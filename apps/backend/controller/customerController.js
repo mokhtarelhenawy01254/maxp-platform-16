@@ -755,47 +755,105 @@ const getCustomerOrders = async (req, res) => {
     }
 
     const { customerId } = req.params;
+    const conversationId = String(req.query.conversationId || '').trim() || null;
+    const queryPhone = String(req.query.phone || '').trim() || null;
 
-    if (!customerId) {
+    if (!customerId && !conversationId && !queryPhone) {
       return res.status(400).json({
         success: false,
-        message: 'معرف العميل مطلوب'
+        message: 'معرف العميل أو المحادثة أو رقم الهاتف مطلوب'
       });
     }
 
-    // التحقق من أن العميل ينتمي للشركة
-    const customer = await getSharedPrismaClient().customer.findUnique({
-      where: { id: customerId },
-      select: { id: true, companyId: true, phone: true, phoneNormalized: true }
-    });
+    const prisma = getSharedPrismaClient();
 
-    if (!customer) {
-      return res.status(404).json({
-        success: false,
-        message: 'العميل غير موجود'
+    // التحقق من أن العميل ينتمي للشركة أو البحث عنه
+    let customer = null;
+    if (customerId && customerId !== 'conversation' && customerId !== 'null' && customerId !== 'undefined') {
+      customer = await prisma.customer.findUnique({
+        where: { id: customerId },
+        select: { id: true, companyId: true, phone: true, phoneNormalized: true }
       });
     }
 
-    if (customer.companyId !== companyId) {
+    // إذا لم نجد العميل وكان لدينا معرف المحادثة
+    if (!customer && conversationId) {
+      const conv = await prisma.conversation.findFirst({
+        where: { id: conversationId, companyId },
+        select: {
+          id: true,
+          customerId: true,
+          customer: {
+            select: { id: true, companyId: true, phone: true, phoneNormalized: true }
+          }
+        }
+      });
+      if (conv?.customer) {
+        customer = conv.customer;
+      }
+    }
+
+    if (customer && customer.companyId !== companyId) {
       return res.status(403).json({
         success: false,
         message: 'غير مصرح بالوصول لهذا العميل'
       });
     }
 
-    // جلب طلبات العميل (بالربط المباشر بالعميل + بأرقام هاتفه)
-    // لأن الطلبات ممكن تكون مسجلة على عميل تاني بنفس الرقم أو كطلب ضيف
-    const orderPhone = customer.phoneNormalized || (customer.phone ? require('../utils/phoneNormalization').toCanonicalE164(customer.phone) : null);
-    const orders = await getSharedPrismaClient().order.findMany({
+    const orderService = require('../services/orderService');
+    const { toCanonicalE164 } = require('../utils/phoneNormalization');
+
+    const orderPhone = customer?.phoneNormalized || (customer?.phone ? toCanonicalE164(customer.phone) : null);
+    const phonesToMatch = [
+      customer?.phone,
+      customer?.phoneNormalized,
+      orderPhone,
+      queryPhone,
+      queryPhone ? toCanonicalE164(queryPhone) : null
+    ].filter(Boolean);
+
+    const phoneConditions = [];
+    const seenDigits = new Set();
+    for (const p of phonesToMatch) {
+      const variations = orderService.getPhoneVariationsForDuplicate
+        ? orderService.getPhoneVariationsForDuplicate(p)
+        : [String(p).replace(/\D/g, '')];
+      for (const v of variations) {
+        const cleaned = String(v).replace(/\D/g, '');
+        if (cleaned.length >= 8 && !seenDigits.has(cleaned)) {
+          seenDigits.add(cleaned);
+          phoneConditions.push({ customerPhone: { contains: cleaned } });
+        }
+      }
+    }
+
+    const orClauses = [];
+    if (customer?.id) {
+      orClauses.push({ customerId: customer.id });
+    }
+    if (conversationId) {
+      orClauses.push({ conversationId: conversationId });
+    }
+    if (phoneConditions.length > 0) {
+      orClauses.push(...phoneConditions);
+    }
+
+    if (orClauses.length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+        productOrders: [],
+        serviceOrders: [],
+        serviceOrdersCount: 0,
+        productOrdersCount: 0
+      });
+    }
+
+    // جلب طلبات العميل من جدول Order
+    const orders = await prisma.order.findMany({
       where: {
         companyId: companyId,
-        OR: [
-          { customerId: customerId },
-          ...(orderPhone ? [
-            { customerPhone: orderPhone },
-            ...(customer.phone ? [{ customerPhone: customer.phone }] : [])
-          ] : [])
-        ]
+        OR: orClauses
       },
       include: {
         orderItems: {
@@ -804,6 +862,7 @@ const getCustomerOrders = async (req, res) => {
               select: {
                 id: true,
                 name: true,
+                mainImage: true,
                 images: true
               }
             }
@@ -811,21 +870,52 @@ const getCustomerOrders = async (req, res) => {
         }
       },
       orderBy: { createdAt: 'desc' },
-      take: 20
+      take: 40
     });
 
-    // تحويل البيانات للصيغة المطلوبة
-    const formattedOrders = orders.map(order => {
-      return {
+    // جلب طلبات الضيوف إن وجدت
+    let guestOrders = [];
+    if (seenDigits.size > 0) {
+      try {
+        const guestPhoneFilters = Array.from(seenDigits).map(digits => ({
+          guestPhone: { contains: digits }
+        }));
+        guestOrders = await prisma.guestOrder.findMany({
+          where: {
+            companyId,
+            OR: guestPhoneFilters
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 20
+        });
+      } catch (guestErr) {
+        console.warn('⚠️ [CUSTOMER-ORDERS] Guest orders lookup skipped:', guestErr.message);
+      }
+    }
+
+    const seenOrderNumbers = new Set();
+    const formattedOrders = [];
+
+    for (const order of orders) {
+      if (seenOrderNumbers.has(order.orderNumber)) continue;
+      seenOrderNumbers.add(order.orderNumber);
+
+      formattedOrders.push({
         id: order.id,
         orderNumber: order.orderNumber,
-        status: (order.status || 'PENDING').toLowerCase(),
-        total: parseFloat(order.total),
+        status: (order.customStatusCode || order.status || 'PENDING').toLowerCase(),
+        total: parseFloat(order.total || 0),
+        subtotal: parseFloat(order.subtotal || 0),
+        shipping: parseFloat(order.shipping || 0),
+        conversationId: order.conversationId || null,
+        sourceType: order.sourceType || null,
         createdAt: order.createdAt,
-        items: order.orderItems.map(item => {
-          let image = null;
+        items: (order.orderItems || []).map(item => {
+          let image = item.productImage || null;
           try {
-            if (item.product?.images) {
+            if (!image && item.product?.mainImage) {
+              image = item.product.mainImage;
+            } else if (!image && item.product?.images) {
               const images = JSON.parse(item.product.images);
               if (Array.isArray(images) && images.length > 0) {
                 image = images[0];
@@ -836,33 +926,62 @@ const getCustomerOrders = async (req, res) => {
           }
 
           return {
-            name: item.product?.name || 'منتج غير معروف',
+            name: item.productName || item.product?.name || 'منتج غير معروف',
+            productName: item.productName || item.product?.name || 'منتج غير معروف',
+            productColor: item.productColor || null,
+            productSize: item.productSize || null,
             quantity: item.quantity,
-            price: parseFloat(item.price),
+            price: parseFloat(item.price || 0),
             image: image
           };
         })
-      };
-    });
+      });
+    }
+
+    for (const go of guestOrders) {
+      if (seenOrderNumbers.has(go.orderNumber)) continue;
+      seenOrderNumbers.add(go.orderNumber);
+
+      let items = [];
+      try {
+        items = typeof go.items === 'string' ? JSON.parse(go.items) : (go.items || []);
+      } catch (_) {}
+
+      formattedOrders.push({
+        id: go.id,
+        orderNumber: go.orderNumber,
+        status: (go.status || 'PENDING').toLowerCase(),
+        total: parseFloat(go.total || 0),
+        subtotal: parseFloat(go.subtotal || 0),
+        shipping: parseFloat(go.shippingCost || 0),
+        conversationId: null,
+        sourceType: 'storefront',
+        createdAt: go.createdAt,
+        items: (Array.isArray(items) ? items : []).map(item => ({
+          name: item.productName || item.name || 'منتج غير معروف',
+          productName: item.productName || item.name || 'منتج غير معروف',
+          productColor: item.productColor || item.color || null,
+          productSize: item.productSize || item.size || null,
+          quantity: Number(item.quantity || 1),
+          price: parseFloat(item.price || 0),
+          image: item.image || item.productImage || null
+        }))
+      });
+    }
 
     // جلب طلبات الخدمات الخاصة بالعميل (حسب رقم هاتفه)
     let formattedServiceOrders = [];
     try {
-      const phonesToMatch = [customer.phone, customer.phoneNormalized, orderPhone].filter(Boolean);
-      const phoneFilters = [];
-      for (const p of phonesToMatch) {
-        phoneFilters.push({ phone: p });
-        const digits = p.replace(/\D/g, '');
-        if (digits.length >= 8) {
-          phoneFilters.push({ phone: { contains: digits.slice(-8) } });
-        }
+      const servicePhoneFilters = [];
+      for (const digits of seenDigits) {
+        servicePhoneFilters.push({ phone: { contains: digits } });
       }
 
-      if (phoneFilters.length > 0) {
-        const serviceOrders = await getSharedPrismaClient().serviceOrder.findMany({
+      if (servicePhoneFilters.length > 0) {
+        const serviceOrders = await prisma.serviceOrder.findMany({
           where: {
             companyId: companyId,
-            OR: phoneFilters
+            OR: servicePhoneFilters
           },
           include: {
             service: true
@@ -1542,6 +1661,38 @@ const searchCustomers = async (req, res) => {
  * بيرجّع بيانات العميل (الاسم/رقم الهاتف/الملاحظات) + أحدث عنوان/محافظة
  * من آخر طلب للرقم ده (لأن بيانات العنوان محفوظة على الـ orders مش على الـ customer).
  */
+const parseCleanAddress = (rawAddress, rawGov, rawCity) => {
+  let gov = rawGov || null;
+  let city = rawCity || null;
+  let area = null;
+  let address = null;
+
+  if (rawAddress && typeof rawAddress === 'string') {
+    const trimmed = rawAddress.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed && typeof parsed === 'object') {
+          gov = gov || parsed.governorate || parsed.government || null;
+          city = city || parsed.city || null;
+          area = parsed.area || parsed.region || null;
+          address = parsed.address || parsed.fullAddress || parsed.street || null;
+        }
+      } catch (_) {}
+    }
+    if (!address && !trimmed.startsWith('{')) {
+      address = trimmed;
+    }
+  } else if (rawAddress && typeof rawAddress === 'object') {
+    gov = gov || rawAddress.governorate || rawAddress.government || null;
+    city = city || rawAddress.city || null;
+    area = rawAddress.area || rawAddress.region || null;
+    address = rawAddress.address || rawAddress.fullAddress || rawAddress.street || null;
+  }
+
+  return { governorate: gov, city, area, address };
+};
+
 const getCustomerLookupByPhone = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
@@ -1553,6 +1704,8 @@ const getCustomerLookupByPhone = async (req, res) => {
     }
 
     const phone = String(req.params.phone || '').trim();
+    const conversationId = String(req.query.conversationId || '').trim() || null;
+
     if (!phone) {
       return res.status(400).json({
         success: false,
@@ -1562,26 +1715,61 @@ const getCustomerLookupByPhone = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     const { findCustomerByPhone } = require('../utils/customerIdentity');
-    const { stripPhone } = require('../utils/phoneNormalization');
+    const { stripPhone, toCanonicalE164 } = require('../utils/phoneNormalization');
+    const orderService = require('../services/orderService');
 
     const digits = stripPhone(phone);
     if (!digits || digits.length < 9) {
-      return res.json({ success: true, data: { customer: null, latestOrder: null } });
+      return res.json({
+        success: true,
+        data: {
+          customer: null,
+          latestOrder: null,
+          previousOrders: [],
+          eligiblePreviousOrders: []
+        }
+      });
     }
 
-    // 1) العميل المسجل بنفس الرقم
+    // 1) العميل المسجل بنفس الرقم مع بياناته الكاملة
     const customer = await findCustomerByPhone(prisma, phone, companyId);
 
-    // 2) أحدث طلب بهذا الرقم (عشان العنوان والمحافظة) — بيشمل طلبات الضيوف
-    const latestOrder = await prisma.order.findFirst({
+    // تجهيز صيغ رقم الهاتف للبحث في الطلبات السابقة
+    const phoneVariations = orderService.getPhoneVariationsForDuplicate
+      ? orderService.getPhoneVariationsForDuplicate(phone)
+      : [digits];
+
+    const seenDigits = new Set();
+    const phoneFilterList = [];
+    for (const p of [phone, digits, toCanonicalE164(phone), ...(customer?.phone ? [customer.phone] : []), ...(customer?.phoneNormalized ? [customer.phoneNormalized] : []), ...phoneVariations]) {
+      const d = String(p || '').replace(/\D/g, '');
+      if (d.length >= 8 && !seenDigits.has(d)) {
+        seenDigits.add(d);
+        phoneFilterList.push({ customerPhone: { contains: d } });
+      }
+    }
+
+    const orderOrClauses = [];
+    if (customer?.id) {
+      orderOrClauses.push({ customerId: customer.id });
+    }
+    if (conversationId) {
+      orderOrClauses.push({ conversationId: conversationId });
+    }
+    if (phoneFilterList.length > 0) {
+      orderOrClauses.push(...phoneFilterList);
+    } else {
+      orderOrClauses.push({ customerPhone: { contains: digits } });
+    }
+
+    // 2) كل تاريخ الطلبات السابقة لهذا الرقم/العميل/المحادثة
+    const orders = await prisma.order.findMany({
       where: {
         companyId,
-        OR: [
-          ...(customer ? [{ customerId: customer.id }] : []),
-          { customerPhone: { contains: digits } },
-        ],
+        OR: orderOrClauses,
       },
       orderBy: { createdAt: 'desc' },
+      take: 50,
       select: {
         id: true,
         orderNumber: true,
@@ -1592,11 +1780,190 @@ const getCustomerLookupByPhone = async (req, res) => {
         customerAddress: true,
         shippingAddress: true,
         notes: true,
+        status: true,
+        customStatusCode: true,
+        total: true,
+        subtotal: true,
+        shipping: true,
+        discount: true,
+        conversationId: true,
+        sourceType: true,
         createdAt: true,
+        orderItems: {
+          select: {
+            id: true,
+            productId: true,
+            productName: true,
+            productColor: true,
+            productSize: true,
+            quantity: true,
+            price: true,
+            total: true,
+            productImage: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                mainImage: true,
+                images: true
+              }
+            }
+          }
+        }
       },
     });
 
-    const orderService = require('../services/orderService');
+    // جلب طلبات الضيوف المسجلة بنفس الهاتف إن وجدت
+    let guestOrders = [];
+    if (seenDigits.size > 0) {
+      try {
+        const guestPhoneFilters = Array.from(seenDigits).map(d => ({
+          guestPhone: { contains: d }
+        }));
+        guestOrders = await prisma.guestOrder.findMany({
+          where: {
+            companyId,
+            OR: guestPhoneFilters
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 20
+        });
+      } catch (guestErr) {
+        console.warn('⚠️ [CUSTOMER-LOOKUP] Guest order query skipped:', guestErr.message);
+      }
+    }
+
+    const seenOrderNumbers = new Set();
+    const formattedPreviousOrders = [];
+
+    for (const o of orders) {
+      if (seenOrderNumbers.has(o.orderNumber)) continue;
+      seenOrderNumbers.add(o.orderNumber);
+
+      const cleanOrderLoc = parseCleanAddress(o.customerAddress || o.shippingAddress, o.governorate, o.city);
+
+      formattedPreviousOrders.push({
+        id: o.id,
+        orderNumber: o.orderNumber,
+        customerName: o.customerName,
+        customerPhone: o.customerPhone,
+        governorate: cleanOrderLoc.governorate || o.governorate,
+        city: cleanOrderLoc.city || o.city,
+        area: cleanOrderLoc.area,
+        address: cleanOrderLoc.address,
+        notes: o.notes,
+        status: (o.customStatusCode || o.status || 'PENDING'),
+        total: Number(o.total || 0),
+        subtotal: Number(o.subtotal || 0),
+        shipping: Number(o.shipping || 0),
+        discount: Number(o.discount || 0),
+        conversationId: o.conversationId || null,
+        sourceType: o.sourceType || null,
+        createdAt: o.createdAt,
+        orderItems: (o.orderItems || []).map(item => {
+          let image = item.productImage || null;
+          try {
+            if (!image && item.product?.mainImage) {
+              image = item.product.mainImage;
+            } else if (!image && item.product?.images) {
+              const images = JSON.parse(item.product.images);
+              if (Array.isArray(images) && images.length > 0) {
+                image = images[0];
+              }
+            }
+          } catch (_) {}
+
+          return {
+            id: item.id,
+            productId: item.productId || null,
+            name: item.productName || item.product?.name || 'منتج',
+            productName: item.productName || item.product?.name || 'منتج',
+            productColor: item.productColor || null,
+            productSize: item.productSize || null,
+            quantity: Number(item.quantity || 1),
+            price: Number(item.price || 0),
+            total: Number(item.total || (Number(item.price || 0) * Number(item.quantity || 1))),
+            image
+          };
+        })
+      });
+    }
+
+    for (const go of guestOrders) {
+      if (seenOrderNumbers.has(go.orderNumber)) continue;
+      seenOrderNumbers.add(go.orderNumber);
+
+      let items = [];
+      try {
+        items = typeof go.items === 'string' ? JSON.parse(go.items) : (go.items || []);
+      } catch (_) {}
+
+      const cleanGuestLoc = parseCleanAddress(go.shippingAddress, go.city, null);
+
+      formattedPreviousOrders.push({
+        id: go.id,
+        orderNumber: go.orderNumber,
+        customerName: go.guestName,
+        customerPhone: go.guestPhone,
+        governorate: cleanGuestLoc.governorate,
+        city: cleanGuestLoc.city,
+        area: cleanGuestLoc.area,
+        address: cleanGuestLoc.address,
+        notes: go.notes,
+        status: (go.status || 'PENDING'),
+        total: Number(go.total || 0),
+        subtotal: Number(go.subtotal || 0),
+        shipping: Number(go.shippingCost || 0),
+        discount: Number(go.discount || 0),
+        conversationId: null,
+        sourceType: 'storefront',
+        createdAt: go.createdAt,
+        orderItems: (Array.isArray(items) ? items : []).map(item => ({
+          id: item.id || null,
+          productId: item.productId || null,
+          name: item.productName || item.name || 'منتج',
+          productName: item.productName || item.name || 'منتج',
+          productColor: item.productColor || item.color || null,
+          productSize: item.productSize || item.size || null,
+          quantity: Number(item.quantity || 1),
+          price: Number(item.price || 0),
+          total: Number(item.total || (Number(item.price || 0) * Number(item.quantity || 1))),
+          image: item.image || item.productImage || null
+        }))
+      });
+    }
+
+    // أحدث طلب لاشتقاق العنوان والبيانات الافتراضية
+    const latestOrder = formattedPreviousOrders[0] || null;
+
+    // استخراج بيانات الموقع المحسنة
+    const cleanLocation = latestOrder
+      ? {
+          governorate: latestOrder.governorate || null,
+          city: latestOrder.city || null,
+          area: latestOrder.area || null,
+          address: latestOrder.address || null,
+        }
+      : { governorate: null, city: null, area: null, address: null };
+
+    // تحليل بيانات metadata للعميل
+    let customerMeta = {};
+    try {
+      customerMeta = typeof customer?.metadata === 'string' ? JSON.parse(customer.metadata) : (customer?.metadata || {});
+    } catch (_) {}
+
+    let parsedTags = [];
+    try {
+      if (Array.isArray(customer?.tags)) {
+        parsedTags = customer.tags;
+      } else if (typeof customer?.tags === 'string') {
+        parsedTags = JSON.parse(customer.tags);
+      }
+    } catch (_) {
+      parsedTags = typeof customer?.tags === 'string' ? [customer.tags] : [];
+    }
+
+    // جلب سياسة الاستبدال والطلبات المؤهلة
     const exchangeReturnPolicy = await orderService.getExchangeReturnPolicy(companyId);
     const eligiblePreviousOrders = await orderService.findEligiblePreviousOrders({
       companyId,
@@ -1605,33 +1972,75 @@ const getCustomerLookupByPhone = async (req, res) => {
       policy: exchangeReturnPolicy
     });
 
+    const formattedCustomer = customer
+      ? {
+          id: customer.id,
+          firstName: customer.firstName || '',
+          lastName: customer.lastName || '',
+          name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || latestOrder?.customerName || '',
+          phone: customer.phone,
+          phoneNormalized: customer.phoneNormalized,
+          phone2: customerMeta?.phone2 || customerMeta?.alternativePhone || null,
+          email: customer.email || null,
+          address: cleanLocation.address || customerMeta?.address || null,
+          governorate: cleanLocation.governorate || customerMeta?.governorate || null,
+          city: cleanLocation.city || customerMeta?.city || null,
+          area: cleanLocation.area || customerMeta?.area || null,
+          notes: customer.notes || latestOrder?.notes || null,
+          tags: parsedTags,
+          customerRating: customer.customerRating || 'UNKNOWN',
+          status: customer.status || 'ACTIVE',
+          successScore: customer.successScore ?? 0,
+          deliveryRate: customer.deliveryRate ?? 0,
+          totalOrdersCount: Math.max(customer.totalOrdersCount || 0, formattedPreviousOrders.length),
+          totalDelivered: customer.totalDelivered ?? 0,
+        }
+      : (latestOrder ? {
+          id: null,
+          firstName: latestOrder.customerName || '',
+          lastName: '',
+          name: latestOrder.customerName || '',
+          phone: latestOrder.customerPhone || phone,
+          phoneNormalized: null,
+          phone2: null,
+          email: null,
+          address: cleanLocation.address || null,
+          governorate: cleanLocation.governorate || null,
+          city: cleanLocation.city || null,
+          area: cleanLocation.area || null,
+          notes: latestOrder.notes || null,
+          tags: [],
+          customerRating: 'NEW',
+          status: 'ACTIVE',
+          successScore: 0,
+          deliveryRate: 0,
+          totalOrdersCount: formattedPreviousOrders.length,
+          totalDelivered: 0,
+        } : null);
+
+    const formattedLatestOrder = latestOrder
+      ? {
+          id: latestOrder.id,
+          orderNumber: latestOrder.orderNumber,
+          customerName: latestOrder.customerName,
+          customerPhone: latestOrder.customerPhone,
+          governorate: cleanLocation.governorate,
+          city: cleanLocation.city,
+          area: cleanLocation.area,
+          address: cleanLocation.address,
+          notes: latestOrder.notes,
+          createdAt: latestOrder.createdAt,
+          total: latestOrder.total,
+          status: latestOrder.status
+        }
+      : null;
+
     res.json({
       success: true,
       data: {
-        customer: customer
-          ? {
-              id: customer.id,
-              firstName: customer.firstName,
-              lastName: customer.lastName,
-              phone: customer.phone,
-              phoneNormalized: customer.phoneNormalized,
-              notes: customer.notes,
-              tags: customer.tags,
-            }
-          : null,
-        latestOrder: latestOrder
-          ? {
-              id: latestOrder.id,
-              orderNumber: latestOrder.orderNumber,
-              customerName: latestOrder.customerName,
-              customerPhone: latestOrder.customerPhone,
-              governorate: latestOrder.governorate,
-              city: latestOrder.city,
-              address: latestOrder.customerAddress || latestOrder.shippingAddress || null,
-              notes: latestOrder.notes,
-              createdAt: latestOrder.createdAt,
-            }
-          : null,
+        customer: formattedCustomer,
+        latestOrder: formattedLatestOrder,
+        previousOrders: formattedPreviousOrders,
         eligiblePreviousOrders: eligiblePreviousOrders || [],
         exchangeReturnPolicy,
       },

@@ -35,6 +35,8 @@ import {
   lookupCustomerByPhone,
   EligiblePreviousOrder,
   ExchangeReturnPolicy,
+  PreviousOrder,
+  CustomerLookupResult,
 } from "../../../hooks/useCustomerByPhone";
 import { authService } from "../../../services/authService";
 import { config } from "../../../config";
@@ -279,7 +281,7 @@ interface QuickOrderModalProps {
   customerId?: string;
   platform?: 'facebook' | 'whatsapp' | 'telegram';
   pageName?: string;
-  onOrderCreated?: (orderId: string) => void;
+  onOrderCreated?: (orderId: string, order?: any, confirmationMessage?: any) => void;
 }
 
 // Variant Selection Modal Component - Same as ManualOrder
@@ -612,8 +614,12 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
 
   // Exchange & Return Policy State
   const [eligiblePreviousOrders, setEligiblePreviousOrders] = useState<EligiblePreviousOrder[]>([]);
+  const [previousOrders, setPreviousOrders] = useState<PreviousOrder[]>([]);
+  const [customerProfile, setCustomerProfile] = useState<CustomerLookupResult | null>(null);
+  const [loadingCustomerOrders, setLoadingCustomerOrders] = useState(false);
   const [exchangeReturnPolicy, setExchangeReturnPolicy] = useState<ExchangeReturnPolicy | null>(null);
   const [selectedPreviousOrder, setSelectedPreviousOrder] = useState<string>("");
+  const isSubmittingRef = useRef(false);
 
   // Preload order policy when modal opens
   useEffect(() => {
@@ -697,34 +703,50 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
     };
   }, [isOpen, city]);
 
-  // Auto-fill customer details from previous orders when a phone number is entered
+  // Auto-fill customer details and fetch full order history when phone number is entered
   useEffect(() => {
     const phoneStr = String(phone || "");
     const digits = phoneStr.replace(/\D/g, "");
     if (!isOpen || digits.length < 9) {
       setEligiblePreviousOrders([]);
+      setPreviousOrders([]);
+      setCustomerProfile(null);
+      setLoadingCustomerOrders(false);
       return;
     }
 
     let cancelled = false;
+    setLoadingCustomerOrders(true);
     const timeoutId = setTimeout(async () => {
       try {
-        const customer = await lookupCustomerByPhone(phoneStr);
+        const customer = await lookupCustomerByPhone(phoneStr, convId);
         if (cancelled || !customer) return;
+
+        setCustomerProfile(customer);
 
         const firstNameStr = String(customer.firstName || "").trim();
         const lastNameStr = String(customer.lastName || "").trim();
         const fullName = `${firstNameStr} ${lastNameStr}`.trim();
         if (fullName) {
-          setCustomerName((prev) => String(prev || "").trim() || fullName);
+          setCustomerName(fullName);
         }
         if (customer.address) {
-          setAddress((prev) => String(prev || "").trim() || String(customer.address));
+          setAddress(String(customer.address));
         }
-        setCity((prev) => prev || customer.governorate || customer.city || "");
-        setArea((prev) => prev || customer.area || customer.city || "");
+        if (customer.governorate || customer.city) {
+          setCity(customer.governorate || customer.city || "");
+        }
+        if (customer.area || customer.city) {
+          setArea(customer.area || customer.city || "");
+        }
         if (customer.notes) {
           setNotes((prev) => String(prev || "").trim() || String(customer.notes));
+        }
+
+        if (customer.previousOrders && customer.previousOrders.length > 0) {
+          setPreviousOrders(customer.previousOrders);
+        } else {
+          setPreviousOrders([]);
         }
 
         if (customer.eligiblePreviousOrders) {
@@ -738,14 +760,18 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         }
       } catch (error) {
         console.error("Quick order customer lookup error:", error);
+      } finally {
+        if (!cancelled) {
+          setLoadingCustomerOrders(false);
+        }
       }
-    }, 800);
+    }, 250);
 
     return () => {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [isOpen, phone]);
+  }, [isOpen, phone, convId]);
 
   // Customer Blocklist check
   useEffect(() => {
@@ -1173,6 +1199,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
 
   // Create order
   const handleCreateOrder = async () => {
+    if (isSubmittingRef.current || loading) return;
     if (cartItems.length === 0) {
       tToast.error("QuickOrderModal.msg_337c");
       return;
@@ -1200,6 +1227,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
       return;
     }
 
+    isSubmittingRef.current = true;
     try {
       setLoading(true);
 
@@ -1274,11 +1302,28 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
 
       if (response.data?.success) {
         tToast.success("QuickOrderModal.success_create_5c00");
-        const orderId = response.data.order?.id || response.data.data?.id;
-        const orderNumber = response.data.order?.orderNumber || response.data.data?.orderNumber;
+        const orderObj = response.data.order || response.data.data;
+        const orderId = orderObj?.id;
+        const orderNumber = orderObj?.orderNumber;
+        const confirmationMessage = response.data.confirmationMessage;
+
+        // Dispatch real-time global event so CustomerProfile, FacebookInbox, and chat instantly update
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("inbox:order-created", {
+              detail: {
+                order: orderObj,
+                orderId,
+                orderNumber,
+                conversationId: convId,
+                confirmationMessage,
+              },
+            })
+          );
+        }
 
         if (onOrderCreated && orderId) {
-          onOrderCreated(orderId);
+          onOrderCreated(orderId, orderObj, confirmationMessage);
         }
 
         setCreatedOrder({
@@ -1296,6 +1341,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
       toast.error(err.response?.data?.message || "حدث خطأ أثناء إنشاء الطلب");
     } finally {
       setLoading(false);
+      isSubmittingRef.current = false;
     }
   };
 
@@ -2113,7 +2159,122 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Customer Blocklist Warning Banner */}
+                    {/* Customer Profile & Historical Orders Lookup */}
+                    {(loadingCustomerOrders || customerProfile || previousOrders.length > 0) && (
+                      <div className="rounded-xl border p-3 text-xs sm:text-sm bg-slate-50/70 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 space-y-2.5">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-xs" style={headingStyle}>
+                              سجل العميل والطلبات السابقة
+                            </span>
+                            {loadingCustomerOrders && (
+                              <span className="inline-flex items-center gap-1 text-[11px] text-primary animate-pulse">
+                                <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
+                                جاري فحص السجل...
+                              </span>
+                            )}
+                          </div>
+
+                          {customerProfile && (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {customerProfile.customerRating && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300">
+                                  ⭐ {customerProfile.customerRating}
+                                </span>
+                              )}
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                {customerProfile.totalOrdersCount || previousOrders.length} طلبات
+                              </span>
+                              {customerProfile.deliveryRate != null && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                  {customerProfile.deliveryRate}% تسليم
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Customer Tags & Address info if any */}
+                        {customerProfile && (customerProfile.tags || customerProfile.notes) && (
+                          <div className="text-[11px] space-y-1 text-muted-foreground border-t border-slate-200/60 dark:border-slate-800/60 pt-1.5">
+                            {customerProfile.notes && (
+                              <p className="truncate">
+                                📝 <span className="font-medium text-foreground">ملاحظات:</span> {customerProfile.notes}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Full Previous Orders List */}
+                        {previousOrders.length > 0 ? (
+                          <div className="space-y-1.5 pt-1">
+                            <div className="text-[11px] text-muted-foreground font-medium flex items-center justify-between">
+                              <span>الطلبات السابقة المسجلة ({previousOrders.length}):</span>
+                              <span className="text-[10px] opacity-75">محدّثة فورياً</span>
+                            </div>
+                            <div className="max-h-48 overflow-y-auto space-y-1.5 pr-0.5">
+                              {previousOrders.map((prevOrder) => (
+                                <div
+                                  key={prevOrder.id || prevOrder.orderNumber}
+                                  className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 text-xs space-y-1 shadow-2xs"
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="font-bold font-mono">
+                                        #{prevOrder.orderNumber}
+                                      </span>
+                                      <span className="text-[10px] text-muted-foreground">
+                                        {new Date(prevOrder.createdAt).toLocaleDateString("ar-EG")}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                        {prevOrder.status}
+                                      </span>
+                                      <span className="font-bold text-primary font-mono">
+                                        {prevOrder.total?.toLocaleString()} ج.م
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {prevOrder.orderItems && prevOrder.orderItems.length > 0 && (
+                                    <div className="text-[11px] text-muted-foreground truncate">
+                                      {prevOrder.orderItems
+                                        .map(
+                                          (item: any) =>
+                                            `${item.quantity}× ${item.productName || item.name}${
+                                              item.productSize || item.productColor
+                                                ? ` (${[item.productColor, item.productSize]
+                                                    .filter(Boolean)
+                                                    .join("-")})`
+                                                : ""
+                                            }`
+                                        )
+                                        .join(" · ")}
+                                    </div>
+                                  )}
+
+                                  <div className="text-left pt-0.5">
+                                    <a
+                                      href={`/orders/${encodeURIComponent(prevOrder.orderNumber || prevOrder.id)}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-[11px] text-primary hover:underline font-medium inline-flex items-center gap-1"
+                                    >
+                                      عرض تفاصيل الطلب ←
+                                    </a>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : !loadingCustomerOrders && phone.replace(/\D/g, "").length >= 10 ? (
+                          <div className="text-xs text-muted-foreground italic py-1">
+                            لا توجد طلبات سابقة مسجلة لهذا الرقم (عميل جديد)
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
                     {(checkingBlock || customerBlock) && (
                       <div
                         className={`rounded-xl border p-3 text-xs sm:text-sm ${

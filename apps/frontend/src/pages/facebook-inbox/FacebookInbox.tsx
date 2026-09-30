@@ -157,10 +157,12 @@ const getApiError = (error: unknown): ApiErrorLike => {
     clearSelection,
     // ðŸ†• API counts for accurate tab counts
     apiCounts,
-    // ðŸ†• Add conversation to list
+    // 🆕 Add conversation to list
     addConversationToList,
-    // ðŸ†• Mark messages as read (for read receipts)
+    // 🆕 Mark messages as read (for read receipts)
     markMessagesAsRead,
+    addMessage,
+    loadMessages,
   } = useInboxConversations();
 
   // Send message
@@ -3613,19 +3615,26 @@ const getApiError = (error: unknown): ApiErrorLike => {
         </div>
       )}
 
-      {/* ðŸ†• Quick Order Modal */}
+      {/* 🆕 Quick Order Modal */}
       {selectedConversation && (
         <QuickOrderModal
           isOpen={showQuickOrderModal}
           onClose={() => setShowQuickOrderModal(false)}
           conversation={selectedConversation}
           customerName={selectedConversation.customerName}
+          customerPhone={selectedConversation.customerPhone}
           conversationId={selectedConversation.id}
           customerId={selectedConversation.customerId}
           platform={platform}
           pageName={selectedConversation.pageName || "Facebook"}
-          onOrderCreated={(orderId) => {
-            console.log("âœ… Order created:", orderId);
+          onOrderCreated={(orderId, order, confirmationMessage) => {
+            console.log("✅ Order created:", orderId, order);
+            if (confirmationMessage && addMessage) {
+              addMessage(confirmationMessage);
+            }
+            if (selectedConversation?.id && loadMessages) {
+              loadMessages(selectedConversation.id);
+            }
           }}
         />
       )}

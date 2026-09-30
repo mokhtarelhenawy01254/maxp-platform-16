@@ -20,6 +20,40 @@ export interface EligiblePreviousOrder {
   }>;
 }
 
+export interface PreviousOrderItem {
+  id?: string | null;
+  productId?: string | null;
+  name?: string;
+  productName: string;
+  productColor?: string | null;
+  productSize?: string | null;
+  quantity: number;
+  price: number;
+  total: number;
+  image?: string | null;
+}
+
+export interface PreviousOrder {
+  id: string;
+  orderNumber: string;
+  customerName?: string;
+  customerPhone?: string;
+  governorate?: string | null;
+  city?: string | null;
+  area?: string | null;
+  address?: string | null;
+  notes?: string | null;
+  status: string;
+  total: number;
+  subtotal?: number;
+  shipping?: number;
+  discount?: number;
+  conversationId?: string | null;
+  sourceType?: string | null;
+  createdAt: string;
+  orderItems: PreviousOrderItem[];
+}
+
 export interface ExchangeReturnPolicy {
   requirePreviousOrder: boolean;
   allowedStatuses: string[];
@@ -28,14 +62,27 @@ export interface ExchangeReturnPolicy {
 }
 
 export interface CustomerLookupResult {
+  id?: string | null;
   firstName: string;
   lastName: string;
+  name?: string;
   phone?: string | null;
+  phone2?: string | null;
+  phoneNormalized?: string | null;
+  email?: string | null;
   address?: string | null;
   governorate?: string | null;
   city?: string | null;
   area?: string | null;
   notes?: string | null;
+  tags?: string[];
+  customerRating?: string;
+  status?: string;
+  totalOrdersCount?: number;
+  totalDelivered?: number;
+  deliveryRate?: number;
+  successScore?: number;
+  previousOrders?: PreviousOrder[];
   eligiblePreviousOrders?: EligiblePreviousOrder[];
   exchangeReturnPolicy?: ExchangeReturnPolicy;
 }
@@ -74,29 +121,34 @@ export const phonesMatch = (
  * Looks up a customer by phone number.
  *
  * Uses the dedicated backend endpoint `/customers/by-phone/:phone` which:
- * 1. Finds the registered customer (name/phone/notes) using phone normalization.
- * 2. Pulls the latest order's shipping details (governorate, city, address),
- *    because address data is stored on orders, not on the customer record.
+ * 1. Finds the registered customer (name/phone/notes/ratings/tags) using phone normalization.
+ * 2. Pulls all previous orders (previousOrders) for this customer/phone/conversation.
+ * 3. Pulls clean location details (governorate, city, address) from historical records.
  *
  * Returns null when nothing meaningful was found.
  */
 export async function lookupCustomerByPhone(
   phone: string,
+  conversationId?: string | null,
 ): Promise<CustomerLookupResult | null> {
   const query = toDigits(phone);
   if (query.length < 9) return null;
 
   try {
+    const params = new URLSearchParams();
+    if (conversationId) params.set("conversationId", conversationId);
+    const queryString = params.toString() ? `?${params.toString()}` : "";
+
     const response = await apiClient.get(
-      `/customers/by-phone/${encodeURIComponent(phone)}`,
+      `/customers/by-phone/${encodeURIComponent(phone)}${queryString}`,
     );
 
     if (!response.data?.success) return null;
 
-    const { customer, latestOrder, eligiblePreviousOrders, exchangeReturnPolicy } =
+    const { customer, latestOrder, previousOrders, eligiblePreviousOrders, exchangeReturnPolicy } =
       response.data.data || {};
 
-    if (!customer && !latestOrder) {
+    if (!customer && !latestOrder && (!previousOrders || previousOrders.length === 0)) {
       if (exchangeReturnPolicy) {
         return {
           firstName: "",
@@ -107,6 +159,7 @@ export async function lookupCustomerByPhone(
           city: null,
           area: null,
           notes: null,
+          previousOrders: [],
           eligiblePreviousOrders: eligiblePreviousOrders || [],
           exchangeReturnPolicy,
         };
@@ -115,13 +168,14 @@ export async function lookupCustomerByPhone(
     }
 
     const governorate =
-      latestOrder?.governorate || latestOrder?.city || customer?.governorate || customer?.city || null;
+      latestOrder?.governorate || customer?.governorate || latestOrder?.city || customer?.city || null;
     const areaCity =
+      latestOrder?.area ||
       latestOrder?.city ||
       customer?.area ||
       customer?.city ||
       null;
-    const area = areaCity && areaCity !== governorate ? areaCity : null;
+    const area = areaCity && areaCity !== governorate ? areaCity : (customer?.area || null);
     const address =
       latestOrder?.address ||
       customer?.address ||
@@ -129,18 +183,32 @@ export async function lookupCustomerByPhone(
     const notes = customer?.notes || latestOrder?.notes || null;
 
     return {
+      id: customer?.id || latestOrder?.customerId || null,
       firstName: customer?.firstName || "",
       lastName: customer?.lastName || "",
-      phone: customer?.phone || latestOrder?.customerPhone || null,
+      name: customer?.name || `${customer?.firstName || ""} ${customer?.lastName || ""}`.trim() || latestOrder?.customerName || "",
+      phone: customer?.phone || latestOrder?.customerPhone || phone,
+      phone2: customer?.phone2 || null,
+      phoneNormalized: customer?.phoneNormalized || null,
+      email: customer?.email || null,
       address,
       governorate,
       city: latestOrder?.city || customer?.city || null,
       area,
       notes,
+      tags: customer?.tags || [],
+      customerRating: customer?.customerRating || "UNKNOWN",
+      status: customer?.status || "ACTIVE",
+      totalOrdersCount: customer?.totalOrdersCount ?? (previousOrders?.length || 0),
+      totalDelivered: customer?.totalDelivered ?? 0,
+      deliveryRate: customer?.deliveryRate ?? 0,
+      successScore: customer?.successScore ?? 0,
+      previousOrders: previousOrders || [],
       eligiblePreviousOrders: eligiblePreviousOrders || [],
       exchangeReturnPolicy,
     };
-  } catch {
+  } catch (error) {
+    console.error("Error in lookupCustomerByPhone:", error);
     return null;
   }
 }
@@ -150,7 +218,7 @@ export async function lookupCustomerByPhone(
  * boolean indicating an in-flight search. Only fires for complete numbers and
  * cancels stale requests when the phone changes.
  */
-export function useCustomerByPhone(phone: string, delay = 800) {
+export function useCustomerByPhone(phone: string, delay = 250, conversationId?: string | null) {
   const [result, setResult] = useState<CustomerLookupResult | null>(null);
   const [searching, setSearching] = useState(false);
   const requestId = useRef(0);
@@ -166,7 +234,7 @@ export function useCustomerByPhone(phone: string, delay = 800) {
     setSearching(true);
     const currentRequest = ++requestId.current;
     const timeoutId = window.setTimeout(async () => {
-      const found = await lookupCustomerByPhone(phone);
+      const found = await lookupCustomerByPhone(phone, conversationId);
       if (currentRequest === requestId.current) {
         setResult(found);
         setSearching(false);
@@ -179,7 +247,7 @@ export function useCustomerByPhone(phone: string, delay = 800) {
         setSearching(false);
       }
     };
-  }, [phone, delay]);
+  }, [phone, delay, conversationId]);
 
   return { customer: result, searching };
 }

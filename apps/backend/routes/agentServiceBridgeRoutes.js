@@ -116,28 +116,39 @@ router.post('/product-search', async (req, res) => {
       });
       await prisma.$disconnect();
 
-      const products = rows.map((p) => ({
-        id: p.id,
-        name: p.name,
-        sku: p.sku,
-        price: Number(p.price) || 0,
-        comparePrice: p.comparePrice ? Number(p.comparePrice) : null,
-        stock: p.stock ?? 0,
-        isFeatured: Boolean(p.isFeatured),
-        trackInventory: p.trackInventory !== false,
-        mainImage: p.mainImage || null,
-        images: Array.isArray(p.images) ? p.images : [],
-        category: p.category ? { name: p.category.name || p.category } : null,
-        searchScore: 1,
-        productVariants: (p.productVariants || []).map(v => ({
-          name: v.name,
-          type: v.type,
-          sku: v.sku,
-          stock: v.stock,
-          trackInventory: v.trackInventory,
-          isActive: v.isActive,
-        })),
-      }));
+      const parseMeta = (raw) => {
+        if (!raw) return {};
+        if (typeof raw === 'object') return raw;
+        try { return JSON.parse(raw); } catch { return {}; }
+      };
+
+      const products = rows.map((p) => {
+        const meta = parseMeta(p.metadata);
+        return {
+          id: p.id,
+          name: p.name,
+          sku: p.sku,
+          price: Number(p.price) || 0,
+          comparePrice: p.comparePrice ? Number(p.comparePrice) : null,
+          quantityOffers: Array.isArray(meta.quantityOffers) ? meta.quantityOffers : [],
+          metadata: meta,
+          stock: p.stock ?? 0,
+          isFeatured: Boolean(p.isFeatured),
+          trackInventory: p.trackInventory !== false,
+          mainImage: p.mainImage || null,
+          images: Array.isArray(p.images) ? p.images : [],
+          category: p.category ? { name: p.category.name || p.category } : null,
+          searchScore: 1,
+          productVariants: (p.productVariants || []).map(v => ({
+            name: v.name,
+            type: v.type,
+            sku: v.sku,
+            stock: v.stock,
+            trackInventory: v.trackInventory,
+            isActive: v.isActive,
+          })),
+        };
+      });
 
       return res.json({
         success: true,
@@ -165,28 +176,39 @@ router.post('/product-search', async (req, res) => {
       },
     });
 
-    const products = result.products.map((p) => ({
-      id: p.id,
-      name: p.name,
-      sku: p.sku,
-      price: Number(p.price) || 0,
-      comparePrice: p.comparePrice ? Number(p.comparePrice) : null,
-      stock: p.stock ?? 0,
-      isFeatured: Boolean(p.isFeatured),
-      trackInventory: p.trackInventory !== false,
-      mainImage: p.mainImage || null,
-      images: Array.isArray(p.images) ? p.images : [],
-      category: p.category ? { name: p.category.name || p.category } : null,
-      searchScore: p.searchScore || 0,
-      productVariants: Array.isArray(p.productVariants) ? p.productVariants.map(v => ({
-        name: v.name,
-        type: v.type,
-        sku: v.sku,
-        stock: v.stock,
-        trackInventory: v.trackInventory,
-        isActive: v.isActive,
-      })) : [],
-    }));
+    const parseMeta = (raw) => {
+      if (!raw) return {};
+      if (typeof raw === 'object') return raw;
+      try { return JSON.parse(raw); } catch { return {}; }
+    };
+
+    const products = result.products.map((p) => {
+      const meta = parseMeta(p.metadata);
+      return {
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        price: Number(p.price) || 0,
+        comparePrice: p.comparePrice ? Number(p.comparePrice) : null,
+        quantityOffers: Array.isArray(meta.quantityOffers) ? meta.quantityOffers : [],
+        metadata: meta,
+        stock: p.stock ?? 0,
+        isFeatured: Boolean(p.isFeatured),
+        trackInventory: p.trackInventory !== false,
+        mainImage: p.mainImage || null,
+        images: Array.isArray(p.images) ? p.images : [],
+        category: p.category ? { name: p.category.name || p.category } : null,
+        searchScore: p.searchScore || 0,
+        productVariants: Array.isArray(p.productVariants) ? p.productVariants.map(v => ({
+          name: v.name,
+          type: v.type,
+          sku: v.sku,
+          stock: v.stock,
+          trackInventory: v.trackInventory,
+          isActive: v.isActive,
+        })) : [],
+      };
+    });
 
     return res.json({
       success: true,

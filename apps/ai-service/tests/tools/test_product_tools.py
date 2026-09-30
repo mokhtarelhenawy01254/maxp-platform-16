@@ -100,6 +100,55 @@ class TestMapProduct:
         assert result["name"] == "Shirt"
         assert result["featured"] is True
         assert result["status"] == "IN_STOCK"
+        assert result["discountSummary"] == "سعر القطعة 100 جنيه بدل 150 جنيه"
+        assert result["quantityOffers"] == []
+        assert result["offersSummary"] is None
+
+    def test_quantity_offers_mapping_and_typo_fix(self):
+        import json
+        product = {
+            "id": "prod-1",
+            "name": "كوتشي سوان إسكوتش",
+            "sku": "SWAN-1",
+            "price": 499,
+            "comparePrice": 689,
+            "stock": 20,
+            "trackInventory": True,
+            "isFeatured": True,
+            "categoryName": "شوزات",
+            "images": [],
+            "mainImage": None,
+            "productVariants": [],
+            "metadata": json.dumps({
+                "quantityOffers": [
+                    {
+                        "id": "offer-2",
+                        "buyText": "اشتري 2 قطعة بـ 958 بدل 1378 ج.م",
+                        "quantity": 2,
+                        "unitPrice": 479,
+                    },
+                    {
+                        "id": "offer-3",
+                        "buyText": "اشتري 2 قطعة بـ 1407 بدل 2067 ج.م",
+                        "quantity": 3,
+                        "unitPrice": 469,
+                    },
+                ]
+            }),
+        }
+        result = _map_product(product)
+        assert result["discountSummary"] == "سعر القطعة 499 جنيه بدل 689 جنيه"
+        assert len(result["quantityOffers"]) == 2
+        assert result["quantityOffers"][0]["quantity"] == 2
+        assert result["quantityOffers"][0]["totalPrice"] == 958
+        assert result["quantityOffers"][0]["originalTotal"] == 1378
+        assert result["quantityOffers"][1]["quantity"] == 3
+        assert result["quantityOffers"][1]["totalPrice"] == 1407
+        assert result["quantityOffers"][1]["originalTotal"] == 2067
+        # Verify copy-paste typo ("2 قطعة" on quantity=3) was auto-fixed
+        assert "3 قطع" in result["quantityOffers"][1]["buyText"]
+        assert "عرض القطعتين بـ 958 جنيه بدل 1378 جنيه" in result["offersSummary"]
+        assert "عرض الـ 3 قطع بـ 1407 جنيه بدل 2067 جنيه" in result["offersSummary"]
 
 
 class TestPeriodStartDate:

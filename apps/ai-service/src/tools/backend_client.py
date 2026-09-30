@@ -12,7 +12,7 @@ from src.config import get_settings
 logger = structlog.get_logger(__name__)
 
 
-class BackendAPIError(Exception):
+class BackendAPIError(RuntimeError):
     """Structured exception for backend API errors carrying human-readable message and error code."""
 
     def __init__(
@@ -827,33 +827,112 @@ class BackendClient:
     # ── Coupon / Promotion APIs ──
 
     async def get_coupons(
-        self, company_id: str, is_active: bool = True
+        self, company_id: str, is_active: bool = True, limit: int = 100
     ) -> list[dict[str, Any]]:
-        result = await self._request("GET", "/api/v1/coupons", params={
-            "isActive": str(is_active).lower(), "companyId": company_id,
-        })
-        data = result.get("data", result.get("coupons", []))
-        return data if isinstance(data, list) else []
+        all_coupons: list[dict[str, Any]] = []
+        page = 1
+        total_pages = 1
+        while page <= total_pages:
+            result = await self._request(
+                "GET",
+                "/api/v1/coupons",
+                params={
+                    "isActive": str(is_active).lower(),
+                    "companyId": company_id,
+                    "page": page,
+                    "limit": limit,
+                },
+            )
+            if isinstance(result, list):
+                data = result
+            elif isinstance(result, dict):
+                data = result.get("data", result.get("items", result.get("coupons", [])))
+                if isinstance(data, dict):
+                    data = data.get("items", data.get("coupons", []))
+            else:
+                data = []
+
+            if isinstance(data, list):
+                all_coupons.extend(data)
+            pagination = result.get("pagination")
+            if isinstance(pagination, dict):
+                try:
+                    total_pages = int(
+                        pagination.get("totalPages")
+                        or pagination.get("pages")
+                        or 1
+                    )
+                except (TypeError, ValueError):
+                    total_pages = 1
+            else:
+                break
+            if not data:
+                break
+            page += 1
+        return all_coupons
 
     async def get_store_promotion(
         self, company_id: str
     ) -> dict[str, Any] | None:
-        try:
-            result = await self._request("GET", "/api/v1/store-promotions", params={"companyId": company_id})
-            data = result.get("data", {})
-            return data if isinstance(data, dict) else None
-        except RuntimeError:
-            return None
+        result = await self._request("GET", "/api/v1/store-promotions", params={"companyId": company_id})
+        data = result.get("data")
+        return data if isinstance(data, dict) else None
 
     async def get_promotion_settings(
         self, company_id: str
     ) -> dict[str, Any] | None:
-        try:
-            result = await self._request("GET", "/api/v1/promotion-settings", params={"companyId": company_id})
-            data = result.get("data", {})
-            return data if isinstance(data, dict) else None
-        except RuntimeError:
-            return None
+        result = await self._request("GET", "/api/v1/promotion-settings", params={"companyId": company_id})
+        data = result.get("data")
+        return data if isinstance(data, dict) else None
+
+    async def get_public_storefront_settings(
+        self, company_id: str
+    ) -> dict[str, Any]:
+        """Fetch public storefront settings including conversion tools and bought-together configuration."""
+        result = await self._request(
+            "GET",
+            "/api/v1/public/storefront/settings",
+            params={"companyId": company_id},
+        )
+        data = result.get("data")
+        return data if isinstance(data, dict) else result
+
+    async def get_store_products(
+        self, company_id: str, limit: int = 100
+    ) -> list[dict[str, Any]]:
+        """Fetch all store products across all pages to inspect quantity offers and product discounts."""
+        all_products: list[dict[str, Any]] = []
+        page = 1
+        total_pages = 1
+        while page <= total_pages:
+            result = await self._request(
+                "GET",
+                "/api/v1/products",
+                params={
+                    "companyId": company_id,
+                    "page": page,
+                    "limit": limit,
+                },
+            )
+            data = result.get("data", result.get("products", []))
+            if isinstance(data, list):
+                all_products.extend(data)
+            pagination = result.get("pagination")
+            if isinstance(pagination, dict):
+                try:
+                    total_pages = int(
+                        pagination.get("totalPages")
+                        or pagination.get("pages")
+                        or 1
+                    )
+                except (TypeError, ValueError):
+                    total_pages = 1
+            else:
+                break
+            if not data:
+                break
+            page += 1
+        return all_products
 
     async def validate_coupon(
         self, company_id: str, code: str, order_amount: str = "0", customer_id: str | None = None

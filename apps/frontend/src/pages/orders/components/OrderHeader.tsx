@@ -353,6 +353,23 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                     </span>
                   );
                 })()}
+
+                {/* Conversation Source Badge */}
+                {order.conversationId && (
+                  <Link
+                    to={
+                      order.conversation?.channel === "WHATSAPP" || (order as any).sourceType?.includes("whatsapp")
+                        ? `/whatsapp?conversationId=${order.conversationId}`
+                        : `/facebook-inbox?conversation=${order.conversationId}`
+                    }
+                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 hover:border-sky-300 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800 transition active:scale-97 shadow-2xs"
+                    title="الطلب مرتبط بمحادثة - اضغط لفتح المحادثة"
+                  >
+                    <span>💬</span>
+                    <span>جاي من محادثة</span>
+                    <span className="text-[10px] opacity-75 font-mono">↗</span>
+                  </Link>
+                )}
               </div>
             )}
           </div>

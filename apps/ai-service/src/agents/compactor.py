@@ -13,7 +13,8 @@ DEFAULT_HEAD_ITEMS_TO_KEEP = 3
 KEY_IDENTIFIER_FIELDS = {
     "id", "campaign_id", "ad_id", "adset_id", "name", "title",
     "status", "effective_status", "roas", "cpa", "spend", "revenue",
-    "price", "stock", "quantity", "sku", "phone", "currency"
+    "price", "comparePrice", "discountSummary", "quantityOffers", "offersSummary",
+    "stock", "quantity", "sku", "phone", "currency"
 }
 
 # Low-value / verbose keys that can be dropped during compaction

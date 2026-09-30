@@ -6,7 +6,10 @@ interface OrderItem {
   name: string;
   quantity: number;
   price: number;
-  image: string | null;
+  image?: string | null;
+  productName?: string;
+  productColor?: string | null;
+  productSize?: string | null;
 }
 
 interface Order {
@@ -16,6 +19,7 @@ interface Order {
   total: number;
   createdAt: string;
   items: OrderItem[];
+  conversationId?: string | null;
 }
 
 interface Activity {
@@ -48,43 +52,89 @@ export const useCustomerProfile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const prependOrder = useCallback((newOrder: Order) => {
+    setOrders((prev) => {
+      if (
+        prev.some(
+          (o) =>
+            o.id === newOrder.id ||
+            (newOrder.orderNumber && o.orderNumber === newOrder.orderNumber)
+        )
+      ) {
+        return prev;
+      }
+      return [newOrder, ...prev];
+    });
+  }, []);
+
   const loadCustomerData = useCallback(
-    async (customerId: string) => {
-      if (!customerId || !companyId) return;
+    async (
+      customerId: string,
+      options?: { conversationId?: string; phone?: string }
+    ) => {
+      if (!companyId) return;
+      if (!customerId && !options?.conversationId && !options?.phone) return;
 
       setLoading(true);
       setError(null);
 
       try {
-        // Concurrent fetching
-        const [ordersRes, activityRes, customerRes] = await Promise.all([
-          apiClient.get(
-            `/customers/${customerId}/orders?companyId=${companyId}`,
-          ),
-          apiClient.get(
-            `/customers/${customerId}/activity?companyId=${companyId}`,
-          ),
-          apiClient.get(`/customers/${customerId}?companyId=${companyId}`),
-        ]);
+        const queryParams = new URLSearchParams();
+        queryParams.set("companyId", companyId);
+        if (options?.conversationId) {
+          queryParams.set("conversationId", options.conversationId);
+        }
+        if (options?.phone) {
+          queryParams.set("phone", options.phone);
+        }
 
-        setOrders(ordersRes.data.data || []);
-        if (customerRes.data.success) {
+        const effectiveCustomerId = customerId || "lookup";
+        const ordersUrl = `/customers/${encodeURIComponent(effectiveCustomerId)}/orders?${queryParams.toString()}`;
+
+        const promises: Promise<any>[] = [apiClient.get(ordersUrl)];
+
+        const hasRealCustomerId =
+          customerId &&
+          customerId !== "lookup" &&
+          customerId !== "guest" &&
+          customerId !== "undefined";
+
+        if (hasRealCustomerId) {
+          promises.push(
+            apiClient.get(
+              `/customers/${customerId}/activity?companyId=${companyId}`
+            ),
+            apiClient.get(`/customers/${customerId}?companyId=${companyId}`)
+          );
+        }
+
+        const results = await Promise.allSettled(promises);
+        const ordersRes = results[0].status === "fulfilled" ? results[0].value : null;
+        const activityRes = results[1]?.status === "fulfilled" ? results[1].value : null;
+        const customerRes = results[2]?.status === "fulfilled" ? results[2].value : null;
+
+        if (ordersRes?.data?.data) {
+          setOrders(ordersRes.data.data);
+        }
+
+        if (customerRes?.data?.success && customerRes.data.data?.customer) {
           setCustomer(customerRes.data.data.customer);
         }
 
-        // Map backend activity format to frontend interface
-        const rawActivities = activityRes.data.data || [];
-        const mappedActivities = rawActivities.map((act: any) => ({
-          id: act.id,
-          action: act.type,
-          description:
-            act.type === "order"
-              ? `طلب جديد #${act.orderNumber} (${act.total} ر.س)`
-              : `محادثة عبر ${act.platform === "WHATSAPP" ? "واتساب" : act.platform === "MESSENGER" ? "ماسنجر" : act.platform || "المنصة"}`,
-          createdAt: act.timestamp || new Date().toISOString(),
-          metadata: JSON.stringify(act.data),
-        }));
-        setActivities(mappedActivities);
+        if (activityRes?.data?.data) {
+          const rawActivities = activityRes.data.data || [];
+          const mappedActivities = rawActivities.map((act: any) => ({
+            id: act.id,
+            action: act.type,
+            description:
+              act.type === "order"
+                ? `طلب جديد #${act.orderNumber} (${act.total} ج.م)`
+                : `محادثة عبر ${act.platform === "WHATSAPP" ? "واتساب" : act.platform === "MESSENGER" ? "ماسنجر" : act.platform || "المنصة"}`,
+            createdAt: act.timestamp || new Date().toISOString(),
+            metadata: JSON.stringify(act.data),
+          }));
+          setActivities(mappedActivities);
+        }
       } catch (err: any) {
         console.error("Error fetching customer profile:", err);
         setError("فشل جلب بيانات العميل");
@@ -92,7 +142,7 @@ export const useCustomerProfile = () => {
         setLoading(false);
       }
     },
-    [companyId],
+    [companyId]
   );
 
   const updateCustomerPhone = useCallback(
@@ -210,6 +260,7 @@ export const useCustomerProfile = () => {
     loading,
     error,
     loadCustomerData,
+    prependOrder,
     resetCustomer,
     updateCustomerPhone,
     updateCustomerPhone2,

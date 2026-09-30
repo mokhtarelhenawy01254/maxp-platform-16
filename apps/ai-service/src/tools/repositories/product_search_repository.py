@@ -64,7 +64,7 @@ class ProductSearchRepository(BaseRepository):
                    p.stock, p."trackInventory", p."isActive",
                    p."isFeatured", p.images, p."mainImage",
                    p."categoryId", c.name AS "categoryName",
-                   p.tags, p.description
+                   p.tags, p.description, p.metadata
             FROM products p
             LEFT JOIN categories c ON c.id = p."categoryId"
             WHERE p."companyId" = :company_id

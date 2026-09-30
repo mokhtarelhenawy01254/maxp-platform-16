@@ -35,6 +35,11 @@ interface MessageMetadata {
   replyToFacebookMessageId?: string;
   myReaction?: string;
   reactions?: Record<string, unknown>;
+  isOrderConfirmation?: boolean;
+  eventType?: string;
+  orderNumber?: string;
+  orderId?: string;
+  total?: number;
 }
 
 interface TemplateButton {
@@ -598,8 +603,35 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
     const actionButtonClassName =
       "flex-shrink-0 flex items-center justify-center rounded-full transition-all active:scale-90 duration-150 border";
 
+    const isOrderConfirmation = Boolean(
+      metadata?.isOrderConfirmation ||
+      metadata?.eventType === "ORDER_CREATED" ||
+      message.content?.includes("تم تأكيد طلبك بنجاح! 🎉") ||
+      message.content?.includes("تم تأكيد طلبك بنجاح")
+    );
+    const orderNumMatch = message.content?.match(/رقم الطلب:\s*#?([A-Za-z0-9_-]+)/);
+    const orderNum = metadata?.orderNumber || orderNumMatch?.[1];
+
     return (
-      <div className="flex w-full mb-4 relative">
+      <div className="flex flex-col w-full mb-4 relative">
+        {isOrderConfirmation && (
+          <div className="flex items-center justify-center my-2 w-full">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>تم إنشاء طلب {orderNum ? `#${orderNum}` : ""} من هذه المحادثة</span>
+              {orderNum && (
+                <a
+                  href={`/orders/${encodeURIComponent(orderNum)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline hover:text-emerald-900 dark:hover:text-white mr-1 text-[11px]"
+                >
+                  عرض الطلب
+                </a>
+              )}
+            </div>
+          </div>
+        )}
         <div
           className={`relative max-w-[85%] sm:max-w-xs lg:max-w-md ${isCustomer ? "ml-auto" : "mr-auto"}`}
           ref={actionsRef}

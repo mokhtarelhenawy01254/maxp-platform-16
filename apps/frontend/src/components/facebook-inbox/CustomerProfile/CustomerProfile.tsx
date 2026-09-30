@@ -129,15 +129,16 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
   const [savingPhone, setSavingPhone] = useState(false);
   const [phoneUpdateMessage, setPhoneUpdateMessage] = useState<string | null>(null);
   const [previewOrder, setPreviewOrder] = useState<any | null>(null);
+  const [searchOrderPhone, setSearchOrderPhone] = useState("");
   const {
     orders,
     activities,
     loading,
     loadCustomerData,
+    prependOrder,
     updateCustomerPhone,
     calculateLTV,
-
-    customer, // Add customer to destructured object
+    customer,
   } = useCustomerProfile();
 
   const handleStartEditPhone = () => {
@@ -162,20 +163,99 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
       setTimeout(() => setPhoneUpdateMessage(null), 4000);
       // إعادة تحميل بيانات العميل والأوردرات فوراً
       // حتى تظهر طلبات رقم الهاتف الجديد في تبويب الطلبات
-      if (customer?.id) {
-        loadCustomerData(customer.id);
-      }
+      loadCustomerData(customer?.id || conversation?.customerId || "", {
+        conversationId: conversation?.id,
+        phone,
+      });
     } else {
       setPhoneUpdateMessage(`❌ ${result.message}`);
       setTimeout(() => setPhoneUpdateMessage(null), 5000);
     }
   };
 
+  // Initial and reactive load of customer orders & activity
   useEffect(() => {
-    if (conversation?.customerId) {
-      loadCustomerData(conversation.customerId);
-    }
-  }, [conversation?.customerId, loadCustomerData]);
+    loadCustomerData(conversation?.customerId || "", {
+      conversationId: conversation?.id,
+      phone: conversation?.customerPhone || customer?.phone || undefined,
+    });
+  }, [
+    conversation?.customerId,
+    conversation?.id,
+    conversation?.customerPhone,
+    loadCustomerData,
+  ]);
+
+  // Real-time synchronization when order is created from QuickOrderModal
+  useEffect(() => {
+    const handleInboxOrderCreated = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        order: any;
+        orderId: string;
+        orderNumber?: string;
+        conversationId?: string;
+      }>;
+      const detail = customEvent.detail;
+      if (!detail) return;
+
+      const isCurrentConv =
+        detail.conversationId &&
+        conversation?.id &&
+        detail.conversationId === conversation.id;
+      const isCurrentCustomer =
+        detail.order?.customerId &&
+        conversation?.customerId &&
+        detail.order.customerId === conversation.customerId;
+      const isCurrentPhone =
+        detail.order?.customerPhone &&
+        (conversation?.customerPhone || customer?.phone) &&
+        (detail.order.customerPhone === conversation?.customerPhone ||
+          detail.order.customerPhone === customer?.phone);
+
+      if (isCurrentConv || isCurrentCustomer || isCurrentPhone) {
+        if (detail.order) {
+          const rawOrder = detail.order;
+          prependOrder({
+            id: String(rawOrder.id || detail.orderId),
+            orderNumber: String(rawOrder.orderNumber || detail.orderNumber || rawOrder.id),
+            status: String(rawOrder.status || "CONFIRMED"),
+            total: Number(rawOrder.totalAmount || rawOrder.total || 0),
+            createdAt: rawOrder.createdAt || new Date().toISOString(),
+            conversationId: rawOrder.conversationId || detail.conversationId || conversation?.id,
+            items: Array.isArray(rawOrder.orderItems || rawOrder.products || rawOrder.items)
+              ? (rawOrder.orderItems || rawOrder.products || rawOrder.items).map((item: any) => ({
+                  name: item.productName || item.name || "منتج",
+                  productName: item.productName || item.name || "منتج",
+                  quantity: Number(item.quantity || 1),
+                  price: Number(item.price || 0),
+                  image: item.productImage || item.image || null,
+                  productColor: item.productColor || item.color || null,
+                  productSize: item.productSize || item.size || null,
+                }))
+              : [],
+          });
+        }
+
+        // Also fetch to guarantee server consistency
+        loadCustomerData(conversation?.customerId || "", {
+          conversationId: conversation?.id,
+          phone: conversation?.customerPhone || customer?.phone || undefined,
+        });
+      }
+    };
+
+    window.addEventListener("inbox:order-created", handleInboxOrderCreated);
+    return () => {
+      window.removeEventListener("inbox:order-created", handleInboxOrderCreated);
+    };
+  }, [
+    conversation?.id,
+    conversation?.customerId,
+    conversation?.customerPhone,
+    customer?.phone,
+    loadCustomerData,
+    prependOrder,
+  ]);
 
   const handleSyncMessages = async () => {
     if (!conversation?.id || conversation.platform !== "facebook") {
@@ -963,39 +1043,90 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                   )}
                 </div>
 
-                {/* Orders Summary Header */}
-                {orders.length > 0 && (
-                  <div
-                    className="p-3 rounded-lg"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 10%, var(--color-card, #ffffff)) 0%, color-mix(in srgb, var(--color-secondary) 8%, var(--color-card, #ffffff)) 100%)",
-                      border:
-                        "1px solid color-mix(in srgb, var(--color-primary) 18%, transparent)",
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <ShoppingBag
-                          size={20}
-                          style={{ color: "var(--color-primary)" }}
-                        />
+                {/* Orders Summary Header & Quick Phone Search */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="بحث برقم هاتف عن طلبات سابقة..."
+                      className="business-control-input flex-1 text-xs py-1.5 font-mono"
+                      dir="ltr"
+                      value={searchOrderPhone}
+                      onChange={(e) => setSearchOrderPhone(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && searchOrderPhone.trim()) {
+                          loadCustomerData(customer?.id || "", {
+                            conversationId: conversation?.id,
+                            phone: searchOrderPhone.trim(),
+                          });
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (searchOrderPhone.trim()) {
+                          loadCustomerData(customer?.id || "", {
+                            conversationId: conversation?.id,
+                            phone: searchOrderPhone.trim(),
+                          });
+                        }
+                      }}
+                      className="business-chip-button px-3 py-1.5 text-xs font-medium"
+                    >
+                      بحث
+                    </button>
+                    {searchOrderPhone && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchOrderPhone("");
+                          loadCustomerData(conversation?.customerId || "", {
+                            conversationId: conversation?.id,
+                            phone: conversation?.customerPhone || customer?.phone || undefined,
+                          });
+                        }}
+                        className="business-chip-button px-2 py-1.5 text-xs"
+                        title="إعادة تعيين"
+                      >
+                        إلغاء
+                      </button>
+                    )}
+                  </div>
+
+                  {orders.length > 0 && (
+                    <div
+                      className="p-3 rounded-lg"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 10%, var(--color-card, #ffffff)) 0%, color-mix(in srgb, var(--color-secondary) 8%, var(--color-card, #ffffff)) 100%)",
+                        border:
+                          "1px solid color-mix(in srgb, var(--color-primary) 18%, transparent)",
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <ShoppingBag
+                            size={18}
+                            style={{ color: "var(--color-primary)" }}
+                          />
+                          <span
+                            className="font-semibold text-sm"
+                            style={{ color: "var(--color-primary)" }}
+                          >
+                            سجل الطلبات
+                          </span>
+                        </div>
                         <span
-                          className="font-semibold"
-                          style={{ color: "var(--color-primary)" }}
+                          className="text-white text-xs font-bold px-2 py-0.5 rounded-full"
+                          style={{ background: "var(--color-primary)" }}
                         >
-                          سجل الطلبات
+                          {orders.length} طلب
                         </span>
                       </div>
-                      <span
-                        className="text-white text-xs font-bold px-2 py-1 rounded-full"
-                        style={{ background: "var(--color-primary)" }}
-                      >
-                        {orders.length} طلب
-                      </span>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {orders.length === 0 ? (
                   <div
@@ -1003,88 +1134,146 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                     style={{ color: "var(--color-muted-foreground)" }}
                   >
                     <ShoppingBag
-                      size={48}
+                      size={44}
                       className="mx-auto mb-2 opacity-20"
                     />
-                    <p>لا توجد طلبات سابقة</p>
+                    <p className="text-sm">لا توجد طلبات سابقة لهذا الرقم</p>
                   </div>
                 ) : (
-                  orders.map((order) => (
-                    <div
-                      key={order.id}
-                      className="p-3 rounded-lg transition-colors"
-                      style={sectionSurfaceStyle}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          {customer?.phone && (
+                  orders.map((order) => {
+                    const isFromThisConv = Boolean(
+                      order.conversationId &&
+                      conversation?.id &&
+                      String(order.conversationId) === String(conversation.id)
+                    );
+
+                    return (
+                      <div
+                        key={order.id}
+                        className="p-3 rounded-lg transition-colors space-y-2.5"
+                        style={sectionSurfaceStyle}
+                      >
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p
+                                className="font-bold text-sm"
+                                style={{ color: "var(--color-foreground)" }}
+                              >
+                                #{order.orderNumber}
+                              </p>
+                              {isFromThisConv && (
+                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                  💬 من هذه المحادثة
+                                </span>
+                              )}
+                            </div>
                             <p
-                              className="text-xs font-medium mb-0.5 flex items-center gap-1"
-                              style={{ color: "var(--color-primary)" }}
-                              dir="ltr"
+                              className="text-xs mt-0.5"
+                              style={{ color: "var(--color-muted-foreground)" }}
                             >
-                              <Phone size={11} className="shrink-0" />
-                              <span className="truncate font-mono">
-                                {customer.phone}
-                              </span>
+                              {format(new Date(order.createdAt), "dd MMM yyyy - HH:mm", {
+                                locale: arSA,
+                              })}
                             </p>
-                          )}
-                          <p
-                            className="font-bold"
-                            style={{ color: "var(--color-foreground)" }}
+                          </div>
+                          <span
+                            className="px-2 py-0.5 text-xs rounded-full shrink-0 font-medium"
+                            style={getOrderStatusTheme(order.status)}
                           >
-                            #{order.orderNumber}
-                          </p>
-                          <p
-                            className="text-xs"
+                            {(() => {
+                              const info = getStatusDisplay(order.status);
+                              return t(info.labelKey) || info.label;
+                            })()}
+                          </span>
+                        </div>
+
+                        {/* Order Items Breakdown */}
+                        {order.items && order.items.length > 0 && (
+                          <div
+                            className="pt-2 space-y-1.5"
+                            style={{
+                              borderTop: "1px dashed var(--business-muted-line)",
+                            }}
+                          >
+                            {order.items.map((item, idx) => (
+                              <div
+                                key={idx}
+                                className="flex justify-between items-center text-xs gap-2"
+                              >
+                                <span
+                                  className="truncate font-medium flex-1 text-right"
+                                  style={{ color: "var(--color-foreground)" }}
+                                >
+                                  {item.quantity}× {item.productName || item.name}
+                                  {(item.productColor || item.productSize) && (
+                                    <span className="text-[11px] opacity-75 mr-1 font-normal">
+                                      ({[item.productColor, item.productSize].filter(Boolean).join(" - ")})
+                                    </span>
+                                  )}
+                                </span>
+                                <span
+                                  className="font-mono shrink-0 text-left font-medium"
+                                  style={{ color: "var(--color-foreground)" }}
+                                >
+                                  {(item.price * item.quantity).toLocaleString()} ج.م
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div
+                          className="flex justify-between items-center pt-2"
+                          style={{
+                            borderTop: "1px solid var(--business-muted-line)",
+                          }}
+                        >
+                          <span
+                            className="text-xs font-medium"
                             style={{ color: "var(--color-muted-foreground)" }}
                           >
-                            {format(new Date(order.createdAt), "dd MMM yyyy", {
-                              locale: arSA,
-                            })}
-                          </p>
+                            الإجمالي:
+                          </span>
+                          <span
+                            className="font-bold text-sm"
+                            style={{ color: "var(--color-primary)" }}
+                          >
+                            {order.total?.toLocaleString() || 0} ج.م
+                          </span>
                         </div>
-                        <span
-                          className="px-2 py-1 text-xs rounded-full"
-                          style={getOrderStatusTheme(order.status)}
-                        >
-                          {(() => { const info = getStatusDisplay(order.status); return t(info.labelKey) || info.label; })()}
-                        </span>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewOrder(order)}
+                            className="business-chip-button flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                            style={{
+                              color: "var(--color-primary)",
+                              background:
+                                "color-mix(in srgb, var(--color-primary) 8%, var(--color-card, #ffffff))",
+                            }}
+                          >
+                            معاينة سريعة
+                          </button>
+                          <a
+                            href={`/orders/${order.orderNumber || order.id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="business-chip-button flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                            style={{
+                              borderColor: "var(--business-card-border)",
+                              color: "var(--business-text-primary)",
+                            }}
+                          >
+                            <ExternalLink size={12} />
+                            صفحة الطلب
+                          </a>
+                        </div>
                       </div>
-                      <div
-                        className="flex justify-between items-center pt-2 mt-2"
-                        style={{
-                          borderTop: "1px solid var(--business-muted-line)",
-                        }}
-                      >
-                        <span
-                          className="text-xs"
-                          style={{ color: "var(--color-muted-foreground)" }}
-                        >
-                          {order.items?.length || 0} منتجات
-                        </span>
-                        <span
-                          className="font-bold"
-                          style={{ color: "var(--color-primary)" }}
-                        >
-                          {order.total?.toLocaleString() || 0} ج.م
-                        </span>
-                      </div>
-                      {/* View Order Button */}
-                      <button
-                        onClick={() => setPreviewOrder(order)}
-                        className="business-chip-button w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium"
-                        style={{
-                          color: "var(--color-primary)",
-                          background:
-                            "color-mix(in srgb, var(--color-primary) 8%, var(--color-card, #ffffff))",
-                        }}
-                      >
-                        <ExternalLink size={14} />
-                        عرض الطلب
-                      </button>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             )}

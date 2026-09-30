@@ -704,10 +704,31 @@ const applyOrderDetailFeatureAccess = (
   }
 
   if (!featureAccess.orderSource) {
+    const keepConversationId = sanitizedOrder.conversationId;
+    const keepConversation = sanitizedOrder.conversation;
+    const keepSourceType = sanitizedOrder.sourceType;
+    const keepExtractionMethod = sanitizedOrder.extractionMethod;
+    const keepOrderSource = sanitizedOrder.orderSource;
+    const keepCreatedBy = sanitizedOrder.createdBy;
+    const keepCreatedByName = sanitizedOrder.createdByName;
+    const keepCreatedByUser = sanitizedOrder.createdByUser;
+
     removeOrderSourceFields(sanitizedOrder);
     delete metadata.source;
     delete metadata.extractionMethod;
     delete metadata.orderSource;
+
+    // Preserve conversation linking and origin context for staff so conversation tracking is never broken
+    if (keepConversationId) {
+      sanitizedOrder.conversationId = keepConversationId;
+      sanitizedOrder.conversation = keepConversation;
+      sanitizedOrder.sourceType = keepSourceType || 'facebook_inbox';
+      sanitizedOrder.extractionMethod = keepExtractionMethod || 'facebook_inbox';
+      sanitizedOrder.orderSource = keepOrderSource || 'MANUAL';
+      sanitizedOrder.createdBy = keepCreatedBy;
+      sanitizedOrder.createdByName = keepCreatedByName;
+      sanitizedOrder.createdByUser = keepCreatedByUser;
+    }
   }
 
   if (!featureAccess.campaignAttribution) {

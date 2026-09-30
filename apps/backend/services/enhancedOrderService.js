@@ -87,6 +87,8 @@ const buildSourceCondition = (source) => {
   }
 };
 
+const _sentOrderConfirmations = new Set();
+
 class EnhancedOrderService {
   constructor() {
     // ❌ Removed: this.prisma = getSharedPrismaClient() - causes early loading issues
@@ -525,9 +527,19 @@ class EnhancedOrderService {
         }
       }
 
+      let confirmationMessage = null;
+      if (!isDuplicate && data.conversationId && data.conversationId !== 'manual') {
+        try {
+          confirmationMessage = await this.sendConversationOrderConfirmation(order, conversation, data);
+        } catch (confirmErr) {
+          console.error('⚠️ [ORDER-CONFIRMATION] Error in conversation confirmation:', confirmErr.message);
+        }
+      }
+
       return {
         success: true,
         order: transformedOrder,
+        confirmationMessage,
         duplicate: isDuplicate,
         postProcessing: affiliateMerchantPostProcess,
         message: isDuplicate ? 'تم إنشاء الطلب مع وسم "مكرر"' : 'تم إنشاء الطلب بنجاح'
@@ -540,6 +552,272 @@ class EnhancedOrderService {
         error: error.message,
         message: 'فشل في إنشاء الطلب'
       };
+    }
+  }
+
+  /**
+   * إرسال رسالة تأكيد تلقائية واحدة للعميل في المحادثة وتسجيلها كحدث نظام ورسالة صادرة
+   */
+  async sendConversationOrderConfirmation(order, conversation, data) {
+    if (!order?.conversationId || order.conversationId === 'manual') {
+      return null;
+    }
+
+    const prisma = this.getPrisma();
+    const effectiveConversationId = String(order.conversationId).trim();
+    if (!effectiveConversationId) return null;
+
+    // 1) منع التكرار (Idempotency Guard)
+    const idempotencyKey = `order_confirm_${order.id}`;
+    if (_sentOrderConfirmations.has(idempotencyKey)) {
+      console.log(`⚠️ [ORDER-CONFIRMATION] Order confirmation already in-flight for ${order.id}`);
+      return null;
+    }
+    _sentOrderConfirmations.add(idempotencyKey);
+    setTimeout(() => _sentOrderConfirmations.delete(idempotencyKey), 120000);
+
+    try {
+      // التحقق من قاعدة البيانات إن كانت الرسالة أُرسلت مسبقاً
+      const existingMsg = await prisma.message.findFirst({
+        where: {
+          conversationId: effectiveConversationId,
+          metadata: {
+            contains: `"orderId":"${order.id}"`
+          }
+        }
+      });
+      if (existingMsg) {
+        console.log(`ℹ️ [ORDER-CONFIRMATION] Confirmation message already exists in DB for order ${order.orderNumber}`);
+        let parsed = null;
+        try {
+          parsed = typeof existingMsg.metadata === 'string' ? JSON.parse(existingMsg.metadata) : existingMsg.metadata;
+        } catch (_) {}
+        return {
+          ...existingMsg,
+          metadata: parsed
+        };
+      }
+
+      // جلب المحادثة مع العميل والشركة
+      const conv = conversation || await prisma.conversation.findUnique({
+        where: { id: effectiveConversationId },
+        include: {
+          customer: true
+        }
+      });
+
+      if (!conv || conv.companyId !== data.companyId) {
+        console.warn(`⚠️ [ORDER-CONFIRMATION] Conversation ${effectiveConversationId} not found or company mismatch`);
+        return null;
+      }
+
+      // 2) بناء نص الرسالة التلقائية للعميل
+      const items = order.orderItems || order.items || data.products || [];
+      const itemsListText = (Array.isArray(items) && items.length > 0)
+        ? items.map((it) => {
+            const name = it.productName || it.name || 'منتج';
+            const color = it.productColor || it.color || '';
+            const size = it.productSize || it.size || '';
+            const variantStr = [color, size].filter(Boolean).join(' / ');
+            const qty = Number(it.quantity || 1);
+            const price = Number(it.price || 0);
+            return `• ${name}${variantStr ? ` (${variantStr})` : ''} × ${qty} (${price * qty} ج.م)`;
+          }).join('\n')
+        : '• طلب مشتريات';
+
+      const shippingCost = Number(order.shipping || 0);
+      const totalAmount = Number(order.total || 0);
+
+      const confirmationText = [
+        `✅ تم تسجيل طلبك بنجاح!`,
+        `رقم الطلب: #${order.orderNumber}`,
+        ``,
+        `📦 تفاصيل المنتجات:`,
+        itemsListText,
+        ``,
+        shippingCost > 0 ? `🚚 الشحن: ${shippingCost} ج.م` : `🚚 الشحن: مجاني`,
+        `💰 الإجمالي النهائي: ${totalAmount} ج.م`,
+        ``,
+        `سيتم تجهيز وشحن طلبك في أقرب وقت. شكراً لطلبك!`
+      ].join('\n');
+
+      const messageId = require('crypto').randomUUID();
+      const messageMeta = {
+        platform: conv.channel ? conv.channel.toLowerCase() : 'facebook',
+        source: 'order_auto_confirmation',
+        isOrderConfirmation: true,
+        eventType: 'ORDER_CREATED',
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        orderTotal: totalAmount,
+        employeeId: data.createdBy || null,
+        employeeName: data.createdByName || 'النظام (تأكيد الطلب)',
+        messengerSent: false,
+        messengerStatus: 'pending',
+        timestamp: new Date().toISOString()
+      };
+
+      // 3) حفظ الرسالة الصادرة في قاعدة البيانات
+      const savedMessage = await prisma.message.create({
+        data: {
+          id: messageId,
+          content: confirmationText,
+          type: 'TEXT',
+          conversationId: conv.id,
+          isFromCustomer: false,
+          senderId: data.createdBy || 'system_order',
+          metadata: JSON.stringify(messageMeta),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
+
+      console.log(`💾 [ORDER-CONFIRMATION] Saved outgoing confirmation message ${savedMessage.id} for order ${order.orderNumber}`);
+
+      // 4) تحديث المحادثة
+      await prisma.conversation.update({
+        where: { id: conv.id },
+        data: {
+          lastMessageAt: new Date(),
+          lastMessagePreview: `تم إنشاء طلب #${order.orderNumber} (${totalAmount} ج.م)`,
+          lastMessageIsFromCustomer: false,
+          updatedAt: new Date()
+        }
+      }).catch(convErr => console.warn('⚠️ [ORDER-CONFIRMATION] Failed to update conversation preview:', convErr.message));
+
+      // 5) إرسال Socket.IO لغرفة الشركة لظهور الرسالة فوراً للموظف
+      try {
+        const socketService = require('./socketService');
+        const io = socketService?.getIO?.();
+        if (io) {
+          const socketData = {
+            id: savedMessage.id,
+            conversationId: conv.id,
+            content: savedMessage.content,
+            type: 'text',
+            isFromCustomer: false,
+            timestamp: savedMessage.createdAt,
+            metadata: messageMeta,
+            senderId: data.createdBy || 'system_order',
+            senderName: data.createdByName || 'النظام (تأكيد الطلب)',
+            lastMessageIsFromCustomer: false,
+            lastCustomerMessageIsUnread: false,
+            companyId: data.companyId,
+            platform: conv.channel ? conv.channel.toLowerCase() : 'facebook',
+            channel: conv.channel || 'FACEBOOK'
+          };
+          io.to(`company_${data.companyId}`).emit('new_message', socketData);
+          console.log(`📡 [SOCKET] Order confirmation message emitted to company_${data.companyId}`);
+        }
+      } catch (sockErr) {
+        console.warn('⚠️ [ORDER-CONFIRMATION] Socket emit error:', sockErr.message);
+      }
+
+      // 6) إرسال للعميل عبر Facebook Messenger (إذا كانت القناة Facebook ولديه معرف فيسبوك)
+      let recipientId = conv.customer?.facebookId;
+      if (!recipientId && conv.customerId && /^\d+$/.test(String(conv.customerId))) {
+        recipientId = String(conv.customerId);
+      }
+
+      const isFacebookChannel = !conv.channel || conv.channel === 'FACEBOOK' || String(data.platform).toLowerCase() === 'facebook';
+
+      if (isFacebookChannel && recipientId) {
+        try {
+          let pageId = null;
+          try {
+            const convMeta = typeof conv.metadata === 'string' ? JSON.parse(conv.metadata) : (conv.metadata || {});
+            pageId = convMeta.pageId || convMeta.facebookPageId || null;
+          } catch (_) {}
+
+          const fbPage = (pageId
+            ? await prisma.facebookPage.findFirst({
+                where: {
+                  companyId: data.companyId,
+                  pageId,
+                  isConnected: true,
+                  pageAccessToken: { not: null }
+                }
+              })
+            : null) || await prisma.facebookPage.findFirst({
+            where: {
+              companyId: data.companyId,
+              isConnected: true,
+              pageAccessToken: { not: null }
+            }
+          });
+
+          if (fbPage?.pageAccessToken) {
+            const { sendProductionFacebookMessage } = require('../utils/production-facebook-fix');
+            const sendResult = await sendProductionFacebookMessage(
+              recipientId,
+              confirmationText,
+              'TEXT',
+              fbPage.pageId,
+              fbPage.pageAccessToken
+            );
+
+            if (sendResult?.success) {
+              console.log(`✅ [ORDER-CONFIRMATION] Messenger message delivered to recipient ${recipientId}`);
+              messageMeta.messengerSent = true;
+              messageMeta.messengerStatus = 'sent';
+              messageMeta.messengerMessageId = sendResult.messageId;
+            } else {
+              console.warn(`⚠️ [ORDER-CONFIRMATION] Messenger direct send blocked/failed: ${sendResult?.message} (${sendResult?.error})`);
+              messageMeta.messengerSent = false;
+              messageMeta.messengerStatus = sendResult?.blocked ? 'window_closed' : 'failed';
+              messageMeta.messengerError = sendResult?.message || 'فشل الإرسال';
+
+              // لو نافذة الـ 24 ساعة مقفولة، نحاول محاولة أخيرة عبر Tag POST_PURCHASE_UPDATE المعتمد من فيسبوك للطلبات
+              if (sendResult?.error === 'OUTSIDE_24_HOUR_WINDOW' || sendResult?.error === 'POLICY_VIOLATION_24H') {
+                try {
+                  const axios = require('axios');
+                  const { getMetaGraphApiVersion } = require('../config/metaApi');
+                  const tagRes = await axios.post(
+                    `https://graph.facebook.com/${getMetaGraphApiVersion()}/me/messages`,
+                    {
+                      recipient: { id: recipientId },
+                      message: { text: confirmationText },
+                      messaging_type: 'MESSAGE_TAG',
+                      tag: 'POST_PURCHASE_UPDATE'
+                    },
+                    {
+                      params: { access_token: fbPage.pageAccessToken },
+                      timeout: 10000
+                    }
+                  );
+                  if (tagRes.data?.message_id) {
+                    console.log(`✅ [ORDER-CONFIRMATION] Messenger delivered via POST_PURCHASE_UPDATE tag: ${tagRes.data.message_id}`);
+                    messageMeta.messengerSent = true;
+                    messageMeta.messengerStatus = 'sent_via_tag';
+                    messageMeta.messengerMessageId = tagRes.data.message_id;
+                  }
+                } catch (tagErr) {
+                  console.warn(`ℹ️ [ORDER-CONFIRMATION] Tag fallback failed: ${tagErr.response?.data?.error?.message || tagErr.message}`);
+                }
+              }
+            }
+
+            // تحديث بيانات الـ message في الـ DB بحالة الإرسال
+            await prisma.message.update({
+              where: { id: savedMessage.id },
+              data: { metadata: JSON.stringify(messageMeta) }
+            }).catch(() => {});
+          } else {
+            console.log(`ℹ️ [ORDER-CONFIRMATION] No active Facebook page access token found for company ${data.companyId}`);
+          }
+        } catch (fbErr) {
+          console.error(`❌ [ORDER-CONFIRMATION] Error in Facebook Messenger send:`, fbErr.message);
+        }
+      }
+
+      return {
+        ...savedMessage,
+        metadata: messageMeta
+      };
+
+    } catch (outerErr) {
+      console.error(`❌ [ORDER-CONFIRMATION] Unexpected error sending confirmation:`, outerErr);
+      return null;
     }
   }
 

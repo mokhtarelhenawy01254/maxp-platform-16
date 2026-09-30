@@ -51,7 +51,15 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
   const getChannelInfo = () => {
     if (!order.conversation && !order.conversationId) return null;
 
-    const channel = order.conversation?.channel || "UNKNOWN";
+    let channel = order.conversation?.channel || "";
+    if (!channel) {
+      const src = String(order.sourceType || order.extractionMethod || "").toLowerCase();
+      if (src.includes("whatsapp")) channel = "WHATSAPP";
+      else if (src.includes("instagram")) channel = "INSTAGRAM";
+      else if (src.includes("telegram")) channel = "TELEGRAM";
+      else channel = "FACEBOOK";
+    }
+
     const channelMap: Record<
       string,
       { name: string; color: string; icon: string }
@@ -216,10 +224,15 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
                 </span>
                 {order.conversationId && (
                   <Link
-                    to={`/whatsapp?conversationId=${order.conversationId}`}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                    to={
+                      order.conversation?.channel === "WHATSAPP" || (order.sourceType || "").includes("whatsapp")
+                        ? `/whatsapp?conversationId=${order.conversationId}`
+                        : `/facebook-inbox?conversation=${order.conversationId}`
+                    }
+                    className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
                   >
-                    عرض المحادثة
+                    <span>عرض المحادثة</span>
+                    <span className="font-mono text-[10px]">↗</span>
                   </Link>
                 )}
               </div>

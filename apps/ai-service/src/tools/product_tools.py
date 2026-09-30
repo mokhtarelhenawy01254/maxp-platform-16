@@ -121,16 +121,141 @@ def _clean_html_description(desc: str | None) -> str:
     return clean[:800]
 
 
+def _fmt_num(val: float | int) -> str:
+    try:
+        f = float(val)
+        return str(int(f)) if f.is_integer() else f"{f:.2f}".rstrip("0").rstrip(".")
+    except (TypeError, ValueError):
+        return str(val)
+
+
+def _parse_quantity_offers(p: dict[str, Any]) -> list[dict[str, Any]]:
+    raw_meta = p.get("metadata")
+    meta: dict[str, Any] = {}
+    if isinstance(raw_meta, dict):
+        meta = raw_meta
+    elif isinstance(raw_meta, str) and raw_meta.strip():
+        try:
+            parsed = json.loads(raw_meta)
+            if isinstance(parsed, dict):
+                meta = parsed
+        except Exception:
+            meta = {}
+
+    raw_offers = (
+        p.get("quantityOffers")
+        or meta.get("quantityOffers")
+        or meta.get("multiPackOffers")
+        or meta.get("volumeDiscounts")
+        or []
+    )
+    if not isinstance(raw_offers, list) or not raw_offers:
+        return []
+
+    try:
+        base_price = float(p.get("price") or 0)
+    except (TypeError, ValueError):
+        base_price = 0.0
+    try:
+        compare_price = float(p.get("comparePrice") or 0) if p.get("comparePrice") is not None else 0.0
+    except (TypeError, ValueError):
+        compare_price = 0.0
+
+    ref_unit_price = compare_price if compare_price > base_price else base_price
+
+    normalized: list[dict[str, Any]] = []
+    for item in raw_offers:
+        if not isinstance(item, dict):
+            continue
+        try:
+            qty = int(item.get("quantity") or item.get("minQuantity") or 0)
+        except (TypeError, ValueError):
+            qty = 0
+        if qty <= 0:
+            continue
+
+        try:
+            unit_price = float(item.get("unitPrice") or item.get("price") or 0)
+        except (TypeError, ValueError):
+            unit_price = 0.0
+        try:
+            total_price = float(item.get("totalPrice") or (qty * unit_price))
+        except (TypeError, ValueError):
+            total_price = qty * unit_price
+
+        if total_price <= 0 and unit_price <= 0:
+            continue
+        if unit_price <= 0 and qty > 0:
+            unit_price = round(total_price / qty, 2)
+
+        original_total = round(qty * ref_unit_price, 2) if ref_unit_price > 0 else 0.0
+
+        if qty == 2:
+            qty_label = "عرض القطعتين"
+            buy_prefix = "اشتري قطعتين"
+        elif qty == 3:
+            qty_label = "عرض الـ 3 قطع"
+            buy_prefix = "اشتري 3 قطع"
+        else:
+            qty_label = f"عرض {qty} قطع"
+            buy_prefix = f"اشتري {qty} قطع"
+
+        if original_total > total_price:
+            summary = f"{qty_label} بـ {_fmt_num(total_price)} جنيه بدل {_fmt_num(original_total)} جنيه (سعر القطعة {_fmt_num(unit_price)} جنيه)"
+            clean_buy_text = f"{buy_prefix} بـ {_fmt_num(total_price)} بدل {_fmt_num(original_total)} ج.م"
+        else:
+            summary = f"{qty_label} بـ {_fmt_num(total_price)} جنيه (سعر القطعة {_fmt_num(unit_price)} جنيه)"
+            clean_buy_text = f"{buy_prefix} بـ {_fmt_num(total_price)} ج.م"
+
+        raw_buy_text = str(item.get("buyText") or "").strip()
+        if not raw_buy_text or (qty != 2 and "2 قطعة" in raw_buy_text):
+            buy_text = clean_buy_text
+        else:
+            buy_text = raw_buy_text
+
+        normalized.append({
+            "quantity": qty,
+            "unitPrice": int(unit_price) if unit_price.is_integer() else round(unit_price, 2),
+            "totalPrice": int(total_price) if total_price.is_integer() else round(total_price, 2),
+            "originalTotal": (int(original_total) if original_total.is_integer() else round(original_total, 2)) if original_total > total_price else None,
+            "buyText": buy_text,
+            "summary": summary,
+        })
+
+    normalized.sort(key=lambda o: o["quantity"])
+    return normalized
+
+
 def _map_product(p: dict[str, Any]) -> dict[str, Any]:
     variants = p.get("productVariants") or p.get("_variants") or []
     size_variants = _aggregate_variants(variants, _VARIANT_SIZE_ALIASES)
     color_variants = _aggregate_variants(variants, _VARIANT_COLOR_ALIASES)
-    return {
+    quantity_offers = _parse_quantity_offers(p)
+
+    price_val = p.get("price")
+    compare_val = p.get("comparePrice")
+    discount_summary: str | None = None
+    try:
+        p_f = float(price_val or 0)
+        c_f = float(compare_val or 0) if compare_val is not None else 0.0
+        if c_f > p_f > 0:
+            discount_summary = f"سعر القطعة {_fmt_num(p_f)} جنيه بدل {_fmt_num(c_f)} جنيه"
+        elif p_f > 0:
+            discount_summary = f"سعر القطعة {_fmt_num(p_f)} جنيه"
+    except (TypeError, ValueError):
+        pass
+
+    offers_summary = "، و".join(o["summary"] for o in quantity_offers) if quantity_offers else None
+
+    mapped: dict[str, Any] = {
         "id": p.get("id"),
         "name": p.get("name"),
         "sku": p.get("sku"),
-        "price": p.get("price"),
-        "comparePrice": p.get("comparePrice"),
+        "price": price_val,
+        "comparePrice": compare_val,
+        "discountSummary": discount_summary,
+        "quantityOffers": quantity_offers,
+        "offersSummary": offers_summary,
         "stock": p.get("stock"),
         "status": _availability_status(p),
         "categoryName": p.get("categoryName"),
@@ -140,6 +265,7 @@ def _map_product(p: dict[str, Any]) -> dict[str, Any]:
         "availableSizes": size_variants,
         "availableColors": color_variants,
     }
+    return mapped
 
 
 def _availability_status(product: dict[str, Any]) -> str:
@@ -188,6 +314,55 @@ def _parse_images(product: dict[str, Any]) -> list[str]:
         except json.JSONDecodeError:
             pass
     return images[:8]
+
+
+async def enrich_vector_results(
+    company_id: str,
+    vec_results: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Enrich semantic/image vector search results with full product catalog details (comparePrice, quantityOffers, variants)."""
+    if not company_id or not vec_results:
+        return vec_results
+    try:
+        sf = _db_mod.async_session
+        async with sf() as sess:
+            repo = ProductSearchRepository(sess)
+            catalog_raw, variants_map = await repo.search_products_with_categories(
+                company_id, "", limit=100
+            )
+        by_id: dict[str, dict[str, Any]] = {}
+        by_name: dict[str, dict[str, Any]] = {}
+        for p in catalog_raw:
+            pid = p.get("id")
+            if pid and pid in variants_map:
+                p["productVariants"] = variants_map[pid]
+            mapped = _map_product(p)
+            if pid:
+                by_id[str(pid)] = mapped
+            pname = (p.get("name") or "").strip().lower()
+            if pname:
+                by_name[pname] = mapped
+
+        enriched: list[dict[str, Any]] = []
+        for vr in vec_results:
+            vid = str(vr.get("id") or "")
+            vname = (vr.get("name") or "").strip().lower()
+            full = by_id.get(vid) or by_name.get(vname)
+            if full:
+                merged = dict(full)
+                if "score" in vr:
+                    merged["score"] = vr["score"]
+                if "rerank" in vr:
+                    merged["rerank"] = vr["rerank"]
+                if vr.get("image_url") and not merged.get("image_url"):
+                    merged["image_url"] = vr["image_url"]
+                enriched.append(merged)
+            else:
+                enriched.append(vr)
+        return enriched
+    except Exception as exc:
+        logger.warning("enrich_vector_results_failed", error=str(exc))
+        return vec_results
 
 
 async def search_products(
