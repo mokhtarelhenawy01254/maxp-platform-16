@@ -2,7 +2,7 @@ import { formatCurrency } from "./currency";
 import { OrderDetailsType, OrderItem } from "../pages/orders/types";
 import { groupOrderDocumentQuantityOffers } from "./orderDocumentQuantityOffers";
 import JsBarcode from "jsbarcode";
-import { extractOrderCustomFields, cleanNotesWithoutCustomFields } from "./orderCustomFields";
+import { resolveCustomFieldsForDisplay } from "./orderCustomFields";
 import { isPersonalDevice } from "./deviceFingerprint";
 
 export interface SimpleOrderForLabel {
@@ -622,11 +622,9 @@ function buildShippingLabelPageMarkup(
 ): string {
   const ctx = resolveLabelContext(order);
   const showCustomFields = settings?.showCustomFields === true;
-  const customFields = showCustomFields ? extractOrderCustomFields(order) : [];
-  const rawNotes = order.notes || "";
-  const displayNotes = showCustomFields
-    ? cleanNotesWithoutCustomFields(rawNotes, customFields)
-    : rawNotes;
+  const { customFields, displayNotes } = resolveCustomFieldsForDisplay(order, {
+    showCustomFields,
+  });
   const orderBarcode = order.orderNumber
     ? `<div style="text-align:center;margin-bottom:4px">${generateBarcodeSvg(order.orderNumber)}<div style="font-size:10px;font-weight:600;color:#000">كود الطلب</div></div>`
     : "";
@@ -694,7 +692,7 @@ function buildShippingLabelPageMarkup(
           <div class="label-custom-fields" style="border-bottom: 2px solid #000; padding: 6px 12px; background-color: #f8fafc;">
             ${customFields.map((cf) => `
               <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:2px;">
-                <span style="font-size:12px; font-weight:700; color:#334155;">🚗 ${escapeHtml(cf.label)}:</span>
+                <span style="font-size:12px; font-weight:700; color:#334155;">${escapeHtml(cf.label)}:</span>
                 <span style="font-size:14px; font-weight:900; color:#000; direction:rtl; text-align:right;">${escapeHtml(cf.value)}</span>
               </div>
             `).join("")}
