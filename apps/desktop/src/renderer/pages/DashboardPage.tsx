@@ -612,7 +612,6 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--bg-page)',
     color: 'var(--text-primary)',
     overflow: 'hidden',
-    userSelect: 'none',
   },
   main: {
     flex: 1,

@@ -571,7 +571,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     gap: 12,
     cursor: 'pointer',
-    userSelect: 'none',
+    userSelect: 'text',
   },
   titleCol: {
     flex: 1,
@@ -580,6 +580,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 8,
     overflow: 'hidden',
+    userSelect: 'text',
   },
   statusIconWrapper: {
     width: 20,
@@ -604,6 +605,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    userSelect: 'text',
   },
   revisionBadge: {
     display: 'inline-flex',
