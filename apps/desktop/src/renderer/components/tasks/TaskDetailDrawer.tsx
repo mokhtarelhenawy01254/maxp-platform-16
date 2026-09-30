@@ -22,6 +22,8 @@ import {
   Loader2,
   Check,
   Link as LinkIcon,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { TaskDescriptionRenderer } from './TaskDescriptionRenderer';
 import { TaskSubtasks } from './TaskSubtasks';
@@ -113,9 +115,12 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
 
   const attachments = task.taskAttachments || task.attachments || [];
   const watchers = task.taskWatchers || task.watchers || [];
+  const [copiedDesc, setCopiedDesc] = useState(false);
+  const [localWatching, setLocalWatching] = useState<boolean | null>(null);
   const isWatching = currentUserId
     ? watchers.some((w: any) => (w.userId || w.id || w.user?.id) === currentUserId)
     : false;
+  const watching = localWatching !== null ? localWatching : Boolean(isWatching);
 
   const isUrgent = String(task.priority || '').toUpperCase() === 'URGENT';
   const isHigh = String(task.priority || '').toUpperCase() === 'HIGH';
@@ -268,7 +273,49 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                 <span style={{ fontSize: 11, fontWeight: 500 }}>إغلاق</span>
               </button>
 
-              {/* Utility Tools: Deep-Link, Edit, Web */}
+              {/* Utility Tools: Copy-Description, Watch, Deep-Link, Edit, Web — relocated from the task row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      navigator.clipboard.writeText(task.description || '');
+                      setCopiedDesc(true);
+                      setTimeout(() => setCopiedDesc(false), 2000);
+                    } catch {}
+                  }}
+                  style={{
+                    ...drawerStyles.iconToolBtn,
+                    color: copiedDesc ? 'var(--accent-green, var(--accent-green))' : 'var(--text-dim)',
+                  }}
+                  title={copiedDesc ? 'تم نسخ وصف المهمة!' : 'نسخ وصف المهمة'}
+                >
+                  {copiedDesc ? <CheckCheck size={12} /> : <Copy size={12} />}
+                  <span style={{ fontSize: 10.5 }}>{copiedDesc ? 'تم النسخ' : 'نسخ الوصف'}</span>
+                </button>
+
+                {currentUserId && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        if (watching) await window.electronAPI.removeWatcher(task.id, currentUserId);
+                        else await window.electronAPI.addWatcher(task.id, currentUserId);
+                        setLocalWatching(!watching);
+                      } catch {}
+                    }}
+                    style={{
+                      ...drawerStyles.iconToolBtn,
+                      color: watching ? 'var(--accent-blue)' : 'var(--text-dim)',
+                    }}
+                    title={watching ? 'إلغاء متابعة المهمة' : 'متابعة المهمة لتصلك التحديثات'}
+                  >
+                    {watching ? <Eye size={12} /> : <EyeOff size={12} />}
+                    <span style={{ fontSize: 10.5 }}>{watching ? 'إلغاء المتابعة' : 'متابعة'}</span>
+                  </button>
+                )}
+              </div>
+
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <button
                   type="button"

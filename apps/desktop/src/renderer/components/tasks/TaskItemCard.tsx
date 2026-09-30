@@ -461,8 +461,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             </div>
           )}
 
-          {/* SINGLE DYNAMIC PRIMARY ACTION — hidden while hover tools occupy the slot */}
-          {!isHovered && (<>
+          {/* SINGLE DYNAMIC PRIMARY ACTION */}
           {isCompleted ? (
             <button
               type="button"
@@ -551,9 +550,6 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             >
               <Lock size={10} color="var(--text-muted)" />
             </span>
-          )}
-
-          </>
           )}
 
           {/* Open Details Drawer Chevron Button */}
