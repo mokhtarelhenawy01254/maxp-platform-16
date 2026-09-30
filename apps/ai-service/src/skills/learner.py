@@ -269,6 +269,9 @@ class AutonomousSkillLearner:
             rule_title=f"{status_tag}: {customer_issue[:30]}",
             rule_instructions=instruction,
             supporting_evidence={"satisfied": was_customer_satisfied, "issue": customer_issue},
+            session=session,
+        )
+
     async def distill_aov_insight(
         self,
         company_id: str,

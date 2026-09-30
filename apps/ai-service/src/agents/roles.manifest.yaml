@@ -461,16 +461,16 @@ roles:
     playbook_title: "كتيب تحليل واستخراج مؤشرات متوسط قيمة الطلب اليومي"
     judge_profile: "merchant_ops"
     capabilities:
-      episodic_memory: false
+      episodic_memory: true
       knowledge_retrieval: true
-      learning: false
-      approvals: false
+      learning: true
+      approvals: true
     approval_policy:
       allowed_scopes: ["AOV", "ANALYTICS", "STORE_OPS"]
       forbidden_prefixes: ["hr_", "payroll_", "internal_"]
     memory_policy:
       retain_days: 30
-      auto_embed: false
+      auto_embed: true
 
   AOV_EXECUTOR:
     label: "منفذ العروض والباكات — فريق AOV"
@@ -481,7 +481,7 @@ roles:
     capabilities:
       episodic_memory: true
       knowledge_retrieval: true
-      learning: false
+      learning: true
       approvals: true
     approval_policy:
       allowed_scopes: ["AOV", "DISCOUNTS", "OFFERS", "SHIPPING", "CONVERSION"]
@@ -497,13 +497,13 @@ roles:
     playbook_title: "كتيب مراجعة وتدقيق تقارير متوسط قيمة الطلب"
     judge_profile: "merchant_ops"
     capabilities:
-      episodic_memory: false
+      episodic_memory: true
       knowledge_retrieval: true
-      learning: false
-      approvals: false
+      learning: true
+      approvals: true
     approval_policy:
       allowed_scopes: ["AOV", "ANALYTICS"]
       forbidden_prefixes: ["hr_", "payroll_", "internal_"]
     memory_policy:
       retain_days: 30
-      auto_embed: false
+      auto_embed: true

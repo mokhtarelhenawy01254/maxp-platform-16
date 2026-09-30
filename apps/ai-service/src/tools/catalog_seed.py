@@ -23,24 +23,29 @@ CURATED_CAPABILITIES: list[dict] = [
         "name": "returns_requests_list",
         "domain": "returns",
         "description_en": (
-            "List customer return requests with optional status filter. "
-            "Use when the merchant asks about pending/approved returns or wants a returns overview."
+            "List customer return requests with optional date range and status filter. "
+            "When the merchant asks about returns for yesterday, today, or a specific period, ALWAYS pass dateFrom and dateTo (YYYY-MM-DD format). "
+            "Never guess or declare zero returns without querying the exact date range."
         ),
-        "usage_hint_ar": "استخدمها لما التاجر يسأل عن المرتجعات أو عايز يراجع طلبات الإرجاع المعلقة",
+        "usage_hint_ar": "استخدمها لما التاجر يسأل عن المرتجعات أو طلبات الإرجاع المعلقة أو مرتجعات فترة معينة (اليوم أو أمس مع تمرير dateFrom و dateTo)",
         "endpoint": "/api/v1/returns/requests",
         "http_method": "GET",
         "input_schema": {
             "type": "object",
             "properties": {
-                "status": {"type": "string", "description": "Filter by status: PENDING, APPROVED, REJECTED, COMPLETED (optional)"},
-                "limit": {"type": "integer", "description": "Max results (default 20)"},
+                "dateFrom": {"type": "string", "description": "Filter returns created on or after date (YYYY-MM-DD, e.g. '2026-09-29')"},
+                "dateTo": {"type": "string", "description": "Filter returns created on or before date (YYYY-MM-DD, e.g. '2026-09-29')"},
+                "status": {"type": "string", "description": "Filter by return status: PENDING, APPROVED, REJECTED, COMPLETED (optional)"},
+                "search": {"type": "string", "description": "Search by orderNumber, trackingNumber, or customer phone/name"},
+                "page": {"type": "integer", "description": "Page number (default 1)"},
+                "limit": {"type": "integer", "description": "Max results per page (default 50, max 100)"},
             },
         },
         "permission_key": "orders.view",
         "app_slug": "order-core",
         "risk_level": "read",
         "exposure_state": "active",
-        "roles": ["STORE_MANAGER"],
+        "roles": ["STORE_MANAGER", "EXECUTIVE_ASSISTANT"],
         "source": "curated",
     },
     {

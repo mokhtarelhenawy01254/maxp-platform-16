@@ -257,7 +257,7 @@ async function ensureShippingReturnRequestsSynced(companyId) {
 // Return Requests
 exports.getReturnRequests = async (req, res) => {
     try {
-        const { orderId, customerId, search, orderStatus, isReviewed, dateFrom, dateTo, page: pageStr, limit: limitStr } = req.query;
+        const { orderId, customerId, search, orderStatus, status, isReviewed, dateFrom, dateTo, page: pageStr, limit: limitStr } = req.query;
         const effectiveCompanyId = req.user.effectiveCompanyId || req.user.companyId;
 
         // Auto-sync any returned shipping orders for company
@@ -267,6 +267,7 @@ exports.getReturnRequests = async (req, res) => {
 
         if (orderId) where.orderId = orderId;
         if (customerId) where.customerId = customerId;
+        if (status) where.status = status;
         if (isReviewed !== undefined) where.isReviewed = isReviewed === 'true';
         if (orderStatus) where.order = { status: orderStatus };
 
@@ -274,16 +275,19 @@ exports.getReturnRequests = async (req, res) => {
         const settings = await getPrisma().returnSettings.findUnique({
             where: { companyId: effectiveCompanyId }
         });
-        const ordersStartDate = req.query.startDate || settings?.reviewDisplayConfig?.ordersStartDate;
+        const ordersStartDate = settings?.reviewDisplayConfig?.ordersStartDate;
 
-        if (dateFrom) {
-            const from = new Date(dateFrom);
+        const effectiveFrom = dateFrom || (req.query.dateFrom ? req.query.dateFrom : req.query.startDate);
+        const effectiveTo = dateTo || (req.query.dateTo ? req.query.dateTo : req.query.endDate);
+
+        if (effectiveFrom) {
+            const from = new Date(effectiveFrom);
             if (!isNaN(from.getTime())) {
                 where.createdAt = { ...(where.createdAt || {}), gte: from };
             }
         }
-        if (dateTo) {
-            const to = new Date(dateTo);
+        if (effectiveTo) {
+            const to = new Date(effectiveTo);
             to.setHours(23, 59, 59, 999);
             if (!isNaN(to.getTime())) {
                 where.createdAt = { ...(where.createdAt || {}), lte: to };

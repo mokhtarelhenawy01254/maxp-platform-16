@@ -77,7 +77,11 @@
     "manage_agent_skill",
     "manage.agent.skill",
     "update_agent_identity",
-    "unlock.advanced.tools"
+    "unlock.advanced.tools",
+    "returns.requests.list",
+    "returns_requests_list",
+    "returns.request.get",
+    "returns_request_get"
   ],
   "allowedSkills": [],
   "channels": [

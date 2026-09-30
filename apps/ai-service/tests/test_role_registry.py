@@ -38,6 +38,7 @@ def test_all_20_roles_exist_and_match():
         "COMPETITOR", "SMART_SELLER", "SALES_REP", "MEDICAL_CENTER",
         "PHYSIOTHERAPY", "EDUCATION_CENTER", "HOTEL", "MEDICAL_CENTER_MANAGER",
         "CEO", "BROWSER_COPILOT", "HR_ASSISTANT", "AOV_SPECIALIST",
+        "AOV_ANALYST", "AOV_EXECUTOR", "AOV_AUDITOR",
     }
     assert len(roles) == len(expected_roles), f"Expected {len(expected_roles)} roles, got {len(roles)}"
     assert set(roles.keys()) == expected_roles

@@ -349,7 +349,6 @@ roles:
     - payment_methods_configure
 
   STORE_MANAGER:
-    - store_capability
     - product_search
     - product_create
     - product_update_price
@@ -373,6 +372,7 @@ roles:
     - customer_top_buyers
     - sales_revenue
     - company_snapshot
+    - discount_create_draft
     - discount_create
     - offers_list_active
     - coupon_validate
@@ -384,7 +384,10 @@ roles:
     - shipping_zone_set
     - knowledge_search
     - knowledge_ask_merchant
+    - knowledge_create_faq
+    - knowledge_create_policy
     - whatsapp_send
+    - message_broadcast
     - competitor_search
     - competitor_get_products
     - competitor_price_compare
@@ -401,6 +404,7 @@ roles:
     - record_learned_rule
     - manage_agent_skill
     - update_agent_identity
+    - agent_spawn
     - scheduler_create_job
 
   HR_ASSISTANT:
