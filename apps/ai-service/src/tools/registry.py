@@ -56,6 +56,7 @@ for _t in _ALL_DOMAIN_TOOLS + list(SKILL_TOOLS):
 
 CORE_TOOL_NAMES: set[str] = {
     "product_search",
+    "product_read_conversion",
     "category_list",
     "order_lookup",
     "inventory_check",
@@ -130,6 +131,7 @@ READ_TOOL_NAMES: set[str] = (CORE_TOOL_NAMES | ADVANCED_TOOL_NAMES | {
 WRITE_TOOL_NAMES: set[str] = {
     "product_create",
     "product_update_price",
+    "product_configure_conversion",
     "order_create_draft",
     "order_cancel",
     "order_refund",

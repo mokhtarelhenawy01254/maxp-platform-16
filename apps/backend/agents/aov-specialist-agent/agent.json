@@ -31,6 +31,8 @@
     "product_top_selling",
     "product_performance",
     "product_search",
+    "product_read_conversion",
+    "product_configure_conversion",
     "customer_top_buyers",
     "customer_info",
     "order_summary",

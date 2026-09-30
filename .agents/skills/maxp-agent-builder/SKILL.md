@@ -564,6 +564,12 @@ python -m scripts.seed_agent_templates
       2. **التركيز الأحادي الحصري (Single-Entity Focus):** يركز الرد بنسبة 100% على المنتج الذي استفسر عنه العميل فقط. يُمنع منعاً باتاً ذكر أو اقتراح أي موديلات أخرى أو أسعار بديلة في نفس الرد.
       3. **الاستثناءات الحصرية:** لا يُعرض أي بديل إلا في حالتين فقط: أن يكون المنتج المطلوب غير متاح بالكامل ومخزونه 0 (`out_of_stock`)، أو إذا طلب العميل صراحة رؤية موديلات أو أشكال أخرى.
       4. **نقاء السعر والـ CTA:** الرد يذكر السعر الصافي المباشر، ويختم بسؤال إغلاق بيعي محدد وموجه لنفس المنتج فقط: *"تحب أحجزلك منها؟"* أو *"تحب نجهزهالك؟"*.
+16. **معمارية تخصيص التحويل والبيع المتقاطع لمنتج واحد ومزامنة قوالب الوكلاء (`Per-Product Conversion Architecture & DB Template Seeding Law`):**
+    - **الخلل المكتشف في جلسة الإنتاج `copilot_sess_1790760043512_oxixu`:** ادعاء المساعد الذكي (`store-manager-agent`) بأن أدوات رفع التحويل والـ Cross-Sell لا تُضبط لمنتج واحد بعينه وأنه لا يملك أداة لتنفيذها، رغم وجود **تبويب «متقدم» (`AdvancedTab.tsx`)** و**تبويب «عروض الكميات» (`QuantityOffersTab.tsx`)** داخل صفحة تعديل كل منتج (`/products/:id/edit`). كما تبيّن أن تعديل ملفات `SOUL.md` على الملفات النصية لا ينعكس تلقائياً في بيئة الإنتاج ما لم يتم تحديث جدول `ai.agent_templates` في PostgreSQL.
+    - **المعيار الإلزامي:**
+      1. **أدوات قراءة وتعديل تحويل المنتج الواحد (`product_read_conversion` & `product_configure_conversion`):** يجب تزويد وكلاء المتجر والمساعد التنفيذي ووكلاء الـ AOV بأداتي `product_read_conversion` و`product_configure_conversion` لقراءة وتعديل `products.metadata` (`upsellProducts`, `crossSellProducts`, `relatedProducts`, `quantityOffers`, `volumeDiscounts`, `excludeFromFreeShipping`, `enableCheckoutForm`) وحقول `showFakeStock` و`comparePrice` لأي منتج بالاسم أو الـ ID.
+      2. **الوعي الكامل بتبويبات المنتج في الواجهة:** التمييز الصريح بين الإعدادات العامة للمتجر (`/settings/conversion-tools` و`/settings/upsell`) وبين إعدادات المنتج الواحد داخل `/products/:id/edit` عبر **تبويب «متقدم»** و**تبويب «عروض الكميات»**.
+      3. **إلزامية إعادة بذر القوالب (`seed_agent_templates.py`) بعد أي تعديل:** بما أن `PromptTemplateRegistry` يقرأ أولاً من جدول `ai.agent_templates` في قاعدة البيانات، يجب دائماً تشغيل `python -m scripts.seed_agent_templates` وإعادة تشغيل `maxp-ai-service` فور تعديل أي ملف في `apps/backend/agents/*/`.
 
 ---
 

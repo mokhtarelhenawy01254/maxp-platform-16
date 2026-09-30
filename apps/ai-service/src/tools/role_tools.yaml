@@ -13,6 +13,8 @@ roles:
     - order_lookup_by_phone
     - customer_info
     - product_search
+    - product_read_conversion
+    - product_configure_conversion
     - product_low_stock
     - product_top_selling
     - product_performance
@@ -50,6 +52,7 @@ roles:
 
   BROWSER_COPILOT:
     - product_search
+    - product_read_conversion
     - product_low_stock
     - product_top_selling
     - category_list
@@ -138,6 +141,8 @@ roles:
 
   INVENTORY:
     - product_search
+    - product_read_conversion
+    - product_configure_conversion
     - product_low_stock
     - product_create
     - category_list
@@ -149,6 +154,8 @@ roles:
   PRODUCT_CREATOR:
     - product_create
     - product_search
+    - product_read_conversion
+    - product_configure_conversion
     - category_list
     - product_update_price
     - competitor_search
@@ -364,6 +371,8 @@ roles:
 
   STORE_MANAGER:
     - product_search
+    - product_read_conversion
+    - product_configure_conversion
     - product_create
     - product_update_price
     - product_low_stock
@@ -453,6 +462,8 @@ roles:
     - product_top_selling
     - product_performance
     - product_search
+    - product_read_conversion
+    - product_configure_conversion
     - customer_top_buyers
     - customer_info
     - order_summary
@@ -485,6 +496,7 @@ roles:
     - sales_revenue
     - product_top_selling
     - product_performance
+    - product_read_conversion
     - customer_top_buyers
     - customer_info
     - offers_list_active
@@ -497,6 +509,9 @@ roles:
   AOV_EXECUTOR:
     - offers_list_active
     - inventory_check
+    - product_search
+    - product_read_conversion
+    - product_configure_conversion
     - product_performance
     - product_top_selling
     - conversion_tools_read
@@ -514,6 +529,7 @@ roles:
     - sales_revenue
     - product_top_selling
     - product_performance
+    - product_read_conversion
     - inventory_check
     - shipping_rates
     - conversion_tools_read

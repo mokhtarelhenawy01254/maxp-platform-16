@@ -31,6 +31,8 @@
     "payment.settings.read",
     "payment.methods.configure",
     "product.search",
+    "product.read.conversion",
+    "product.configure.conversion",
     "product.create",
     "product.update.price",
     "product.low.stock",

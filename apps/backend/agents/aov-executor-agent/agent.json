@@ -29,6 +29,9 @@
   "allowedTools": [
     "offers_list_active",
     "inventory_check",
+    "product_search",
+    "product_read_conversion",
+    "product_configure_conversion",
     "product_performance",
     "product_top_selling",
     "conversion_tools_read",

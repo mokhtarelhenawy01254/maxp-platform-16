@@ -203,6 +203,9 @@ async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
                 image_bytes=decoded_image,
                 mime_type=image_mime_type,
             )
+            vec_results = await product_tools.enrich_vector_results(
+                input_data.company_id or "", vec_results
+            )
             return {"results": vec_results, "count": len(vec_results), "listAll": False, "searchType": "image_semantic"}
 
     result = await product_tools.search_products(
@@ -389,7 +392,13 @@ def _format_product_search(result: dict) -> str:
         price = p.get("price")
         if isinstance(price, dict):
             price = price.get("amount", "")
-        names.append(f"{name}{f' ({price})' if price else ''}")
+        compare_price = p.get("comparePrice")
+        offers_summary = p.get("offersSummary")
+        price_part = f"{price} بدل {compare_price}" if (price and compare_price and compare_price != price) else f"{price}"
+        entry = f"{name}{f' ({price_part})' if price_part else ''}"
+        if offers_summary:
+            entry += f" [{offers_summary}]"
+        names.append(entry)
     result_str = ", ".join(filter(None, names))
     if len(products) > 5:
         result_str += "..."
@@ -398,7 +407,7 @@ def _format_product_search(result: dict) -> str:
 
 product_search_tool = FunctionTool(
     name="product_search",
-    description="Search for products by name, SKU, or keyword. Use this FIRST when customer asks about products, wants to see what's available, or asks for recommendations — never guess or invent products from memory. Set list_all=true to browse the full catalog. Returns products with prices, stock, variants, available sizes, available colors, and category info. Use inventory.check for detailed per-variant availability.",
+    description="Search for products by name, SKU, or keyword. Use this FIRST when customer asks about products, wants to see what's available, or asks for recommendations — never guess or invent products from memory. Set list_all=true to browse the full catalog. Returns products with prices, comparePrice (original price before discount), discountSummary, quantityOffers / offersSummary (2-piece and 3-piece bundle offers), stock, variants, available sizes, available colors, and category info. Use inventory.check for detailed per-variant availability.",
     func=product_search,
     input_model=ProductSearchInput,
     format_result=_format_product_search,
@@ -458,6 +467,173 @@ category_list_tool = FunctionTool(
     input_model=CategoryListInput,
 )
 
+
+class ProductReadConversionInput(BaseModel):
+    product_id: str = Field(
+        description="Product CUID, SKU, or exact/partial product name to inspect its per-product conversion settings (Advanced tab & Quantity Offers tab)."
+    )
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class ProductQuantityTierInput(BaseModel):
+    quantity: int = Field(description="Minimum quantity for this tier (e.g. 2 or 3)")
+    discount_percent: float | None = Field(
+        default=None,
+        description="Discount percentage for this quantity tier (e.g. 10 for 10%, 15 for 15%)",
+    )
+    unit_price: float | None = Field(
+        default=None,
+        description="Optional explicit unit price per item in this tier if discount_percent is not used",
+    )
+    label: str | None = Field(default=None, description="Optional Arabic display label for the tier")
+
+
+class ProductConfigureConversionInput(BaseModel):
+    product_id: str = Field(
+        description="Target product CUID, SKU, or product name to configure conversion/advanced settings for."
+    )
+    cross_sell_products: list[str] | None = Field(
+        default=None,
+        description="Optional list of complementary product IDs, SKUs, or names to link as Cross-Sell / Bought Together (منتجات مكملة / يُشترى معًا) in the product's Advanced tab.",
+    )
+    upsell_products: list[str] | None = Field(
+        default=None,
+        description="Optional list of higher-tier product IDs, SKUs, or names to link as Upsell (منتجات الترقية) in the product's Advanced tab.",
+    )
+    related_products: list[str] | None = Field(
+        default=None,
+        description="Optional list of similar product IDs, SKUs, or names to link as Related Products (المنتجات المشابهة) in the product's Advanced tab.",
+    )
+    quantity_tiers: list[ProductQuantityTierInput] | None = Field(
+        default=None,
+        description="Optional list of per-product quantity discount tiers (شرائح عروض الكمية في تبويب عروض الكميات), e.g. [{'quantity': 2, 'discount_percent': 10}, {'quantity': 3, 'discount_percent': 15}].",
+    )
+    show_fake_stock: bool | None = Field(
+        default=None,
+        description="Optional toggle for the per-product urgency fake stock counter (عداد وهمي) in the Advanced tab.",
+    )
+    exclude_from_free_shipping: bool | None = Field(
+        default=None,
+        description="Optional toggle to exclude this specific product from free shipping in the Advanced tab.",
+    )
+    enable_checkout_form: bool | None = Field(
+        default=None,
+        description="Optional toggle to enable direct checkout form on this specific product page in the Advanced tab.",
+    )
+    compare_price: float | None = Field(
+        default=None,
+        description="Optional compare-at strike price (سعر الشطب قبل الخصم) for this product.",
+    )
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+async def product_read_conversion(input_data: ProductReadConversionInput) -> dict[str, Any]:
+    company_id = input_data.company_id or ""
+    if not company_id or not input_data.product_id:
+        return {"found": False, "error": "معرف المتجر أو المنتج مفقود"}
+
+    from src.tools.repositories.product_repository import ProductRepository
+    import src.db.session as _db_mod
+
+    if _db_mod.async_session is None:
+        await _db_mod.init_db()
+
+    async with _db_mod.async_session() as sess:
+        repo = ProductRepository(sess)
+        return await repo.get_product_conversion_settings(input_data.product_id, company_id)
+
+
+async def product_configure_conversion(input_data: ProductConfigureConversionInput) -> dict[str, Any]:
+    company_id = input_data.company_id or ""
+    if not company_id or not input_data.product_id:
+        return {"success": False, "error": "معرف المتجر أو المنتج مفقود"}
+
+    updates: dict[str, Any] = {}
+    if input_data.cross_sell_products is not None:
+        updates["cross_sell_products"] = input_data.cross_sell_products
+    if input_data.upsell_products is not None:
+        updates["upsell_products"] = input_data.upsell_products
+    if input_data.related_products is not None:
+        updates["related_products"] = input_data.related_products
+    if input_data.quantity_tiers is not None:
+        updates["quantity_tiers"] = [t.model_dump() for t in input_data.quantity_tiers]
+    if input_data.show_fake_stock is not None:
+        updates["show_fake_stock"] = input_data.show_fake_stock
+    if input_data.exclude_from_free_shipping is not None:
+        updates["exclude_from_free_shipping"] = input_data.exclude_from_free_shipping
+    if input_data.enable_checkout_form is not None:
+        updates["enable_checkout_form"] = input_data.enable_checkout_form
+    if input_data.compare_price is not None:
+        updates["compare_price"] = input_data.compare_price
+
+    from src.tools.repositories.product_repository import ProductRepository
+    import src.db.session as _db_mod
+
+    if _db_mod.async_session is None:
+        await _db_mod.init_db()
+
+    async with _db_mod.async_session() as sess:
+        repo = ProductRepository(sess)
+        return await repo.update_product_conversion_settings(input_data.product_id, company_id, updates)
+
+
+def _format_product_read_conversion(result: dict[str, Any]) -> str:
+    if not result.get("found"):
+        return f"تعذر قراءة إعدادات المنتج: {result.get('error', 'المنتج غير موجود')}"
+    adv = result.get("advancedTabSettings") or {}
+    qty_tab = result.get("quantityOffersTabSettings") or {}
+    cross = ", ".join(f"{p['name']} ({p['price']} ج.م)" for p in (adv.get("crossSellProducts") or [])) or "غير محدد"
+    upsell = ", ".join(f"{p['name']} ({p['price']} ج.م)" for p in (adv.get("upsellProducts") or [])) or "غير محدد"
+    related = ", ".join(f"{p['name']} ({p['price']} ج.م)" for p in (adv.get("relatedProducts") or [])) or "غير محدد"
+    offers = qty_tab.get("quantityOffers") or []
+    offers_str = (
+        " · ".join(f"{o.get('quantity')} قطع بسعر قطعة {o.get('unitPrice')} ج.م" for o in offers)
+        if offers
+        else "لا توجد شرائح مخصصة"
+    )
+    return (
+        f"إعدادات المنتج «{result.get('name')}» (SKU: {result.get('sku')} — السعر: {result.get('price')} ج.م):\n"
+        f"- تبويب «متقدم» (/products/{result.get('productId')}/edit):\n"
+        f"  • منتجات مكملة / يُشترى معًا (Cross-Sell): {cross}\n"
+        f"  • منتجات الترقية (Upsell): {upsell}\n"
+        f"  • المنتجات المشابهة (Related): {related}\n"
+        f"  • عداد وهمي: {'مفعّل' if adv.get('showFakeStock') else 'متوقف'}\n"
+        f"  • فورم الشيك أوت المباشر: {'مفعّل' if adv.get('enableCheckoutForm') else 'متوقف'}\n"
+        f"- تبويب «عروض الكميات»:\n"
+        f"  • الشرائح: {offers_str}"
+    )
+
+
+def _format_product_configure_conversion(result: dict[str, Any]) -> str:
+    if not result.get("success"):
+        return f"تعذر تحديث إعدادات التحويل للمنتج: {result.get('error', 'خطأ غير معروف')}"
+    return result.get("message", "تم تحديث إعدادات التحويل للمنتج بنجاح.")
+
+
+product_read_conversion_tool = FunctionTool(
+    name="product_read_conversion",
+    description=(
+        "Read a single product's conversion & advanced settings from its 'متقدم' (Advanced) tab and 'عروض الكميات' (Quantity Offers) tab: "
+        "linked Cross-Sell / Bought Together products, Upsell products, Related products, quantity discount tiers, fake stock counter, "
+        "direct checkout form toggle, and free-shipping exclusion. Use whenever the merchant asks about conversion/upsell/cross-sell/bundle settings for a specific product."
+    ),
+    func=product_read_conversion,
+    input_model=ProductReadConversionInput,
+    format_result=_format_product_read_conversion,
+)
+
+product_configure_conversion_tool = FunctionTool(
+    name="product_configure_conversion",
+    description=(
+        "Configure per-product conversion, bundle, cross-sell, upsell, related products, quantity discount tiers (شرائح عروض الكميات), "
+        "fake stock urgency counter, or checkout settings for a single specific product (persisted in the product's 'متقدم' Advanced tab and 'عروض الكميات' Quantity Offers tab). "
+        "Requires merchant approval."
+    ),
+    func=product_configure_conversion,
+    input_model=ProductConfigureConversionInput,
+    format_result=_format_product_configure_conversion,
+)
+
 __all_tools__ = [
     product_search_tool,
     product_create_tool,
@@ -466,4 +642,6 @@ __all_tools__ = [
     product_update_price_tool,
     product_performance_tool,
     category_list_tool,
+    product_read_conversion_tool,
+    product_configure_conversion_tool,
 ]

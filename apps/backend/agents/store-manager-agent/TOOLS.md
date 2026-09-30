@@ -2,10 +2,12 @@
 
 ## 🔴 الأدوات الأساسية — إدارة واجهة المتجر
 
-### أدوات رفع التحويل (Conversion Tools)
-- `conversion_tools_read`: اقرأ حالة أدوات رفع التحويل — أي تطبيقات متثبتة (أدوات رفع التحويل / عروض الكميات / المبيعات المتقدمة / تقييمات العملاء)، وأي موديول مفعّل، والقيم الحالية.
-- `conversion_tool_toggle`: تفعيل أو إيقاف أداة واحدة بمفتاحها (مثل `freeShippingBar` أو `saleCountdown`). **القاعدة: استدعِ `conversion_tools_read` أولًا واعرض الحالة على التاجر قبل أي toggle.**
-- `conversion_tool_set_threshold`: ضبط قيمة رقمية مثل `freeShippingAmount` (حد الشحن المجاني) أو `lowStockLimit` (حد تنبيه المخزون). اعرض القيمة الحالية والجديدة قبل التنفيذ.
+### أدوات رفع التحويل وتخصيص المنتج الواحد (Conversion Tools & Per-Product Conversion)
+- `conversion_tools_read`: اقرأ حالة أدوات رفع التحويل العامة للمتجر — أي تطبيقات متثبتة (أدوات رفع التحويل / عروض الكميات / المبيعات المتقدمة / تقييمات العملاء)، وأي موديول مفعّل، والقيم الحالية.
+- `conversion_tool_toggle`: تفعيل أو إيقاف أداة عامة واحدة بمفتاحها (مثل `freeShippingBar` أو `saleCountdown`). **القاعدة: استدعِ `conversion_tools_read` أولًا واعرض الحالة على التاجر قبل أي toggle.**
+- `conversion_tool_set_threshold`: ضبط قيمة رقمية عامة مثل `freeShippingAmount` (حد الشحن المجاني) أو `lowStockLimit` (حد تنبيه المخزون). اعرض القيمة الحالية والجديدة قبل التنفيذ.
+- `product_read_conversion`: قراءة إعدادات التحويل والبيع المتقاطع لمنتج واحد بعينه (تبويب «متقدم» `AdvancedTab` وتبويب «عروض الكميات» `QuantityOffersTab` في صفحة تعديل المنتج `/products/:id/edit`) — يعرض `upsellProducts` (منتجات الترقية)، `crossSellProducts` (المنتجات المكملة / اشترِ معاً)، `relatedProducts` (المنتجات المشابهة)، `quantityOffers` (شرائح خصم الكميات)، `showFakeStock` (العداد الوهمي)، `excludeFromFreeShipping`، و`comparePrice` (سعر الشطب).
+- `product_configure_conversion`: ضبط وتخصيص إعدادات التحويل لمنتج واحد بعينه مباشرة من الشات — يدعم ربط منتجات `cross_sell_queries` (Cross-Sell)، `upsell_queries` (Upsell)، `related_queries` بالاسم أو الـ ID، وإضافة شرائح خصم الكميات (`quantity_tiers`)، وتفعيل العداد الوهمي (`show_fake_stock`)، وتحديد سعر الشطب (`compare_price`). **استدعِ `product_read_conversion` أولاً لعرض الحالة الحالية قبل التعديل.**
 
 ### طرق الدفع (Payments)
 - `payment_settings_read`: اعرض طرق الدفع المفعّلة (كاشير / بطاقات / محفظة) وحالة بوابة Kashier والعربون — من غير أي مفاتيح سرية، وده متعمد للأمان.

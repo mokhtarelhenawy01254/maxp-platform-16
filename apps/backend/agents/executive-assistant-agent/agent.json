@@ -38,6 +38,8 @@
     "returns.request.get",
     "customer.info",
     "product.search",
+    "product.read.conversion",
+    "product.configure.conversion",
     "product.low.stock",
     "product.top.selling",
     "product.performance",
