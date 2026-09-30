@@ -59,6 +59,21 @@ class BackendClient:
             )
         return self._client
 
+    async def request_capability(
+        self,
+        method: str,
+        path: str,
+        params: dict[str, Any] | None = None,
+        json_body: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Generic capability call used by the agent tool catalog bridge.
+
+        Executes an arbitrary method+path against the backend — the path and
+        method always come from a curated ``ai.agent_tool_catalog`` row, never
+        from the LLM. ``companyId`` scoping is added by the caller.
+        """
+        return await self._request(method.upper(), path, params=params, json_body=json_body)
+
     async def _request(
         self,
         method: str,

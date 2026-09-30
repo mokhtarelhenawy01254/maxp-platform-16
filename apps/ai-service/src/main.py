@@ -129,6 +129,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if db_session.async_session:
                 await init_registry_from_db(db_session.async_session)
 
+            # Capability bridge: mirror code tools into the catalog (tracked
+            # rows) and register DB-catalog active tools as bridge FunctionTools.
+            try:
+                from src.tools.catalog import register_catalog_at_startup
+                await register_catalog_at_startup()
+            except Exception as exc:
+                log = structlog.get_logger()
+                log.warning("Capability catalog startup skipped", error=str(exc))
+
         # Register skills for the new skill-based pipeline
         from src.skills.register_all import register_all_skills
         register_all_skills()

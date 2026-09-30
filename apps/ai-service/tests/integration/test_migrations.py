@@ -59,7 +59,17 @@ def test_migration_chain_is_linear(alembic_config):
     heads = script.get_heads()
 
     assert len(heads) == 1, f"Expected 1 head, got {len(heads)}: {heads}"
-    assert heads[0] == "0020", f"Expected head to be 0020, got {heads[0]}"
+    # Linearity: every migration file must be reachable walking down from
+    # the head — an orphaned branch would make the walked count smaller.
+    import pathlib
+
+    versions_dir = pathlib.Path(__file__).resolve().parents[2] / "migrations" / "versions"
+    migration_files = [p for p in versions_dir.glob("*.py") if p.name != "__init__.py"]
+    all_ids = [r.revision for r in script.walk_revisions()]
+    assert len(all_ids) == len(migration_files), (
+        f"Walked {len(all_ids)} revisions but {len(migration_files)} migration files exist "
+        "— a revision is orphaned (not connected to the head)"
+    )
 
 
 

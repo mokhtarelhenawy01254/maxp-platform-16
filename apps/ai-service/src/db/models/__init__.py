@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from src.db.base import Base
 from src.db.models.agent import Agent, AgentDepartment, AgentTemplate
+from src.db.models.agent_tool_catalog import AgentToolCatalog
 from src.db.models.guardrail import AgentGuardrailRule
 from src.db.models.ai_setting import AiSetting
 from src.db.models.approval import Approval
@@ -21,6 +22,7 @@ __all__ = [
     "FAQ",
     "KnowledgeQuestion",
     "Agent",
+    "AgentToolCatalog",
     "AgentDepartment",
     "AgentTemplate",
     "AgentGuardrailRule",
