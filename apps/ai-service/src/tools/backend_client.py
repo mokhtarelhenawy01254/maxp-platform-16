@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from typing import Any
 
 import httpx
@@ -59,6 +60,35 @@ class BackendClient:
             )
         return self._client
 
+    async def _get_bridge_session(self, company_id: str) -> str | None:
+        """Fetch a short-lived permissioned bridge JWT for a company.
+
+        The AI_BRIDGE identity is a real backend User (AGENT role) whose
+        company-scoped role carries only the bridge's permission keys —
+        permission checks and audit logs apply, unlike the god-mode service
+        token. Cached per company with TTL; failures fall back to the
+        service token (never break a live chat over identity minting).
+        """
+        now = time.monotonic()
+        cached = self._bridge_sessions.get(company_id)
+        if cached and cached[1] > now:
+            return cached[0]
+
+        client = await self._get_client()
+        try:
+            response = await client.post(
+                "/api/v1/internal/service-session",
+                json={"companyId": company_id},
+            )
+            if response.is_success:
+                token = str(response.json().get("token") or "")
+                if token:
+                    self._bridge_sessions[company_id] = (token, now + 600.0)
+                    return token
+        except Exception:
+            pass
+        return None
+
     async def request_capability(
         self,
         method: str,
@@ -70,9 +100,23 @@ class BackendClient:
 
         Executes an arbitrary method+path against the backend — the path and
         method always come from a curated ``ai.agent_tool_catalog`` row, never
-        from the LLM. ``companyId`` scoping is added by the caller.
+        from the LLM. ``companyId`` scoping is added by the caller. Auth uses
+        the permissioned AI_BRIDGE session; falls back to the service token
+        if minting fails.
         """
-        return await self._request(method.upper(), path, params=params, json_body=json_body)
+        if not hasattr(self, "_bridge_sessions"):
+            self._bridge_sessions: dict[str, tuple[str, float]] = {}
+        company_id = ""
+        if params and params.get("companyId"):
+            company_id = str(params["companyId"])
+        elif json_body and json_body.get("companyId"):
+            company_id = str(json_body["companyId"])
+        headers: dict[str, str] | None = None
+        if company_id:
+            bridge_token = await self._get_bridge_session(company_id)
+            if bridge_token:
+                headers = {"Authorization": f"Bearer {bridge_token}"}
+        return await self._request(method.upper(), path, params=params, json_body=json_body, headers=headers)
 
     async def _request(
         self,

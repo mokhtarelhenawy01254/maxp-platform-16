@@ -220,3 +220,39 @@ async def test_register_catalog_tools_registers_active(monkeypatch):
 
     # cleanup the singleton so other tests are unaffected
     registry._tools.pop(canonical_tool_name("returns_request_update"), None)
+
+
+# ── Phase 3: curated pilot domains ─────────────────────────────────────────
+
+
+def test_curated_seed_rows_are_consistent():
+    """Every curated row must carry a valid state, a real-shaped endpoint,
+    matching path_params, and risk_level consistent with its description."""
+    from src.tools.catalog_seed import CURATED_CAPABILITIES
+    from src.tools.catalog import validate_states
+    import re
+
+    assert len(CURATED_CAPABILITIES) >= 8
+    names = set()
+    for cap in CURATED_CAPABILITIES:
+        validate_states(exposure_state=cap["exposure_state"], risk_level=cap["risk_level"])
+        assert cap["exposure_state"] == "active"
+        assert cap["name"] not in names, f"duplicate curated name {cap['name']}"
+        names.add(cap["name"])
+        assert cap["endpoint"].startswith("/api/v1/")
+        params_in_path = set(re.findall(r"/:([A-Za-z_]+)", cap["endpoint"]))
+        assert params_in_path == set(cap.get("path_params", [])), cap["name"]
+        if cap["risk_level"] == "write":
+            assert "APPROVAL" in cap["description_en"], cap["name"]
+
+
+def test_curated_names_do_not_collide_with_code_tools():
+    """Catalog names must never shadow the 137 code tools."""
+    from src.skills.registry import get_skill_registry
+    from src.tools.catalog_seed import CURATED_CAPABILITIES
+
+    registry = get_skill_registry()
+    for cap in CURATED_CAPABILITIES:
+        assert registry.resolve(cap["name"]) is None, (
+            f"curated name {cap['name']} collides with a code tool — rename it"
+        )

@@ -324,6 +324,11 @@ async def register_catalog_at_startup() -> dict[str, int]:
 
     async with sf() as session:
         try:
+            from src.tools.catalog_seed import seed_curated_capabilities
+            await seed_curated_capabilities(session)
+        except Exception as exc:  # noqa: BLE001 — never block startup on seeding
+            logger.error("catalog_seed_failed", error=str(exc))
+        try:
             await sync_tracked_tools(session)
         except Exception as exc:  # noqa: BLE001 — never block startup on catalog sync
             logger.error("catalog_tracked_sync_failed", error=str(exc))

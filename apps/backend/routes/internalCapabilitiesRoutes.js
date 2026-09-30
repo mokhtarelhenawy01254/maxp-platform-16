@@ -168,6 +168,17 @@ router.get('/capabilities', requireServiceToken, (req, res) => {
   }
 });
 
+/**
+ * Mint a short-lived permissioned bridge session for a company.
+ * The identity is a real User (AI Bridge / AGENT) with an AI_BRIDGE role —
+ * permission checks and audit logs apply like any human operator, unlike
+ * the legacy AI_SERVICE secret which bypasses requireDbPermission.
+ */
+router.post('/service-session', requireServiceToken, async (req, res) => {
+  const { POSTServiceSession } = require('../services/aiBridgeIdentity');
+  return POSTServiceSession(req, res);
+});
+
 module.exports = router;
 module.exports.buildCapabilityManifest = buildCapabilityManifest;
 module.exports.mountPathOf = mountPathOf;
