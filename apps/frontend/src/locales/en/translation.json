@@ -10990,7 +10990,8 @@
       "work-types": "Work Types",
       "technicians": "Technicians",
       "invoices": "Invoices",
-      "settings": "Settings"
+      "settings": "Settings",
+      "kiosk": "Barcode Scanner"
     },
     "common": {
       "save": "Save",
@@ -11028,6 +11029,7 @@
       "RECEIVED": "Received",
       "DESIGN": "Design",
       "MANUFACTURING": "Manufacturing",
+      "OUTSOURCED": "Outsourced",
       "QC": "Quality Control",
       "READY": "Ready for Delivery",
       "DELIVERED": "Delivered",
