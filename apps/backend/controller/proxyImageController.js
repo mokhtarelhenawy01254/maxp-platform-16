@@ -690,9 +690,12 @@ const assertPublicRemoteHost = async (hostname) => {
   if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) {
     return false;
   }
+  // IPv6 literals ممنوعة تمامًا: فيها صيغ mapped/6to4/NAT64 بتلتف على فحص الرينجات
+  // (مثال: [::ffff:7f00:1] = 127.0.0.1 بصيغة هيكس) — وصور المتاجر بتستخدم دومينات مش IP literals
+  if (host.includes(":")) return false;
   if (isPrivateHostAddress(host)) return false;
   // اسم DNS: بنحل العنوان ونمنع لو أي رجع من الرينجات الخاصة (DNS rebinding شامل)
-  const looksLikeIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(":");
+  const looksLikeIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
   if (!looksLikeIp) {
     try {
       const dns = require("dns").promises;

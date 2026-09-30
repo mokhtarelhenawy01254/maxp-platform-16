@@ -3504,14 +3504,15 @@ const normalizeGuestPhone = (value) => {
     .replace(/\D/g, '');
 };
 
-// مطابقة متسامحة: تطابق تام أو تطابق لواحقة (9 أرقام فأكثر) عشان صيغ +20/01/201
+// مطابقة متسامحة: تطابق تام أو تطابق لواحقة (10 أرقام فأكثر) عشان صيغ +20/01
+// — العتبة 10 عشان ما تفتحش باب تخمين لواحقة قصيرة
 const phoneMatchesGuest = (provided, stored) => {
   const a = normalizeGuestPhone(provided);
   const b = normalizeGuestPhone(stored);
   if (!a || !b) return false;
   if (a === b) return true;
   const minLen = Math.min(a.length, b.length);
-  return minLen >= 9 && (a.endsWith(b) || b.endsWith(a));
+  return minLen >= 10 && (a.endsWith(b) || b.endsWith(a));
 };
 
 const extractGuestPhone = (req) => req.query.phone || req.body?.phone || '';

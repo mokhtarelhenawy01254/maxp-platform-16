@@ -10,9 +10,16 @@ const AUTH_RATE_WINDOW_MS = 60_000;
 const AUTH_RATE_MAX = 10;
 const authRateBucket = new Map();
 const authRateLimiter = (req, res, next) => {
+  // 🔑 الهوية الموثوقة: Cloudflare بيكتب CF-Connecting-IP وبيقدرش يتزوير من غيره،
+  // وأول X-Forwarded-For بيكتبه العميل نفسه (بيتعادى بيه الـ limiter) — فبناخد آخر entry
+  // (اللي الـ proxy ضافه) كبديل.
+  const xffEntries = String(req.headers['x-forwarded-for'] || '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
   const ip =
-    String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() ||
-    req.headers['x-real-ip'] ||
+    String(req.headers['cf-connecting-ip'] || '').trim() ||
+    xffEntries[xffEntries.length - 1] ||
     req.ip ||
     'unknown';
   const now = Date.now();
