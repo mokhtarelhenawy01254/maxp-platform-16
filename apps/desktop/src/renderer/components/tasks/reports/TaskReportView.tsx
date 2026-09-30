@@ -129,7 +129,17 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
 
     return tasks.map((t: any) => {
       const estMin = Number(t.estimatedMinutes || t.estimated_minutes || (t.estimatedHours ? t.estimatedHours * 60 : 0));
-      const actualMin = Math.round(Number(t.totalDuration || t.total_duration || (t.totalSeconds ? t.totalSeconds / 60 : 0)));
+      const actualMin = Math.round(
+        Number(
+          t.totalDuration ??
+          t.total_duration ??
+          t.actualMinutes ??
+          t.actual_minutes ??
+          t.totalTimeMinutes ??
+          (t.totalSeconds != null ? t.totalSeconds / 60 : null) ??
+          (t.actualHours != null ? t.actualHours * 60 : 0)
+        )
+      );
       const varianceMin = actualMin - estMin;
       const variancePct = estMin > 0 ? Math.round((actualMin / estMin) * 100) : 0;
 
@@ -391,7 +401,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
     if (pendingToday.length > 0) {
       text += `📌 *مهام مجدولة للمتابعة (${pendingToday.length}):*\n`;
       pendingToday.slice(0, 3).forEach((t) => {
-        text += `• ${t.title} [${t.status === 'IN_REVIEW' ? 'مراجعة' : 'قيد الانتظار'}]\n`;
+        text += `• ${t.title} [${t.status === 'IN_REVIEW' ? 'بانتظار الاعتماد' : 'قيد الانتظار'}]\n`;
       });
       text += '\n';
     }

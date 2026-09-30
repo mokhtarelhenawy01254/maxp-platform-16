@@ -509,6 +509,13 @@ const PUBLIC_ROUTES = [
   'GET /api/v1/agent-inbox/facebook/*',
   'POST /api/v1/agent-inbox/facebook/*',
 
+  // External HR API uses x-api-key / Bearer in its own router (apps/backend/routes/hrExternalRoutes.js)
+  'GET /api/v1/external/hr/*',
+  'POST /api/v1/external/hr/*',
+  'PUT /api/v1/external/hr/*',
+  'PATCH /api/v1/external/hr/*',
+  'DELETE /api/v1/external/hr/*',
+
   // Teacher Portal (public login endpoint)
   'POST /api/v1/education/teacher-portal/login',
 
@@ -693,7 +700,8 @@ function needsCompanyIsolation(path) {
     '/api/v1/whatsapp/whatsapp', // Local WhatsApp Bridge endpoint (SMS Parity)
     '/api/v1/whatsapp/meta/webhook',
     '/api/v1/whatsapp-meta',
-    '/api/v1/hr/recruitment/forms/public'
+    '/api/v1/hr/recruitment/forms/public',
+    '/api/v1/external/hr'
   ];
 
   if (excludedPaths.some(excluded => path === excluded || path.startsWith(excluded + '?') || path.startsWith(excluded + '/'))) {

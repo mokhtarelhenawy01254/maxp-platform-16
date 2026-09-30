@@ -421,4 +421,26 @@ describe('HR External API — New Endpoints & Timezone Fix Unit Tests', () => {
       );
     });
   });
+
+  describe('Post-Deployment Fixes: Void Reward, Settings & Attendance Conditions', () => {
+    test('voidReward rejects missing reason with 400 VALIDATION_ERROR', async () => {
+      mockReq.params = { id: 'rec-123' };
+      mockReq.body = {};
+      await hrExternalController.voidReward(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({ code: 'VALIDATION_ERROR', message: expect.stringContaining('reason') })
+        })
+      );
+    });
+
+    test('rewardEligibilityService._hasAttendanceConditions recognizes maxAllowedAbsenceDays and ATTENDANCE_COMMITMENT', () => {
+      const rewardEligibilityService = require('../../services/hr/rewardEligibilityService');
+      expect(rewardEligibilityService._hasAttendanceConditions({ maxAllowedAbsenceDays: 2 })).toBe(true);
+      expect(rewardEligibilityService._hasAttendanceConditions({ type: 'ATTENDANCE_COMMITMENT' })).toBe(true);
+      expect(rewardEligibilityService._hasAttendanceConditions({ randomKey: true })).toBe(false);
+    });
+  });
 });

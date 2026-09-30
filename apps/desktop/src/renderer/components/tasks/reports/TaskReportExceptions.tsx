@@ -95,8 +95,8 @@ export const TaskReportExceptions: React.FC<TaskReportExceptionsProps> = ({
         {reviewBlockedTasks.slice(0, 2).map((t) => (
           <div key={`review-${t.id}`} style={{ ...styles.itemCard, borderColor: 'rgba(234, 179, 8, 0.3)' }}>
             <div style={styles.badgeReview}>
-              <PauseCircle size={11} color="var(--accent-yellow)" />
-              <span>معلقة في الاعتماد</span>
+              <Clock size={11} color="var(--accent-yellow)" />
+              <span>بانتظار الاعتماد</span>
             </div>
             <div style={styles.itemTitle} title={t.title}>
               {t.title}

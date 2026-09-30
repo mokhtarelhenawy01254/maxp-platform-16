@@ -15,7 +15,7 @@ export const SPECIALIST_AGENTS: SpecialistAgent[] = [
   {
     id: 'executive-assistant-agent',
     slug: 'executive-assistant-agent',
-    name: 'ماكس — المساعد التنفيذي',
+    name: 'سليم — المساعد التنفيذي',
     role: 'EXECUTIVE_ASSISTANT',
     title: 'المساعد التنفيذي للمنصة وإدارة العمليات',
     description: 'المتابعة التنفيذية الشاملة، مؤشرات الأداء، الأوردرات والمخزون، وتفويض المهام.',

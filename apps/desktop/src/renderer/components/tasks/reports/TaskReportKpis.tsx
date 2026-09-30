@@ -125,7 +125,7 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
         title="انقر لتصفية المهام المعلقة في المراجعة لأكثر من 24 ساعة"
       >
         <div style={styles.cardHeader}>
-          <span style={styles.cardLabel}>في انتظار الاعتماد</span>
+          <span style={styles.cardLabel}>بانتظار الاعتماد</span>
           <PauseCircle size={13} style={{ color: kpis.inReviewCount > 0 ? 'var(--accent-yellow)' : 'var(--text-muted)' }} />
         </div>
         <div style={styles.cardBody}>
@@ -133,7 +133,7 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
             {kpis.inReviewCount}
           </span>
           <span style={{ ...styles.secondaryBadge, color: kpis.reviewBlockedCount > 0 ? 'var(--accent-yellow)' : 'var(--text-muted)' }}>
-            {kpis.reviewBlockedCount > 0 ? `${kpis.reviewBlockedCount} عالقة > 24h` : 'بانتظار المراجعة'}
+            {kpis.reviewBlockedCount > 0 ? `${kpis.reviewBlockedCount} عالقة > 24h` : 'بانتظار الاعتماد'}
           </span>
         </div>
         <span style={styles.hintSubtext}>

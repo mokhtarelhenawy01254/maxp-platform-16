@@ -88,7 +88,15 @@ class RewardEligibilityService {
     }
 
     _hasAttendanceConditions(conditions) {
-        return conditions.noLateness || conditions.noAbsences || conditions.maxLateMinutes !== undefined || conditions.minAttendanceRate !== undefined;
+        if (!conditions) return false;
+        return Boolean(
+            conditions.noLateness ||
+            conditions.noAbsences ||
+            conditions.maxLateMinutes !== undefined ||
+            conditions.minAttendanceRate !== undefined ||
+            conditions.maxAllowedAbsenceDays !== undefined ||
+            conditions.type === 'ATTENDANCE_COMMITMENT'
+        );
     }
 
     _hasPerformanceConditions(conditions) {
@@ -109,37 +117,69 @@ class RewardEligibilityService {
 
         const presentRecords = attendanceRecords.filter(a => a.status === 'PRESENT' || a.status === 'LATE' || a.status === 'HALF_DAY');
         const lateRecords = attendanceRecords.filter(a => (a.lateMinutes > 0) || (a.status === 'LATE'));
-        const absentRecords = attendanceRecords.filter(a => a.status === 'ABSENT');
+        const rawAbsentRecords = attendanceRecords.filter(a => a.status === 'ABSENT');
 
         const totalLateMinutes = attendanceRecords.reduce((sum, a) => sum + (a.lateMinutes || 0), 0);
 
         let isEligible = true;
         let reason = '';
 
-        if (conditions.noLateness && lateRecords.length > 0) {
-            isEligible = false;
-            reason = 'Employee has lateness records';
+        // Calculate real absences using attendanceService (missing punches on working days + explicit ABSENT rows)
+        let realAbsentDays = rawAbsentRecords.length;
+        let checkedDays = 0;
+        let absentDates = [];
+        try {
+            const attendanceService = require('./attendanceService');
+            const targetYear = new Date(startDate).getFullYear();
+            const targetMonth = new Date(startDate).getMonth() + 1;
+            const absentReport = await attendanceService.getAbsentDaysReport(companyId, targetYear, targetMonth, userId);
+            checkedDays = absentReport?.totalWorkingDays || 0;
+            const empReport = absentReport?.employees?.find(e => e.userId === userId || e.id === userId) || absentReport?.employees?.[0];
+            if (empReport) {
+                realAbsentDays = Number(empReport.absentDays ?? 0);
+                absentDates = empReport.absentDates || [];
+            }
+        } catch (repErr) {
+            console.warn('⚠️ [RewardEligibility] Could not fetch detailed absent report, falling back to db records:', repErr.message);
         }
 
-        if (conditions.noAbsences && absentRecords.length > 0) {
+        const maxAllowed = conditions.maxAllowedAbsenceDays !== undefined
+            ? Number(conditions.maxAllowedAbsenceDays)
+            : (conditions.type === 'ATTENDANCE_COMMITMENT' ? 2 : null);
+
+        if (maxAllowed !== null) {
+            if (realAbsentDays > maxAllowed) {
+                isEligible = false;
+                reason = `تجاوز أيام الغياب المسموحة (${realAbsentDays} يوم غياب > الحد المسموح ${maxAllowed} يوم)`;
+            }
+        }
+
+        if (conditions.noLateness && lateRecords.length > 0) {
             isEligible = false;
-            reason = 'Employee has absence records';
+            reason = reason ? `${reason}; موظف لديه سجلات تأخير` : 'موظف لديه سجلات تأخير';
+        }
+
+        if (conditions.noAbsences && realAbsentDays > 0) {
+            isEligible = false;
+            reason = reason ? `${reason}; موظف لديه أيام غياب (${realAbsentDays} يوم)` : `موظف لديه أيام غياب (${realAbsentDays} يوم)`;
         }
 
         if (conditions.maxLateMinutes !== undefined && totalLateMinutes > conditions.maxLateMinutes) {
             isEligible = false;
-            reason = `Total late minutes ${totalLateMinutes} exceeds limit ${conditions.maxLateMinutes}`;
+            const msg = `إجمالي دقائق التأخير ${totalLateMinutes} يتجاوز الحد ${conditions.maxLateMinutes}`;
+            reason = reason ? `${reason}; ${msg}` : msg;
         }
 
         // Min Attendance Rate %
         if (conditions.minAttendanceRate !== undefined) {
-            const totalRecords = attendanceRecords.length;
-            // Note: This logic assumes records exist for scheduled days.
-            if (totalRecords > 0) {
-                const rate = (presentRecords.length / totalRecords) * 100;
+            const baseDays = checkedDays > 0 ? checkedDays : attendanceRecords.length;
+            if (baseDays > 0) {
+                const attendedCount = Math.max(0, baseDays - realAbsentDays);
+                const rate = (attendedCount / baseDays) * 100;
                 if (rate < conditions.minAttendanceRate) {
                     isEligible = false;
-                    reason = `Attendance rate ${rate.toFixed(1)}% is below ${conditions.minAttendanceRate}%`;
+                    const msg = `نسبة الحضور ${rate.toFixed(1)}% أقل من النسبة المطلوبة ${conditions.minAttendanceRate}%`;
+                    reason = reason ? `${reason}; ${msg}` : msg;
                 }
             }
         }
@@ -148,9 +188,13 @@ class RewardEligibilityService {
             isEligible,
             reason,
             details: {
+                absentDays: realAbsentDays,
+                checkedDays,
+                threshold: maxAllowed,
+                absentDates,
                 totalLateMinutes,
                 lateCount: lateRecords.length,
-                absentCount: absentRecords.length,
+                absentCount: realAbsentDays,
                 presentCount: presentRecords.length
             }
         };

@@ -697,6 +697,33 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                     </span>
                   </div>
                 </div>
+
+                {/* Actual Tracked Time */}
+                <div style={drawerStyles.metaItem}>
+                  <span style={drawerStyles.metaLabel}>الوقت الفعلي المسجل</span>
+                  <div style={drawerStyles.metaValue}>
+                    <Clock size={13} color="var(--accent-green)" />
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {(() => {
+                        const mins = Math.round(
+                          Number(
+                            task.totalDuration ??
+                            task.total_duration ??
+                            task.actualMinutes ??
+                            task.totalTimeMinutes ??
+                            (task.totalSeconds ? task.totalSeconds / 60 : null) ??
+                            (task.actualHours ? task.actualHours * 60 : 0)
+                          )
+                        );
+                        if (!mins || mins === 0) return '0 دقيقة';
+                        const h = Math.floor(mins / 60);
+                        const m = mins % 60;
+                        if (h === 0) return `${m} دقيقة`;
+                        return `${h} س ${m > 0 ? `${m} د` : ''}`;
+                      })()}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* Dependencies Section inside Meta */}

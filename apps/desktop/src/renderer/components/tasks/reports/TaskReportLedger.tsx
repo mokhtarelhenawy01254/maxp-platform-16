@@ -62,19 +62,29 @@ export const TaskReportLedger: React.FC<TaskReportLedgerProps> = ({
         return (
           <span style={{ ...styles.statusBadge, color: 'var(--accent-blue)', background: 'rgba(56, 189, 248, 0.12)' }}>
             <Play size={10} style={{ marginRight: 3 }} />
-            جارية
+            قيد التنفيذ
           </span>
         );
       case 'IN_REVIEW':
+      case 'PENDING_REVIEW':
         return (
           <span style={{ ...styles.statusBadge, color: 'var(--accent-yellow)', background: 'rgba(234, 179, 8, 0.12)' }}>
-            مراجعة
+            <Clock size={11} style={{ marginRight: 3 }} />
+            بانتظار الاعتماد
+          </span>
+        );
+      case 'REVISION':
+      case 'RETURNED':
+        return (
+          <span style={{ ...styles.statusBadge, color: 'var(--accent-red)', background: 'rgba(239, 68, 68, 0.12)' }}>
+            <AlertTriangle size={11} style={{ marginRight: 3 }} />
+            مُعادة للتعديل
           </span>
         );
       default:
         return (
           <span style={{ ...styles.statusBadge, color: 'var(--text-muted)', background: 'rgba(148, 163, 184, 0.12)' }}>
-            معلقة
+            قيد الانتظار
           </span>
         );
     }

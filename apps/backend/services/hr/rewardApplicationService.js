@@ -56,11 +56,15 @@ class RewardApplicationService {
         // Otherwise -> Pending
         const settings = await this.prisma.rewardSettings.findUnique({ where: { companyId } });
 
-        let status = 'PENDING';
-        if (rewardType.triggerType === 'AUTOMATIC') {
-            status = 'APPROVED';
-        } else if (settings && !settings.requireManagerApproval) {
-            status = 'APPROVED';
+        let status = options.status || 'PENDING';
+        if (!options.status) {
+            if (settings && (settings.requireHRApproval || settings.requireManagerApproval)) {
+                status = 'PENDING';
+            } else if (rewardType.triggerType === 'AUTOMATIC') {
+                status = 'APPROVED';
+            } else if (settings && !settings.requireManagerApproval && !settings.requireHRApproval) {
+                status = 'APPROVED';
+            }
         }
 
         const now = new Date();

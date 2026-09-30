@@ -164,7 +164,16 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   const overdueColor = overdueDays >= 7 ? 'var(--accent-red)' : overdueDays >= 4 ? 'var(--accent-orange)' : 'var(--accent-yellow)';
   // Time-leak: tracked time exceeded the estimate (the only estimate signal the row needs)
   const rowEstMin = Number(task.estimatedMinutes || 0) || (Number(task.estimatedHours || 0) * 60) || 0;
-  const rowActualMin = Math.round(Number(task.totalDuration || task.total_duration || (task.totalSeconds ? task.totalSeconds / 60 : 0)));
+  const rowActualMin = Math.round(
+    Number(
+      task.totalDuration ??
+      task.total_duration ??
+      task.actualMinutes ??
+      task.totalTimeMinutes ??
+      (task.totalSeconds ? task.totalSeconds / 60 : null) ??
+      (task.actualHours ? task.actualHours * 60 : 0)
+    )
+  );
   const isTimeLeak = !isCompleted && rowEstMin > 0 && rowActualMin > rowEstMin * 1.3;
 
   const isDueSoon = !!dueTime && !isCompleted && !isOverdue && diffMs! <= 24 * 60 * 60 * 1000;
@@ -361,14 +370,28 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
           )}
         </div>
 
-        {/* Col 3: Estimated Time */}
+        {/* Col 3: Tracked vs Estimated Time */}
         <div style={rowStyles.estCol} className="task-col-est">
           {isTimeLeak ? (
             <span
               style={{ fontSize: 9, fontWeight: 700, color: 'var(--accent-orange)', whiteSpace: 'nowrap', padding: '1px 5px', backgroundColor: 'var(--accent-orange-bg, rgba(249,115,22,0.1))', borderRadius: 5 }}
               title={`تجاوز التقدير: ${rowActualMin} د فعليًا مقابل ${rowEstMin} د مقدرة — التفاصيل بالداخل`}
             >
-              تجاوز التقدير
+              تجاوز التقدير ({Math.round(rowActualMin / 60 * 10) / 10}س)
+            </span>
+          ) : rowActualMin > 0 ? (
+            <span
+              style={{ ...rowStyles.monoText, fontSize: 10, color: 'var(--text-secondary)', direction: 'ltr' }}
+              title={`الزمن الفعلي المسجل: ${rowActualMin} دقيقة ${rowEstMin > 0 ? `(المقدر: ${rowEstMin} دقيقة)` : ''}`}
+            >
+              {Math.floor(rowActualMin / 60)}:{String(rowActualMin % 60).padStart(2, '0')}
+            </span>
+          ) : rowEstMin > 0 ? (
+            <span
+              style={{ ...rowStyles.monoText, fontSize: 9.5, color: 'var(--text-muted)', direction: 'ltr' }}
+              title={`الوقت المقدر: ${rowEstMin} دقيقة (لم يبدأ التايمر بعد)`}
+            >
+              ~{Math.floor(rowEstMin / 60)}:{String(rowEstMin % 60).padStart(2, '0')}
             </span>
           ) : (
             <span style={rowStyles.emptyCell}>—</span>
@@ -776,7 +799,6 @@ const rowStyles: Record<string, React.CSSProperties> = {
     outline: 'none',
     whiteSpace: 'nowrap',
     flexShrink: 0,
-    height: 24,
     transition: 'all 120ms ease-out',
   },
   pauseBtn: {

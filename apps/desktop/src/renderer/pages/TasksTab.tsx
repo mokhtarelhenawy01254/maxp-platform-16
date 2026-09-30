@@ -1228,7 +1228,7 @@ export const TasksTab: React.FC = () => {
                 >
                   <span>
                     {s === 'IN_PROGRESS' && 'قيد التنفيذ'}
-                    {s === 'IN_REVIEW' && 'قيد الاعتماد'}
+                    {s === 'IN_REVIEW' && 'بانتظار الاعتماد'}
                     {s === 'COMPLETED' && 'المكتملة'}
                   </span>
                   <span
@@ -1309,7 +1309,7 @@ export const TasksTab: React.FC = () => {
         {listMode === 'board' ? (
           /* ── Kanban board (click-to-move; no drag libs) ── */
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, alignItems: 'start' }}>
-            {([['TODO', 'للتنفيذ'], ['IN_PROGRESS', 'قيد التنفيذ'], ['IN_REVIEW', 'مراجعة'], ['COMPLETED', 'مكتملة']] as const).map(([status, label]) => {
+            {([['TODO', 'قيد الانتظار'], ['IN_PROGRESS', 'قيد التنفيذ'], ['IN_REVIEW', 'بانتظار الاعتماد'], ['COMPLETED', 'مكتملة']] as const).map(([status, label]) => {
               const colTasks = sortedDisplayTasks.filter((t) => String(t.status || '').toUpperCase() === status).slice(0, 25);
               return (
                 <div key={status} style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>

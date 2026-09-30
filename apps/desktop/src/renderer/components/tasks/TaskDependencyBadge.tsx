@@ -106,9 +106,9 @@ export const TaskDependencyBadge: React.FC<TaskDependencyBadgeProps> = ({ taskId
 
   const getStatusText = (status: string) => {
     const s = String(status || '').toUpperCase();
-    if (s === 'COMPLETED') return 'مكتمل';
+    if (s === 'COMPLETED') return 'مكتملة';
     if (s === 'IN_PROGRESS') return 'قيد التنفيذ';
-    if (s === 'PENDING_REVIEW' || s === 'IN_REVIEW') return 'قيد المراجعة';
+    if (s === 'PENDING_REVIEW' || s === 'IN_REVIEW') return 'بانتظار الاعتماد';
     return 'قيد الانتظار';
   };
 

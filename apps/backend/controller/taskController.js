@@ -382,7 +382,9 @@ async function hydrateLegacyTasks(tasks) {
     ),
   ];
 
-  const [projects, categories, users] = await Promise.all([
+  const taskIds = tasks.map((task) => task.id).filter(Boolean);
+
+  const [projects, categories, users, timeEntries] = await Promise.all([
     projectIds.length > 0
       ? prisma.project
           .findMany({
@@ -407,6 +409,14 @@ async function hydrateLegacyTasks(tasks) {
           })
           .catch(() => [])
       : Promise.resolve([]),
+    taskIds.length > 0
+      ? prisma.timeEntry
+          .findMany({
+            where: { taskId: { in: taskIds } },
+            select: { taskId: true, duration: true, isRunning: true, startTime: true },
+          })
+          .catch(() => [])
+      : Promise.resolve([]),
   ]);
 
   const projectsById = new Map(projects.map((project) => [project.id, project]));
@@ -415,7 +425,31 @@ async function hydrateLegacyTasks(tasks) {
   );
   const usersById = new Map(users.map((user) => [user.id, user]));
 
-  return tasks.map((task) => ({
+  const timeMap = new Map();
+  const now = Date.now();
+  for (const entry of timeEntries) {
+    let mins = 0;
+    if (entry.isRunning && entry.startTime) {
+      const startMs = new Date(entry.startTime).getTime();
+      if (!isNaN(startMs) && now > startMs) {
+        mins = Math.max(0, Math.round((now - startMs) / 60000));
+      }
+    } else {
+      mins = Number(entry.duration || 0);
+    }
+    timeMap.set(entry.taskId, (timeMap.get(entry.taskId) || 0) + mins);
+  }
+
+  return tasks.map((task) => {
+    let totalTrackedMinutes = timeMap.get(task.id) || 0;
+    if (totalTrackedMinutes === 0 && Number(task.actualHours || 0) > 0) {
+      totalTrackedMinutes = Math.round(Number(task.actualHours) * 60);
+    }
+    const computedHours = Math.round((totalTrackedMinutes / 60) * 10) / 10;
+    const estHours = Number(task.estimatedHours || 0);
+    const estMinutes = Number(task.estimatedMinutes || (estHours * 60) || 0);
+
+    return {
       id: task.id,
       projectId: task.projectId || "",
       projectName: projectsById.get(task.projectId)?.name || "مشروع غير محدد",
@@ -435,8 +469,14 @@ async function hydrateLegacyTasks(tasks) {
       createdByName: makePersonName(usersById.get(task.createdBy)),
       dueDate: task.dueDate,
       startDate: task.startDate || null,
-      estimatedHours: Number(task.estimatedHours || 0),
-      actualHours: Number(task.actualHours || 0),
+      estimatedHours: estHours,
+      estimatedMinutes: estMinutes,
+      actualHours: computedHours,
+      actualMinutes: totalTrackedMinutes,
+      totalDuration: totalTrackedMinutes,
+      total_duration: totalTrackedMinutes,
+      totalSeconds: totalTrackedMinutes * 60,
+      totalTimeMinutes: totalTrackedMinutes,
       progress: Number(task.progress || 0),
       measurementType: "TIME",
       metricUnit: null,
@@ -447,7 +487,8 @@ async function hydrateLegacyTasks(tasks) {
       taskAttachments: [],
       createdAt: task.createdAt,
       updatedAt: task.updatedAt,
-    }));
+    };
+  });
 }
 
 async function fetchLegacyTaskById(companyId, taskId) {
@@ -589,60 +630,100 @@ const buildTaskSummaryInclude = () => ({
       dependsOnId: true,
     },
   },
+  time_entries: {
+    select: {
+      id: true,
+      duration: true,
+      isRunning: true,
+      startTime: true,
+    },
+  },
 });
 
-const formatTaskSummary = (task) => ({
-  id: task.id,
-  projectId: task.projectId,
-  projectName: task.project?.name || "مشروع غير محدد",
-  categoryId: task.categoryId || null,
-  categoryName: task.taskCategory?.name || null,
-  goalId: task.goalId || null,
-  goalTitle: task.goal?.title || null,
-  goalType: task.goal?.goalType || null,
-  title: task.title,
-  description: task.description,
-  status: task.status,
-  priority: task.priority,
-  type: task.type,
-  assignedTo: task.assignedTo,
-  assignee: task.assignee || null,
-  assignedToName: task.assignee
-    ? `${task.assignee.firstName || ''} ${task.assignee.lastName || ''}`.trim() || task.assignee.email
-    : "غير محدد",
-  createdBy: task.createdBy,
-  creator: task.creator || null,
-  createdByName: task.creator
-    ? `${task.creator.firstName || ''} ${task.creator.lastName || ''}`.trim() || task.creator.email
-    : "غير محدد",
-  taskAttachments: task.taskAttachments || [],
-  taskWatchers: task.taskWatchers || [],
-  dueDate: task.dueDate,
-  startDate: task.startDate || null,
-  estimatedHours: task.estimatedHours,
-  actualHours: task.actualHours,
-  progress: Number(task.progress || 0),
-  measurementType: task.measurementType || "TIME",
-  metricUnit: task.metricUnit || null,
-  metricTargetValue:
-    task.metricTargetValue === null || task.metricTargetValue === undefined
-      ? null
-      : Number(task.metricTargetValue),
-  metricCurrentValue:
-    task.metricCurrentValue === null || task.metricCurrentValue === undefined
-      ? 0
-      : Number(task.metricCurrentValue),
-  tags: parseStringArray(task.tags),
-  dependencies: (() => {
-    const tableDeps = (task.task_dependencies_task_dependencies_taskIdTotasks || []).map(
-      (d) => d.dependsOnId
-    );
-    const jsonDeps = parseStringArray(task.dependencies);
-    return Array.from(new Set([...tableDeps, ...jsonDeps]));
-  })(),
-  createdAt: task.createdAt,
-  updatedAt: task.updatedAt,
-});
+const formatTaskSummary = (task) => {
+  let totalTrackedMinutes = 0;
+  if (Array.isArray(task.time_entries) && task.time_entries.length > 0) {
+    const now = Date.now();
+    for (const entry of task.time_entries) {
+      if (entry.isRunning && entry.startTime) {
+        const startMs = new Date(entry.startTime).getTime();
+        if (!isNaN(startMs) && now > startMs) {
+          totalTrackedMinutes += Math.max(0, Math.round((now - startMs) / 60000));
+        }
+      } else {
+        totalTrackedMinutes += Number(entry.duration || 0);
+      }
+    }
+  }
+
+  // Fallback to actualHours * 60 if time_entries yielded 0 but actualHours was persisted
+  if (totalTrackedMinutes === 0 && Number(task.actualHours || 0) > 0) {
+    totalTrackedMinutes = Math.round(Number(task.actualHours) * 60);
+  }
+
+  const computedHours = Math.round((totalTrackedMinutes / 60) * 10) / 10;
+  const estHours = Number(task.estimatedHours || 0);
+  const estMinutes = Number(task.estimatedMinutes || (estHours * 60) || 0);
+
+  return {
+    id: task.id,
+    projectId: task.projectId,
+    projectName: task.project?.name || "مشروع غير محدد",
+    categoryId: task.categoryId || null,
+    categoryName: task.taskCategory?.name || null,
+    goalId: task.goalId || null,
+    goalTitle: task.goal?.title || null,
+    goalType: task.goal?.goalType || null,
+    title: task.title,
+    description: task.description,
+    status: task.status,
+    priority: task.priority,
+    type: task.type,
+    assignedTo: task.assignedTo,
+    assignee: task.assignee || null,
+    assignedToName: task.assignee
+      ? `${task.assignee.firstName || ''} ${task.assignee.lastName || ''}`.trim() || task.assignee.email
+      : "غير محدد",
+    createdBy: task.createdBy,
+    creator: task.creator || null,
+    createdByName: task.creator
+      ? `${task.creator.firstName || ''} ${task.creator.lastName || ''}`.trim() || task.creator.email
+      : "غير محدد",
+    taskAttachments: task.taskAttachments || [],
+    taskWatchers: task.taskWatchers || [],
+    dueDate: task.dueDate,
+    startDate: task.startDate || null,
+    estimatedHours: estHours,
+    estimatedMinutes: estMinutes,
+    actualHours: computedHours,
+    actualMinutes: totalTrackedMinutes,
+    totalDuration: totalTrackedMinutes,
+    total_duration: totalTrackedMinutes,
+    totalSeconds: totalTrackedMinutes * 60,
+    totalTimeMinutes: totalTrackedMinutes,
+    progress: Number(task.progress || 0),
+    measurementType: task.measurementType || "TIME",
+    metricUnit: task.metricUnit || null,
+    metricTargetValue:
+      task.metricTargetValue === null || task.metricTargetValue === undefined
+        ? null
+        : Number(task.metricTargetValue),
+    metricCurrentValue:
+      task.metricCurrentValue === null || task.metricCurrentValue === undefined
+        ? 0
+        : Number(task.metricCurrentValue),
+    tags: parseStringArray(task.tags),
+    dependencies: (() => {
+      const tableDeps = (task.task_dependencies_task_dependencies_taskIdTotasks || []).map(
+        (d) => d.dependsOnId
+      );
+      const jsonDeps = parseStringArray(task.dependencies);
+      return Array.from(new Set([...tableDeps, ...jsonDeps]));
+    })(),
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
+  };
+};
 
 async function validateGoalLink(companyId, goalId) {
   if (!goalId) {
@@ -3234,16 +3315,25 @@ const taskController = {
 
       const validRunning = [];
       const stopNow = new Date();
+      const nowMs = stopNow.getTime();
       for (const entry of runningEntries) {
         const taskStatus = String(entry.task?.status || "").toUpperCase();
         if (["COMPLETED", "CANCELLED"].includes(taskStatus)) {
-          const dur = Math.max(1, Math.round((stopNow - new Date(entry.startTime)) / 60000));
+          const dur = Math.max(1, Math.round((nowMs - new Date(entry.startTime).getTime()) / 60000));
           await getSharedPrismaClient().timeEntry.update({
             where: { id: entry.id },
             data: { endTime: stopNow, duration: dur, isRunning: false },
           });
         } else {
-          validRunning.push(entry);
+          const startMs = new Date(entry.startTime).getTime();
+          const elapsedSeconds = !isNaN(startMs) && nowMs > startMs ? Math.floor((nowMs - startMs) / 1000) : 0;
+          const durationMinutes = Math.max(0, Math.floor(elapsedSeconds / 60));
+          validRunning.push({
+            ...entry,
+            elapsedSeconds,
+            durationMinutes,
+            accumulatedSeconds: elapsedSeconds,
+          });
         }
       }
 

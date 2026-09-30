@@ -192,7 +192,7 @@ async function upsertHRSettingsCompat(prisma, companyId, updateData, runtimeColu
   return readHRSettingsCompat(prisma, companyId, runtimeColumns);
 }
 
-function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo') {
+function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo', latenessRules = null, primaryShift = null) {
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const workDaysNums = safeParseSettingsArray(settings?.workDays, [1, 2, 3, 4, 5]);
   const workingDays = Array.isArray(workDaysNums)
@@ -207,13 +207,22 @@ function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo') {
       }))
     : [];
 
+  const workStartTime = latenessRules?.workStartTime || primaryShift?.startTime || settings?.workStartTime || null;
+  const workEndTime = primaryShift?.endTime || settings?.workEndTime || null;
+  const latestAllowedTime = latenessRules?.latestAllowedTime || null;
+  const monthlyAllowanceMinutes = latenessRules?.monthlyAllowanceMinutes !== undefined ? latenessRules.monthlyAllowanceMinutes : null;
+  const allowanceResetDay = latenessRules?.allowanceResetDay !== undefined ? latenessRules.allowanceResetDay : null;
+
   return {
     workHours: {
       workingDays,
       workDays: workDaysNums,
-      workStartTime: settings?.workStartTime || '09:00',
-      workEndTime: settings?.workEndTime || '17:00',
-      breakDuration: settings?.breakDuration ?? 60,
+      workStartTime: workStartTime || null,
+      workEndTime: workEndTime || null,
+      latestAllowedTime,
+      monthlyAllowanceMinutes,
+      allowanceResetDay,
+      breakDuration: primaryShift?.breakDuration ?? settings?.breakDuration ?? 60,
       timezone: companyTimezone
     },
     leaves: {
@@ -2513,12 +2522,17 @@ const getHRSettings = async (req, res) => {
     const { companyId } = req;
     const prisma = getSharedPrismaClient();
 
-    const [company, runtimeColumns] = await Promise.all([
+    const [company, runtimeColumns, latenessRules, primaryShift] = await Promise.all([
       prisma.company.findUnique({
         where: { id: companyId },
         select: { id: true, name: true, timezone: true, phone: true }
       }),
-      getHRSettingsRuntimeColumns(prisma)
+      getHRSettingsRuntimeColumns(prisma),
+      prisma.latenessRules.findUnique({ where: { companyId } }),
+      prisma.shift.findFirst({
+        where: { companyId, isActive: true },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }]
+      })
     ]);
 
     let settings = await readHRSettingsCompat(prisma, companyId, runtimeColumns);
@@ -2531,7 +2545,12 @@ const getHRSettings = async (req, res) => {
       );
     }
 
-    const maskedData = formatMaskedSettings(settings, company?.timezone || 'Africa/Cairo');
+    const maskedData = formatMaskedSettings(
+      settings,
+      company?.timezone || 'Africa/Cairo',
+      latenessRules,
+      primaryShift
+    );
 
     return res.json({
       success: true,
@@ -2552,12 +2571,17 @@ const updateHRSettings = async (req, res) => {
     const { companyId } = req;
     const prisma = getSharedPrismaClient();
 
-    const [company, runtimeColumns] = await Promise.all([
+    const [company, runtimeColumns, latenessRules, primaryShift] = await Promise.all([
       prisma.company.findUnique({
         where: { id: companyId },
         select: { id: true, name: true, timezone: true, phone: true }
       }),
-      getHRSettingsRuntimeColumns(prisma)
+      getHRSettingsRuntimeColumns(prisma),
+      prisma.latenessRules.findUnique({ where: { companyId } }),
+      prisma.shift.findFirst({
+        where: { companyId, isActive: true },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }]
+      })
     ]);
 
     let currentSettings = await readHRSettingsCompat(prisma, companyId, runtimeColumns);
@@ -2570,7 +2594,12 @@ const updateHRSettings = async (req, res) => {
       );
     }
 
-    const currentFormatted = formatMaskedSettings(currentSettings, company?.timezone || 'Africa/Cairo');
+    const currentFormatted = formatMaskedSettings(
+      currentSettings,
+      company?.timezone || 'Africa/Cairo',
+      latenessRules,
+      primaryShift
+    );
 
     // Section Merge: any section passed is merged with current section
     const body = req.body || {};
@@ -2583,6 +2612,7 @@ const updateHRSettings = async (req, res) => {
 
     // Support flat body keys if passed at root
     const flatKeys = [
+      'workStartTime', 'workEndTime', 'latestAllowedTime', 'monthlyAllowanceMinutes', 'allowanceResetDay',
       'lateThreshold', 'lateThresholdMinutes', 'lateGracePeriod', 'earlyLeaveThreshold',
       'earlyLeaveGracePeriod', 'earlyCheckoutEnabled', 'earlyCheckoutThresholdMinutes',
       'monthlyLateLimit', 'lateWarningThreshold', 'autoDeductionEnabled', 'gracePeriodMinutes',
@@ -2593,11 +2623,53 @@ const updateHRSettings = async (req, res) => {
     ];
     for (const key of flatKeys) {
       if (body[key] !== undefined) {
+        if (key in mergedWorkHours) mergedWorkHours[key] = body[key];
         if (key in mergedAttendance) mergedAttendance[key] = body[key];
         if (key in mergedGeofence) mergedGeofence[key] = body[key];
         if (key in mergedPayroll) mergedPayroll[key] = body[key];
         if (key in mergedLeaves) mergedLeaves[key] = body[key];
       }
+    }
+
+    // Upsert lateness_rules with workStartTime, latestAllowedTime, monthlyAllowanceMinutes, allowanceResetDay
+    const latenessUpdate = {};
+    if (mergedWorkHours.workStartTime !== undefined && mergedWorkHours.workStartTime !== null) {
+      latenessUpdate.workStartTime = String(mergedWorkHours.workStartTime).trim();
+    }
+    if (mergedWorkHours.latestAllowedTime !== undefined && mergedWorkHours.latestAllowedTime !== null) {
+      latenessUpdate.latestAllowedTime = String(mergedWorkHours.latestAllowedTime).trim();
+    }
+    if (mergedWorkHours.monthlyAllowanceMinutes !== undefined && mergedWorkHours.monthlyAllowanceMinutes !== null) {
+      latenessUpdate.monthlyAllowanceMinutes = Number(mergedWorkHours.monthlyAllowanceMinutes);
+    }
+    if (mergedWorkHours.allowanceResetDay !== undefined && mergedWorkHours.allowanceResetDay !== null) {
+      latenessUpdate.allowanceResetDay = Number(mergedWorkHours.allowanceResetDay);
+    }
+
+    if (Object.keys(latenessUpdate).length > 0) {
+      await prisma.latenessRules.upsert({
+        where: { companyId },
+        create: {
+          companyId,
+          workStartTime: latenessUpdate.workStartTime || '10:00',
+          latestAllowedTime: latenessUpdate.latestAllowedTime || '10:10',
+          monthlyAllowanceMinutes: latenessUpdate.monthlyAllowanceMinutes ?? 60,
+          allowanceResetDay: latenessUpdate.allowanceResetDay ?? 5,
+          ...latenessUpdate
+        },
+        update: latenessUpdate
+      });
+    }
+
+    // Sync workEndTime / workStartTime with primary company shift in hr_shifts
+    if ((mergedWorkHours.workEndTime || mergedWorkHours.workStartTime) && primaryShift) {
+      const shiftData = {};
+      if (mergedWorkHours.workEndTime) shiftData.endTime = String(mergedWorkHours.workEndTime).trim();
+      if (mergedWorkHours.workStartTime) shiftData.startTime = String(mergedWorkHours.workStartTime).trim();
+      await prisma.shift.update({
+        where: { id: primaryShift.id },
+        data: shiftData
+      });
     }
 
     // Convert workingDays to workDays numbers if provided
@@ -2702,11 +2774,18 @@ const updateHRSettings = async (req, res) => {
 
     await upsertHRSettingsCompat(prisma, companyId, dbUpdateData, runtimeColumns);
 
-    const freshSettings = await readHRSettingsCompat(prisma, companyId, runtimeColumns);
-    const freshCompany = await prisma.company.findUnique({
-      where: { id: companyId },
-      select: { timezone: true }
-    });
+    const [freshSettings, freshCompany, freshLateness, freshShift] = await Promise.all([
+      readHRSettingsCompat(prisma, companyId, runtimeColumns),
+      prisma.company.findUnique({
+        where: { id: companyId },
+        select: { timezone: true }
+      }),
+      prisma.latenessRules.findUnique({ where: { companyId } }),
+      prisma.shift.findFirst({
+        where: { companyId, isActive: true },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }]
+      })
+    ]);
 
     await logExternalApiAction({
       req,
@@ -2718,7 +2797,12 @@ const updateHRSettings = async (req, res) => {
       details: { sectionsUpdated: Object.keys(body || {}) }
     });
 
-    const maskedOutput = formatMaskedSettings(freshSettings, freshCompany?.timezone || 'Africa/Cairo');
+    const maskedOutput = formatMaskedSettings(
+      freshSettings,
+      freshCompany?.timezone || 'Africa/Cairo',
+      freshLateness,
+      freshShift
+    );
 
     return res.json({
       success: true,
@@ -3295,6 +3379,78 @@ const createReward = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ [ExternalHrController.createReward] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * إلغاء مكافأة مسجلة
+ * POST /rewards/:id/void
+ */
+const voidReward = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { id } = req.params;
+    const { reason } = req.body || {};
+
+    if (!reason || !String(reason).trim()) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'reason is required to void a reward record' }
+      });
+    }
+
+    const voidedBy = req.externalApiCredential?.id || req.hrCredential?.id || 'EXTERNAL_API';
+
+    const record = await rewardApplicationService.voidReward(
+      companyId,
+      id,
+      voidedBy,
+      String(reason).trim()
+    );
+
+    await logExternalApiAction({
+      req,
+      action: 'VOID_REWARD',
+      description: `Voided reward record "${record.rewardName}" (${record.id}) - Reason: ${reason}`,
+      resourceType: 'RewardRecord',
+      resourceId: record.id,
+      targetName: record.rewardName,
+      details: {
+        rewardRecordId: record.id,
+        rewardTypeId: record.rewardTypeId,
+        userId: record.userId,
+        amount: Number(record.calculatedValue),
+        reason
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: `Reward record ${record.id} voided successfully`,
+      data: {
+        id: record.id,
+        status: record.status,
+        voidedBy: record.voidedBy,
+        voidedAt: record.voidedAt,
+        voidReason: record.voidReason,
+        isLocked: record.isLocked
+      }
+    });
+  } catch (error) {
+    if (error.statusCode === 404 || error.name === 'NotFoundError') {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: error.message }
+      });
+    }
+    if (error.statusCode === 409 || error.name === 'ConflictError') {
+      return res.status(409).json({
+        success: false,
+        error: { code: 'CONFLICT', message: error.message }
+      });
+    }
+    console.error('❌ [ExternalHrController.voidReward] Error:', error);
     return res.status(500).json({ success: false, error: { message: error.message } });
   }
 };
@@ -4730,21 +4886,37 @@ const updateRewardSettings = async (req, res) => {
 
 /**
  * 40. تشغيل التقييم الآلي يدويًا لنوع مكافأة محدد
- * POST /reward-types/:id/evaluate?month=&year=
+ * POST /reward-types/:id/evaluate?month=&year=&dryRun=true|false&employeeId=
  */
 const evaluateRewardType = async (req, res) => {
   try {
     const { companyId } = req;
     const { id } = req.params;
 
-    const now = new Date();
-    let targetMonth = req.query.month ? parseInt(req.query.month, 10) : (now.getMonth() + 1);
-    let targetYear = req.query.year ? parseInt(req.query.year, 10) : now.getFullYear();
+    const rawMonth = req.query.month || req.body?.month;
+    const rawYear = req.query.year || req.body?.year;
+    let targetMonth;
+    let targetYear;
+
+    if (rawMonth && typeof rawMonth === 'string' && rawMonth.includes('-')) {
+      const parts = rawMonth.split('-');
+      if (parts[0].length === 4) {
+        targetYear = parseInt(parts[0], 10);
+        targetMonth = parseInt(parts[1], 10);
+      } else {
+        targetMonth = parseInt(parts[0], 10);
+        targetYear = parseInt(parts[1], 10);
+      }
+    } else {
+      const now = new Date();
+      targetMonth = rawMonth ? parseInt(rawMonth, 10) : (now.getMonth() + 1);
+      targetYear = rawYear ? parseInt(rawYear, 10) : now.getFullYear();
+    }
 
     if (isNaN(targetMonth) || targetMonth < 1 || targetMonth > 12) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'month parameter must be an integer between 1 and 12' }
+        error: { code: 'VALIDATION_ERROR', message: 'month parameter must be an integer between 1 and 12 (or YYYY-MM format)' }
       });
     }
 
@@ -4754,6 +4926,9 @@ const evaluateRewardType = async (req, res) => {
         error: { code: 'VALIDATION_ERROR', message: 'year parameter must be a valid 4-digit year' }
       });
     }
+
+    const isDryRun = req.query.dryRun === 'true' || req.query.dryRun === true || req.body?.dryRun === true || req.body?.dryRun === 'true';
+    const targetId = req.query.employeeId || req.query.targetEmployeeId || req.query.userId || req.body?.employeeId || req.body?.targetEmployeeId || req.body?.userId;
 
     const prisma = getSharedPrismaClient();
 
@@ -4778,10 +4953,32 @@ const evaluateRewardType = async (req, res) => {
     const periodStart = new Date(Date.UTC(targetYear, targetMonth - 1, 1));
     const periodEnd = new Date(Date.UTC(targetYear, targetMonth, 0, 23, 59, 59, 999));
 
-    // Get active users (employees) in company
-    const activeEmployees = await prisma.user.findMany({
-      where: { companyId, isActive: true },
-      select: { id: true, firstName: true, lastName: true, employeeNumber: true }
+    // Get active employees in company (optionally filtered by targetId)
+    const employeeWhere = {
+      companyId,
+      status: 'ACTIVE'
+    };
+
+    if (targetId) {
+      employeeWhere.OR = [
+        { id: targetId },
+        { userId: targetId },
+        { employeeNumber: targetId }
+      ];
+    }
+
+    const activeEmployees = await prisma.employee.findMany({
+      where: employeeWhere,
+      select: {
+        id: true,
+        userId: true,
+        employeeNumber: true,
+        firstName: true,
+        lastName: true,
+        user: {
+          select: { id: true, firstName: true, lastName: true, email: true }
+        }
+      }
     });
 
     const results = [];
@@ -4790,26 +4987,79 @@ const evaluateRewardType = async (req, res) => {
     let alreadyExistedCount = 0;
 
     for (const emp of activeEmployees) {
+      const employeeName = [emp.firstName, emp.lastName].filter(Boolean).join(' ') ||
+        (emp.user ? [emp.user.firstName, emp.user.lastName].filter(Boolean).join(' ') : 'Unknown');
+
+      if (!emp.userId) {
+        results.push({
+          employeeId: emp.id,
+          userId: null,
+          employeeNumber: emp.employeeNumber,
+          employeeName,
+          isEligible: false,
+          absentDays: 0,
+          maxAllowedAbsenceDays: null,
+          absentDates: [],
+          status: 'NOT_ELIGIBLE',
+          reason: 'الموظف غير مربوط بحساب مستخدم في النظام'
+        });
+        continue;
+      }
+
       let eligibility = { isEligible: true, details: {} };
       try {
         eligibility = await rewardEligibilityService.evaluateEligibility(
           companyId,
-          emp.id,
+          emp.userId,
           rewardType.id,
           periodStart,
           periodEnd
         );
       } catch (e) {
-        eligibility = { isEligible: false, reason: e.message };
+        eligibility = { isEligible: false, reason: e.message, details: {} };
+      }
+
+      const att = eligibility.details?.attendance || {};
+      const absentDays = att.actualAbsentDays !== undefined ? att.actualAbsentDays : 0;
+      const maxAllowed = att.maxAllowedAbsenceDays !== undefined ? att.maxAllowedAbsenceDays : null;
+      const absentDates = att.absentDates || [];
+
+      let reasonText = eligibility.reason || '';
+      if (!reasonText && att.hasAbsenceCondition) {
+        if (eligibility.isEligible) {
+          reasonText = `مستحق — غياب ${absentDays} يوم (الحد الأقصى ${maxAllowed})`;
+        } else {
+          reasonText = `غياب ${absentDays} يوم والمسموح ${maxAllowed}`;
+        }
+      } else if (!reasonText && eligibility.isEligible) {
+        reasonText = 'مستحق للشروط المحددة';
       }
 
       if (eligibility.isEligible) {
         eligibleCount++;
+
+        if (isDryRun) {
+          results.push({
+            employeeId: emp.id,
+            userId: emp.userId,
+            employeeNumber: emp.employeeNumber,
+            employeeName,
+            isEligible: true,
+            absentDays,
+            maxAllowedAbsenceDays: maxAllowed,
+            absentDates,
+            status: 'ELIGIBLE',
+            calculatedValue: Number(rewardType.value || 0),
+            reason: reasonText
+          });
+          continue;
+        }
+
         // Check if employee already received this reward type for this month/year
         const existingRecord = await prisma.rewardRecord.findFirst({
           where: {
             companyId,
-            userId: emp.id,
+            userId: emp.userId,
             rewardTypeId: rewardType.id,
             appliedMonth: targetMonth,
             appliedYear: targetYear,
@@ -4820,74 +5070,108 @@ const evaluateRewardType = async (req, res) => {
         if (existingRecord) {
           alreadyExistedCount++;
           results.push({
-            userId: emp.id,
+            employeeId: emp.id,
+            userId: emp.userId,
             employeeNumber: emp.employeeNumber,
+            employeeName,
             isEligible: true,
+            absentDays,
+            maxAllowedAbsenceDays: maxAllowed,
+            absentDates,
             status: 'ALREADY_EXISTS',
             recordId: existingRecord.id,
-            calculatedValue: Number(existingRecord.calculatedValue)
+            calculatedValue: Number(existingRecord.calculatedValue),
+            reason: `تم صرف أو تسجيل المكافأة مسبقاً (${existingRecord.status})`
           });
         } else {
           try {
+            const initialStatus = rewardType.requireHRApproval ? 'PENDING' : 'APPROVED';
             const record = await rewardApplicationService.applyReward(
               companyId,
-              emp.id,
+              emp.userId,
               rewardType.id,
               periodStart,
               periodEnd,
               req.externalApiCredential?.id || req.hrCredential?.id || 'EXTERNAL_API',
-              { reason: `Automatic evaluation for ${targetMonth}/${targetYear}` }
+              {
+                status: initialStatus,
+                reason: `Attendance Commitment Bonus - Month ${targetYear}-${String(targetMonth).padStart(2, '0')}: ${reasonText}`
+              }
             );
             createdRecords.push(record);
             results.push({
-              userId: emp.id,
+              employeeId: emp.id,
+              userId: emp.userId,
               employeeNumber: emp.employeeNumber,
+              employeeName,
               isEligible: true,
+              absentDays,
+              maxAllowedAbsenceDays: maxAllowed,
+              absentDates,
               status: 'CREATED',
               recordId: record.id,
-              calculatedValue: Number(record.calculatedValue)
+              recordStatus: record.status,
+              calculatedValue: Number(record.calculatedValue),
+              reason: reasonText
             });
           } catch (appErr) {
             results.push({
-              userId: emp.id,
+              employeeId: emp.id,
+              userId: emp.userId,
               employeeNumber: emp.employeeNumber,
+              employeeName,
               isEligible: true,
+              absentDays,
+              maxAllowedAbsenceDays: maxAllowed,
+              absentDates,
               status: 'ERROR',
-              error: appErr.message
+              error: appErr.message,
+              reason: reasonText
             });
           }
         }
       } else {
         results.push({
-          userId: emp.id,
+          employeeId: emp.id,
+          userId: emp.userId,
           employeeNumber: emp.employeeNumber,
+          employeeName,
           isEligible: false,
-          reason: eligibility.reason || 'Did not meet eligibility criteria'
+          absentDays,
+          maxAllowedAbsenceDays: maxAllowed,
+          absentDates,
+          status: 'NOT_ELIGIBLE',
+          reason: reasonText || 'لم يستوفِ شروط الاستحقاق'
         });
       }
     }
 
-    await logExternalApiAction({
-      req,
-      action: 'EVALUATE_REWARD_TYPE',
-      description: `Executed evaluation for reward type "${rewardType.name}" (${targetMonth}/${targetYear}): ${createdRecords.length} created, ${alreadyExistedCount} existed, ${eligibleCount} eligible out of ${activeEmployees.length}`,
-      resourceType: 'RewardType',
-      resourceId: rewardType.id,
-      targetName: rewardType.name,
-      details: {
-        month: targetMonth,
-        year: targetYear,
-        totalEvaluated: activeEmployees.length,
-        eligibleCount,
-        createdCount: createdRecords.length,
-        alreadyExistedCount
-      }
-    });
+    if (!isDryRun) {
+      await logExternalApiAction({
+        req,
+        action: 'EVALUATE_REWARD_TYPE',
+        description: `Executed evaluation for reward type "${rewardType.name}" (${targetMonth}/${targetYear}): ${createdRecords.length} created, ${alreadyExistedCount} existed, ${eligibleCount} eligible out of ${activeEmployees.length}`,
+        resourceType: 'RewardType',
+        resourceId: rewardType.id,
+        targetName: rewardType.name,
+        details: {
+          month: targetMonth,
+          year: targetYear,
+          totalEvaluated: activeEmployees.length,
+          eligibleCount,
+          createdCount: createdRecords.length,
+          alreadyExistedCount
+        }
+      });
+    }
 
     return res.json({
       success: true,
-      message: `Evaluation completed for "${rewardType.name}" for period ${targetMonth}/${targetYear}`,
+      message: isDryRun
+        ? `Simulation completed for "${rewardType.name}" for period ${targetMonth}/${targetYear}`
+        : `Evaluation completed for "${rewardType.name}" for period ${targetMonth}/${targetYear}`,
       data: {
+        isDryRun,
         rewardType: {
           id: rewardType.id,
           name: rewardType.name,
@@ -4904,10 +5188,10 @@ const evaluateRewardType = async (req, res) => {
         summary: {
           totalEvaluated: activeEmployees.length,
           eligibleCount,
-          createdCount: createdRecords.length,
+          createdCount: isDryRun ? 0 : createdRecords.length,
           alreadyExistedCount
         },
-        createdRecords,
+        createdRecords: isDryRun ? [] : createdRecords,
         results
       }
     });
@@ -5666,6 +5950,7 @@ module.exports = {
   updateDeduction,
   listRewards,
   createReward,
+  voidReward,
   listShifts,
   createShift,
   updateShift,

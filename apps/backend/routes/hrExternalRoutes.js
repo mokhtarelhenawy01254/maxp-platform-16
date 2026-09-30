@@ -117,6 +117,7 @@ router.patch('/deductions/:id', requireExternalHrScope('hr:deductions:write'), h
 // 🏆 Rewards & Bonuses
 router.get('/rewards', requireExternalHrScope('hr:rewards:read'), hrExternalController.listRewards);
 router.post('/rewards', requireExternalHrScope('hr:rewards:write'), hrExternalController.createReward);
+router.post('/rewards/:id/void', requireExternalHrScope('hr:rewards:write'), hrExternalController.voidReward);
 router.get('/reward-types', requireExternalHrScope('hr:rewards:read'), hrExternalController.listRewardTypes);
 router.post('/reward-types', requireExternalHrScope('hr:rewards:write'), hrExternalController.createRewardType);
 router.patch('/reward-types/:id', requireExternalHrScope('hr:rewards:write'), hrExternalController.updateRewardType);
@@ -145,5 +146,16 @@ router.get('/resignations', requireExternalHrScope('hr:resignations:read'), hrEx
 // 🔔 Outbound Webhooks Management
 router.get('/webhooks', requireExternalHrScope('hr:write'), hrExternalController.listWebhookEndpoints);
 router.post('/webhooks', requireExternalHrScope('hr:write'), hrExternalController.createWebhookEndpoint);
+
+// Catch-all for undefined external HR endpoints -> return clean 404 instead of falling through to globalSecurity 401
+router.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: {
+      code: 'HR_ENDPOINT_NOT_FOUND',
+      message: `The requested External HR API endpoint does not exist: ${req.method} ${req.originalUrl || req.url}`
+    }
+  });
+});
 
 module.exports = router;

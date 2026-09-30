@@ -67,14 +67,22 @@ class TaskTimerService {
           include: { task: { select: { id: true, title: true } } },
         });
 
-        // زيادة ساعات العمل الفعلية على المهمة
+        // تحديث ساعات العمل الفعلية على المهمة من إجمالي كل الجلسات بدقة
         if (entry.taskId) {
-          await prisma.task.update({
-            where: { id: entry.taskId },
-            data: {
-              actualHours: { increment: Math.round(durationMinutes / 60) },
-            },
-          }).catch((err) => console.warn('[TaskTimerService] Task actualHours update error:', err.message));
+          try {
+            const allEntries = await prisma.timeEntry.findMany({
+              where: { taskId: entry.taskId },
+              select: { duration: true },
+            });
+            const sumMinutes = allEntries.reduce((s, e) => s + (e.duration || 0), 0);
+            const totalHours = Math.round(sumMinutes / 60);
+            await prisma.task.update({
+              where: { id: entry.taskId },
+              data: { actualHours: totalHours },
+            });
+          } catch (err) {
+            console.warn('[TaskTimerService] Task actualHours update error:', err.message);
+          }
         }
 
         // 🎯 Auto-advance hours goal metric on stop
@@ -168,10 +176,20 @@ class TaskTimerService {
     });
 
     if (entry.taskId) {
-      await prisma.task.update({
-        where: { id: entry.taskId },
-        data: { actualHours: { increment: Math.round(durationMinutes / 60) } },
-      }).catch(() => {});
+      try {
+        const allEntries = await prisma.timeEntry.findMany({
+          where: { taskId: entry.taskId },
+          select: { duration: true },
+        });
+        const sumMinutes = allEntries.reduce((s, e) => s + (e.duration || 0), 0);
+        const totalHours = Math.round(sumMinutes / 60);
+        await prisma.task.update({
+          where: { id: entry.taskId },
+          data: { actualHours: totalHours },
+        });
+      } catch (err) {
+        console.warn('[TaskTimerService] Task actualHours update error in stopTimerById:', err.message);
+      }
     }
 
     try {

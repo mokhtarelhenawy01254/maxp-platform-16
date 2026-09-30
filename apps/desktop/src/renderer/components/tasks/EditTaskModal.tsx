@@ -619,16 +619,13 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 const modalStyles: Record<string, React.CSSProperties> = {
   overlay: {
     position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    inset: 0,
     background: 'rgba(0,0,0,0.72)',
     backdropFilter: 'blur(4px)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 9999,
+    zIndex: 50000,
     padding: 16,
   },
   modal: {

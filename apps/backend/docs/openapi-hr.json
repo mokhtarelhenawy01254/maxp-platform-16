@@ -1805,6 +1805,55 @@
         }
       }
     },
+    "/rewards/{id}/void": {
+      "post": {
+        "summary": "Void / cancel a reward record",
+        "description": "Voids an applied/approved reward record before payroll processing. Requires mandatory reason.\n\n**Required Scope:** hr:rewards:write (or hr:write, *)",
+        "operationId": "hr_void_reward",
+        "x-required-scope": "hr:rewards:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Reward Record ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "Mandatory explanation for voiding the reward"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reward voided successfully"
+          },
+          "404": {
+            "description": "Reward record not found"
+          },
+          "409": {
+            "description": "Reward already processed in payroll"
+          }
+        }
+      }
+    },
     "/shifts": {
       "get": {
         "summary": "List shifts",
