@@ -60,6 +60,15 @@ if (fs.existsSync(MANAGER_TOOLS_FILE)) {
   for (const m of matches) allCanonicalToolNames.add(m[1].replace(/\./g, "_"));
 }
 
+// 2b. Scan curated catalog capabilities (registered as bridge tools at
+// ai-service startup — see catalog.py::register_catalog_tools)
+const CATALOG_SEED_FILE = path.join(ROOT, "apps/ai-service/src/tools/catalog_seed.py");
+if (fs.existsSync(CATALOG_SEED_FILE)) {
+  const content = fs.readFileSync(CATALOG_SEED_FILE, "utf-8");
+  const matches = content.matchAll(/"name":\s*"([a-z0-9_]+)"/g);
+  for (const m of matches) allCanonicalToolNames.add(m[1].replace(/\./g, "_"));
+}
+
 // 3. Check registry.py registers all tools
 const registryContent = fs.readFileSync(REGISTER_ALL_FILE, "utf-8");
 const registryToolNames = new Set();

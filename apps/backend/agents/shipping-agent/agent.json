@@ -47,7 +47,6 @@
     "order_update_details",
     "order_confirm",
     "customer_info",
-    "delayed_orders_check",
     "whatsapp_send",
     "agent_handoff_to"
   ],
