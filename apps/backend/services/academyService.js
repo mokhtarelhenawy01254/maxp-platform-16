@@ -586,6 +586,7 @@ class AcademyService {
     studentName,
     studentPhone,
     studentEmail,
+    subscriptionDays,
     byAdmin = false,
   }) {
     const db = this.getDb();
@@ -636,7 +637,9 @@ class AcademyService {
     }
 
     // ─── حساب تاريخ انتهاء الاشتراك ──────────────────────────────────────
-    const subDays = course.subscriptionDays ? Number(course.subscriptionDays) : null;
+    const subDays = (subscriptionDays && Number(subscriptionDays) > 0)
+      ? Number(subscriptionDays)
+      : (course.subscriptionDays ? Number(course.subscriptionDays) : null);
     let expiresAt = null;
     if (subDays && subDays > 0) {
       expiresAt = new Date();

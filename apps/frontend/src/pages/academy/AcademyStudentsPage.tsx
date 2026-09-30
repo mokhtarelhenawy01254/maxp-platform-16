@@ -199,6 +199,7 @@ export default function AcademyStudentsPage() {
         studentName: newStudentName.trim(),
         studentPhone: newStudentPhone.trim(),
         studentEmail: newStudentEmail.trim() || undefined,
+        subscriptionDays: newStudentDays && parseInt(newStudentDays, 10) > 0 ? parseInt(newStudentDays, 10) : undefined,
       });
 
       toast.success(`تم تسجيل الطالب "${newStudentName}" في الدورة بنجاح.`);

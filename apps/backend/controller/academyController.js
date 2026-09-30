@@ -279,7 +279,7 @@ exports.enrollStudent = async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     const { courseId } = req.params;
-    const { studentName, studentPhone, studentEmail, customerId, orderId } = req.body;
+    const { studentName, studentPhone, studentEmail, customerId, orderId, subscriptionDays } = req.body;
 
     // الأدمن المصادق عليه يستطيع التسجيل بدون دفع
     const byAdmin = Boolean(req.user?.id);
@@ -293,6 +293,7 @@ exports.enrollStudent = async (req, res) => {
       studentName: studentName || req.user?.name,
       studentPhone: studentPhone || req.user?.phone,
       studentEmail: studentEmail || req.user?.email,
+      subscriptionDays: subscriptionDays ? Number(subscriptionDays) : null,
       byAdmin,
     });
 

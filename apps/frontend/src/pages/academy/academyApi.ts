@@ -234,7 +234,15 @@ export const academyApi = {
     return res.data as any;
   },
 
-  async enrollStudent(courseId: string, studentData: { studentName?: string; studentPhone?: string; studentEmail?: string }): Promise<any> {
+  async enrollStudent(
+    courseId: string,
+    studentData: {
+      studentName?: string;
+      studentPhone?: string;
+      studentEmail?: string;
+      subscriptionDays?: number;
+    }
+  ): Promise<any> {
     const res = await apiClient.post<any>(`/api/v1/academy/courses/${courseId}/enroll`, studentData);
     return (res.data as any)?.enrollment;
   },

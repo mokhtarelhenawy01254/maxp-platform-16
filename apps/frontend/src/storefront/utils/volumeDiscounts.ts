@@ -117,7 +117,7 @@ export const normalizeVolumeDiscounts = (value: unknown): VolumeDiscountTier[] =
 
         if (Array.isArray(metadata.quantityOffers)) {
           return metadata.quantityOffers
-            .filter((offer: unknown) => isRecord(offer) && offer.isDefault !== true)
+            .filter((offer: unknown) => isRecord(offer) && toFiniteNumber((offer as any).quantity, 0) > 1)
             .map((offer: unknown) => quantityOfferToVolumeDiscount(offer))
             .filter(Boolean);
         }

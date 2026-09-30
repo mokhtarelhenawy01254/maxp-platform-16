@@ -94,7 +94,7 @@ const getVolumeDiscountsFromMetadata = (rawMetadata, options = {}) => {
     rawDiscounts = metadata.bulkSavings;
   } else if (Array.isArray(metadata.quantityOffers)) {
     rawDiscounts = metadata.quantityOffers
-      .filter((offer) => isRecord(offer) && offer.isDefault !== true)
+      .filter((offer) => isRecord(offer) && toFiniteNumber(offer.quantity, 0) > 1)
       .map((offer) => quantityOfferToVolumeDiscount(offer, basePrice))
       .filter(Boolean);
   } else {

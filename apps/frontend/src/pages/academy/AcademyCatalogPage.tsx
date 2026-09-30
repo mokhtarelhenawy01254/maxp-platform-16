@@ -110,6 +110,16 @@ export default function AcademyCatalogPage() {
     }
   };
 
+  // Support WhatsApp phone
+  const supportPhone = useMemo(() => {
+    const raw = (
+      user?.company?.phone ||
+      (typeof window !== "undefined" && (window as any)?.__ENV__?.VITE_SUPPORT_WHATSAPP_NUMBER) ||
+      "201123087745"
+    ).replace(/[^0-9]/g, "");
+    return raw.startsWith("0") ? `2${raw}` : raw;
+  }, [user]);
+
   // Filtered Catalog Courses
   const filteredCourses = useMemo(() => {
     return courses.filter((c) => {
@@ -369,7 +379,7 @@ export default function AcademyCatalogPage() {
                           </a>
                         ) : course.price > 0 ? (
                           <a
-                            href={`https://wa.me/201000000000?text=${encodeURIComponent(`مرحباً، أود الاستفسار والاشتراك في كورس: ${course.title}`)}`}
+                            href={`https://wa.me/${supportPhone}?text=${encodeURIComponent(`مرحباً، أود الاستفسار والاشتراك في كورس: ${course.title}`)}`}
                             target="_blank"
                             rel="noreferrer"
                             className="px-4 py-2.5 sm:py-3 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition flex items-center gap-1.5 active:scale-[0.97]"
