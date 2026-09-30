@@ -92,6 +92,9 @@ export interface StudentProgressRow {
   status: string;
   enrolledAt: string;
   completedAt?: string | null;
+  expiresAt?: string | null;
+  subscriptionDays?: number | null;
+  isExpired?: boolean;
   completedLessonsCount: number;
   totalLessonsCount: number;
   progressPercent: number;
@@ -303,5 +306,16 @@ export const academyApi = {
   async getStudentsProgress(courseId: string): Promise<StudentProgressRow[]> {
     const res = await apiClient.get<any>(`/api/v1/academy/courses/${courseId}/students`);
     return (res.data as any)?.students || [];
+  },
+
+  // Admin: Enrollment management
+  async suspendEnrollment(enrollmentId: string): Promise<any> {
+    const res = await apiClient.post<any>(`/api/v1/academy/enrollments/${enrollmentId}/suspend`);
+    return (res.data as any)?.enrollment;
+  },
+
+  async reactivateEnrollment(enrollmentId: string): Promise<any> {
+    const res = await apiClient.post<any>(`/api/v1/academy/enrollments/${enrollmentId}/reactivate`);
+    return (res.data as any)?.enrollment;
   },
 };

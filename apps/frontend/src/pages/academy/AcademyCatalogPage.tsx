@@ -214,17 +214,31 @@ export default function AcademyCatalogPage() {
                       {course.isEnrolled ? (
                         <Link
                           to={`/academy/catalog/${course.id}`}
-                          className="px-5 py-2.5 sm:py-3 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition flex items-center gap-1.5 active:scale-[0.98]"
+                          className="px-5 py-2.5 sm:py-3 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition flex items-center gap-1.5 active:scale-[0.97]"
                         >
-                          <span>متابعة التعلم</span>
+                          <span>ادخل الكورس</span>
                           <ArrowLeft className="w-4 h-4" />
                         </Link>
+                      ) : course.price > 0 && course.storeProductId ? (
+                        // كورس مدفوع مرتبط بمنتج → وجّه للمتجر
+                        <a
+                          href={`/store/products/${course.storeProductId}`}
+                          className="px-5 py-2.5 sm:py-3 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition active:scale-[0.97]"
+                        >
+                          اشترك الآن
+                        </a>
+                      ) : course.price > 0 ? (
+                        // كورس مدفوع بدون ربط منتج بعد
+                        <span className="px-5 py-2.5 sm:py-3 rounded-xl text-xs font-bold bg-muted text-muted-foreground border border-border/60 cursor-not-allowed">
+                          قريباً في المتجر
+                        </span>
                       ) : (
+                        // كورس مجاني → تسجيل مباشر
                         <button
                           onClick={() => setSelectedCourse(course)}
-                          className="px-5 py-2.5 sm:py-3 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition active:scale-[0.98]"
+                          className="px-5 py-2.5 sm:py-3 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition active:scale-[0.97]"
                         >
-                          تسجيل الآن
+                          سجّل مجاناً
                         </button>
                       )}
                     </div>
