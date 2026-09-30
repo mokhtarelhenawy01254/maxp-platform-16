@@ -1134,6 +1134,7 @@ const OrderDetails: React.FC = () => {
             selectedGovernmentId={selectedGovernmentId}
             setSelectedGovernmentId={setSelectedGovernmentId}
             handleGovernmentChange={handleGovernmentChange}
+            invoiceSettings={invoiceSettings}
           />
 
           <div id="customer-order-history-card">
