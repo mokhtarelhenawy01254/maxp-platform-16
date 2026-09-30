@@ -1999,6 +1999,7 @@ async function sendNotification(options) {
           where: { id: notificationLog.id },
           data: {
             status: 'SENT',
+            content: content,
             messageType: usedMessageType || result?.messageType || 'TEXT',
             sentAt: new Date(),
             whatsappMessageId: result?.messageId || result?.key?.id || null

@@ -635,11 +635,9 @@ const getUnreadTicketsCount = async (req, res) => {
   try {
     const currentCompanyId = resolveCompanyId(req);
     const accessibleCompanies = await resolveAccessibleTurboCompanies(req);
-    const targetCompanies = accessibleCompanies.length > 0
-      ? accessibleCompanies
-      : (currentCompanyId ? [{ id: currentCompanyId }] : []);
 
-    if (targetCompanies.length === 0) {
+    // 🛡️ ROOT-CAUSE FIX: لو الشركة غير مفعّلة في تربو، نرجع فوراً بدون إنشاء TurboService أو استعلامات فاشلة
+    if (!accessibleCompanies || accessibleCompanies.length === 0) {
       return res.status(200).json({
         success: true,
         data: { counts: { tickets: 0, missions: 0, orders: 0 } },
@@ -647,6 +645,8 @@ const getUnreadTicketsCount = async (req, res) => {
         unconfigured: true,
       });
     }
+
+    const targetCompanies = accessibleCompanies;
 
     const cacheKey = targetCompanies.map(c => c.id).sort().join(',');
     const cached = unreadCountsCache.get(cacheKey);
