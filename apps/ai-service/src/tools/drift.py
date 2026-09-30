@@ -126,7 +126,7 @@ async def run_drift_check(session: Any, manifest: list[dict[str, Any]] | None = 
         # Auto-activate reads only — writes await one-click review (policy).
         state = "draft" if is_write else "active"
 
-        session.merge(AgentToolCatalog(
+        await session.merge(AgentToolCatalog(
             name=name,
             domain=_infer_domain(path),
             description_en=f"Auto-discovered backend capability: {_humanize_route(route)}",

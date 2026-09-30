@@ -31,7 +31,8 @@ class _MockSession:
     async def execute(self, *_a, **_kw):
         return _MockResult(self.rows)
 
-    def merge(self, obj):
+    async def merge(self, obj):
+        # AsyncSession.merge is awaitable in production — mocks must match
         self.merged.append(obj)
 
     async def commit(self):
