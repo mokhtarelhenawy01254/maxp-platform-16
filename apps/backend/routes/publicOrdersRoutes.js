@@ -1822,9 +1822,6 @@ router.post('/', async (req, res) => {
         criteria: duplicateSettings?.criteria,
         originalStatus: 'PENDING'
       };
-      if (duplicateSettings?.alertTeam) {
-        orderService.alertTeamAboutDuplicate(company.id, guestPhone, duplicateMatch.order, orderNumber);
-      }
     }
     let affiliateReferralId = null;
     let affiliateId = null;
@@ -2245,6 +2242,13 @@ router.post('/', async (req, res) => {
       }
     } catch (addrErr) {
       console.error('⚠️ [CHECKOUT] Failed to save customer address:', addrErr?.message || addrErr);
+    }
+
+    // تنبيه الفريق في حال كان الطلب مكرراً وتم إنشاؤه بنجاح
+    if (isDuplicateOrder && duplicateSettings?.alertTeam && duplicateMatch?.order) {
+      orderService.alertTeamAboutDuplicate(company.id, guestPhone, duplicateMatch.order, order.orderNumber).catch(err => {
+        console.error('⚠️ [DUPLICATE-ALERT] Failed to alert team:', err?.message || err);
+      });
     }
 
     // Delete cart (only if using cart mode)

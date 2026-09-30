@@ -1259,16 +1259,16 @@ export const TasksTab: React.FC = () => {
             <div style={{ flex: 1, minWidth: 0 }}>
               <span style={styles.tableColLabel}>المهمة</span>
             </div>
-            <div style={{ width: 90, textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ width: 90, textAlign: 'right', flexShrink: 0 }} className="task-col-person">
               <span style={styles.tableColLabel}>{activeView === 'my-tasks' ? 'المنشئ' : 'المكلف'}</span>
             </div>
-            <div style={{ width: 44, textAlign: 'center', flexShrink: 0 }}>
+            <div style={{ width: 44, textAlign: 'center', flexShrink: 0 }} className="task-col-est">
               <span style={styles.tableColLabel}>المقدر</span>
             </div>
             <div style={{ width: 72, textAlign: 'center', flexShrink: 0 }}>
               <span style={styles.tableColLabel}>الاستحقاق</span>
             </div>
-            <div style={{ width: 135, textAlign: 'left', flexShrink: 0, paddingLeft: 4 }}>
+            <div style={{ width: 135, textAlign: 'left', flexShrink: 0, paddingLeft: 4 }} className="task-col-actions">
               <span style={styles.tableColLabel}>الإجراءات</span>
             </div>
           </div>

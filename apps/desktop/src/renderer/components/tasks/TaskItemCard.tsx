@@ -316,6 +316,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
         {/* Col 2: Creator / Assignee */}
         <div
           style={rowStyles.personCol}
+          className="task-col-person"
           title={`${viewType === 'my-tasks' ? `أنشأها: ${creatorName}` : `المكلف: ${assigneeName}`} (صلاحية الظهور: ${visibilityReason.label})`}
         >
           <User size={11} color="var(--text-muted)" />
@@ -337,7 +338,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
         </div>
 
         {/* Col 3: Estimated Time */}
-        <div style={rowStyles.estCol}>
+        <div style={rowStyles.estCol} className="task-col-est">
           {(task.estimatedMinutes || task.estimatedHours) ? (
             <span style={rowStyles.monoText}>
               {task.estimatedMinutes || task.estimatedHours * 60} د
@@ -347,26 +348,33 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
           )}
         </div>
 
-        {/* Col 4: Due Date */}
-        <div style={rowStyles.dueCol}>
+        {/* Col 4: Due Date — date on top, overdue state stacked under it (never overlaps neighbours) */}
+        <div style={rowStyles.dueCol} className="task-col-due">
           {task.dueDate ? (
-            <span
-              style={{
-                ...rowStyles.monoText,
-                color: isOverdue ? 'var(--accent-red)' : isDueSoon ? 'var(--accent-yellow)' : 'var(--text-dim)',
-                fontWeight: isOverdue ? 600 : 400,
-              }}
-              title={new Date(task.dueDate).toLocaleString('ar-EG-u-nu-latn')}
-            >
-              <span dir="ltr">
-                {new Date(task.dueDate).getDate()}/{new Date(task.dueDate).getMonth() + 1}
+            <div style={rowStyles.dueStack}>
+              <span
+                style={{
+                  ...rowStyles.monoText,
+                  color: isOverdue ? 'var(--accent-red)' : isDueSoon ? 'var(--accent-yellow)' : 'var(--text-dim)',
+                  fontWeight: isOverdue ? 600 : 400,
+                }}
+                title={new Date(task.dueDate).toLocaleString('ar-EG-u-nu-latn')}
+              >
+                <span dir="ltr">
+                  {new Date(task.dueDate).getDate()}/{new Date(task.dueDate).getMonth() + 1}
+                </span>
               </span>
               {isOverdue && (
-                <span style={{ marginRight: 3, fontSize: 10, opacity: 0.85 }}>
-                  · {getOverdueText()}
+                <span style={rowStyles.overdueMini} title={`متأخر عن الموعد بـ ${getOverdueText()}`}>
+                  متأخر {getOverdueText()}
                 </span>
               )}
-            </span>
+              {isDueSoon && !isOverdue && (
+                <span style={rowStyles.dueSoonMini} title="موعدها قريب (خلال 24 ساعة)">
+                  قريب
+                </span>
+              )}
+            </div>
           ) : (
             <span style={rowStyles.emptyCell}>—</span>
           )}
@@ -507,7 +515,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               title="بدء العمل على المهمة واحتساب الوقت"
             >
               <Play size={10} fill="#ffffff" color="#ffffff" />
-              <span>بدء العمل</span>
+              <span className="task-action-label">بدء العمل</span>
             </button>
           ) : (
             <span
@@ -575,6 +583,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
+    overflow: 'hidden',
   },
   statusIconWrapper: {
     width: 20,
@@ -677,6 +686,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 5,
+    overflow: 'hidden',
   },
   personName: {
     fontSize: 11,
@@ -699,6 +709,29 @@ const rowStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  dueStack: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 1,
+    overflow: 'hidden',
+    maxWidth: '100%',
+  },
+  overdueMini: {
+    fontSize: 9,
+    fontWeight: 700,
+    color: 'var(--accent-red)',
+    whiteSpace: 'nowrap',
+    lineHeight: 1.15,
+  },
+  dueSoonMini: {
+    fontSize: 9,
+    fontWeight: 600,
+    color: 'var(--accent-yellow)',
+    whiteSpace: 'nowrap',
+    lineHeight: 1.15,
   },
   monoText: {
     fontSize: 11,

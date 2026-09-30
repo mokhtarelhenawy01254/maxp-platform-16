@@ -1335,9 +1335,10 @@ class CustomerLoyaltyService {
       let activeVoucher = null;
       let walletBalance = 0;
       let loyaltySystem = 'TIERS';
+      let _adSettings = {};
       try {
         const autoDiscountService = require('../autoDiscountService');
-        const _adSettings = await autoDiscountService.getSettings(companyId);
+        _adSettings = (await autoDiscountService.getSettings(companyId)) || {};
         loyaltySystem = _adSettings.loyaltySystem || 'TIERS';
         if (await autoDiscountService.isAutoDiscountActive(companyId)) {
           const voucher = await autoDiscountService.getActiveVoucher(customerId, companyId);
@@ -2332,6 +2333,62 @@ class CustomerLoyaltyService {
       isDynamic: true,
       currency
     };
+  }
+
+  /**
+   * تطبيق سقف الخصم الشامل ومنع التضارب بين الكوبون والولاء
+   */
+  async enforceDiscountCap({
+    companyId,
+    orderTotal = 0,
+    couponDiscount = 0,
+    walletAmount = 0,
+    pointsAmount = 0,
+    couponAllowWithLoyalty = true
+  }) {
+    try {
+      const autoDiscountService = require('../autoDiscountService');
+      const settings = (await autoDiscountService.getSettings(companyId).catch(() => ({}))) || {};
+      const maxPercent = Number(settings?.maxTotalDiscountPercent || 0);
+
+      // إذا كان الكوبون لا يسمح بالدمج مع الولاء
+      if (!couponAllowWithLoyalty && couponDiscount > 0) {
+        return {
+          loyaltyAllowed: false,
+          couponDiscount,
+          capped: false,
+          cappedTotal: couponDiscount
+        };
+      }
+
+      const totalRequestedDiscount = Number(couponDiscount) + Number(walletAmount) + Number(pointsAmount);
+      if (maxPercent > 0 && Number(orderTotal) > 0) {
+        const maxAllowedDiscount = (Number(orderTotal) * maxPercent) / 100;
+        if (totalRequestedDiscount > maxAllowedDiscount) {
+          return {
+            loyaltyAllowed: true,
+            couponDiscount,
+            capped: true,
+            cappedTotal: Math.max(0, maxAllowedDiscount)
+          };
+        }
+      }
+
+      return {
+        loyaltyAllowed: true,
+        couponDiscount,
+        capped: false,
+        cappedTotal: totalRequestedDiscount
+      };
+    } catch (err) {
+      console.warn('⚠️ [ENFORCE-DISCOUNT-CAP] Error:', err?.message);
+      return {
+        loyaltyAllowed: true,
+        couponDiscount,
+        capped: false,
+        cappedTotal: Number(couponDiscount)
+      };
+    }
   }
 }
 
