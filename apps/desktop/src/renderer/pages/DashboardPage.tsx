@@ -5,7 +5,7 @@ import { TabErrorBoundary } from '../components/TabErrorBoundary';
 import CockpitTab from './CockpitTab';
 import TasksTab from './TasksTab';
 import GoalsTab from './GoalsTab';
-import SimpleReportTab from './SimpleReportTab';
+import { TaskReportView } from '../components/tasks/reports/TaskReportView';
 import AppsTimelineTab from './AppsTimelineTab';
 import AttendanceAuditTab from './AttendanceAuditTab';
 import SystemStatusTab from './SystemStatusTab';
@@ -516,7 +516,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
 
           {activeTab === 'tasks' && <TabErrorBoundary key="tasks" tabName="المهام"><TasksTab /></TabErrorBoundary>}
           {activeTab === 'goals' && <TabErrorBoundary key="goals" tabName="الأهداف"><GoalsTab /></TabErrorBoundary>}
-          {activeTab === 'reports' && <TabErrorBoundary key="reports" tabName="التقرير والملخص"><SimpleReportTab /></TabErrorBoundary>}
+          {activeTab === 'reports' && <TabErrorBoundary key="reports" tabName="تقارير الأداء"><TaskReportView isExecutiveMode={false} /></TabErrorBoundary>}
 
           {activeTab === 'apps' && (
             <TabErrorBoundary key="apps" tabName="البرامج والمواقع">

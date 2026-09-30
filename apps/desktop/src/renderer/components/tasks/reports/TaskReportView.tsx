@@ -46,6 +46,33 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
   const roleStr = String(currentUser?.role || '').toUpperCase();
   const isAdmin = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER'].includes(roleStr);
   const isManager = isAdmin || ['MANAGER', 'HR_MANAGER'].includes(roleStr) || isExecutiveMode;
+  const [teamOverview, setTeamOverview] = useState<any[]>([]);
+
+  // Presence summary (absorbed from the merged daily report screen)
+  const presenceStats = useMemo(() => {
+    const rows = teamOverview;
+    const activeNow = rows.filter((r: any) => String(r.status || '').toUpperCase() === 'ONLINE').length;
+    const late = rows.filter((r: any) => Number(r.lateStartSeconds || 0) > 0).length;
+    const totalHours = Math.round((rows.reduce((s: number, r: any) => s + Number(r.activeSeconds || 0), 0) / 3600) * 10) / 10;
+    const withRatio = rows.filter((r: any) => Number(r.activityRatio || 0) > 0);
+    const avgProd = withRatio.length
+      ? Math.round((withRatio.reduce((s: number, r: any) => s + Number(r.activityRatio || 0), 0) / withRatio.length) * 100)
+      : 0;
+    return { activeNow, late, totalHours, avgProd };
+  }, [teamOverview]);
+
+  const presenceChipStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    fontSize: 11,
+    color: 'var(--text-secondary)',
+    backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 6,
+    padding: '4px 10px',
+    whiteSpace: 'nowrap',
+  };
 
   const loadData = useCallback(async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -57,9 +84,10 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       const hasPrivilege = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER', 'HR_MANAGER'].includes(userRole) || isExecutiveMode;
       const fetchType = hasPrivilege ? 'all' : 'my-tasks';
 
-      const [tasksRes, usersRes] = await Promise.all([
+      const [tasksRes, usersRes, teamRes] = await Promise.all([
         window.electronAPI.getTasks(fetchType),
         hasPrivilege ? window.electronAPI.getCompanyUsers() : Promise.resolve({ success: false, users: [] }),
+        hasPrivilege ? window.electronAPI.getTeamOverview().catch(() => null) : Promise.resolve(null),
       ]);
 
       if (tasksRes?.success && Array.isArray(tasksRes.tasks)) {
@@ -68,6 +96,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       if (usersRes?.success && Array.isArray(usersRes.users)) {
         setUsers(usersRes.users);
       }
+      setTeamOverview(teamRes?.data && Array.isArray(teamRes.data) ? teamRes.data : []);
     } catch (err) {
       console.warn('[TaskReportView] Error loading report data:', err);
     } finally {
@@ -481,6 +510,24 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         activeFilter={filters.exceptionFilter}
         onFilterChange={(f) => setFilters((p) => ({ ...p, exceptionFilter: f }))}
       />
+
+      {/* Presence strip — absorbed from the merged daily report screen */}
+      {isManager && teamOverview.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={presenceChipStyle}>
+            الحاضر الآن: <b>{presenceStats.activeNow}</b> / {teamOverview.length}
+          </span>
+          <span style={presenceChipStyle}>
+            متأخرون عن البصمة: <b>{presenceStats.late}</b>
+          </span>
+          <span style={presenceChipStyle}>
+            موثق اليوم: <b>{presenceStats.totalHours}</b> ساعة
+          </span>
+          <span style={presenceChipStyle}>
+            متوسط الإنتاجية: <b>{presenceStats.avgProd}%</b>
+          </span>
+        </div>
+      )}
 
       {/* Team Members Workload Matrix (Per person in-progress, in-review, completed today) */}
       <TaskReportTeamMatrix

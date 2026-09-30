@@ -40,69 +40,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isAdmin = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER'].includes(roleStr);
   const isManager = isAdmin || ['MANAGER', 'HR_MANAGER'].includes(roleStr);
 
-  const navItems: { id: TabId; label: string; icon: React.ReactNode }[] = isManager
+  const navGroups: { label: string; items: { id: TabId; label: string; icon: React.ReactNode }[] }[] = isManager
     ? [
         {
-          id: 'tasks',
-          label: 'المهام والإنتاجية',
-          icon: <CheckSquare size={17} />,
+          label: 'شغلي',
+          items: [
+            { id: 'tasks', label: 'المهام والإنتاجية', icon: <CheckSquare size={17} /> },
+            { id: 'goals', label: 'الأهداف ومؤشرات الأداء', icon: <Target size={17} /> },
+          ],
         },
         {
-          id: 'goals',
-          label: 'الأهداف ومؤشرات الأداء',
-          icon: <Target size={17} />,
+          label: 'فريقي',
+          items: [
+            { id: 'reports', label: 'تقارير الأداء', icon: <FileText size={17} /> },
+            { id: 'attendance', label: 'مطابقة الحضور والتدقيق', icon: <Clock size={17} /> },
+          ],
         },
         {
-          id: 'reports',
-          label: 'التقرير والملخص',
-          icon: <FileText size={17} />,
+          label: 'نشاطي',
+          items: [
+            { id: 'cockpit', label: 'سجل النشاط وساعات العمل', icon: <Activity size={17} /> },
+            { id: 'apps', label: 'البرامج والمواقع', icon: <Globe size={17} /> },
+          ],
         },
         {
-          id: 'cockpit',
-          label: 'سجل النشاط وساعات العمل',
-          icon: <Activity size={17} />,
-        },
-        {
-          id: 'apps',
-          label: 'البرامج والمواقع',
-          icon: <Globe size={17} />,
-        },
-        {
-          id: 'attendance',
-          label: 'مطابقة الحضور والتدقيق',
-          icon: <Clock size={17} />,
-        },
-        {
-          id: 'system',
-          label: 'حالة السحابة والجهاز',
-          icon: <Cpu size={17} />,
+          label: 'النظام',
+          items: [
+            { id: 'system', label: 'حالة السحابة والجهاز', icon: <Cpu size={17} /> },
+          ],
         },
       ]
     : [
         {
-          id: 'tasks',
-          label: 'المهام والإنتاجية',
-          icon: <CheckSquare size={17} />,
+          label: 'شغلي',
+          items: [
+            { id: 'tasks', label: 'المهام والإنتاجية', icon: <CheckSquare size={17} /> },
+            { id: 'goals', label: 'الأهداف ومؤشرات الأداء', icon: <Target size={17} /> },
+            { id: 'reports', label: 'تقارير الأداء', icon: <FileText size={17} /> },
+          ],
         },
         {
-          id: 'goals',
-          label: 'الأهداف ومؤشرات الأداء',
-          icon: <Target size={17} />,
-        },
-        {
-          id: 'reports',
-          label: 'التقرير اليومي',
-          icon: <FileText size={17} />,
-        },
-        {
-          id: 'cockpit',
-          label: 'النشاط وساعات العمل',
-          icon: <Activity size={17} />,
-        },
-        {
-          id: 'apps',
-          label: 'البرامج والمواقع',
-          icon: <Globe size={17} />,
+          label: 'نشاطي',
+          items: [
+            { id: 'cockpit', label: 'النشاط وساعات العمل', icon: <Activity size={17} /> },
+            { id: 'apps', label: 'البرامج والمواقع', icon: <Globe size={17} /> },
+          ],
         },
       ];
 
@@ -144,7 +126,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Navigation List */}
       <nav style={styles.nav}>
-        {navItems.map((item) => {
+        {navGroups.map((group) => (
+          <div key={group.label}>
+            <div style={styles.navGroupLabel}>{group.label}</div>
+            {group.items.map((item) => {
           const isActive = activeTab === item.id;
           return (
             <button
@@ -182,7 +167,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             </button>
           );
-        })}
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Footer / System Controls */}
@@ -326,6 +313,14 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: 4,
     overflowY: 'auto',
+  },
+  navGroupLabel: {
+    fontSize: 9.5,
+    fontWeight: 700,
+    color: 'var(--text-muted)',
+    letterSpacing: '0.04em',
+    padding: '10px 6px 2px',
+    opacity: 0.85,
   },
   navItem: {
     display: 'flex',

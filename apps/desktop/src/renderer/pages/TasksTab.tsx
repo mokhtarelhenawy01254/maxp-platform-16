@@ -20,6 +20,7 @@ import {
   AlertCircle,
   ClipboardCheck,
   RotateCcw,
+  ChevronDown,
 } from 'lucide-react';
 import { CreateTaskModal } from '../components/tasks/CreateTaskModal';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
@@ -62,6 +63,7 @@ export const TasksTab: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState<any[]>([]);
   const [teamActiveTimers, setTeamActiveTimers] = useState<TeamActiveTimer[]>([]);
+  const [teamCockpitOpen, setTeamCockpitOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -1045,7 +1047,11 @@ export const TasksTab: React.FC = () => {
       {/* Team Live Active Tasks Cockpit for Managers */}
       {isAdminOrManager && teamActiveTimers.length > 0 && (
         <div style={styles.teamCockpitBox}>
-          <div style={styles.teamCockpitHeader}>
+          <div
+            style={{ ...styles.teamCockpitHeader, cursor: 'pointer' }}
+            onClick={() => setTeamCockpitOpen((v) => !v)}
+            title={teamCockpitOpen ? 'إخفاء تفاصيل الفريق المباشر' : 'عرض كروت الفريق المباشر'}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={styles.teamPulseDot} />
               <span style={styles.teamCockpitTitle}>أعضاء الفريق قيد العمل المباشر الآن</span>
@@ -1053,11 +1059,21 @@ export const TasksTab: React.FC = () => {
                 {teamActiveTimers.length} {teamActiveTimers.length === 1 ? 'عضو' : 'أعضاء'}
               </span>
             </div>
-            <span style={styles.teamCockpitSubtitle}>
-              تتبع حي فوري للمهام الجاري إنجازها في هذه اللحظة
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {teamCockpitOpen && (
+                <span style={styles.teamCockpitSubtitle}>
+                  تتبع حي فوري للمهام الجاري إنجازها في هذه اللحظة
+                </span>
+              )}
+              <ChevronDown
+                size={14}
+                color="var(--text-muted)"
+                style={{ transform: teamCockpitOpen ? 'rotate(180deg)' : 'none', transition: 'transform 140ms ease-out' }}
+              />
+            </div>
           </div>
 
+          {teamCockpitOpen && (
           <div style={styles.teamCockpitGrid}>
             {teamActiveTimers.map((timer) => (
               <div
@@ -1147,6 +1163,7 @@ export const TasksTab: React.FC = () => {
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
 
