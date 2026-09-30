@@ -13774,6 +13774,13 @@ declare module 'react-i18next' {
         customerNotePlaceholder: string;
         orderNote: string;
         orderNotePlaceholder: string;
+        orderNotes: string;
+        customerNotes: string;
+        customFields: string;
+        customFieldsAndNotes: string;
+        customFieldsHeader: string;
+        customFieldEditPlaceholder: string;
+        additionalNotes: string;
         orderHistory: string;
         orderActivity: string;
         noActivity: string;
