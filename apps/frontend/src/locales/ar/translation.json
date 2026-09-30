@@ -3143,11 +3143,7 @@
     "lastYear": "آخر سنة",
     "custom": "فترة مخصصة",
     "from": "من",
-    "to": "إلى",
-    "selectBothDatesPrompt": "يرجى تحديد تاريخ البداية وتاريخ النهاية",
-    "selectBothDatesWarning": "يرجى اختيار التاريخين معاً لتطبيق الفلتر",
-    "startDateAfterEndDate": "تاريخ البداية يجب أن يكون قبل أو يساوي تاريخ النهاية",
-    "appliedPeriod": "الفترة المطبقة"
+    "to": "إلى"
   },
   "PlatformPartnerManagement": {
     "error_load_1fe0": "خطأ في تحميل البيانات",

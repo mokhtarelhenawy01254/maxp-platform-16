@@ -3149,10 +3149,6 @@ declare module 'react-i18next' {
         custom: string;
         from: string;
         to: string;
-        selectBothDatesPrompt: string;
-        selectBothDatesWarning: string;
-        startDateAfterEndDate: string;
-        appliedPeriod: string;
       };
       PlatformPartnerManagement: {
         error_load_1fe0: string;
