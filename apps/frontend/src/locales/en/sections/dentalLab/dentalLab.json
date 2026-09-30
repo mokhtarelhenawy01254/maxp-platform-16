@@ -82,6 +82,7 @@
     "readyCount": "Ready for Delivery",
     "overdueCount": "Overdue",
     "revenue": "Revenue",
+    "collected": "Collected (Paid)",
     "outstanding": "Outstanding",
     "byStatus": "Cases by Stage",
     "topDoctors": "Top Doctors",

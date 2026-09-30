@@ -101,7 +101,7 @@ export default function DentalLabDashboardTab() {
     },
     {
       id: "revenue",
-      label: "المحصل (مدفوع)",
+      label: t("dentalLab.dashboard.collected"),
       value: data?.revenue != null ? `${fmtMoney(data.revenue)} ج` : "—",
       icon: <Coins className="w-5 h-5" />,
       tone: "text-emerald-600 dark:text-emerald-400",

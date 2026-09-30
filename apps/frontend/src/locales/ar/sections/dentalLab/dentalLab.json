@@ -82,6 +82,7 @@
     "readyCount": "جاهزة للتسليم",
     "overdueCount": "متأخرة",
     "revenue": "الإيرادات",
+    "collected": "المحصل (مدفوع)",
     "outstanding": "المديونيات",
     "byStatus": "الحالات حسب المرحلة",
     "topDoctors": "أكتر دكاترة شغل",
