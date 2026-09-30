@@ -828,7 +828,7 @@ export default function DentalLabReportsTab() {
   const kpiCards = [
     { label: t("dentalLab.dashboard.collected"), value: kpi ? fmtMoney(kpi.revenue) : "—", icon: <ArrowUpRight className="w-4 h-4" />, tone: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
     { label: t("dentalLab.dashboard.outstanding"), value: kpi ? fmtMoney(kpi.outstanding) : "—", icon: <ArrowDownLeft className="w-4 h-4" />, tone: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/20" },
-    { label: "حالات اليوم", value: String(kpi?.todayReceived ?? "—"), icon: <Inbox className="w-4 h-4" />, tone: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20" },
+    { label: t("dentalLab.dashboard.todayReceived"), value: String(kpi?.todayReceived ?? "—"), icon: <Inbox className="w-4 h-4" />, tone: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20" },
     { label: t("dentalLab.dashboard.overdueCount"), value: String(kpi?.overdueCount ?? "—"), icon: <AlertTriangle className="w-4 h-4" />, tone: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/20" },
   ];
 
