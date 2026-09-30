@@ -159,6 +159,14 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   const diffMs = dueTime ? dueTime - now : null;
 
   const isOverdue = !!dueTime && !isCompleted && diffMs! < 0;
+  // Overdue intensity: amber <=3d, orange 4-6d, red >=7d — red must mean "critical"
+  const overdueDays = isOverdue && dueTime ? Math.floor((now - dueTime) / 86400000) : 0;
+  const overdueColor = overdueDays >= 7 ? 'var(--accent-red)' : overdueDays >= 4 ? 'var(--accent-orange)' : 'var(--accent-yellow)';
+  // Time-leak: tracked time exceeded the estimate (the only estimate signal the row needs)
+  const rowEstMin = Number(task.estimatedMinutes || 0) || (Number(task.estimatedHours || 0) * 60) || 0;
+  const rowActualMin = Math.round(Number(task.totalDuration || task.total_duration || (task.totalSeconds ? task.totalSeconds / 60 : 0)));
+  const isTimeLeak = !isCompleted && rowEstMin > 0 && rowActualMin > rowEstMin * 1.3;
+
   const isDueSoon = !!dueTime && !isCompleted && !isOverdue && diffMs! <= 24 * 60 * 60 * 1000;
 
   const getOverdueText = () => {
@@ -288,12 +296,6 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               <span>عاجل</span>
             </span>
           )}
-          {isHigh && !isCompleted && !isUrgent && (
-            <span style={rowStyles.highBadge} title="أولوية مرتفعة">
-              <span style={rowStyles.highDot} />
-              <span>مرتفع</span>
-            </span>
-          )}
 
           {/* Blocking Dependencies Badge */}
           {hasBlocking && !isCompleted && (
@@ -314,7 +316,6 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               title={`${attachments.length} مرفقات — انقر للمعاينة باللوحة`}
             >
               <Paperclip size={10} color="var(--text-muted)" />
-              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{attachments.length}</span>
             </span>
           )}
         </div>
@@ -325,29 +326,49 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
           className="task-col-person"
           title={`${viewType === 'my-tasks' ? `أنشأها: ${creatorName}` : `المكلف: ${assigneeName}`} (صلاحية الظهور: ${visibilityReason.label})`}
         >
-          <User size={11} color="var(--text-muted)" />
-          <span style={rowStyles.personName}>{targetPerson}</span>
-          <span
-            style={{
-              fontSize: 9.5,
-              fontWeight: 600,
-              padding: '1px 5px',
-              borderRadius: 4,
-              backgroundColor: visibilityReason.bg,
-              color: visibilityReason.color,
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-          >
-            {visibilityReason.label}
-          </span>
+          {viewType === 'my-tasks' ? (
+            <span
+              style={(() => {
+                const pk = String(targetPerson || '؟');
+                const hues = [258, 152, 12, 200, 330, 45, 96, 175, 285, 30];
+                const hue = hues[(pk.length + pk.charCodeAt(0)) % hues.length];
+                return { width: 22, height: 22, borderRadius: '50%', background: `hsl(${hue} 42% 45%)`, color: '#ffffff', fontSize: 9, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 };
+              })()}
+            >
+              {String(targetPerson || '؟').trim().slice(0, 2).toUpperCase()}
+            </span>
+          ) : (
+            <>
+              <User size={11} color="var(--text-muted)" />
+              <span style={rowStyles.personName}>{targetPerson}</span>
+            </>
+          )}
+          {(visibilityReason.label === 'متابع' || visibilityReason.label === 'إشراف إداري') && (
+            <span
+              style={{
+                fontSize: 9.5,
+                fontWeight: 600,
+                padding: '1px 5px',
+                borderRadius: 4,
+                backgroundColor: visibilityReason.bg,
+                color: visibilityReason.color,
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              {visibilityReason.label}
+            </span>
+          )}
         </div>
 
         {/* Col 3: Estimated Time */}
         <div style={rowStyles.estCol} className="task-col-est">
-          {(task.estimatedMinutes || task.estimatedHours) ? (
-            <span style={rowStyles.monoText}>
-              {task.estimatedMinutes || task.estimatedHours * 60} د
+          {isTimeLeak ? (
+            <span
+              style={{ fontSize: 9, fontWeight: 700, color: 'var(--accent-orange)', whiteSpace: 'nowrap', padding: '1px 5px', backgroundColor: 'var(--accent-orange-bg, rgba(249,115,22,0.1))', borderRadius: 5 }}
+              title={`تجاوز التقدير: ${rowActualMin} د فعليًا مقابل ${rowEstMin} د مقدرة — التفاصيل بالداخل`}
+            >
+              تجاوز التقدير
             </span>
           ) : (
             <span style={rowStyles.emptyCell}>—</span>
@@ -361,7 +382,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               <span
                 style={{
                   ...rowStyles.monoText,
-                  color: isOverdue ? 'var(--accent-red)' : isDueSoon ? 'var(--accent-yellow)' : 'var(--text-dim)',
+                  color: isOverdue ? overdueColor : isDueSoon ? 'var(--accent-yellow)' : 'var(--text-dim)',
                   fontWeight: isOverdue ? 600 : 400,
                 }}
                 title={new Date(task.dueDate).toLocaleString('ar-EG-u-nu-latn')}
@@ -371,7 +392,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                 </span>
               </span>
               {isOverdue && (
-                <span style={rowStyles.overdueMini} title={`متأخر عن الموعد بـ ${getOverdueText()}`}>
+                <span style={{ ...rowStyles.overdueMini, color: overdueColor }} title={`متأخر عن الموعد بـ ${getOverdueText()}`}>
                   متأخر {getOverdueText()}
                 </span>
               )}
@@ -521,8 +542,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               style={rowStyles.startBtn}
               title="بدء العمل على المهمة واحتساب الوقت"
             >
-              <Play size={10} fill="currentColor" color="currentColor" />
-              <span className="task-action-label">بدء العمل</span>
+              <Play size={12} fill="currentColor" color="currentColor" />
             </button>
           ) : (
             <span
@@ -753,7 +773,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     fontSize: 11,
   },
   actionsCol: {
-    width: 135,
+    width: 100,
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
@@ -797,11 +817,13 @@ const rowStyles: Record<string, React.CSSProperties> = {
   startBtn: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(56, 189, 248, 0.12)',
-    border: '1px solid rgba(56, 189, 248, 0.3)',
-    borderRadius: 5,
-    padding: '3px 8px',
+    justifyContent: 'center',
+    width: 28,
+    height: 28,
+    backgroundColor: 'var(--accent-blue-bg)',
+    border: '1px solid var(--accent-blue-border)',
+    borderRadius: '50%',
+    padding: 0,
     fontSize: 11,
     fontWeight: 600,
     color: 'var(--accent-blue)',

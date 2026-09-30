@@ -810,6 +810,16 @@ export const TasksTab: React.FC = () => {
     const bRunning = (b.id && activeTasksMap?.[b.id]) ? 1 : 0;
     if (aRunning !== bRunning) return bRunning - aRunning;
 
+    // Smart order: overdue tasks lead (oldest due first) — the list tells a story
+    if (sortBy === 'smart') {
+      const done = (x: any) => String(x.status || '').toUpperCase() === 'COMPLETED';
+      const nowMs = Date.now();
+      const aOver = !done(a) && a.dueDate && new Date(a.dueDate).getTime() < nowMs;
+      const bOver = !done(b) && b.dueDate && new Date(b.dueDate).getTime() < nowMs;
+      if (aOver && bOver) return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      if (aOver !== bOver) return aOver ? -1 : 1;
+    }
+
     const priorityWeight: Record<string, number> = {
       URGENT: 4,
       HIGH: 3,
@@ -1478,7 +1488,7 @@ export const TasksTab: React.FC = () => {
             <div style={{ width: 72, textAlign: 'center', flexShrink: 0 }}>
               <span style={styles.tableColLabel}>الاستحقاق</span>
             </div>
-            <div style={{ width: 135, textAlign: 'left', flexShrink: 0, paddingLeft: 4 }} className="task-col-actions">
+            <div style={{ width: 100, textAlign: 'left', flexShrink: 0, paddingLeft: 4 }} className="task-col-actions">
               <span style={styles.tableColLabel}>الإجراءات</span>
             </div>
           </div>
@@ -1581,7 +1591,7 @@ export const TasksTab: React.FC = () => {
         <div style={styles.tableFooterRow}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={styles.tableFooterText}>
-              عرض {displayTasks.length} من {tasks.length} مهمة
+              المقدر الكلي: {Math.round(displayTasks.reduce((s, t) => s + (Number(t.estimatedMinutes || 0) || (Number(t.estimatedHours || 0) * 60) || 0), 0) / 60 * 10) / 10} ساعة · عرض {displayTasks.length} من {tasks.length} مهمة
             </span>
             {urgentCount > 0 && (
               <span style={styles.footerUrgentBadge}>
