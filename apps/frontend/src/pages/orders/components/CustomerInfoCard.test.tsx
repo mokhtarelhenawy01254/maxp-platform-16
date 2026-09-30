@@ -65,14 +65,26 @@ const baseOrder: OrderDetailsType = {
   updatedAt: "2026-05-04T09:00:00.000Z",
 };
 
-const renderCard = (order: OrderDetailsType = baseOrder) =>
+const renderCard = (
+  order: OrderDetailsType = baseOrder,
+  options?: {
+    isEditing?: boolean;
+    editForm?: any;
+    setEditForm?: jest.Mock;
+    customFieldConfig?: {
+      isEnabled?: boolean;
+      label?: string;
+      placeholder?: string;
+    };
+  },
+) =>
   render(
     <MemoryRouter>
       <CustomerInfoCard
         order={order}
-        isEditing={false}
-        editForm={{}}
-        setEditForm={jest.fn()}
+        isEditing={options?.isEditing ?? false}
+        editForm={options?.editForm ?? {}}
+        setEditForm={options?.setEditForm ?? jest.fn()}
         governments={[]}
         areas={[]}
         loadingGovernments={false}
@@ -80,6 +92,7 @@ const renderCard = (order: OrderDetailsType = baseOrder) =>
         selectedGovernmentId={null}
         setSelectedGovernmentId={jest.fn()}
         handleGovernmentChange={jest.fn()}
+        customFieldConfig={options?.customFieldConfig}
       />
     </MemoryRouter>,
   );
@@ -141,5 +154,108 @@ describe("CustomerInfoCard customer blocking", () => {
         }),
       );
     });
+  });
+});
+
+describe("CustomerInfoCard notes and custom fields behavior", () => {
+  const orderWithNotesAndCarSpecs: OrderDetailsType = {
+    ...baseOrder,
+    notes: "تفاصيل الطلب: نوع وموديل وسنة صنع السيارة: هيونداي توسان 2022\nرقم هاتف بديل 01005053064",
+    metadata: {
+      carModel: "هيونداي توسان 2022",
+    },
+  };
+
+  it("when custom fields is DISABLED, displays generic order notes without car specs wording and preserves customer text", () => {
+    renderCard(orderWithNotesAndCarSpecs, {
+      customFieldConfig: { isEnabled: false },
+    });
+
+    // Should display general notes label
+    expect(screen.getByText("ملاحظات الطلب")).toBeInTheDocument();
+
+    // Should NOT contain the old hardcoded headers
+    expect(
+      screen.queryByText(/تفاصيل وملاحظات الطلب ومواصفات السيارة/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/مواصفات وتفاصيل مدخلة بواسطة العميل:/),
+    ).not.toBeInTheDocument();
+
+    // Must preserve full original notes content including alternate phone
+    expect(screen.getByText(/رقم هاتف بديل 01005053064/)).toBeInTheDocument();
+  });
+
+  it("when custom fields is DISABLED and in edit mode, shows generic notes placeholder", () => {
+    renderCard(orderWithNotesAndCarSpecs, {
+      isEditing: true,
+      editForm: { notes: orderWithNotesAndCarSpecs.notes },
+      customFieldConfig: { isEnabled: false },
+    });
+
+    const textarea = screen.getByPlaceholderText("أدخل ملاحظات الطلب...");
+    expect(textarea).toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText(/مثل نوع وموديل السيارة/),
+    ).not.toBeInTheDocument();
+  });
+
+  it("when custom fields is ENABLED, displays extracted custom fields with label and value, and preserves extra delivery notes", () => {
+    renderCard(orderWithNotesAndCarSpecs, {
+      customFieldConfig: {
+        isEnabled: true,
+        label: "نوع وموديل وسنة صنع السيارة",
+        placeholder: "اكتب مواصفات السيارة...",
+      },
+    });
+
+    // Displays custom field label and value extracted
+    expect(
+      screen.getByText(/نوع وموديل وسنة صنع السيارة:/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("هيونداي توسان 2022")).toBeInTheDocument();
+
+    // Displays residual notes under additional notes
+    expect(screen.getByText("ملاحظات إضافية:")).toBeInTheDocument();
+    expect(screen.getByText(/رقم هاتف بديل 01005053064/)).toBeInTheDocument();
+  });
+
+  it("when custom fields is ENABLED and in edit mode, shows custom field placeholder", () => {
+    renderCard(orderWithNotesAndCarSpecs, {
+      isEditing: true,
+      editForm: { notes: orderWithNotesAndCarSpecs.notes },
+      customFieldConfig: {
+        isEnabled: true,
+        label: "نوع وموديل وسنة صنع السيارة",
+        placeholder: "اكتب مواصفات السيارة...",
+      },
+    });
+
+    const textarea = screen.getByPlaceholderText("اكتب مواصفات السيارة...");
+    expect(textarea).toBeInTheDocument();
+  });
+
+  it("same order displays appropriately based strictly on store settings", () => {
+    // Disabled store
+    const { unmount } = renderCard(orderWithNotesAndCarSpecs, {
+      customFieldConfig: { isEnabled: false },
+    });
+    expect(screen.getByText("ملاحظات الطلب")).toBeInTheDocument();
+    expect(
+      screen.queryByText("المواصفات والحقول المخصصة"),
+    ).not.toBeInTheDocument();
+    unmount();
+
+    // Enabled store
+    renderCard(orderWithNotesAndCarSpecs, {
+      customFieldConfig: {
+        isEnabled: true,
+        label: "نوع وموديل وسنة صنع السيارة",
+      },
+    });
+    expect(
+      screen.getByText(/نوع وموديل وسنة صنع السيارة:/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("هيونداي توسان 2022")).toBeInTheDocument();
   });
 });
