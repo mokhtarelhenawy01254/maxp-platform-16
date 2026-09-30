@@ -150,6 +150,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openExternal: (url: string) =>
     ipcRenderer.invoke('shell:open-external', url),
 
+  // Clipboard
+  copyToClipboard: (text: string) =>
+    ipcRenderer.invoke('clipboard:write-text', text),
+  readClipboardText: () =>
+    ipcRenderer.invoke('clipboard:read-text'),
+
   // Window Controls & System
   windowMinimize: () => ipcRenderer.invoke('window:minimize'),
   windowToggleMaximize: () => ipcRenderer.invoke('window:toggle-maximize'),

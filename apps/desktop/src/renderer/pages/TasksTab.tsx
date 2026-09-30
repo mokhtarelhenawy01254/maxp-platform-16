@@ -20,7 +20,6 @@ import {
   AlertCircle,
   ClipboardCheck,
   RotateCcw,
-  ChevronDown,
 } from 'lucide-react';
 import { CreateTaskModal } from '../components/tasks/CreateTaskModal';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
@@ -68,8 +67,7 @@ export const TasksTab: React.FC = () => {
   const [listMode, setListMode] = useState<'list' | 'board'>(() => (localStorage.getItem('maxp_tasks_mode') as any) || 'list');
   const [groupByProject, setGroupByProject] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
-  const [teamActiveTimers, setTeamActiveTimers] = useState<TeamActiveTimer[]>([]);
-  const [teamCockpitOpen, setTeamCockpitOpen] = useState(false);
+
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -374,9 +372,7 @@ export const TasksTab: React.FC = () => {
         window.electronAPI.getTasks(fetchScope),
         window.electronAPI.getCompanyUsers().catch(() => null),
         window.electronAPI.getRunningTaskTimer().catch(() => null),
-        isMgr
-          ? window.electronAPI.getCompanyActiveTimers().catch(() => null)
-          : Promise.resolve(null),
+        Promise.resolve(null),
       ]);
 
       if (tokenRes?.token) {
@@ -478,10 +474,6 @@ export const TasksTab: React.FC = () => {
         }
       }
 
-      // 4. Team timers arrived with the parallel batch above
-      if (activeRes?.success && Array.isArray(activeRes.activeTimers)) {
-        setTeamActiveTimers(activeRes.activeTimers);
-      }
     } catch (err) {
       console.warn('[TasksTab] Fetch error:', err);
     } finally {
@@ -1040,131 +1032,6 @@ export const TasksTab: React.FC = () => {
           </button>
         </div>
       )}
-
-      {/* Team Live Active Tasks Cockpit for Managers */}
-      {isAdminOrManager && teamActiveTimers.length > 0 && (
-        <div style={styles.teamCockpitBox}>
-          <div
-            style={{ ...styles.teamCockpitHeader, cursor: 'pointer' }}
-            onClick={() => setTeamCockpitOpen((v) => !v)}
-            title={teamCockpitOpen ? 'إخفاء تفاصيل الفريق المباشر' : 'عرض كروت الفريق المباشر'}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={styles.teamPulseDot} />
-              <span style={styles.teamCockpitTitle}>أعضاء الفريق قيد العمل المباشر الآن</span>
-              <span style={styles.teamCockpitCountBadge}>
-                {teamActiveTimers.length} {teamActiveTimers.length === 1 ? 'عضو' : 'أعضاء'}
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {teamCockpitOpen && (
-                <span style={styles.teamCockpitSubtitle}>
-                  تتبع حي فوري للمهام الجاري إنجازها في هذه اللحظة
-                </span>
-              )}
-              <ChevronDown
-                size={14}
-                color="var(--text-muted)"
-                style={{ transform: teamCockpitOpen ? 'rotate(180deg)' : 'none', transition: 'transform 140ms ease-out' }}
-              />
-            </div>
-          </div>
-
-          {teamCockpitOpen && (
-          <div style={styles.teamCockpitGrid}>
-            {teamActiveTimers.map((timer) => (
-              <div
-                key={timer.id}
-                style={styles.teamTimerCard}
-                onClick={() => {
-                  setActiveView('all');
-                  setSearchQuery(timer.userName);
-                }}
-                title={`عرض مهام ${timer.userName} — يعمل حالياً على: ${timer.taskTitle}`}
-                onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.98)'; }}
-                onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
-              >
-                {/* User Avatar & Info */}
-                <div style={styles.teamUserSection}>
-                  <div style={styles.teamAvatar}>
-                    {timer.userName ? timer.userName.charAt(0).toUpperCase() : 'U'}
-                  </div>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={styles.teamUserName} title={timer.userName}>{timer.userName}</div>
-                    <div style={styles.teamUserDept} title={timer.userJobTitle || timer.userDepartment || 'فريق العمل'}>
-                      {timer.userJobTitle || timer.userDepartment || 'فريق العمل'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Task Title & Project */}
-                <div style={styles.teamTaskSection}>
-                  <div style={styles.teamTaskTitle} title={timer.taskTitle}>
-                    {timer.taskTitle}
-                  </div>
-                  {timer.projectName && (
-                    <span style={styles.teamProjectTag}>{timer.projectName}</span>
-                  )}
-                </div>
-
-                {/* Live Stopwatch Badge */}
-                <div
-                  style={{
-                    ...styles.teamStopwatchBadge,
-                    borderColor: timer.elapsedSeconds > 4 * 3600 ? 'rgba(245, 158, 11, 0.45)' : (styles.teamStopwatchBadge.borderColor || 'var(--accent-green-border)'),
-                    backgroundColor: timer.elapsedSeconds > 4 * 3600 ? 'rgba(245, 158, 11, 0.12)' : (styles.teamStopwatchBadge.backgroundColor || 'rgba(34, 197, 94, 0.08)'),
-                  }}
-                  title={timer.elapsedSeconds > 4 * 3600 ? 'تنبيه: وقت العمل تجاوز 4 ساعات متواصلة (احتمال خمول أو نسيان)' : 'عداد وقت العمل الفعلي على المهمة'}
-                >
-                  <Clock size={11} color={timer.elapsedSeconds > 4 * 3600 ? 'var(--accent-yellow)' : 'var(--accent-green)'} />
-                  <span
-                    style={{
-                      ...styles.teamStopwatchText,
-                      color: timer.elapsedSeconds > 4 * 3600 ? 'var(--accent-yellow)' : styles.teamStopwatchText.color,
-                    }}
-                  >
-                    {formatRunnerTimer(timer.elapsedSeconds)} {timer.elapsedSeconds > 4 * 3600 ? '⚠️' : ''}
-                  </span>
-                </div>
-
-                {/* Manager Remote Stop Action */}
-                {isAdminOrManager && (
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      if (window.confirm(`هل تريد إيقاف المؤقت للموظف (${timer.userName})؟`)) {
-                        try {
-                          await window.electronAPI.stopTaskTimer(timer.id);
-                          loadData(false);
-                        } catch (err: any) {
-                          alert('تعذر إيقاف المؤقت: ' + err.message);
-                        }
-                      }
-                    }}
-                    style={{
-                      marginRight: 6,
-                      background: 'rgba(239, 68, 68, 0.08)',
-                      border: '1px solid rgba(239, 68, 68, 0.25)',
-                      color: 'var(--accent-red)',
-                      borderRadius: 4,
-                      fontSize: 10,
-                      fontWeight: 600,
-                      padding: '2px 6px',
-                      cursor: 'pointer',
-                    }}
-                    title="إيقاف المؤقت إدارياً"
-                  >
-                    إيقاف
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-          )}
-        </div>
-      )}
-
-
 
       {/* Linear-Style Tasks Surface Chassis (Unified Single-Surface) */}
       <div style={styles.list}>

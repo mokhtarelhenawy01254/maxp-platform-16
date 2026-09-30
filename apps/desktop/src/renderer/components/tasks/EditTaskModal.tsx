@@ -67,7 +67,12 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     if (!task) return;
     setTitle(task.title || '');
     setDescription(task.description || '');
-    setAssignedTo(task.assignedTo || '');
+    setAssignedTo(String(
+      task.assignedTo ||
+      task.assignedToId ||
+      (typeof task.assignee === 'object' ? task.assignee?.id : '') ||
+      ''
+    ));
     setPriority((task.priority || 'MEDIUM').toUpperCase());
     setExistingAttachments(task.taskAttachments || task.attachments || []);
     setNewAttachments([]);
@@ -91,8 +96,12 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       setDueDate('');
     }
 
-    const est = task.estimatedMinutes || (task.estimatedHours ? task.estimatedHours * 60 : 60);
-    setEstimatedMinutes(est);
+    const est = task.estimatedMinutes
+      ? Number(task.estimatedMinutes)
+      : task.estimatedHours
+      ? Number(task.estimatedHours) * 60
+      : 0;
+    setEstimatedMinutes(est || 60);
   }, [task]);
 
   if (!isOpen || !task) return null;

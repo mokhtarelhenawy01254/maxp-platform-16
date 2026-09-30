@@ -5,12 +5,12 @@ import { TabErrorBoundary } from '../components/TabErrorBoundary';
 import CockpitTab from './CockpitTab';
 import TasksTab from './TasksTab';
 import TimersTab from './TimersTab';
+import TeamLiveTab from './TeamLiveTab';
 import CommandPalette from '../components/CommandPalette';
 import GoalsTab from './GoalsTab';
 import { TaskReportView } from '../components/tasks/reports/TaskReportView';
 import AppsTimelineTab from './AppsTimelineTab';
 import AttendanceAuditTab from './AttendanceAuditTab';
-import SystemStatusTab from './SystemStatusTab';
 import SettingsModal from '../components/SettingsModal';
 import { BreakReasonModal } from '../components/BreakReasonModal';
 import { ShiftHandoverModal } from '../components/ShiftHandoverModal';
@@ -309,6 +309,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
         return 'المهام اليومية ومعدل الإنجاز';
       case 'timers':
         return 'المؤقتات الحية — زمن المهام والشغل المتوازي';
+      case 'team':
+        return 'أعضاء الفريق قيد العمل المباشر';
       case 'goals':
         return 'الأهداف ومؤشرات الأداء (OKRs)';
       case 'reports':
@@ -552,6 +554,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
           {activeTab === 'timers' && <TabErrorBoundary key="timers" tabName="المؤقتات"><TimersTab /></TabErrorBoundary>}
           {activeTab === 'goals' && <TabErrorBoundary key="goals" tabName="الأهداف"><GoalsTab /></TabErrorBoundary>}
           {activeTab === 'reports' && <TabErrorBoundary key="reports" tabName="تقارير الأداء"><TaskReportView isExecutiveMode={false} /></TabErrorBoundary>}
+          {activeTab === 'team' && <TabErrorBoundary key="team" tabName="أعضاء الفريق"><TeamLiveTab /></TabErrorBoundary>}
 
           {activeTab === 'apps' && (
             <TabErrorBoundary key="apps" tabName="البرامج والمواقع">
@@ -565,7 +568,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
             </TabErrorBoundary>
           )}
 
-          {activeTab === 'system' && <TabErrorBoundary key="system" tabName="حالة السحابة والجهاز"><SystemStatusTab /></TabErrorBoundary>}
         </div>
       </main>
 

@@ -609,6 +609,25 @@ function logout(): void {
 // ── IPC Handlers ──────────────────────────────────────────────
 
 function registerIpcHandlers(): void {
+  // Safe Clipboard IPC handlers
+  ipcMain.handle('clipboard:write-text', async (_, text: string) => {
+    try {
+      clipboard.writeText(String(text || ''));
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message };
+    }
+  });
+
+  ipcMain.handle('clipboard:read-text', async () => {
+    try {
+      const text = clipboard.readText();
+      return { success: true, text };
+    } catch (err: any) {
+      return { success: false, error: err?.message, text: '' };
+    }
+  });
+
   ipcMain.handle(IPC_CHANNELS.GET_TRACKER_STATE, () => {
     const today = getLocalDateString();
     const stored = localDb.getDailyStats(today);
