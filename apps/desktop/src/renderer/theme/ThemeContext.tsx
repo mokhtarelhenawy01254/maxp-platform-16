@@ -160,6 +160,18 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setModeState(p.base);
   }, []);
 
+  // Command palette bridge (cross-tree actions)
+  useEffect(() => {
+    const onPreset = (e: Event) => setPreset((e as CustomEvent).detail);
+    const onToggle = () => toggleTheme();
+    window.addEventListener('maxp:apply-preset', onPreset);
+    window.addEventListener('maxp:apply-toggle-theme', onToggle);
+    return () => {
+      window.removeEventListener('maxp:apply-preset', onPreset);
+      window.removeEventListener('maxp:apply-toggle-theme', onToggle);
+    };
+  }, [setPreset, toggleTheme]);
+
   const setFontSize = useCallback((s: FontSizeSetting) => {
     setFontSizeState(s);
   }, []);

@@ -66,6 +66,11 @@ function isShipmentNotFoundError(message = '') {
 }
 
 function handleError(error, operation) {
+  if (isTurboConfigurationError(error)) {
+    // 🛡️ Silent for unconfigured companies to avoid log spam (e.g. 1600+ entries)
+    const translatedError = translateTurboErrorToArabic(error.message);
+    throw new Error(translatedError);
+  }
   if (error.response) {
     const status = error.response.status;
     const data = error.response.data;

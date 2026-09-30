@@ -230,7 +230,12 @@ async function logSubtaskCreated(taskId, memberId, subtaskTitle) {
 async function logFieldChanges(taskId, memberId, changes) {
     const promises = [];
 
-    for (const [field, { oldValue, newValue }] of Object.entries(changes)) {
+    for (const [field, change] of Object.entries(changes)) {
+        // ملاحظة: القيم دي بتتغيّر جوه الـswitch (تحويل IDs لأسماء أعضاء/مشاريع/إصدارات)،
+        // فمينفعش تكون const مفكوكة من الحلقة — كان بيعمل TypeError: Assignment to constant variable
+        // وبيتبلع في الـcatch فبيتسجّل الـID الخام بدل الاسم.
+        let oldValue = change?.oldValue;
+        let newValue = change?.newValue;
         if (oldValue !== newValue) {
             let action = null;
 

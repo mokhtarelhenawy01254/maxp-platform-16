@@ -1,6 +1,6 @@
 const axios = require('axios');
 const FormData = require('form-data');
-const { handleError } = require('../../utils/turbo/errorHandler');
+const { handleError, isTurboConfigurationError } = require('../../utils/turbo/errorHandler');
 
 class TicketService {
   constructor(apiClient) {
@@ -333,7 +333,9 @@ class TicketService {
       if (result.success === 0 || result.success === false) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
       return { success: true, counts: result.feed || result.data || { tickets: 0, missions: 0, orders: 0 }, message: result.message || 'تم جلب عدد التذاكر غير المقروءة بنجاح', data: result };
     } catch (error) {
-      if (error.response?.status === 404) return { success: true, counts: { tickets: 0, missions: 0, orders: 0 }, message: 'لا توجد تذاكر غير مقروءة', data: null };
+      if (error.response?.status === 404 || isTurboConfigurationError(error)) {
+        return { success: true, counts: { tickets: 0, missions: 0, orders: 0 }, message: 'لا توجد تذاكر غير مقروءة أو خدمة تربو غير مفعلة', data: null, unconfigured: true };
+      }
       handleError(error, 'Get Unread Tickets Count');
       return { success: false, error: error.message, message: 'فشل في جلب عدد التذاكر غير المقروءة', counts: { tickets: 0, missions: 0, orders: 0 } };
     }

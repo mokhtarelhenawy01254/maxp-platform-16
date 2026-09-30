@@ -57,6 +57,26 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [watchers, setWatchers] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState(getDefaultDueDate);
   const [estimatedMinutes, setEstimatedMinutes] = useState<number>(60);
+  const [projectName, setProjectName] = useState('');
+  const [templates, setTemplates] = useState<{ name: string; title: string; description: string; priority: string; estimatedMinutes: number }[]>(() => {
+    try { return JSON.parse(localStorage.getItem('maxp_task_templates') || '[]'); } catch { return []; }
+  }, []);
+
+  const saveAsTemplate = (): void => {
+    if (!title.trim()) return;
+    try {
+      const next = [...templates, { name: title.trim().slice(0, 24), title: title.trim(), description: description.trim(), priority, estimatedMinutes }];
+      localStorage.setItem('maxp_task_templates', JSON.stringify(next.slice(-6)));
+      setTemplates(next.slice(-6));
+    } catch {}
+  };
+
+  const applyTemplate = (tpl: typeof templates[number]): void => {
+    setTitle(tpl.title);
+    setDescription(tpl.description || '');
+    setPriority((tpl.priority as any) || 'MEDIUM');
+    setEstimatedMinutes(tpl.estimatedMinutes || 60);
+  };
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringRule, setRecurringRule] = useState<'DAILY' | 'WEEKLY' | 'MONTHLY'>('DAILY');
   const [attachments, setAttachments] = useState<AttachmentDraft[]>([]);
@@ -126,6 +146,56 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Natural-language quick add — parsed synchronously at submit:
+  // dates (بكرة / بعد يومين / بعد 3 أيام / بعد أسبوع / weekday) and priority (عاجل).
+  const parseQuickAdd = (rawTitle: string): { title: string; dueDate?: string; priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' } => {
+    let clean = rawTitle;
+    let dueISO: string | undefined;
+    let priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' | undefined;
+
+    const base = new Date();
+    const addDays = (n: number): Date => { const d = new Date(base); d.setDate(d.getDate() + n); return d; };
+    const setEndOfDay = (d: Date): string => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 18, 0, 0).toISOString().slice(0, 10);
+    const weekdays: [RegExp, number][] = [
+      [/الأحد|الاحد/, 0], [/الإثنين|الاثنين|الاتنين/, 1], [/الثلاثاء|التلات/, 2],
+      [/الأربعاء|الاربع/, 3], [/الخميس/, 4], [/الجمعة|الجمعه/, 5], [/السبت/, 6],
+    ];
+
+    const afterDays = rawTitle.match(/بعد\s*(يومين|[0-9]+\s*(?:أيام|يوم))/);
+    const afterWeek = rawTitle.match(/بعد\s*(أسبوعين|[0-9]+\s*(?:أسابيع|أسبوع))/);
+    const weekdayHit = weekdays.find(([re]) => re.test(rawTitle));
+
+    let due: Date | null = null;
+    if (/بكرة|بكره|غدًا|غدا/.test(rawTitle)) due = addDays(1);
+    else if (afterDays) {
+      const m = afterDays[1];
+      due = addDays(m.includes('يومين') ? 2 : (parseInt(m.replace(/[^0-9]/g, ''), 10) || 1));
+    } else if (afterWeek) {
+      const m = afterWeek[1];
+      due = addDays(m.includes('أسبوعين') ? 14 : (parseInt(m.replace(/[^0-9]/g, ''), 10) || 7));
+    } else if (weekdayHit) {
+      let diff = (weekdayHit[1] - base.getDay() + 7) % 7;
+      if (diff === 0) diff = 7;
+      due = addDays(diff);
+    }
+
+    if (due) {
+      dueISO = setEndOfDay(due);
+      clean = clean
+        .replace(/بعد\s*(يومين|[0-9]+\s*(?:أيام|يوم|أسبوع|أسابيع|أسبوعين|أسابيع))/g, '')
+        .replace(/بكرة|بكره|غدًا|غدا/g, '');
+      weekdays.forEach(([re]) => { clean = clean.replace(re, ''); });
+      clean = clean.replace(/\s{2,}/g, ' ').replace(/\s+([.!؟?])/g, '$1').trim();
+    }
+
+    if (/عاجل|مستعجل|ضروري|فورًا|فورا/.test(rawTitle)) {
+      priority = 'URGENT';
+      clean = clean.replace(/عاجل|مستعجل|ضروري|فورًا|فورا/g, '').replace(/\s{2,}/g, ' ').trim();
+    }
+
+    return { title: clean.trim() || rawTitle, dueDate: dueISO, priority };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
@@ -133,18 +203,24 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       return;
     }
 
+    const quick = parseQuickAdd(title.trim());
+    const finalTitle = quick.title;
+    const finalDue = quick.dueDate || (dueDate ? new Date(dueDate).toISOString().slice(0, 10) : '');
+    const finalPriority = quick.priority || priority;
+
     setIsSubmitting(true);
     setError(null);
 
     try {
       // 1. Create task
       const createRes = await window.electronAPI.createTask({
-        title: title.trim(),
-        description: description.trim() || title.trim(),
-        priority,
+        title: finalTitle,
+        description: description.trim() || finalTitle,
+        priority: finalPriority,
         assignedTo: assignedTo || undefined,
-        dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+        dueDate: finalDue ? new Date(finalDue).toISOString() : undefined,
         estimatedMinutes: Number(estimatedMinutes) || 60,
+        projectName: projectName.trim() || undefined,
         isRecurring,
         recurringRule: isRecurring ? recurringRule : undefined,
         watchers,
@@ -154,7 +230,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         throw new Error(createRes.error || 'فشل إنشاء المهمة في السيرفر');
       }
 
-      if (priority === 'URGENT') {
+      if (finalPriority === 'URGENT') {
         audioAlerts.playUrgentAlert();
       } else {
         audioAlerts.playTaskStart();
@@ -178,6 +254,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
       // Reset form & notify
       setTitle('');
+      setProjectName('');
       setDescription('');
       setAssignedTo('');
       setWatchers([]);
@@ -209,6 +286,40 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         {error && <div style={modalStyles.errorAlert}>{error}</div>}
 
         <form onSubmit={handleSubmit} style={modalStyles.form}>
+        {templates.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+            <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>قوالب:</span>
+            {templates.map((tpl, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => applyTemplate(tpl)}
+                title={tpl.title}
+                style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--accent-blue)', backgroundColor: 'var(--accent-blue-bg)', border: '1px solid var(--accent-blue-border)', borderRadius: 10, padding: '2px 9px', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                {tpl.name}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={saveAsTemplate}
+              title="حفظ البيانات الحالية كقالب"
+              style={{ fontSize: 10.5, color: 'var(--text-muted)', background: 'transparent', border: '1px dashed var(--border-default)', borderRadius: 10, padding: '2px 9px', cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              + حفظ كقالب
+            </button>
+          </div>
+        )}
+        {templates.length === 0 && (
+          <button
+            type="button"
+            onClick={saveAsTemplate}
+            style={{ fontSize: 10.5, color: 'var(--text-muted)', background: 'transparent', border: '1px dashed var(--border-default)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', marginBottom: 10, alignSelf: 'flex-start' }}
+            title="احفظ المهمة الحالية كقالب للاستخدام لاحقًا"
+          >
+            + حفظ الحقول الحالية كقالب
+          </button>
+        )}
           {/* Title */}
           <div>
             <label style={modalStyles.label}>عنوان المهمة *</label>
@@ -260,7 +371,15 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             </div>
 
             <div>
-              <label style={modalStyles.label}>مستوى الأولوية</label>
+              <label style={{ ...modalStyles.label }}>المشروع</label>
+              <input
+                type="text"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="مثال: Swan Store (اختياري)"
+                style={{ ...modalStyles.input, marginBottom: 12 }}
+              />
+              <label style={{ ...modalStyles.label }}>مستوى الأولوية</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as any)}

@@ -58,9 +58,15 @@ export interface TeamActiveTimer {
 export const TasksTab: React.FC = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'my-tasks' | 'assigned-by-me' | 'all' | 'analytics'>('my-tasks');
-  const [statusFilter, setStatusFilter] = useState<'IN_PROGRESS' | 'IN_REVIEW' | 'REVISION' | 'COMPLETED'>('IN_PROGRESS');
+  const [activeView, setActiveView] = useState<'my-tasks' | 'assigned-by-me' | 'all' | 'analytics'>(() => (localStorage.getItem('maxp_tasks_view') as any) || 'my-tasks');
+  const [statusFilter, setStatusFilter] = useState<'IN_PROGRESS' | 'IN_REVIEW' | 'REVISION' | 'COMPLETED'>(() => (localStorage.getItem('maxp_tasks_status') as any) || 'IN_PROGRESS');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'smart' | 'due' | 'priority' | 'alpha'>(() => (localStorage.getItem('maxp_tasks_sort') as any) || 'smart');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [undoToast, setUndoToast] = useState<{ taskId: string; from: string; to: string } | null>(null);
+  const [listMode, setListMode] = useState<'list' | 'board'>(() => (localStorage.getItem('maxp_tasks_mode') as any) || 'list');
+  const [groupByProject, setGroupByProject] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [teamActiveTimers, setTeamActiveTimers] = useState<TeamActiveTimer[]>([]);
   const [teamCockpitOpen, setTeamCockpitOpen] = useState(false);
@@ -519,6 +525,84 @@ export const TasksTab: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [loadData]);
 
+  // Persist view/filter so the employee finds his context after restart
+  useEffect(() => {
+    try {
+      localStorage.setItem('maxp_tasks_view', activeView);
+      localStorage.setItem('maxp_tasks_status', statusFilter);
+      localStorage.setItem('maxp_tasks_sort', sortBy);
+      localStorage.setItem('maxp_tasks_mode', listMode);
+    } catch {}
+  }, [activeView, statusFilter, sortBy, listMode]);
+
+  // Undo toast auto-dismiss
+  useEffect(() => {
+    if (!undoToast) return;
+    const t = setTimeout(() => setUndoToast(null), 6000);
+    return () => clearTimeout(t);
+  }, [undoToast]);
+
+  const undoLastAction = async () => {
+    if (!undoToast) return;
+    try {
+      await window.electronAPI.updateTaskStatus(undoToast.taskId, undoToast.from);
+      setUndoToast(null);
+      loadData(false);
+    } catch (err: any) {
+      alert('تعذر التراجع: ' + err.message);
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  // Kanban: click-to-move through the standard flow
+  const KANBAN_FLOW = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'];
+  const moveTask = (taskId: string, dir: 1 | -1) => {
+    const t = tasks.find((x) => x.id === taskId);
+    if (!t) return;
+    const cur = String(t.status || 'TODO').toUpperCase();
+    const idx = KANBAN_FLOW.indexOf(cur);
+    const nextIdx = idx === -1 ? (dir === 1 ? 0 : 0) : Math.min(KANBAN_FLOW.length - 1, Math.max(0, idx + dir));
+    const next = KANBAN_FLOW[nextIdx];
+    if (next !== cur) handleUpdateStatus(taskId, next);
+  };
+
+  const bulkComplete = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0 || bulkBusy) return;
+    setBulkBusy(true);
+    try {
+      await Promise.all(ids.map((id) => window.electronAPI.updateTaskStatus(id, 'COMPLETED')));
+      setSelectedIds(new Set());
+      loadData(false);
+    } catch (err: any) {
+      alert('فشل التحديث الجماعي: ' + err.message);
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  // Command palette deep actions: open task in drawer / spawn create modal
+  useEffect(() => {
+    const onOpenTask = (e: Event) => {
+      const task = (e as CustomEvent).detail;
+      if (task?.id) handleSelectTask(task);
+    };
+    const onNewTask = () => setIsCreateOpen(true);
+    window.addEventListener('maxp:open-task', onOpenTask);
+    window.addEventListener('maxp:new-task', onNewTask);
+    return () => {
+      window.removeEventListener('maxp:open-task', onOpenTask);
+      window.removeEventListener('maxp:new-task', onNewTask);
+    };
+  }, [handleSelectTask]);
+
   const userRole = String(currentUser?.role || '').toUpperCase();
   const isAdminOrManager = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER'].includes(userRole);
 
@@ -612,6 +696,9 @@ export const TasksTab: React.FC = () => {
         setTasks((prev) =>
           prev.map((t) => (t.id === taskId ? { ...t, ...res.task, status: finalStatus } : t))
         );
+        if (prevStatus && String(prevStatus).toUpperCase() !== String(targetStatus).toUpperCase()) {
+          setUndoToast({ taskId, from: String(prevStatus).toUpperCase(), to: targetStatus });
+        }
       }
     } catch (err) {
       console.warn('[TasksTab] Status update failed:', err);
@@ -722,6 +809,18 @@ export const TasksTab: React.FC = () => {
   // Smart 2026 SaaS sorting: running timers pinned to top, urgent tasks next, eliminating visual clutter
   const sortedDisplayTasks = [...displayTasks].filter(Boolean).sort((a, b) => {
     if (!a || !b) return 0;
+    if (sortBy === 'alpha') return String(a.title || '').localeCompare(String(b.title || ''), 'ar');
+    if (sortBy === 'due') {
+      const ad = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+      const bd = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+      if (ad !== bd) return ad - bd;
+    }
+    if (sortBy === 'priority') {
+      const pw: Record<string, number> = { URGENT: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+      const aw = pw[String(a.priority || '').toUpperCase()] || 0;
+      const bw = pw[String(b.priority || '').toUpperCase()] || 0;
+      if (aw !== bw) return bw - aw;
+    }
     const aRunning = (a.id && activeTasksMap?.[a.id]) ? 1 : 0;
     const bRunning = (b.id && activeTasksMap?.[b.id]) ? 1 : 0;
     if (aRunning !== bRunning) return bRunning - aRunning;
@@ -1173,6 +1272,45 @@ export const TasksTab: React.FC = () => {
       <div style={styles.list}>
         {/* Table Filter & Status Ribbon (Directly integrated into the top of the chassis) */}
         <div style={styles.tableFilterRibbon}>
+          {/* View mode + grouping toggles */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button
+              onClick={() => setListMode(listMode === 'list' ? 'board' : 'list')}
+              style={{
+                ...styles.segBtn,
+                backgroundColor: listMode === 'board' ? 'var(--bg-elevated)' : 'transparent',
+                color: listMode === 'board' ? 'var(--text-primary)' : 'var(--text-muted)',
+              }}
+              title="تبديل بين القائمة ولوحة Kanban"
+            >
+              <span>{listMode === 'list' ? 'عرض لوحة' : 'عرض قائمة'}</span>
+            </button>
+            <button
+              onClick={() => setGroupByProject((v) => !v)}
+              style={{
+                ...styles.segBtn,
+                backgroundColor: groupByProject ? 'var(--bg-elevated)' : 'transparent',
+                color: groupByProject ? 'var(--text-primary)' : 'var(--text-muted)',
+              }}
+              title="تجميع المهام حسب المشروع"
+            >
+              <span>تجميع بالمشروع</span>
+            </button>
+          </div>
+
+          {/* Sort selector (user-controlled ordering) */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            style={styles.sortSelect}
+            title="ترتيب القائمة"
+          >
+            <option value="smart">ترتيب ذكي (شغّال ← أولوية ← استحقاق)</option>
+            <option value="due">الأقرب استحقاقًا</option>
+            <option value="priority">الأولوية فقط</option>
+            <option value="alpha">أبجدي</option>
+          </select>
+
           {/* Status Tabs */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             {(['IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'] as const).map((s) => {
@@ -1270,6 +1408,60 @@ export const TasksTab: React.FC = () => {
           </div>
         </div>
 
+        {listMode === 'board' ? (
+          /* ── Kanban board (click-to-move; no drag libs) ── */
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, alignItems: 'start' }}>
+            {([['TODO', 'للتنفيذ'], ['IN_PROGRESS', 'قيد التنفيذ'], ['IN_REVIEW', 'مراجعة'], ['COMPLETED', 'مكتملة']] as const).map(([status, label]) => {
+              const colTasks = sortedDisplayTasks.filter((t) => String(t.status || '').toUpperCase() === status).slice(0, 25);
+              return (
+                <div key={status} style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 4px' }}>
+                    <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-secondary)' }}>{label}</span>
+                    <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{colTasks.length}</span>
+                  </div>
+                  {colTasks.length === 0 && (
+                    <div style={{ fontSize: 10.5, color: 'var(--text-muted)', textAlign: 'center', padding: '14px 4px', border: '1px dashed var(--border-default)', borderRadius: 8 }}>
+                      فاضية
+                    </div>
+                  )}
+                  {colTasks.map((t) => {
+                    const idx = KANBAN_FLOW.indexOf(String(t.status || 'TODO').toUpperCase());
+                    return (
+                      <div
+                        key={t.id}
+                        onClick={() => handleSelectTask(t)}
+                        style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 6 }}
+                        title="فتح التفاصيل"
+                      >
+                        <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
+                          {t.title}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); moveTask(t.id, -1); }}
+                            disabled={idx <= 0}
+                            style={{ ...styles.kanbanMoveBtn, opacity: idx <= 0 ? 0.3 : 1 }}
+                            title="رجّع خطوة للخلف"
+                          >›</button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); moveTask(t.id, 1); }}
+                            disabled={idx >= KANBAN_FLOW.length - 1}
+                            style={{ ...styles.kanbanMoveBtn, opacity: idx >= KANBAN_FLOW.length - 1 ? 0.3 : 1 }}
+                            title="قدّم خطوة للأمام"
+                          >‹</button>
+                          <span style={{ marginLeft: 'auto', fontSize: 9.5, color: 'var(--text-muted)' }}>
+                            {String(t.priority || '').toUpperCase() === 'URGENT' ? '🔥 عاجل' : String(t.priority || '').toUpperCase() === 'HIGH' ? 'مرتفع' : ''}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+        <>
         {/* Table Column Headers (Linear / Raycast 2026 Style) */}
         {displayTasks.length > 0 && (
           <div style={styles.tableHeaderRow}>
@@ -1292,7 +1484,11 @@ export const TasksTab: React.FC = () => {
         )}
 
         {loading && tasks.length === 0 ? (
-          <div style={styles.emptyState}>جاري جلب المهام من السيرفر السحابي…</div>
+          <div style={styles.skeletonWrap}>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} style={styles.skeletonRow} className="maxp-skeleton" />
+            ))}
+          </div>
         ) : displayTasks.length === 0 ? (
           <div style={styles.emptyState}>
             {searchQuery ? (
@@ -1321,10 +1517,41 @@ export const TasksTab: React.FC = () => {
             )}
           </div>
         ) : (
+          groupByProject ? (
+            (() => {
+              const groups = new Map<string, any[]>();
+              sortedDisplayTasks.forEach((t) => {
+                const p = t.projectName || 'عام';
+                if (!groups.has(p)) groups.set(p, []);
+                groups.get(p).push(t);
+              });
+              return [...groups.entries()].map(([proj, list]) => (
+                <React.Fragment key={proj}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px 4px', position: 'sticky', top: 0, background: 'var(--bg-page)', zIndex: 2 }}>
+                    <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--accent-blue)' }}>{proj}</span>
+                    <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{list.length} مهمة</span>
+                  </div>
+                  {list.map((t) => (
+                    <TaskItemCard
+                      key={t.id}
+                      task={t}
+                      selectMode={selectedIds.size > 0}
+                      checked={selectedIds.has(t.id)}
+                      onToggleCheck={toggleSelect}
+                      onToggleStatus={handleToggleStatus}
+                    />
+                  ))}
+                </React.Fragment>
+              ));
+            })()
+          ) : (
           sortedDisplayTasks.map((t) => (
             <TaskItemCard
               key={t.id}
               task={t}
+              selectMode={selectedIds.size > 0}
+              checked={selectedIds.has(t.id)}
+              onToggleCheck={toggleSelect}
               onToggleStatus={handleToggleStatus}
               onUpdateStatus={handleUpdateStatus}
               onOpenImage={(img) => setPreviewImage(img)}
@@ -1345,8 +1572,10 @@ export const TasksTab: React.FC = () => {
               viewType={activeView}
             />
           ))
+          )
+          )}
+        </>
         )}
-
         {/* Table Telemetry Footer Bar (Eliminates abrupt bottom cutoff & anchors chassis) */}
         <div style={styles.tableFooterRow}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1378,6 +1607,27 @@ export const TasksTab: React.FC = () => {
       </div>
     </>
   )}
+
+      {/* Undo toast */}
+      {undoToast && (
+        <div style={styles.undoBar}>
+          <span>تم: {undoToast.to === 'COMPLETED' ? 'إنجاز المهمة' : 'تغيير الحالة'}</span>
+          <button onClick={undoLastAction} style={styles.undoBtn}>تراجع</button>
+        </div>
+      )}
+
+      {/* Bulk actions bar */}
+      {selectedIds.size > 0 && (
+        <div style={styles.bulkBar}>
+          <span>محدد: <b>{selectedIds.size}</b> مهمة</span>
+          <button onClick={bulkComplete} disabled={bulkBusy} style={styles.bulkBtn}>
+            {bulkBusy ? 'جاري التنفيذ…' : 'إنجاز المحدد'}
+          </button>
+          <button onClick={() => setSelectedIds(new Set())} style={{ ...styles.undoBtn, backgroundColor: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-muted)' }}>
+            إلغاء التحديد
+          </button>
+        </div>
+      )}
 
       {/* Create Task Modal */}
       <CreateTaskModal
@@ -1990,6 +2240,101 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     color: 'var(--text-dim)',
     letterSpacing: '0.02em',
+  },
+  skeletonWrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    padding: '10px 12px',
+  },
+  skeletonRow: {
+    height: 40,
+    borderRadius: 8,
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-subtle)',
+  },
+  kanbanMoveBtn: {
+    width: 20,
+    height: 18,
+    borderRadius: 4,
+    border: '1px solid var(--border-default)',
+    background: 'var(--bg-input)',
+    color: 'var(--text-secondary)',
+    fontSize: 13,
+    lineHeight: 1,
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+  },
+  sortSelect: {
+    backgroundColor: 'var(--bg-input)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 6,
+    color: 'var(--text-secondary)',
+    fontSize: 11,
+    padding: '5px 8px',
+    outline: 'none',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+  },
+  undoBar: {
+    position: 'fixed',
+    bottom: 18,
+    insetInlineStart: 18,
+    zIndex: 90000,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'var(--bg-elevated)',
+    border: '1px solid var(--border-strong)',
+    borderRadius: 10,
+    padding: '10px 14px',
+    boxShadow: 'var(--shadow-modal)',
+    fontSize: 12,
+    color: 'var(--text-primary)',
+  },
+  undoBtn: {
+    backgroundColor: 'var(--accent-green-bg)',
+    border: '1px solid var(--accent-green-border)',
+    color: 'var(--accent-green)',
+    borderRadius: 6,
+    padding: '4px 10px',
+    fontSize: 11,
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  bulkBar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'var(--accent-blue-bg)',
+    border: '1px solid var(--accent-blue-border)',
+    borderRadius: 8,
+    padding: '7px 12px',
+    fontSize: 11.5,
+    color: 'var(--text-primary)',
+    flexShrink: 0,
+  },
+  bulkBtn: {
+    backgroundColor: 'var(--accent-green)',
+    border: 'none',
+    color: '#ffffff',
+    borderRadius: 6,
+    padding: '5px 12px',
+    fontSize: 11,
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  rowCheck: {
+    width: 14,
+    height: 14,
+    accentColor: 'var(--accent-green)',
+    cursor: 'pointer',
+    flexShrink: 0,
   },
   emptyState: {
     textAlign: 'center',

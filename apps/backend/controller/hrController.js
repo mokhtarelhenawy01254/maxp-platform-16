@@ -27,6 +27,13 @@ const {
 } = require("../services/hr");
 const { handleHRError } = require("../utils/hrErrors");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
+const {
+  getStartOfDayInTimezone,
+  getEndOfDayInTimezone,
+  getDateStringInTimezone,
+  normalizeDateForDb,
+  getNowInTimezone
+} = require("../utils/dateUtils");
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues - use getSharedPrismaClient() inside functions
 
 // Enabled WhatsApp for attendance notifications

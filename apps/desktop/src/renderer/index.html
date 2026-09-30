@@ -24,6 +24,8 @@
       from { transform: translateX(-100%); }
       to { transform: translateX(0); }
     }
+    @keyframes maxpShimmer { 0% { opacity: 0.45; } 50% { opacity: 0.9; } 100% { opacity: 0.45; } }
+    .maxp-skeleton { animation: maxpShimmer 1.3s ease-in-out infinite; }
     /* Tasks table: progressive degradation on narrow windows (window = viewport) */
     @media (max-width: 1180px) { .task-col-est { display: none !important; } }
     @media (max-width: 1080px) { .task-col-person { display: none !important; } }

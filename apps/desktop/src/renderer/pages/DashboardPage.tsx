@@ -5,6 +5,7 @@ import { TabErrorBoundary } from '../components/TabErrorBoundary';
 import CockpitTab from './CockpitTab';
 import TasksTab from './TasksTab';
 import TimersTab from './TimersTab';
+import CommandPalette from '../components/CommandPalette';
 import GoalsTab from './GoalsTab';
 import { TaskReportView } from '../components/tasks/reports/TaskReportView';
 import AppsTimelineTab from './AppsTimelineTab';
@@ -76,6 +77,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
   const [trackerState, setTrackerState] = useState<any>(null);
   const [dailySummary, setDailySummary] = useState<any>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [showBreakModal, setShowBreakModal] = useState(false);
   const [showHandoverModal, setShowHandoverModal] = useState(false);
   const [showOvertimeModal, setShowOvertimeModal] = useState(false);
@@ -269,6 +271,35 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
     }
     return `${h} س ${m} د`;
   };
+
+  // Global shortcuts & cross-component bus (command palette / deep actions)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    const onNavigate = (e: Event) => {
+      const tab = (e as CustomEvent).detail?.tab;
+      if (tab) setActiveTabState(tab as TabId);
+    };
+    const onPreset = (e: Event) => {
+      const id = (e as CustomEvent).detail;
+      if (id) window.dispatchEvent(new CustomEvent('maxp:apply-preset', { detail: id }));
+    };
+    const onToggleTheme = () => window.dispatchEvent(new CustomEvent('maxp:apply-toggle-theme'));
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('maxp:navigate', onNavigate);
+    window.addEventListener('maxp:preset', onPreset);
+    window.addEventListener('maxp:toggle-theme', onToggleTheme);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('maxp:navigate', onNavigate);
+      window.removeEventListener('maxp:preset', onPreset);
+      window.removeEventListener('maxp:toggle-theme', onToggleTheme);
+    };
+  }, []);
 
   const getTabTitle = () => {
     switch (activeTab) {
@@ -543,6 +574,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
       />
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
       {/* Break Reason & Duration Modal */}
       <BreakReasonModal

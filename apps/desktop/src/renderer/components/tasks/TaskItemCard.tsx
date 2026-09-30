@@ -40,6 +40,9 @@ interface TaskItemCardProps {
   activeRunnerSeconds?: number;
   onStartTask?: (task: any) => void;
   onStopTask?: (taskId?: string) => void;
+  selectMode?: boolean;
+  checked?: boolean;
+  onToggleCheck?: (taskId: string) => void;
   viewType?: 'my-tasks' | 'assigned-by-me' | 'all';
 }
 
@@ -60,6 +63,9 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   activeRunnerSeconds = 0,
   onStartTask,
   onStopTask,
+  selectMode,
+  checked,
+  onToggleCheck,
   viewType = 'my-tasks',
 }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -232,7 +238,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
         title="انقر لعرض تفاصيل المهمة والملاحظات والمرفقات"
       >
         {/* Col 1: Status Icon + Title + Priority/Dep Pills + Attachments Badge */}
-        <div style={rowStyles.titleCol}>
+        <div style={rowStyles.titleCol}>{selectMode && (<input type="checkbox" checked={!!checked} onChange={(e) => { e.stopPropagation(); onToggleCheck?.(task.id); }} onClick={(e) => e.stopPropagation()} style={{ width: 14, height: 14, accentColor: 'var(--accent-green)', cursor: 'pointer', marginInlineEnd: 8, flexShrink: 0 }} title="تحديد للإجراء الجماعي" />)}
           {/* Status Indicator Icon */}
           <div style={rowStyles.statusIconWrapper}>
             {isCompleted ? (

@@ -1390,7 +1390,7 @@ async function sendNotification(options) {
 
     // 5. تجهيز المحتوى
     const rawContent = options.contentOverride || safeTemplate.content || '';
-    const content = replaceVariables(rawContent, {
+    let content = replaceVariables(rawContent, {
       ...variables,
       customerName: variables.customerName || recipientName || 'عميلنا العزيز',
       customerPhone: variables.customerPhone || recipientPhone || '',
