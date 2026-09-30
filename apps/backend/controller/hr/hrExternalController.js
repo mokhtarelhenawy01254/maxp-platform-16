@@ -4,6 +4,7 @@
  */
 
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
+const { getDateStringInTimezone } = require('../../utils/dateUtils');
 const {
   dispatchHrWebhook,
   generateHrApiKey,
@@ -339,8 +340,28 @@ const recordPunchesBatch = async (req, res) => {
 const getTodayAttendance = async (req, res) => {
   try {
     const { companyId } = req;
-    const targetDate = req.query.date ? new Date(req.query.date) : new Date();
-    targetDate.setUTCHours(0, 0, 0, 0);
+    const timezone = req.company?.timezone || 'Africa/Cairo';
+
+    let targetDate;
+    if (req.query.date) {
+      const rawDate = String(req.query.date).trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+        targetDate = new Date(`${rawDate}T00:00:00.000Z`);
+      } else {
+        const d = new Date(rawDate);
+        if (isNaN(d.getTime())) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'INVALID_DATE', message: 'Invalid date parameter provided' }
+          });
+        }
+        const dateStr = getDateStringInTimezone(d, timezone);
+        targetDate = new Date(`${dateStr}T00:00:00.000Z`);
+      }
+    } else {
+      const dateStr = getDateStringInTimezone(new Date(), timezone);
+      targetDate = new Date(`${dateStr}T00:00:00.000Z`);
+    }
 
     const prisma = getSharedPrismaClient();
     const records = await prisma.attendance.findMany({
@@ -356,15 +377,38 @@ const getTodayAttendance = async (req, res) => {
             lastName: true,
             department: { select: { name: true } }
           }
+        },
+        user: {
+          select: {
+            employeeNumber: true,
+            firstName: true,
+            lastName: true,
+            departmentRelation: { select: { name: true } }
+          }
         }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const data = records.map((record) => {
+      let employeeRel = record.employeeRel;
+      if (!employeeRel && record.user) {
+        employeeRel = {
+          employeeNumber: record.user.employeeNumber || '',
+          firstName: record.user.firstName || '',
+          lastName: record.user.lastName || '',
+          department: record.user.departmentRelation ? { name: record.user.departmentRelation.name } : null
+        };
       }
+      const { user, ...rest } = record;
+      return { ...rest, employeeRel };
     });
 
     return res.json({
       success: true,
       date: targetDate.toISOString().slice(0, 10),
-      count: records.length,
-      data: records
+      count: data.length,
+      data
     });
   } catch (error) {
     console.error('❌ [ExternalHrController.getTodayAttendance] Error:', error);
@@ -1401,6 +1445,648 @@ const decideLeaveRequest = async (req, res) => {
   }
 };
 
+/**
+ * 17. قائمة طلبات السلف المالية (Advances)
+ * GET /advances
+ */
+const listAdvances = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const {
+      page = 1,
+      limit = 50,
+      employeeCode,
+      status,
+      from,
+      to,
+      search
+    } = req.query;
+
+    const skip = (Math.max(1, parseInt(page, 10)) - 1) * Math.min(100, parseInt(limit, 10));
+    const take = Math.min(100, Math.max(1, parseInt(limit, 10)));
+
+    const where = { companyId };
+    if (status && status !== 'all') {
+      where.status = status.toUpperCase();
+    }
+
+    if (from || to) {
+      where.createdAt = {};
+      if (from) where.createdAt.gte = new Date(from);
+      if (to) {
+        const toDate = new Date(to);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(String(to).trim())) {
+          toDate.setUTCHours(23, 59, 59, 999);
+        }
+        where.createdAt.lte = toDate;
+      }
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    if (employeeCode) {
+      const code = String(employeeCode).trim();
+      const [matchedEmps, matchedUsers] = await Promise.all([
+        prisma.employee.findMany({
+          where: {
+            companyId,
+            OR: [{ employeeNumber: code }, { id: code }]
+          },
+          select: { id: true, userId: true }
+        }),
+        prisma.user.findMany({
+          where: {
+            OR: [{ employeeNumber: code }, { id: code }]
+          },
+          select: { id: true }
+        })
+      ]);
+
+      const relIds = matchedEmps.map((e) => e.id);
+      const userIds = [
+        ...matchedEmps.map((e) => e.userId),
+        ...matchedUsers.map((u) => u.id)
+      ].filter(Boolean);
+
+      where.OR = [
+        ...(relIds.length ? [{ employeeRelId: { in: relIds } }] : []),
+        ...(userIds.length ? [{ userId: { in: userIds } }] : [])
+      ];
+    }
+
+    if (search) {
+      const searchConditions = [
+        { reason: { contains: search, mode: 'insensitive' } },
+        { repaymentType: { contains: search, mode: 'insensitive' } }
+      ];
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchConditions }];
+        delete where.OR;
+      } else {
+        where.OR = searchConditions;
+      }
+    }
+
+    const [advances, total] = await Promise.all([
+      prisma.advanceRequest.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          employeeRel: {
+            select: {
+              id: true,
+              employeeNumber: true,
+              firstName: true,
+              lastName: true,
+              department: { select: { id: true, name: true } },
+              position: { select: { id: true, title: true } }
+            }
+          },
+          user: {
+            select: {
+              id: true,
+              employeeNumber: true,
+              firstName: true,
+              lastName: true,
+              departmentRelation: { select: { id: true, name: true } },
+              positionRelation: { select: { id: true, title: true } }
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.advanceRequest.count({ where })
+    ]);
+
+    const formattedData = advances.map((item) => {
+      let employee = item.employeeRel;
+      if (!employee && item.user) {
+        employee = {
+          id: item.user.id,
+          employeeNumber: item.user.employeeNumber || '',
+          firstName: item.user.firstName || '',
+          lastName: item.user.lastName || '',
+          department: item.user.departmentRelation ? { id: item.user.departmentRelation.id, name: item.user.departmentRelation.name } : null,
+          position: item.user.positionRelation ? { id: item.user.positionRelation.id, title: item.user.positionRelation.title } : null
+        };
+      }
+      const { user, employeeRel, ...rest } = item;
+      return {
+        ...rest,
+        employee
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: formattedData,
+      pagination: {
+        page: Math.max(1, parseInt(page, 10)),
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take)
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.listAdvances] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 18. قائمة الخصومات والجزاءات (Deductions)
+ * GET /deductions
+ */
+const listDeductions = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const {
+      page = 1,
+      limit = 50,
+      employeeCode,
+      status,
+      from,
+      to,
+      search
+    } = req.query;
+
+    const skip = (Math.max(1, parseInt(page, 10)) - 1) * Math.min(100, parseInt(limit, 10));
+    const take = Math.min(100, Math.max(1, parseInt(limit, 10)));
+    const timezone = req.company?.timezone || 'Africa/Cairo';
+
+    const where = { companyId };
+    if (status && status !== 'all') {
+      where.status = status.toUpperCase();
+    }
+
+    if (from || to) {
+      where.date = {};
+      if (from) {
+        const fromStr = /^\d{4}-\d{2}-\d{2}$/.test(String(from).trim())
+          ? String(from).trim()
+          : getDateStringInTimezone(new Date(from), timezone);
+        where.date.gte = new Date(`${fromStr}T00:00:00.000Z`);
+      }
+      if (to) {
+        const toStr = /^\d{4}-\d{2}-\d{2}$/.test(String(to).trim())
+          ? String(to).trim()
+          : getDateStringInTimezone(new Date(to), timezone);
+        where.date.lte = new Date(`${toStr}T00:00:00.000Z`);
+      }
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    if (employeeCode) {
+      const code = String(employeeCode).trim();
+      const [matchedEmps, matchedUsers] = await Promise.all([
+        prisma.employee.findMany({
+          where: {
+            companyId,
+            OR: [{ employeeNumber: code }, { id: code }]
+          },
+          select: { id: true, userId: true }
+        }),
+        prisma.user.findMany({
+          where: {
+            OR: [{ employeeNumber: code }, { id: code }]
+          },
+          select: { id: true }
+        })
+      ]);
+
+      const candidateIds = [
+        ...matchedEmps.map((e) => e.id),
+        ...matchedEmps.map((e) => e.userId),
+        ...matchedUsers.map((u) => u.id)
+      ].filter(Boolean);
+
+      where.employeeId = { in: candidateIds };
+    }
+
+    if (search) {
+      where.OR = [
+        { reason: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { category: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    const [deductions, total] = await Promise.all([
+      prisma.manualDeduction.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.manualDeduction.count({ where })
+    ]);
+
+    const employeeIds = [...new Set(deductions.map((d) => d.employeeId).filter(Boolean))];
+    const [employees, users] = await Promise.all([
+      employeeIds.length
+        ? prisma.employee.findMany({
+            where: {
+              companyId,
+              OR: [{ id: { in: employeeIds } }, { userId: { in: employeeIds } }]
+            },
+            select: {
+              id: true,
+              userId: true,
+              employeeNumber: true,
+              firstName: true,
+              lastName: true,
+              department: { select: { id: true, name: true } },
+              position: { select: { id: true, title: true } }
+            }
+          })
+        : [],
+      employeeIds.length
+        ? prisma.user.findMany({
+            where: { id: { in: employeeIds } },
+            select: {
+              id: true,
+              employeeNumber: true,
+              firstName: true,
+              lastName: true,
+              departmentRelation: { select: { id: true, name: true } },
+              positionRelation: { select: { id: true, title: true } }
+            }
+          })
+        : []
+    ]);
+
+    const empMap = new Map();
+    for (const emp of employees) {
+      if (emp.id) empMap.set(emp.id, emp);
+      if (emp.userId) empMap.set(emp.userId, emp);
+    }
+    for (const u of users) {
+      if (!empMap.has(u.id)) {
+        empMap.set(u.id, {
+          id: u.id,
+          employeeNumber: u.employeeNumber || '',
+          firstName: u.firstName || '',
+          lastName: u.lastName || '',
+          department: u.departmentRelation ? { id: u.departmentRelation.id, name: u.departmentRelation.name } : null,
+          position: u.positionRelation ? { id: u.positionRelation.id, title: u.positionRelation.title } : null
+        });
+      }
+    }
+
+    const formattedData = deductions.map((item) => ({
+      ...item,
+      employee: empMap.get(item.employeeId) || null
+    }));
+
+    return res.json({
+      success: true,
+      data: formattedData,
+      pagination: {
+        page: Math.max(1, parseInt(page, 10)),
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take)
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.listDeductions] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 19. قائمة الإنذارات ولفتات النظر (Warnings)
+ * GET /warnings
+ */
+const listWarnings = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const {
+      page = 1,
+      limit = 50,
+      employeeCode,
+      status,
+      from,
+      to,
+      search
+    } = req.query;
+
+    const skip = (Math.max(1, parseInt(page, 10)) - 1) * Math.min(100, parseInt(limit, 10));
+    const take = Math.min(100, Math.max(1, parseInt(limit, 10)));
+
+    const where = { companyId };
+    if (status && status !== 'all') {
+      where.OR = [
+        { severity: { equals: status, mode: 'insensitive' } },
+        { type: { equals: status.toUpperCase() } }
+      ];
+    }
+
+    if (from || to) {
+      where.incidentDate = {};
+      if (from) where.incidentDate.gte = new Date(from);
+      if (to) {
+        const toDate = new Date(to);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(String(to).trim())) {
+          toDate.setUTCHours(23, 59, 59, 999);
+        }
+        where.incidentDate.lte = toDate;
+      }
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    if (employeeCode) {
+      const code = String(employeeCode).trim();
+      const [matchedEmps, matchedUsers] = await Promise.all([
+        prisma.employee.findMany({
+          where: {
+            companyId,
+            OR: [{ employeeNumber: code }, { id: code }]
+          },
+          select: { id: true, userId: true }
+        }),
+        prisma.user.findMany({
+          where: {
+            OR: [{ employeeNumber: code }, { id: code }]
+          },
+          select: { id: true }
+        })
+      ]);
+
+      const relIds = matchedEmps.map((e) => e.id);
+      const userIds = [
+        ...matchedEmps.map((e) => e.userId),
+        ...matchedUsers.map((u) => u.id)
+      ].filter(Boolean);
+
+      const codeFilter = [
+        ...(relIds.length ? [{ employeeRelId: { in: relIds } }] : []),
+        ...(userIds.length ? [{ userId: { in: userIds } }] : [])
+      ];
+
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: codeFilter }];
+        delete where.OR;
+      } else {
+        where.OR = codeFilter;
+      }
+    }
+
+    if (search) {
+      const searchConditions = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { actionTaken: { contains: search, mode: 'insensitive' } }
+      ];
+      if (where.AND) {
+        where.AND.push({ OR: searchConditions });
+      } else if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchConditions }];
+        delete where.OR;
+      } else {
+        where.OR = searchConditions;
+      }
+    }
+
+    const [warnings, total] = await Promise.all([
+      prisma.employeeWarning.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          employeeRel: {
+            select: {
+              id: true,
+              employeeNumber: true,
+              firstName: true,
+              lastName: true,
+              department: { select: { id: true, name: true } },
+              position: { select: { id: true, title: true } }
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.employeeWarning.count({ where })
+    ]);
+
+    const missingUserIds = warnings
+      .filter((w) => !w.employeeRel && w.userId)
+      .map((w) => w.userId);
+    const users = missingUserIds.length
+      ? await prisma.user.findMany({
+          where: { id: { in: missingUserIds } },
+          select: {
+            id: true,
+            employeeNumber: true,
+            firstName: true,
+            lastName: true,
+            departmentRelation: { select: { id: true, name: true } },
+            positionRelation: { select: { id: true, title: true } }
+          }
+        })
+      : [];
+
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    const formattedData = warnings.map((item) => {
+      let employee = item.employeeRel;
+      if (!employee && item.userId && userMap.has(item.userId)) {
+        const u = userMap.get(item.userId);
+        employee = {
+          id: u.id,
+          employeeNumber: u.employeeNumber || '',
+          firstName: u.firstName || '',
+          lastName: u.lastName || '',
+          department: u.departmentRelation ? { id: u.departmentRelation.id, name: u.departmentRelation.name } : null,
+          position: u.positionRelation ? { id: u.positionRelation.id, title: u.positionRelation.title } : null
+        };
+      }
+      const { employeeRel, ...rest } = item;
+      return {
+        ...rest,
+        employee
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: formattedData,
+      pagination: {
+        page: Math.max(1, parseInt(page, 10)),
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take)
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.listWarnings] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 20. قائمة طلبات الاستقالة (Resignations)
+ * GET /resignations
+ */
+const listResignations = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const {
+      page = 1,
+      limit = 50,
+      employeeCode,
+      status,
+      from,
+      to,
+      search
+    } = req.query;
+
+    const skip = (Math.max(1, parseInt(page, 10)) - 1) * Math.min(100, parseInt(limit, 10));
+    const take = Math.min(100, Math.max(1, parseInt(limit, 10)));
+
+    const where = { companyId };
+    if (status && status !== 'all') {
+      where.status = status.toUpperCase();
+    }
+
+    if (from || to) {
+      where.resignationDate = {};
+      if (from) where.resignationDate.gte = new Date(from);
+      if (to) {
+        const toDate = new Date(to);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(String(to).trim())) {
+          toDate.setUTCHours(23, 59, 59, 999);
+        }
+        where.resignationDate.lte = toDate;
+      }
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    if (employeeCode) {
+      const code = String(employeeCode).trim();
+      const [matchedEmps, matchedUsers] = await Promise.all([
+        prisma.employee.findMany({
+          where: {
+            companyId,
+            OR: [{ employeeNumber: code }, { id: code }]
+          },
+          select: { id: true, userId: true }
+        }),
+        prisma.user.findMany({
+          where: {
+            OR: [{ employeeNumber: code }, { id: code }]
+          },
+          select: { id: true }
+        })
+      ]);
+
+      const relIds = matchedEmps.map((e) => e.id);
+      const userIds = [
+        ...matchedEmps.map((e) => e.userId),
+        ...matchedUsers.map((u) => u.id)
+      ].filter(Boolean);
+
+      where.OR = [
+        ...(relIds.length ? [{ employeeRelId: { in: relIds } }] : []),
+        ...(userIds.length ? [{ userId: { in: userIds } }] : [])
+      ];
+    }
+
+    if (search) {
+      const searchConditions = [
+        { reason: { contains: search, mode: 'insensitive' } },
+        { exitInterview: { contains: search, mode: 'insensitive' } }
+      ];
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchConditions }];
+        delete where.OR;
+      } else {
+        where.OR = searchConditions;
+      }
+    }
+
+    const [resignations, total] = await Promise.all([
+      prisma.resignation.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          employeeRel: {
+            select: {
+              id: true,
+              employeeNumber: true,
+              firstName: true,
+              lastName: true,
+              department: { select: { id: true, name: true } },
+              position: { select: { id: true, title: true } }
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.resignation.count({ where })
+    ]);
+
+    const missingUserIds = resignations
+      .filter((r) => !r.employeeRel && r.userId)
+      .map((r) => r.userId);
+    const users = missingUserIds.length
+      ? await prisma.user.findMany({
+          where: { id: { in: missingUserIds } },
+          select: {
+            id: true,
+            employeeNumber: true,
+            firstName: true,
+            lastName: true,
+            departmentRelation: { select: { id: true, name: true } },
+            positionRelation: { select: { id: true, title: true } }
+          }
+        })
+      : [];
+
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    const formattedData = resignations.map((item) => {
+      let employee = item.employeeRel;
+      if (!employee && item.userId && userMap.has(item.userId)) {
+        const u = userMap.get(item.userId);
+        employee = {
+          id: u.id,
+          employeeNumber: u.employeeNumber || '',
+          firstName: u.firstName || '',
+          lastName: u.lastName || '',
+          department: u.departmentRelation ? { id: u.departmentRelation.id, name: u.departmentRelation.name } : null,
+          position: u.positionRelation ? { id: u.positionRelation.id, title: u.positionRelation.title } : null
+        };
+      }
+      const { employeeRel, ...rest } = item;
+      return {
+        ...rest,
+        employee
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: formattedData,
+      pagination: {
+        page: Math.max(1, parseInt(page, 10)),
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take)
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.listResignations] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
 module.exports = {
   listEmployees,
   getEmployeeById,
@@ -1423,5 +2109,10 @@ module.exports = {
   getAttendanceSummary,
   listPayrollRuns,
   getPayrollRunItems,
-  decideLeaveRequest
+  decideLeaveRequest,
+  // New read endpoints
+  listAdvances,
+  listDeductions,
+  listWarnings,
+  listResignations
 };

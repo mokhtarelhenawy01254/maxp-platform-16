@@ -26,14 +26,54 @@
         "description": "Returns paginated list of employees with search and department filtering.",
         "operationId": "hr_list_employees",
         "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
-          { "name": "search", "in": "query", "schema": { "type": "string" } },
-          { "name": "departmentId", "in": "query", "schema": { "type": "string" } },
-          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "PROBATION", "ON_LEAVE", "TERMINATED"] } }
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "departmentId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "PROBATION",
+                "ON_LEAVE",
+                "TERMINATED"
+              ]
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "List of employees" }
+          "200": {
+            "description": "List of employees"
+          }
         }
       }
     },
@@ -43,11 +83,22 @@
         "description": "Fetch detailed profile of an employee.",
         "operationId": "hr_get_employee_by_id",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Employee profile" },
-          "404": { "description": "Employee not found" }
+          "200": {
+            "description": "Employee profile"
+          },
+          "404": {
+            "description": "Employee not found"
+          }
         }
       }
     },
@@ -62,25 +113,60 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["employeeNumber", "firstName", "lastName"],
+                "required": [
+                  "employeeNumber",
+                  "firstName",
+                  "lastName"
+                ],
                 "properties": {
-                  "employeeNumber": { "type": "string" },
-                  "firstName": { "type": "string" },
-                  "lastName": { "type": "string" },
-                  "email": { "type": "string", "format": "email" },
-                  "phone": { "type": "string" },
-                  "departmentId": { "type": "string" },
-                  "positionId": { "type": "string" },
-                  "status": { "type": "string", "enum": ["ACTIVE", "PROBATION", "SUSPENDED", "TERMINATED"], "default": "ACTIVE" },
-                  "hireDate": { "type": "string", "format": "date" }
+                  "employeeNumber": {
+                    "type": "string"
+                  },
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "departmentId": {
+                    "type": "string"
+                  },
+                  "positionId": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "PROBATION",
+                      "SUSPENDED",
+                      "TERMINATED"
+                    ],
+                    "default": "ACTIVE"
+                  },
+                  "hireDate": {
+                    "type": "string",
+                    "format": "date"
+                  }
                 }
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "Employee updated" },
-          "201": { "description": "Employee created" }
+          "200": {
+            "description": "Employee updated"
+          },
+          "201": {
+            "description": "Employee created"
+          }
         }
       }
     },
@@ -95,18 +181,38 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["punches"],
+                "required": [
+                  "punches"
+                ],
                 "properties": {
-                  "deviceId": { "type": "string", "example": "DEV_MAIN_GATE" },
+                  "deviceId": {
+                    "type": "string",
+                    "example": "DEV_MAIN_GATE"
+                  },
                   "punches": {
                     "type": "array",
                     "items": {
                       "type": "object",
-                      "required": ["employeeNumber", "punchTime"],
+                      "required": [
+                        "employeeNumber",
+                        "punchTime"
+                      ],
                       "properties": {
-                        "employeeNumber": { "type": "string" },
-                        "punchTime": { "type": "string", "format": "date-time" },
-                        "type": { "type": "string", "enum": ["CHECK_IN", "CHECK_OUT"], "default": "CHECK_IN" }
+                        "employeeNumber": {
+                          "type": "string"
+                        },
+                        "punchTime": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "CHECK_IN",
+                            "CHECK_OUT"
+                          ],
+                          "default": "CHECK_IN"
+                        }
                       }
                     }
                   }
@@ -116,7 +222,9 @@
           }
         },
         "responses": {
-          "200": { "description": "Punches processed summary" }
+          "200": {
+            "description": "Punches processed summary"
+          }
         }
       }
     },
@@ -126,10 +234,19 @@
         "description": "Quickly inspect who is present, checked-in, or absent today.",
         "operationId": "hr_get_today_attendance",
         "parameters": [
-          { "name": "date", "in": "query", "schema": { "type": "string", "format": "date" } }
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Attendance list" }
+          "200": {
+            "description": "Attendance list"
+          }
         }
       }
     },
@@ -144,21 +261,51 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["type", "startDate", "endDate"],
+                "required": [
+                  "type",
+                  "startDate",
+                  "endDate"
+                ],
                 "properties": {
-                  "employeeId": { "type": "string" },
-                  "employeeNumber": { "type": "string" },
-                  "type": { "type": "string", "enum": ["ANNUAL", "SICK", "UNPAID", "EMERGENCY", "MATERNITY", "PATERNITY", "HAJJ", "BEREAVEMENT"] },
-                  "startDate": { "type": "string", "format": "date" },
-                  "endDate": { "type": "string", "format": "date" },
-                  "reason": { "type": "string" }
+                  "employeeId": {
+                    "type": "string"
+                  },
+                  "employeeNumber": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "ANNUAL",
+                      "SICK",
+                      "UNPAID",
+                      "EMERGENCY",
+                      "MATERNITY",
+                      "PATERNITY",
+                      "HAJJ",
+                      "BEREAVEMENT"
+                    ]
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
                 }
               }
             }
           }
         },
         "responses": {
-          "201": { "description": "Leave request submitted" }
+          "201": {
+            "description": "Leave request submitted"
+          }
         }
       }
     },
@@ -167,7 +314,9 @@
         "summary": "List subscribed webhooks",
         "operationId": "hr_list_webhooks",
         "responses": {
-          "200": { "description": "List of active webhooks" }
+          "200": {
+            "description": "List of active webhooks"
+          }
         }
       },
       "post": {
@@ -179,15 +328,29 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["name", "targetUrl"],
+                "required": [
+                  "name",
+                  "targetUrl"
+                ],
                 "properties": {
-                  "name": { "type": "string" },
-                  "targetUrl": { "type": "string", "format": "uri" },
-                  "secret": { "type": "string" },
+                  "name": {
+                    "type": "string"
+                  },
+                  "targetUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "secret": {
+                    "type": "string"
+                  },
                   "subscribedEvents": {
                     "type": "array",
-                    "items": { "type": "string" },
-                    "default": ["*"]
+                    "items": {
+                      "type": "string"
+                    },
+                    "default": [
+                      "*"
+                    ]
                   }
                 }
               }
@@ -195,7 +358,317 @@
           }
         },
         "responses": {
-          "201": { "description": "Webhook endpoint registered" }
+          "201": {
+            "description": "Webhook endpoint registered"
+          }
+        }
+      }
+    },
+    "/advances": {
+      "get": {
+        "summary": "List advance requests",
+        "description": "Returns paginated list of employee financial advance requests with filtering by employeeCode, status, date range, and search.\n\n**Required Scope:** `hr:advances:read` (or `hr:read`, `*`)",
+        "operationId": "hr_list_advances",
+        "x-required-scope": "hr:advances:read",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "name": "employeeCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of advances"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/deductions": {
+      "get": {
+        "summary": "List deductions",
+        "description": "Returns paginated list of employee manual and auto deductions with filtering by employeeCode, status, date range, and search.\n\n**Required Scope:** `hr:deductions:read` (or `hr:read`, `*`)",
+        "operationId": "hr_list_deductions",
+        "x-required-scope": "hr:deductions:read",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "name": "employeeCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of deductions"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/warnings": {
+      "get": {
+        "summary": "List disciplinary warnings",
+        "description": "Returns paginated list of disciplinary warnings with filtering by employeeCode, status/severity, date range, and search.\n\n**Required Scope:** `hr:warnings:read` (or `hr:read`, `*`)",
+        "operationId": "hr_list_warnings",
+        "x-required-scope": "hr:warnings:read",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "name": "employeeCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of warnings"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/resignations": {
+      "get": {
+        "summary": "List resignations",
+        "description": "Returns paginated list of employee resignation requests and exit procedures with filtering by employeeCode, status, date range, and search.\n\n**Required Scope:** `hr:resignations:read` (or `hr:read`, `*`)",
+        "operationId": "hr_list_resignations",
+        "x-required-scope": "hr:resignations:read",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "name": "employeeCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of resignations"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
         }
       }
     }

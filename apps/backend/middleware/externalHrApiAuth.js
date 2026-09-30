@@ -58,7 +58,8 @@ const authenticateExternalHrApi = async (req, res, next) => {
           select: {
             id: true,
             name: true,
-            isActive: true
+            isActive: true,
+            timezone: true
           }
         }
       }

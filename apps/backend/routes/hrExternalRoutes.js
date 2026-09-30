@@ -97,6 +97,18 @@ router.post('/leaves/:id/decision', requireExternalHrScope('hr:leaves:approve'),
 router.get('/payroll/runs', requireExternalHrScope('hr:payroll:read'), hrExternalController.listPayrollRuns);
 router.get('/payroll/runs/:id/items', requireExternalHrScope('hr:payroll:read'), hrExternalController.getPayrollRunItems);
 
+// 💳 Advances (Financial Loans)
+router.get('/advances', requireExternalHrScope('hr:advances:read'), hrExternalController.listAdvances);
+
+// 🔻 Deductions & Penalties
+router.get('/deductions', requireExternalHrScope('hr:deductions:read'), hrExternalController.listDeductions);
+
+// ⚠️ Warnings & Disciplinary Notices
+router.get('/warnings', requireExternalHrScope('hr:warnings:read'), hrExternalController.listWarnings);
+
+// 📝 Resignations & Offboarding
+router.get('/resignations', requireExternalHrScope('hr:resignations:read'), hrExternalController.listResignations);
+
 // 🔔 Outbound Webhooks Management
 router.get('/webhooks', requireExternalHrScope('hr:write'), hrExternalController.listWebhookEndpoints);
 router.post('/webhooks', requireExternalHrScope('hr:write'), hrExternalController.createWebhookEndpoint);

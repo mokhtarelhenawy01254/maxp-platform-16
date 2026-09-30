@@ -20,7 +20,11 @@ const HR_API_SCOPES = [
   'hr:leaves:approve',
   'hr:departments:read',
   'hr:positions:read',
-  'hr:payroll:read'
+  'hr:payroll:read',
+  'hr:advances:read',
+  'hr:deductions:read',
+  'hr:warnings:read',
+  'hr:resignations:read'
 ];
 
 const HR_API_DEFAULT_SCOPES = [

@@ -77,6 +77,10 @@ hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9
 | `hr:leaves:write` | Granular | تقديم طلب إجازة جديد نيابة عن موظف (`POST /leaves`) |
 | `hr:leaves:approve` | Granular | اتخاذ قرار قبول أو رفض طلب إجازة مع تدوين الملاحظة (`POST /leaves/:id/decision`) |
 | `hr:payroll:read` | Granular | استعلام مسيرات الرواتب والمفردات والبدلات والخصومات (`GET /payroll/runs`, `GET /payroll/runs/:id/items`) |
+| `hr:advances:read` | Granular | استعلام طلبات السلف المالية وحالات السداد والأقساط (`GET /advances`) |
+| `hr:deductions:read` | Granular | استعلام سجلات الخصومات والجزاءات اليدوية والتلقائية (`GET /deductions`) |
+| `hr:warnings:read` | Granular | استعلام الإنذارات الإدارية ولفتات النظر ومستوى الخطورة (`GET /warnings`) |
+| `hr:resignations:read` | Granular | استعلام طلبات الاستقالة وحالات إخلاء الطرف والتسوية النهائية (`GET /resignations`) |
 
 ### حدود الاستخدام ومعدل الطلبات (Rate Limiting):
 - **معدل الطلبات للمفاتيح (API Keys):** خوارزمية **Token Bucket** في الذاكرة (In-memory) لكل معالج تشغيل (Worker Process):
@@ -134,7 +138,7 @@ hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9
 
 ### ⏰ الحضور والانصراف والبصمة (Attendance)
 - `POST /attendance/punches/batch` (`hr:attendance:ingest`): رفع حركات البصمة مجمعة من أجهزة ZKTeco.
-- `GET /attendance/today` (`hr:attendance:read`): كشف الحضور والغياب لليوم الحالي.
+- `GET /attendance/today` (`hr:attendance:read`): كشف الحضور والغياب لليوم الحالي. يعتمد المسار على النطاق الزمني للشركة (`timezone` المسجل في إعدادات الشركة، والافتراضي `Africa/Cairo` القاهرة) لضمان عدم حدوث أي انزياح في منتصف الليل (بين 12:00 ص و3:00 ص)، كما يقبل المعامل `?date=YYYY-MM-DD` للاستعلام عن أي يوم محدد في نفس النطاق الزمني.
 - `GET /attendance/summary` (`hr:attendance:read`): ملخص مجمع لحركات الحضور والغياب والتأخيرات ومعدلات الدوام لفترة محددة (`from`, `to`, `employeeCode`, `departmentId`).
 
 ### 🏖️ طلبات وأرصدة الإجازات (Leaves Management)
@@ -146,6 +150,18 @@ hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9
 ### 💰 مسيرات ومفردات الرواتب (Payroll)
 - `GET /payroll/runs` (`hr:payroll:read`): استعلام دورات ومسيرات الرواتب المحسوبة (`year`, `month`, `status`, `page`, `limit`).
 - `GET /payroll/runs/:id/items` (`hr:payroll:read`): تفاصيل مفردات الراتب لكل موظف داخل المسيرة (أساسي، بدلات، خصومات، صافي).
+
+### 💳 السلف المالية (Financial Advances)
+- `GET /advances` (`hr:advances:read`): استعلام طلبات السلف المالية وجداول السداد والأقساط بصفحات وفلاتر (`page`, `limit`, `employeeCode`, `status`, `from`, `to`, `search`).
+
+### 🔻 الخصومات والجزاءات (Deductions & Penalties)
+- `GET /deductions` (`hr:deductions:read`): استعلام سجلات الخصومات التلقائية (تأخيرات، غيابات) واليدوية وفلاترها (`page`, `limit`, `employeeCode`, `status`, `from`, `to`, `search`).
+
+### ⚠️ الإنذارات ولفتات النظر (Warnings & Disciplinary)
+- `GET /warnings` (`hr:warnings:read`): استعلام الإنذارات الإدارية ومستويات الخطورة (`page`, `limit`, `employeeCode`, `status`, `from`, `to`, `search`).
+
+### 📝 الاستقالات وإنهاء الخدمة (Resignations & Offboarding)
+- `GET /resignations` (`hr:resignations:read`): استعلام طلبات الاستقالة وحالات إخلاء الطرف وملاحظات المقابلة النهائية (`page`, `limit`, `employeeCode`, `status`, `from`, `to`, `search`).
 
 ### 🔔 الأحداث والـ Webhooks
 - `GET /webhooks` (`hr:write`): استعلام روابط الـ Webhook النشطة للشركة.

@@ -448,6 +448,10 @@ export default function HRApiIntegrations() {
                     <option value="hr:leaves:write">hr:leaves:write — تقديم طلبات إجازة جديدة</option>
                     <option value="hr:leaves:approve">hr:leaves:approve — اتخاذ قرار قبول/رفض الإجازات</option>
                     <option value="hr:payroll:read">hr:payroll:read — استعلام مسيرات ورواتب الموظفين</option>
+                    <option value="hr:advances:read">hr:advances:read — استعلام طلبات السلف المالية</option>
+                    <option value="hr:deductions:read">hr:deductions:read — استعلام سجلات الخصومات والجزاءات</option>
+                    <option value="hr:warnings:read">hr:warnings:read — استعلام الإنذارات واللفتات الإدارية</option>
+                    <option value="hr:resignations:read">hr:resignations:read — استعلام طلبات وإنهاء الاستقالات</option>
                   </select>
                 </div>
 

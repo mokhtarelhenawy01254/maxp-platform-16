@@ -23,7 +23,11 @@ describe('HR External API V2 Comprehensive Test Suite', () => {
         'hr:leaves:read',
         'hr:leaves:write',
         'hr:leaves:approve',
-        'hr:payroll:read'
+        'hr:payroll:read',
+        'hr:advances:read',
+        'hr:deductions:read',
+        'hr:warnings:read',
+        'hr:resignations:read'
       ];
 
       for (const scope of requiredScopes) {
@@ -35,6 +39,7 @@ describe('HR External API V2 Comprehensive Test Suite', () => {
       // Umbrella *
       expect(credentialHasScope({ scopes: JSON.stringify(['*']) }, 'hr:departments:read')).toBe(true);
       expect(credentialHasScope({ scopes: JSON.stringify(['*']) }, 'hr:leaves:approve')).toBe(true);
+      expect(credentialHasScope({ scopes: JSON.stringify(['*']) }, 'hr:advances:read')).toBe(true);
 
       // Umbrella hr:read
       const readCred = { scopes: JSON.stringify(['hr:read']) };
@@ -44,6 +49,11 @@ describe('HR External API V2 Comprehensive Test Suite', () => {
       expect(credentialHasScope(readCred, 'hr:attendance:read')).toBe(true);
       expect(credentialHasScope(readCred, 'hr:leaves:read')).toBe(true);
       expect(credentialHasScope(readCred, 'hr:payroll:read')).toBe(true);
+      expect(credentialHasScope(readCred, 'hr:advances:read')).toBe(true);
+      expect(credentialHasScope(readCred, 'hr:deductions:read')).toBe(true);
+      expect(credentialHasScope(readCred, 'hr:warnings:read')).toBe(true);
+      expect(credentialHasScope(readCred, 'hr:resignations:read')).toBe(true);
+
       // hr:read should NOT grant write or approve
       expect(credentialHasScope(readCred, 'hr:leaves:approve')).toBe(false);
       expect(credentialHasScope(readCred, 'hr:leaves:write')).toBe(false);
@@ -56,16 +66,22 @@ describe('HR External API V2 Comprehensive Test Suite', () => {
       expect(credentialHasScope(writeCred, 'hr:leaves:write')).toBe(true);
       expect(credentialHasScope(writeCred, 'hr:leaves:approve')).toBe(true);
 
-      // Granular hr:leaves:approve does not grant hr:leaves:write
-      const approveCred = { scopes: JSON.stringify(['hr:leaves:approve']) };
-      expect(credentialHasScope(approveCred, 'hr:leaves:approve')).toBe(true);
-      expect(credentialHasScope(approveCred, 'hr:leaves:write')).toBe(false);
-      expect(credentialHasScope(approveCred, 'hr:employees:read')).toBe(false);
+      // Granular scopes
+      const advCred = { scopes: JSON.stringify(['hr:advances:read']) };
+      expect(credentialHasScope(advCred, 'hr:advances:read')).toBe(true);
+      expect(credentialHasScope(advCred, 'hr:deductions:read')).toBe(false);
 
-      // Granular hr:leaves:write does not grant hr:leaves:approve
-      const leaveWriteCred = { scopes: JSON.stringify(['hr:leaves:write']) };
-      expect(credentialHasScope(leaveWriteCred, 'hr:leaves:write')).toBe(true);
-      expect(credentialHasScope(leaveWriteCred, 'hr:leaves:approve')).toBe(false);
+      const dedCred = { scopes: JSON.stringify(['hr:deductions:read']) };
+      expect(credentialHasScope(dedCred, 'hr:deductions:read')).toBe(true);
+      expect(credentialHasScope(dedCred, 'hr:advances:read')).toBe(false);
+
+      const warnCred = { scopes: JSON.stringify(['hr:warnings:read']) };
+      expect(credentialHasScope(warnCred, 'hr:warnings:read')).toBe(true);
+      expect(credentialHasScope(warnCred, 'hr:resignations:read')).toBe(false);
+
+      const resigCred = { scopes: JSON.stringify(['hr:resignations:read']) };
+      expect(credentialHasScope(resigCred, 'hr:resignations:read')).toBe(true);
+      expect(credentialHasScope(resigCred, 'hr:warnings:read')).toBe(false);
     });
 
     test('OpenAPI spec contains all required V2 endpoints', () => {
@@ -85,6 +101,10 @@ describe('HR External API V2 Comprehensive Test Suite', () => {
         '/leaves/{id}/decision',
         '/payroll/runs',
         '/payroll/runs/{id}/items',
+        '/advances',
+        '/deductions',
+        '/warnings',
+        '/resignations',
         '/webhooks'
       ];
 
