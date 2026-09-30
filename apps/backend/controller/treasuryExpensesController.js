@@ -999,11 +999,7 @@ exports.createExpense = async (req, res) => {
 
       const isPaid = (status || 'PAID') === 'PAID';
 
-      if (isPaid && Number(account.balance) < expenseAmount) {
-        throw new Error(`رصيد الخزينة غير كافٍ. المتاح حالياً: ${Number(account.balance).toLocaleString('ar-EG')}، والمطلوب: ${expenseAmount.toLocaleString('ar-EG')}`);
-      }
-
-      // 2. Generate expense number
+      // 2. Generate expense number (Overdraft permitted: balance may become negative)
       const expenseNumber = await generateExpenseNumber(tx, companyId);
       const newBalance = isPaid ? Number(account.balance) - expenseAmount : Number(account.balance);
       const txDate = paymentDate ? new Date(paymentDate) : new Date();
@@ -1145,9 +1141,7 @@ exports.updateExpense = async (req, res) => {
           throw new Error('الخزينة المحددة غير موجودة أو غير نشطة');
         }
         const availableBalance = Number(targetAcc.balance);
-        if (availableBalance < targetAmount) {
-          throw new Error(`رصيد الخزينة غير كافٍ. المتاح حالياً: ${availableBalance.toLocaleString('ar-EG')}، والمطلوب: ${targetAmount.toLocaleString('ar-EG')}`);
-        }
+        // Overdraft permitted: calculate new target balance directly (may become negative)
         const updatedTargetBalance = availableBalance - targetAmount;
         await tx.treasuryAccount.update({
           where: { id: targetAccountId },
