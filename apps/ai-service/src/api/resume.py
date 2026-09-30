@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -32,6 +32,35 @@ class ResumeResponse(BaseModel):
     status: Literal["ok", "error"]
     reply: str
     thread_id: str
+    action_type: str | None = None
+    result_summary: str | None = None
+
+
+def _execution_result_summary(action_type: str | None, approve_result: dict[str, Any]) -> str | None:
+    """Human-readable summary of an executed approval, for session mirroring."""
+    if approve_result.get("status") != "completed":
+        return str(approve_result.get("message") or "")[:500] or None
+
+    result = approve_result.get("result")
+    if not isinstance(result, dict):
+        return None
+
+    if result.get("message"):
+        return str(result["message"])[:500]
+
+    try:
+        from src.tools.names import canonical_tool_name
+        from src.tools.registry import get_tool
+
+        tool = get_tool(canonical_tool_name(action_type)) if action_type else None
+        formatter = getattr(tool, "format_result", None)
+        if callable(formatter):
+            formatted = formatter(result)
+            if formatted:
+                return str(formatted)[:500]
+    except Exception as exc:
+        logger.warning("approval result formatting failed", error=str(exc))
+    return None
 
 
 @router.post("/resume", response_model=ResumeResponse)
@@ -57,6 +86,7 @@ async def resume(
         raise HTTPException(status_code=403, detail="Cross-tenant access denied")
 
     resolved_thread_id = body.thread_id or str(approval.thread_id)
+    action_type = str(getattr(approval, "action_type", "") or "") or None
 
     if body.approved:
         result = await svc.approve(
@@ -101,18 +131,24 @@ async def resume(
                 status="ok",
                 reply=t("approval.executed", locale="ar"),
                 thread_id=resolved_thread_id,
+                action_type=action_type,
+                result_summary=_execution_result_summary(action_type, result),
             )
         elif result.get("status") == "already_approved":
             return ResumeResponse(
                 status="ok",
                 reply=t("approval.executed", locale="ar"),
                 thread_id=resolved_thread_id,
+                action_type=action_type,
+                result_summary=_execution_result_summary(action_type, result),
             )
         else:
             return ResumeResponse(
                 status="error",
                 reply=t("approval.execution_failed", locale="ar"),
                 thread_id=resolved_thread_id,
+                action_type=action_type,
+                result_summary=str(result.get("message") or "")[:500] or None,
             )
     else:
         await svc.reject(
@@ -146,6 +182,7 @@ async def resume(
             status="ok",
             reply=t("approval.rejected", locale="ar"),
             thread_id=resolved_thread_id,
+            action_type=action_type,
         )
 
 

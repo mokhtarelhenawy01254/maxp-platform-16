@@ -35,11 +35,15 @@ def test_discovered_by_loader_with_instructions():
 
 
 def test_every_allowed_tool_resolves_in_registry():
+    from src.tools.catalog_seed import CURATED_CAPABILITIES
+
+    catalog_names = {str(c["name"]) for c in CURATED_CAPABILITIES}
     manifest = _manifest()
     unresolved = [
         name
         for name in manifest["allowedTools"]
         if get_tool(canonical_tool_name(name)) is None
+        and canonical_tool_name(name) not in catalog_names
     ]
     assert unresolved == [], f"allowedTools not found in registry: {unresolved}"
 

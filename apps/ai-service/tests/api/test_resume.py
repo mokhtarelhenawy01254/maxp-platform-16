@@ -163,6 +163,68 @@ def test_resume_approve_flow(client, mock_session, valid_headers):
     mock_approve.assert_awaited_once_with(draft_id="draft_123", decided_by="merchant")
 
 
+def test_resume_approve_returns_action_type_and_summary(client, mock_session, valid_headers):
+    """Approval Outcome Mirroring (SKILL 8.13-30): /resume must surface what was
+    executed so the backend can mirror it into the chat session ledger."""
+    approval = _make_mock_approval()
+    approval.action_type = "manage_agent_skill"
+    mock_session.execute.return_value = MagicMock(
+        scalar_one_or_none=MagicMock(return_value=approval)
+    )
+
+    from src.services.approval_service import ApprovalService
+    with patch.object(ApprovalService, "approve", new_callable=AsyncMock) as mock_approve:
+        mock_approve.return_value = {
+            "status": "completed",
+            "draft_id": "draft_123",
+            "result": {
+                "success": True,
+                "action": "create",
+                "skill": {"name": "مهارة الباقات", "message": "تم حفظ وتفعيل المهارة 'مهارة الباقات' بنجاح."},
+            },
+        }
+
+        resp = client.post(
+            "/resume",
+            json={"thread_id": "t1", "draft_id": "draft_123", "approved": True},
+            headers=valid_headers,
+        )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "ok"
+    assert data["action_type"] == "manage_agent_skill"
+    assert "مهارة الباقات" in (data["result_summary"] or "")
+
+
+def test_resume_approve_execution_failure_returns_action_type(client, mock_session, valid_headers):
+    approval = _make_mock_approval()
+    approval.action_type = "inventory_adjust"
+    mock_session.execute.return_value = MagicMock(
+        scalar_one_or_none=MagicMock(return_value=approval)
+    )
+
+    from src.services.approval_service import ApprovalService
+    with patch.object(ApprovalService, "approve", new_callable=AsyncMock) as mock_approve:
+        mock_approve.return_value = {
+            "status": "failed",
+            "draft_id": "draft_123",
+            "message": "qty must be positive",
+        }
+
+        resp = client.post(
+            "/resume",
+            json={"thread_id": "t1", "draft_id": "draft_123", "approved": True},
+            headers=valid_headers,
+        )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "error"
+    assert data["action_type"] == "inventory_adjust"
+    assert "qty must be positive" in (data["result_summary"] or "")
+
+
 def test_resume_approve_uses_sdk_workflow_before_manual_execution(client, mock_session, valid_headers):
     approval = _make_mock_approval()
     approval.approval_metadata = {"sdk_approval_id": "call-1"}

@@ -12,6 +12,8 @@ roles:
     - order_lookup
     - order_lookup_by_phone
     - customer_info
+    - returns_requests_list
+    - returns_request_get
     - product_search
     - product_read_conversion
     - product_configure_conversion
@@ -393,6 +395,8 @@ roles:
     - order_refund
     - customer_info
     - customer_top_buyers
+    - returns_requests_list
+    - returns_request_get
     - sales_revenue
     - company_snapshot
     - discount_create_draft

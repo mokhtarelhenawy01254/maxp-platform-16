@@ -149,10 +149,13 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
   const handleDecision = useCallback(
     async (cardId: string, approved: boolean) => {
       try {
-        await apiClient.post(`/agent-approvals/${cardId}/${approved ? 'approve' : 'reject'}`, {
-          threadId: activeSessionId,
-          reason: approved ? 'اعتمد بواسطة التاجر من المساعد التنفيذي' : 'ألغي الإجراء من قبل التاجر',
-        });
+        const res = await apiClient.post<{ success?: boolean; note?: string; approvalStatus?: string }>(
+          `/agent-approvals/${cardId}/${approved ? 'approve' : 'reject'}`,
+          {
+            threadId: activeSessionId,
+            reason: approved ? 'اعتمد بواسطة التاجر من المساعد التنفيذي' : 'ألغي الإجراء من قبل التاجر',
+          }
+        );
 
         setMessages((prev) =>
           prev.map((msg) => {
@@ -165,6 +168,21 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
             };
           })
         );
+
+        // Surface the execution outcome immediately (the backend mirrors it into
+        // the session ledger so it survives reloads and informs the agent).
+        const note = res.data?.note;
+        if (note) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `approval-${Date.now()}`,
+              sender: 'assistant',
+              text: note,
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+        }
       } catch (err: any) {
         console.error('[Copilot] Approval error:', err);
       }

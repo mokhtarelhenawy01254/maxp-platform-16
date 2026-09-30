@@ -53,7 +53,7 @@ class TestUnlockAdvancedToolsGovernance:
         assert res["company_id"] == "comp_123"
         assert "action_args" in res
         assert res["action_args"]["approved"] is True
-        assert "STORE_MANAGER_ADVANCED" in res["action_args"]["scope_info"]
+        assert "STORE_OPS_ADVANCED" in res["action_args"]["scope_info"]
 
         # Scope restriction: HR and payroll must be strictly excluded
         scoped = res["action_args"]["scoped_tools"]

@@ -126,6 +126,7 @@ async function sendMessage(req, res) {
           agentId: targetAgentId,
           message: effectiveMessage,
           threadId: activeSessionId,
+          customerId: userId,
           memoryContext: combinedMemoryContext,
           channel: req.body?.channel || 'dashboard',
           attachments: normalizedAttachments.length > 0 ? normalizedAttachments : undefined,
