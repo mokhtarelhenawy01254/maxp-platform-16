@@ -4,6 +4,7 @@ import Sidebar, { TabId } from '../components/Sidebar';
 import { TabErrorBoundary } from '../components/TabErrorBoundary';
 import CockpitTab from './CockpitTab';
 import TasksTab from './TasksTab';
+import TimersTab from './TimersTab';
 import GoalsTab from './GoalsTab';
 import { TaskReportView } from '../components/tasks/reports/TaskReportView';
 import AppsTimelineTab from './AppsTimelineTab';
@@ -275,6 +276,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
         return isAdmin ? 'النشاط المباشر والعدادات' : 'النشاط وساعات العمل';
       case 'tasks':
         return 'المهام اليومية ومعدل الإنجاز';
+      case 'timers':
+        return 'المؤقتات الحية — زمن المهام والشغل المتوازي';
       case 'goals':
         return 'الأهداف ومؤشرات الأداء (OKRs)';
       case 'reports':
@@ -515,6 +518,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
           )}
 
           {activeTab === 'tasks' && <TabErrorBoundary key="tasks" tabName="المهام"><TasksTab /></TabErrorBoundary>}
+          {activeTab === 'timers' && <TabErrorBoundary key="timers" tabName="المؤقتات"><TimersTab /></TabErrorBoundary>}
           {activeTab === 'goals' && <TabErrorBoundary key="goals" tabName="الأهداف"><GoalsTab /></TabErrorBoundary>}
           {activeTab === 'reports' && <TabErrorBoundary key="reports" tabName="تقارير الأداء"><TaskReportView isExecutiveMode={false} /></TabErrorBoundary>}
 

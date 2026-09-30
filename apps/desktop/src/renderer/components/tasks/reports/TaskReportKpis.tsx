@@ -62,11 +62,11 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
       {/* 2. Tracked Stopwatch Hours */}
       <div style={styles.card} title="إجمالي الساعات المسجلة بالتايمر الفعلي">
         <div style={styles.cardHeader}>
-          <span style={styles.cardLabel}>وقت التركيز المسجل</span>
+          <span style={styles.cardLabel}>الوقت الفعلي اليوم</span>
           <Clock size={13} style={{ color: 'var(--accent-blue)' }} />
         </div>
         <div style={styles.cardBody}>
-          <span style={styles.primaryNum}>{formatHours(kpis.totalTrackedSeconds)}</span>
+          <span style={styles.primaryNum}>{formatHours(kpis.actualSeconds || kpis.totalTrackedSeconds)}</span>
           <span style={{ ...styles.secondaryBadge, color: 'var(--accent-blue)' }}>
             <TrendingUp size={11} style={{ marginRight: 3 }} />
             {kpis.inProgressCount} جارية الآن

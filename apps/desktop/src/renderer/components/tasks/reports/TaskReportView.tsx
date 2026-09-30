@@ -47,18 +47,24 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
   const isAdmin = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER'].includes(roleStr);
   const isManager = isAdmin || ['MANAGER', 'HR_MANAGER'].includes(roleStr) || isExecutiveMode;
   const [teamOverview, setTeamOverview] = useState<any[]>([]);
+  const [myDayActiveSeconds, setMyDayActiveSeconds] = useState(0);
 
   // Presence summary (absorbed from the merged daily report screen)
   const presenceStats = useMemo(() => {
     const rows = teamOverview;
     const activeNow = rows.filter((r: any) => String(r.status || '').toUpperCase() === 'ONLINE').length;
     const late = rows.filter((r: any) => Number(r.lateStartSeconds || 0) > 0).length;
-    const totalHours = Math.round((rows.reduce((s: number, r: any) => s + Number(r.activeSeconds || 0), 0) / 3600) * 10) / 10;
+    const actualSeconds = rows.reduce((s: number, r: any) => s + Number(r.activeSeconds || 0), 0);
+    const totalHours = Math.round((actualSeconds / 3600) * 10) / 10;
     const withRatio = rows.filter((r: any) => Number(r.activityRatio || 0) > 0);
+    // activityRatio arrives 0..1 (fraction) or 0..100 (percent) depending on backend — normalize
     const avgProd = withRatio.length
-      ? Math.round((withRatio.reduce((s: number, r: any) => s + Number(r.activityRatio || 0), 0) / withRatio.length) * 100)
+      ? Math.round(withRatio.reduce((s: number, r: any) => {
+          const v = Number(r.activityRatio || 0);
+          return s + (v > 1.5 ? v : v * 100);
+        }, 0) / withRatio.length)
       : 0;
-    return { activeNow, late, totalHours, avgProd };
+    return { activeNow, late, totalHours, avgProd, actualSeconds };
   }, [teamOverview]);
 
   const presenceChipStyle: React.CSSProperties = {
@@ -84,10 +90,11 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       const hasPrivilege = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER', 'HR_MANAGER'].includes(userRole) || isExecutiveMode;
       const fetchType = hasPrivilege ? 'all' : 'my-tasks';
 
-      const [tasksRes, usersRes, teamRes] = await Promise.all([
+      const [tasksRes, usersRes, teamRes, myDayRes] = await Promise.all([
         window.electronAPI.getTasks(fetchType),
         hasPrivilege ? window.electronAPI.getCompanyUsers() : Promise.resolve({ success: false, users: [] }),
         hasPrivilege ? window.electronAPI.getTeamOverview().catch(() => null) : Promise.resolve(null),
+        window.electronAPI.getDailySummary(new Date().toISOString().slice(0, 10)).catch(() => null),
       ]);
 
       if (tasksRes?.success && Array.isArray(tasksRes.tasks)) {
@@ -97,6 +104,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         setUsers(usersRes.users);
       }
       setTeamOverview(teamRes?.data && Array.isArray(teamRes.data) ? teamRes.data : []);
+      setMyDayActiveSeconds(Number(myDayRes?.total_active_seconds || 0));
     } catch (err) {
       console.warn('[TaskReportView] Error loading report data:', err);
     } finally {
@@ -214,6 +222,10 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
 
     const totalSeconds = filteredItems.reduce((acc, t) => acc + t.actualTrackedMinutes * 60, 0);
     const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    // Real human work time: team aggregate for managers, own attendance day for employees
+    const actualSeconds = teamOverview.length > 0
+      ? teamOverview.reduce((s: number, r: any) => s + Number(r.activeSeconds || 0), 0)
+      : myDayActiveSeconds;
 
     return {
       totalTasks: total,
@@ -222,12 +234,13 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       inProgressCount: inProgress,
       inReviewCount: inReview,
       totalTrackedSeconds: totalSeconds,
+      actualSeconds,
       overdueCount: overdue,
       timeLeakCount: timeLeaks,
       reviewBlockedCount: reviewBlocked,
       focusAccuracyRate: 85,
     };
-  }, [filteredItems]);
+  }, [filteredItems, teamOverview, myDayActiveSeconds]);
 
   // Unique project names for dropdown
   const uniqueProjects = useMemo(() => {

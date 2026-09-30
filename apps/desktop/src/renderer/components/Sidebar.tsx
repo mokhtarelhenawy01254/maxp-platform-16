@@ -13,10 +13,11 @@ import {
   Sun,
   Target,
   FileText,
+  Timer,
 } from 'lucide-react';
 import { useTheme } from '../theme/ThemeContext';
 
-export type TabId = 'tasks' | 'goals' | 'reports' | 'cockpit' | 'apps' | 'attendance' | 'system';
+export type TabId = 'tasks' | 'timers' | 'goals' | 'reports' | 'cockpit' | 'apps' | 'attendance' | 'system';
 
 interface SidebarProps {
   activeTab: TabId;
@@ -46,6 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           label: 'شغلي',
           items: [
             { id: 'tasks', label: 'المهام والإنتاجية', icon: <CheckSquare size={17} /> },
+            { id: 'timers', label: 'المؤقتات الحية', icon: <Timer size={17} /> },
             { id: 'goals', label: 'الأهداف ومؤشرات الأداء', icon: <Target size={17} /> },
           ],
         },
@@ -75,6 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           label: 'شغلي',
           items: [
             { id: 'tasks', label: 'المهام والإنتاجية', icon: <CheckSquare size={17} /> },
+            { id: 'timers', label: 'المؤقتات الحية', icon: <Timer size={17} /> },
             { id: 'goals', label: 'الأهداف ومؤشرات الأداء', icon: <Target size={17} /> },
             { id: 'reports', label: 'تقارير الأداء', icon: <FileText size={17} /> },
           ],

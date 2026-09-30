@@ -24,7 +24,8 @@ export interface TaskReportKpiData {
   completionRate: number; // 0 - 100
   inProgressCount: number;
   inReviewCount: number;
-  totalTrackedSeconds: number;
+  totalTrackedSeconds: number;   // sum of per-task durations (parallel-inclusive)
+  actualSeconds: number;         // real human work time (attendance-based, parallel-exclusive)
   overdueCount: number;
   timeLeakCount: number;
   reviewBlockedCount: number;

@@ -434,7 +434,8 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             </div>
           )}
 
-          {/* SINGLE DYNAMIC PRIMARY ACTION */}
+          {/* SINGLE DYNAMIC PRIMARY ACTION — hidden while hover tools occupy the slot */}
+          {!isHovered && (<>
           {isCompleted ? (
             <button
               type="button"
@@ -519,12 +520,14 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             </button>
           ) : (
             <span
-              style={rowStyles.assignedChip}
-              title={`المهمة مسندة للزميل: ${assigneeName} (لا تملك صلاحية تشغيلها)`}
+              style={{ ...rowStyles.assignedChip, padding: '3px 5px' }}
+              title={`مكلفة لزميل: ${assigneeName} (لا تملك صلاحية تشغيلها)`}
             >
               <Lock size={10} color="var(--text-muted)" />
-              <span>مكلفة لزميل</span>
             </span>
+          )}
+
+          </>
           )}
 
           {/* Open Details Drawer Chevron Button */}
