@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 .desktop-review*/
+.zcode/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

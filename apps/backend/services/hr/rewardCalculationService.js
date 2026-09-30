@@ -26,14 +26,16 @@ class RewardCalculationService {
         let calculationDetails = {};
 
         switch (rewardType.calculationMethod) {
+            case 'FIXED':
             case 'FIXED_AMOUNT':
                 calculatedValue = Number(rewardType.value);
                 calculationDetails = {
-                    method: 'FIXED_AMOUNT',
+                    method: 'FIXED',
                     fixedValue: calculatedValue
                 };
                 break;
 
+            case 'PERCENTAGE':
             case 'PERCENTAGE_SALARY':
                 const employee = await this.prisma.user.findUnique({
                     where: { id: userId },

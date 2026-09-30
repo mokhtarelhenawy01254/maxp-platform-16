@@ -285,4 +285,81 @@ describe('HR External API — New Endpoints & Timezone Fix Unit Tests', () => {
       });
     });
   });
+
+  describe('Item 6: Phase 4 Endpoints Structure & Validations', () => {
+    test('All Phase 4 endpoints are exported as functions', () => {
+      expect(typeof hrExternalController.createEmployee).toBe('function');
+      expect(typeof hrExternalController.updateEmployee).toBe('function');
+      expect(typeof hrExternalController.terminateEmployee).toBe('function');
+      expect(typeof hrExternalController.listRewardTypes).toBe('function');
+      expect(typeof hrExternalController.createRewardType).toBe('function');
+      expect(typeof hrExternalController.updateRewardType).toBe('function');
+      expect(typeof hrExternalController.getRewardSettings).toBe('function');
+      expect(typeof hrExternalController.updateRewardSettings).toBe('function');
+      expect(typeof hrExternalController.evaluateRewardType).toBe('function');
+    });
+
+    test('createEmployee rejects negative baseSalary with 400 VALIDATION_ERROR', async () => {
+      mockReq.body = {
+        employeeNumber: 'EMP-P4-01',
+        firstName: 'Test',
+        lastName: 'Employee',
+        baseSalary: -500
+      };
+      await hrExternalController.createEmployee(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({ code: 'VALIDATION_ERROR' })
+        })
+      );
+    });
+
+    test('updateEmployee rejects negative baseSalary with 400 VALIDATION_ERROR', async () => {
+      mockReq.params = { id: 'emp-123' };
+      mockReq.body = { baseSalary: -100 };
+      await hrExternalController.updateEmployee(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({ code: 'VALIDATION_ERROR' })
+        })
+      );
+    });
+
+    test('createEmployee rejects invalid contractType with 400 VALIDATION_ERROR and allowed values', async () => {
+      mockReq.body = {
+        employeeNumber: 'EMP-P4-02',
+        firstName: 'Test',
+        lastName: 'Employee',
+        contractType: 'FREELANCE_INVALID'
+      };
+      await hrExternalController.createEmployee(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR',
+            allowedValues: expect.arrayContaining(['FULL_TIME', 'PART_TIME', 'CONTRACT'])
+          })
+        })
+      );
+    });
+
+    test('evaluateRewardType rejects invalid month with 400 VALIDATION_ERROR', async () => {
+      mockReq.params = { id: 'rt-123' };
+      mockReq.query = { month: '13', year: '2026' };
+      await hrExternalController.evaluateRewardType(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({ code: 'VALIDATION_ERROR' })
+        })
+      );
+    });
+  });
 });

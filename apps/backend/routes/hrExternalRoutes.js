@@ -77,9 +77,12 @@ router.put('/settings', requireExternalHrScope('hr:settings:write'), hrExternalC
 
 // 👥 Employees Sync & Query (ERPs, AI Profile Checks)
 router.get('/employees', requireExternalHrScope('hr:employees:read'), hrExternalController.listEmployees);
+router.post('/employees', requireExternalHrScope('hr:employees:write'), hrExternalController.createEmployee);
 router.get('/employees/stats', requireExternalHrScope('hr:employees:read'), hrExternalController.getEmployeeStats);
 router.get('/employees/organization-chart', requireExternalHrScope('hr:employees:read'), hrExternalController.getOrganizationChart);
 router.get('/employees/:id', requireExternalHrScope('hr:employees:read'), hrExternalController.getEmployeeById);
+router.patch('/employees/:id', requireExternalHrScope('hr:employees:write'), hrExternalController.updateEmployee);
+router.post('/employees/:id/terminate', requireExternalHrScope('hr:employees:write'), hrExternalController.terminateEmployee);
 router.post('/employees/upsert', requireExternalHrScope('hr:employees:write'), hrExternalController.upsertEmployee);
 router.patch('/employees/:id/shift', requireExternalHrScope('hr:shifts:write'), hrExternalController.assignEmployeeShift);
 
@@ -114,6 +117,12 @@ router.patch('/deductions/:id', requireExternalHrScope('hr:deductions:write'), h
 // 🏆 Rewards & Bonuses
 router.get('/rewards', requireExternalHrScope('hr:rewards:read'), hrExternalController.listRewards);
 router.post('/rewards', requireExternalHrScope('hr:rewards:write'), hrExternalController.createReward);
+router.get('/reward-types', requireExternalHrScope('hr:rewards:read'), hrExternalController.listRewardTypes);
+router.post('/reward-types', requireExternalHrScope('hr:rewards:write'), hrExternalController.createRewardType);
+router.patch('/reward-types/:id', requireExternalHrScope('hr:rewards:write'), hrExternalController.updateRewardType);
+router.post('/reward-types/:id/evaluate', requireExternalHrScope('hr:rewards:write'), hrExternalController.evaluateRewardType);
+router.get('/reward-settings', requireExternalHrScope('hr:rewards:read'), hrExternalController.getRewardSettings);
+router.put('/reward-settings', requireExternalHrScope('hr:rewards:write'), hrExternalController.updateRewardSettings);
 
 // 🕐 Shifts & Rosters
 router.get('/shifts', requireExternalHrScope('hr:shifts:read'), hrExternalController.listShifts);

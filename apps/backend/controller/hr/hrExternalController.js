@@ -79,6 +79,23 @@ const VALID_ATTENDANCE_STATUSES = [
   'REMOTE'
 ];
 
+const VALID_CONTRACT_TYPES = [
+  'FULL_TIME',
+  'PART_TIME',
+  'CONTRACT',
+  'FREELANCE',
+  'INTERNSHIP',
+  'REMOTE'
+];
+
+const VALID_REWARD_TYPE_CATEGORIES = ['FINANCIAL', 'NON_FINANCIAL'];
+const VALID_REWARD_CALCULATION_METHODS = ['FIXED', 'PERCENTAGE'];
+const VALID_REWARD_TRIGGER_TYPES = ['MANUAL', 'AUTOMATIC'];
+const VALID_REWARD_FREQUENCIES = ['ONCE', 'MONTHLY', 'QUARTERLY', 'YEARLY'];
+
+const rewardEligibilityService = require('../../services/hr/rewardEligibilityService');
+const rewardApplicationService = require('../../services/hr/rewardApplicationService');
+
 function maskSensitivePhone(phone) {
   if (!phone || typeof phone !== 'string') return phone || '';
   const trimmed = phone.trim();
@@ -3629,10 +3646,1284 @@ const updateAttendanceRecord = async (req, res) => {
   }
 };
 
+/**
+ * 32. إنشاء موظف جديد
+ * POST /employees
+ */
+const createEmployee = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const {
+      employeeNumber,
+      firstName,
+      lastName,
+      email,
+      phone,
+      nationalId,
+      departmentId,
+      positionId,
+      managerId,
+      status = 'ACTIVE',
+      contractType = 'FULL_TIME',
+      hireDate,
+      baseSalary,
+      userId
+    } = req.body || {};
+
+    if (!employeeNumber || !String(employeeNumber).trim()) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'employeeNumber is required' }
+      });
+    }
+
+    if (!firstName || !String(firstName).trim() || !lastName || !String(lastName).trim()) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'firstName and lastName are required' }
+      });
+    }
+
+    const cleanEmpNumber = String(employeeNumber).trim();
+
+    // Validate status
+    let normalizedStatus = 'ACTIVE';
+    if (status !== undefined && status !== null) {
+      normalizedStatus = String(status).trim().toUpperCase();
+      if (!VALID_EMPLOYEE_STATUSES.includes(normalizedStatus)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Invalid status: '${status}'. Allowed values are: ${VALID_EMPLOYEE_STATUSES.join(', ')}`,
+            allowedValues: VALID_EMPLOYEE_STATUSES
+          }
+        });
+      }
+    }
+    const dbStatus = normalizedStatus === 'PROBATION' ? 'ACTIVE' : normalizedStatus;
+
+    // Validate contractType
+    let normContract = 'FULL_TIME';
+    if (contractType !== undefined && contractType !== null) {
+      normContract = String(contractType).trim().toUpperCase();
+      if (!VALID_CONTRACT_TYPES.includes(normContract)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Invalid contractType: '${contractType}'. Allowed values are: ${VALID_CONTRACT_TYPES.join(', ')}`,
+            allowedValues: VALID_CONTRACT_TYPES
+          }
+        });
+      }
+    }
+
+    // Validate hireDate
+    let parsedHireDate = new Date();
+    if (hireDate) {
+      const d = new Date(hireDate);
+      if (isNaN(d.getTime())) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Invalid hireDate format. Expected YYYY-MM-DD' }
+        });
+      }
+      parsedHireDate = d;
+    }
+
+    // Validate baseSalary
+    let numericSalary = null;
+    if (baseSalary !== undefined && baseSalary !== null && baseSalary !== '') {
+      numericSalary = Number(baseSalary);
+      if (isNaN(numericSalary) || numericSalary < 0) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'baseSalary must be a non-negative number' }
+        });
+      }
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    // Check duplicate employeeNumber
+    const existing = await prisma.employee.findUnique({
+      where: {
+        companyId_employeeNumber: { companyId, employeeNumber: cleanEmpNumber }
+      }
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: 'DUPLICATE_EMPLOYEE_NUMBER',
+          message: `Employee with number ${cleanEmpNumber} already exists in this company`
+        }
+      });
+    }
+
+    // Validate departmentId
+    if (departmentId) {
+      const dept = await prisma.department.findFirst({ where: { id: departmentId, companyId } });
+      if (!dept) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'DEPARTMENT_NOT_FOUND', message: `Department not found: ${departmentId}` }
+        });
+      }
+    }
+
+    // Validate positionId
+    if (positionId) {
+      const pos = await prisma.position.findFirst({ where: { id: positionId, companyId } });
+      if (!pos) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'POSITION_NOT_FOUND', message: `Position not found: ${positionId}` }
+        });
+      }
+    }
+
+    // Validate managerId
+    if (managerId) {
+      const mgr = await prisma.employee.findFirst({ where: { id: managerId, companyId } });
+      if (!mgr) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'MANAGER_NOT_FOUND', message: `Manager not found: ${managerId}` }
+        });
+      }
+    }
+
+    // Validate userId linking
+    let targetUserId = null;
+    if (userId !== undefined && userId !== null && userId !== '') {
+      targetUserId = String(userId).trim();
+      const user = await prisma.user.findFirst({ where: { id: targetUserId, companyId } });
+      if (!user) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'USER_NOT_FOUND', message: `User not found or does not belong to this company: ${targetUserId}` }
+        });
+      }
+
+      const linkedEmp = await prisma.employee.findFirst({
+        where: { userId: targetUserId, companyId }
+      });
+      if (linkedEmp) {
+        return res.status(409).json({
+          success: false,
+          error: {
+            code: 'USER_ALREADY_LINKED',
+            message: `User ${targetUserId} is already linked to employee ${linkedEmp.employeeNumber} (${linkedEmp.firstName} ${linkedEmp.lastName})`
+          }
+        });
+      }
+    }
+
+    const employee = await prisma.employee.create({
+      data: {
+        companyId,
+        employeeNumber: cleanEmpNumber,
+        firstName: String(firstName).trim(),
+        lastName: String(lastName).trim(),
+        email: email ? String(email).trim().toLowerCase() : null,
+        phone: phone ? String(phone).trim() : null,
+        nationalId: nationalId ? String(nationalId).trim() : null,
+        departmentId: departmentId || null,
+        positionId: positionId || null,
+        managerId: managerId || null,
+        status: dbStatus,
+        contractType: normContract,
+        hireDate: parsedHireDate,
+        baseSalary: numericSalary,
+        userId: targetUserId
+      },
+      include: {
+        department: { select: { id: true, name: true } },
+        position: { select: { id: true, title: true } },
+        manager: { select: { id: true, firstName: true, lastName: true, employeeNumber: true } }
+      }
+    });
+
+    // Record initial salary history if baseSalary provided
+    if (numericSalary !== null && numericSalary > 0) {
+      await prisma.salaryHistory.create({
+        data: {
+          companyId,
+          userId: targetUserId || employee.id,
+          employeeRelId: employee.id,
+          previousSalary: 0,
+          newSalary: numericSalary,
+          changeType: 'INITIAL',
+          changePercentage: 100,
+          effectiveDate: parsedHireDate,
+          reason: 'Initial salary on employee creation',
+          approvedBy: req.externalApiCredential?.id || req.hrCredential?.id || 'EXTERNAL_API'
+        }
+      });
+    }
+
+    await logExternalApiAction({
+      req,
+      action: 'CREATE_EMPLOYEE',
+      description: `Created employee ${employee.employeeNumber} (${employee.firstName} ${employee.lastName})`,
+      resourceType: 'Employee',
+      resourceId: employee.id,
+      targetName: `${employee.firstName} ${employee.lastName}`,
+      details: { employeeNumber: employee.employeeNumber, status: employee.status, baseSalary: numericSalary }
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Employee created successfully',
+      data: employee
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.createEmployee] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 33. تعديل موظف كامل (الراتب وتاريخ الرواتب وربط المستخدمين)
+ * PATCH /employees/:id
+ */
+const updateEmployee = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { id } = req.params;
+    const {
+      baseSalary,
+      departmentId,
+      positionId,
+      status,
+      hireDate,
+      contractType,
+      managerId,
+      phone,
+      email,
+      nationalId,
+      userId,
+      reason
+    } = req.body || {};
+
+    // Input validations before DB query
+    let newSalary = null;
+    if (baseSalary !== undefined && baseSalary !== null && baseSalary !== '') {
+      newSalary = Number(baseSalary);
+      if (isNaN(newSalary) || newSalary < 0) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'baseSalary must be a non-negative number' }
+        });
+      }
+    }
+
+    let normStatus = null;
+    if (status !== undefined && status !== null) {
+      const s = String(status).trim().toUpperCase();
+      if (!VALID_EMPLOYEE_STATUSES.includes(s)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Invalid status: '${status}'. Allowed values are: ${VALID_EMPLOYEE_STATUSES.join(', ')}`,
+            allowedValues: VALID_EMPLOYEE_STATUSES
+          }
+        });
+      }
+      normStatus = s === 'PROBATION' ? 'ACTIVE' : s;
+    }
+
+    let normContract = null;
+    if (contractType !== undefined && contractType !== null) {
+      const c = String(contractType).trim().toUpperCase();
+      if (!VALID_CONTRACT_TYPES.includes(c)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Invalid contractType: '${contractType}'. Allowed values are: ${VALID_CONTRACT_TYPES.join(', ')}`,
+            allowedValues: VALID_CONTRACT_TYPES
+          }
+        });
+      }
+      normContract = c;
+    }
+
+    let parsedHireDate = null;
+    if (hireDate !== undefined && hireDate !== null) {
+      const d = new Date(hireDate);
+      if (isNaN(d.getTime())) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Invalid hireDate format. Expected YYYY-MM-DD' }
+        });
+      }
+      parsedHireDate = d;
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    const employee = await prisma.employee.findFirst({
+      where: {
+        companyId,
+        OR: [{ id }, { employeeNumber: id }]
+      }
+    });
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'EMPLOYEE_NOT_FOUND', message: `Employee not found with ID or code: ${id}` }
+      });
+    }
+
+    const updateData = {};
+
+    // 1. baseSalary & SalaryHistory
+    if (newSalary !== null) {
+      const previousSalary = employee.baseSalary ? Number(employee.baseSalary) : 0;
+      if (newSalary !== previousSalary) {
+        updateData.baseSalary = newSalary;
+
+        const changePercentage = previousSalary > 0
+          ? Number(((newSalary - previousSalary) / previousSalary) * 100)
+          : 0;
+
+        await prisma.salaryHistory.create({
+          data: {
+            companyId,
+            userId: employee.userId || employee.id,
+            employeeRelId: employee.id,
+            previousSalary,
+            newSalary,
+            changeType: 'ADJUSTMENT',
+            changePercentage,
+            effectiveDate: new Date(),
+            reason: reason || 'Salary updated via External HR API',
+            approvedBy: req.externalApiCredential?.id || req.hrCredential?.id || 'EXTERNAL_API'
+          }
+        });
+
+        if (employee.userId) {
+          await prisma.user.update({
+            where: { id: employee.userId },
+            data: { baseSalary: newSalary }
+          }).catch(() => {});
+        }
+      }
+    }
+
+    // 2. departmentId
+    if (departmentId !== undefined) {
+      if (departmentId === null || departmentId === '') {
+        updateData.departmentId = null;
+      } else {
+        const dept = await prisma.department.findFirst({ where: { id: departmentId, companyId } });
+        if (!dept) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'DEPARTMENT_NOT_FOUND', message: `Department not found: ${departmentId}` }
+          });
+        }
+        updateData.departmentId = departmentId;
+      }
+    }
+
+    // 3. positionId
+    if (positionId !== undefined) {
+      if (positionId === null || positionId === '') {
+        updateData.positionId = null;
+      } else {
+        const pos = await prisma.position.findFirst({ where: { id: positionId, companyId } });
+        if (!pos) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'POSITION_NOT_FOUND', message: `Position not found: ${positionId}` }
+          });
+        }
+        updateData.positionId = positionId;
+      }
+    }
+
+    // 4. managerId
+    if (managerId !== undefined) {
+      if (managerId === null || managerId === '') {
+        updateData.managerId = null;
+      } else {
+        const mgr = await prisma.employee.findFirst({ where: { id: managerId, companyId } });
+        if (!mgr) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'MANAGER_NOT_FOUND', message: `Manager not found: ${managerId}` }
+          });
+        }
+        updateData.managerId = managerId;
+      }
+    }
+
+    // 5. status
+    if (normStatus !== null) {
+      updateData.status = normStatus;
+    }
+
+    // 6. contractType
+    if (normContract !== null) {
+      updateData.contractType = normContract;
+    }
+
+    // 7. hireDate
+    if (parsedHireDate !== null) {
+      updateData.hireDate = parsedHireDate;
+    }
+
+    // 8. phone, email, nationalId
+    if (phone !== undefined) updateData.phone = phone ? String(phone).trim() : null;
+    if (email !== undefined) updateData.email = email ? String(email).trim().toLowerCase() : null;
+    if (nationalId !== undefined) updateData.nationalId = nationalId ? String(nationalId).trim() : null;
+
+    // 9. userId (link / unlink)
+    if (userId !== undefined) {
+      if (userId === null || userId === '') {
+        updateData.userId = null;
+      } else {
+        const targetUserId = String(userId).trim();
+        const user = await prisma.user.findFirst({ where: { id: targetUserId, companyId } });
+        if (!user) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'USER_NOT_FOUND', message: `User not found or does not belong to this company: ${targetUserId}` }
+          });
+        }
+
+        const conflictEmp = await prisma.employee.findFirst({
+          where: { userId: targetUserId, companyId, id: { not: employee.id } }
+        });
+        if (conflictEmp) {
+          return res.status(409).json({
+            success: false,
+            error: {
+              code: 'USER_ALREADY_LINKED',
+              message: `User ${targetUserId} is already linked to employee ${conflictEmp.employeeNumber} (${conflictEmp.firstName} ${conflictEmp.lastName})`
+            }
+          });
+        }
+
+        updateData.userId = targetUserId;
+      }
+    }
+
+    const updated = await prisma.employee.update({
+      where: { id: employee.id },
+      data: updateData,
+      include: {
+        department: { select: { id: true, name: true } },
+        position: { select: { id: true, title: true } },
+        manager: { select: { id: true, firstName: true, lastName: true, employeeNumber: true } }
+      }
+    });
+
+    await logExternalApiAction({
+      req,
+      action: 'UPDATE_EMPLOYEE',
+      description: `Updated employee ${updated.employeeNumber} (${updated.firstName} ${updated.lastName})`,
+      resourceType: 'Employee',
+      resourceId: updated.id,
+      targetName: `${updated.firstName} ${updated.lastName}`,
+      details: { fieldsUpdated: Object.keys(updateData) }
+    });
+
+    return res.json({
+      success: true,
+      message: 'Employee updated successfully',
+      data: updated
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.updateEmployee] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 34. إنهاء خدمة موظف
+ * POST /employees/:id/terminate
+ */
+const terminateEmployee = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { id } = req.params;
+    const { lastWorkingDay, reason } = req.body || {};
+
+    let terminationDate = new Date();
+    if (lastWorkingDay) {
+      const d = new Date(lastWorkingDay);
+      if (isNaN(d.getTime())) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Invalid lastWorkingDay format. Expected YYYY-MM-DD' }
+        });
+      }
+      terminationDate = d;
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    const employee = await prisma.employee.findFirst({
+      where: {
+        companyId,
+        OR: [{ id }, { employeeNumber: id }]
+      }
+    });
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'EMPLOYEE_NOT_FOUND', message: `Employee not found with ID or code: ${id}` }
+      });
+    }
+
+    const terminated = await prisma.employee.update({
+      where: { id: employee.id },
+      data: {
+        status: 'TERMINATED',
+        terminationDate,
+        terminationReason: reason ? String(reason).trim() : null
+      },
+      include: {
+        department: { select: { id: true, name: true } },
+        position: { select: { id: true, title: true } }
+      }
+    });
+
+    if (employee.userId) {
+      await prisma.user.update({
+        where: { id: employee.userId },
+        data: { isActive: false }
+      }).catch(() => {});
+    }
+
+    await logExternalApiAction({
+      req,
+      action: 'TERMINATE_EMPLOYEE',
+      description: `Terminated employee ${terminated.employeeNumber} (${terminated.firstName} ${terminated.lastName}). Reason: ${reason || 'Not specified'}`,
+      resourceType: 'Employee',
+      resourceId: terminated.id,
+      targetName: `${terminated.firstName} ${terminated.lastName}`,
+      details: { terminationDate, reason: reason || null }
+    });
+
+    return res.json({
+      success: true,
+      message: 'Employee terminated successfully',
+      data: terminated
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.terminateEmployee] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 35. استعلام أنواع المكافآت والحوافز
+ * GET /reward-types
+ */
+const listRewardTypes = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const {
+      page = 1,
+      limit = 50,
+      search,
+      category,
+      triggerType,
+      frequency,
+      isActive
+    } = req.query;
+
+    const skip = (Math.max(1, parseInt(page, 10)) - 1) * Math.min(100, parseInt(limit, 10));
+    const take = Math.min(100, Math.max(1, parseInt(limit, 10)));
+
+    const where = { companyId };
+    if (category) where.category = category;
+    if (triggerType) where.triggerType = triggerType;
+    if (frequency) where.frequency = frequency;
+    if (isActive !== undefined && isActive !== 'all') {
+      where.isActive = isActive === 'true' || isActive === true;
+    }
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { nameAr: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    const prisma = getSharedPrismaClient();
+    const [types, total] = await Promise.all([
+      prisma.rewardType.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { priority: 'asc' }
+      }),
+      prisma.rewardType.count({ where })
+    ]);
+
+    const formatted = types.map((item) => {
+      let parsedConditions = null;
+      if (item.eligibilityConditions) {
+        try {
+          parsedConditions = JSON.parse(item.eligibilityConditions);
+        } catch (_e) {
+          parsedConditions = item.eligibilityConditions;
+        }
+      }
+      return {
+        ...item,
+        eligibilityConditions: parsedConditions
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: formatted,
+      pagination: {
+        page: Math.max(1, parseInt(page, 10)),
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take)
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.listRewardTypes] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 36. إنشاء نوع مكافأة جديد
+ * POST /reward-types
+ */
+const createRewardType = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const {
+      name,
+      nameAr,
+      description,
+      category,
+      calculationMethod,
+      value,
+      maxCap,
+      triggerType = 'MANUAL',
+      frequency = 'MONTHLY',
+      eligibilityConditions,
+      isActive = true,
+      priority = 1
+    } = req.body || {};
+
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'name is required' }
+      });
+    }
+
+    if (!category) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: `category is required. Allowed values are: ${VALID_REWARD_TYPE_CATEGORIES.join(', ')}`,
+          allowedValues: VALID_REWARD_TYPE_CATEGORIES
+        }
+      });
+    }
+
+    const normCategory = String(category).trim().toUpperCase();
+    if (!VALID_REWARD_TYPE_CATEGORIES.includes(normCategory)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: `Invalid category: '${category}'. Allowed values are: ${VALID_REWARD_TYPE_CATEGORIES.join(', ')}`,
+          allowedValues: VALID_REWARD_TYPE_CATEGORIES
+        }
+      });
+    }
+
+    if (!calculationMethod) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: `calculationMethod is required. Allowed values are: ${VALID_REWARD_CALCULATION_METHODS.join(', ')}`,
+          allowedValues: VALID_REWARD_CALCULATION_METHODS
+        }
+      });
+    }
+
+    const normCalc = String(calculationMethod).trim().toUpperCase();
+    if (!VALID_REWARD_CALCULATION_METHODS.includes(normCalc)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: `Invalid calculationMethod: '${calculationMethod}'. Allowed values are: ${VALID_REWARD_CALCULATION_METHODS.join(', ')}`,
+          allowedValues: VALID_REWARD_CALCULATION_METHODS
+        }
+      });
+    }
+
+    if (value === undefined || value === null || isNaN(Number(value)) || Number(value) < 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'value is required and must be a non-negative number' }
+      });
+    }
+
+    let normTrigger = 'MANUAL';
+    if (triggerType !== undefined && triggerType !== null) {
+      normTrigger = String(triggerType).trim().toUpperCase();
+      if (!VALID_REWARD_TRIGGER_TYPES.includes(normTrigger)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Invalid triggerType: '${triggerType}'. Allowed values are: ${VALID_REWARD_TRIGGER_TYPES.join(', ')}`,
+            allowedValues: VALID_REWARD_TRIGGER_TYPES
+          }
+        });
+      }
+    }
+
+    let normFrequency = 'MONTHLY';
+    if (frequency !== undefined && frequency !== null) {
+      normFrequency = String(frequency).trim().toUpperCase();
+      if (!VALID_REWARD_FREQUENCIES.includes(normFrequency)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Invalid frequency: '${frequency}'. Allowed values are: ${VALID_REWARD_FREQUENCIES.join(', ')}`,
+            allowedValues: VALID_REWARD_FREQUENCIES
+          }
+        });
+      }
+    }
+
+    let conditionsStr = null;
+    if (eligibilityConditions !== undefined && eligibilityConditions !== null) {
+      conditionsStr = typeof eligibilityConditions === 'string'
+        ? eligibilityConditions
+        : JSON.stringify(eligibilityConditions);
+    }
+
+    const prisma = getSharedPrismaClient();
+    const rewardType = await prisma.rewardType.create({
+      data: {
+        companyId,
+        name: String(name).trim(),
+        nameAr: nameAr ? String(nameAr).trim() : null,
+        description: description ? String(description).trim() : null,
+        category: normCategory,
+        calculationMethod: normCalc,
+        value: Number(value),
+        maxCap: maxCap !== undefined && maxCap !== null ? Number(maxCap) : null,
+        triggerType: normTrigger,
+        frequency: normFrequency,
+        eligibilityConditions: conditionsStr,
+        isActive: Boolean(isActive),
+        priority: Number(priority) || 1,
+        createdBy: req.externalApiCredential?.id || req.hrCredential?.id || 'EXTERNAL_API'
+      }
+    });
+
+    await logExternalApiAction({
+      req,
+      action: 'CREATE_REWARD_TYPE',
+      description: `Created reward type "${rewardType.name}" (${rewardType.category}/${rewardType.calculationMethod})`,
+      resourceType: 'RewardType',
+      resourceId: rewardType.id,
+      targetName: rewardType.name,
+      details: { value: rewardType.value, triggerType: rewardType.triggerType, frequency: rewardType.frequency }
+    });
+
+    let parsedConditions = null;
+    if (rewardType.eligibilityConditions) {
+      try { parsedConditions = JSON.parse(rewardType.eligibilityConditions); } catch (_e) { parsedConditions = rewardType.eligibilityConditions; }
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: 'Reward type created successfully',
+      data: {
+        ...rewardType,
+        eligibilityConditions: parsedConditions
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.createRewardType] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 37. تعديل نوع مكافأة
+ * PATCH /reward-types/:id
+ */
+const updateRewardType = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { id } = req.params;
+    const {
+      name,
+      nameAr,
+      description,
+      category,
+      calculationMethod,
+      value,
+      maxCap,
+      triggerType,
+      frequency,
+      eligibilityConditions,
+      isActive,
+      priority
+    } = req.body || {};
+
+    let normCategory = undefined;
+    if (category !== undefined) {
+      normCategory = String(category).trim().toUpperCase();
+      if (!VALID_REWARD_TYPE_CATEGORIES.includes(normCategory)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Invalid category: '${category}'. Allowed values are: ${VALID_REWARD_TYPE_CATEGORIES.join(', ')}`,
+            allowedValues: VALID_REWARD_TYPE_CATEGORIES
+          }
+        });
+      }
+    }
+
+    let normCalc = undefined;
+    if (calculationMethod !== undefined) {
+      normCalc = String(calculationMethod).trim().toUpperCase();
+      if (!VALID_REWARD_CALCULATION_METHODS.includes(normCalc)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Invalid calculationMethod: '${calculationMethod}'. Allowed values are: ${VALID_REWARD_CALCULATION_METHODS.join(', ')}`,
+            allowedValues: VALID_REWARD_CALCULATION_METHODS
+          }
+        });
+      }
+    }
+
+    let numVal = undefined;
+    if (value !== undefined) {
+      numVal = Number(value);
+      if (isNaN(numVal) || numVal < 0) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'value must be a non-negative number' }
+        });
+      }
+    }
+
+    let normTrigger = undefined;
+    if (triggerType !== undefined) {
+      normTrigger = String(triggerType).trim().toUpperCase();
+      if (!VALID_REWARD_TRIGGER_TYPES.includes(normTrigger)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Invalid triggerType: '${triggerType}'. Allowed values are: ${VALID_REWARD_TRIGGER_TYPES.join(', ')}`,
+            allowedValues: VALID_REWARD_TRIGGER_TYPES
+          }
+        });
+      }
+    }
+
+    let normFrequency = undefined;
+    if (frequency !== undefined) {
+      normFrequency = String(frequency).trim().toUpperCase();
+      if (!VALID_REWARD_FREQUENCIES.includes(normFrequency)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Invalid frequency: '${frequency}'. Allowed values are: ${VALID_REWARD_FREQUENCIES.join(', ')}`,
+            allowedValues: VALID_REWARD_FREQUENCIES
+          }
+        });
+      }
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    const existing = await prisma.rewardType.findFirst({
+      where: { id, companyId }
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'REWARD_TYPE_NOT_FOUND', message: `Reward type not found with ID: ${id}` }
+      });
+    }
+
+    const updateData = {};
+    if (name !== undefined) updateData.name = String(name).trim();
+    if (nameAr !== undefined) updateData.nameAr = nameAr ? String(nameAr).trim() : null;
+    if (description !== undefined) updateData.description = description ? String(description).trim() : null;
+    if (normCategory !== undefined) updateData.category = normCategory;
+    if (normCalc !== undefined) updateData.calculationMethod = normCalc;
+    if (numVal !== undefined) updateData.value = numVal;
+    if (maxCap !== undefined) updateData.maxCap = maxCap !== null ? Number(maxCap) : null;
+    if (normTrigger !== undefined) updateData.triggerType = normTrigger;
+    if (normFrequency !== undefined) updateData.frequency = normFrequency;
+
+    if (eligibilityConditions !== undefined) {
+      updateData.eligibilityConditions = eligibilityConditions
+        ? (typeof eligibilityConditions === 'string' ? eligibilityConditions : JSON.stringify(eligibilityConditions))
+        : null;
+    }
+
+    if (isActive !== undefined) updateData.isActive = Boolean(isActive);
+    if (priority !== undefined) updateData.priority = Number(priority);
+
+    const updated = await prisma.rewardType.update({
+      where: { id: existing.id },
+      data: updateData
+    });
+
+    await logExternalApiAction({
+      req,
+      action: 'UPDATE_REWARD_TYPE',
+      description: `Updated reward type "${updated.name}"`,
+      resourceType: 'RewardType',
+      resourceId: updated.id,
+      targetName: updated.name,
+      details: updateData
+    });
+
+    let parsedConditions = null;
+    if (updated.eligibilityConditions) {
+      try { parsedConditions = JSON.parse(updated.eligibilityConditions); } catch (_e) { parsedConditions = updated.eligibilityConditions; }
+    }
+
+    return res.json({
+      success: true,
+      message: 'Reward type updated successfully',
+      data: {
+        ...updated,
+        eligibilityConditions: parsedConditions
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.updateRewardType] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 38. استعلام إعدادات المكافآت والحوافز
+ * GET /reward-settings
+ */
+const getRewardSettings = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const prisma = getSharedPrismaClient();
+
+    let settings = await prisma.rewardSettings.findUnique({
+      where: { companyId }
+    });
+
+    if (!settings) {
+      settings = await prisma.rewardSettings.create({
+        data: {
+          companyId,
+          autoEvaluationEnabled: true,
+          evaluationDayOfMonth: 1,
+          requireManagerApproval: false,
+          requireHRApproval: true,
+          applyRewardsBeforeTax: true,
+          allowRewardDeductionOffset: false,
+          notifyEmployeeOnReward: true,
+          notifyManagerOnReward: true
+        }
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: settings
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.getRewardSettings] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 39. تعديل إعدادات المكافآت والحوافز
+ * PUT /reward-settings
+ */
+const updateRewardSettings = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const {
+      autoEvaluationEnabled,
+      evaluationDayOfMonth,
+      requireManagerApproval,
+      requireHRApproval,
+      applyRewardsBeforeTax,
+      allowRewardDeductionOffset,
+      notifyEmployeeOnReward,
+      notifyManagerOnReward
+    } = req.body || {};
+
+    const prisma = getSharedPrismaClient();
+
+    const updateData = {};
+    if (autoEvaluationEnabled !== undefined) updateData.autoEvaluationEnabled = Boolean(autoEvaluationEnabled);
+    if (evaluationDayOfMonth !== undefined) updateData.evaluationDayOfMonth = Math.max(1, Math.min(28, Number(evaluationDayOfMonth) || 1));
+    if (requireManagerApproval !== undefined) updateData.requireManagerApproval = Boolean(requireManagerApproval);
+    if (requireHRApproval !== undefined) updateData.requireHRApproval = Boolean(requireHRApproval);
+    if (applyRewardsBeforeTax !== undefined) updateData.applyRewardsBeforeTax = Boolean(applyRewardsBeforeTax);
+    if (allowRewardDeductionOffset !== undefined) updateData.allowRewardDeductionOffset = Boolean(allowRewardDeductionOffset);
+    if (notifyEmployeeOnReward !== undefined) updateData.notifyEmployeeOnReward = Boolean(notifyEmployeeOnReward);
+    if (notifyManagerOnReward !== undefined) updateData.notifyManagerOnReward = Boolean(notifyManagerOnReward);
+
+    const updated = await prisma.rewardSettings.upsert({
+      where: { companyId },
+      update: updateData,
+      create: { companyId, ...updateData }
+    });
+
+    await logExternalApiAction({
+      req,
+      action: 'UPDATE_REWARD_SETTINGS',
+      description: 'Updated reward settings',
+      resourceType: 'RewardSettings',
+      resourceId: updated.id,
+      targetName: 'Reward Settings',
+      details: updateData
+    });
+
+    return res.json({
+      success: true,
+      message: 'Reward settings updated successfully',
+      data: updated
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.updateRewardSettings] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 40. تشغيل التقييم الآلي يدويًا لنوع مكافأة محدد
+ * POST /reward-types/:id/evaluate?month=&year=
+ */
+const evaluateRewardType = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { id } = req.params;
+
+    const now = new Date();
+    let targetMonth = req.query.month ? parseInt(req.query.month, 10) : (now.getMonth() + 1);
+    let targetYear = req.query.year ? parseInt(req.query.year, 10) : now.getFullYear();
+
+    if (isNaN(targetMonth) || targetMonth < 1 || targetMonth > 12) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'month parameter must be an integer between 1 and 12' }
+      });
+    }
+
+    if (isNaN(targetYear) || targetYear < 2020 || targetYear > 2035) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'year parameter must be a valid 4-digit year' }
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    const rewardType = await prisma.rewardType.findFirst({
+      where: { id, companyId }
+    });
+
+    if (!rewardType) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'REWARD_TYPE_NOT_FOUND', message: `Reward type not found with ID: ${id}` }
+      });
+    }
+
+    if (!rewardType.isActive) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'REWARD_TYPE_INACTIVE', message: `Reward type "${rewardType.name}" is deactivated` }
+      });
+    }
+
+    const periodStart = new Date(Date.UTC(targetYear, targetMonth - 1, 1));
+    const periodEnd = new Date(Date.UTC(targetYear, targetMonth, 0, 23, 59, 59, 999));
+
+    // Get active users (employees) in company
+    const activeEmployees = await prisma.user.findMany({
+      where: { companyId, isActive: true },
+      select: { id: true, firstName: true, lastName: true, employeeNumber: true }
+    });
+
+    const results = [];
+    const createdRecords = [];
+    let eligibleCount = 0;
+    let alreadyExistedCount = 0;
+
+    for (const emp of activeEmployees) {
+      let eligibility = { isEligible: true, details: {} };
+      try {
+        eligibility = await rewardEligibilityService.evaluateEligibility(
+          companyId,
+          emp.id,
+          rewardType.id,
+          periodStart,
+          periodEnd
+        );
+      } catch (e) {
+        eligibility = { isEligible: false, reason: e.message };
+      }
+
+      if (eligibility.isEligible) {
+        eligibleCount++;
+        // Check if employee already received this reward type for this month/year
+        const existingRecord = await prisma.rewardRecord.findFirst({
+          where: {
+            companyId,
+            userId: emp.id,
+            rewardTypeId: rewardType.id,
+            appliedMonth: targetMonth,
+            appliedYear: targetYear,
+            status: { not: 'CANCELLED' }
+          }
+        });
+
+        if (existingRecord) {
+          alreadyExistedCount++;
+          results.push({
+            userId: emp.id,
+            employeeNumber: emp.employeeNumber,
+            isEligible: true,
+            status: 'ALREADY_EXISTS',
+            recordId: existingRecord.id,
+            calculatedValue: Number(existingRecord.calculatedValue)
+          });
+        } else {
+          try {
+            const record = await rewardApplicationService.applyReward(
+              companyId,
+              emp.id,
+              rewardType.id,
+              periodStart,
+              periodEnd,
+              req.externalApiCredential?.id || req.hrCredential?.id || 'EXTERNAL_API',
+              { reason: `Automatic evaluation for ${targetMonth}/${targetYear}` }
+            );
+            createdRecords.push(record);
+            results.push({
+              userId: emp.id,
+              employeeNumber: emp.employeeNumber,
+              isEligible: true,
+              status: 'CREATED',
+              recordId: record.id,
+              calculatedValue: Number(record.calculatedValue)
+            });
+          } catch (appErr) {
+            results.push({
+              userId: emp.id,
+              employeeNumber: emp.employeeNumber,
+              isEligible: true,
+              status: 'ERROR',
+              error: appErr.message
+            });
+          }
+        }
+      } else {
+        results.push({
+          userId: emp.id,
+          employeeNumber: emp.employeeNumber,
+          isEligible: false,
+          reason: eligibility.reason || 'Did not meet eligibility criteria'
+        });
+      }
+    }
+
+    await logExternalApiAction({
+      req,
+      action: 'EVALUATE_REWARD_TYPE',
+      description: `Executed evaluation for reward type "${rewardType.name}" (${targetMonth}/${targetYear}): ${createdRecords.length} created, ${alreadyExistedCount} existed, ${eligibleCount} eligible out of ${activeEmployees.length}`,
+      resourceType: 'RewardType',
+      resourceId: rewardType.id,
+      targetName: rewardType.name,
+      details: {
+        month: targetMonth,
+        year: targetYear,
+        totalEvaluated: activeEmployees.length,
+        eligibleCount,
+        createdCount: createdRecords.length,
+        alreadyExistedCount
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: `Evaluation completed for "${rewardType.name}" for period ${targetMonth}/${targetYear}`,
+      data: {
+        rewardType: {
+          id: rewardType.id,
+          name: rewardType.name,
+          category: rewardType.category,
+          calculationMethod: rewardType.calculationMethod,
+          value: Number(rewardType.value)
+        },
+        period: {
+          month: targetMonth,
+          year: targetYear,
+          startDate: periodStart.toISOString().split('T')[0],
+          endDate: periodEnd.toISOString().split('T')[0]
+        },
+        summary: {
+          totalEvaluated: activeEmployees.length,
+          eligibleCount,
+          createdCount: createdRecords.length,
+          alreadyExistedCount
+        },
+        createdRecords,
+        results
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.evaluateRewardType] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
 module.exports = {
   listEmployees,
   getEmployeeById,
   upsertEmployee,
+  createEmployee,
+  updateEmployee,
+  terminateEmployee,
   recordPunchesBatch,
   getTodayAttendance,
   createLeaveRequest,
@@ -3668,5 +4959,12 @@ module.exports = {
   createShift,
   updateShift,
   assignEmployeeShift,
-  updateAttendanceRecord
+  updateAttendanceRecord,
+  // Phase 4 endpoints
+  listRewardTypes,
+  createRewardType,
+  updateRewardType,
+  getRewardSettings,
+  updateRewardSettings,
+  evaluateRewardType
 };

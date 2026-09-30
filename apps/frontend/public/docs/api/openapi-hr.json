@@ -90,6 +90,44 @@
             "$ref": "#/components/responses/RateLimited"
           }
         }
+      },
+      "post": {
+        "summary": "Create employee",
+        "description": "Create a new employee profile with full HR attributes, initial salary history, and optional user account linking.\n\n**Required Scope:** `hr:employees:write` (or `hr:write`, `*`)",
+        "operationId": "hr_create_employee",
+        "x-required-scope": "hr:employees:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["employeeNumber", "firstName", "lastName"],
+                "properties": {
+                  "employeeNumber": { "type": "string" },
+                  "firstName": { "type": "string" },
+                  "lastName": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "phone": { "type": "string" },
+                  "nationalId": { "type": "string" },
+                  "departmentId": { "type": "string" },
+                  "positionId": { "type": "string" },
+                  "managerId": { "type": "string" },
+                  "status": { "type": "string", "enum": ["ACTIVE", "PROBATION", "ON_LEAVE", "TERMINATED", "SUSPENDED", "RESIGNED", "ON_HOLD"] },
+                  "contractType": { "type": "string", "enum": ["FULL_TIME", "PART_TIME", "CONTRACT", "FREELANCE", "INTERNSHIP", "REMOTE"] },
+                  "hireDate": { "type": "string", "format": "date" },
+                  "baseSalary": { "type": "number" },
+                  "userId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Employee created successfully" },
+          "400": { "description": "Validation error" },
+          "409": { "description": "Duplicate employee number or user already linked" }
+        }
       }
     },
     "/employees/stats": {
@@ -168,6 +206,84 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           }
+        }
+      },
+      "patch": {
+        "summary": "Update employee",
+        "description": "Update an employee profile. If baseSalary changes, a salary history audit row is automatically created. User account linking or unlinking is verified within the company.\n\n**Required Scope:** `hr:employees:write` (or `hr:write`, `*`)",
+        "operationId": "hr_update_employee",
+        "x-required-scope": "hr:employees:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "baseSalary": { "type": "number" },
+                  "departmentId": { "type": "string" },
+                  "positionId": { "type": "string" },
+                  "managerId": { "type": "string" },
+                  "status": { "type": "string", "enum": ["ACTIVE", "PROBATION", "ON_LEAVE", "TERMINATED", "SUSPENDED", "RESIGNED", "ON_HOLD"] },
+                  "contractType": { "type": "string", "enum": ["FULL_TIME", "PART_TIME", "CONTRACT", "FREELANCE", "INTERNSHIP", "REMOTE"] },
+                  "hireDate": { "type": "string", "format": "date" },
+                  "phone": { "type": "string" },
+                  "email": { "type": "string" },
+                  "nationalId": { "type": "string" },
+                  "userId": { "type": "string" },
+                  "reason": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Employee updated successfully" },
+          "400": { "description": "Validation error" },
+          "404": { "description": "Employee not found" },
+          "409": { "description": "User already linked to another employee" }
+        }
+      }
+    },
+    "/employees/{id}/terminate": {
+      "post": {
+        "summary": "Terminate employee",
+        "description": "Terminate employee service safely (no hard delete). Sets status to TERMINATED, records lastWorkingDay and reason, and deactivates any linked user login.\n\n**Required Scope:** `hr:employees:write` (or `hr:write`, `*`)",
+        "operationId": "hr_terminate_employee",
+        "x-required-scope": "hr:employees:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lastWorkingDay": { "type": "string", "format": "date" },
+                  "reason": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Employee terminated successfully" },
+          "400": { "description": "Validation error" },
+          "404": { "description": "Employee not found" }
         }
       }
     },
@@ -1813,6 +1929,163 @@
           "200": {
             "description": "Shift updated"
           }
+        }
+      }
+    },
+    "/reward-types": {
+      "get": {
+        "summary": "List reward types",
+        "description": "Returns configured reward and incentive types with eligibility rules.\n\n**Required Scope:** `hr:rewards:read` (or `hr:read`, `*`)",
+        "operationId": "hr_list_reward_types",
+        "x-required-scope": "hr:rewards:read",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "category", "in": "query", "schema": { "type": "string", "enum": ["FINANCIAL", "NON_FINANCIAL"] } },
+          { "name": "triggerType", "in": "query", "schema": { "type": "string", "enum": ["MANUAL", "AUTOMATIC"] } },
+          { "name": "frequency", "in": "query", "schema": { "type": "string", "enum": ["ONCE", "MONTHLY", "QUARTERLY", "YEARLY"] } },
+          { "name": "isActive", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Paginated reward types list" }
+        }
+      },
+      "post": {
+        "summary": "Create reward type",
+        "description": "Define a new financial or non-financial reward type with calculation method, value, and trigger conditions.\n\n**Required Scope:** `hr:rewards:write` (or `hr:write`, `*`)",
+        "operationId": "hr_create_reward_type",
+        "x-required-scope": "hr:rewards:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "category", "calculationMethod", "value"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "nameAr": { "type": "string" },
+                  "description": { "type": "string" },
+                  "category": { "type": "string", "enum": ["FINANCIAL", "NON_FINANCIAL"] },
+                  "calculationMethod": { "type": "string", "enum": ["FIXED", "PERCENTAGE"] },
+                  "value": { "type": "number" },
+                  "maxCap": { "type": "number" },
+                  "triggerType": { "type": "string", "enum": ["MANUAL", "AUTOMATIC"], "default": "MANUAL" },
+                  "frequency": { "type": "string", "enum": ["ONCE", "MONTHLY", "QUARTERLY", "YEARLY"], "default": "MONTHLY" },
+                  "eligibilityConditions": { "type": "object" },
+                  "isActive": { "type": "boolean", "default": true },
+                  "priority": { "type": "integer", "default": 1 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Reward type created successfully" },
+          "400": { "description": "Validation error" }
+        }
+      }
+    },
+    "/reward-types/{id}": {
+      "patch": {
+        "summary": "Update reward type",
+        "description": "Updates definition, calculation formula, or status of an existing reward type.\n\n**Required Scope:** `hr:rewards:write` (or `hr:write`, `*`)",
+        "operationId": "hr_update_reward_type",
+        "x-required-scope": "hr:rewards:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "nameAr": { "type": "string" },
+                  "description": { "type": "string" },
+                  "category": { "type": "string", "enum": ["FINANCIAL", "NON_FINANCIAL"] },
+                  "calculationMethod": { "type": "string", "enum": ["FIXED", "PERCENTAGE"] },
+                  "value": { "type": "number" },
+                  "maxCap": { "type": "number" },
+                  "triggerType": { "type": "string", "enum": ["MANUAL", "AUTOMATIC"] },
+                  "frequency": { "type": "string", "enum": ["ONCE", "MONTHLY", "QUARTERLY", "YEARLY"] },
+                  "eligibilityConditions": { "type": "object" },
+                  "isActive": { "type": "boolean" },
+                  "priority": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Reward type updated successfully" },
+          "400": { "description": "Validation error" },
+          "404": { "description": "Reward type not found" }
+        }
+      }
+    },
+    "/reward-types/{id}/evaluate": {
+      "post": {
+        "summary": "Manually execute automated evaluation for reward type",
+        "description": "Runs evaluation engine for a reward type across active employees for specified month/year. Creates reward records preventing duplicates.\n\n**Required Scope:** `hr:rewards:write` (or `hr:write`, `*`)",
+        "operationId": "hr_evaluate_reward_type",
+        "x-required-scope": "hr:rewards:write",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "month", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 12 } },
+          { "name": "year", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Evaluation executed successfully with summary and created records" },
+          "400": { "description": "Reward type inactive or invalid month/year" },
+          "404": { "description": "Reward type not found" }
+        }
+      }
+    },
+    "/reward-settings": {
+      "get": {
+        "summary": "Get reward & incentive system settings",
+        "description": "Fetches approval workflow, payroll integration, evaluation schedules, and notification preferences.\n\n**Required Scope:** `hr:rewards:read` (or `hr:read`, `*`)",
+        "operationId": "hr_get_reward_settings",
+        "x-required-scope": "hr:rewards:read",
+        "responses": {
+          "200": { "description": "Reward system settings" }
+        }
+      },
+      "put": {
+        "summary": "Update reward & incentive system settings",
+        "description": "Updates reward workflow settings, approvals, and evaluation calendar.\n\n**Required Scope:** `hr:rewards:write` (or `hr:write`, `*`)",
+        "operationId": "hr_update_reward_settings",
+        "x-required-scope": "hr:rewards:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "autoEvaluationEnabled": { "type": "boolean" },
+                  "evaluationDayOfMonth": { "type": "integer", "minimum": 1, "maximum": 28 },
+                  "requireManagerApproval": { "type": "boolean" },
+                  "requireHRApproval": { "type": "boolean" },
+                  "applyRewardsBeforeTax": { "type": "boolean" },
+                  "allowRewardDeductionOffset": { "type": "boolean" },
+                  "notifyEmployeeOnReward": { "type": "boolean" },
+                  "notifyManagerOnReward": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Reward settings updated successfully" }
         }
       }
     }
