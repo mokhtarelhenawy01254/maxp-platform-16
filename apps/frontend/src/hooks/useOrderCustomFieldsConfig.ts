@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useInvoiceSettings } from "./useInvoiceSettings";
 import { storefrontSettingsService } from "../services/storefrontSettingsService";
 import { getPdpQuickOrderSettingsFromDesignTokens } from "../storefront/utils/pdpQuickOrderSettings";
-import { InvoicePrintSettings } from "../components/orders/InvoiceContent";
+import { InvoicePrintSettings } from "../types/invoiceSettings";
 
 export interface OrderCustomFieldsConfig {
   isEnabled: boolean;

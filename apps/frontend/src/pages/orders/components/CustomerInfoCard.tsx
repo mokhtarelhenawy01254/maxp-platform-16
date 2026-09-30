@@ -28,7 +28,7 @@ import {
   CustomerBlockEvaluation,
   CustomerBlockReasonCode,
 } from "../../../services/customerBlocklistService";
-import { InvoicePrintSettings } from "../../../components/orders/InvoiceContent";
+import { InvoicePrintSettings } from "../../../types/invoiceSettings";
 import { useOrderCustomFieldsConfig } from "../../../hooks/useOrderCustomFieldsConfig";
 import { resolveCustomFieldsForDisplay } from "../../../utils/orderCustomFields";
 

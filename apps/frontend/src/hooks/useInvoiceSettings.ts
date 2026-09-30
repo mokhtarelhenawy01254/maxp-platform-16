@@ -3,7 +3,7 @@ import { apiClient } from "../services/apiClient";
 import {
   InvoicePrintSettings,
   DEFAULT_INVOICE_SETTINGS,
-} from "../components/orders/InvoiceContent";
+} from "../types/invoiceSettings";
 
 let cachedInvoiceSettings: InvoicePrintSettings | null = null;
 let inflightInvoiceSettingsPromise: Promise<InvoicePrintSettings> | null = null;
