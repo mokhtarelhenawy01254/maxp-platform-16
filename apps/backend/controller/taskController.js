@@ -3156,36 +3156,44 @@ const taskController = {
         message: `تم إيقاف تتبع الوقت. المدة: ${updatedEntry.duration} دقيقة`,
       });
 
-      await taskNotificationService.notifyTaskStakeholders({
-        companyId,
-        task: timeEntry.task ? { id: timeEntry.taskId, title: timeEntry.task.title, assignedTo: timeEntry.userId, companyId } : { id: timeEntry.taskId, companyId },
-        actorUserId: userId,
-        type: "time_entry_added",
-        title: "إيقاف تتبع وقت",
-        message: `أوقف ${req.user.firstName || "مستخدم"} تتبع الوقت على المهمة. المدة: ${duration} دقيقة`,
-        includeAssignee: true,
-        includeCreator: true,
-        includeWatchers: true,
-        excludeUserIds: [userId],
-        whatsappData: {
-          templateName: "TASK_TIME_ENTRY_ADDED",
-          taskTitle: timeEntry.task?.title || "المهمة",
-          variables: taskNotificationHelpers.buildTaskVariables({
-            id: timeEntry.taskId,
-            title: timeEntry.task?.title || "المهمة",
-          }, {
-            entryType: "إيقاف تتبع",
-            duration: `${duration} دقيقة`,
-          }),
-        },
-        logActivity: true,
-        activityDescription: `تم إرسال إشعار إيقاف تتبع الوقت: ${duration} دقيقة`,
-      });
+      const duration = updatedEntry.duration || 0;
+      const taskForNotif = updatedEntry.task
+        ? { id: updatedEntry.taskId, title: updatedEntry.task.title, assignedTo: updatedEntry.userId, companyId }
+        : (updatedEntry.taskId ? { id: updatedEntry.taskId, companyId } : null);
+
+      if (taskForNotif) {
+        taskNotificationService.notifyTaskStakeholders({
+          companyId,
+          task: taskForNotif,
+          actorUserId: userId,
+          type: "time_entry_added",
+          title: "إيقاف تتبع وقت",
+          message: `أوقف ${req.user?.firstName || "مستخدم"} تتبع الوقت على المهمة. المدة: ${duration} دقيقة`,
+          includeAssignee: true,
+          includeCreator: true,
+          includeWatchers: true,
+          excludeUserIds: [userId],
+          whatsappData: {
+            templateName: "TASK_TIME_ENTRY_ADDED",
+            taskTitle: taskForNotif.title || "المهمة",
+            variables: taskNotificationHelpers.buildTaskVariables(taskForNotif, {
+              entryType: "إيقاف تتبع",
+              duration: `${duration} دقيقة`,
+            }),
+          },
+          logActivity: true,
+          activityDescription: `تم إرسال إشعار إيقاف تتبع الوقت: ${duration} دقيقة`,
+        }).catch((notifyErr) => {
+          console.warn("[stopTimeTracking] Error sending stop notification:", notifyErr?.message || notifyErr);
+        });
+      }
     } catch (error) {
       console.error("Error stopping time tracking:", error);
-      res
-        .status(500)
-        .json({ success: false, error: "فشل في إيقاف تتبع الوقت" });
+      if (!res.headersSent) {
+        res
+          .status(500)
+          .json({ success: false, error: "فشل في إيقاف تتبع الوقت" });
+      }
     }
   },
 
