@@ -330,6 +330,7 @@ export default function DentalTechniciansTab() {
                         {x.name}
                       </Link>
                     </td>
+                    <td className="py-3 px-3 text-xs text-gray-600 dark:text-gray-300" dir="ltr">{x.phone || "—"}</td>
                     <td className="py-3 px-3">{roleBadge(x.role)}</td>
                     <td className="py-3 px-3 text-xs">
                       <div className="font-mono text-gray-800 dark:text-gray-200">
