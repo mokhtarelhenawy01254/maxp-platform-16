@@ -5,25 +5,63 @@ import {
   DEFAULT_INVOICE_SETTINGS,
 } from "../components/orders/InvoiceContent";
 
-export function useInvoiceSettings() {
-  const [settings, setSettings] = useState<InvoicePrintSettings>(DEFAULT_INVOICE_SETTINGS);
-  const [loading, setLoading] = useState(true);
+let cachedInvoiceSettings: InvoicePrintSettings | null = null;
+let inflightInvoiceSettingsPromise: Promise<InvoicePrintSettings> | null = null;
 
-  const fetchSettings = useCallback(async () => {
+export const clearInvoiceSettingsCache = () => {
+  cachedInvoiceSettings = null;
+  inflightInvoiceSettingsPromise = null;
+};
+
+export const setCachedInvoiceSettings = (settings: InvoicePrintSettings) => {
+  cachedInvoiceSettings = { ...DEFAULT_INVOICE_SETTINGS, ...settings };
+};
+
+export function useInvoiceSettings() {
+  const [settings, setSettings] = useState<InvoicePrintSettings>(
+    cachedInvoiceSettings || DEFAULT_INVOICE_SETTINGS,
+  );
+  const [loading, setLoading] = useState(!cachedInvoiceSettings);
+
+  const fetchSettings = useCallback(async (force = false) => {
+    if (cachedInvoiceSettings && !force) {
+      setSettings(cachedInvoiceSettings);
+      setLoading(false);
+      return cachedInvoiceSettings;
+    }
+
+    if (!inflightInvoiceSettingsPromise || force) {
+      inflightInvoiceSettingsPromise = apiClient
+        .get("/order-invoice-settings")
+        .then((res) => {
+          if (res.data?.success && res.data?.data) {
+            const merged = { ...DEFAULT_INVOICE_SETTINGS, ...res.data.data };
+            cachedInvoiceSettings = merged;
+            return merged;
+          }
+          return cachedInvoiceSettings || DEFAULT_INVOICE_SETTINGS;
+        })
+        .catch(() => {
+          return cachedInvoiceSettings || DEFAULT_INVOICE_SETTINGS;
+        })
+        .finally(() => {
+          inflightInvoiceSettingsPromise = null;
+        });
+    }
+
     try {
-      const res = await apiClient.get("/order-invoice-settings");
-      if (res.data?.success && res.data?.data) {
-        setSettings((prev) => ({ ...prev, ...res.data.data }));
-      }
-    } catch {
-      // use defaults silently
+      const resolved = await inflightInvoiceSettingsPromise;
+      setSettings(resolved);
+      return resolved;
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void fetchSettings();
+    if (!cachedInvoiceSettings) {
+      void fetchSettings();
+    }
   }, [fetchSettings]);
 
   const mergeSettings = useCallback(
@@ -34,5 +72,5 @@ export function useInvoiceSettings() {
     [settings],
   );
 
-  return { settings, loading, mergeSettings };
+  return { settings, loading, mergeSettings, refetch: () => fetchSettings(true) };
 }

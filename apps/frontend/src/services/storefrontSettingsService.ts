@@ -283,50 +283,87 @@ export const normalizePublicSettingsPayload = (
   );
 };
 
+const cachedStorefrontSettings: Record<string, StorefrontSettings> = {};
+const inflightStorefrontPromises: Record<string, Promise<{ data: StorefrontSettings }>> = {};
+
 export const storefrontSettingsService = {
   getSettings: async (
     companyId?: string,
-    options?: { allowFallback?: boolean },
+    options?: { allowFallback?: boolean; force?: boolean },
   ): Promise<{ data: StorefrontSettings }> => {
-    try {
-      const response = await apiClient.get("/storefront-settings", {
-        params: companyId ? { companyId } : undefined,
-      });
-      return {
-        data: normalizeSettings(response?.data?.data || response?.data, companyId),
-      };
-    } catch (error) {
-      if (options?.allowFallback === false) {
-        throw error;
-      }
-      return { data: buildDefaultSettings(companyId) };
+    const cacheKey = companyId || "current";
+    if (cachedStorefrontSettings[cacheKey] && !options?.force) {
+      return { data: cachedStorefrontSettings[cacheKey] };
     }
+
+    if (!inflightStorefrontPromises[cacheKey] || options?.force) {
+      inflightStorefrontPromises[cacheKey] = (async () => {
+        try {
+          const response = await apiClient.get("/storefront-settings", {
+            params: companyId ? { companyId } : undefined,
+          });
+          const normalized = normalizeSettings(
+            response?.data?.data || response?.data,
+            companyId,
+          );
+          cachedStorefrontSettings[cacheKey] = normalized;
+          return { data: normalized };
+        } catch (error) {
+          if (options?.allowFallback === false) {
+            throw error;
+          }
+          const fallback = buildDefaultSettings(companyId);
+          cachedStorefrontSettings[cacheKey] = fallback;
+          return { data: fallback };
+        } finally {
+          delete inflightStorefrontPromises[cacheKey];
+        }
+      })();
+    }
+
+    return inflightStorefrontPromises[cacheKey];
   },
 
   updateSettings: async (
     data: StorefrontSettingsUpdate,
     companyId?: string,
   ): Promise<{ data: StorefrontSettings }> => {
+    const cacheKey = companyId || "current";
+    delete cachedStorefrontSettings[cacheKey];
+    delete inflightStorefrontPromises[cacheKey];
     const response = await apiClient.put(
       "/storefront-settings",
       data,
       companyId ? { params: { companyId } } : undefined,
     );
+    const normalized = normalizeSettings(
+      response?.data?.data || response?.data,
+      companyId,
+    );
+    cachedStorefrontSettings[cacheKey] = normalized;
     return {
-      data: normalizeSettings(response?.data?.data || response?.data, companyId),
+      data: normalized,
     };
   },
 
   resetSettings: async (
     companyId?: string,
   ): Promise<{ data: StorefrontSettings }> => {
+    const cacheKey = companyId || "current";
+    delete cachedStorefrontSettings[cacheKey];
+    delete inflightStorefrontPromises[cacheKey];
     const response = await apiClient.post(
       "/storefront-settings/reset",
       {},
       companyId ? { params: { companyId } } : undefined,
     );
+    const normalized = normalizeSettings(
+      response?.data?.data || response?.data,
+      companyId,
+    );
+    cachedStorefrontSettings[cacheKey] = normalized;
     return {
-      data: normalizeSettings(response?.data?.data || response?.data, companyId),
+      data: normalized,
     };
   },
 
