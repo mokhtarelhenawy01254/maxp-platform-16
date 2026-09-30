@@ -387,29 +387,29 @@ exports.createReturnRequest = async (req, res) => {
     try {
         const { orderId, orderNumber, orderItemId, customerId, reasonId, customerNotes, adminNotes, assignedTo, responsibleParty, refundAmount } = req.body;
 
-        // Find order by orderNumber or orderId
-        let order = null;
-        if (orderNumber) {
-            order = await getPrisma().order.findFirst({
-                where: {
-                    OR: [
-                        { orderNumber: orderNumber },
-                        { id: orderNumber }
-                    ],
-                    companyId: req.user.effectiveCompanyId || req.user.companyId
-                }
-            });
-            if (!order) {
-                return res.status(404).json({ error: 'Order not found' });
-            }
-        }
+        const effectiveCompanyId = req.user.effectiveCompanyId || req.user.companyId;
 
-        const finalOrderId = order?.id || orderId;
-        const finalCustomerId = order?.customerId || customerId;
-
-        if (!finalOrderId) {
+        // Find order by orderNumber or orderId, strictly scoped to current tenant
+        const lookupKey = orderNumber || orderId;
+        if (!lookupKey) {
             return res.status(400).json({ error: 'Order ID or Order Number is required' });
         }
+
+        const order = await getPrisma().order.findFirst({
+            where: {
+                OR: [
+                    { orderNumber: lookupKey },
+                    { id: lookupKey }
+                ],
+                companyId: effectiveCompanyId
+            }
+        });
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        const finalOrderId = order.id;
+        const finalCustomerId = order.customerId || customerId;
 
         // If responsibleParty isn't provided, try to get it from reason's category
         let finalResponsibleParty = responsibleParty;
