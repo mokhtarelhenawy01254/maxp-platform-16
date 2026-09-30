@@ -1800,30 +1800,36 @@ async function startServer() {
       );
     }
 
-    if (shouldOwnSingletonWork()) {
-      // 🚀 Start sync queue processor (polls every 5s)
-      const syncQueueService = require('./services/syncQueueService');
-      setInterval(() => syncQueueService.processBatch(5), 5000);
-      console.log("✅ [SERVER] Sync queue processor started (5s interval)");
-
-      await telegramBotService.initialize();
-      console.log("✅ [SERVER] Telegram Bot initialized");
-
-      await WhatsAppManager.restoreAllSessions();
-      console.log("✅ [SERVER] WhatsApp Sessions Restored");
-
-      const { startTelegramScheduler } = require("./cron/telegramScheduler");
-      startTelegramScheduler();
-    } else {
-      console.log(
-        `Singleton work (WhatsApp / Telegram / Sync Queue) skipped for process instance ${getProcessInstanceId()}`,
-      );
-    }
-
-    server.listen(PORT, "0.0.0.0", () => {
+    server.listen(PORT, "0.0.0.0", async () => {
       console.log(`🚀🚀🚀 STABLE SERVER STARTED ON PORT ${PORT} 🚀🚀🚀`);
       if (typeof process.send === "function") {
         process.send("ready");
+      }
+
+      if (shouldOwnSingletonWork()) {
+        try {
+          // 🚀 Start sync queue processor (polls every 5s)
+          const syncQueueService = require('./services/syncQueueService');
+          setInterval(() => syncQueueService.processBatch(5), 5000);
+          console.log("✅ [SERVER] Sync queue processor started (5s interval)");
+
+          await telegramBotService.initialize();
+          console.log("✅ [SERVER] Telegram Bot initialized");
+
+          WhatsAppManager.restoreAllSessions().catch((err) => {
+            console.error("⚠️ [SERVER] WhatsApp restoreAllSessions background error:", err?.message || err);
+          });
+          console.log("⏳ [SERVER] WhatsApp session restoration initiated in background");
+
+          const { startTelegramScheduler } = require("./cron/telegramScheduler");
+          startTelegramScheduler();
+        } catch (singletonErr) {
+          console.error("⚠️ [SERVER] Error initializing singleton services:", singletonErr);
+        }
+      } else {
+        console.log(
+          `Singleton work (WhatsApp / Telegram / Sync Queue) skipped for process instance ${getProcessInstanceId()}`,
+        );
       }
     });
   } catch (error) {

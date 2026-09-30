@@ -23,7 +23,7 @@ module.exports = {
             exp_backoff_restart_delay: 500,
             kill_timeout: 20000,
             wait_ready: true,
-            listen_timeout: 30000,
+            listen_timeout: 60000,
             env: {
                 NODE_ENV: 'development',
                 PORT: 3007,

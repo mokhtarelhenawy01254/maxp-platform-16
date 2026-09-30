@@ -509,7 +509,7 @@ async function main() {
       await handleDryRun(prisma, data);
     }
   } finally {
-    // Shared prisma client handles its own connection pooling
+    process.exit(0);
   }
 }
 
