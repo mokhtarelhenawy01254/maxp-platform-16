@@ -748,9 +748,11 @@ export const PAYMENT_STATUS_MAP: Record<DentalPaymentStatus, { label: string; co
 };
 
 export const INVOICE_STATUS_MAP: Record<string, { label: string; color: string }> = {
+  OPEN: { label: "غير مسددة", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
   UNPAID: { label: "غير مسددة", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
   PARTIAL: { label: "مسددة جزئياً", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
   PAID: { label: "مسددة", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+  VOID: { label: "ملغاة", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
   CANCELLED: { label: "ملغاة", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
 };
 
