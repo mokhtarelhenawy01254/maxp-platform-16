@@ -313,7 +313,7 @@ export const useProduct = (
     queryKey,
     queryFn: () => fetchStorefrontProduct(requestIdOrSlug!, isPreviewMode, presentationSlug),
     enabled: Boolean(requestIdOrSlug) && (options.enabled ?? true),
-    staleTime: 60 * 1000,
+    staleTime: 0,
     placeholderData: () => {
       if (!requestIdOrSlug) return undefined;
       const cached = queryClient.getQueryData<Product>(queryKey);
@@ -327,7 +327,7 @@ export const useProduct = (
           const match = res.data.find(
             (p) => p.id === requestIdOrSlug || p.slug === requestIdOrSlug,
           );
-          if (match) return match;
+          if (match && match.metadata) return match;
         }
       }
       return undefined;

@@ -11060,10 +11060,11 @@
     "dashboard": {
       "subtitle": "نظرة سريعة على الحالات والتحصيل",
       "totalCases": "حالة",
-      "todayReceived": "حالات النهارده",
+      "todayReceived": "حالات اليوم",
       "readyCount": "جاهزة للتسليم",
       "overdueCount": "متأخرة",
       "revenue": "الإيرادات",
+      "collected": "المحصل (مدفوع)",
       "outstanding": "المديونيات",
       "byStatus": "الحالات حسب المرحلة",
       "topDoctors": "أكتر دكاترة شغل",
@@ -11150,7 +11151,7 @@
       "editTitle": "تعديل الحالة",
       "patientName": "اسم المريض",
       "patientPhone": "تليفون المريض",
-      "teeth": "السنان",
+      "teeth": "رقم السن",
       "shade": "اللون (Shade)",
       "material": "الخامة",
       "priceSnapshot": "السعر",
@@ -11500,8 +11501,8 @@
       "stages": "مرحلة"
     },
     "creditNotes": {
-      "title": "ائتمانات",
-      "hint": "ائتمانات على العملاء عند إعادة الشغل",
+      "title": "إشعارات دائنة",
+      "hint": "إشعارات دائنة على العملاء عند إعادة الشغل",
       "amount": "المبلغ",
       "reason": "السبب",
       "createdAt": "التاريخ"

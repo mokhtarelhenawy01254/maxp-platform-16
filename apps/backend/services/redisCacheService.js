@@ -127,6 +127,56 @@ class RedisCacheService {
     }
 
     /**
+     * Delete keys matching a pattern (e.g. "public_products:comp123:*")
+     * @param {string} pattern
+     */
+    async delPattern(pattern) {
+        if (!pattern) return false;
+
+        const regexPattern = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+        for (const localKey of this.localCache.keys()) {
+            if (regexPattern.test(localKey)) {
+                this.localCache.delete(localKey);
+            }
+        }
+
+        if (this.isConnected && this.client) {
+            try {
+                const stream = this.client.scanStream({
+                    match: pattern,
+                    count: 100
+                });
+
+                return new Promise((resolve) => {
+                    stream.on('data', async (keys = []) => {
+                        if (keys.length > 0) {
+                            stream.pause();
+                            try {
+                                const pipeline = this.client.pipeline();
+                                keys.forEach(key => pipeline.del(key));
+                                await pipeline.exec();
+                            } catch (err) {
+                                console.error(`❌ [REDIS] DelPattern batch error:`, err.message);
+                            }
+                            stream.resume();
+                        }
+                    });
+
+                    stream.on('end', () => resolve(true));
+                    stream.on('error', (err) => {
+                        console.error(`❌ [REDIS] DelPattern Error (${pattern}):`, err.message);
+                        resolve(false);
+                    });
+                });
+            } catch (error) {
+                console.error(`❌ [REDIS] DelPattern Scan Error (${pattern}):`, error.message);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Clear all cache (Use carefully)
      */
     async flush() {

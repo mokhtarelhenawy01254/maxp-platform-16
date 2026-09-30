@@ -237,10 +237,13 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
   );
 
   React.useEffect(() => {
-    if (defaultOffer?.id && !selectedOfferId) {
-      setSelectedOfferId(defaultOffer.id);
+    if (defaultOffer?.id) {
+      const isCurrentSelectionValid = offers.some((o) => o.id === selectedOfferId);
+      if (!isCurrentSelectionValid) {
+        setSelectedOfferId(defaultOffer.id);
+      }
     }
-  }, [defaultOffer?.id, selectedOfferId]);
+  }, [defaultOffer?.id, offers, selectedOfferId]);
 
   const seedAttributesKey = React.useMemo(
     () => JSON.stringify(seedAttributes || {}),

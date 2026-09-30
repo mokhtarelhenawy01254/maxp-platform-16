@@ -6633,6 +6633,7 @@ declare module 'react-i18next' {
           routing: string;
           ignoreList: string;
           test: string;
+          coverage: string;
         };
         test: {
           agent: string;
@@ -10983,6 +10984,7 @@ declare module 'react-i18next' {
           technicians: string;
           invoices: string;
           settings: string;
+          kiosk: string;
         };
         common: {
           save: string;
@@ -11020,6 +11022,7 @@ declare module 'react-i18next' {
           RECEIVED: string;
           DESIGN: string;
           MANUFACTURING: string;
+          OUTSOURCED: string;
           QC: string;
           READY: string;
           DELIVERED: string;
@@ -11054,6 +11057,7 @@ declare module 'react-i18next' {
           readyCount: string;
           overdueCount: string;
           revenue: string;
+          collected: string;
           outstanding: string;
           byStatus: string;
           topDoctors: string;

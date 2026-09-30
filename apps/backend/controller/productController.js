@@ -51,6 +51,7 @@ const {
   resolveMerchantAccount,
   syncMerchantProductStock,
 } = require('../utils/merchantAccountScope');
+const redisCacheService = require('../services/redisCacheService');
 
 // 🔤 Arabic to Franco mapping for slug generation
 const arabicToFranco = {
@@ -1887,6 +1888,10 @@ const updateSingleProduct = async (req, res) => {
     internalSyncService.syncProductUpdate(product.id, companyId, updateData).catch(err => {
       console.error(`❌ Failed to sync product update for ${product.id}:`, err.message);
     });
+
+    // Invalidate public and storefront product Redis caches immediately
+    redisCacheService.delPattern(`public_products:${companyId}:*`).catch(() => {});
+    redisCacheService.del(`product_demand_signals:${product.id}`).catch(() => {});
 
     //console.log(`✅ [server] Product updated: ${product.name}`);
     res.json({

@@ -920,6 +920,12 @@ function formatProductResponse(product, options = {}) {
 
   if (!isSummary) {
     response.metadata = product.metadata;
+  } else if (product.metadata) {
+    const parsedMeta = parseJsonRecord(product.metadata);
+    response.metadata = {
+      quantityOffers: parsedMeta.quantityOffers || [],
+      variantSettings: parsedMeta.variantSettings || {},
+    };
   }
 
   return response;
@@ -1583,7 +1589,7 @@ router.get('/', async (req, res) => {
       try {
         const cached = await redisCacheService.get(cacheKey);
         if (cached) {
-          res.set('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120');
+          res.set('Cache-Control', 'public, no-cache, must-revalidate');
           return res.json(cached);
         }
       } catch (cacheErr) {
@@ -1658,7 +1664,7 @@ router.get('/', async (req, res) => {
       }
     }
 
-    res.set('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120');
+    res.set('Cache-Control', 'public, no-cache, must-revalidate');
     res.json(responseData);
   } catch (error) {
     console.error('❌ [PUBLIC-PRODUCTS] GET / error:', error);
@@ -1943,6 +1949,8 @@ router.get('/:id/:presentationSlug', async (req, res) => {
 
     if (isPreview) {
       res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    } else {
+      res.set('Cache-Control', 'public, no-cache, must-revalidate');
     }
 
     res.json({
@@ -2023,7 +2031,7 @@ router.get('/:id', async (req, res) => {
     if (isPreview) {
       res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     } else {
-      res.set('Cache-Control', 'public, max-age=60, s-maxage=180, stale-while-revalidate=300');
+      res.set('Cache-Control', 'public, no-cache, must-revalidate');
     }
     res.json({
       success: true,

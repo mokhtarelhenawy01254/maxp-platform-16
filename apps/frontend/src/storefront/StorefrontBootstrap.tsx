@@ -287,7 +287,7 @@ export const prefetchStorefrontBootstrapData = async (): Promise<void> => {
     ? queryClient.prefetchQuery({
         queryKey: productQueryKey,
         queryFn: () => fetchStorefrontProduct(productPathKey, isPreviewMode),
-        staleTime: 60 * 1000,
+        staleTime: 0,
       }).then(() => {
         const product = queryClient.getQueryData<Product>(productQueryKey);
         const primaryImage = getPrimaryProductImage(product);
