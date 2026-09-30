@@ -78,10 +78,10 @@ async def test_new_manifest_routes_become_catalog_rows():
     assert stats["new_active_reads"] == 1
     merged = session.merged
     by_name = {m.name: m for m in merged}
-    widget = by_name["bridge_brand_new_widget"]
+    widget = by_name["bridge_get_brand_new_widget"]
     assert widget.exposure_state == "active"
     assert widget.risk_level == "read"
-    coupon = by_name["bridge_coupons"]
+    coupon = by_name["bridge_post_coupons"]
     assert coupon.exposure_state == "draft"
     assert coupon.risk_level == "write"
     assert coupon.source == "auto"
@@ -118,3 +118,20 @@ async def test_excluded_prefixes_not_present_via_manifest_shape():
         {"method": "GET", "path": ""},
     ])
     assert session.merged == []
+
+
+@pytest.mark.asyncio
+async def test_public_routes_auto_hidden():
+    """Storefront-public and inbound webhook routes are created as hidden
+    auto rows — not agent-callable surface, must not pollute search."""
+    session = _MockSession(rows=[])
+    stats = await run_drift_check(session, manifest=[
+        {"method": "GET", "path": "/api/v1/public/products", "permissionKey": None, "appSlug": None},
+        {"method": "POST", "path": "/api/v1/webhook", "permissionKey": None, "appSlug": None},
+        {"method": "GET", "path": "/api/v1/products", "permissionKey": "products.view", "appSlug": None},
+    ])
+    by_name = {m.name: m for m in session.merged}
+    assert by_name["bridge_get_public_products"].exposure_state == "hidden"
+    assert by_name["bridge_post_webhook"].exposure_state == "hidden"
+    assert by_name["bridge_get_products"].exposure_state == "active"
+    assert stats["new_active_reads"] == 1  # hidden reads don't count as active

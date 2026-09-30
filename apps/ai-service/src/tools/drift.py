@@ -63,10 +63,12 @@ def _infer_domain(path: str) -> str:
     return "other"
 
 
-def _bridge_route_name(path: str) -> str:
-    """Deterministic bridge row name from a manifest path, e.g.
-    /api/v1/brand-new-widget → bridge_brand_new_widget.
-    Non-/api/v1 paths return '' (caller skips them)."""
+def _bridge_route_name(method: str, path: str) -> str:
+    """Deterministic bridge row name from method + manifest path, e.g.
+    GET /api/v1/brand-new-widget → bridge_get_brand_new_widget.
+    Method-aware so GET/POST on the same path never merge into one row
+    (the old scheme silently collapsed ~1000 routes). Non-/api/v1 paths
+    return '' (caller skips them)."""
     marker = "/api/v1/"
     if marker not in path:
         return ""
@@ -74,7 +76,17 @@ def _bridge_route_name(path: str) -> str:
     tail = tail.replace("/", "_").replace("-", "_")
     # strip :param placeholders → stable names
     tail = tail.replace(":", "")
-    return f"bridge_{tail}"[:118]
+    return f"bridge_{method.lower()}_{tail}"[:118]
+
+
+# Route prefixes that are storefront-public or inbound receivers — never
+# agent-callable surface: auto rows are created straight as 'hidden' so
+# they don't pollute the store_capability search index (reviewable later).
+AUTO_HIDE_PREFIXES = (
+    "/api/v1/public/",
+    "/api/v1/webhook",
+    "/api/v1/shipping-zones/public/",
+)
 
 
 def _humanize_route(route: dict[str, Any]) -> str:
@@ -119,12 +131,17 @@ async def run_drift_check(session: Any, manifest: list[dict[str, Any]] | None = 
             stats["unchanged"] += 1
             continue
 
-        name = _bridge_route_name(path)
+        name = _bridge_route_name(method, path)
         if not name:
             continue  # not a versioned API path — not a store capability
         is_write = _infer_write(method)
         # Auto-activate reads only — writes await one-click review (policy).
-        state = "draft" if is_write else "active"
+        # Storefront-public / inbound routes are auto-hidden: they are not
+        # agent surface and would only pollute the capability search index.
+        if any(path.startswith(p) or path == p.rstrip("/") for p in AUTO_HIDE_PREFIXES):
+            state = "hidden"
+        else:
+            state = "draft" if is_write else "active"
 
         await session.merge(AgentToolCatalog(
             name=name,
@@ -143,7 +160,7 @@ async def run_drift_check(session: Any, manifest: list[dict[str, Any]] | None = 
             catalog_metadata={"manifest_seen_at": time.time()},
         ))
         stats["new_capabilities"] += 1
-        if not is_write:
+        if not is_write and state == "active":
             stats["new_active_reads"] += 1
 
     # Stale flags: active/draft rows whose endpoint vanished from the manifest
