@@ -172,3 +172,136 @@ export const lightTokens: ThemeTokens = {
 /** Resolve tokens map for a given mode. */
 export const getTokens = (mode: ThemeMode): ThemeTokens =>
   mode === 'dark' ? darkTokens : lightTokens;
+
+/* ═══════════════════════════════════════════════════════════
+ *  THEME PRESETS (2026) — each inherits a base mode and re-skins
+ *  the accent family + background tints. Semantic colors (red/
+ *  yellow/blue) stay constant across presets by design.
+ * ═══════════════════════════════════════════════════════════ */
+
+export interface ThemePreset {
+  id: string;
+  name: string;
+  base: ThemeMode;
+  accent: string; // picker swatch color
+  overrides: Partial<ThemeTokens>;
+}
+
+export const THEME_PRESETS: ThemePreset[] = [
+  {
+    id: 'carbon',
+    name: 'كربون',
+    base: 'dark',
+    accent: '#22c55e',
+    overrides: {}, // identity — pure darkTokens
+  },
+  {
+    id: 'rose',
+    name: 'روز',
+    base: 'dark',
+    accent: '#fb7185',
+    overrides: {
+      '--bg-page': '#0d0a0e',
+      '--bg-sidebar': '#110d12',
+      '--bg-surface': '#161116',
+      '--bg-elevated': '#1d161c',
+      '--bg-topbar': '#0f0c10',
+      '--bg-input': '#0c0a0d',
+      '--accent-green': '#fb7185',
+      '--accent-green-dim': 'rgba(251,113,133,0.7)',
+      '--accent-green-bg': 'rgba(251,113,133,0.12)',
+      '--accent-green-border': 'rgba(251,113,133,0.28)',
+      '--avatar-gradient': 'linear-gradient(135deg, #2c1e26, #4a2f3d)',
+    },
+  },
+  {
+    id: 'lavender',
+    name: 'لافندر',
+    base: 'dark',
+    accent: '#a78bfa',
+    overrides: {
+      '--bg-page': '#0c0b12',
+      '--bg-sidebar': '#0f0e16',
+      '--bg-surface': '#14121d',
+      '--bg-elevated': '#1b1826',
+      '--bg-topbar': '#0e0d14',
+      '--bg-input': '#0b0a10',
+      '--accent-green': '#a78bfa',
+      '--accent-green-dim': 'rgba(167,139,250,0.7)',
+      '--accent-green-bg': 'rgba(167,139,250,0.12)',
+      '--accent-green-border': 'rgba(167,139,250,0.28)',
+      '--avatar-gradient': 'linear-gradient(135deg, #241f33, #38304f)',
+    },
+  },
+  {
+    id: 'corpblue',
+    name: 'أزرق مؤسسي',
+    base: 'dark',
+    accent: '#60a5fa',
+    overrides: {
+      '--bg-page': '#0a0d12',
+      '--bg-sidebar': '#0d1117',
+      '--bg-surface': '#111721',
+      '--bg-elevated': '#171f2b',
+      '--bg-topbar': '#0c1015',
+      '--bg-input': '#090c11',
+      '--accent-green': '#60a5fa',
+      '--accent-green-dim': 'rgba(96,165,250,0.7)',
+      '--accent-green-bg': 'rgba(96,165,250,0.12)',
+      '--accent-green-border': 'rgba(96,165,250,0.28)',
+      '--avatar-gradient': 'linear-gradient(135deg, #1d2633, #2e3d52)',
+    },
+  },
+  {
+    id: 'latte',
+    name: 'لاتيه',
+    base: 'light',
+    accent: '#b05c30',
+    overrides: {
+      '--bg-page': '#fdfbf7',
+      '--bg-sidebar': '#fbf7ef',
+      '--bg-surface': '#ffffff',
+      '--bg-elevated': '#f5efe3',
+      '--bg-hover': '#ece4d4',
+      '--bg-topbar': '#fdfbf7',
+      '--bg-input': '#ffffff',
+      '--accent-green': '#b05c30',
+      '--accent-green-dim': 'rgba(176,92,48,0.7)',
+      '--accent-green-bg': 'rgba(176,92,48,0.10)',
+      '--accent-green-border': 'rgba(176,92,48,0.26)',
+      '--avatar-gradient': 'linear-gradient(135deg, #efe6d6, #d8c9b2)',
+    },
+  },
+  {
+    id: 'sand',
+    name: 'بيج صحراوي',
+    base: 'light',
+    accent: '#963c4a',
+    overrides: {
+      '--bg-page': '#f7f3ec',
+      '--bg-sidebar': '#f2ede2',
+      '--bg-surface': '#fdfbf7',
+      '--bg-elevated': '#ece5d7',
+      '--bg-hover': '#e1d9c8',
+      '--bg-topbar': '#f7f3ec',
+      '--bg-input': '#fdfbf7',
+      '--accent-green': '#963c4a',
+      '--accent-green-dim': 'rgba(150,60,74,0.7)',
+      '--accent-green-bg': 'rgba(150,60,74,0.10)',
+      '--accent-green-border': 'rgba(150,60,74,0.26)',
+      '--avatar-gradient': 'linear-gradient(135deg, #e7dfd0, #cec2ab)',
+    },
+  },
+];
+
+export function getPreset(id: string): ThemePreset | undefined {
+  return THEME_PRESETS.find((p) => p.id === id);
+}
+
+/** Base tokens for a mode, re-skinned by the preset when it matches the mode. */
+export function getTokensFor(mode: ThemeMode, presetId: string): ThemeTokens {
+  const base = mode === 'dark' ? darkTokens : lightTokens;
+  const preset = getPreset(presetId);
+  if (!preset || preset.base !== mode) return base;
+  return { ...base, ...preset.overrides };
+}

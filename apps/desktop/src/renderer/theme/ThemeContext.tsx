@@ -18,28 +18,33 @@ import React, {
   useCallback,
   type ReactNode,
 } from 'react';
-import { type ThemeMode, getTokens } from './tokens';
+import { type ThemeMode, getPreset, getTokensFor } from './tokens';
 
 export type FontSizeSetting = 'compact' | 'normal' | 'large';
 
 interface ThemeContextValue {
   mode: ThemeMode;
   fontSize: FontSizeSetting;
+  presetId: string;
   toggleTheme: () => void;
   setTheme: (m: ThemeMode) => void;
+  setPreset: (id: string) => void;
   setFontSize: (size: FontSizeSetting) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
   mode: 'dark',
   fontSize: 'normal',
+  presetId: 'carbon',
   toggleTheme: () => {},
   setTheme: () => {},
+  setPreset: () => {},
   setFontSize: () => {},
 });
 
 const STORAGE_KEY = 'maxp_theme';
 const FONT_STORAGE_KEY = 'maxp_font_size';
+const PRESET_STORAGE_KEY = 'maxp_theme_preset';
 
 /** Read the saved preference, default to 'dark'. */
 function readSaved(): ThemeMode {
@@ -58,9 +63,17 @@ function readSavedFontSize(): FontSizeSetting {
   return 'normal';
 }
 
+function readSavedPreset(): string {
+  try {
+    const v = localStorage.getItem(PRESET_STORAGE_KEY);
+    if (v && getPreset(v)) return v;
+  } catch {}
+  return 'carbon';
+}
+
 /** Apply CSS custom-properties to document root. */
-function applyTokens(mode: ThemeMode, fontSize: FontSizeSetting) {
-  const tokens = getTokens(mode);
+function applyTokens(mode: ThemeMode, fontSize: FontSizeSetting, presetId: string) {
+  const tokens = getTokensFor(mode, presetId);
   const root = document.documentElement;
   for (const [key, value] of Object.entries(tokens)) {
     root.style.setProperty(key, value);
@@ -68,6 +81,7 @@ function applyTokens(mode: ThemeMode, fontSize: FontSizeSetting) {
   // also set a data attribute for potential CSS selectors
   root.setAttribute('data-theme', mode);
   root.setAttribute('data-font-size', fontSize);
+  root.setAttribute('data-preset', presetId);
 
   const fontSizeMap: Record<FontSizeSetting, string> = {
     compact: '12.5px',
@@ -110,22 +124,40 @@ function applyTokens(mode: ThemeMode, fontSize: FontSizeSetting) {
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [mode, setModeState] = useState<ThemeMode>(readSaved);
   const [fontSize, setFontSizeState] = useState<FontSizeSetting>(readSavedFontSize);
+  const [presetId, setPresetIdState] = useState<string>(readSavedPreset);
 
-  // Apply tokens whenever mode or fontSize changes
+  // Apply tokens whenever mode, fontSize or preset changes
   useEffect(() => {
-    applyTokens(mode, fontSize);
+    applyTokens(mode, fontSize, presetId);
     try {
       localStorage.setItem(STORAGE_KEY, mode);
       localStorage.setItem(FONT_STORAGE_KEY, fontSize);
+      localStorage.setItem(PRESET_STORAGE_KEY, presetId);
     } catch {}
-  }, [mode, fontSize]);
+  }, [mode, fontSize, presetId]);
 
-  const toggleTheme = useCallback(() => {
-    setModeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  // Switching family: keep a preset that belongs to the new family,
+  // otherwise fall back to that family's default identity.
+  const adoptMode = useCallback((m: ThemeMode) => {
+    setModeState(m);
+    setPresetIdState((prev) =>
+      getPreset(prev)?.base === m ? prev : m === 'dark' ? 'carbon' : 'latte'
+    );
   }, []);
 
+  const toggleTheme = useCallback(() => {
+    adoptMode(mode === 'dark' ? 'light' : 'dark');
+  }, [mode, adoptMode]);
+
   const setTheme = useCallback((m: ThemeMode) => {
-    setModeState(m);
+    adoptMode(m);
+  }, [adoptMode]);
+
+  const setPreset = useCallback((id: string) => {
+    const p = getPreset(id);
+    if (!p) return;
+    setPresetIdState(id);
+    setModeState(p.base);
   }, []);
 
   const setFontSize = useCallback((s: FontSizeSetting) => {
@@ -133,7 +165,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ mode, fontSize, toggleTheme, setTheme, setFontSize }}>
+    <ThemeContext.Provider value={{ mode, fontSize, presetId, toggleTheme, setTheme, setPreset, setFontSize }}>
       {children}
     </ThemeContext.Provider>
   );

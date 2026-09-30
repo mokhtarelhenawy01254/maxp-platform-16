@@ -15,6 +15,7 @@ import {
   Type,
 } from 'lucide-react';
 import { useTheme } from '../theme/ThemeContext';
+import { THEME_PRESETS } from '../theme/tokens';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -34,7 +35,7 @@ const DEFAULT_PREFS: Prefs = {
 };
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
-  const { mode, setTheme, fontSize, setFontSize } = useTheme();
+  const { mode, setTheme, fontSize, setFontSize, presetId, setPreset } = useTheme();
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [saved, setSaved] = useState(false);
 
@@ -297,6 +298,51 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 <Sun size={14} />
                 <span>فاتح</span>
               </button>
+            </div>
+
+            {/* Ready-made 2026 theme presets */}
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>
+                ثيمات جاهزة — 2026
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                {THEME_PRESETS.map((p) => {
+                  const active = presetId === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => setPreset(p.id)}
+                      title={`تطبيق ثيم ${p.name}`}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '8px 10px',
+                        borderRadius: 8,
+                        border: active ? '1px solid var(--accent-green)' : '1px solid var(--border-default)',
+                        background: active ? 'var(--accent-green-bg)' : 'var(--bg-input)',
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        textAlign: 'right',
+                        transition: 'all 140ms ease-out',
+                      }}
+                    >
+                      <span style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
+                        <span style={{ width: 11, height: 11, borderRadius: '50%', background: p.accent }} />
+                        <span style={{ width: 11, height: 11, borderRadius: '50%', background: p.overrides['--bg-surface'] || (p.base === 'dark' ? '#121216' : '#ffffff'), border: '1px solid var(--border-default)' }} />
+                        <span style={{ width: 11, height: 11, borderRadius: '50%', background: p.overrides['--bg-page'] || (p.base === 'dark' ? '#09090b' : '#f8fafc'), border: '1px solid var(--border-default)' }} />
+                      </span>
+                      <span style={{ fontSize: 11.5, fontWeight: 600, color: active ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                        {p.name}
+                      </span>
+                      {active && <CheckCircle2 size={13} color="var(--accent-green)" style={{ marginInlineStart: 'auto' }} />}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 7 }}>
+                اختيار الثيم بيضبط الوضع (داكن/فاتح) المناسب له تلقائيًا — وبيتحفظ على جهازك.
+              </div>
             </div>
           </div>
 

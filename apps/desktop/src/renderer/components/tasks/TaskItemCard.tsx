@@ -514,7 +514,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               style={rowStyles.startBtn}
               title="بدء العمل على المهمة واحتساب الوقت"
             >
-              <Play size={10} fill="#ffffff" color="#ffffff" />
+              <Play size={10} fill="currentColor" color="currentColor" />
               <span className="task-action-label">بدء العمل</span>
             </button>
           ) : (
