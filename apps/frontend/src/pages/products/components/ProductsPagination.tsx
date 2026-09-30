@@ -37,7 +37,7 @@ const ProductsPagination: React.FC<ProductsPaginationProps> = ({
   const NextIcon = isEn ? ChevronRightIcon : ChevronLeftIcon;
 
   return (
-    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm px-4 py-3 flex items-center justify-between rounded-xl shadow-md border border-gray-100 dark:border-gray-700/50">
+    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm px-4 py-3 flex items-center justify-between rounded-xl shadow-md border border-gray-100 dark:border-gray-700/50 relative z-20 mb-8 sm:mb-6">
       {/* Mobile */}
       <div className="flex-1 flex items-center justify-between sm:hidden">
         <button
@@ -98,7 +98,7 @@ const ProductsPagination: React.FC<ProductsPaginationProps> = ({
           </select>
         </div>
 
-        <nav className="relative z-0 inline-flex rounded-lg shadow-sm -space-x-px" aria-label="Pagination">
+        <nav className="relative z-20 inline-flex rounded-lg shadow-sm -space-x-px" aria-label="Pagination">
           <button
             onClick={() => onPageChange(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}

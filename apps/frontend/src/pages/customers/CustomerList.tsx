@@ -524,7 +524,7 @@ const CustomerList: React.FC = () => {
         )}
 
         {/* Customers Table */}
-        <div className="bg-white dark:bg-gray-800 shadow dark:shadow-md overflow-hidden sm:rounded-md">
+        <div className="bg-white dark:bg-gray-800 shadow dark:shadow-md overflow-hidden sm:rounded-md mb-8 sm:mb-6">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-900">
@@ -683,8 +683,8 @@ const CustomerList: React.FC = () => {
 
           {/* Pagination */}
           {pagination && pagination.total > 0 && (
-            <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
-              <div className="flex-1 flex justify-between sm:hidden">
+            <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6 relative z-20">
+              <div className="flex-1 flex justify-between sm:hidden relative z-20">
                 <button
                   onClick={() => handlePageChange(pagination.page - 1)}
                   disabled={!pagination.hasPrev}
@@ -721,7 +721,7 @@ const CustomerList: React.FC = () => {
                 </div>
                 <div>
                   <nav
-                    className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                    className="relative z-20 inline-flex rounded-md shadow-sm -space-x-px"
                     aria-label="Pagination"
                   >
                     <button

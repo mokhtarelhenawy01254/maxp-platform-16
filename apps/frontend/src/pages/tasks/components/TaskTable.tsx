@@ -243,7 +243,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
     const pages = buildPageNumbers(currentPage, totalPages);
 
     return (
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-3 py-2.5 md:px-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-3 py-2.5 md:px-4 relative z-20 pb-4">
         <div className="flex items-center gap-2">
           <p className="text-xs text-muted-foreground">
             صفحة {currentPage} من {totalPages}
@@ -268,7 +268,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
             </Button>
           </div>
         </div>
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1 relative z-20">
           <Button
             type="button"
             variant="outline"
@@ -346,7 +346,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
     <div
       id="tasks-queue"
       data-testid="tasks-queue"
-      className="overflow-hidden rounded-2xl border border-border/60 bg-card/80 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.18)]"
+      className="overflow-hidden rounded-2xl border border-border/60 bg-card/80 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.18)] mb-8 sm:mb-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 bg-background/40 px-4 py-2.5 md:px-5">
         <div className="min-w-0 space-y-0.5">

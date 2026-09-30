@@ -853,8 +853,8 @@ const UnifiedCommentsManagement = () => {
 
               {/* Pagination */}
               {pagination.totalPages > 1 && (
-                <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 flex items-center justify-between border-t border-slate-200">
-                  <div className="flex-1 flex justify-between sm:hidden">
+                <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 flex items-center justify-between border-t border-slate-200 relative z-20 mb-8 sm:mb-6">
+                  <div className="flex-1 flex justify-between sm:hidden relative z-20">
                     <button
                       onClick={() =>
                         handlePageChange(pagination.currentPage - 1)
@@ -899,7 +899,7 @@ const UnifiedCommentsManagement = () => {
                     </div>
                     <div>
                       <nav
-                        className="relative z-0 inline-flex rounded-xl shadow-sm gap-1"
+                        className="relative z-20 inline-flex rounded-xl shadow-sm gap-1"
                         aria-label="Pagination"
                       >
                         <button

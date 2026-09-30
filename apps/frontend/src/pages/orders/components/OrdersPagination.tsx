@@ -43,7 +43,7 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
 
   if (variant === "mobile") {
     return (
-      <div className="mt-2.5 mb-20 rounded-2xl border border-slate-200/80 bg-white/95 p-2 shadow-xs backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95 lg:hidden">
+      <div className="mt-2.5 mb-24 rounded-2xl border border-slate-200/80 bg-white/95 p-2 shadow-xs backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95 lg:hidden relative z-20">
         {isJumping ? (
           <form onSubmit={handleJumpSubmit} className="flex items-center justify-between gap-2">
             <button
@@ -148,7 +148,7 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
   }
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-900 px-3 py-2.5 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4 lg:px-4">
+    <div className="bg-slate-50 dark:bg-slate-900 px-3 py-2.5 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4 lg:px-4 relative z-20">
       <div className="flex items-center gap-4">
         <div className="text-sm text-slate-500 dark:text-slate-400">
           {t("orders.showing")} {(page - 1) * limit + 1} {t("orders.to")}{" "}
