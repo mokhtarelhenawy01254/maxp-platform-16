@@ -6,9 +6,23 @@ import CustomerInfoCard from "./CustomerInfoCard";
 import { OrderDetailsType } from "../types";
 import { customerBlocklistService } from "../../../services/customerBlocklistService";
 
+jest.mock("../../../services/apiClient", () => ({
+  apiClient: {
+    get: jest.fn().mockResolvedValue({ data: { success: true, data: {} } }),
+    post: jest.fn().mockResolvedValue({ data: { success: true, data: {} } }),
+    put: jest.fn().mockResolvedValue({ data: { success: true, data: {} } }),
+  },
+}));
+
+jest.mock("../../../services/storefrontSettingsService", () => ({
+  storefrontSettingsService: {
+    getSettings: jest.fn().mockResolvedValue({ data: { designTokens: {} } }),
+  },
+}));
+
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string, fallback?: string) => fallback || key,
   }),
 }));
 
