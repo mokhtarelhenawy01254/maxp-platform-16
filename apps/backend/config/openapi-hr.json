@@ -581,14 +581,48 @@
             }
           },
           {
-            "name": "departmentId",
+            "name": "month",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "description": "Calendar month (1-12)"
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Calendar year (e.g. 2026)"
+          },
+          {
+            "name": "employeeId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Employee ID, Employee Number, or User ID"
+          },
+          {
+            "name": "employeeCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Alias for employeeId"
+          },
+          {
+            "name": "userId",
             "in": "query",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "employeeCode",
+            "name": "departmentId",
             "in": "query",
             "schema": {
               "type": "string"
@@ -1603,6 +1637,11 @@
                       "REMOTE"
                     ]
                   },
+                  "date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-09-30"
+                  },
                   "notes": {
                     "type": "string"
                   },
@@ -1617,6 +1656,105 @@
         "responses": {
           "200": {
             "description": "Corrected attendance record"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Void and delete attendance record",
+        "description": "Permanently voids and deletes an erroneous or future attendance record with mandatory audit logging.\n\n**Required Scope:** `hr:attendance:write` (or `hr:write`, `*`)",
+        "operationId": "hr_void_attendance_record",
+        "x-required-scope": "hr:attendance:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Attendance Record ID"
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Mandatory explanation for voiding the record"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "Mandatory reason for voiding this record"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Attendance record voided successfully"
+          },
+          "400": {
+            "description": "Validation error (missing reason)"
+          },
+          "404": {
+            "description": "Attendance record not found"
+          }
+        }
+      }
+    },
+    "/attendance/{id}/void": {
+      "post": {
+        "summary": "Void and delete attendance record",
+        "description": "Alias for DELETE /attendance/{id} with mandatory reason in body or query.\n\n**Required Scope:** `hr:attendance:write` (or `hr:write`, `*`)",
+        "operationId": "hr_void_attendance_post",
+        "x-required-scope": "hr:attendance:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Attendance Record ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["reason"],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "Mandatory reason for voiding this record"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Attendance record voided successfully"
+          },
+          "400": {
+            "description": "Validation error (missing reason)"
+          },
+          "404": {
+            "description": "Attendance record not found"
           }
         }
       }

@@ -95,6 +95,8 @@ router.post('/attendance/punches/batch', requireExternalHrScope('hr:attendance:i
 router.get('/attendance/today', requireExternalHrScope('hr:attendance:read'), hrExternalController.getTodayAttendance);
 router.get('/attendance/summary', requireExternalHrScope('hr:attendance:read'), hrExternalController.getAttendanceSummary);
 router.patch('/attendance/:id', requireExternalHrScope('hr:attendance:write'), hrExternalController.updateAttendanceRecord);
+router.delete('/attendance/:id', requireExternalHrScope('hr:attendance:write'), hrExternalController.voidAttendanceRecord);
+router.post('/attendance/:id/void', requireExternalHrScope('hr:attendance:write'), hrExternalController.voidAttendanceRecord);
 
 // 🏖️ Leaves & Absence
 router.get('/leaves', requireExternalHrScope('hr:leaves:read'), hrExternalController.listLeaveRequests);

@@ -480,4 +480,37 @@ describe('HR External API — New Endpoints & Timezone Fix Unit Tests', () => {
       rewardEligibilityService._mockPrisma = null;
     });
   });
+
+  describe('Item 8: Attendance Summary Filtering & Void Attendance Record', () => {
+    test('voidAttendanceRecord is exported as a function', () => {
+      expect(typeof hrExternalController.voidAttendanceRecord).toBe('function');
+    });
+
+    test('voidAttendanceRecord returns 400 VALIDATION_ERROR when reason is missing', async () => {
+      mockReq.params = { id: 'att-123' };
+      mockReq.body = {};
+      await hrExternalController.voidAttendanceRecord(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({ code: 'VALIDATION_ERROR' })
+        })
+      );
+    });
+
+    test('updateAttendanceRecord rejects invalid date format with 400 VALIDATION_ERROR', async () => {
+      mockReq.params = { id: 'att-123' };
+      mockReq.body = { date: 'invalid-date-format' };
+      await hrExternalController.updateAttendanceRecord(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({ code: 'VALIDATION_ERROR' })
+        })
+      );
+    });
+  });
 });
+

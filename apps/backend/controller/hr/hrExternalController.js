@@ -1510,28 +1510,129 @@ const getLeaveBalances = async (req, res) => {
 /**
  * D1: ملخص وإحصائيات الحضور والغياب والتأخير
  * GET /attendance/summary (Scope: hr:attendance:read)
- * Query: from, to, employeeCode
+ * Query: from, to, month, year, employeeId, employeeCode, userId, departmentId
  */
 const getAttendanceSummary = async (req, res) => {
   try {
     const { companyId } = req;
-    const { from, to, employeeCode } = req.query;
+    const { from, to, month, year, employeeId, employeeCode, userId, departmentId } = req.query;
     const prisma = getSharedPrismaClient();
 
-    const startDate = from ? new Date(from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const endDate = to ? new Date(to) : new Date();
+    let startDate, endDate;
+    if (from) {
+      startDate = new Date(from.includes('T') ? from : `${from}T00:00:00.000Z`);
+    }
+    if (to) {
+      endDate = new Date(to.includes('T') ? to : `${to}T23:59:59.999Z`);
+    }
+
+    const m = month ? parseInt(month, 10) : null;
+    const y = year ? parseInt(year, 10) : null;
+
+    if (!startDate && !endDate) {
+      if (m && y) {
+        startDate = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
+        endDate = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999));
+      } else if (m && !y) {
+        const currentYear = new Date().getFullYear();
+        startDate = new Date(Date.UTC(currentYear, m - 1, 1, 0, 0, 0, 0));
+        endDate = new Date(Date.UTC(currentYear, m, 0, 23, 59, 59, 999));
+      } else if (!m && y) {
+        startDate = new Date(Date.UTC(y, 0, 1, 0, 0, 0, 0));
+        endDate = new Date(Date.UTC(y, 11, 31, 23, 59, 59, 999));
+      } else {
+        startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        endDate = new Date();
+      }
+    } else if (!startDate) {
+      startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    } else if (!endDate) {
+      endDate = new Date();
+    }
 
     const where = {
       companyId,
       date: { gte: startDate, lte: endDate }
     };
 
-    if (employeeCode) {
-      const emp = await prisma.employee.findFirst({
-        where: { companyId, OR: [{ employeeNumber: employeeCode }, { id: employeeCode }] },
-        select: { userId: true }
+    const empParam = employeeId || employeeCode || userId;
+    let targetUserId = null;
+    let resolvedEmp = null;
+
+    if (empParam) {
+      resolvedEmp = await prisma.employee.findFirst({
+        where: {
+          companyId,
+          OR: [
+            { id: empParam },
+            { employeeNumber: empParam },
+            { userId: empParam }
+          ]
+        },
+        select: { id: true, userId: true, employeeNumber: true, name: true, departmentId: true }
       });
-      if (emp?.userId) where.userId = emp.userId;
+
+      if (resolvedEmp?.userId) {
+        targetUserId = resolvedEmp.userId;
+      } else {
+        const usr = await prisma.user.findFirst({
+          where: {
+            companyId,
+            OR: [
+              { id: empParam },
+              { employeeNumber: empParam }
+            ]
+          },
+          select: { id: true, employeeNumber: true, name: true, departmentId: true }
+        });
+        if (usr) {
+          targetUserId = usr.id;
+        }
+      }
+
+      if (targetUserId) {
+        where.userId = targetUserId;
+      } else {
+        where.userId = '__NON_EXISTING_USER_ID__';
+      }
+    }
+
+    if (departmentId) {
+      const [deptEmployees, deptUsers] = await Promise.all([
+        prisma.employee.findMany({
+          where: { companyId, departmentId },
+          select: { userId: true }
+        }),
+        prisma.user.findMany({
+          where: {
+            departmentId,
+            OR: [
+              { companyId },
+              { userCompanies: { some: { companyId, isActive: true } } }
+            ]
+          },
+          select: { id: true }
+        })
+      ]);
+
+      const deptUserIds = Array.from(new Set([
+        ...deptEmployees.map(e => e.userId).filter(Boolean),
+        ...deptUsers.map(u => u.id).filter(Boolean)
+      ]));
+
+      if (deptUserIds.length === 0) {
+        where.userId = '__NON_EXISTING_DEPT_USERS__';
+      } else if (where.userId) {
+        if (typeof where.userId === 'string') {
+          if (!deptUserIds.includes(where.userId)) {
+            where.userId = '__NO_USER_DEPT_INTERSECTION__';
+          }
+        } else if (where.userId.in) {
+          where.userId = { in: where.userId.in.filter(id => deptUserIds.includes(id)) };
+        }
+      } else {
+        where.userId = { in: deptUserIds };
+      }
     }
 
     const [totalRecords, byStatusRaw, aggregates] = await Promise.all([
@@ -1553,22 +1654,82 @@ const getAttendanceSummary = async (req, res) => {
       return acc;
     }, {});
 
+    // Calculate derived absence days via official attendanceService.getAbsentDaysReport
+    let derivedAbsenceDays = null;
+    let totalWorkingDays = null;
+    let derivedAttendanceRate = null;
+    let absentDates = [];
+
+    try {
+      const evalYear = (m && y) ? y : (y || startDate.getUTCFullYear());
+      const evalMonth = (m && y) ? m : (m || (startDate.getUTCMonth() + 1));
+      const validTargetUserId = (targetUserId && !targetUserId.startsWith('__')) ? targetUserId : null;
+
+      const absentReport = await attendanceService.getAbsentDaysReport(
+        companyId,
+        evalYear,
+        evalMonth,
+        validTargetUserId,
+        departmentId || null
+      );
+
+      if (absentReport) {
+        totalWorkingDays = absentReport.totalWorkingDays ?? null;
+        if (validTargetUserId) {
+          const empData = absentReport.employees?.find(e => e.userId === validTargetUserId || e.id === validTargetUserId);
+          if (empData) {
+            derivedAbsenceDays = empData.absentDays;
+            absentDates = empData.absentDates || [];
+            derivedAttendanceRate = empData.attendanceRate;
+          } else {
+            derivedAbsenceDays = absentReport.totalAbsentDays ?? 0;
+          }
+        } else {
+          derivedAbsenceDays = absentReport.totalAbsentDays ?? 0;
+          derivedAttendanceRate = absentReport.attendanceRate;
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ [ExternalHrController.getAttendanceSummary] getAbsentDaysReport error:', e.message);
+    }
+
+    const rowBasedAbsence = byStatus.ABSENT || 0;
+    const effectiveDerivedAbsenceDays = derivedAbsenceDays !== null ? derivedAbsenceDays : rowBasedAbsence;
+
     return res.json({
       success: true,
       data: {
         period: {
           from: startDate.toISOString().split('T')[0],
-          to: endDate.toISOString().split('T')[0]
+          to: endDate.toISOString().split('T')[0],
+          ...(m && y ? { month: m, year: y } : {})
+        },
+        filters: {
+          employeeId: empParam || null,
+          employeeNumber: resolvedEmp?.employeeNumber || null,
+          userId: (targetUserId && !targetUserId.startsWith('__')) ? targetUserId : null,
+          departmentId: departmentId || null
         },
         totalRecords,
         present: byStatus.PRESENT || 0,
         late: byStatus.LATE || 0,
-        absent: byStatus.ABSENT || 0,
+        absent: rowBasedAbsence,
+        rowBasedAbsence,
+        derivedAbsenceDays: effectiveDerivedAbsenceDays,
+        absentDays: effectiveDerivedAbsenceDays,
+        totalWorkingDays,
+        attendanceRate: derivedAttendanceRate,
+        absentDates: absentDates.length > 0 ? absentDates : undefined,
         onLeave: byStatus.ON_LEAVE || 0,
         halfDay: byStatus.HALF_DAY || 0,
         byStatus,
-        avgWorkHours: Number((aggregates._avg.workHours || 0).toFixed(2)),
-        totalOvertimeHours: Number((aggregates._sum.overtimeHours || 0).toFixed(2))
+        avgWorkHours: Number((aggregates._avg?.workHours || 0).toFixed(2)),
+        totalOvertimeHours: Number((aggregates._sum?.overtimeHours || 0).toFixed(2)),
+        absenceBreakdown: {
+          rowBasedAbsence,
+          derivedAbsenceDays: effectiveDerivedAbsenceDays,
+          explanation: 'rowBasedAbsence counts database rows with status=ABSENT. derivedAbsenceDays counts scheduled working days without check-in (excluding public holidays, approved leaves, and days prior to hire date).'
+        }
       }
     });
   } catch (error) {
@@ -3716,7 +3877,21 @@ const updateAttendanceRecord = async (req, res) => {
   try {
     const { companyId } = req;
     const { id } = req.params;
-    const { checkIn, checkOut, status, notes, lateMinutes, earlyLeaveMinutes, workMode } = req.body || {};
+    const { checkIn, checkOut, status, notes, lateMinutes, earlyLeaveMinutes, workMode, date } = req.body || {};
+
+    if (date !== undefined) {
+      const dateStr = String(date).trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'date must be in YYYY-MM-DD format'
+          }
+        });
+      }
+      req.body.date = dateStr;
+    }
 
     if (status !== undefined) {
       const normalizedStatus = String(status).trim().toUpperCase();
@@ -3788,7 +3963,7 @@ const updateAttendanceRecord = async (req, res) => {
       resourceType: 'Attendance',
       resourceId: updated.id,
       targetName: `Attendance Record ${id}`,
-      details: { checkIn: req.body.checkIn, checkOut: req.body.checkOut, status, lateMinutes }
+      details: { checkIn: req.body.checkIn, checkOut: req.body.checkOut, status, lateMinutes, date: req.body.date }
     });
 
     return res.json({
@@ -3798,6 +3973,95 @@ const updateAttendanceRecord = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ [ExternalHrController.updateAttendanceRecord] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 31b. إلغاء/حذف سجل الحضور والانصراف
+ * DELETE /attendance/:id
+ * POST /attendance/:id/void
+ * Scope: hr:attendance:write
+ */
+const voidAttendanceRecord = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { id } = req.params;
+    const reason = req.body?.reason || req.query?.reason;
+
+    if (!reason || !String(reason).trim()) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'reason is required to void/delete an attendance record'
+        }
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    const existing = await prisma.attendance.findFirst({
+      where: { id, companyId },
+      include: {
+        user: { select: { id: true, name: true, employeeNumber: true } }
+      }
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'ATTENDANCE_NOT_FOUND',
+          message: `Attendance record not found with ID: ${id}`
+        }
+      });
+    }
+
+    const formattedDate = existing.date
+      ? (existing.date.toISOString ? existing.date.toISOString().split('T')[0] : String(existing.date).split('T')[0])
+      : null;
+
+    // Delete attendance record
+    await prisma.attendance.delete({
+      where: { id }
+    });
+
+    await logExternalApiAction({
+      req,
+      action: 'VOID_ATTENDANCE',
+      description: `Voided attendance record ${id} for ${existing.user?.name || existing.userId} on ${formattedDate} - Reason: ${String(reason).trim()}`,
+      resourceType: 'Attendance',
+      resourceId: id,
+      targetName: existing.user?.name || existing.user?.employeeNumber || existing.userId,
+      details: {
+        attendanceId: id,
+        userId: existing.userId,
+        employeeNumber: existing.user?.employeeNumber,
+        date: formattedDate,
+        checkIn: existing.checkIn,
+        checkOut: existing.checkOut,
+        previousStatus: existing.status,
+        reason: String(reason).trim()
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: `Attendance record ${id} voided and removed successfully`,
+      data: {
+        id,
+        userId: existing.userId,
+        employeeNumber: existing.user?.employeeNumber,
+        employeeName: existing.user?.name,
+        date: formattedDate,
+        previousStatus: existing.status,
+        voidReason: String(reason).trim(),
+        voidedAt: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.voidAttendanceRecord] Error:', error);
     return res.status(500).json({ success: false, error: { message: error.message } });
   }
 };
@@ -6123,6 +6387,7 @@ module.exports = {
   updateShift,
   assignEmployeeShift,
   updateAttendanceRecord,
+  voidAttendanceRecord,
   // Phase 4 endpoints
   listRewardTypes,
   getRewardTypeById,
