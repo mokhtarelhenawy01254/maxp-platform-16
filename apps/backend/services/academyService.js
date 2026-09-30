@@ -609,11 +609,14 @@ class AcademyService {
       );
     }
 
+    const targetCompanyId = companyId || course.companyId;
+    if (!targetCompanyId) throw new Error('معرف الشركة مطلوب لإتمام التسجيل');
+
     // ─── فحص التسجيل المكرر ───────────────────────────────────────────────
     const existing = await db.academyEnrollment.findFirst({
       where: {
         courseId,
-        companyId,
+        companyId: targetCompanyId,
         OR: [
           ...(studentUserId ? [{ studentUserId }] : []),
           ...(customerId ? [{ customerId }] : []),
@@ -642,7 +645,7 @@ class AcademyService {
 
     const enrollment = await db.academyEnrollment.create({
       data: {
-        companyId,
+        companyId: targetCompanyId,
         courseId,
         studentCompanyId: studentCompanyId || null,
         studentUserId: studentUserId || null,

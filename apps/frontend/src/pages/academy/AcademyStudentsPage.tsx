@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import {
   Users,
   Award,
@@ -14,7 +15,13 @@ import {
   Loader2,
   Ban,
   RotateCcw,
+  Search,
+  UserPlus,
+  MessageCircle,
+  GraduationCap,
+  Calendar,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   academyApi,
   Course,
@@ -26,19 +33,35 @@ export default function AcademyStudentsPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
   const [students, setStudents] = useState<StudentProgressRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Active top tab: 'students' | 'submissions'
   const [activeTab, setActiveTab] = useState<"students" | "submissions">("students");
 
+  // Search & Filter for students
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED" | "SUSPENDED" | "EXPIRED">("ALL");
+
   // Submissions state
   const [submissions, setSubmissions] = useState<ExerciseSubmission[]>([]);
-  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<ExerciseSubmission | null>(null);
   const [reviewNote, setReviewNote] = useState("");
-  const [reviewing, setReviewing] = useState(false);
+  const [reviewingAction, setReviewingAction] = useState<"ACCEPTED" | "REJECTED" | "NEEDS_MORE" | null>(null);
   const [submissionFilter, setSubmissionFilter] = useState<string>("ALL");
+
+  // Manual enrollment modal
+  const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
+  const [newStudentName, setNewStudentName] = useState("");
+  const [newStudentPhone, setNewStudentPhone] = useState("");
+  const [newStudentEmail, setNewStudentEmail] = useState("");
+  const [newStudentDays, setNewStudentDays] = useState("");
+  const [isEnrollingManual, setIsEnrollingManual] = useState(false);
+
+  // Suspend action
+  const [suspendingId, setSuspendingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadCourses();
@@ -46,7 +69,7 @@ export default function AcademyStudentsPage() {
 
   const loadCourses = async () => {
     try {
-      setLoading(true);
+      setLoadingCourses(true);
       const data = await academyApi.getCourses();
       setCourses(data);
       const firstCourse = data[0];
@@ -59,21 +82,23 @@ export default function AcademyStudentsPage() {
       }
       setError(null);
     } catch (err: any) {
-      setError(err?.response?.data?.error || "فشل تحميل بيانات الطلاب");
+      const msg = err?.response?.data?.error || "فشل تحميل بيانات الكورسات والطلاب";
+      setError(msg);
+      toast.error(msg);
     } finally {
-      setLoading(false);
+      setLoadingCourses(false);
     }
   };
 
   const loadStudents = async (cId: string) => {
     try {
-      setLoading(true);
+      setLoadingStudents(true);
       const data = await academyApi.getStudentsProgress(cId);
       setStudents(data);
     } catch (err: any) {
-      alert(err?.response?.data?.error || "فشل تحميل الطلاب للدورة المحددة");
+      toast.error(err?.response?.data?.error || "فشل تحميل الطلاب للدورة المحددة");
     } finally {
-      setLoading(false);
+      setLoadingStudents(false);
     }
   };
 
@@ -91,6 +116,9 @@ export default function AcademyStudentsPage() {
 
   const handleCourseChange = (cId: string) => {
     setSelectedCourseId(cId);
+    setSearchQuery("");
+    setStatusFilter("ALL");
+    setSubmissionFilter("ALL");
     loadStudents(cId);
     loadSubmissions(cId);
   };
@@ -103,7 +131,7 @@ export default function AcademyStudentsPage() {
   const handleSaveReview = async (newStatus: "ACCEPTED" | "REJECTED" | "NEEDS_MORE") => {
     if (!selectedSubmission) return;
     try {
-      setReviewing(true);
+      setReviewingAction(newStatus);
       const updated = await academyApi.reviewSubmission(selectedSubmission.id, {
         status: newStatus,
         instructorNote: reviewNote.trim() || undefined,
@@ -113,30 +141,33 @@ export default function AcademyStudentsPage() {
         prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s))
       );
       setSelectedSubmission({ ...selectedSubmission, ...updated });
-      alert("تم حفظ المراجعة واعتماد قرار المدرب بنجاح.");
+      toast.success(
+        newStatus === "ACCEPTED"
+          ? "تم اعتماد وقبول تسليم الطالب واحتساب إكمال الدرس."
+          : newStatus === "REJECTED"
+          ? "تم طلب تعديل وإعادة التسليم من الطالب."
+          : "تم حفظ طلب التوضيح وإرساله للطالب."
+      );
+      // Refresh students to reflect updated progress percent
+      if (selectedCourseId) loadStudents(selectedCourseId);
     } catch (err: any) {
-      alert(err?.response?.data?.error || "فشل حفظ المراجعة");
+      toast.error(err?.response?.data?.error || "فشل حفظ المراجعة");
     } finally {
-      setReviewing(false);
+      setReviewingAction(null);
     }
   };
 
-  // إيقاف / تفعيل اشتراك طالب
-  const [suspending, setSuspending] = useState<string | null>(null);
   const handleToggleSuspend = async (student: StudentProgressRow) => {
     const isSuspended = student.status === "SUSPENDED";
-    const confirmMsg = isSuspended
-      ? `إعادة تفعيل اشتراك "${student.studentName}"؟`
-      : `إيقاف اشتراك "${student.studentName}"؟ لن يتمكن من الوصول للكورس.`;
-    if (!window.confirm(confirmMsg)) return;
     try {
-      setSuspending(student.id);
+      setSuspendingId(student.id);
       if (isSuspended) {
         await academyApi.reactivateEnrollment(student.id);
+        toast.success(`تم إعادة تفعيل اشتراك الطالب ${student.studentName || ""}`);
       } else {
         await academyApi.suspendEnrollment(student.id);
+        toast.warning(`تم إيقاف اشتراك الطالب ${student.studentName || ""}`);
       }
-      // تحديث القائمة محلياً
       setStudents((prev) =>
         prev.map((s) =>
           s.id === student.id
@@ -145,52 +176,126 @@ export default function AcademyStudentsPage() {
         )
       );
     } catch (err: any) {
-      alert(err?.response?.data?.error || "فشل تعديل الاشتراك");
+      toast.error(err?.response?.data?.error || "فشل تعديل حالة الاشتراك");
     } finally {
-      setSuspending(null);
+      setSuspendingId(null);
     }
   };
 
+  const handleManualEnroll = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCourseId) {
+      toast.error("يرجى اختيار دورة تدريبية أولاً");
+      return;
+    }
+    if (!newStudentName.trim() || !newStudentPhone.trim()) {
+      toast.error("يرجى إدخال اسم الطالب ورقم هاتفه");
+      return;
+    }
+
+    try {
+      setIsEnrollingManual(true);
+      await academyApi.enrollStudent(selectedCourseId, {
+        studentName: newStudentName.trim(),
+        studentPhone: newStudentPhone.trim(),
+        studentEmail: newStudentEmail.trim() || undefined,
+      });
+
+      toast.success(`تم تسجيل الطالب "${newStudentName}" في الدورة بنجاح.`);
+      setIsEnrollModalOpen(false);
+      setNewStudentName("");
+      setNewStudentPhone("");
+      setNewStudentEmail("");
+      setNewStudentDays("");
+
+      await loadStudents(selectedCourseId);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "فشل تسجيل الطالب");
+    } finally {
+      setIsEnrollingManual(false);
+    }
+  };
+
+  // KPIs
   const totalStudents = students.length;
   const completedStudents = students.filter((s) => s.hasCertificate || s.progressPercent === 100).length;
-  const inProgressStudents = totalStudents - completedStudents;
-
+  const inProgressStudents = students.filter((s) => s.status === "ACTIVE" && !s.isExpired && !s.hasCertificate && s.progressPercent < 100).length;
   const pendingSubmissionsCount = submissions.filter(
     (s) => s.status === "PENDING" || s.status === "NEEDS_MORE"
   ).length;
 
-  const filteredSubmissions = submissions.filter((s) => {
-    if (submissionFilter === "ALL") return true;
-    return s.status === submissionFilter;
-  });
+  // Filtered Students
+  const filteredStudents = useMemo(() => {
+    return students.filter((s) => {
+      // Status filter
+      if (statusFilter === "ACTIVE" && (s.status !== "ACTIVE" || s.isExpired)) return false;
+      if (statusFilter === "COMPLETED" && !(s.hasCertificate || s.progressPercent === 100)) return false;
+      if (statusFilter === "SUSPENDED" && s.status !== "SUSPENDED") return false;
+      if (statusFilter === "EXPIRED" && !s.isExpired) return false;
+
+      // Query filter
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase().trim();
+      const name = (s.studentName || "").toLowerCase();
+      const phone = (s.studentPhone || "").toLowerCase();
+      const email = (s.studentEmail || "").toLowerCase();
+      return name.includes(q) || phone.includes(q) || email.includes(q);
+    });
+  }, [students, statusFilter, searchQuery]);
+
+  // Filtered Submissions
+  const filteredSubmissions = useMemo(() => {
+    return submissions.filter((s) => {
+      if (submissionFilter === "ALL") return true;
+      return s.status === submissionFilter;
+    });
+  }, [submissions, submissionFilter]);
+
+  // Format WhatsApp Link
+  const getWhatsAppLink = (phone?: string) => {
+    if (!phone) return null;
+    const clean = phone.replace(/[^0-9]/g, "");
+    const formatted = clean.startsWith("0") ? `2${clean}` : clean;
+    return `https://wa.me/${formatted}`;
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground p-3 sm:p-6" dir="rtl">
-      {/* Header */}
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border/60">
         <div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-foreground flex items-center gap-2 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-foreground flex items-center gap-2.5 tracking-tight">
             <Users className="w-6 h-6 text-primary" />
             <span>متابعة الطلاب والتقييم الأكاديمي</span>
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            متابعة نسب إكمال الدروس، تصحيح التمارين العملية، ومراجعة تسليمات مسطرة الكورس
+            متابعة نسب إنجاز الدروس، تصحيح التمارين العملية بالذكاء الاصطناعي، وإدارة اشتراكات الطلاب
           </p>
         </div>
 
         {courses.length > 0 && (
-          <div className="w-full sm:w-72">
-            <select
-              value={selectedCourseId}
-              onChange={(e) => handleCourseChange(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="w-full sm:w-64">
+              <select
+                value={selectedCourseId}
+                onChange={(e) => handleCourseChange(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
+              >
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={() => setIsEnrollModalOpen(true)}
+              className="px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-xs flex items-center gap-1.5 active:scale-[0.98]"
             >
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                </option>
-              ))}
-            </select>
+              <UserPlus className="w-4 h-4" />
+              <span>تسجيل طالب يدوياً</span>
+            </button>
           </div>
         )}
       </div>
@@ -202,339 +307,551 @@ export default function AcademyStudentsPage() {
         </div>
       )}
 
-      {/* KPI Stats Bar */}
-      {courses.length > 0 && !loading && (
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div className="p-4 rounded-2xl bg-card border border-border/60 shadow-xs flex items-center justify-between">
-            <div>
-              <span className="text-xs text-muted-foreground font-medium">إجمالي المسجلين</span>
-              <div className="text-2xl font-extrabold text-foreground mt-1 font-mono">{totalStudents}</div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-              <Users className="w-5 h-5" />
-            </div>
+      {/* Case 1: Initial Loading of Courses */}
+      {loadingCourses ? (
+        <div className="py-24 text-center space-y-3">
+          <Loader2 className="w-9 h-9 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto text-primary" />
+          <p className="text-sm font-medium text-muted-foreground">جاري تحميل الدورات والبيانات الأكاديمية...</p>
+        </div>
+      ) : courses.length === 0 ? (
+        /* Case 2: No courses created yet (Clear Empty State with Action) */
+        <div className="mt-8 p-10 sm:p-16 rounded-3xl bg-card border border-border/80 text-center max-w-2xl mx-auto space-y-4 shadow-sm">
+          <div className="w-16 h-16 rounded-3xl bg-primary/10 text-primary flex items-center justify-center mx-auto">
+            <GraduationCap className="w-8 h-8" />
           </div>
-
-          <div className="p-4 rounded-2xl bg-card border border-border/60 shadow-xs flex items-center justify-between">
-            <div>
-              <span className="text-xs text-muted-foreground font-medium">أكملوا الدورة بنجاح</span>
-              <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1 font-mono">{completedStudents}</div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-card border border-border/60 shadow-xs flex items-center justify-between">
-            <div>
-              <span className="text-xs text-muted-foreground font-medium">قيد التعلّم والمتابعة</span>
-              <div className="text-2xl font-extrabold text-primary mt-1 font-mono">{inProgressStudents}</div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-              <Clock className="w-5 h-5" />
-            </div>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-card border border-border/60 shadow-xs flex items-center justify-between">
-            <div>
-              <span className="text-xs text-muted-foreground font-medium">تسليمات بحاجة لمراجعة</span>
-              <div className="text-2xl font-extrabold text-amber-500 mt-1 font-mono">{pendingSubmissionsCount}</div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-              <FileText className="w-5 h-5" />
-            </div>
+          <h2 className="text-lg sm:text-xl font-bold text-foreground">
+            لم تقم بإنشاء أي دورة تدريبية بعد
+          </h2>
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+            للبدء في متابعة الطلاب، تصحيح التمارين بالذكاء الاصطناعي، وإصدار الشهادات المعتمدة، يجب أولاً إنشاء دورتك التدريبية الأولى ونشر دروسها.
+          </p>
+          <div className="pt-2">
+            <Link
+              to="/academy/courses"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-xs sm:text-sm hover:bg-primary/90 transition shadow-sm active:scale-[0.98]"
+            >
+              <GraduationCap className="w-4 h-4" />
+              <span>إدارة الدورات التدريبية وإنشاء دورة جديدة</span>
+            </Link>
           </div>
         </div>
-      )}
-
-      {/* Tabs Switcher: Students Progress vs Exercise Submissions */}
-      <div className="mt-8 flex items-center gap-2 border-b border-border/60 pb-3">
-        <button
-          onClick={() => setActiveTab("students")}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 ${
-            activeTab === "students"
-              ? "bg-primary text-primary-foreground shadow-xs"
-              : "text-muted-foreground hover:bg-muted"
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>سجل الطلاب ونسب الإنجاز ({students.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("submissions")}
-          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 ${
-            activeTab === "submissions"
-              ? "bg-primary text-primary-foreground shadow-xs"
-              : "text-muted-foreground hover:bg-muted"
-          }`}
-        >
-          <FileText className="w-4 h-4" />
-          <span>تسليمات التمارين العملية ({submissions.length})</span>
-          {pendingSubmissionsCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-mono">
-              {pendingSubmissionsCount}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* TAB 1: Students Progress Table */}
-      {activeTab === "students" && (
-        <div className="mt-6">
-          {loading ? (
-            <div className="py-16 text-center space-y-2">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-sm text-muted-foreground">جاري تحميل بيانات الطلاب...</p>
-            </div>
-          ) : students.length === 0 ? (
-            <div className="p-12 rounded-2xl sm:rounded-3xl bg-card border border-dashed border-border/80 text-center space-y-2 shadow-xs">
-              <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
-                <Users className="w-6 h-6" />
+      ) : (
+        /* Case 3: Courses Exist */
+        <>
+          {/* KPI Stats Bar */}
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="p-4 rounded-2xl bg-card border border-border/60 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-xs text-muted-foreground font-medium">إجمالي المسجلين</span>
+                <div className="text-2xl font-extrabold text-foreground mt-1 font-mono">{totalStudents}</div>
               </div>
-              <h3 className="text-sm font-bold text-foreground">لا يوجد طلاب مسجلين في هذه الدورة بعد</h3>
-              <p className="text-xs text-muted-foreground">
-                سيظهر هنا كل طالب فور شرائه الدورة من المتجر أو تسجيله عبر بوابة الطلاب.
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-2xl sm:rounded-3xl bg-card border border-border/60 overflow-hidden shadow-xs">
-              <div className="overflow-x-auto">
-                <table className="w-full text-right text-xs text-foreground">
-                  <thead className="bg-muted/50 border-b border-border/60 text-muted-foreground font-semibold">
-                    <tr>
-                      <th className="p-3.5 sm:p-4">اسم الطالب</th>
-                      <th className="p-3.5 sm:p-4">الهاتف / واتساب</th>
-                      <th className="p-3.5 sm:p-4">نسبة الإكمال</th>
-                      <th className="p-3.5 sm:p-4">الدروس المنجزة</th>
-                      <th className="p-3.5 sm:p-4">الشهادة</th>
-                      <th className="p-3.5 sm:p-4">انتهاء الاشتراك</th>
-                      <th className="p-3.5 sm:p-4">تاريخ التسجيل</th>
-                      <th className="p-3.5 sm:p-4 text-center">إجراءات</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/40">
-                    {students.map((st) => (
-                      <tr
-                        key={st.id}
-                        className={`hover:bg-muted/30 transition ${st.status === "SUSPENDED" ? "opacity-60" : ""}`}
-                      >
-                        <td className="p-3.5 sm:p-4 font-bold text-foreground">
-                          <div className="flex items-center gap-1.5">
-                            {st.status === "SUSPENDED" && (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20">
-                                موقوف
-                              </span>
-                            )}
-                            {st.isExpired && st.status !== "SUSPENDED" && (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                                منتهي
-                              </span>
-                            )}
-                            {st.studentName || "طالب"}
-                          </div>
-                        </td>
-                        <td className="p-3.5 sm:p-4 font-mono text-muted-foreground">{st.studentPhone || "—"}</td>
-                        <td className="p-3.5 sm:p-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-20 bg-muted rounded-full h-2 overflow-hidden">
-                              <div
-                                className="bg-primary h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${st.progressPercent}%` }}
-                              />
-                            </div>
-                            <span className="font-bold text-primary font-mono">{st.progressPercent}%</span>
-                          </div>
-                        </td>
-                        <td className="p-3.5 sm:p-4 text-muted-foreground font-mono">
-                          {st.completedLessonsCount} من {st.totalLessonsCount} درس
-                        </td>
-                        <td className="p-3.5 sm:p-4">
-                          {st.hasCertificate ? (
-                            <a
-                              href={`/api/v1/academy/certificates/${st.id}/view`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-500 hover:text-amber-600 dark:text-amber-400 hover:underline"
-                            >
-                              <Award className="w-3.5 h-3.5" />
-                              <span>معتمدة ({st.certificateNumber})</span>
-                            </a>
-                          ) : (
-                            <span className="text-[11px] text-muted-foreground">قيد التقدم</span>
-                          )}
-                        </td>
-                        <td className="p-3.5 sm:p-4 font-mono">
-                          {st.expiresAt ? (
-                            <span className={st.isExpired ? "text-rose-500 font-bold" : "text-muted-foreground"}>
-                              {new Date(st.expiresAt).toLocaleDateString("ar-EG")}
-                              {st.isExpired && " (منتهي)"}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground text-[11px]">مؤبد</span>
-                          )}
-                        </td>
-                        <td className="p-3.5 sm:p-4 text-muted-foreground font-mono">
-                          {new Date(st.enrolledAt).toLocaleDateString("ar-EG")}
-                        </td>
-                        <td className="p-3.5 sm:p-4 text-center">
-                          <button
-                            onClick={() => handleToggleSuspend(st)}
-                            disabled={suspending === st.id}
-                            title={st.status === "SUSPENDED" ? "إعادة تفعيل الاشتراك" : "إيقاف الاشتراك"}
-                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition disabled:opacity-50 ${
-                              st.status === "SUSPENDED"
-                                ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/20"
-                                : "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 border border-rose-500/20"
-                            }`}
-                          >
-                            {suspending === st.id ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : st.status === "SUSPENDED" ? (
-                              <RotateCcw className="w-3 h-3" />
-                            ) : (
-                              <Ban className="w-3 h-3" />
-                            )}
-                            <span>{st.status === "SUSPENDED" ? "تفعيل" : "إيقاف"}</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <Users className="w-5 h-5" />
               </div>
             </div>
-          )}
-        </div>
-      )}
 
-      {/* TAB 2: Exercise Submissions Table & Instructor Review Drawer */}
-      {activeTab === "submissions" && (
-        <div className="mt-6 space-y-4">
-          {/* Submissions Filter */}
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground font-medium">تصفية حسب الحالة:</span>
-              <div className="flex items-center gap-1.5">
-                {[
-                  { id: "ALL", label: "الكل" },
-                  { id: "PENDING", label: "معلق / قيد المراجعة" },
-                  { id: "ACCEPTED", label: "مقبول" },
-                  { id: "REJECTED", label: "مرفوض / ناقص" },
-                  { id: "NEEDS_MORE", label: "بحاجة لتوضيح" },
-                ].map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => setSubmissionFilter(f.id)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
-                      submissionFilter === f.id
-                        ? "bg-primary/10 text-primary border border-primary/30"
-                        : "bg-muted/40 text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
+            <div className="p-4 rounded-2xl bg-card border border-border/60 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-xs text-muted-foreground font-medium">أكملوا وحصلوا على شهادة</span>
+                <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1 font-mono">{completedStudents}</div>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5" />
               </div>
             </div>
-            <span className="text-xs text-muted-foreground font-mono">
-              {filteredSubmissions.length} تسليم
-            </span>
+
+            <div className="p-4 rounded-2xl bg-card border border-border/60 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-xs text-muted-foreground font-medium">قيد التعلم والمتابعة</span>
+                <div className="text-2xl font-extrabold text-primary mt-1 font-mono">{inProgressStudents}</div>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <Clock className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-card border border-border/60 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-xs text-muted-foreground font-medium">تسليمات بحاجة لمراجعة</span>
+                <div className="text-2xl font-extrabold text-amber-500 mt-1 font-mono">{pendingSubmissionsCount}</div>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                <FileText className="w-5 h-5" />
+              </div>
+            </div>
           </div>
 
-          {loadingSubmissions ? (
-            <div className="py-16 text-center space-y-2">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-sm text-muted-foreground">جاري تحميل تسليمات التمارين...</p>
-            </div>
-          ) : filteredSubmissions.length === 0 ? (
-            <div className="p-12 rounded-2xl sm:rounded-3xl bg-card border border-dashed border-border/80 text-center space-y-2 shadow-xs">
-              <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
-                <FileText className="w-6 h-6" />
-              </div>
-              <h3 className="text-sm font-bold text-foreground">لا توجد تسليمات تطابق الفلتر المحدد</h3>
-              <p className="text-xs text-muted-foreground">
-                تظهر هنا حلول الطلاب للتمارين فور إرسالها للتقييم الآلي.
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-2xl sm:rounded-3xl bg-card border border-border/60 overflow-hidden shadow-xs">
-              <div className="overflow-x-auto">
-                <table className="w-full text-right text-xs text-foreground">
-                  <thead className="bg-muted/50 border-b border-border/60 text-muted-foreground font-semibold">
-                    <tr>
-                      <th className="p-3.5 sm:p-4">الطالب</th>
-                      <th className="p-3.5 sm:p-4">الدرس</th>
-                      <th className="p-3.5 sm:p-4">حالة المصحح الذكي</th>
-                      <th className="p-3.5 sm:p-4">رأي المصحح</th>
-                      <th className="p-3.5 sm:p-4">تاريخ التسليم</th>
-                      <th className="p-3.5 sm:p-4 text-center">إجراءات المراجعة</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/40">
-                    {filteredSubmissions.map((sub) => {
-                      const verdict = sub.status;
-                      const ai = sub.aiVerdictJson;
+          {/* Tabs Switcher: Students Progress vs Exercise Submissions */}
+          <div className="mt-8 flex items-center gap-2 border-b border-border/60 pb-3">
+            <button
+              onClick={() => setActiveTab("students")}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 ${
+                activeTab === "students"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>سجل الطلاب ونسب الإنجاز ({students.length})</span>
+            </button>
 
-                      return (
-                        <tr key={sub.id} className="hover:bg-muted/30 transition">
-                          <td className="p-3.5 sm:p-4 font-bold text-foreground">
-                            <div>{sub.studentName || "طالب"}</div>
-                            {sub.studentPhone && (
-                              <div className="text-[10px] text-muted-foreground font-mono">{sub.studentPhone}</div>
-                            )}
-                          </td>
-                          <td className="p-3.5 sm:p-4 font-medium text-foreground">
-                            {sub.lessonTitle || `درس ${sub.lessonSortOrder || ""}`}
-                          </td>
-                          <td className="p-3.5 sm:p-4">
-                            <span
-                              className={`px-2.5 py-1 rounded-full text-[11px] font-bold inline-flex items-center gap-1 ${
-                                verdict === "ACCEPTED"
-                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
-                                  : verdict === "REJECTED"
-                                  ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30"
-                                  : verdict === "NEEDS_MORE"
-                                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30"
-                                  : "bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30"
-                              }`}
-                            >
-                              {verdict === "ACCEPTED" && <Check className="w-3 h-3" />}
-                              {verdict === "REJECTED" && <X className="w-3 h-3" />}
-                              <span>
-                                {verdict === "ACCEPTED"
-                                  ? "مقبول"
-                                  : verdict === "REJECTED"
-                                  ? "ناقص / مرفوض"
-                                  : verdict === "NEEDS_MORE"
-                                  ? "بحاجة لتوضيح"
-                                  : "معلق"}
-                              </span>
-                            </span>
-                          </td>
-                          <td className="p-3.5 sm:p-4 max-w-xs text-muted-foreground truncate" title={ai?.coachLine}>
-                            {ai?.coachLine || sub.aiFeedback || "—"}
-                          </td>
-                          <td className="p-3.5 sm:p-4 text-muted-foreground font-mono">
-                            {new Date(sub.createdAt).toLocaleDateString("ar-EG")}
-                          </td>
-                          <td className="p-3.5 sm:p-4 text-center">
-                            <button
-                              onClick={() => handleOpenReview(sub)}
-                              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-primary/10 text-primary hover:bg-primary/20 border border-primary/25 transition shadow-xs"
-                            >
-                              فحص واعتماد
-                            </button>
-                          </td>
+            <button
+              onClick={() => setActiveTab("submissions")}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 ${
+                activeTab === "submissions"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              <span>تسليمات التمارين العملية ({submissions.length})</span>
+              {pendingSubmissionsCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-mono">
+                  {pendingSubmissionsCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* TAB 1: Students Progress Table */}
+          {activeTab === "students" && (
+            <div className="mt-6 space-y-4">
+              {/* Search & Filter Toolbar */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="ابحث بالاسم أو رقم الهاتف..."
+                    className="w-full pr-9 pl-3 py-2 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                  <span className="text-xs text-muted-foreground font-medium ml-1 flex-shrink-0">الحالة:</span>
+                  {[
+                    { id: "ALL", label: "الكل" },
+                    { id: "ACTIVE", label: "نشط" },
+                    { id: "COMPLETED", label: "مكتمل" },
+                    { id: "SUSPENDED", label: "موقوف" },
+                    { id: "EXPIRED", label: "منتهي" },
+                  ].map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => setStatusFilter(f.id as any)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+                        statusFilter === f.id
+                          ? "bg-primary text-primary-foreground shadow-xs"
+                          : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {loadingStudents ? (
+                <div className="py-16 text-center space-y-2">
+                  <Loader2 className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto text-primary" />
+                  <p className="text-sm text-muted-foreground">جاري تحميل بيانات الطلاب...</p>
+                </div>
+              ) : filteredStudents.length === 0 ? (
+                <div className="p-12 rounded-2xl sm:rounded-3xl bg-card border border-dashed border-border/80 text-center space-y-2 shadow-xs">
+                  <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-sm font-bold text-foreground">
+                    {searchQuery || statusFilter !== "ALL"
+                      ? "لا توجد نتائج مطابقة لمعايير البحث والتصفية"
+                      : "لا يوجد طلاب مسجلين في هذه الدورة بعد"}
+                  </h3>
+                  <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                    {searchQuery || statusFilter !== "ALL"
+                      ? "جرّب تغيير كلمات البحث أو مسح الفلتر لإظهار بقية الطلاب."
+                      : "يمكنك إضافة طالب يدوياً الآن أو انتظار تسجيل الطلاب عبر المتجر أو رابط الكورس."}
+                  </p>
+                  {(!searchQuery && statusFilter === "ALL") && (
+                    <button
+                      onClick={() => setIsEnrollModalOpen(true)}
+                      className="mt-3 px-4 py-2 rounded-xl text-xs font-bold bg-primary text-primary-foreground shadow-xs hover:bg-primary/90"
+                    >
+                      تسجيل أول طالب الآن
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-2xl sm:rounded-3xl bg-card border border-border/60 overflow-hidden shadow-xs">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-right text-xs text-foreground">
+                      <thead className="bg-muted/50 border-b border-border/60 text-muted-foreground font-semibold">
+                        <tr>
+                          <th className="p-3.5 sm:p-4">اسم الطالب</th>
+                          <th className="p-3.5 sm:p-4">الهاتف / واتساب</th>
+                          <th className="p-3.5 sm:p-4">نسبة الإكمال</th>
+                          <th className="p-3.5 sm:p-4">الدروس المنجزة</th>
+                          <th className="p-3.5 sm:p-4">الشهادة</th>
+                          <th className="p-3.5 sm:p-4">انتهاء الاشتراك</th>
+                          <th className="p-3.5 sm:p-4">تاريخ التسجيل</th>
+                          <th className="p-3.5 sm:p-4 text-center">إجراءات</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                      </thead>
+                      <tbody className="divide-y divide-border/40">
+                        {filteredStudents.map((st) => {
+                          const waLink = getWhatsAppLink(st.studentPhone);
+
+                          return (
+                            <tr
+                              key={st.id}
+                              className={`hover:bg-muted/30 transition ${st.status === "SUSPENDED" ? "opacity-60 bg-muted/20" : ""}`}
+                            >
+                              <td className="p-3.5 sm:p-4 font-bold text-foreground">
+                                <div className="flex items-center gap-1.5">
+                                  {st.status === "SUSPENDED" && (
+                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                                      موقوف
+                                    </span>
+                                  )}
+                                  {st.isExpired && st.status !== "SUSPENDED" && (
+                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                                      منتهي
+                                    </span>
+                                  )}
+                                  <div>
+                                    <div>{st.studentName || "طالب"}</div>
+                                    {st.studentEmail && (
+                                      <div className="text-[10px] text-muted-foreground font-normal">{st.studentEmail}</div>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+
+                              <td className="p-3.5 sm:p-4 font-mono text-muted-foreground">
+                                {st.studentPhone ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <span>{st.studentPhone}</span>
+                                    {waLink && (
+                                      <a
+                                        href={waLink}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        title="مراسلة عبر واتساب"
+                                        className="p-1 rounded-md text-emerald-600 hover:bg-emerald-500/10 transition"
+                                      >
+                                        <MessageCircle className="w-3.5 h-3.5" />
+                                      </a>
+                                    )}
+                                  </div>
+                                ) : (
+                                  "—"
+                                )}
+                              </td>
+
+                              <td className="p-3.5 sm:p-4">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-20 bg-muted rounded-full h-2 overflow-hidden">
+                                    <div
+                                      className="bg-primary h-2 rounded-full transition-all duration-300"
+                                      style={{ width: `${st.progressPercent}%` }}
+                                    />
+                                  </div>
+                                  <span className="font-bold text-primary font-mono">{st.progressPercent}%</span>
+                                </div>
+                              </td>
+
+                              <td className="p-3.5 sm:p-4 text-muted-foreground font-mono">
+                                {st.completedLessonsCount} من {st.totalLessonsCount} درس
+                              </td>
+
+                              <td className="p-3.5 sm:p-4">
+                                {st.hasCertificate ? (
+                                  <a
+                                    href={`/api/v1/academy/certificates/${st.id}/view`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-500 hover:text-amber-600 dark:text-amber-400 hover:underline"
+                                  >
+                                    <Award className="w-3.5 h-3.5" />
+                                    <span>معتمدة ({st.certificateNumber})</span>
+                                  </a>
+                                ) : (
+                                  <span className="text-[11px] text-muted-foreground">قيد التقدم</span>
+                                )}
+                              </td>
+
+                              <td className="p-3.5 sm:p-4 font-mono">
+                                {st.expiresAt ? (
+                                  <span className={st.isExpired ? "text-rose-500 font-bold" : "text-muted-foreground"}>
+                                    {new Date(st.expiresAt).toLocaleDateString("ar-EG")}
+                                    {st.isExpired && " (منتهي)"}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground text-[11px]">مؤبد</span>
+                                )}
+                              </td>
+
+                              <td className="p-3.5 sm:p-4 text-muted-foreground font-mono">
+                                {new Date(st.enrolledAt).toLocaleDateString("ar-EG")}
+                              </td>
+
+                              <td className="p-3.5 sm:p-4 text-center">
+                                <button
+                                  onClick={() => handleToggleSuspend(st)}
+                                  disabled={suspendingId === st.id}
+                                  title={st.status === "SUSPENDED" ? "إعادة تفعيل الاشتراك" : "إيقاف الاشتراك"}
+                                  className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition disabled:opacity-50 ${
+                                    st.status === "SUSPENDED"
+                                      ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/20"
+                                      : "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 border border-rose-500/20"
+                                  }`}
+                                >
+                                  {suspendingId === st.id ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : st.status === "SUSPENDED" ? (
+                                    <RotateCcw className="w-3 h-3" />
+                                  ) : (
+                                    <Ban className="w-3 h-3" />
+                                  )}
+                                  <span>{st.status === "SUSPENDED" ? "تفعيل" : "إيقاف"}</span>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
+
+          {/* TAB 2: Exercise Submissions Table & Instructor Review Drawer */}
+          {activeTab === "submissions" && (
+            <div className="mt-6 space-y-4">
+              {/* Submissions Filter */}
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground font-medium">تصفية حسب الحالة:</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[
+                      { id: "ALL", label: "الكل" },
+                      { id: "PENDING", label: "معلق / قيد المراجعة" },
+                      { id: "ACCEPTED", label: "مقبول" },
+                      { id: "REJECTED", label: "مرفوض / ناقص" },
+                      { id: "NEEDS_MORE", label: "بحاجة لتوضيح" },
+                    ].map((f) => (
+                      <button
+                        key={f.id}
+                        onClick={() => setSubmissionFilter(f.id)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+                          submissionFilter === f.id
+                            ? "bg-primary/10 text-primary border border-primary/30"
+                            : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <span className="text-xs text-muted-foreground font-mono">
+                  {filteredSubmissions.length} تسليم
+                </span>
+              </div>
+
+              {loadingSubmissions ? (
+                <div className="py-16 text-center space-y-2">
+                  <Loader2 className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto text-primary" />
+                  <p className="text-sm text-muted-foreground">جاري تحميل تسليمات التمارين...</p>
+                </div>
+              ) : filteredSubmissions.length === 0 ? (
+                <div className="p-12 rounded-2xl sm:rounded-3xl bg-card border border-dashed border-border/80 text-center space-y-2 shadow-xs">
+                  <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-sm font-bold text-foreground">لا توجد تسليمات تطابق الفلتر المحدد</h3>
+                  <p className="text-xs text-muted-foreground">
+                    تظهر هنا حلول الطلاب للتمارين فور إرسالها للتقييم والمراجعة.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-2xl sm:rounded-3xl bg-card border border-border/60 overflow-hidden shadow-xs">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-right text-xs text-foreground">
+                      <thead className="bg-muted/50 border-b border-border/60 text-muted-foreground font-semibold">
+                        <tr>
+                          <th className="p-3.5 sm:p-4">الطالب</th>
+                          <th className="p-3.5 sm:p-4">الدرس</th>
+                          <th className="p-3.5 sm:p-4">حالة المصحح الذكي</th>
+                          <th className="p-3.5 sm:p-4">رأي المصحح</th>
+                          <th className="p-3.5 sm:p-4">تاريخ التسليم</th>
+                          <th className="p-3.5 sm:p-4 text-center">إجراءات المراجعة</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/40">
+                        {filteredSubmissions.map((sub) => {
+                          const verdict = sub.status;
+                          const ai = sub.aiVerdictJson;
+
+                          return (
+                            <tr key={sub.id} className="hover:bg-muted/30 transition">
+                              <td className="p-3.5 sm:p-4 font-bold text-foreground">
+                                <div>{sub.studentName || "طالب"}</div>
+                                {sub.studentPhone && (
+                                  <div className="text-[10px] text-muted-foreground font-mono">{sub.studentPhone}</div>
+                                )}
+                              </td>
+                              <td className="p-3.5 sm:p-4 font-medium text-foreground">
+                                {sub.lessonTitle || `درس ${sub.lessonSortOrder || ""}`}
+                              </td>
+                              <td className="p-3.5 sm:p-4">
+                                <span
+                                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold inline-flex items-center gap-1 ${
+                                    verdict === "ACCEPTED"
+                                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                                      : verdict === "REJECTED"
+                                      ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30"
+                                      : verdict === "NEEDS_MORE"
+                                      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                                      : "bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30"
+                                  }`}
+                                >
+                                  {verdict === "ACCEPTED" && <Check className="w-3 h-3" />}
+                                  {verdict === "REJECTED" && <X className="w-3 h-3" />}
+                                  <span>
+                                    {verdict === "ACCEPTED"
+                                      ? "مقبول"
+                                      : verdict === "REJECTED"
+                                      ? "ناقص / مرفوض"
+                                      : verdict === "NEEDS_MORE"
+                                      ? "بحاجة لتوضيح"
+                                      : "معلق"}
+                                  </span>
+                                </span>
+                              </td>
+                              <td className="p-3.5 sm:p-4 max-w-xs text-muted-foreground truncate" title={ai?.coachLine}>
+                                {ai?.coachLine || sub.aiFeedback || "—"}
+                              </td>
+                              <td className="p-3.5 sm:p-4 text-muted-foreground font-mono">
+                                {new Date(sub.createdAt).toLocaleDateString("ar-EG")}
+                              </td>
+                              <td className="p-3.5 sm:p-4 text-center">
+                                <button
+                                  onClick={() => handleOpenReview(sub)}
+                                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-primary/10 text-primary hover:bg-primary/20 border border-primary/25 transition shadow-xs"
+                                >
+                                  فحص واعتماد
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Manual Student Enrollment Modal */}
+      {isEnrollModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6" dir="rtl">
+          <div className="bg-card border border-border/80 rounded-2xl sm:rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <h3 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-primary" />
+                <span>تسجيل طالب يدوياً في الدورة</span>
+              </h3>
+              <button
+                onClick={() => setIsEnrollModalOpen(false)}
+                className="p-1.5 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleManualEnroll} className="space-y-3.5">
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1">اسم الطالب *</label>
+                <input
+                  type="text"
+                  required
+                  value={newStudentName}
+                  onChange={(e) => setNewStudentName(e.target.value)}
+                  placeholder="مثال: محمد عبد الله"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1">رقم الهاتف / واتساب *</label>
+                <input
+                  type="tel"
+                  required
+                  value={newStudentPhone}
+                  onChange={(e) => setNewStudentPhone(e.target.value)}
+                  placeholder="010XXXXXXXX"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1">البريد الإلكتروني (اختياري)</label>
+                <input
+                  type="email"
+                  value={newStudentEmail}
+                  onChange={(e) => setNewStudentEmail(e.target.value)}
+                  placeholder="student@example.com"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1">مدة الاشتراك بالأيام (اتركه فارغاً للاشتراك المؤبد)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={newStudentDays}
+                  onChange={(e) => setNewStudentDays(e.target.value)}
+                  placeholder="مثال: 90 أو 365"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs font-mono"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/60">
+                <button
+                  type="button"
+                  onClick={() => setIsEnrollModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:bg-muted transition"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEnrollingManual}
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-xs disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {isEnrollingManual && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>تأكيد التسجيل</span>
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -644,31 +961,43 @@ export default function AcademyStudentsPage() {
 
               <button
                 type="button"
-                disabled={reviewing}
+                disabled={reviewingAction !== null}
                 onClick={() => handleSaveReview("REJECTED")}
                 className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-xs transition disabled:opacity-50 flex items-center gap-1.5"
               >
-                <X className="w-3.5 h-3.5" />
+                {reviewingAction === "REJECTED" ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <X className="w-3.5 h-3.5" />
+                )}
                 <span>طلب إعادة وتعديل (رفض)</span>
               </button>
 
               <button
                 type="button"
-                disabled={reviewing}
+                disabled={reviewingAction !== null}
                 onClick={() => handleSaveReview("NEEDS_MORE")}
                 className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-xs transition disabled:opacity-50 flex items-center gap-1.5"
               >
-                <AlertCircle className="w-3.5 h-3.5" />
+                {reviewingAction === "NEEDS_MORE" ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <AlertCircle className="w-3.5 h-3.5" />
+                )}
                 <span>طلب توضيح إضافي</span>
               </button>
 
               <button
                 type="button"
-                disabled={reviewing}
+                disabled={reviewingAction !== null}
                 onClick={() => handleSaveReview("ACCEPTED")}
                 className="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition disabled:opacity-50 flex items-center gap-1.5"
               >
-                {reviewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                {reviewingAction === "ACCEPTED" ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4" />
+                )}
                 <span>اعتماد وقبول التسليم</span>
               </button>
             </div>

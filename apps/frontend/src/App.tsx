@@ -8388,9 +8388,7 @@ const AppContent = () => {
                   path="/academy/catalog"
                   element={
                     <Layout fullWidth>
-                      <AppAccessRoute requiredAppSlugs={['academy-app']}>
-                        <AcademyCatalogPage />
-                      </AppAccessRoute>
+                      <AcademyCatalogPage />
                     </Layout>
                   }
                 />
@@ -8398,9 +8396,7 @@ const AppContent = () => {
                   path="/academy/catalog/:courseId"
                   element={
                     <Layout fullWidth>
-                      <AppAccessRoute requiredAppSlugs={['academy-app']}>
-                        <AcademyLessonViewerPage />
-                      </AppAccessRoute>
+                      <AcademyLessonViewerPage />
                     </Layout>
                   }
                 />
@@ -8408,9 +8404,7 @@ const AppContent = () => {
                   path="/academy/catalog/:courseId/lessons/:lessonId"
                   element={
                     <Layout fullWidth>
-                      <AppAccessRoute requiredAppSlugs={['academy-app']}>
-                        <AcademyLessonViewerPage />
-                      </AppAccessRoute>
+                      <AcademyLessonViewerPage />
                     </Layout>
                   }
                 />
