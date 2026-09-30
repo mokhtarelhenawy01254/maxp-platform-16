@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { extractOrderCustomFields, cleanNotesWithoutCustomFields } from "../orderCustomFields";
+import {
+  extractOrderCustomFields,
+  cleanNotesWithoutCustomFields,
+  resolveCustomFieldsForDisplay,
+} from "../orderCustomFields";
 
 describe("extractOrderCustomFields", () => {
   it("returns empty array when source is null or empty", () => {
@@ -100,6 +104,55 @@ describe("cleanNotesWithoutCustomFields", () => {
     ]);
     const cleaned = cleanNotesWithoutCustomFields(bulkInvoiceData.order.notes, fields);
     expect(cleaned).toBe("");
+  });
+});
+
+describe("resolveCustomFieldsForDisplay", () => {
+  const sampleOrder = {
+    orderNumber: "ORD-505",
+    notes: "تفاصيل الطلب: نوع وموديل وسنة صنع السيارة: هيونداي توسان 2022\nرقم هاتف بديل 01005053064",
+    metadata: {
+      carModel: "هيونداي توسان 2022",
+    },
+  };
+
+  it("when showCustomFields is false (store without custom fields), returns empty customFields and preserves raw notes intact", () => {
+    const result = resolveCustomFieldsForDisplay(sampleOrder, {
+      showCustomFields: false,
+    });
+
+    expect(result.isEnabled).toBe(false);
+    expect(result.customFields).toEqual([]);
+    expect(result.displayNotes).toContain("رقم هاتف بديل 01005053064");
+    expect(result.displayNotes).toBe(sampleOrder.notes);
+  });
+
+  it("when showCustomFields is true, extracts custom fields and cleans notes while preserving customer remarks", () => {
+    const result = resolveCustomFieldsForDisplay(sampleOrder, {
+      showCustomFields: true,
+    });
+
+    expect(result.isEnabled).toBe(true);
+    expect(result.customFields.length).toBeGreaterThan(0);
+    expect(result.customFields[0].value).toBe("هيونداي توسان 2022");
+    expect(result.displayNotes).toBe("رقم هاتف بديل 01005053064");
+    expect(result.displayNotes).not.toContain("هيونداي");
+  });
+
+  it("uses custom configured label when specified in options", () => {
+    const orderWithCustomNotes = {
+      notes: "تفاصيل الطلب: مقاس الخاتم: 18\nيرجى التوصيل للمنزل",
+    };
+    const result = resolveCustomFieldsForDisplay(orderWithCustomNotes, {
+      showCustomFields: true,
+      defaultLabel: "مقاس الخاتم",
+    });
+
+    expect(result.isEnabled).toBe(true);
+    expect(result.customFields).toEqual([
+      { label: "مقاس الخاتم", value: "18" },
+    ]);
+    expect(result.displayNotes).toBe("يرجى التوصيل للمنزل");
   });
 });
 

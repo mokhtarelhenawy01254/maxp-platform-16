@@ -3,10 +3,21 @@ export interface OrderCustomFieldEntry {
   value: string;
 }
 
-export function extractOrderCustomFields(source: any): OrderCustomFieldEntry[] {
+export interface ExtractOrderCustomFieldsOptions {
+  defaultLabel?: string;
+}
+
+export function extractOrderCustomFields(
+  source: any,
+  options?: ExtractOrderCustomFieldsOptions | string,
+): OrderCustomFieldEntry[] {
   if (!source) return [];
   const entries: OrderCustomFieldEntry[] = [];
   const seenKeys = new Set<string>();
+
+  const configuredFallbackLabel =
+    (typeof options === "string" ? options : options?.defaultLabel)?.trim() || "";
+  const defaultFallbackLabel = configuredFallbackLabel || "نوع وموديل وسنة صنع السيارة";
 
   const addEntry = (label: string, value: string) => {
     const cleanLabel = String(label || "").trim();
@@ -70,10 +81,10 @@ export function extractOrderCustomFields(source: any): OrderCustomFieldEntry[] {
 
     // Specific known keys like carModel / car_model
     if (metadata.carModel && typeof metadata.carModel === "string") {
-      addEntry("نوع وموديل وسنة صنع السيارة", metadata.carModel);
+      addEntry(defaultFallbackLabel, metadata.carModel);
     }
     if (metadata.car_model && typeof metadata.car_model === "string") {
-      addEntry("نوع وموديل وسنة صنع السيارة", metadata.car_model);
+      addEntry(defaultFallbackLabel, metadata.car_model);
     }
   }
 
@@ -99,7 +110,7 @@ export function extractOrderCustomFields(source: any): OrderCustomFieldEntry[] {
           const value = parts.slice(1).join("-").trim();
           addEntry(label, value);
         } else {
-          addEntry("مواصفات وتفاصيل الطلب", afterPrefix);
+          addEntry(configuredFallbackLabel || "مواصفات وتفاصيل الطلب", afterPrefix);
         }
       } else if (
         line.includes("سيار") ||
@@ -110,7 +121,7 @@ export function extractOrderCustomFields(source: any): OrderCustomFieldEntry[] {
           const [lbl, ...val] = line.split(":");
           addEntry(lbl.trim(), val.join(":").trim());
         } else {
-          addEntry("نوع وموديل وسنة صنع السيارة", line);
+          addEntry(defaultFallbackLabel, line);
         }
       }
     }
@@ -159,4 +170,42 @@ export function cleanNotesWithoutCustomFields(
   });
 
   return filteredLines.join("\n").trim();
+}
+
+export interface OrderCustomFieldsDisplayResult {
+  isEnabled: boolean;
+  customFields: OrderCustomFieldEntry[];
+  displayNotes: string;
+}
+
+/**
+ * Single source of truth for Order Details, Invoice, and Shipping Label.
+ * Determines custom fields and notes for display according to the enabled setting.
+ */
+export function resolveCustomFieldsForDisplay(
+  source: any,
+  options?: {
+    showCustomFields?: boolean;
+    defaultLabel?: string;
+  },
+): OrderCustomFieldsDisplayResult {
+  const isEnabled = options?.showCustomFields === true;
+  const rawNotes = String(source?.notes || source?.order?.notes || "").trim();
+
+  if (!isEnabled) {
+    return {
+      isEnabled: false,
+      customFields: [],
+      displayNotes: rawNotes,
+    };
+  }
+
+  const customFields = extractOrderCustomFields(source, options?.defaultLabel);
+  const displayNotes = cleanNotesWithoutCustomFields(rawNotes, customFields);
+
+  return {
+    isEnabled: true,
+    customFields,
+    displayNotes,
+  };
 }
