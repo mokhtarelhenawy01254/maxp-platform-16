@@ -5,6 +5,7 @@ import { ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 import type { SidebarSection } from '../../../types/layout';
 import { useAuth } from '../../../hooks/useAuthSimple';
 import { buildStoreUrl } from '../../../utils/storeUrl';
+import { isSidebarPathActive } from '../sidebar/matchSidebarPath';
 
 interface AppSidebarProps {
   appName: string;
@@ -66,11 +67,8 @@ const AppSidebarInner: React.FC<AppSidebarProps> = ({
       : to;
   };
 
-  const isActive = (path: string) => {
-    const current = normalizeRoute(`${location.pathname}${location.search}`);
-    const target = normalizeRoute(path);
-    return current === target || current.startsWith(`${target}/`);
-  };
+  const isActive = (path: string) =>
+    isSidebarPathActive(`${location.pathname}${location.search}`, path);
 
   useEffect(() => {
     if (!navRef.current) return;

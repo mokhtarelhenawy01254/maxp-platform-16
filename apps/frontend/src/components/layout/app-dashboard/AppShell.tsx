@@ -5,6 +5,7 @@ import { Bars3Icon, ArrowUturnLeftIcon, ChartBarIcon } from '@heroicons/react/24
 import AppSidebar from './AppSidebar';
 import AdminBottomNav from './AdminBottomNav';
 import { sectionHasVisibleItems, isChatRoute } from './helpers';
+import { isSidebarPathActive } from '../sidebar/matchSidebarPath';
 import { getAppById, APP_REGISTRY } from '../../../config/appRegistry';
 import type { AppDefinition } from '../../../config/appRegistry';
 import type { SidebarItem, SidebarSection } from '../../../types/layout';
@@ -154,9 +155,12 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
           break;
         }
 
-        if (normalizedCurrent.startsWith(itemPath + '/')) {
+        if (
+          normalizedCurrent.startsWith(itemPath + '/') &&
+          isSidebarPathActive(normalizedCurrent, itemPath) &&
+          (!parentPath || itemPath.length > parentPath.length)
+        ) {
           parentPath = itemPath;
-          break;
         }
 
         if (item.children) {
@@ -164,14 +168,15 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
             if (child.hidden) continue;
             const childPath = normalizePathname(child.to);
             if (normalizedCurrent.startsWith(childPath + '/') || normalizedCurrent === childPath) {
-              parentPath = itemPath;
+              if (!parentPath || itemPath.length > parentPath.length) {
+                parentPath = itemPath;
+              }
               break;
             }
           }
-          if (parentPath) break;
         }
       }
-      if (exactMatch || parentPath !== null) break;
+      if (exactMatch) break;
     }
 
     if (parentPath) {
@@ -298,16 +303,8 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
 
 const normalizePathname = (path: string): string => path.split('?')[0]?.replace(/\/+$/, '') || '/';
 
-const itemMatchesPath = (item: SidebarItem, pathname: string): boolean => {
-  const target = normalizePathname(item.to);
-  const current = normalizePathname(pathname);
-
-  if (target === '/') {
-    return current === target;
-  }
-
-  return current === target || current.startsWith(`${target}/`);
-};
+const itemMatchesPath = (item: SidebarItem, pathname: string): boolean =>
+  isSidebarPathActive(pathname, item.to);
 
 const itemOrChildrenMatchPath = (item: SidebarItem, pathname: string): boolean => {
   if (item.hidden || item.external) return false;
@@ -344,20 +341,22 @@ export const getAppByPath = (
 ): AppDefinition | undefined => {
   const normalized = normalizePathname(pathname);
 
-  // 1. Exact item path match
-  const exactSection = allSections.find(
-    (candidate) => !candidate.hidden && candidate.items.some((item) => !item.hidden && normalizePathname(item.to) === normalized)
-  );
-  if (exactSection) {
-    return buildAppFromSection(exactSection);
-  }
-
-  // 2. Direct section prefix match (e.g. /inventory/* matches section 'inventory', /products/* matches section 'products')
+  // 1. Direct section prefix match when that section actually owns a matching item via isSidebarPathActive
+  // (e.g. /inventory/studio matches section 'inventory' rather than duplicate shortcut in 'products',
+  // while /settings/store/tools/* does NOT match 'settings' because '/settings' is a baseDashboardPath)
   const directSection = allSections.find(
     (s) => !s.hidden && (normalized === `/${s.id}` || normalized.startsWith(`/${s.id}/`))
   );
   if (directSection && directSection.items.some((item) => itemOrChildrenMatchPath(item, pathname))) {
     return buildAppFromSection(directSection);
+  }
+
+  // 2. Exact item path match
+  const exactSection = allSections.find(
+    (candidate) => !candidate.hidden && candidate.items.some((item) => !item.hidden && normalizePathname(item.to) === normalized)
+  );
+  if (exactSection) {
+    return buildAppFromSection(exactSection);
   }
 
   // 3. General section match

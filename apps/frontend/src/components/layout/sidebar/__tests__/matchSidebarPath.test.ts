@@ -20,6 +20,9 @@ describe("isSidebarPathActive helper", () => {
   it("returns false on base dashboards sub-paths to prevent duplicate highlighting", () => {
     expect(isSidebarPathActive("/hr/employees", "/hr")).toBe(false);
     expect(isSidebarPathActive("/admin/booking/doctors", "/admin/booking")).toBe(false);
+    expect(isSidebarPathActive("/settings/store/tools/boughtTogether", "/settings")).toBe(false);
+    expect(isSidebarPathActive("/settings/store/tools/boughtTogether", "/settings/store")).toBe(false);
+    expect(isSidebarPathActive("/settings/store/tools/boughtTogether", "/settings/store/tools")).toBe(true);
   });
 
   it("respects search query parameters when present on target", () => {

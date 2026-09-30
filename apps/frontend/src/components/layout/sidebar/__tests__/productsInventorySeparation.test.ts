@@ -78,5 +78,12 @@ describe('Products & Inventory Navigation Separation', () => {
     // Crucial check: /inventory/studio MUST resolve to inventory, NOT products!
     const studioApp = getAppByPath('/inventory/studio', sections);
     expect(studioApp?.id).toBe('inventory');
+
+    // Crucial check: /settings/store/tools/:toolId MUST resolve to storefront-design, NOT settings!
+    const conversionToolsApp = getAppByPath('/settings/store/tools', sections);
+    expect(conversionToolsApp?.id).toBe('storefront-design');
+
+    const boughtTogetherApp = getAppByPath('/settings/store/tools/boughtTogether', sections);
+    expect(boughtTogetherApp?.id).toBe('storefront-design');
   });
 });

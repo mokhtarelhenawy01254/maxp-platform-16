@@ -34,6 +34,7 @@ export const isSidebarPathActive = (
   const baseDashboardPaths = [
     "/",
     "/settings",
+    "/settings/store",
     "/hr",
     "/admin/booking",
     "/admin/education"
