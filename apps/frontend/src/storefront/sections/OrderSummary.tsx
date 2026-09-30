@@ -1535,7 +1535,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
           {walletDiscount > 0 && walletPaymentSettings?.showDiscountBadge !== false ? (
             <div className="flex justify-between text-foreground">
               <span className="inline-flex items-center gap-1.5 text-[#6f6455]">
-                <Tag className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                <span>🏷️</span>
                 <span>خصم الدفع الإلكتروني ({walletDiscountPercent}%)</span>
               </span>
               <span className="text-emerald-600">

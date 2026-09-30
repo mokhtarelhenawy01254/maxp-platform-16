@@ -267,7 +267,8 @@ describe('PdpQuickOrderForm wallet payment method visibility', () => {
       </MemoryRouter>
     );
 
-    // Verify discount badge text appears
+    // Verify discount badge text and tag icon appear
     expect(screen.getByText(/خصم 10%/i)).toBeTruthy();
+    expect(screen.getByText(/🏷️/)).toBeTruthy();
   });
 });

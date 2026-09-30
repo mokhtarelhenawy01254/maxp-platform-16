@@ -207,12 +207,8 @@ elif [ -d "$DEPLOY_STAGING/frontend/dist" ]; then
   echo "📦 Moving frontend files from old staging format..."
   sync_frontend_dist "$DEPLOY_STAGING/frontend/dist"
   echo "✅ Frontend moved successfully"
-elif [ -d "/var/www/frontend/dist" ]; then
-  echo "📦 Moving frontend files from legacy location..."
-  sync_frontend_dist "/var/www/frontend/dist"
-  echo "✅ Frontend moved successfully from legacy"
 else
-  echo "⚠️ Frontend files not found, skipping..."
+  echo "ℹ️ No frontend changes in this deployment, keeping active /var/www/frontend2/dist intact"
 fi
 
 # Clean up legacy frontend directory unconditionally

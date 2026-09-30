@@ -2358,7 +2358,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                                 : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200"
                             }`}
                           >
-                            <Tag className="h-2.5 w-2.5 shrink-0" />
+                            <span>🏷️</span>
                             <span>خصم {walletDiscountPercent}%</span>
                           </span>
                         ) : null}
@@ -2383,7 +2383,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                                 : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200"
                             }`}
                           >
-                            <Tag className="h-2.5 w-2.5 shrink-0" />
+                            <span>🏷️</span>
                             <span>خصم {walletDiscountPercent}%</span>
                           </span>
                         ) : null}
