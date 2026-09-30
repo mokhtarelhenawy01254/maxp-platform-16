@@ -2083,6 +2083,29 @@ class OrderService {
             const dropshippingService = require('./dropshippingService');
             const prisma = this.getPrisma();
 
+            // ─── أكاديمية: تسجيل تلقائي عند تأكيد طلب منتج مرتبط بكورس ─────
+            try {
+              const academyService = require('./academyService');
+              const orderItems = order.orderItems || [];
+              for (const item of orderItems) {
+                const productId = item.productId || item.product?.id;
+                if (productId) {
+                  await academyService.autoEnrollFromPaidOrder({
+                    companyId: order.companyId,
+                    customerId: order.customerId || null,
+                    storeProductId: productId,
+                    orderId: order.id,
+                    customerName: order.customerName || order.customer?.name || null,
+                    customerPhone: order.customerPhone || order.customer?.phone || null,
+                    customerEmail: order.customerEmail || order.customer?.email || null,
+                  }).catch(e => console.warn('[academy-hook] auto-enroll failed:', e.message));
+                }
+              }
+            } catch (academyErr) {
+              console.warn('[academy-hook] error:', academyErr.message);
+            }
+            // ─── نهاية hook الأكاديمية ────────────────────────────────────────
+
             // قراءة الإعداد: في أي حالة تتحسب العمولة
             const affSetting = await prisma.affiliateSetting.findUnique({
               where: { companyId: order.companyId },
