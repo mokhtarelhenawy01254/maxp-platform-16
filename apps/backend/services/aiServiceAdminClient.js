@@ -89,6 +89,35 @@ async function listAgents(companyId, status) {
   return request('GET', `/admin/agents${qs}`) || [];
 }
 
+/**
+ * Coerce raw caller-supplied attachment objects into the strict
+ * AgentChatAttachment schema (ai-service agents_schemas.py). Any stray field
+ * — e.g. a frontend `detail` outside low/high/auto/original or a string
+ * `metadata` — otherwise 422s the whole request and silently downgrades the
+ * copilot to the generic chat fallback.
+ */
+function sanitizeAgentChatAttachments(attachments) {
+  if (!Array.isArray(attachments)) return undefined;
+  const DETAIL_VALUES = new Set(['low', 'high', 'auto', 'original']);
+  const sanitized = [];
+  for (const raw of attachments) {
+    if (!raw || typeof raw !== 'object') continue;
+    const item = {
+      type: typeof raw.type === 'string' && raw.type.trim() ? raw.type.trim() : 'image',
+    };
+    for (const key of ['mime_type', 'url', 'data_url', 'base64_data', 'file_id', 'name']) {
+      const value = raw[key];
+      if (typeof value === 'string' && value.length > 0) item[key] = value;
+    }
+    if (typeof raw.detail === 'string' && DETAIL_VALUES.has(raw.detail)) item.detail = raw.detail;
+    if (raw.metadata && typeof raw.metadata === 'object' && !Array.isArray(raw.metadata)) {
+      item.metadata = raw.metadata;
+    }
+    if (item.url || item.data_url || item.base64_data || item.file_id) sanitized.push(item);
+  }
+  return sanitized;
+}
+
 async function chatWithAgent({ companyId, agentId, message, threadId, conversationId, customerId, channel, agentConfig, memoryContext, memory_context, attachments }) {
   const incomingMemoryContext = memoryContext || memory_context || null;
   const { enrichMemoryContextWithPostProduct } = require('../utils/postProductMappingHelper');
@@ -105,7 +134,8 @@ async function chatWithAgent({ companyId, agentId, message, threadId, conversati
   body.channel = channel || 'dashboard';
   if (agentConfig) body.agent_config = agentConfig;
   if (enrichedContext && Object.keys(enrichedContext).length > 0) body.memory_context = enrichedContext;
-  if (attachments) body.attachments = attachments;
+  const safeAttachments = sanitizeAgentChatAttachments(attachments);
+  if (safeAttachments && safeAttachments.length > 0) body.attachments = safeAttachments;
   return request('POST', '/admin/agents/chat', body);
 }
 
@@ -443,6 +473,7 @@ async function notifyOrderCreated(data) {
 }
 
 module.exports = {
+  sanitizeAgentChatAttachments,
   listTools,
   listSkills,
   updateToolMeta,
