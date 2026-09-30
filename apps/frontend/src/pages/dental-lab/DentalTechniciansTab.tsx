@@ -213,8 +213,10 @@ export default function DentalTechniciansTab() {
   };
 
   const roleBadge = (role: string) => {
-    const meta = ROLE_CONFIG[role];
-    if (!meta) return <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">{role}</span>;
+    // بعض الأدوار القديمة مخزنة نص حر ثنائي اللغة مثل "مشرف المعمل / Master" — نعرضها عربية نظيفة
+    const cleanRole = String(role || "").replace(/\s*\/\s*(Master|QC)\s*$/i, "").trim();
+    const meta = ROLE_CONFIG[cleanRole] || ROLE_CONFIG[role];
+    if (!meta) return <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">{cleanRole}</span>;
     return <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${meta.color}`}>{meta.label}</span>;
   };
 
@@ -336,7 +338,7 @@ export default function DentalTechniciansTab() {
                           : "6 أيام (افتراضي)"}
                       </div>
                       <div className="text-[11px] text-gray-400 mt-0.5 font-mono">
-                        {x.dailyCap && x.dailyCap > 0 ? `سقف: ${x.dailyCap} /يوم` : "سقف مفتوح"}
+                        {x.dailyCap && x.dailyCap > 0 ? `سقف: ${x.dailyCap} حالة/يوم` : "سقف مفتوح"}
                       </div>
                       {(() => {
                         const vac = isTechnicianOnVacation(x);

@@ -318,7 +318,7 @@ function CreateCaseModal({ initial, doctors, workTypes, technicians, onClose, on
               <select className={inputCls} value={technicianId} onChange={e => setTechnicianId(e.target.value)}>
                 <option value="">— بدون إسناد فوري —</option>
                 {technicians.filter(t => t.isActive).map(t => (
-                  <option key={t.id} value={t.id}>{t.name} ({ROLE_CONFIG[t.role]?.label || t.role})</option>
+                  <option key={t.id} value={t.id}>{t.name} ({String(ROLE_CONFIG[t.role]?.label || t.role || "").replace(/\s*\/\s*(Master|QC)\s*$/i, "")})</option>
                 ))}
               </select>
             </div>
@@ -671,7 +671,7 @@ function AssignModal({ caseData, technicians, onClose, onSaved }: AssignModalPro
             </label>
             <select className={inputCls} value={technicianId} onChange={e => setTechnicianId(e.target.value)}>
               <option value="">— اختر الفني —</option>
-              {active.map(x => <option key={x.id} value={x.id}>{x.name} ({ROLE_CONFIG[x.role]?.label || x.role})</option>)}
+              {active.map(x => <option key={x.id} value={x.id}>{x.name} ({String(ROLE_CONFIG[x.role]?.label || x.role || "").replace(/\s*\/\s*(Master|QC)\s*$/i, "")})</option>)}
             </select>
           </div>
           <div>
@@ -894,7 +894,7 @@ function KioskScannerModal({ technicians, onClose, onScanned }: KioskScannerModa
             >
               <option value="">تلقائي (حسب المرحلة الحالية للحالة)</option>
               {technicians.filter(t => t.isActive).map(t => (
-                <option key={t.id} value={t.id}>{t.name} ({ROLE_CONFIG[t.role]?.label || t.role})</option>
+                <option key={t.id} value={t.id}>{t.name} ({String(ROLE_CONFIG[t.role]?.label || t.role || "").replace(/\s*\/\s*(Master|QC)\s*$/i, "")})</option>
               ))}
             </select>
           </div>
@@ -1757,7 +1757,7 @@ export default function DentalCasesTab() {
           >
             <option value="">كل الفنيين</option>
             {technicians.filter(t => t.isActive).map(t => (
-              <option key={t.id} value={t.id}>{t.name} ({ROLE_CONFIG[t.role]?.label || t.role})</option>
+              <option key={t.id} value={t.id}>{t.name} ({String(ROLE_CONFIG[t.role]?.label || t.role || "").replace(/\s*\/\s*(Master|QC)\s*$/i, "")})</option>
             ))}
           </select>
 
@@ -2640,7 +2640,7 @@ export default function DentalCasesTab() {
                 >
                   <option value="">إسناد للفني...</option>
                   {technicians.filter(t => t.isActive).map(t => (
-                    <option key={t.id} value={t.id}>{t.name} ({ROLE_CONFIG[t.role]?.label || t.role})</option>
+                    <option key={t.id} value={t.id}>{t.name} ({String(ROLE_CONFIG[t.role]?.label || t.role || "").replace(/\s*\/\s*(Master|QC)\s*$/i, "")})</option>
                   ))}
                 </select>
                 <button
