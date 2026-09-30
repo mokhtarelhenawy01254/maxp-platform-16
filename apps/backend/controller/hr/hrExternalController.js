@@ -5020,8 +5020,8 @@ const evaluateRewardType = async (req, res) => {
       }
 
       const att = eligibility.details?.attendance || {};
-      const absentDays = att.actualAbsentDays !== undefined ? att.actualAbsentDays : 0;
-      const maxAllowed = att.maxAllowedAbsenceDays !== undefined ? att.maxAllowedAbsenceDays : null;
+      const absentDays = att.actualAbsentDays !== undefined ? att.actualAbsentDays : (att.absentDays !== undefined ? att.absentDays : 0);
+      const maxAllowed = att.maxAllowedAbsenceDays !== undefined ? att.maxAllowedAbsenceDays : (att.threshold !== undefined ? att.threshold : null);
       const absentDates = att.absentDates || [];
 
       let reasonText = eligibility.reason || '';
