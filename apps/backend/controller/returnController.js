@@ -902,34 +902,69 @@ const ALLOWED_SETTINGS_FIELDS = [
 exports.updateReturnSettings = async (req, res) => {
     try {
         const companyId = req.user.effectiveCompanyId || req.user.companyId;
+        const { validateRatingSettings, batchRecalculateCompanyCustomers } = require('../services/customerRatingService');
+
+        // Fetch existing settings to merge and validate complete threshold sequence
+        const existing = await getPrisma().returnSettings.findUnique({
+            where: { companyId }
+        });
+
+        let existingReviewConfig = {};
+        if (existing?.reviewDisplayConfig) {
+            existingReviewConfig = typeof existing.reviewDisplayConfig === 'string'
+                ? JSON.parse(existing.reviewDisplayConfig || '{}')
+                : existing.reviewDisplayConfig;
+        }
+
+        const candidateExcellent = req.body.excellentThreshold !== undefined
+            ? Number(req.body.excellentThreshold)
+            : (existing?.excellentThreshold ?? 90);
+        const candidateGood = req.body.goodThreshold !== undefined
+            ? Number(req.body.goodThreshold)
+            : (existing?.goodThreshold ?? 75);
+        const candidateAverage = req.body.averageThreshold !== undefined
+            ? Number(req.body.averageThreshold)
+            : (existingReviewConfig.averageThreshold ?? 50);
+        const candidateMinOrders = req.body.minOrdersForRating !== undefined
+            ? Number(req.body.minOrdersForRating)
+            : (existing?.minOrdersForRating ?? 3);
+
+        const validation = validateRatingSettings({
+            excellentThreshold: candidateExcellent,
+            goodThreshold: candidateGood,
+            averageThreshold: candidateAverage,
+            minOrdersForRating: candidateMinOrders
+        });
+
+        if (!validation.valid) {
+            return res.status(400).json({ error: validation.message, message: validation.message });
+        }
+
         const data = {};
         for (const field of ALLOWED_SETTINGS_FIELDS) {
             if (req.body[field] !== undefined) {
                 if (['excellentThreshold', 'goodThreshold', 'minOrdersForRating', 'autoApproveScore'].includes(field)) {
-                    data[field] = parseInt(req.body[field], 10);
+                    data[field] = Math.round(Number(req.body[field]));
                 } else {
                     data[field] = req.body[field];
                 }
             }
         }
 
-        if (req.body.averageThreshold !== undefined) {
-            let currentReviewDisplayConfig = data.reviewDisplayConfig;
-            if (!currentReviewDisplayConfig) {
-                const existing = await getPrisma().returnSettings.findUnique({
-                    where: { companyId },
-                    select: { reviewDisplayConfig: true }
-                });
-                currentReviewDisplayConfig = existing?.reviewDisplayConfig || {};
-            }
-            if (typeof currentReviewDisplayConfig === 'string') {
-                try { currentReviewDisplayConfig = JSON.parse(currentReviewDisplayConfig); } catch (e) { currentReviewDisplayConfig = {}; }
-            }
-            data.reviewDisplayConfig = {
-                ...(currentReviewDisplayConfig || {}),
-                averageThreshold: parseInt(req.body.averageThreshold, 10) || 50
-            };
+        let updatedReviewConfig = data.reviewDisplayConfig || existingReviewConfig || {};
+        if (typeof updatedReviewConfig === 'string') {
+            try { updatedReviewConfig = JSON.parse(updatedReviewConfig); } catch (e) { updatedReviewConfig = {}; }
         }
+
+        data.reviewDisplayConfig = {
+            ...updatedReviewConfig,
+            averageThreshold: candidateAverage,
+            exactThresholds: {
+                excellent: candidateExcellent,
+                good: candidateGood,
+                average: candidateAverage
+            }
+        };
 
         const settings = await getPrisma().returnSettings.upsert({
             where: { companyId },
@@ -937,9 +972,8 @@ exports.updateReturnSettings = async (req, res) => {
             create: { ...data, companyId }
         });
 
-        // Trigger background recalculation for company customers using the updated thresholds
+        // Trigger background recalculation for company customers using cursor pagination
         try {
-            const { batchRecalculateCompanyCustomers } = require('../services/customerRatingService');
             batchRecalculateCompanyCustomers(companyId).catch(err => {
                 console.warn(`[RETURN-SETTINGS] Background customer recalculation failed:`, err.message);
             });
@@ -953,11 +987,29 @@ exports.updateReturnSettings = async (req, res) => {
 
         res.json({
             ...settings,
-            averageThreshold: reviewConfig.averageThreshold ?? 50
+            averageThreshold: reviewConfig.averageThreshold ?? candidateAverage
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to update settings' });
+    }
+};
+
+/**
+ * Returns automated customer rating health report for company
+ */
+exports.getRatingHealth = async (req, res) => {
+    try {
+        const companyId = req.user.effectiveCompanyId || req.user.companyId;
+        const { getCustomerRatingHealth } = require('../services/customerRatingService');
+        const health = await getCustomerRatingHealth(companyId);
+        res.json({
+            success: true,
+            data: health
+        });
+    } catch (error) {
+        console.error('Error fetching rating health:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch customer rating health telemetry' });
     }
 };
 

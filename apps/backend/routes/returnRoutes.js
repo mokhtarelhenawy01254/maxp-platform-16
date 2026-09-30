@@ -25,6 +25,7 @@ router.put('/requests/:id', verifyToken.authenticateToken, checkAppAccess('order
 // Return Settings
 router.get('/settings', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getReturnSettings);
 router.put('/settings', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.updateReturnSettings);
+router.get('/settings/rating-health', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getRatingHealth);
 
 // Return Types (أنواع المرتجع حسب شركة الشحن)
 router.get('/return-types', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getReturnTypes);

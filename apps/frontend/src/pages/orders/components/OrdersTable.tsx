@@ -303,32 +303,26 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                     {columns.includes("customer") && (
                       <td className={cellPadding}>
                         <div className="flex flex-col gap-1 leading-tight">
-                          <span className="truncate max-w-[190px] text-sm font-medium text-slate-900 dark:text-slate-100">
-                            {getCustomerDisplayName(order)}
-                          </span>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {order.customerPhone && (
-                              <span
-                                className="text-xs text-slate-500 dark:text-slate-400 font-mono tabular-nums"
-                                dir="ltr"
-                              >
-                                {toStandardDigits(order.customerPhone)}
-                              </span>
-                            )}
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="truncate max-w-[190px] text-sm font-medium text-slate-900 dark:text-slate-100">
+                              {getCustomerDisplayName(order)}
+                            </span>
                             <CustomerRatingBadge
                               rating={order.customerRating || order.customer?.customerRating}
-                              orderNumber={order.orderNumber}
-                              customerId={order.customer?.id || (order as any).customerId}
                               deliveryRate={(order as any).deliveryRate ?? order.customer?.deliveryRate}
                               totalDelivered={(order as any).totalDelivered ?? order.customer?.totalDelivered}
                               totalAttempts={(order as any).totalOrdersCount ?? order.customer?.totalOrdersCount}
-                              interactive={true}
-                              size="xs"
-                              onRatingChange={(newRating) => {
-                                onCustomerRatingChange?.(order.orderNumber, newRating);
-                              }}
+                              variant="dot"
                             />
                           </div>
+                          {order.customerPhone && (
+                            <span
+                              className="text-xs text-slate-500 dark:text-slate-400 font-mono tabular-nums"
+                              dir="ltr"
+                            >
+                              {toStandardDigits(order.customerPhone)}
+                            </span>
+                          )}
                         </div>
                       </td>
                     )}

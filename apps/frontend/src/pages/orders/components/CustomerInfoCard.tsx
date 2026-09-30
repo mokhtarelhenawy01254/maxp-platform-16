@@ -260,14 +260,11 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
             </span>
             <CustomerRatingBadge
               rating={order.customerRating || (order as any).customer?.customerRating}
-              orderNumber={order.orderNumber}
-              customerId={order.customerId || (order as any).customer?.id}
-              interactive={true}
+              deliveryRate={(order as any).customer?.deliveryRate}
+              totalDelivered={(order as any).customer?.totalDelivered}
+              totalAttempts={(order as any).customer?.totalOrdersCount}
+              variant="badge"
               size="sm"
-              onRatingChange={(newRating) => {
-                order.customerRating = newRating;
-                setEditForm({ ...editForm, customerRating: newRating });
-              }}
             />
           </h3>
 

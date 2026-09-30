@@ -151,6 +151,8 @@ export const returnService = {
   getSettings: () => apiClient.get<ReturnSettingsData>("/returns/settings"),
   updateSettings: (data: any) =>
     apiClient.put<ReturnSettingsData>("/returns/settings", data),
+  getRatingHealth: () =>
+    apiClient.get<{ success: boolean; data: CustomerRatingHealthData }>("/returns/settings/rating-health"),
 
   // Details & Logs
   addContactAttempt: (
@@ -251,4 +253,28 @@ export interface ReturnSettingsData {
   reviewDisplayConfig: ReviewDisplayConfig;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CustomerRatingHealthData {
+  companyId: string;
+  totalCustomers: number;
+  ratedCustomers: number;
+  unratedCustomers: number;
+  breakdown: {
+    EXCELLENT: number;
+    GOOD: number;
+    AVERAGE: number;
+    POOR: number;
+    UNKNOWN: number;
+  };
+  rulesVersion: string;
+  lastRunAt: string | null;
+  failureCount: number;
+  status: "HEALTHY" | "WARNING" | "CRITICAL";
+  activeThresholds: {
+    excellentThreshold: number;
+    goodThreshold: number;
+    averageThreshold: number;
+    minOrdersForRating: number;
+  };
 }

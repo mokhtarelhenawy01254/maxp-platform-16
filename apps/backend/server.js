@@ -1600,6 +1600,15 @@ try {
 } catch (error) {
   console.error("❌ [NOTIF-QUEUE] Failed to start notification queue worker:", error);
 }
+
+// ⭐ Automated Customer Rating Scheduler (Hourly dirty sync + Daily company sync)
+try {
+  const { startCustomerRatingScheduler } = require("./cron/customerRatingCron");
+  startCustomerRatingScheduler();
+  console.log("✅ [CUSTOMER-RATING-CRON] Automated customer rating scheduler registered");
+} catch (error) {
+  console.error("❌ [CUSTOMER-RATING-CRON] Failed to start customer rating scheduler:", error);
+}
 } else {
   console.log(
     `ℹ️ [SERVER] Background cron schedulers skipped for worker instance ${getProcessInstanceId()} (dedicated to HTTP requests)`,

@@ -1,71 +1,67 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import CustomerRatingBadge from "../CustomerRatingBadge";
 
-// Mock apiClient
-jest.mock("../../../services/apiClient", () => ({
-  apiClient: {
-    post: jest.fn(),
-  },
-}));
-
-// Mock sonner toast
-jest.mock("sonner", () => ({
-  toast: {
-    success: jest.fn(),
-    error: jest.fn(),
-  },
-}));
-
-describe("CustomerRatingBadge - Automated Rating UI Guard", () => {
-  it("renders automated rating badge with label and percentage without manual selection list", () => {
-    render(
+describe("CustomerRatingBadge - 2026 Ergonomic Automated Rating Standards", () => {
+  it("renders 8px dot indicator for orders table with single-line tooltip, no popover, no buttons", () => {
+    const { container } = render(
       <CustomerRatingBadge
         rating="EXCELLENT"
-        deliveryRate={85.5}
-        totalDelivered={6}
-        totalAttempts={7}
-        interactive={true}
+        deliveryRate={92.5}
+        totalDelivered={10}
+        totalAttempts={11}
+        variant="dot"
       />
     );
 
-    // Should display short label and percentage
-    expect(screen.getByText("ممتاز")).toBeInTheDocument();
-    expect(screen.getByText("(86%)")).toBeInTheDocument();
+    // Should render dot indicator with accessible title
+    const dot = container.querySelector(".rounded-full");
+    expect(dot).toBeInTheDocument();
+    expect(dot?.parentElement).toHaveAttribute(
+      "title",
+      expect.stringContaining("تقييم العميل: عميل ممتاز (نسبة الاستلام: 93%) — 10 من 11 طلب")
+    );
 
-    // Verify there is NO manual selection radio/dropdown options initially
-    expect(screen.queryByText("تعديل تقييم العميل")).not.toBeInTheDocument();
-    expect(screen.queryByText("عميل ضعيف / مخاطرة")).not.toBeInTheDocument();
+    // Verify there are NO popovers, explanations, or recalculate buttons
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByText(/إعادة احتساب/i)).not.toBeInTheDocument();
   });
 
-  it("opens automated telemetry popover upon click with delivered stats and NO manual choice list", () => {
+  it("renders compact badge chip with label and percentage for customer header", () => {
     render(
       <CustomerRatingBadge
         rating="GOOD"
-        deliveryRate={75}
-        totalDelivered={3}
-        totalAttempts={4}
-        interactive={true}
-        orderNumber="ORD-101"
+        deliveryRate={80}
+        totalDelivered={4}
+        totalAttempts={5}
+        variant="badge"
       />
     );
 
-    const triggerButton = screen.getByRole("button", {
-      name: /تقييم العميل الآلي/i,
-    });
-    fireEvent.click(triggerButton);
+    expect(screen.getByText("جيد")).toBeInTheDocument();
+    expect(screen.getByText("(80%)")).toBeInTheDocument();
+    expect(screen.queryByText(/إعادة احتساب/i)).not.toBeInTheDocument();
+  });
 
-    // Popover header should indicate automated delivery rating
-    expect(screen.getByText("تقييم استلام العميل الآلي")).toBeInTheDocument();
-    expect(screen.getByText("عميل جيد")).toBeInTheDocument();
-    expect(screen.getByText("75%")).toBeInTheDocument();
-    expect(screen.getByText("3 من 4 طلب منتهي")).toBeInTheDocument();
+  it("renders detailed telemetry card for customer details page without any manual buttons", () => {
+    render(
+      <CustomerRatingBadge
+        rating="AVERAGE"
+        deliveryRate={60}
+        totalDelivered={3}
+        totalAttempts={5}
+        variant="detailed"
+      />
+    );
 
-    // Verify NO manual selection options exist (the old bug where user can pick rating manually)
-    expect(screen.queryByText("تعديل تقييم العميل")).not.toBeInTheDocument();
+    expect(screen.getByText("تصنيف العميل الآلي")).toBeInTheDocument();
+    expect(screen.getByText("عميل متوسط")).toBeInTheDocument();
+    expect(screen.getByText("60%")).toBeInTheDocument();
+    expect(screen.getByText("3 من 5 طلب مكتمل")).toBeInTheDocument();
 
-    // Verify automatic recalculate action exists
-    expect(screen.getByText("إعادة احتساب التقييم آلياً")).toBeInTheDocument();
+    // Zero manual override or recalculate buttons
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByText(/إعادة احتساب/i)).not.toBeInTheDocument();
   });
 
   it("displays UNKNOWN for new customers with 0 completed orders", () => {
@@ -75,7 +71,7 @@ describe("CustomerRatingBadge - Automated Rating UI Guard", () => {
         deliveryRate={0}
         totalDelivered={0}
         totalAttempts={0}
-        interactive={true}
+        variant="badge"
       />
     );
 

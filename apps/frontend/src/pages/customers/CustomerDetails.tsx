@@ -160,29 +160,12 @@ const CustomerDetails: React.FC = () => {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
   const [isUnblocking, setIsUnblocking] = useState(false);
-  const [isRecalculatingRating, setIsRecalculatingRating] = useState(false);
   const [blockForm, setBlockForm] = useState({
     reasonCode: "REPEATED_REFUSAL" as CustomerBlockReasonCode,
     reasonNote: "",
     action: "BLOCK_ORDERS" as CustomerBlockAction,
     expiresAt: "",
   });
-
-  const handleRecalculateRating = async () => {
-    if (!id) return;
-    setIsRecalculatingRating(true);
-    try {
-      const res = await apiClient.post(`/customers/${id}/recalculate-rating`);
-      toast.success(
-        `تم إعادة حساب التقييم: ${res.data?.data?.rating || "UNKNOWN"} (نسبة الاستلام: ${res.data?.data?.deliveryRate ?? 0}%)`
-      );
-      loadCustomerDetails();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "تعذر إعادة حساب التقييم");
-    } finally {
-      setIsRecalculatingRating(false);
-    }
-  };
 
   useEffect(() => {
     loadCustomerDetails();
@@ -538,18 +521,11 @@ const CustomerDetails: React.FC = () => {
               </span>
               <CustomerRatingBadge
                 rating={customer.customerRating}
-                customerId={customer.id}
                 deliveryRate={customer.deliveryRate ?? stats.deliveryRate}
                 totalDelivered={customer.totalDelivered ?? stats.totalDelivered}
                 totalAttempts={customer.totalOrdersCount ?? stats.totalOrdersCount}
-                interactive={true}
+                variant="badge"
                 size="sm"
-                onRatingChange={(newRating) => {
-                  setData((prev) => prev ? {
-                    ...prev,
-                    customer: { ...prev.customer, customerRating: newRating }
-                  } : prev);
-                }}
               />
             </div>
           </div>
@@ -655,15 +631,6 @@ const CustomerDetails: React.FC = () => {
                 </div>
               </div>
             </div>
-            <button
-              type="button"
-              disabled={isRecalculatingRating}
-              onClick={handleRecalculateRating}
-              title="إعادة حساب التقييم آلياً"
-              className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-gray-700 rounded-md transition-colors"
-            >
-              <ArrowPathIcon className={`h-4 w-4 ${isRecalculatingRating ? "animate-spin text-indigo-600" : ""}`} />
-            </button>
           </div>
         </div>
 

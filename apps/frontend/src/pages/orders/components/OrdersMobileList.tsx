@@ -197,17 +197,10 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                         </span>
                         <CustomerRatingBadge
                           rating={order.customerRating || order.customer?.customerRating}
-                          orderNumber={order.orderNumber}
-                          customerId={order.customer?.id || (order as any).customerId}
                           deliveryRate={(order as any).deliveryRate ?? order.customer?.deliveryRate}
                           totalDelivered={(order as any).totalDelivered ?? order.customer?.totalDelivered}
                           totalAttempts={(order as any).totalOrdersCount ?? order.customer?.totalOrdersCount}
-                          interactive={true}
-                          size="xs"
-                          showLabel={false}
-                          onRatingChange={(newRating) => {
-                            onCustomerRatingChange?.(order.orderNumber, newRating);
-                          }}
+                          variant="dot"
                         />
                       </div>
                     </div>
@@ -343,21 +336,6 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                             </span>
                           </>
                         )}
-
-                        <span className="text-slate-300 dark:text-slate-600 shrink-0">•</span>
-                        <CustomerRatingBadge
-                          rating={order.customerRating || order.customer?.customerRating}
-                          orderNumber={order.orderNumber}
-                          customerId={order.customer?.id || (order as any).customerId}
-                          deliveryRate={(order as any).deliveryRate ?? order.customer?.deliveryRate}
-                          totalDelivered={(order as any).totalDelivered ?? order.customer?.totalDelivered}
-                          totalAttempts={(order as any).totalOrdersCount ?? order.customer?.totalOrdersCount}
-                          interactive={true}
-                          size="xs"
-                          onRatingChange={(newRating) => {
-                            onCustomerRatingChange?.(order.orderNumber, newRating);
-                          }}
-                        />
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">

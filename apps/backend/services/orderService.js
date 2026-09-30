@@ -2174,7 +2174,8 @@ class OrderService {
           const terminalRatingStatuses = ['DELIVERED', 'PARTIALLY_DELIVERED', 'RETURNED', 'PARTIALLY_RETURNED', 'CANCELLED', 'REFUNDED', 'LOST'];
           if (order.customerId && (terminalRatingStatuses.includes(status) || terminalRatingStatuses.includes(order.status))) {
             try {
-              const { recalculateCustomerRating } = require('./customerRatingService');
+              const { recalculateCustomerRating, markCustomerDirty } = require('./customerRatingService');
+              markCustomerDirty(order.customerId, order.companyId).catch(() => {});
               recalculateCustomerRating(order.customerId, order.companyId).catch(err => {
                 console.warn(`⚠️ [CUSTOMER-RATING-BG] Failed for order ${orderNumber}:`, err.message);
               });
@@ -2456,9 +2457,12 @@ class OrderService {
               const targetPhone = updatedGuestOrder.guestPhone || guestOrder.guestPhone;
               if (targetPhone) {
                 const { findCustomerByPhone } = require('../utils/customerIdentity');
-                const { recalculateCustomerRating } = require('./customerRatingService');
+                const { recalculateCustomerRating, markCustomerDirty } = require('./customerRatingService');
                 findCustomerByPhone(this.getPrisma(), targetPhone, companyId).then(cust => {
-                  if (cust?.id) recalculateCustomerRating(cust.id, companyId);
+                  if (cust?.id) {
+                    markCustomerDirty(cust.id, companyId).catch(() => {});
+                    recalculateCustomerRating(cust.id, companyId);
+                  }
                 }).catch(() => {});
               }
             } catch (rErr) {}
