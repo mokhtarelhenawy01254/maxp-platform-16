@@ -16,9 +16,11 @@ const AgenticRAGLab = React.lazy(() => import("./AgenticRAGLab"));
 const WebChatWidgetPage = React.lazy(() => import("./WebChatWidgetPage"));
 const AgentTrainingPage = React.lazy(() => import("./AgentTrainingPage"));
 const SuperAdminAiIncidentsPage = React.lazy(() => import("../super-admin/ai-incidents/SuperAdminAiIncidentsPage"));
+const CapabilityCoveragePage = React.lazy(() => import("./CapabilityCoveragePage"));
 
 const TABS = [
   { key: "sandbox", labelKey: "aiHub.tabs.sandbox" },
+  { key: "coverage", labelKey: "aiHub.tabs.coverage" },
   { key: "train", labelKey: "aiHub.tabs.train" },
   { key: "widget", labelKey: "aiHub.tabs.widget" },
   { key: "skills", labelKey: "aiHub.tabs.skills" },
@@ -120,13 +122,14 @@ export default function AIHubLayout() {
     if (!isSuper) return;
     (async () => {
       try {
-        const { data } = await apiClient.get("/super-admin/companies/quick-list");
-        if (data.success) setCompanies(data.companies);
+        const { data }: { data: { success: boolean; companies?: Company[] } } =
+          await apiClient.get("/super-admin/companies/quick-list");
+        if (data.success) setCompanies(data.companies || []);
       } catch {}
     })();
   }, [isSuper]);
 
-  const availableTabs = TABS.filter((t) => !t.superOnly || isSuper);
+  const availableTabs = TABS.filter((t) => !("superOnly" in t && t.superOnly) || isSuper);
   const currentTab = availableTabs.find((t) => t.key === activeTab) ? activeTab : availableTabs[0]?.key || "sandbox";
 
   useLayoutEffect(() => {
@@ -197,6 +200,7 @@ export default function AIHubLayout() {
           </div>
         }>
           {currentTab === "sandbox" && <AIAgentSandboxPage />}
+          {currentTab === "coverage" && <div className="h-full overflow-y-auto"><CapabilityCoveragePage /></div>}
           {currentTab === "train" && <div className="h-full overflow-y-auto"><AgentTrainingPage /></div>}
           {currentTab === "widget" && <div className="h-full overflow-y-auto"><WebChatWidgetPage /></div>}
           {currentTab === "skills" && <div className="h-full overflow-y-auto"><AgentSkillsPage companyId={isSuper ? selectedCompanyId || undefined : undefined} /></div>}

@@ -6639,7 +6639,8 @@
       "scheduler": "Scheduler",
       "routing": "Channel Routing",
       "ignoreList": "Do-Not-Reply",
-      "test": "Test"
+      "test": "Test",
+      "coverage": "Coverage"
     },
     "test": {
       "agent": "Agent",

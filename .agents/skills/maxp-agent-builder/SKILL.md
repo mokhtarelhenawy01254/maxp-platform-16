@@ -722,6 +722,20 @@ python -m scripts.seed_agent_templates
 
 ---
 
+## ❽.14 جسر القدرات: التغطية التلقائية وأدوات الكتالوج (Capability Bridge — Auto-Exposure & Catalog Tools Standard 2026-09-30)
+
+* **قانون التغطية التلقائية (Auto-Exposure Law):** أي endpoint جديد في الباكند يظهر **تلقائيًا** في `ai.agent_tool_catalog` عبر كاشف الانجراف (`src/tools/drift.py` — يقرأ `GET /api/v1/internal/capabilities` المبني على عكس route-stack مع ميتاداتا `_maxpMeta` من `requireDbPermission`/`checkAppAccess`). **القراءة تتفعل فورًا (`active`)، والكتابة تبقى مسودة (`draft`) بضغطة مراجعة** من تاب «تغطية القدرات» في AI Hub (`POST /capability-catalog/:name/activate`) — سياسة معتمدة من مختار (2026-09-30).
+* **مصدر الحقيقة الوحيد (Single Source of Truth):** جدول `ai.agent_tool_catalog` — صفوف `tracked` مرآة للأدوات الكودية (للتغطية فقط، لا يُعاد تسجيلها)، وصفوف `active` تُسجَّل وقت الإقلاع كـ FunctionTools جسرية (`src/tools/catalog.py::register_catalog_tools`) مع **حارس تصادم أسماء صارم** (الريجستري يكتب فوق بصمت — أي تصادم يُسقَط ويُسجَّل خطأ).
+* **مصادقة الجسر (Permissioned Bridge Identity):** الكتالوج يشتغل بهوية `AI_BRIDGE` حقيقية (User دور AGENT + Role بصلاحيات مخصصة من كتالوج الـ 169) عبر `POST /api/v1/internal/service-session` — JWT قصير العمر (15 دقيقة) يخضع لفحوص الصلاحيات وسجل النشاط كأي موظف. **يُحظر** توسيع استعمال توكن `AI_SERVICE` الجديد (god-mode بيتخطى كل `requireDbPermission`) لأي قدرة كتالوج جديدة.
+* **بوابة الموافقات تتبع `risk_level` (Risk-Driven Approval):** أدوات الكتالوج الكتابية (`risk_level=write`) ترفع كارت موافقة التاجر تلقائيًا — المنفّذ العام يشتغل بالاعتماد من خدمة الموافقات حصريًا. **يُحظر نهائيًا** تمرير `approved=true` من args الموديل (تم إصلاح الثغرة في `skills_pipeline` + `gateway` + `sdk_gateway` — الاختبار الإلزامي: `test_pipeline_strips_smuggled_approved_flag`).
+* **التصنيف fail-closed (Fail-Closed Classification):** أي أداة كتابة جديدة **يجب** تصنيفها في `WRITE_TOOL_NAMES` (موافقة) أو `DIRECT_WRITE_TOOL_NAMES` (تنفيذ فوري مقصود) — الاختبار `test_unclassified_mutating_tools_empty` يفشل البناء خلافًا لذلك، ويحظر تكرار الاسم في القائمتين (`test_write_and_direct_write_lists_do_not_overlap` — التكرار كان يُلغي البوابة في مساري gateway/SDK).
+* **حد السياق يُدار بالكشف التدريجي (L0/L1 Progressive Disclosure):** أدوات الكتالوج تُمنح للأدوار عبر أداة الفهرس `store_capability` (بحث مضغوط + تنفيذ قراءات عند الطلب) — **يُحظر** منح مئات الـ schemas كاملة للأدوار (57 أداة ≈ 8-16k توكن غير محسوبة في الميزانية أصلاً). أدوات الكتابة تظهر في البحث لكن تنفيذها من الفهرس مرفوض — لازم أداة مخصصة بكارت موافقة.
+* **المنح التلقائي للأدوار (Role Grant Propagation):** إضافة اسم أداة في `role_tools.yaml` (أو `add_tool_to_roles_yaml`) توصل للإيجنتات الحالية بعد restart عبر union الـ startup (`agent_registry.py`) — لكن **الشيل لا يسحبها** (union one-way)؛ السحب الحقيقي يتطلب تعديل `allowed_tools` للإيجنتات المستقلة أو hidden بالكتالوج.
+* **فحص حيّة الأدوات (Dead Tool Hygiene):** أدوات الكتالوج التي اختفى endpoint بتاعها من المانيفيست تُعلَّم `stale` في `catalog_metadata` وتظهر في تقرير الانجراف — يُمنع ترك أدوات ميتة منوحة لأدوار نشطة (نمط الـ 10 stubs اللي كانت بتترسم «completed» بدون عمل).
+* **تنفيذ حقيقي لا مسودات (No No-Op Draft Tools):** دالة الأداة المقيّدة يجب أن تنفّذ العمل الفعلي عند الاعتماد (`order_refund` عبر payment-status route، `discount_create` عبر POST /coupons، `shipping_update` عبر orders-v2) — ويُحظر إرجاع `_write_result` مرة ثانية (قانون 8.13-18).
+
+---
+
 ## ❾ بروتوكول التغذية العكسية والتطوير المستمر (Continuous Improvement Protocol)
 
 هذه المهارة كائن حي يتطور مع كل اكتشاف وتجربة عملية في المنصة:
