@@ -1569,7 +1569,7 @@ const getAttendanceSummary = async (req, res) => {
             { userId: empParam }
           ]
         },
-        select: { id: true, userId: true, employeeNumber: true, name: true, departmentId: true }
+        select: { id: true, userId: true, employeeNumber: true, firstName: true, lastName: true, departmentId: true }
       });
 
       if (resolvedEmp?.userId) {
@@ -1583,7 +1583,7 @@ const getAttendanceSummary = async (req, res) => {
               { employeeNumber: empParam }
             ]
           },
-          select: { id: true, employeeNumber: true, name: true, departmentId: true }
+          select: { id: true, employeeNumber: true, firstName: true, lastName: true, departmentId: true }
         });
         if (usr) {
           targetUserId = usr.id;
@@ -4004,7 +4004,7 @@ const voidAttendanceRecord = async (req, res) => {
     const existing = await prisma.attendance.findFirst({
       where: { id, companyId },
       include: {
-        user: { select: { id: true, name: true, employeeNumber: true } }
+        user: { select: { id: true, firstName: true, lastName: true, employeeNumber: true } }
       }
     });
 
@@ -4018,6 +4018,10 @@ const voidAttendanceRecord = async (req, res) => {
       });
     }
 
+    const employeeName = existing.user
+      ? `${existing.user.firstName || ''} ${existing.user.lastName || ''}`.trim()
+      : existing.userId;
+
     const formattedDate = existing.date
       ? (existing.date.toISOString ? existing.date.toISOString().split('T')[0] : String(existing.date).split('T')[0])
       : null;
@@ -4030,10 +4034,10 @@ const voidAttendanceRecord = async (req, res) => {
     await logExternalApiAction({
       req,
       action: 'VOID_ATTENDANCE',
-      description: `Voided attendance record ${id} for ${existing.user?.name || existing.userId} on ${formattedDate} - Reason: ${String(reason).trim()}`,
+      description: `Voided attendance record ${id} for ${employeeName} on ${formattedDate} - Reason: ${String(reason).trim()}`,
       resourceType: 'Attendance',
       resourceId: id,
-      targetName: existing.user?.name || existing.user?.employeeNumber || existing.userId,
+      targetName: employeeName,
       details: {
         attendanceId: id,
         userId: existing.userId,
@@ -4053,7 +4057,7 @@ const voidAttendanceRecord = async (req, res) => {
         id,
         userId: existing.userId,
         employeeNumber: existing.user?.employeeNumber,
-        employeeName: existing.user?.name,
+        employeeName,
         date: formattedDate,
         previousStatus: existing.status,
         voidReason: String(reason).trim(),
