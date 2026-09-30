@@ -43,6 +43,7 @@ const portalLogin = async (req, res) => {
     const requestedCompanyId = body.companyId || req.headers['x-company-id'] || req.headers['X-Company-Id'] || null;
 
     if (!requestedCompanyId) {
+      // ملاحظة: DentalLabDoctor مفيهوش علاقة company في السكيمة — الأسماء بتتجلب من جدول Company بشكل منفصل
       const candidateDoctors = await prisma.dentalLabDoctor.findMany({
         where: { phone, isActive: true },
         select: {
@@ -50,7 +51,6 @@ const portalLogin = async (req, res) => {
           companyId: true,
           name: true,
           clinicName: true,
-          company: { select: { id: true, name: true } },
         },
       });
 
@@ -59,13 +59,18 @@ const portalLogin = async (req, res) => {
       }
 
       if (candidateDoctors.length > 1) {
+        const candidateCompanyIds = [...new Set(candidateDoctors.map((d) => d.companyId).filter(Boolean))];
+        const candidateCompanies = candidateCompanyIds.length
+          ? await prisma.company.findMany({ where: { id: { in: candidateCompanyIds } }, select: { id: true, name: true } })
+          : [];
+        const companyNameById = new Map(candidateCompanies.map((c) => [c.id, c.name]));
         return res.status(400).json({
           success: false,
           requireCompanySelection: true,
           error: 'رقم الهاتف مرتبط بأكثر من معمل أسنان، يرجى تحديد المعمل المطلوب',
           labs: candidateDoctors.map((doc) => ({
             companyId: doc.companyId,
-            companyName: doc.company?.name || 'معمل أسنان',
+            companyName: companyNameById.get(doc.companyId) || 'معمل أسنان',
             clinicName: doc.clinicName,
           })),
         });
