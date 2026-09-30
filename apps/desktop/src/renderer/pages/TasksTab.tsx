@@ -588,21 +588,6 @@ export const TasksTab: React.FC = () => {
     }
   };
 
-  // Command palette deep actions: open task in drawer / spawn create modal
-  useEffect(() => {
-    const onOpenTask = (e: Event) => {
-      const task = (e as CustomEvent).detail;
-      if (task?.id) handleSelectTask(task);
-    };
-    const onNewTask = () => setIsCreateOpen(true);
-    window.addEventListener('maxp:open-task', onOpenTask);
-    window.addEventListener('maxp:new-task', onNewTask);
-    return () => {
-      window.removeEventListener('maxp:open-task', onOpenTask);
-      window.removeEventListener('maxp:new-task', onNewTask);
-    };
-  }, [handleSelectTask]);
-
   const userRole = String(currentUser?.role || '').toUpperCase();
   const isAdminOrManager = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER'].includes(userRole);
 
@@ -864,6 +849,22 @@ export const TasksTab: React.FC = () => {
       window.history.replaceState(null, '', window.location.pathname);
     }
   }, []);
+
+
+  // Command palette deep actions: open task in drawer / spawn create modal
+  useEffect(() => {
+    const onOpenTask = (e: Event) => {
+      const task = (e as CustomEvent).detail;
+      if (task?.id) handleSelectTask(task);
+    };
+    const onNewTask = () => setIsCreateOpen(true);
+    window.addEventListener('maxp:open-task', onOpenTask);
+    window.addEventListener('maxp:new-task', onNewTask);
+    return () => {
+      window.removeEventListener('maxp:open-task', onOpenTask);
+      window.removeEventListener('maxp:new-task', onNewTask);
+    };
+  }, [handleSelectTask]);
 
   // Keyboard navigation for task drawer: Esc to close, ↑/↓ or j/k to navigate between tasks without interrupting timers
   useEffect(() => {
