@@ -230,6 +230,12 @@ def build_catalog_function_tool(row: AgentToolCatalog) -> FunctionTool:
 async def register_catalog_tools(session: Any) -> dict[str, int]:
     """Register all ``active`` catalog rows into the SkillRegistry.
 
+    Also builds the in-memory role→tool grant map consumed by the chat
+    pipeline filter and the SDK resolver — without it, registered catalog
+    tools exist in the registry but no agent's allowlist filter lets them
+    through (agents would keep requesting them via unlock_advanced_tools
+    in a loop — found live 2026-09-30).
+
     Collision guard: a catalog row whose canonical name already resolves to
     a code tool is SKIPPED loudly (SkillRegistry.register_tool silently
     overwrites — that must never happen for code tools).
@@ -241,6 +247,7 @@ async def register_catalog_tools(session: Any) -> dict[str, int]:
         select(AgentToolCatalog).where(AgentToolCatalog.exposure_state == "active")
     )).scalars().all()
 
+    grants: dict[str, list[str]] = {}
     for row in rows:
         try:
             validate_states(exposure_state=row.exposure_state, risk_level=row.risk_level)
@@ -261,10 +268,34 @@ async def register_catalog_tools(session: Any) -> dict[str, int]:
 
         registry.register_tool(build_catalog_function_tool(row))
         stats["registered"] += 1
+        for role in (row.roles or []):
+            role_key = str(role).upper()
+            names = grants.setdefault(role_key, [])
+            if canonical not in names:
+                names.append(canonical)
+
+    set_catalog_role_grants(grants)
 
     if stats["registered"] or stats["skipped_collisions"]:
-        logger.info("catalog_tools_registered", **stats)
+        logger.info("catalog_tools_registered", **stats, granted_roles=sorted(grants.keys()))
     return stats
+
+
+# ── Role grant map (in-memory, rebuilt at startup / after activation) ──────
+
+_catalog_role_grants: dict[str, list[str]] = {}
+
+
+def set_catalog_role_grants(grants: dict[str, list[str]]) -> None:
+    global _catalog_role_grants
+    _catalog_role_grants = {k.upper(): list(v) for k, v in grants.items()}
+
+
+def get_catalog_tools_for_role(role: str | None) -> list[str]:
+    """Catalog tool names granted to this agent role (empty if none)."""
+    if not role:
+        return []
+    return list(_catalog_role_grants.get(str(role).upper(), []))
 
 
 async def sync_tracked_tools(session: Any) -> dict[str, int]:

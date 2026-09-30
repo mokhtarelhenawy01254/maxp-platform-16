@@ -453,6 +453,50 @@ async def _build_active_order_block(ctx: PipelineContext) -> str:
         return ""
 
 
+def _filter_skills_for_agent(ctx: PipelineContext, registry: Any) -> list:
+    """Tools offered to this agent: allowed_skills manifests ∪ allowed_tools
+    ∪ catalog role grants (active ai.agent_tool_catalog rows granted to the
+    agent's role). Empty allowlist ⇒ the whole registry (legacy fallback)."""
+    all_available = registry.get_all_tools()
+    if not ctx.agent:
+        return all_available
+
+    allowed_names: set[str] = set()
+    if hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
+        try:
+            for meta in _iter_skill_meta(set(ctx.agent.allowed_skills)):
+                allowed_names.update(t.lower() for t in meta.get("allowed_tools", []))
+        except Exception as e:
+            logger.warning("skills_filter_failed", error=str(e))
+    if hasattr(ctx.agent, "allowed_tools") and ctx.agent.allowed_tools:
+        from src.tools.names import canonical_tool_name
+        allowed_names.update(canonical_tool_name(t).lower() for t in ctx.agent.allowed_tools)
+    # Catalog role grants (in-memory map built at startup by
+    # register_catalog_tools). Without this, catalog tools register into
+    # the registry but every agent's allowlist filter drops them.
+    try:
+        from src.tools.catalog import get_catalog_tools_for_role
+
+        agent_role = getattr(ctx.agent, "role", None)
+        for tool_name in get_catalog_tools_for_role(agent_role):
+            allowed_names.add(tool_name.lower())
+    except Exception as e:
+        logger.warning("catalog_grants_filter_failed", error=str(e))
+
+    if not allowed_names:
+        return all_available
+
+    skills = [s for s in all_available if s.name.lower() in allowed_names]
+    logger.info(
+        "skills_filtered_by_agent",
+        agent=str(ctx.agent.name or ctx.agent.id),
+        total=len(all_available),
+        filtered=len(skills),
+        filtered_names=[s.name for s in skills],
+    )
+    return skills
+
+
 async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
     """Replace resolve_intent + route_to_tools + execute_tools with one call.
 
@@ -482,28 +526,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
 
     # 2. Get skills (filtered by agent's allowed_skills and allowed_tools if present)
     registry = get_skill_registry()
-    all_available = registry.get_all_tools()
-    skills = all_available
-    if ctx.agent:
-        allowed_names: set[str] = set()
-        if hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
-            try:
-                for meta in _iter_skill_meta(set(ctx.agent.allowed_skills)):
-                    allowed_names.update(t.lower() for t in meta.get("allowed_tools", []))
-            except Exception as e:
-                logger.warning("skills_filter_failed", error=str(e))
-        if hasattr(ctx.agent, "allowed_tools") and ctx.agent.allowed_tools:
-            from src.tools.names import canonical_tool_name
-            allowed_names.update(canonical_tool_name(t).lower() for t in ctx.agent.allowed_tools)
-        if allowed_names:
-            skills = [s for s in all_available if s.name.lower() in allowed_names]
-            logger.info(
-                "skills_filtered_by_agent",
-                agent=str(ctx.agent.name or ctx.agent.id),
-                total=len(all_available),
-                filtered=len(skills),
-                filtered_names=[s.name for s in skills],
-            )
+    skills = _filter_skills_for_agent(ctx, registry)
     if not skills:
         logger.warning("no_skills_available_using_allowed_tools_fallback")
 

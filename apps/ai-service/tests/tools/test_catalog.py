@@ -340,3 +340,72 @@ def test_tool_schema_budget_flagged_when_huge():
     approx = len(_json.dumps(specs, ensure_ascii=False)) // 4
     assert ctx.tools_budget_tokens == approx
     assert approx > 8_000  # 120×400-char tools definitely exceed the 8k budget
+
+
+# ── Live-finding fix: catalog role grants reach the pipeline filter ────────
+
+
+@pytest.mark.asyncio
+async def test_register_builds_role_grant_map(monkeypatch):
+    """register_catalog_tools must build the role→tool grant map from each
+    row's roles — otherwise registered catalog tools never pass the chat
+    pipeline's allowlist filter (live loop found 2026-09-30: Karim kept
+    requesting returns_requests_list via unlock_advanced_tools)."""
+    from src.skills.registry import get_skill_registry
+    from src.tools.catalog import (
+        get_catalog_tools_for_role,
+        register_catalog_tools,
+        set_catalog_role_grants,
+    )
+
+    set_catalog_role_grants({})  # reset
+    registry = get_skill_registry()
+    row = _catalog_row(roles=["STORE_MANAGER", "CEO"])
+    session = _MockSession(rows=[row])
+
+    stats = await register_catalog_tools(session)
+    assert stats["registered"] == 1
+    assert "returns_request_update" in get_catalog_tools_for_role("store_manager")
+    assert "returns_request_update" in get_catalog_tools_for_role("CEO")
+    assert get_catalog_tools_for_role("SUPPORT") == []
+
+    registry._tools.pop(canonical_tool_name("returns_request_update"), None)
+    set_catalog_role_grants({})
+
+
+@pytest.mark.asyncio
+async def test_pipeline_filter_includes_catalog_grants(monkeypatch):
+    """The chat pipeline tool filter must admit role-granted catalog tools —
+    the full production path: register_catalog_tools registers the bridge
+    tool AND builds the role grant map, then the filter admits it.
+    """
+    from src.pipeline.context import PipelineContext
+    from src.pipeline.stages.skills_pipeline import _filter_skills_for_agent
+    from src.skills.registry import get_skill_registry
+    from src.tools.catalog import register_catalog_tools, set_catalog_role_grants
+
+    set_catalog_role_grants({})
+    registry = get_skill_registry()
+    row = _catalog_row(name="returns_requests_list", http_method="GET", risk_level="read",
+                       endpoint="/api/v1/returns/requests", path_params=[], roles=["STORE_MANAGER"])
+    session = _MockSession(rows=[row])
+    stats = await register_catalog_tools(session)
+    assert stats["registered"] == 1
+
+    class _Agent:
+        name = "كريم"
+        id = "a1"
+        role = "STORE_MANAGER"
+        allowed_tools = ["product_search"]
+        allowed_skills = []
+
+    ctx = PipelineContext(message="x", thread_id="t", company_id="c", customer_id=None, channel="merchant")
+    ctx.agent = _Agent()
+    skills = _filter_skills_for_agent(ctx, registry)
+    names = {s.name for s in skills}
+    assert "returns_requests_list" in names, "role-granted catalog tool must pass the filter"
+    assert "product_search" in names
+
+    registry._tools.pop("returns_requests_list", None)
+    set_catalog_role_grants({})
+

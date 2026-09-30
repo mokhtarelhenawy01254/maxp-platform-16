@@ -596,6 +596,17 @@ class BaseAgent:
 
         allowed = {name.lower() for name in self.allowed_tools}
 
+        # Catalog role grants: active ai.agent_tool_catalog rows granted to
+        # this agent's role (in-memory map built at startup by
+        # register_catalog_tools) — same grant channel as the chat pipeline.
+        try:
+            from src.tools.catalog import get_catalog_tools_for_role
+
+            for _ct in get_catalog_tools_for_role(self.role):
+                allowed.add(str(_ct).lower())
+        except Exception as exc:
+            logger.warning("catalog_grants_resolve_failed", role=self.role, error=str(exc))
+
         # Derive tools from skill manifests for each allowed skill
         if self.allowed_skills:
             from src.skills.integration import get_skill_allowed_tools
