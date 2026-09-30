@@ -684,6 +684,31 @@ export const CASE_STATUS_MAP: Record<string, { label: string; color: string }> =
   {} as Record<string, { label: string; color: string }>,
 );
 
+/**
+ * Translated case-status label. Reads `dentalLab.status.<STATUS>` via i18n
+ * (e.g. status.RECEIVED / status.OUTSOURCED) and falls back to the legacy
+ * Arabic label from CASE_STATUS_MAP, then to the raw status — so Arabic is
+ * always preserved when no translator is available.
+ * Usage: `dentalStatusLabel(c.status, t)` inside a React component.
+ */
+export const dentalStatusLabel = (
+  status: string | null | undefined,
+  t?: (key: never) => unknown
+): string => {
+  if (!status) return "";
+  if (t) {
+    try {
+      const translated = t(`dentalLab.status.${status}` as never);
+      if (typeof translated === "string" && translated && !translated.startsWith("dentalLab.status.")) {
+        return translated;
+      }
+    } catch (_) {
+      // fall through to the Arabic fallback below
+    }
+  }
+  return CASE_STATUS_MAP[status]?.label ?? status;
+};
+
 export const CASE_STATUS_FLOW: DentalCaseStatus[] = ["RECEIVED", "DESIGN", "MANUFACTURING", "QC", "READY", "DELIVERED", "CLOSED"];
 
 export const nextStatusOf = (status: string): DentalCaseStatus | null => {

@@ -23,7 +23,7 @@ import {
 import DentalWorkTypeStagesModal from "./DentalWorkTypeStagesModal";
 import {
   DentalWorkType, fetchWorkTypes, createWorkType, updateWorkType, deleteWorkType,
-  WORK_TYPE_CATEGORIES, tKey, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, fmtMoney,
+  MODAL_CONTENT_CLS, MODAL_INPUT_CLS, fmtMoney,
 } from "./shared";
 
 interface WorkTypeForm {
@@ -64,6 +64,23 @@ const COMMON_BRANDS = [
   "Argen (ArgenZ Zirconia)",
   "Dentsply Sirona (Cercon ht)",
 ];
+
+// فئات أنواع الشغل — القيمة (value) هي ما يُحفظ في قاعدة البيانات، والليبل عربي
+const CATEGORY_OPTIONS: { value: string; label: string }[] = [
+  { value: "CROWN", label: "تيجان" },
+  { value: "BRIDGE", label: "جسور" },
+  { value: "REMOVABLE", label: "أطقم" },
+  { value: "IMPLANT", label: "زراعة" },
+  { value: "PROTECTIVE", label: "تطبيقات واقية" },
+  { value: "ORTHODONTICS", label: "تقويم" },
+  { value: "OTHER", label: "أخرى" },
+];
+
+// يشمل قيماً قديمة محفوظة في البيانات (مثل VENEERS) لعرض الليبل العربي الصحيح في الجدول
+const CATEGORY_LABELS: Record<string, string> = {
+  ...Object.fromEntries(CATEGORY_OPTIONS.map((c): [string, string] => [c.value, c.label])),
+  VENEERS: "فينير",
+};
 
 export default function DentalWorkTypesTab() {
   const { t } = useTranslation();
@@ -108,7 +125,7 @@ export default function DentalWorkTypesTab() {
     setError(null);
     setModal({
       name: "",
-      category: "CROWN",
+      category: "OTHER",
       pricingMode: "PER_UNIT",
       price: 0,
       costPrice: 0,
@@ -293,7 +310,7 @@ export default function DentalWorkTypesTab() {
                       </td>
                       <td className="py-3 px-4 text-gray-600 dark:text-gray-300">
                         <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-700">
-                          {tKey(t, `dentalLab.workTypes.categoryOptions.${w.category}`) || w.category || "—"}
+                          {CATEGORY_LABELS[w.category ?? ""] || w.category || "—"}
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -407,7 +424,7 @@ export default function DentalWorkTypesTab() {
                   <div>
                     <label className={labelCls}>{t("dentalLab.workTypes.category")}</label>
                     <select className={inputCls} value={modal.category} onChange={e => setModal({ ...modal, category: e.target.value })}>
-                      {WORK_TYPE_CATEGORIES.map(c => <option key={c} value={c}>{tKey(t, `dentalLab.workTypes.categoryOptions.${c}`)}</option>)}
+                      {CATEGORY_OPTIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                     </select>
                   </div>
 
@@ -517,7 +534,7 @@ export default function DentalWorkTypesTab() {
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-                          {tKey(t, `dentalLab.workTypes.categoryOptions.${modal.category}`) || modal.category}
+                          {CATEGORY_LABELS[modal.category] || modal.category}
                         </span>
                         <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 mt-1">
                           {modal.name.trim() || "اسم نوع الشغل"}

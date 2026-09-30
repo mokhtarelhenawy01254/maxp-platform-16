@@ -1429,9 +1429,9 @@ export default function DentalCaseDetailPage() {
         </div>
       )
     },
-    { label: "عدد الوحدات", value: c.unitsCount ? `${c.unitsCount} وحدات` : "1 وحدة" },
+    { label: "عدد الوحدات", value: c.unitsCount ? (c.unitsCount === 1 ? "1 وحدة" : c.unitsCount === 2 ? "وحدتين" : `${c.unitsCount} وحدات`) : "1 وحدة" },
     { label: "سعر الوحدة", value: c.unitPrice ? fmtMoney(c.unitPrice) : "—" },
-    { label: t("dentalLab.cases.teeth"), value: c.teeth || "—" },
+    { label: "رقم السن", value: c.teeth || "—" },
     { label: t("dentalLab.cases.shade"), value: c.shade || "—" },
     { label: t("dentalLab.cases.material"), value: c.material || "—" },
     { label: "الماركة / الشركة", value: c.materialBrand || "—" },
@@ -2102,7 +2102,7 @@ export default function DentalCaseDetailPage() {
             )}
           </Card>
 
-          <Card title={t("dentalLab.creditNotes.title")} icon={<Receipt className="w-5 h-5" />}>
+          <Card title="إشعارات دائنة" icon={<Receipt className="w-5 h-5" />}>
             {creditNotes.length === 0 ? (
               <p className="text-sm text-gray-400 dark:text-gray-500">{t("dentalLab.detail.noCreditNotes")}</p>
             ) : (

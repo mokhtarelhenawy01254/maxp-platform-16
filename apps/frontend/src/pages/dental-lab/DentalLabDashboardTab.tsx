@@ -101,7 +101,7 @@ export default function DentalLabDashboardTab() {
     },
     {
       id: "revenue",
-      label: t("dentalLab.dashboard.revenue"),
+      label: "المحصل (مدفوع)",
       value: data?.revenue != null ? `${fmtMoney(data.revenue)} ج` : "—",
       icon: <Coins className="w-5 h-5" />,
       tone: "text-emerald-600 dark:text-emerald-400",
@@ -341,25 +341,25 @@ export default function DentalLabDashboardTab() {
                     onClick={() => navigate("/dental-lab/cases?new=1")}
                     className="p-3 text-right rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/30 hover:bg-blue-100/60 dark:hover:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-xs font-semibold transition-colors"
                   >
-                    ➕ إنشاء أمر شغل جديد
+                    إنشاء أمر شغل جديد
                   </button>
                   <button
                     onClick={() => navigate("/dental-lab/cases?tab=OVERDUE")}
                     className="p-3 text-right rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50/50 dark:bg-rose-950/30 hover:bg-rose-100/60 dark:hover:bg-rose-900/50 text-rose-800 dark:text-rose-300 text-xs font-semibold transition-colors"
                   >
-                    ⚠️ متابعة الحالات المتأخرة
+                    متابعة الحالات المتأخرة
                   </button>
                   <button
                     onClick={() => navigate("/dental-lab/cases?kiosk=1")}
                     className="p-3 text-right rounded-xl border border-purple-200 dark:border-purple-900 bg-purple-50/50 dark:bg-purple-950/30 hover:bg-purple-100/60 dark:hover:bg-purple-900/50 text-purple-800 dark:text-purple-300 text-xs font-semibold transition-colors"
                   >
-                    📷 محطة مسح الباركود Kiosk
+                    محطة مسح الباركود Kiosk
                   </button>
                   <button
                     onClick={() => navigate("/dental-lab/invoices")}
                     className="p-3 text-right rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-950/30 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 text-xs font-semibold transition-colors"
                   >
-                    🧾 إصدار وتحصيل الفواتير
+                    إصدار وتحصيل الفواتير
                   </button>
                 </div>
               </div>

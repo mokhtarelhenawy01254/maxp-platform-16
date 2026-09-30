@@ -3,7 +3,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  AlertTriangle, ArrowRightCircle, ArrowRightLeft, Calendar, Check, CheckCircle2, CheckSquare, Clock, Columns3, CreditCard, ExternalLink, Eye, FileSpreadsheet, Filter, FilterX, Flame, Layers, List, Loader2, PackageCheck, Pencil, Printer, RefreshCw, RotateCcw, ScanLine, Search, Square, Stethoscope, Trash2, Upload, UserPlus, Users, X as XMarkIcon, Zap,
+  AlertTriangle, ArrowRightCircle, ArrowRightLeft, Calendar, Check, CheckCircle2, CheckSquare, ChevronDown, Clock, Columns3, CreditCard, ExternalLink, Eye, FileSpreadsheet, Filter, FilterX, Flame, Layers, List, Loader2, PackageCheck, Pencil, Printer, RefreshCw, RotateCcw, ScanLine, Search, Square, Stethoscope, Trash2, Upload, UserPlus, Users, X as XMarkIcon, Zap,
 } from "lucide-react";
 import {
   CASE_STATUS_MAP, CASE_STATUSES, PRIORITY_CONFIG, ROLE_CONFIG, PAYMENT_STATUS_MAP,
@@ -1016,6 +1016,8 @@ export default function DentalCasesTab() {
   const [layoutMode, setLayoutMode] = useState<"TABLE" | "KANBAN">(() => {
     return (searchParams.get("layout") || "").toUpperCase() === "KANBAN" ? "KANBAN" : "TABLE";
   });
+  // Mobile app-like filters: collapsed by default below md, always visible on md+
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // URL searchParams two-way filter sync helper
   const applyFilter = useCallback(
@@ -1500,6 +1502,8 @@ export default function DentalCasesTab() {
     Boolean(agendaDate) || dateRangePreset !== "ALL",
     Boolean(searchInput.trim()),
   ].filter(Boolean).length;
+  // Badge count for the mobile filters toggle: selects off their default + date fields (search excluded)
+  const mobileFilterBadgeCount = activeFiltersCount - (searchInput.trim() ? 1 : 0);
 
   const resetFilters = () => {
     clearAllFilters();
@@ -1679,8 +1683,28 @@ export default function DentalCasesTab() {
           </button>
         </div>
 
+        {/* Mobile Filters Toggle (app-like: collapsed by default below md, always visible on md+) */}
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(o => !o)}
+          className="md:hidden flex items-center justify-between w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-200 active:scale-[0.99] transition-transform"
+          aria-expanded={filtersOpen}
+          aria-label="إظهار أو إخفاء الفلاتر المتقدمة"
+        >
+          <span className="flex items-center gap-2">
+            <Filter className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <span>الفلاتر</span>
+            {mobileFilterBadgeCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[10px] font-bold tabular-nums">
+                {mobileFilterBadgeCount}
+              </span>
+            )}
+          </span>
+          <ChevronDown className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${filtersOpen ? "rotate-180" : ""}`} />
+        </button>
+
         {/* Comprehensive Filters Bar */}
-        <div className="flex flex-wrap items-center gap-2.5 pt-1">
+        <div className={`flex flex-wrap items-center gap-2.5 pt-1 ${filtersOpen ? "" : "hidden"} md:flex`}>
           {viewMode !== "TRASH" && (
             <select
               className={`${filterCls} text-xs`}
@@ -2428,7 +2452,7 @@ export default function DentalCasesTab() {
                               )}
                               {c.teeth && (
                                 <span className="shrink-0 px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-[10px] font-bold font-mono">
-                                  🦷 {c.teeth}
+                                  {c.teeth}
                                 </span>
                               )}
                             </div>

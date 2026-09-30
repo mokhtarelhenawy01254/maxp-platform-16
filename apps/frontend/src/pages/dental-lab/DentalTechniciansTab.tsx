@@ -228,7 +228,8 @@ export default function DentalTechniciansTab() {
   const labelCls = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
   const totalWages = rows.reduce((s, x) => s + (x.totalEarnings ?? 0), 0);
   const totalPaid = rows.reduce((s, x) => s + (x.totalPaid ?? 0), 0);
-  const totalBalanceDue = rows.reduce((s, x) => s + (x.balanceDue ?? 0), 0);
+  // صافي المستحق = إجمالي المكتسب - إجمالي المنصرف (نفس مجاميع البطاقتين الأُخرتين لضمان الاتساق الحسابي)
+  const totalBalanceDue = totalWages - totalPaid;
 
   return (
     <div className="space-y-4">

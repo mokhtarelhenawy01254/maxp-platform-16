@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { TabId, TABS, fetchMyInfo } from "./shared";
+import DentalTechKioskTab from "./technician/DentalTechKioskTab";
 import DentalLabDashboardTab from "./DentalLabDashboardTab";
 import DentalCasesTab from "./DentalCasesTab";
 import DentalDoctorsTab from "./DentalDoctorsTab";
@@ -18,6 +19,7 @@ import TabErrorBoundary from "@/pages/admin/OrderWorkflow/TabErrorBoundary";
 
 export default function DentalLabManagementPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { "*": path } = useParams();
   const [techPortal, setTechPortal] = useState<boolean | null>(null);
   const [fetchError, setFetchError] = useState(false);
@@ -70,11 +72,12 @@ export default function DentalLabManagementPage() {
   }, []);
 
   const urlTab = (path || "").split("/")[0] || "";
+  const isKioskRoute = urlTab === "kiosk";
   const activeTab = (TABS.some(t => t.id === urlTab) ? urlTab : "dashboard") as TabId;
 
   if (techPortal === true) {
     return (
-      <div className="p-3 sm:p-6 w-full h-full overflow-y-auto" dir="rtl">
+      <div className="p-3 sm:p-6 w-full h-full overflow-y-auto">
         <TabErrorBoundary tabLabel={t("dentalLab.myCases.title")}>
           <DentalTechnicianPortal initialSection={urlTab} />
         </TabErrorBoundary>
@@ -84,7 +87,7 @@ export default function DentalLabManagementPage() {
 
   if (fetchError) {
     return (
-      <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto" dir="rtl">
+      <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto">
         <div className="flex flex-col items-center justify-center py-16 gap-3">
           <p className="text-sm text-red-500">{t("dentalLab.common.noData")}</p>
           <button onClick={() => { setFetchError(false); setTechPortal(null); fetchMyInfo().then(i=>setTechPortal(i.dentalRole==="TECHNICIAN")).catch(()=>setFetchError(true)); }} className="px-4 py-2 border rounded-lg text-sm">{t("dentalLab.common.refresh")}</button>
@@ -94,11 +97,25 @@ export default function DentalLabManagementPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto" dir="rtl">
+    <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto">
       {techPortal === null && (
         <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
       )}
-      {techPortal === false && (
+      {techPortal === false && isKioskRoute && (
+        <TabErrorBoundary tabLabel={t("dentalLab.tabs.kiosk")}>
+          <div className="max-w-xl mx-auto">
+            <button
+              onClick={() => navigate("/dental-lab/cases")}
+              className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 transition mb-1"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" />
+              <span>{t("dentalLab.common.back")}</span>
+            </button>
+            <DentalTechKioskTab />
+          </div>
+        </TabErrorBoundary>
+      )}
+      {techPortal === false && !isKioskRoute && (
         <>
           {activeTab === "dashboard" && <TabErrorBoundary tabLabel={t("dentalLab.tabs.dashboard")}><DentalLabDashboardTab /></TabErrorBoundary>}
           {activeTab === "cases" && <TabErrorBoundary tabLabel={t("dentalLab.tabs.cases")}><DentalCasesTab /></TabErrorBoundary>}

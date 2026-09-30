@@ -93,7 +93,9 @@ router.get('/design-review/:name', async (req, res) => {
 // Protection: enforce authentication & dental-lab-app subscription on all API routes
 const { checkAppAccess } = require('../middleware/checkAppAccess');
 router.use((req, res, next) => {
-  if (req.path.startsWith('/files/') || req.path.startsWith('/design-review/')) {
+  // /portal/* راوت مستقل ببوابة مصادقة خاصة بالدكاترة (dentalPortalAuth) — لازم يفلت من حارس المنصة
+  // وإلا طلب /portal/login العام بيتقفل بـ 401 قبل ما يوصل لراوت البوابة المتركب بعدها في server.js
+  if (req.path.startsWith('/files/') || req.path.startsWith('/design-review/') || req.path.startsWith('/portal/')) {
     return next();
   }
   verifyToken.authenticateToken(req, res, () => {

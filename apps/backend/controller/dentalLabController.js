@@ -2199,6 +2199,30 @@ const updateCase = async (req, res) => {
       }).catch(() => null);
     }
 
+    // مزامنة الفواتير غير المسددة المرتبطة بالحالة (الفاتورة تتبع سعر الحالة ما دامت غير مسددة)
+    // نُحدّث فقط الفواتير التي كانت تعكس القيمة القديمة للحالة أو صفرًا — حفاظًا على أي تعديل يدوي متعمد آخر
+    if (body.syncInvoices !== false) {
+      try {
+        const linkedOpenInvoices = await prisma.dentalInvoice.findMany({
+          where: { companyId, caseId: id, status: { notIn: ['PAID', 'VOID'] } },
+          select: { id: true, total: true, paid: true },
+        });
+        const oldCaseTotal = round2(Number(existing.total) || 0);
+        for (const inv of linkedOpenInvoices) {
+          const invTotal = round2(Number(inv.total) || 0);
+          if (invTotal !== 0 && invTotal !== oldCaseTotal) continue;
+          const invPaid = round2(Number(inv.paid) || 0);
+          const invRemaining = round2(Math.max(0, total - invPaid));
+          await prisma.dentalInvoice.update({
+            where: { id: inv.id },
+            data: { total, discount, remaining: invRemaining, status: deriveInvoiceStatus(total, invPaid) },
+          });
+        }
+      } catch (err) {
+        console.warn('Could not sync case price to open invoices:', err.message);
+      }
+    }
+
     res.json({ success: true, data: serializeDentalCaseDetail(dentalCase) });
   } catch (error) {
     console.error('Error updating dental case:', error);
@@ -2329,6 +2353,11 @@ const bulkAdvanceCases = async (req, res) => {
       reason: reason || `ترقية جماعية إلى ${target}`,
     };
 
+    // السياسة المالية: الفاتورة التلقائية لازم تشتغل في المسار الجماعي زي المسار الفردي
+    // (غيابها هنا كان بيسيب الحالات المسلّمة جماعيًا من غير فواتير)
+    const billingPolicy = await getBillingPolicy(prisma, companyId);
+    const shouldAutoInvoice = ['READY', 'DELIVERED', 'CLOSED'].includes(target) && billingPolicy.invoiceMode !== 'MANUAL';
+
     for (const c of cases) {
       const current = c.status;
       if (current === target) continue;
@@ -2376,6 +2405,12 @@ const bulkAdvanceCases = async (req, res) => {
         userName: meta.userName,
         reason: meta.reason,
       }).catch(() => null);
+
+      if (shouldAutoInvoice) {
+        await autoCreateInvoiceForCase(prisma, companyId, c, meta).catch((err) =>
+          console.warn('Could not auto-create invoice on bulk advance:', err.message)
+        );
+      }
 
       updatedCount += 1;
     }

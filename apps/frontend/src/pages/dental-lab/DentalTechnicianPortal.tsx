@@ -86,7 +86,7 @@ export default function DentalTechnicianPortal({ initialSection }: Props) {
   }
 
   return (
-    <div className="space-y-4 pb-12" dir="rtl">
+    <div className="space-y-4 pb-12">
       {/* 1. Dedicated Header & Single-Depth Direct KPIs */}
       <DentalTechHeader
         technicianName={wage?.technician?.name}

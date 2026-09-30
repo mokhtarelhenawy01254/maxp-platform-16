@@ -285,7 +285,7 @@ export default function DentalMaterialsTab() {
 
         <div className="bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center justify-between text-gray-500 dark:text-gray-400 text-xs">
-            <span>إجمالي الوحدات المتاحة للخرط</span>
+            <span>إجمالي الوحدات المتاحة للتفريز</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           </div>
           <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2">
@@ -684,7 +684,7 @@ export default function DentalMaterialsTab() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">عدد الوحدات القابلة للخرط</label>
+                  <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">عدد الوحدات القابلة للتفريز</label>
                   <input
                     type="number"
                     min="1"

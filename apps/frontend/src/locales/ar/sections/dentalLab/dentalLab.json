@@ -8,7 +8,8 @@
     "work-types": "أنواع الشغل",
     "technicians": "الفنيين",
     "invoices": "الفواتير",
-    "settings": "الإعدادات"
+    "settings": "الإعدادات",
+    "kiosk": "ماسح الباركود"
   },
   "common": {
     "save": "حفظ",
@@ -46,6 +47,7 @@
     "RECEIVED": "وصل",
     "DESIGN": "تصميم",
     "MANUFACTURING": "تصنيع",
+    "OUTSOURCED": "بره المعمل",
     "QC": "فحص جودة",
     "READY": "جاهز للتسليم",
     "DELIVERED": "اتسلم",

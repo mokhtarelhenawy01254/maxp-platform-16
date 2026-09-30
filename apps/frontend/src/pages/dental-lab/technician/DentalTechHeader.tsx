@@ -62,7 +62,7 @@ export const DentalTechHeader: React.FC<DentalTechHeaderProps> = ({
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition shadow-xs"
           >
             <ScanLine className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            <span>ماسح الباركود 📷</span>
+            <span>ماسح الباركود</span>
           </button>
           <button
             onClick={onRefresh}
@@ -100,7 +100,7 @@ export const DentalTechHeader: React.FC<DentalTechHeaderProps> = ({
         >
           <div className="flex items-center justify-between">
             <span className={`text-xs font-bold ${safeOverdue.length > 0 ? "text-rose-700 dark:text-rose-400" : "text-gray-500"}`}>
-              حالات متأخرة ⚠️
+              حالات متأخرة
             </span>
             <ShieldAlert className={`w-4 h-4 ${safeOverdue.length > 0 ? "text-rose-600 animate-pulse" : "text-gray-400"}`} />
           </div>
