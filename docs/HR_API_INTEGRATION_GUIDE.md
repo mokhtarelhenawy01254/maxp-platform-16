@@ -130,21 +130,21 @@ hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9
 - `GET /employees/stats` (`hr:employees:read`): إحصائيات عامة (إجمالي الموظفين، النشطين، المجازين، وتوزيع الأقسام).
 - `GET /employees/organization-chart` (`hr:employees:read`): شجرة الهيكل التنظيمي وتسلسل الإدارة والمناصب.
 - `GET /employees/:id` (`hr:employees:read`): ملف الموظف الكامل بواسطة الـ ID أو الرقم الوظيفي.
-- `POST /employees/upsert` (`hr:employees:write`): مزامنة وتحديث بيانات موظف من أنظمة الـ ERP.
+- `POST /employees/upsert` (`hr:employees:write`): مزامنة وتحديث بيانات موظف من أنظمة الـ ERP. يتحقق من صحة حالة الموظف `status` (`ACTIVE`, `PROBATION`, `ON_LEAVE`, `TERMINATED`, `SUSPENDED`, `RESIGNED`, `ON_HOLD`, `COMPLETED`, `CANCELLED`) ويرد بـ `400 VALIDATION_ERROR` في حال إرسال قيمة غير صحيحة.
 
 ### 🏢 الأقسام والوظائف (Departments & Positions)
 - `GET /departments` (`hr:departments:read`): استعلام الأقسام مع أسماء المديرين وعدد الموظفين.
 - `GET /positions` (`hr:positions:read`): استعلام المسميات الوظيفية والأقسام التابعة لها.
 
 ### ⏰ الحضور والانصراف والبصمة (Attendance)
-- `POST /attendance/punches/batch` (`hr:attendance:ingest`): رفع حركات البصمة مجمعة من أجهزة ZKTeco.
+- `POST /attendance/punches/batch` (`hr:attendance:ingest`): رفع حركات البصمة مجمعة من أجهزة ZKTeco أو الأنظمة الخارجية. يعتمد المسار على النطاق الزمني للشركة (`timezone` المسجل، والافتراضي `Africa/Cairo`) لربط البصمات باليوم الفعلي الصحيح ومطابقة استعلام `/attendance/today`.
 - `GET /attendance/today` (`hr:attendance:read`): كشف الحضور والغياب لليوم الحالي. يعتمد المسار على النطاق الزمني للشركة (`timezone` المسجل في إعدادات الشركة، والافتراضي `Africa/Cairo` القاهرة) لضمان عدم حدوث أي انزياح في منتصف الليل (بين 12:00 ص و3:00 ص)، كما يقبل المعامل `?date=YYYY-MM-DD` للاستعلام عن أي يوم محدد في نفس النطاق الزمني.
 - `GET /attendance/summary` (`hr:attendance:read`): ملخص مجمع لحركات الحضور والغياب والتأخيرات ومعدلات الدوام لفترة محددة (`from`, `to`, `employeeCode`, `departmentId`).
 
 ### 🏖️ طلبات وأرصدة الإجازات (Leaves Management)
 - `GET /leaves` (`hr:leaves:read`): استعلام سجلات وطلبات الإجازات بفلترة (`status`, `employeeCode`, `from`, `to`, `page`, `limit`).
 - `GET /leaves/balances` (`hr:leaves:read`): استعلام أرصدة الإجازات والمتبقي والمستهلك لكل موظف (`employeeCode`, `year`).
-- `POST /leaves` (`hr:leaves:write`): تقديم طلب إجازة جديد للموظف.
+- `POST /leaves` (`hr:leaves:write`): تقديم طلب إجازة جديد للموظف. يتحقق من نوع الإجازة `type` (`ANNUAL`, `SICK`, `UNPAID`, `MATERNITY`, `PATERNITY`, `BEREAVEMENT`, `MARRIAGE`, `HAJJ`, `STUDY`, `EMERGENCY`, `OTHER`) وصحة التواريخ ويرد بـ `400 VALIDATION_ERROR` في حال عدم المطابقة.
 - `POST /leaves/:id/decision` (`hr:leaves:approve`): اعتماد أو رفض طلب إجازة مع ملاحظة (`action`: `APPROVE` أو `REJECT`, `note`).
 
 ### 💰 مسيرات ومفردات الرواتب (Payroll)

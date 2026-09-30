@@ -13,6 +13,32 @@ const {
   logExternalApiAction
 } = require('../../services/hrIntegrationService');
 
+const VALID_EMPLOYEE_STATUSES = [
+  'ACTIVE',
+  'PROBATION',
+  'ON_LEAVE',
+  'TERMINATED',
+  'SUSPENDED',
+  'RESIGNED',
+  'ON_HOLD',
+  'COMPLETED',
+  'CANCELLED'
+];
+
+const VALID_LEAVE_TYPES = [
+  'ANNUAL',
+  'SICK',
+  'UNPAID',
+  'MATERNITY',
+  'PATERNITY',
+  'BEREAVEMENT',
+  'MARRIAGE',
+  'HAJJ',
+  'STUDY',
+  'EMERGENCY',
+  'OTHER'
+];
+
 /**
  * 1. قائمة الموظفين (مع الترقيم والبحث)
  */
@@ -133,6 +159,36 @@ const upsertEmployee = async (req, res) => {
       });
     }
 
+    let normalizedStatus = 'ACTIVE';
+    if (status !== undefined && status !== null) {
+      normalizedStatus = String(status).trim().toUpperCase();
+      if (!VALID_EMPLOYEE_STATUSES.includes(normalizedStatus)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Invalid status: '${status}'. Allowed values are: ${VALID_EMPLOYEE_STATUSES.join(', ')}`,
+            allowedValues: VALID_EMPLOYEE_STATUSES
+          }
+        });
+      }
+    }
+
+    // Map PROBATION to ACTIVE for database persistence since Prisma EmployeeStatus enum does not contain PROBATION
+    const dbStatus = normalizedStatus === 'PROBATION' ? 'ACTIVE' : normalizedStatus;
+
+    let parsedHireDate = undefined;
+    if (hireDate) {
+      const d = new Date(hireDate);
+      if (isNaN(d.getTime())) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Invalid hireDate format. Expected YYYY-MM-DD' }
+        });
+      }
+      parsedHireDate = d;
+    }
+
     const prisma = getSharedPrismaClient();
     const existing = await prisma.employee.findUnique({
       where: {
@@ -153,8 +209,8 @@ const upsertEmployee = async (req, res) => {
           phone: phone !== undefined ? phone : existing.phone,
           departmentId: departmentId !== undefined ? departmentId : existing.departmentId,
           positionId: positionId !== undefined ? positionId : existing.positionId,
-          status: status || existing.status,
-          hireDate: hireDate ? new Date(hireDate) : existing.hireDate
+          status: status !== undefined ? dbStatus : existing.status,
+          hireDate: parsedHireDate !== undefined ? parsedHireDate : existing.hireDate
         }
       });
     } else {
@@ -169,8 +225,8 @@ const upsertEmployee = async (req, res) => {
           phone,
           departmentId,
           positionId,
-          status,
-          hireDate: hireDate ? new Date(hireDate) : new Date()
+          status: dbStatus,
+          hireDate: parsedHireDate || new Date()
         }
       });
     }
@@ -199,7 +255,13 @@ const upsertEmployee = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ [ExternalHrController.upsertEmployee] Error:', error);
-    return res.status(500).json({ success: false, error: { message: error.message } });
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'An unexpected error occurred while processing employee upsert'
+      }
+    });
   }
 };
 
@@ -219,6 +281,7 @@ const recordPunchesBatch = async (req, res) => {
       });
     }
 
+    const timezone = req.company?.timezone || 'Africa/Cairo';
     const prisma = getSharedPrismaClient();
     const results = {
       processed: 0,
@@ -237,6 +300,20 @@ const recordPunchesBatch = async (req, res) => {
         continue;
       }
 
+      const punchDate = new Date(punchTime);
+      if (isNaN(punchDate.getTime())) {
+        results.failed++;
+        results.errors.push({ punch, error: 'Invalid punchTime date format' });
+        continue;
+      }
+
+      const normalizedType = String(type || 'CHECK_IN').trim().toUpperCase();
+      if (!['CHECK_IN', 'CHECK_OUT'].includes(normalizedType)) {
+        results.failed++;
+        results.errors.push({ punch, error: `Invalid punch type: '${type}'. Expected CHECK_IN or CHECK_OUT` });
+        continue;
+      }
+
       const employee = await prisma.employee.findUnique({
         where: {
           companyId_employeeNumber: { companyId, employeeNumber }
@@ -250,9 +327,9 @@ const recordPunchesBatch = async (req, res) => {
         continue;
       }
 
-      const punchDate = new Date(punchTime);
-      const dayStart = new Date(punchDate);
-      dayStart.setUTCHours(0, 0, 0, 0);
+      // Calculate start of day in company timezone (Africa/Cairo default)
+      const dateStr = getDateStringInTimezone(punchDate, timezone);
+      const dayStart = new Date(`${dateStr}T00:00:00.000Z`);
 
       try {
         const attendance = await prisma.attendance.findUnique({
@@ -264,7 +341,7 @@ const recordPunchesBatch = async (req, res) => {
           }
         });
 
-        const isCheckIn = type.toUpperCase() === 'CHECK_IN';
+        const isCheckIn = normalizedType === 'CHECK_IN';
 
         if (attendance) {
           const updateData = {};
@@ -305,12 +382,12 @@ const recordPunchesBatch = async (req, res) => {
           employeeNumber,
           employeeId: employee.id,
           punchTime,
-          type,
+          type: normalizedType,
           deviceId: deviceId || 'EXTERNAL'
         });
       } catch (err) {
         results.failed++;
-        results.errors.push({ punch, error: err.message });
+        results.errors.push({ punch, error: 'Database error processing punch' });
       }
     }
 
@@ -330,7 +407,13 @@ const recordPunchesBatch = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ [ExternalHrController.recordPunchesBatch] Error:', error);
-    return res.status(500).json({ success: false, error: { message: error.message } });
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'An unexpected error occurred while processing punches batch'
+      }
+    });
   }
 };
 
@@ -431,6 +514,39 @@ const createLeaveRequest = async (req, res) => {
       });
     }
 
+    const normalizedType = String(type || '').trim().toUpperCase();
+    if (!VALID_LEAVE_TYPES.includes(normalizedType)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: `Invalid leave type: '${type}'. Allowed values are: ${VALID_LEAVE_TYPES.join(', ')}`,
+          allowedValues: VALID_LEAVE_TYPES
+        }
+      });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid startDate or endDate format. Expected YYYY-MM-DD'
+        }
+      });
+    }
+    if (end < start) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'endDate must not be before startDate'
+        }
+      });
+    }
+
     const prisma = getSharedPrismaClient();
     const employee = await prisma.employee.findFirst({
       where: {
@@ -446,8 +562,6 @@ const createLeaveRequest = async (req, res) => {
       return res.status(404).json({ success: false, error: { code: 'EMPLOYEE_NOT_FOUND', message: 'Employee not found or unlinked to user' } });
     }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
     const diffTime = Math.abs(end - start);
     const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
@@ -455,7 +569,7 @@ const createLeaveRequest = async (req, res) => {
       data: {
         companyId,
         userId: employee.userId,
-        type,
+        type: normalizedType,
         startDate: start,
         endDate: end,
         totalDays: Math.max(1, totalDays),
@@ -486,7 +600,13 @@ const createLeaveRequest = async (req, res) => {
     return res.status(201).json({ success: true, data: leave });
   } catch (error) {
     console.error('❌ [ExternalHrController.createLeaveRequest] Error:', error);
-    return res.status(500).json({ success: false, error: { message: error.message } });
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'An unexpected error occurred while creating leave request'
+      }
+    });
   }
 };
 
@@ -1441,7 +1561,13 @@ const decideLeaveRequest = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ [ExternalHrController.decideLeaveRequest] Error:', error);
-    return res.status(500).json({ success: false, error: { message: error.message } });
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'An unexpected error occurred while processing leave decision'
+      }
+    });
   }
 };
 

@@ -65,7 +65,12 @@
                 "ACTIVE",
                 "PROBATION",
                 "ON_LEAVE",
-                "TERMINATED"
+                "TERMINATED",
+                "SUSPENDED",
+                "RESIGNED",
+                "ON_HOLD",
+                "COMPLETED",
+                "CANCELLED"
               ]
             }
           }
@@ -146,8 +151,13 @@
                     "enum": [
                       "ACTIVE",
                       "PROBATION",
+                      "ON_LEAVE",
+                      "TERMINATED",
                       "SUSPENDED",
-                      "TERMINATED"
+                      "RESIGNED",
+                      "ON_HOLD",
+                      "COMPLETED",
+                      "CANCELLED"
                     ],
                     "default": "ACTIVE"
                   },
@@ -279,11 +289,14 @@
                       "ANNUAL",
                       "SICK",
                       "UNPAID",
-                      "EMERGENCY",
                       "MATERNITY",
                       "PATERNITY",
+                      "BEREAVEMENT",
+                      "MARRIAGE",
                       "HAJJ",
-                      "BEREAVEMENT"
+                      "STUDY",
+                      "EMERGENCY",
+                      "OTHER"
                     ]
                   },
                   "startDate": {

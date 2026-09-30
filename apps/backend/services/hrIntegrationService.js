@@ -235,8 +235,10 @@ const logExternalApiAction = async (firstArg, secondArg) => {
     const credentialId = options.credentialId || req?.hrCredential?.id;
     const credentialName = options.credentialName || req?.hrCredential?.name || 'External API Key';
     const keyPrefix = options.keyPrefix || req?.hrCredential?.keyPrefix;
-    const route = options.route || req?.originalUrl || req?.url;
-    const userId = options.userId || req?.user?.id || req?.hrCredential?.createdByUserId || null;
+    // Only pass userId if it's a real user ID and not the placeholder 'external-system'
+    const rawUserId = options.userId || req?.hrCredential?.createdByUserId || (req?.user?.id !== 'external-system' ? req?.user?.id : null) || null;
+    const userId = typeof rawUserId === 'string' && rawUserId.length > 5 && rawUserId !== 'external-system' ? rawUserId : null;
+    const route = options.route || req?.originalUrl || req?.url || null;
 
     const auditDetails = {
       credentialId,
@@ -249,23 +251,46 @@ const logExternalApiAction = async (firstArg, secondArg) => {
 
     // 1. Core ActivityLog
     if (prisma && prisma.activityLog) {
-      await prisma.activityLog.create({
-        data: {
-          companyId,
-          userId: typeof userId === 'string' && userId.length < 50 ? userId : null,
-          userName: `External Agent: ${credentialName}`,
-          category: 'HR_EXTERNAL_API',
-          action: action || 'EXTERNAL_WRITE',
-          description: `External API [${credentialName}] performed ${action || 'POST'} on ${resourceType || 'resource'} ${resourceId || ''}`.trim(),
-          targetType: resourceType || 'HR_RESOURCE',
-          targetId: resourceId ? String(resourceId) : null,
-          targetName: targetName || credentialName,
-          metadata: JSON.stringify(auditDetails),
-          severity: 'LOW',
-          isSuccess: true,
-          isLocked: true
+      try {
+        await prisma.activityLog.create({
+          data: {
+            companyId,
+            userId,
+            category: 'HR_EXTERNAL_API',
+            action: action || 'EXTERNAL_WRITE',
+            description: `External API [${credentialName}] performed ${action || 'POST'} on ${resourceType || 'resource'} ${resourceId || ''}`.trim(),
+            targetType: resourceType || 'HR_RESOURCE',
+            targetId: resourceId ? String(resourceId) : null,
+            targetName: targetName || credentialName,
+            metadata: JSON.stringify(auditDetails),
+            severity: 'LOW',
+            isSuccess: true,
+            isLocked: true
+          }
+        });
+      } catch (insertErr) {
+        if (userId && insertErr.code === 'P2003') {
+          console.warn('⚠️ [logExternalApiAction] Retrying ActivityLog insert with userId: null due to FK constraint');
+          await prisma.activityLog.create({
+            data: {
+              companyId,
+              userId: null,
+              category: 'HR_EXTERNAL_API',
+              action: action || 'EXTERNAL_WRITE',
+              description: `External API [${credentialName}] performed ${action || 'POST'} on ${resourceType || 'resource'} ${resourceId || ''}`.trim(),
+              targetType: resourceType || 'HR_RESOURCE',
+              targetId: resourceId ? String(resourceId) : null,
+              targetName: targetName || credentialName,
+              metadata: JSON.stringify(auditDetails),
+              severity: 'LOW',
+              isSuccess: true,
+              isLocked: true
+            }
+          });
+        } else {
+          console.error('❌ [logExternalApiAction] ActivityLog insert failed:', insertErr.message, insertErr);
         }
-      }).catch(err => console.warn('⚠️ [logExternalApiAction] ActivityLog insert skipped:', err.message));
+      }
     }
 
     // 2. auditTrailService (if available and no mock was provided)

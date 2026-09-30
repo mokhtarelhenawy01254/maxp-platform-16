@@ -46,4 +46,48 @@ describe('HR External API — New Endpoints & Timezone Fix Unit Tests', () => {
       expect(typeof hrExternalController.listResignations).toBe('function');
     });
   });
+
+  describe('Item 3: Enum Validations on Write Routes', () => {
+    test('upsertEmployee rejects invalid status with 400 VALIDATION_ERROR and allowed values', async () => {
+      mockReq.body = {
+        employeeNumber: 'EMP999',
+        firstName: 'Test',
+        lastName: 'User',
+        status: 'INACTIVE'
+      };
+      await hrExternalController.upsertEmployee(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR',
+            message: expect.stringContaining('INACTIVE'),
+            allowedValues: expect.arrayContaining(['ACTIVE', 'PROBATION', 'TERMINATED'])
+          })
+        })
+      );
+    });
+
+    test('createLeaveRequest rejects invalid leave type with 400 VALIDATION_ERROR and allowed values', async () => {
+      mockReq.body = {
+        employeeNumber: 'EMP999',
+        type: 'VACATION',
+        startDate: '2026-10-01',
+        endDate: '2026-10-05'
+      };
+      await hrExternalController.createLeaveRequest(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR',
+            message: expect.stringContaining('VACATION'),
+            allowedValues: expect.arrayContaining(['ANNUAL', 'SICK', 'UNPAID'])
+          })
+        })
+      );
+    });
+  });
 });

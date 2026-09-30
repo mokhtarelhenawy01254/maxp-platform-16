@@ -189,7 +189,8 @@ describe('HR External API V2 Comprehensive Test Suite', () => {
       expect(mockPrisma.activityLog.create).toHaveBeenCalled();
       const callArg = mockPrisma.activityLog.create.mock.calls[0][0].data;
       expect(callArg.companyId).toBe('comp_123');
-      expect(callArg.userName).toBe('External Agent: ZKTeco Main Gate');
+      expect(callArg.targetName).toBe('ZKTeco Main Gate');
+      expect(callArg.category).toBe('HR_EXTERNAL_API');
       expect(callArg.metadata).not.toContain('hrk_');
       expect(callArg.action).toBe('UPSERT_EMPLOYEE');
     });
