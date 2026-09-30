@@ -2036,6 +2036,7 @@ function InvoiceDetailModal({
 export default function DentalInvoicesTab() {
   const { t } = useTranslation();
   const [rows, setRows] = useState<DentalInvoice[]>([]);
+  const [fetchedCount, setFetchedCount] = useState<number | null>(null);
   const [cases, setCases] = useState<DentalLabCase[]>([]);
   const [doctors, setDoctors] = useState<DentalLabDoctor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2078,17 +2079,30 @@ export default function DentalInvoicesTab() {
     async (opts?: { silent?: boolean }) => {
       try {
         const [invs, cs, docs, uninv] = await Promise.all([
-          fetchInvoices({
-            doctorId: selectedDoctorId || undefined,
-            status: statusFilter !== "ALL" ? statusFilter : undefined,
-            search: searchQuery.trim() || undefined,
-            ...dateParams,
-          }),
+          // جلب كل الصفحات — الافتراضي في الباكند 50 فاتورة فقط والباقي كان بيبقى غير ظاهر
+          (async () => {
+            const base = {
+              doctorId: selectedDoctorId || undefined,
+              status: statusFilter !== "ALL" ? statusFilter : undefined,
+              search: searchQuery.trim() || undefined,
+              ...dateParams,
+            };
+            const PAGE_SIZE = 200;
+            const MAX_PAGES = 15;
+            let acc: DentalInvoice[] = [];
+            for (let page = 1; page <= MAX_PAGES; page++) {
+              const chunk = await fetchInvoices({ ...base, page, limit: PAGE_SIZE });
+              acc = acc.concat(chunk);
+              if (chunk.length < PAGE_SIZE) break;
+            }
+            return acc;
+          })(),
           fetchCases({ limit: 100 }),
           fetchDoctors(),
           fetchUninvoicedSummary().catch(() => null),
         ]);
         setRows(invs);
+        setFetchedCount(invs.length);
         setCases(cs.data);
         setDoctors(docs);
         if (uninv) setUninvoicedSummary(uninv);
@@ -2444,6 +2458,15 @@ export default function DentalInvoicesTab() {
               {s.label}
             </button>
           ))}
+          {fetchedCount !== null && (
+            <span
+              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+              style={{ fontVariantNumeric: "tabular-nums" }}
+              title="إجمالي الفواتير المطابقة للفلترة الحالية"
+            >
+              عدد الفواتير: {fetchedCount}
+            </span>
+          )}
         </div>
 
         {/* Date presets */}
