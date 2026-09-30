@@ -115,16 +115,69 @@ class ContextAssembler:
                 if len(parts) >= 4 and parts[0] == "mb" and parts[1] == "sess":
                     clean_session_id = f"{parts[0]}_{parts[1]}_{parts[2]}_{parts[3]}"
 
-            is_dashboard_channel = (
-                getattr(ctx, "channel", None) in {"dashboard", "marketing_studio"}
-                or str(lookup_id).startswith("mb_sess_")
-                or clean_session_id.startswith("mb_sess_")
-            )
-            if is_dashboard_channel:
+            # 1. Marketing copilot session table
+            if str(lookup_id).startswith("mb_sess_") or clean_session_id.startswith("mb_sess_"):
                 try:
                     fb_query = text(
                         'SELECT content, role FROM public.facebook_ads_ai_chat_messages '
-                        'WHERE "sessionId" = :clean_id OR "sessionId" = :raw_id '
+                        'WHERE ("sessionId" = :clean_id OR "sessionId" = :raw_id) AND ("isDeleted" IS FALSE OR "isDeleted" IS NULL) '
+                        'ORDER BY "createdAt" DESC LIMIT :limit'
+                    )
+                    fb_result = await ctx.session.execute(
+                        fb_query,
+                        {"clean_id": clean_session_id, "raw_id": str(lookup_id), "limit": limit}
+                    )
+                    fb_rows = fb_result.fetchall()
+                    if fb_rows:
+                        for row in reversed(fb_rows):
+                            content = row[0] or ""
+                            r = str(row[1] or "assistant").lower()
+                            role = "user" if r == "user" else "assistant"
+                            if content:
+                                history_messages.append({"role": role, "content": content})
+                        if history_messages:
+                            deduped = self._dedupe_adjacent_messages(history_messages)
+                            current_clean = (ctx.message or "").strip()
+                            if deduped and deduped[-1].get("role") == "user" and deduped[-1].get("content", "").strip() == current_clean:
+                                deduped.pop()
+                            return deduped
+                except Exception as fb_err:
+                    logger.warning("failed to fetch marketing message history from DB", error=str(fb_err))
+
+            # 2. General Agent Studio sessions table (Merchant Copilot, Specialist Agents, Operations, Inventory, etc.)
+            try:
+                studio_query = text(
+                    'SELECT content, role FROM public.agent_studio_messages '
+                    'WHERE ("sessionId" = :clean_id OR "sessionId" = :raw_id) AND ("isDeleted" IS FALSE OR "isDeleted" IS NULL) '
+                    'ORDER BY "createdAt" DESC LIMIT :limit'
+                )
+                studio_result = await ctx.session.execute(
+                    studio_query,
+                    {"clean_id": clean_session_id, "raw_id": str(lookup_id), "limit": limit}
+                )
+                studio_rows = studio_result.fetchall()
+                if studio_rows:
+                    for row in reversed(studio_rows):
+                        content = row[0] or ""
+                        r = str(row[1] or "assistant").lower()
+                        role = "user" if r == "user" else "assistant"
+                        if content:
+                            history_messages.append({"role": role, "content": content})
+                    if history_messages:
+                        deduped = self._dedupe_adjacent_messages(history_messages)
+                        current_clean = (ctx.message or "").strip()
+                        if deduped and deduped[-1].get("role") == "user" and deduped[-1].get("content", "").strip() == current_clean:
+                            deduped.pop()
+                        return deduped
+            except Exception as studio_err:
+                logger.warning("failed to fetch agent studio message history from DB", error=str(studio_err))
+
+            # 3. Fallback to facebook_ads_ai_chat_messages if not checked above
+            if not (str(lookup_id).startswith("mb_sess_") or clean_session_id.startswith("mb_sess_")):
+                try:
+                    fb_query = text(
+                        'SELECT content, role FROM public.facebook_ads_ai_chat_messages '
+                        'WHERE ("sessionId" = :clean_id OR "sessionId" = :raw_id) AND ("isDeleted" IS FALSE OR "isDeleted" IS NULL) '
                         'ORDER BY "createdAt" DESC LIMIT :limit'
                     )
                     fb_result = await ctx.session.execute(
@@ -217,7 +270,7 @@ class ContextAssembler:
             or session_state.get("referredProduct")
         )
 
-        # Automatic DB fallback: recover activeProduct from public.facebook_ads_ai_chat_sessions if missing
+        # Automatic DB fallback: recover activeProduct from public.agent_studio_sessions or public.facebook_ads_ai_chat_sessions if missing
         lookup_id = ctx.conversation_id or ctx.thread_id
         if not has_active_prod and lookup_id and ctx.session:
             clean_session_id = str(lookup_id)
@@ -225,20 +278,28 @@ class ContextAssembler:
                 parts = clean_session_id.split("_")
                 if len(parts) >= 4 and parts[0] == "mb" and parts[1] == "sess":
                     clean_session_id = f"{parts[0]}_{parts[1]}_{parts[2]}_{parts[3]}"
-                try:
-                    import json as _json
+            try:
+                import json as _json
+                # Check agent_studio_sessions first
+                sess_res = await ctx.session.execute(
+                    text('SELECT context FROM public.agent_studio_sessions WHERE id = :clean_id OR id = :raw_id LIMIT 1'),
+                    {"clean_id": clean_session_id, "raw_id": str(lookup_id)}
+                )
+                sess_row = sess_res.fetchone()
+                if not sess_row or not sess_row[0]:
                     sess_res = await ctx.session.execute(
                         text('SELECT context FROM public.facebook_ads_ai_chat_sessions WHERE id = :clean_id OR id = :raw_id LIMIT 1'),
                         {"clean_id": clean_session_id, "raw_id": str(lookup_id)}
                     )
                     sess_row = sess_res.fetchone()
-                    if sess_row and sess_row[0]:
-                        db_ctx = sess_row[0] if isinstance(sess_row[0], dict) else _json.loads(sess_row[0])
-                        db_prod = db_ctx.get("activeProduct") or db_ctx.get("active_product")
-                        if db_prod:
-                            session_state["activeProduct"] = db_prod
-                except Exception as sess_err:
-                    logger.warning("failed to fetch activeProduct from facebook_ads_ai_chat_sessions", error=str(sess_err))
+
+                if sess_row and sess_row[0]:
+                    db_ctx = sess_row[0] if isinstance(sess_row[0], dict) else _json.loads(sess_row[0])
+                    db_prod = db_ctx.get("activeProduct") or db_ctx.get("active_product")
+                    if db_prod:
+                        session_state["activeProduct"] = db_prod
+            except Exception as sess_err:
+                logger.warning("failed to fetch activeProduct from studio sessions", error=str(sess_err))
 
         if session_state:
             ctx.session_state = session_state

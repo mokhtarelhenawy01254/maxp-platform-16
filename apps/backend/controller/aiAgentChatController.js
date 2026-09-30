@@ -84,9 +84,35 @@ async function sendMessage(req, res) {
       attachments: normalizedAttachments,
     });
 
+    // Retrieve recent conversation history and session context for multi-turn continuity (prevent Conversational Amnesia)
+    let sessionRecentMessages = [];
+    let sessionContext = {};
+    try {
+      const sessionData = await aiSessionService.getHistory(companyId, userId, activeSessionId);
+      if (sessionData) {
+        sessionContext = sessionData.session?.context || {};
+        if (Array.isArray(sessionData.messages) && sessionData.messages.length > 1) {
+          // Exclude the current user message we just appended (the last one) so current turn is not duplicated
+          sessionRecentMessages = sessionData.messages
+            .filter(m => !m.isDeleted)
+            .slice(0, -1)
+            .slice(-15)
+            .map(m => ({
+              role: m.role || (m.sender === 'user' ? 'user' : 'assistant'),
+              content: m.content || m.text || '',
+            }))
+            .filter(m => m.content);
+        }
+      }
+    } catch (memErr) {
+      console.warn('[AI-CHAT-CTRL] Could not load prior messages for context:', memErr.message);
+    }
+
     let result = null;
     const targetAgentId = agentId || agentSlug || await resolveDefaultCopilotAgent(companyId);
     const combinedMemoryContext = {
+      ...(sessionContext || {}),
+      ...(sessionRecentMessages.length > 0 ? { recentMessages: sessionRecentMessages } : {}),
       ...(memoryContext || {}),
       ...(memory_context || {}),
       ...(executiveContext ? { executiveContext } : {}),
