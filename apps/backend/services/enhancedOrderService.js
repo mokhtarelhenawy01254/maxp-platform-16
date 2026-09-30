@@ -11,6 +11,7 @@ const { toCanonicalE164 } = require('../utils/phoneNormalization');
 const { findCustomerByPhone, safeCreateCustomer, buildPhoneWhere } = require('../utils/customerIdentity');
 const { splitCustomerName } = require('../utils/customerName');
 const { serializeTurboMetadata } = require('../utils/turbo/turboMetadata');
+const { isValidOrderStatusEnum } = require('../utils/orderStatusEnum');
 
 const buildSourceCondition = (source) => {
   switch (String(source).toLowerCase()) {
@@ -207,7 +208,6 @@ class EnhancedOrderService {
       const orderNumber = await this.generateOrderNumber(data.companyId);
 
       // توحيد الحالات
-      const { isValidOrderStatusEnum } = require('../utils/orderStatusEnum');
       const normalizedStatus = (data.status || 'CONFIRMED').toUpperCase();
       data.status = isValidOrderStatusEnum(normalizedStatus) ? normalizedStatus : 'CONFIRMED';
       data.paymentMethod = normalizeOrderPaymentMethod(data.paymentMethod, 'CASH');
@@ -621,6 +621,16 @@ class EnhancedOrderService {
             );
           } catch (updateErr) {
             console.error('⚠️ [ENHANCED-ORDER] فشل تحديث حالة العميل:', updateErr.message);
+            if (updateData.status) {
+              try {
+                customer = await this.safeQuery(() =>
+                  this.getPrisma().customer.update({
+                    where: { id: customer.id },
+                    data: { status: updateData.status }
+                  })
+                );
+              } catch (_) {}
+            }
           }
         }
       }
