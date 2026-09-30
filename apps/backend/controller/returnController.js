@@ -466,6 +466,44 @@ exports.createReturnRequest = async (req, res) => {
     }
 };
 
+exports.getReturnRequest = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const effectiveCompanyId = req.user.effectiveCompanyId || req.user.companyId;
+
+        const request = await getPrisma().returnRequest.findFirst({
+            where: { id, companyId: effectiveCompanyId },
+            include: {
+                customer: {
+                    select: { firstName: true, lastName: true, email: true, phone: true, customerRating: true, successScore: true }
+                },
+                order: {
+                    select: { orderNumber: true, total: true, currency: true, turboTrackingNumber: true, shipping: true, codDepositAmount: true, codDepositPaid: true, codDepositRefunded: true }
+                },
+                returnReason: {
+                    include: { returnReasonCategory: true }
+                },
+                returnType: true,
+                shippingCompany: {
+                    select: { id: true, name: true, slug: true }
+                },
+                assignedUser: {
+                    select: { firstName: true, lastName: true }
+                }
+            }
+        });
+
+        if (!request) {
+            return res.status(404).json({ error: 'Return request not found' });
+        }
+
+        res.json(request);
+    } catch (error) {
+        console.error('❌ [GET_RETURN_REQUEST] ERROR:', error.message);
+        res.status(500).json({ error: 'Failed to fetch return request details' });
+    }
+};
+
 exports.updateReturnRequest = async (req, res) => {
     try {
         const { id } = req.params;

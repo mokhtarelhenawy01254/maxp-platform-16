@@ -18,6 +18,7 @@ router.delete('/reasons/:id', verifyToken.authenticateToken, checkAppAccess('ord
 
 // Return Requests
 router.get('/requests', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getReturnRequests);
+router.get('/requests/:id', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getReturnRequest);
 router.post('/requests', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.createReturnRequest);
 router.put('/requests/:id', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.updateReturnRequest);
 
