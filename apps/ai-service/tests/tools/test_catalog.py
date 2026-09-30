@@ -256,3 +256,87 @@ def test_curated_names_do_not_collide_with_code_tools():
         assert registry.resolve(cap["name"]) is None, (
             f"curated name {cap['name']} collides with a code tool — rename it"
         )
+
+
+# ── Phase 4: store_capability meta-tool + tools budget ─────────────────────
+
+
+@pytest.mark.asyncio
+async def test_store_capability_search_and_execute(monkeypatch):
+    from src.tools.definitions.store_capability import StoreCapabilityInput, store_capability
+
+    row = SimpleNamespace(
+        name="coupon_stats", domain="coupons",
+        description_en="Coupon performance stats (usage counts, discount totals).",
+        risk_level="read", exposure_state="active",
+        input_schema={"type": "object", "properties": {}},
+    )
+
+    class _Session:
+        async def __aenter__(self): return self
+        async def __aexit__(self, *a): return False
+        async def execute(self, *_a, **_kw):
+            return _MockResult([row]) if False else _MockResult(_rows=[row])  # noqa
+
+    # simpler: patch the helper directly
+    async def fake_active_rows(_session):
+        return [row]
+
+    import src.tools.definitions.store_capability as sc
+    monkeypatch.setattr(sc, "_active_rows", fake_active_rows)
+
+    class _SessionFactory:
+        def __call__(self):
+            return _Session()
+
+    import src.db.session as db_mod
+    monkeypatch.setattr(db_mod, "async_session", _SessionFactory())
+
+    # search (Arabic keyword should not match; English does)
+    res = await store_capability(StoreCapabilityInput(action="search", query="coupon"))
+    assert res["success"] is True
+    assert res["matches"][0]["name"] == "coupon_stats"
+
+    # execute read capability
+    async def fake_execute(r, args):
+        return {"success": True, "capability": r.name}
+
+    monkeypatch.setattr("src.tools.catalog.execute_catalog_tool", fake_execute)
+    res = await store_capability(StoreCapabilityInput(
+        action="execute", capability_name="coupon_stats", company_id="comp1",
+    ))
+    assert res["success"] is True
+
+    # write capability refused through the index (must use dedicated tool + approval)
+    row.risk_level = "write"
+    res = await store_capability(StoreCapabilityInput(
+        action="execute", capability_name="coupon_stats", company_id="comp1",
+    ))
+    assert res["success"] is False
+    assert "dedicated tool" in res["error"]
+
+
+def test_tool_schema_budget_flagged_when_huge():
+    """_build_skill_tool_dicts must measure the tools array — with hundreds
+    of catalog tools, schemas could silently crowd out the conversation."""
+    import json as _json
+
+    from src.pipeline.context import PipelineContext
+    from src.pipeline.stages.skills_pipeline import _build_skill_tool_dicts
+
+    class _BigTool:
+        def __init__(self, i):
+            self.name = f"bridge_tool_{i}"
+            self.description = "x" * 400
+
+        def to_json_schema_spec(self):
+            return {"type": "function", "function": {"name": self.name, "description": self.description, "parameters": {"type": "object", "properties": {}}}}
+
+    ctx = PipelineContext(message="hi", thread_id="t", company_id="c", customer_id=None, channel="merchant")
+    skills = [_BigTool(i) for i in range(120)]
+    specs = _build_skill_tool_dicts(skills, ctx)
+
+    assert len(specs) == 120
+    approx = len(_json.dumps(specs, ensure_ascii=False)) // 4
+    assert ctx.tools_budget_tokens == approx
+    assert approx > 8_000  # 120×400-char tools definitely exceed the 8k budget

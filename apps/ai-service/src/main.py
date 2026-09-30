@@ -138,6 +138,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 log = structlog.get_logger()
                 log.warning("Capability catalog startup skipped", error=str(exc))
 
+            # Capability drift detector: hourly manifest ↔ catalog diff.
+            try:
+                sf = db_session.async_session
+                if sf:
+                    async with sf() as _s:
+                        from src.tools.drift import run_drift_check
+                        await run_drift_check(_s)
+                from src.tools.drift import start_drift_loop
+                start_drift_loop()
+            except Exception as exc:
+                log = structlog.get_logger()
+                log.warning("Capability drift startup skipped", error=str(exc))
+
         # Register skills for the new skill-based pipeline
         from src.skills.register_all import register_all_skills
         register_all_skills()

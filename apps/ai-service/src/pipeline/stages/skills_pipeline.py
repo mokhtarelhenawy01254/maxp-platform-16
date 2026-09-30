@@ -1023,6 +1023,22 @@ def _build_skill_tool_dicts(skills: list, ctx: PipelineContext) -> list[dict]:
                     seen_names.add(fn_name)
                     tool_dicts.append(spec)
 
+    # Tool-schema budget: tool specs ride along on EVERY call and follow-up
+    # round but were never counted against ctx.token_budget — with hundreds
+    # of catalog tools they could silently crowd out the conversation.
+    import json as _json
+
+    tools_chars = len(_json.dumps(tool_dicts, ensure_ascii=False))
+    tools_tokens = tools_chars // 4
+    ctx.tools_budget_tokens = tools_tokens  # exposed for logging/metrics
+    if tools_tokens > 8_000:
+        logger.warning(
+            "tool_schema_budget_exceeded",
+            tools=len(tool_dicts),
+            approx_tokens=tools_tokens,
+            hint="reduce role tool grants or rely on the store_capability index tool",
+        )
+
     return tool_dicts
 
 

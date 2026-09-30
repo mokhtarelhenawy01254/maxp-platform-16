@@ -349,6 +349,7 @@ roles:
     - payment_methods_configure
 
   STORE_MANAGER:
+    - store_capability
     - product_search
     - product_create
     - product_update_price
