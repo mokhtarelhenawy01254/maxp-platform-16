@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import {
   UsersIcon,
   XCircleIcon,
   TrophyIcon,
+  CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
 import PeriodSelector, {
+  PeriodKey,
   PeriodRange,
+  computePeriodRange,
+  getPeriodLabel,
 } from "../../../components/common/PeriodSelector";
 
 interface TeamStats {
@@ -31,27 +36,149 @@ interface TeamStats {
   totalTeamRevenue: number;
 }
 
+const STORAGE_KEY = "maxp_analytics_team_performance_period";
+const VALID_PERIODS: PeriodKey[] = [
+  "today",
+  "yesterday",
+  "7",
+  "30",
+  "90",
+  "180",
+  "365",
+  "custom",
+];
+
+const getInitialPeriodState = (searchParams: URLSearchParams): PeriodRange => {
+  const urlPeriod = searchParams.get("period") as PeriodKey | null;
+  const urlStart = searchParams.get("startDate") || "";
+  const urlEnd = searchParams.get("endDate") || "";
+
+  if (urlPeriod && VALID_PERIODS.includes(urlPeriod)) {
+    if (urlPeriod === "custom") {
+      if (urlStart && urlEnd && urlStart <= urlEnd) {
+        return { period: "custom", startDate: urlStart, endDate: urlEnd };
+      }
+    } else {
+      const dates = computePeriodRange(urlPeriod);
+      return {
+        period: urlPeriod,
+        startDate: dates.startDate,
+        endDate: dates.endDate,
+      };
+    }
+  }
+
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.period && VALID_PERIODS.includes(parsed.period)) {
+        if (parsed.period === "custom") {
+          if (
+            parsed.startDate &&
+            parsed.endDate &&
+            parsed.startDate <= parsed.endDate
+          ) {
+            return {
+              period: "custom",
+              startDate: parsed.startDate,
+              endDate: parsed.endDate,
+            };
+          }
+        } else {
+          const dates = computePeriodRange(parsed.period);
+          return {
+            period: parsed.period,
+            startDate: dates.startDate,
+            endDate: dates.endDate,
+          };
+        }
+      }
+    }
+  } catch {
+    // Ignore storage parse error
+  }
+
+  // Default is "today" for Team Performance Analytics
+  const defaultDates = computePeriodRange("today");
+  return {
+    period: "today",
+    startDate: defaultDates.startDate,
+    endDate: defaultDates.endDate,
+  };
+};
+
 const TeamPerformanceAnalytics: React.FC = () => {
   const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [initialConfig] = useState<PeriodRange>(() =>
+    getInitialPeriodState(searchParams),
+  );
+  const [range, setRange] = useState<PeriodRange>(initialConfig);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<TeamStats | null>(null);
+
+  // Sync to URL & localStorage on initial mount if not yet present in URL
+  useEffect(() => {
+    const urlPeriod = searchParams.get("period");
+    if (!urlPeriod) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set("period", initialConfig.period);
+      if (
+        initialConfig.period === "custom" &&
+        initialConfig.startDate &&
+        initialConfig.endDate
+      ) {
+        nextParams.set("startDate", initialConfig.startDate);
+        nextParams.set("endDate", initialConfig.endDate);
+      }
+      setSearchParams(nextParams, { replace: true });
+    }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(initialConfig));
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleRangeChange = (newRange: PeriodRange) => {
+    setRange(newRange);
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("period", newRange.period);
+    if (
+      newRange.period === "custom" &&
+      newRange.startDate &&
+      newRange.endDate
+    ) {
+      nextParams.set("startDate", newRange.startDate);
+      nextParams.set("endDate", newRange.endDate);
+    } else {
+      nextParams.delete("startDate");
+      nextParams.delete("endDate");
+    }
+    setSearchParams(nextParams, { replace: true });
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newRange));
+    } catch {}
+  };
 
   useEffect(() => {
     if (range) {
-      fetchData();
+      fetchData(range);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range]);
 
-  const fetchData = async () => {
+  const fetchData = async (targetRange: PeriodRange = range) => {
     try {
       setLoading(true);
       setError(null);
       const response = await analyticsService.getTeamPerformanceAnalytics(
-        range?.period,
-        range?.startDate,
-        range?.endDate,
+        targetRange.period,
+        targetRange.startDate,
+        targetRange.endDate,
       );
       if (response.success && response.data) {
         setStats(response.data);
@@ -71,17 +198,44 @@ const TeamPerformanceAnalytics: React.FC = () => {
     }
   };
 
+  const appliedPeriodLabel = getPeriodLabel(range.period, t);
+
+  const appliedPeriodBadge = (
+    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/60 text-xs font-medium">
+      <CalendarDaysIcon className="w-4 h-4 shrink-0 text-blue-600 dark:text-blue-400" />
+      <span className="text-gray-600 dark:text-gray-400">
+        {t("periodSelector.appliedPeriod", "الفترة المطبقة")}:
+      </span>
+      <span className="font-semibold text-blue-700 dark:text-blue-300">
+        {appliedPeriodLabel}
+      </span>
+      {range.startDate && range.endDate && (
+        <span className="text-gray-500 dark:text-gray-400 font-mono text-[11px] ltr:ml-1 rtl:mr-1">
+          {range.startDate === range.endDate
+            ? `(${range.startDate})`
+            : `(${range.startDate} إلى ${range.endDate})`}
+        </span>
+      )}
+    </div>
+  );
+
   const header = (
-    <div className="flex items-center justify-between">
-      <div>
+    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="space-y-1.5">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           {t("teamPerformance.title")}
         </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
+        <p className="text-gray-500 dark:text-gray-400 text-sm">
           {t("teamPerformance.subtitle")}
         </p>
+        <div className="pt-0.5">{appliedPeriodBadge}</div>
       </div>
-      <PeriodSelector onRangeChange={setRange} />
+      <PeriodSelector
+        initialPeriod={initialConfig.period}
+        initialStartDate={initialConfig.startDate}
+        initialEndDate={initialConfig.endDate}
+        onRangeChange={handleRangeChange}
+      />
     </div>
   );
 
@@ -104,7 +258,7 @@ const TeamPerformanceAnalytics: React.FC = () => {
           <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 dark:text-red-400">{error}</p>
           <button
-            onClick={fetchData}
+            onClick={() => fetchData(range)}
             className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
           >
             {t("teamPerformance.retry")}

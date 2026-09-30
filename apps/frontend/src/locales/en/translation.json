@@ -3143,7 +3143,11 @@
     "lastYear": "Last Year",
     "custom": "Custom Period",
     "from": "From",
-    "to": "To"
+    "to": "To",
+    "selectBothDatesPrompt": "Please select both start and end dates",
+    "selectBothDatesWarning": "Please select both dates to apply the filter",
+    "startDateAfterEndDate": "Start date must be before or equal to end date",
+    "appliedPeriod": "Applied Period"
   },
   "PlatformPartnerManagement": {
     "error_load_1fe0": "خطأ في تحميل البيانات",
