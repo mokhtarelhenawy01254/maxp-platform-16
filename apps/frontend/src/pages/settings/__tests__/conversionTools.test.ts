@@ -1,3 +1,5 @@
+/* @vitest-environment jsdom */
+
 import { describe, expect, it } from "vitest";
 import arTranslation from "../../../locales/ar/translation.json";
 import enTranslation from "../../../locales/en/translation.json";
@@ -10,8 +12,8 @@ import {
 type TranslationNamespace = Record<string, any>;
 
 describe("conversion tools catalog", () => {
-  it("exposes all 22 tools across the 5 pages", () => {
-    expect(ALL_CONVERSION_TOOLS).toHaveLength(22);
+  it("exposes all 24 tools across the 5 pages", () => {
+    expect(ALL_CONVERSION_TOOLS).toHaveLength(24);
   });
 
   it("findToolById resolves existing keys and rejects unknown ones", () => {
@@ -29,7 +31,7 @@ describe("conversion tools catalog", () => {
     }
   });
 
-  it("renders a preview node for every tool (22/22)", () => {
+  it("renders a preview node for every tool (24/24)", () => {
     for (const { tool } of ALL_CONVERSION_TOOLS) {
       const node = renderConversionToolPreview(tool.key, {
         settings: { thresholds: { freeShippingAmount: 750 } },

@@ -51,6 +51,6 @@ export const StorefrontRoutes = [
   <Route key="settings-sf-tools-leg" path="/settings/storefront/tools-legacy" element={<Navigate to="/settings/storefront/editor" replace />} />,
   <Route key="settings-sf-layout" path="/settings/storefront/layout-studio" element={<Navigate to="/settings/storefront/editor" replace />} />,
   <Route key="settings-sf-struct" path="/settings/storefront/structure-manager" element={<Navigate to="/settings/storefront/editor" replace />} />,
-  <Route key="settings-conv-tools" path="/settings/conversion-tools" element={<Navigate to="/settings/store?tab=promotion" replace />} />,
+  <Route key="settings-conv-tools" path="/settings/conversion-tools" element={<Navigate to="/settings/store/tools" replace />} />,
   <Route key="settings-volume-discounts" path="/settings/volume-discounts" element={<Navigate to="/settings/store-promotion" replace />} />
 ];

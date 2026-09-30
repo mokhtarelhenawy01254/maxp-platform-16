@@ -1,3 +1,5 @@
+/* @vitest-environment jsdom */
+
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/react";
 import {
@@ -38,7 +40,7 @@ describe("conversion tool previews render inside the storefront theme provider",
     }
   });
 
-  it("renders every single tool preview inside the provider without throwing (22/22)", () => {
+  it("renders every single tool preview inside the provider without throwing (24/24)", () => {
     for (const { tool } of ALL_CONVERSION_TOOLS) {
       const node = renderConversionToolPreview(tool.key, { settings: PREVIEW_SETTINGS });
       expect(node, `no node for ${tool.key}`).toBeTruthy();

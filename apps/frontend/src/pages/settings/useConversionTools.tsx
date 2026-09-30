@@ -283,19 +283,29 @@ export function useConversionTools(appSlugs: ManagedMarketplaceAppSlug[]) {
       }
 
       const currentValue = getDeepValue(appState.settings, field.path.split("."));
-      const nextNumber = Math.max(
-        field.min ?? 0,
-        Number.isFinite(Number(rawValue)) ? Number(rawValue) : 0,
-      );
+      let nextValue: unknown;
 
-      if (Number(currentValue || 0) === nextNumber) {
-        return;
+      if (field.type === "number") {
+        const nextNumber = Math.max(
+          field.min ?? 0,
+          Number.isFinite(Number(rawValue)) ? Number(rawValue) : 0,
+        );
+        if (Number(currentValue || 0) === nextNumber) {
+          return;
+        }
+        nextValue = nextNumber;
+      } else {
+        const nextString = String(rawValue ?? "").trim();
+        if (String(currentValue ?? "").trim() === nextString) {
+          return;
+        }
+        nextValue = nextString;
       }
 
       const nextSettings = setDeepValue(
         appState.settings,
         field.path.split("."),
-        nextNumber,
+        nextValue,
       );
       const normalizedSettings = normalizeMarketplaceAppSettings(
         tool.appSlug,

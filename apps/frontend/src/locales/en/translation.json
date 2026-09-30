@@ -17972,6 +17972,14 @@
       "verifiedBadge": {
         "label": "Verified Badge",
         "benefit": "Displays a verified-purchaser badge within reviews."
+      },
+      "productWishlist": {
+        "label": "Product Wishlist",
+        "benefit": "Heart button that lets customers save favorite products to buy later."
+      },
+      "productComparison": {
+        "label": "Product Comparison",
+        "benefit": "Comparison button that lets customers compare features and specs easily."
       }
     },
     "field": {

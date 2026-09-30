@@ -6815,7 +6815,7 @@ const AppContent = () => {
                 <Route
                   path="/settings/conversion-tools"
                   element={
-                    <Navigate to="/settings/store?tab=promotion" replace />
+                    <Navigate to="/settings/store/tools" replace />
                   }
                 />
                 <Route

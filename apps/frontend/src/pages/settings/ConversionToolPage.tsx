@@ -10,6 +10,7 @@ import {
   Monitor,
   ShoppingBag,
   Smartphone,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { buildStorefrontPreviewPath } from "../../storefront/utils/paths";
@@ -273,6 +274,61 @@ export default function ConversionToolPage() {
             ) : null}
           </div>
 
+          {tool.key === "boughtTogether" ? (
+            <div className="space-y-3 rounded-xl border border-amber-200/90 bg-amber-50/80 p-4 text-xs text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+              <div className="flex items-center gap-2 font-black text-amber-900 dark:text-amber-100">
+                <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <span>كيف يتم ربط وتحديد منتجات الباقة (Bought Together)؟</span>
+              </div>
+              <p className="text-[11px] leading-5 text-amber-800/90 dark:text-amber-300/90">
+                تعرض هذه الأداة في المتجر باقة ترويجية جاهزة للمنتج مع خيارات تحديد القطع وزر إضافة الباقة دفعة واحدة. المنتجات المعروضة داخل الباقة يتم تحديدها من خلال <strong>ربط المنتجات التكميلية (Cross-sell / Related)</strong> لكل صنف في الكتالوج.
+              </p>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <Link
+                  to="/settings/upsell"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-black text-white shadow-xs transition hover:bg-amber-700 active:scale-95"
+                >
+                  <span>إدارة وربط منتجات الباقات (Upsell Hub)</span>
+                  <ExternalLink className="h-3 w-3" />
+                </Link>
+                <Link
+                  to="/products"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-bold text-amber-900 shadow-xs transition hover:bg-amber-50 dark:border-amber-700 dark:bg-gray-900 dark:text-amber-200"
+                >
+                  <span>كتالوج المنتجات</span>
+                </Link>
+              </div>
+            </div>
+          ) : null}
+
+          {tool.actions?.length ? (
+            <div className="space-y-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 dark:border-indigo-900/50 dark:bg-indigo-950/30">
+              {tool.actions.map((action) => (
+                <div key={action.to} className="space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-black text-indigo-950 dark:text-indigo-200">
+                        {action.label}
+                      </h4>
+                      {action.description ? (
+                        <p className="text-[11px] leading-5 text-indigo-800/80 dark:text-indigo-300/80">
+                          {action.description}
+                        </p>
+                      ) : null}
+                    </div>
+                    <Link
+                      to={action.to}
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white shadow-xs transition hover:bg-indigo-700 active:scale-95"
+                    >
+                      <span>فتح</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
           {tool.fields?.length ? (
             <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-950">
               <p className="text-sm font-black text-gray-900 dark:text-white">
@@ -297,16 +353,64 @@ export default function ConversionToolPage() {
                       </span>
                     ) : null}
                     <span className="mt-1 flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={field.min}
-                        defaultValue={Number(fieldValue || 0)}
-                        disabled={!availability.available || loading || saving || fieldSaving}
-                        onBlur={(event) =>
-                          void handleToolFieldSave(tool, field, event.currentTarget.value)
-                        }
-                        className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm font-bold text-gray-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
-                      />
+                      {field.type === "select" ? (
+                        <select
+                          defaultValue={String(
+                            fieldValue || field.options?.[0]?.value || "",
+                          )}
+                          disabled={
+                            !availability.available || loading || saving || fieldSaving
+                          }
+                          onChange={(event) =>
+                            void handleToolFieldSave(
+                              tool,
+                              field,
+                              event.currentTarget.value,
+                            )
+                          }
+                          className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-xs font-bold text-gray-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
+                        >
+                          {field.options?.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : field.type === "text" ? (
+                        <input
+                          type="text"
+                          defaultValue={String(fieldValue ?? "")}
+                          placeholder={field.placeholder}
+                          disabled={
+                            !availability.available || loading || saving || fieldSaving
+                          }
+                          onBlur={(event) =>
+                            void handleToolFieldSave(
+                              tool,
+                              field,
+                              event.currentTarget.value,
+                            )
+                          }
+                          className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-xs font-bold text-gray-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
+                        />
+                      ) : (
+                        <input
+                          type="number"
+                          min={field.min}
+                          defaultValue={Number(fieldValue || 0)}
+                          disabled={
+                            !availability.available || loading || saving || fieldSaving
+                          }
+                          onBlur={(event) =>
+                            void handleToolFieldSave(
+                              tool,
+                              field,
+                              event.currentTarget.value,
+                            )
+                          }
+                          className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm font-bold text-gray-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
+                        />
+                      )}
                       {field.suffix ? (
                         <span className="text-xs font-black text-gray-500 dark:text-gray-400">
                           {field.suffix}

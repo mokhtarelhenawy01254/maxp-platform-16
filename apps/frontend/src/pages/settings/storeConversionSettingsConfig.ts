@@ -11,11 +11,20 @@ export type StoreConversionPageId =
   | "selling-modes"
   | "reviews-social-proof";
 
+export type StoreConversionToolActionConfig = {
+  label: string;
+  description?: string;
+  to: string;
+  primary?: boolean;
+};
+
 export type StoreConversionToolFieldConfig = {
   key: string;
   label: string;
   description?: string;
-  type: "number";
+  type?: "number" | "text" | "select";
+  options?: Array<{ value: string; label: string }>;
+  placeholder?: string;
   path: string;
   min?: number;
   suffix?: string;
@@ -30,6 +39,7 @@ export type StoreConversionToolConfig = {
   writePathsOn?: string[];
   writePathsOff?: string[];
   fields?: StoreConversionToolFieldConfig[];
+  actions?: StoreConversionToolActionConfig[];
 };
 
 export type StoreConversionSectionConfig = {
@@ -93,13 +103,26 @@ export const STORE_CONVERSION_PAGES: StoreConversionPageConfig[] = [
             "conversion-suite",
             "saleCountdown",
           ),
-          buildModuleToggle(
-            "lowStockNotice",
-            "Low Stock Notice",
-            "Shows a low-stock alert for size or color before adding to cart.",
-            "conversion-suite",
-            "lowStockNotice",
-          ),
+          {
+            ...buildModuleToggle(
+              "lowStockNotice",
+              "Low Stock Notice",
+              "Shows a low-stock alert for size or color before adding to cart.",
+              "conversion-suite",
+              "lowStockNotice",
+            ),
+            fields: [
+              {
+                key: "lowStockThreshold",
+                label: "الحد الأدنى لظهور التنبيه",
+                description: "يظهر التنبيه للعميل عندما يقل المخزون عن هذا العدد.",
+                type: "number",
+                path: "thresholds.lowStockThreshold",
+                min: 1,
+                suffix: "قطع",
+              },
+            ],
+          },
           buildModuleToggle(
             "soldCounter",
             "Sold Counter",
@@ -176,32 +199,116 @@ export const STORE_CONVERSION_PAGES: StoreConversionPageConfig[] = [
       {
         title: "storeConversionSettings.sectionComplementary",
         tools: [
-          buildModuleToggle(
-            "crossSell",
-            "Cross Sell",
-            "Runs cross-sell product suggestions in dedicated spaces.",
-            "conversion-suite",
-            "crossSell",
-          ),
-          buildModuleToggle(
-            "boughtTogether",
-            "Bought Together",
-            "Shows product bundles frequently bought together on the same page.",
-            "conversion-suite",
-            "boughtTogether",
-          ),
+          {
+            ...buildModuleToggle(
+              "crossSell",
+              "Cross Sell",
+              "Runs cross-sell product suggestions in dedicated spaces.",
+              "conversion-suite",
+              "crossSell",
+            ),
+            actions: [
+              {
+                label: "إدارة المنتجات التكميلية (Cross-Sell Hub)",
+                description: "ربط وتعيين المنتجات المكملة لكل منتج في الكتالوج.",
+                to: "/settings/upsell",
+                primary: true,
+              },
+            ],
+            fields: [
+              {
+                key: "crossSellTitle",
+                label: "عنوان قسم المنتجات التكميلية",
+                type: "text",
+                path: "copy.crossSellTitle",
+                placeholder: "منتجات تكميلية قد تعجبك",
+              },
+              {
+                key: "crossSellDescription",
+                label: "الوصف التوضيحي",
+                type: "text",
+                path: "copy.crossSellDescription",
+                placeholder: "قطع مختارة تتناسب مع اختيارك",
+              },
+            ],
+          },
+          {
+            ...buildModuleToggle(
+              "boughtTogether",
+              "Bought Together",
+              "Shows product bundles frequently bought together on the same page.",
+              "conversion-suite",
+              "boughtTogether",
+            ),
+            actions: [
+              {
+                label: "إدارة وربط منتجات الباقات (Upsell Hub)",
+                description: "اختر المنتج وحدد المنتجات المكملة التي ستظهر معه في باقة الشراء التلقائية.",
+                to: "/settings/upsell",
+                primary: true,
+              },
+            ],
+            fields: [
+              {
+                key: "boughtTogetherTitle",
+                label: "عنوان قسم الباقة",
+                description: "العنوان الظاهر للعميل فوق الباقة في صفحة المنتج.",
+                type: "text",
+                path: "copy.boughtTogetherTitle",
+                placeholder: "يُشترى معًا كثيرًا (أو اشترِ معًا ووفّر)",
+              },
+              {
+                key: "boughtTogetherDescription",
+                label: "الوصف التحفيزي للباقة",
+                description: "النص التوضيحي تحت العنوان لتحفيز العميل.",
+                type: "text",
+                path: "copy.boughtTogetherDescription",
+                placeholder: "اقتراحات مختارة بعناية لتكمل هذا المنتج وتزيد قيمة الطلب.",
+              },
+              {
+                key: "boughtTogetherStyle",
+                label: "شكل وتنسيق عرض الباقة",
+                description: "طريقة عرض وترتيب كروت المنتجات داخل الباقة.",
+                type: "select",
+                path: "ui.boughtTogetherStyle",
+                options: [
+                  { value: "stacked", label: "مكدسة عموديًا (Stacked) — الأكثر وضوحًا" },
+                  { value: "compact", label: "كروت مدمجة (Compact) — عصرية وأنيقة" },
+                  { value: "editorial", label: "استعراض واسع (Editorial) — صور كبيرة وفخمة" },
+                ],
+              },
+              {
+                key: "bundleAddLabel",
+                label: "نص زر إضافة الباقة",
+                description: "النص المكتوب على زر إضافة الباقة للسلة.",
+                type: "text",
+                path: "copy.bundleAddLabel",
+                placeholder: "أضف الباقة المحددة",
+              },
+            ],
+          },
         ],
       },
       {
         title: "storeConversionSettings.sectionQuantityOffers",
         tools: [
-          buildModuleToggle(
-            "bulkSavings",
-            "Bulk Savings",
-            "Runs quantity savings directly on the product page.",
-            "conversion-suite",
-            "bulkSavings",
-          ),
+          {
+            ...buildModuleToggle(
+              "bulkSavings",
+              "Bulk Savings",
+              "Runs quantity savings directly on the product page.",
+              "conversion-suite",
+              "bulkSavings",
+            ),
+            actions: [
+              {
+                label: "إدارة جدول خصومات الكميات",
+                description: "تحديد شرائح الكميات ونسب الخصم على مستوى المنتجات.",
+                to: "/settings/volume-discounts",
+                primary: true,
+              },
+            ],
+          },
           {
             key: "buyMoreSaveMore",
             label: "Buy More Save More",
@@ -210,6 +317,14 @@ export const STORE_CONVERSION_PAGES: StoreConversionPageConfig[] = [
             readPaths: ["general.enabled", "modules.renderOnProductPage"],
             writePathsOn: ["general.enabled", "modules.renderOnProductPage"],
             writePathsOff: ["modules.renderOnProductPage"],
+            actions: [
+              {
+                label: "إدارة عروض الكميات المتقدمة",
+                description: "تخصيص باقات التوفير المتعددة والـ Mix and Match.",
+                to: "/settings/volume-discounts",
+                primary: true,
+              },
+            ],
           },
         ],
       },
@@ -259,13 +374,41 @@ export const STORE_CONVERSION_PAGES: StoreConversionPageConfig[] = [
       {
         title: "storeConversionSettings.sectionBehavioral",
         tools: [
-          buildModuleToggle(
-            "exitIntentPopup",
-            "Exit Intent Popup",
-            "Runs an exit-intent popup when the user tries to leave the store.",
-            "conversion-suite",
-            "exitIntentPopup",
-          ),
+          {
+            ...buildModuleToggle(
+              "exitIntentPopup",
+              "Exit Intent Popup",
+              "Runs an exit-intent popup when the user tries to leave the store.",
+              "conversion-suite",
+              "exitIntentPopup",
+            ),
+            fields: [
+              {
+                key: "exitIntentTitle",
+                label: "عنوان نافذة الخروج",
+                description: "العنوان الظاهر عند محاولة العميل مغادرة الصفحة.",
+                type: "text",
+                path: "copy.exitIntentTitle",
+                placeholder: "انتظر! لدينا هدية مميزة لك",
+              },
+              {
+                key: "exitIntentCouponCode",
+                label: "كود كوبون الخصم",
+                description: "رمز القسيمة الترويجية المعروضة لتحفيز إتمام الشراء.",
+                type: "text",
+                path: "copy.exitIntentCouponCode",
+                placeholder: "SAVE10",
+              },
+              {
+                key: "exitIntentDescription",
+                label: "رسالة العرض",
+                description: "النص التوضيحي لحث العميل على استخدام الكوبون فورًا.",
+                type: "text",
+                path: "copy.exitIntentDescription",
+                placeholder: "استخدم هذا الكوبون واحصل على خصم فوري قبل مغادرة المتجر!",
+              },
+            ],
+          },
           buildModuleToggle(
             "fakeVisitorCounter",
             "Fake Visitor",
