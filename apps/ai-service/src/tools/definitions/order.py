@@ -242,7 +242,17 @@ async def order_lookup_by_phone(input_data: OrderLookupByPhoneInput) -> dict[str
 
 
 async def order_create_draft(input_data: OrderCreateDraftInput) -> dict[str, Any]:
-    return _write_result("order.create_draft", {
+    """Create a PENDING order for merchant review.
+
+    Runs after merchant approval: the order lands in the dashboard with
+    status PENDING (repo.create_order always inserts PENDING) so the store
+    team confirms/fulfills it through the normal pipeline.
+    """
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "Missing company_id"}
+
+    order_payload = {
         "customerName": input_data.customer_name,
         "customerPhone": input_data.customer_phone,
         "productName": input_data.product_name,
@@ -253,8 +263,16 @@ async def order_create_draft(input_data: OrderCreateDraftInput) -> dict[str, Any
         "total": input_data.total,
         "address": input_data.address,
         "city": input_data.city,
+        "confirmedByCustomer": False,
         "notes": input_data.notes,
-    }, input_data.company_id or "")
+    }
+    order_payload = {key: value for key, value in order_payload.items() if value is not None}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = OrderRepository(sess)
+        result = await repo.create_order(company_id, order_payload)
+    return _executed_result("ORDER_DRAFT_CREATED", result)
 
 
 async def order_create_confirmed(input_data: OrderCreateConfirmedInput) -> dict[str, Any]:

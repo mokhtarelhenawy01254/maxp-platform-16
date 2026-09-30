@@ -89,7 +89,8 @@ ADVANCED_TOOL_NAMES: set[str] = {
     "hr_my_advances",
     "facebook_ad_analyze_product",
     "facebook_ad_get_decision",
-    "facebook_ad_record_learned_rule",
+    # facebook_ad_record_learned_rule is a WRITE tool (playbook mutation) —
+    # see WRITE_TOOL_NAMES; not a read/analytics tool.
     "facebook_ad_account_info",
     "orders_campaign_attribution_report",
     # Smart Seller analytics

@@ -34,13 +34,11 @@
     "order_lookup",
     "order_create_confirmed",
     "inventory_check",
-    "discount_create_draft",
     "shipping_rates",
     "whatsapp_send",
     "facebook_reply",
     "knowledge_search",
     "knowledge_ask_merchant",
-    "knowledge_create_faq",
     "abandoned_carts",
     "offers_list_active",
     "coupon_validate"

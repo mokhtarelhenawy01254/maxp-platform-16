@@ -65,7 +65,6 @@ roles:
     - agent_handoff_to
     - knowledge_search
     - knowledge_ask_merchant
-    - knowledge_create_faq
     - session_search
 
   ORDER:
@@ -119,7 +118,6 @@ roles:
     - inventory_check
     - order_create_draft
     - order_create_confirmed
-    - discount_create_draft
     - whatsapp_send
     - shipping_rates
     - session_search
@@ -132,7 +130,6 @@ roles:
     - inventory_check
     - inventory_adjust
     - product_update_price
-    - discount_create_draft
     - audit_read
 
   PRODUCT_CREATOR:
@@ -154,7 +151,6 @@ roles:
     - inventory_check
     - sales_revenue
     - company_snapshot
-    - facebook_ad_create_draft
     - facebook_ad_create_full_draft
     - facebook_ad_publish_draft
     - facebook_ad_analyze_product
@@ -163,7 +159,6 @@ roles:
     - facebook_ad_account_info
     - orders_campaign_attribution_report
     - competitor_get_ads
-    - message_broadcast
     - audit_read
     - generate_social_image
     - session_search
@@ -250,7 +245,6 @@ roles:
     - order_refund
     - order_summary
     - inventory_check
-    - discount_create_draft
     - sales_revenue
     - company_snapshot
     - shipping_rates
@@ -274,13 +268,11 @@ roles:
     - order_lookup
     - order_create_confirmed
     - inventory_check
-    - discount_create_draft
     - shipping_rates
     - whatsapp_send
     - facebook_reply
     - knowledge_search
     - knowledge_ask_merchant
-    - knowledge_create_faq
     - abandoned_carts
     - offers_list_active
     - coupon_validate
@@ -380,7 +372,6 @@ roles:
     - customer_top_buyers
     - sales_revenue
     - company_snapshot
-    - discount_create_draft
     - discount_create
     - offers_list_active
     - coupon_validate
@@ -392,10 +383,7 @@ roles:
     - shipping_zone_set
     - knowledge_search
     - knowledge_ask_merchant
-    - knowledge_create_faq
-    - knowledge_create_policy
     - whatsapp_send
-    - message_broadcast
     - competitor_search
     - competitor_get_products
     - competitor_price_compare
@@ -412,7 +400,6 @@ roles:
     - record_learned_rule
     - manage_agent_skill
     - update_agent_identity
-    - agent_spawn
     - scheduler_create_job
 
   HR_ASSISTANT:

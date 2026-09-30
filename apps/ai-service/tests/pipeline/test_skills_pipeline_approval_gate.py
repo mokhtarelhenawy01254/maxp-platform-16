@@ -55,8 +55,13 @@ async def test_write_tool_is_blocked_and_not_executed():
     func.assert_not_awaited()
     assert result["status"] == "awaiting_approval"
     assert result["action_type"] == "conversion_tool_toggle"
-    # pipeline injects company_id into the args before the gate — kept in the draft
-    assert result["action_args"] == {"tool_key": "freeShippingBar", "enable": True, "company_id": "comp1"}
+    # pipeline injects company_id + user_id into the args before the gate — kept in the draft
+    assert result["action_args"] == {
+        "tool_key": "freeShippingBar",
+        "enable": True,
+        "company_id": "comp1",
+        "user_id": "merchant",
+    }
     assert result["company_id"] == "comp1"
     # The LLM-visible payload must give a literal reply template framing the
     # block as a pending approval — never as a failure or an execution.

@@ -37,7 +37,6 @@
     "order_refund",
     "order_summary",
     "inventory_check",
-    "discount_create_draft",
     "sales_revenue",
     "company_snapshot",
     "shipping_rates",

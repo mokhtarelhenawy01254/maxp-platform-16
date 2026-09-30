@@ -30,7 +30,6 @@
     "order.lookup",
     "order.create_draft",
     "order.create_confirmed",
-    "discount.create_draft",
     "whatsapp.send",
     "agent.handoff"
   ],

@@ -35,8 +35,7 @@
     "whatsapp.send",
     "agent.handoff.to",
     "knowledge.search",
-    "knowledge.ask.merchant",
-    "knowledge.create.faq"
+    "knowledge.ask.merchant"
   ],
   "allowedSkills": [
     "customer-context-summary",

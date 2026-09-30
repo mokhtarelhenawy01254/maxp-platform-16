@@ -223,7 +223,7 @@ async def test_order_lookup_by_phone_missing_params():
 
 @pytest.mark.asyncio
 async def test_order_lookup_by_phone_calls_repo(monkeypatch):
-    async def fake_get_orders(company_id, phone, limit=10, status=None):
+    async def fake_get_orders(self, company_id, phone, limit=10, status=None):
         assert company_id == "comp1"
         assert phone == "01012345678"
         return [
@@ -251,7 +251,7 @@ async def test_order_lookup_by_phone_calls_repo(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_order_lookup_by_phone_empty(monkeypatch):
-    async def fake_get_orders(company_id, phone, limit=10, status=None):
+    async def fake_get_orders(self, company_id, phone, limit=10, status=None):
         return []
 
     class _MockSession:
@@ -272,7 +272,7 @@ async def test_order_lookup_by_phone_empty(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_order_recent_list_with_status_and_period(monkeypatch):
-    async def fake_get_recent_orders(company_id, limit=25, status=None, period=None, date=None):
+    async def fake_get_recent_orders(self, company_id, limit=25, status=None, period=None, date=None):
         assert company_id == "comp1"
         assert status == "CONFIRMED"
         assert period == "yesterday"
@@ -318,7 +318,7 @@ async def test_order_recent_list_with_status_and_period(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_order_summary_yesterday(monkeypatch):
-    async def fake_get_order_summary(company_id, period="today"):
+    async def fake_get_order_summary(self, company_id, period="today"):
         assert company_id == "comp1"
         assert period == "yesterday"
         return {

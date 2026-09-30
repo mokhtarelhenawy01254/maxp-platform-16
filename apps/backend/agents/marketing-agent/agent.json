@@ -26,7 +26,6 @@
   "allowedTools": [
     "product.search",
     "inventory.check",
-    "facebook_ad.create_draft",
     "audit.read",
     "agent.handoff"
   ],
