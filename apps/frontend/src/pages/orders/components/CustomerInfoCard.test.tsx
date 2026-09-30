@@ -258,4 +258,25 @@ describe("CustomerInfoCard notes and custom fields behavior", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("هيونداي توسان 2022")).toBeInTheDocument();
   });
+
+  it("caches invoice settings in memory so opening multiple orders does not repeat API calls", async () => {
+    const { apiClient } = require("../../../services/apiClient");
+    const { clearInvoiceSettingsCache } = require("../../../hooks/useInvoiceSettings");
+    clearInvoiceSettingsCache();
+    jest.mocked(apiClient.get).mockClear();
+
+    const { unmount: unmount1 } = renderCard({ ...baseOrder, id: "ORD-1", notes: "ملاحظة 1" });
+    await waitFor(() => {
+      expect(apiClient.get).toHaveBeenCalledTimes(1);
+    });
+    unmount1();
+
+    // Second and third orders should read directly from cache with 0 additional API calls
+    const { unmount: unmount2 } = renderCard({ ...baseOrder, id: "ORD-2", notes: "ملاحظة 2" });
+    unmount2();
+    const { unmount: unmount3 } = renderCard({ ...baseOrder, id: "ORD-3", notes: "ملاحظة 3" });
+    unmount3();
+
+    expect(apiClient.get).toHaveBeenCalledTimes(1);
+  });
 });
