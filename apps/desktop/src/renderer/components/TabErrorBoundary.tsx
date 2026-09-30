@@ -74,6 +74,29 @@ export class TabErrorBoundary extends React.Component<Props, State> {
           <RefreshCw size={12} />
           <span>إعادة تحميل الشاشة</span>
         </button>
+
+        <button
+          onClick={() => {
+            try { window.electronAPI?.quitAndInstallUpdate(); } catch {}
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'var(--accent-green-bg)',
+            border: '1px solid var(--accent-green-border)',
+            color: 'var(--accent-green)',
+            borderRadius: 6,
+            padding: '7px 14px',
+            fontSize: 11.5,
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+          title="لو فيه تحديث اتساب على الجهاز — ده هيثبته ويعيد التشغيل ويرجع الشاشة شغالة"
+        >
+          تثبيت التحديث الجاهز وإعادة التشغيل
+        </button>
       </div>
     );
   }
