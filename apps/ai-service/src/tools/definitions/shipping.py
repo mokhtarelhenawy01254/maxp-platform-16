@@ -5,7 +5,7 @@ from typing import Any
 from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 
-from src.tools.definitions._helpers import _executed_result, _write_result
+from src.tools.definitions._helpers import _executed_result
 
 
 class ShippingZoneSetInput(BaseModel):
@@ -127,11 +127,40 @@ async def shipping_rates(input_data: ShippingRatesInput) -> dict[str, Any]:
 
 
 async def shipping_update(input_data: ShippingUpdateInput) -> dict[str, Any]:
-    return _write_result("shipping.update", {
-        "orderId": input_data.order_id,
-        "address": input_data.address,
-        "shippingClass": input_data.shipping_class,
-    }, input_data.company_id or "")
+    """Update an order's delivery address through the backend.
+
+    Runs after merchant approval: reuses the orders-v2 details route (same
+    one as order_update_details) so validation, status history, and side
+    effects run server-side. `shipping_class` is recorded in order notes
+    (the backend route has no shipping-class field).
+    """
+    company_id = input_data.company_id or ""
+    if not company_id or not input_data.order_id:
+        return {"success": False, "error": "Missing company_id or order_id"}
+
+    data: dict[str, Any] = {}
+    if input_data.address:
+        data["shippingAddress"] = input_data.address
+    if input_data.shipping_class:
+        data["notes"] = f"shipping class → {input_data.shipping_class}"
+    if not data:
+        return {"success": False, "error": "Nothing to update (provide address and/or shipping_class)"}
+
+    from src.tools.backend_client import get_backend_client
+
+    client = get_backend_client()
+    try:
+        result = await client.update_order_details(
+            company_id, input_data.order_id, data
+        )
+        return {
+            "success": True,
+            "orderId": input_data.order_id,
+            "updatedFields": list(data.keys()),
+            "backend": result,
+        }
+    except Exception as exc:
+        return {"success": False, "error": str(exc), "orderId": input_data.order_id}
 
 
 async def shipping_company_governorates(input_data: ShippingCompanyGovernoratesInput) -> dict[str, Any]:

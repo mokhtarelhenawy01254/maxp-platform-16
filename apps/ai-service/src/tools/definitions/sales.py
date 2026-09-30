@@ -70,11 +70,53 @@ async def discount_create_draft(input_data: DiscountCreateDraftInput) -> dict[st
 
 
 async def discount_create(input_data: DiscountCreateInput) -> dict[str, Any]:
-    return _write_result("discount.create", {
-        "productId": input_data.product_id,
-        "discountPercent": input_data.discount_percent,
-        "reason": input_data.reason,
-    }, input_data.company_id or "")
+    """Create a real percentage coupon through the backend (coupons-pro).
+
+    Runs after merchant approval. Coupons are store-level (not
+    product-scoped), so the target product is named in the coupon
+    name/description for traceability.
+    """
+    import secrets
+    from datetime import datetime, timedelta
+
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "Missing company_id"}
+
+    percent = max(1.0, min(100.0, float(input_data.discount_percent)))
+    code = f"AI{secrets.token_hex(3).upper()}"
+    now = datetime.utcnow()
+    payload = {
+        "code": code,
+        "name": f"خصم {int(percent)}% — {input_data.product_id}",
+        "description": (
+            f"AI-created discount {int(percent)}% off product {input_data.product_id}"
+            + (f" — {input_data.reason}" if input_data.reason else "")
+        ),
+        "type": "percentage",
+        "value": percent,
+        "validFrom": now.isoformat(),
+        "validTo": (now + timedelta(days=30)).isoformat(),
+        "isActive": True,
+    }
+
+    from src.tools.backend_client import get_backend_client
+
+    client = get_backend_client()
+    try:
+        result = await client.create_coupon(company_id, payload)
+        coupon = result.get("data", result) if isinstance(result, dict) else {}
+        return {
+            "success": True,
+            "couponCode": coupon.get("code", code),
+            "discountPercent": percent,
+            "product": input_data.product_id,
+            "validTo": payload["validTo"],
+            "note": "الكوبون على مستوى المتجر — المنتج مذكور في الاسم والوصف",
+            "backend": result,
+        }
+    except Exception as exc:
+        return {"success": False, "error": str(exc), "product": input_data.product_id}
 
 
 async def whatsapp_send(input_data: WhatsappSendInput) -> dict[str, Any]:
@@ -108,7 +150,7 @@ discount_create_draft_tool = FunctionTool(
 
 discount_create_tool = FunctionTool(
     name="discount_create",
-    description="Create a discount for a product. REQUIRES MERCHANT APPROVAL.",
+    description="Create a store coupon with a percentage discount (product is named in the coupon name/description — coupons are store-level, not product-scoped). REQUIRES MERCHANT APPROVAL.",
     func=discount_create,
     input_model=DiscountCreateInput,
 )

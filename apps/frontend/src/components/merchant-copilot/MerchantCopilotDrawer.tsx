@@ -236,7 +236,8 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
         {
           message: text,
           sessionId: targetSessionId,
-          agentId: selectedAgent.slug,
+          agentId: selectedAgent.id || selectedAgent.slug,
+          agentSlug: selectedAgent.slug || selectedAgent.id,
           images: currentImages.length > 0 ? currentImages : undefined,
           executiveContext: context,
         },

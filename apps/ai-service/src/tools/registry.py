@@ -158,20 +158,81 @@ WRITE_TOOL_NAMES: set[str] = {
     "record_learned_rule",
     "update_agent_identity",
     "unlock_advanced_tools",
+    # Scheduled agent jobs persist company state — require merchant approval
+    "scheduler_create_job",
+    # Ad spend controls are financial mutations
+    "facebook_ad_update_status",
+    "facebook_ad_update_budget",
+    "facebook_ad_record_learned_rule",
+    # Education vertical writes
+    "education_enroll",
+    "education_schedule_session",
+    "education_cancel_session",
+    # Booking vertical writes (align with hotel_* which were already gated);
+    # booking_status can cancel an appointment, so it gates too
+    "booking_reserve",
+    "booking_status",
+    "booking_branch_create",
+    "booking_branch_update",
+    "booking_branch_delete",
+    "booking_doctor_create",
+    "booking_doctor_update",
+    "booking_doctor_delete",
+    "booking_service_create",
+    "booking_service_update",
+    "booking_service_delete",
+    "booking_service_toggle",
+    "booking_appointment_update_status",
+    "booking_appointments_bulk_delete",
 }
 
 DIRECT_WRITE_TOOL_NAMES: set[str] = {
     "order_create_confirmed",
-    "discount_create_draft",
-    "facebook_ad_create_full_draft",
-    "facebook_ad_publish_draft",
-    "knowledge_create_faq",
     "order_confirm",
     "order_update_details",
     "shipping_zone_set",
+    # Live-conversation replies (agents whose job is real-time customer
+    # messaging) — immediate execution; bulk message_broadcast stays gated.
+    "whatsapp_send",
+    "facebook_reply",
+    # Operational carrier-ticket workflow (shipping-agent), mirrors
+    # order_update_details: routine, non-financial, reversible.
+    "shipping_ticket_create",
+    "shipping_ticket_reply",
     "order_target_settings",
-    "scheduler_create_job",
 }
+
+
+# Fail-closed guard: a mutating tool name that appears in NEITHER approval
+# list would default to approval_mode="never_require" (execute immediately).
+# Tests assert this set is empty — a new write tool MUST be classified in
+# WRITE_TOOL_NAMES (merchant approval) or DIRECT_WRITE_TOOL_NAMES (explicit
+# immediate execution) at introduction time.
+MUTATING_NAME_TOKENS: frozenset[str] = frozenset({
+    "create", "update", "delete", "remove", "cancel", "refund", "adjust",
+    "configure", "toggle", "send", "broadcast", "publish", "spawn", "reserve",
+    "enroll", "schedule", "record", "set", "reply",
+})
+
+
+def unclassified_mutating_tools() -> list[str]:
+    """Mutating-named tools missing from both approval classification lists.
+
+    Matching is segment-based (underscore/dot split), so `payment_settings_read`
+    (segment "settings") does not match "set". Scoped to SkillRegistry domain
+    tools (the chat-pipeline surface); dotted manager_tools live outside the
+    SkillRegistry and are unreachable there.
+    """
+    from src.tools.names import canonical_tool_name
+
+    classified = WRITE_TOOL_NAMES | DIRECT_WRITE_TOOL_NAMES
+    offending: list[str] = []
+    for tool in _registry.get_all_tools():
+        canonical = canonical_tool_name(tool.name)
+        segments = set(canonical.lower().replace(".", "_").split("_"))
+        if segments & MUTATING_NAME_TOKENS and canonical not in classified:
+            offending.append(canonical)
+    return sorted(offending)
 
 
 def _resolve_tool_set(names: set[str]) -> list[FunctionTool]:
@@ -201,6 +262,20 @@ CORE_TOOLS: list[FunctionTool] = _resolve_tool_set(CORE_TOOL_NAMES)
 ADVANCED_TOOLS: list[FunctionTool] = _resolve_tool_set(ADVANCED_TOOL_NAMES)
 READ_TOOLS: list[FunctionTool] = _resolve_tool_set(READ_TOOL_NAMES)
 WRITE_TOOLS: list[FunctionTool] = _resolve_tool_set(WRITE_TOOL_NAMES)
+
+# Fail-closed startup guard: mutating tools left unclassified default to
+# never_require (immediate execution). Warn loudly at import time — the
+# test suite turns this into a hard failure.
+_unclassified = unclassified_mutating_tools()
+if _unclassified:
+    import warnings
+
+    warnings.warn(
+        "Unclassified mutating tools default to no-approval execution: "
+        + ", ".join(_unclassified)
+        + " — add them to WRITE_TOOL_NAMES or DIRECT_WRITE_TOOL_NAMES.",
+        stacklevel=2,
+    )
 
 # -- Backward-compatible re-exports ------------------------------------------
 # Import individual tool instances so that existing code doing

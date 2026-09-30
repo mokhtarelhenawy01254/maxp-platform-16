@@ -435,11 +435,50 @@ async def order_update_details(input_data: OrderUpdateDetailsInput) -> dict[str,
 
 
 async def order_refund(input_data: OrderRefundInput) -> dict[str, Any]:
-    return _write_result("order.refund", {
-        "orderNumber": input_data.order_number,
-        "amount": input_data.amount,
-        "reason": input_data.reason,
-    }, input_data.company_id or "")
+    """Process a refund through the backend payment-status route.
+
+    Runs after merchant approval: marks the order's paymentStatus REFUNDED
+    via orders-v2 so the change lands in the order's status history (real
+    audit trail), instead of writing SQL directly.
+    """
+    company_id = input_data.company_id or ""
+    if not company_id or not input_data.order_number:
+        return {
+            "success": False,
+            "error": "Missing company_id or order_number",
+            "orderNumber": input_data.order_number,
+        }
+
+    from src.tools.backend_client import get_backend_client
+
+    client = get_backend_client()
+    notes_parts: list[str] = []
+    if input_data.amount is not None:
+        notes_parts.append(f"partial refund amount: {input_data.amount}")
+    if input_data.reason:
+        notes_parts.append(f"reason: {input_data.reason}")
+    notes = " | ".join(notes_parts) or None
+
+    try:
+        result = await client.update_order_payment_status(
+            company_id,
+            input_data.order_number,
+            "REFUNDED",
+            notes=notes,
+        )
+        return {
+            "success": True,
+            "orderNumber": input_data.order_number,
+            "paymentStatus": "REFUNDED",
+            "partialAmount": input_data.amount,
+            "backend": result,
+        }
+    except Exception as exc:
+        return {
+            "success": False,
+            "error": str(exc),
+            "orderNumber": input_data.order_number,
+        }
 
 
 def _format_order_lookup(result: dict) -> str:

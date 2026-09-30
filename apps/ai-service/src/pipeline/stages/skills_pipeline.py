@@ -37,6 +37,14 @@ async def _execute_one_tool(ctx: PipelineContext, registry: Any, tc: dict) -> di
         logger.warning("unknown_tool_called", name=func_name)
         return {"tool": func_name, "status": "unknown"}
 
+    # Approval signals may never originate from the model: strip `approved`
+    # from LLM-provided arguments. The only legitimate source is
+    # approval_service._execute_action, which calls tool.func directly and
+    # never re-enters this pipeline.
+    if isinstance(arguments, dict) and "approved" in arguments:
+        logger.warning("approval_flag_stripped_from_llm_args", name=func_name)
+        arguments = {k: v for k, v in arguments.items() if k != "approved"}
+
     if ctx.company_id and "company_id" not in arguments:
         arguments = {**arguments, "company_id": ctx.company_id}
 

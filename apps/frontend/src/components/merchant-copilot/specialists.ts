@@ -6,6 +6,8 @@ export interface SpecialistAgent {
   title: string;
   description: string;
   badge: string;
+  icon?: string;
+  isDefault?: boolean;
   suggestedPrompts: string[];
 }
 
@@ -18,6 +20,8 @@ export const SPECIALIST_AGENTS: SpecialistAgent[] = [
     title: 'المساعد التنفيذي للمنصة وإدارة العمليات',
     description: 'المتابعة التنفيذية الشاملة، مؤشرات الأداء، الأوردرات والمخزون، وتفويض المهام.',
     badge: 'المساعد التنفيذي',
+    icon: '⚡',
+    isDefault: true,
     suggestedPrompts: [
       'أعطني ملخصاً تنفيذياً لحالة البيزنس والمبيعات اليوم',
       'ما هي أهم النواقص أو العمليات المعلقة التي تحتاج تدخلاً فوري؟',

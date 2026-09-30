@@ -859,7 +859,17 @@ async function getSpecialists(req, res) {
 
     const defaultAgentSlug = await resolveDefaultCopilotAgent(companyId);
 
-    // Baseline curated specialists with rich Arabic metadata & prompts
+    // 1. Fetch real active agents configured for this company
+    const aiServiceAdminClient = require('../services/aiServiceAdminClient');
+    let companyAgents = [];
+    try {
+      companyAgents = await aiServiceAdminClient.listAgents(companyId, 'ACTIVE');
+      if (!Array.isArray(companyAgents)) companyAgents = [];
+    } catch (listErr) {
+      console.warn('[AI-CHAT-CTRL] Failed to fetch company agents in getSpecialists:', listErr.message);
+    }
+
+    // Baseline fallback specialists with rich Arabic metadata & prompts
     const baseSpecialists = [
       {
         id: 'executive-assistant-agent',
@@ -933,51 +943,66 @@ async function getSpecialists(req, res) {
       },
     ];
 
-    // Merge company-installed templates if available
-    let finalSpecialists = [...baseSpecialists];
-    try {
-      const aiServiceAdminClient = require('../services/aiServiceAdminClient');
-      const templates = await aiServiceAdminClient.listAgentTemplates();
-      if (Array.isArray(templates) && templates.length > 0) {
-        for (const t of templates) {
-          if (!t.slug || finalSpecialists.some((s) => s.slug === t.slug)) continue;
-          if (t.is_active === false) continue;
+    // Build unified specialists list from actual company agents
+    const activeAgents = companyAgents.filter((a) => a.status === 'ACTIVE' || !a.status);
+    let finalSpecialists = [];
+
+    if (activeAgents.length > 0) {
+      finalSpecialists = activeAgents.map((a) => {
+        const agentChannels = (a.allowedChannels || a.allowed_channels || []);
+        const hasDashboardChannel = Array.isArray(agentChannels) && agentChannels.map((c) => String(c).toUpperCase()).includes('DASHBOARD');
+        const isDefault =
+          a.id === defaultAgentSlug ||
+          a.slug === defaultAgentSlug ||
+          a.templateSlug === defaultAgentSlug ||
+          a.template_slug === defaultAgentSlug ||
+          hasDashboardChannel;
+
+        const baseMatch = baseSpecialists.find(
+          (b) => b.slug === a.templateSlug || b.slug === a.template_slug || b.role === a.role
+        );
+
+        return {
+          id: a.id,
+          slug: a.slug || a.templateSlug || a.template_slug || a.id,
+          name: a.name || baseMatch?.name || a.role || 'وكيل ذكاء اصطناعي',
+          role: a.role || baseMatch?.role || 'SPECIALIST',
+          title: a.description || baseMatch?.title || a.name || 'وكيل متخصص',
+          description: a.description || baseMatch?.description || 'وكيل ذكاء اصطناعي ضمن فريق عمل المتجر.',
+          badge: isDefault ? 'المساعد التنفيذي' : (a.departmentName || baseMatch?.badge || a.role || 'متخصص'),
+          icon: a.icon || baseMatch?.icon || '🤖',
+          isDefault,
+          allowedChannels: agentChannels,
+          suggestedPrompts: baseMatch?.suggestedPrompts || [
+            `أعطني ملخصاً عن أداء ${a.name || a.role}`,
+            'ما هي أهم النواقص أو العمليات المعلقة لديك الآن؟',
+          ],
+        };
+      });
+
+      // Ensure default copilot agent is placed at the top of the list
+      finalSpecialists.sort((x, y) => (y.isDefault ? 1 : 0) - (x.isDefault ? 1 : 0));
+    }
+
+    // If company has no active agents or default copilot agent isn't in list, merge baseline
+    if (finalSpecialists.length === 0 || !finalSpecialists.some((s) => s.isDefault)) {
+      for (const base of baseSpecialists) {
+        if (!finalSpecialists.some((s) => s.slug === base.slug)) {
+          const isDefault = base.slug === defaultAgentSlug || base.id === defaultAgentSlug;
           finalSpecialists.push({
-            id: t.slug,
-            slug: t.slug,
-            name: t.name || t.slug,
-            role: t.role || 'SPECIALIST',
-            title: t.name || 'وكيل متخصص',
-            description: (t.persona_meta && t.persona_meta.description) || 'وكيل ذكاء اصطناعي متخصص للعمليات.',
-            badge: t.role || 'متخصص',
-            suggestedPrompts: [
-              `أعطني ملخصاً عن أداء ${t.name || t.slug}`,
-              'ما هي أهم التوصيات والمهام الحالية؟',
-            ],
+            ...base,
+            isDefault,
           });
         }
       }
-    } catch (_) {
-      // Base specialists serve as resilient baseline
+      finalSpecialists.sort((x, y) => (y.isDefault ? 1 : 0) - (x.isDefault ? 1 : 0));
     }
-
-    const routeAgentMap = {
-      '/marketing': 'facebook-media-buyer-agent',
-      '/facebook-ads': 'facebook-media-buyer-agent',
-      '/orders': 'order-confirmation-agent',
-      '/shipping': 'order-confirmation-agent',
-      '/inventory': 'inventory-pricing-agent',
-      '/products': 'inventory-pricing-agent',
-      '/customers': 'customer-service-agent',
-      '/conversations': 'customer-service-agent',
-      '/whatsapp': 'customer-service-agent',
-    };
 
     return res.json({
       success: true,
       defaultAgentSlug,
       specialists: finalSpecialists,
-      routeAgentMap,
+      routeAgentMap: {},
     });
   } catch (error) {
     console.error('[AI-CHAT-CTRL] getSpecialists error:', error.message);

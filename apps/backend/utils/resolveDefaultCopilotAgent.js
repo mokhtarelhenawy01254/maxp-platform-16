@@ -45,6 +45,25 @@ async function resolveDefaultCopilotAgent(companyId) {
       resolved = aiSetting.copilotDefaultAgentSlug;
     }
 
+    // Priority 1.5: Active company agent with DASHBOARD channel assigned in channel routing
+    if (!resolved) {
+      try {
+        const aiServiceAdminClient = require('../services/aiServiceAdminClient');
+        const companyAgents = await aiServiceAdminClient.listAgents(companyId, 'ACTIVE');
+        if (Array.isArray(companyAgents)) {
+          const dashboardAgent = companyAgents.find((a) => {
+            const channels = (a.allowedChannels || a.allowed_channels || []);
+            return Array.isArray(channels) && channels.map((c) => String(c).toUpperCase()).includes('DASHBOARD');
+          });
+          if (dashboardAgent) {
+            resolved = dashboardAgent.slug || dashboardAgent.templateSlug || dashboardAgent.template_slug || dashboardAgent.id;
+          }
+        }
+      } catch (_) {
+        // Non-blocking fallback
+      }
+    }
+
     // Priority 2: Platform-level system setting
     if (!resolved) {
       const platformCached = _cache.get('__platform__');

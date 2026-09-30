@@ -14,34 +14,12 @@ export function useCopilotSpecialists({
   const [specialists, setSpecialists] = useState<SpecialistAgent[]>(SPECIALIST_AGENTS);
   const userHasExplicitlySelectedRef = useRef(false);
 
-  // Synchronous route-aware initial suggestion (0ms, zero layout shift)
-  const routeRecommendedSlug = useMemo(() => {
-    const p = pathname.toLowerCase();
-    if (p.startsWith('/marketing') || p.startsWith('/facebook-ads')) {
-      return 'facebook-media-buyer-agent';
-    }
-    if (p.startsWith('/orders') || p.startsWith('/shipping')) {
-      return 'order-confirmation-agent';
-    }
-    if (p.startsWith('/inventory') || p.startsWith('/products')) {
-      return 'inventory-pricing-agent';
-    }
-    if (p.startsWith('/customers') || p.startsWith('/conversations') || p.startsWith('/whatsapp')) {
-      return 'customer-service-agent';
-    }
-    return null;
-  }, [pathname]);
-
-  // Initial agent selection — route-aware if matching, otherwise primary default
+  // Initial agent selection — defaults strictly to the primary Executive Assistant
   const [selectedAgent, setSelectedAgentState] = useState<SpecialistAgent>(() => {
-    if (routeRecommendedSlug) {
-      const match = SPECIALIST_AGENTS.find((a) => a.slug === routeRecommendedSlug);
-      if (match) return match;
-    }
     return SPECIALIST_AGENTS[0]!;
   });
 
-  // Track explicit user selection so route changes or API fetches don't override manual choice
+  // Track explicit user selection so background syncs don't override manual choice
   const setSelectedAgent = useCallback((agent: SpecialistAgent) => {
     userHasExplicitlySelectedRef.current = true;
     setSelectedAgentState(agent);
@@ -67,15 +45,15 @@ export function useCopilotSpecialists({
         if (Array.isArray(serverSpecialists) && serverSpecialists.length > 0) {
           setSpecialists(serverSpecialists);
 
-          // If user hasn't explicitly picked someone, adapt if appropriate
+          // If user hasn't explicitly picked someone, lock strictly to the DASHBOARD routed agent
           if (!userHasExplicitlySelectedRef.current) {
             const serverDefaultSlug = res.data?.defaultAgentSlug;
-            const targetSlug = routeRecommendedSlug || serverDefaultSlug;
-            if (targetSlug) {
-              const matched = serverSpecialists.find((a) => a.slug === targetSlug);
-              if (matched) {
-                setSelectedAgentState(matched);
-              }
+            const matched = serverSpecialists.find(
+              (a) => a.isDefault || a.slug === serverDefaultSlug || a.id === serverDefaultSlug
+            ) || serverSpecialists[0];
+
+            if (matched) {
+              setSelectedAgentState(matched);
             }
           }
         }
@@ -87,24 +65,22 @@ export function useCopilotSpecialists({
     return () => {
       isMounted = false;
     };
-  }, [companyId, routeRecommendedSlug]);
+  }, [companyId]);
 
+  // Contextual page awareness (informational telemetry badge, never hijacking the active agent)
   const contextReason = useMemo(() => {
-    if (userHasExplicitlySelectedRef.current) return null;
-    if (!routeRecommendedSlug || selectedAgent.slug !== routeRecommendedSlug) return null;
     const p = pathname.toLowerCase();
-    if (p.startsWith('/marketing') || p.startsWith('/facebook-ads')) return 'توجيه تلقائي: سياق الإعلانات';
-    if (p.startsWith('/orders') || p.startsWith('/shipping')) return 'توجيه تلقائي: سياق الطلبات والشحن';
-    if (p.startsWith('/inventory') || p.startsWith('/products')) return 'توجيه تلقائي: سياق المخزون والتسعير';
-    if (p.startsWith('/customers') || p.startsWith('/conversations') || p.startsWith('/whatsapp')) return 'توجيه تلقائي: سياق خدمة العملاء';
+    if (p.startsWith('/marketing') || p.startsWith('/facebook-ads')) return 'سياق الصفحة: الإعلانات';
+    if (p.startsWith('/orders') || p.startsWith('/shipping')) return 'سياق الصفحة: الطلبات والشحن';
+    if (p.startsWith('/inventory') || p.startsWith('/products')) return 'سياق الصفحة: المخزون والمنتجات';
+    if (p.startsWith('/customers') || p.startsWith('/conversations') || p.startsWith('/whatsapp')) return 'سياق الصفحة: خدمة العملاء';
     return null;
-  }, [pathname, routeRecommendedSlug, selectedAgent.slug]);
+  }, [pathname]);
 
   return {
     specialists,
     selectedAgent,
     setSelectedAgent,
-    routeRecommendedSlug,
     contextReason,
   };
 }

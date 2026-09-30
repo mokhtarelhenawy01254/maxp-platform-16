@@ -149,7 +149,7 @@ export default function ChannelRoutingPage() {
         );
         // Fallback default for Dashboard / Copilot: company default copilot agent
         if (!assigned && ch.key === "DASHBOARD") {
-          assigned = activeAgents.find((a) => a.slug === defaultCopilotSlug || a.id === defaultCopilotSlug || a.role === "EXECUTIVE_ASSISTANT") || activeAgents[0];
+          assigned = activeAgents.find((a) => a.slug === defaultCopilotSlug || a.id === defaultCopilotSlug || a.role === "EXECUTIVE_ASSISTANT");
         }
         // Fallback default for Marketing Studio: media buyer agent if not explicitly claimed
         if (!assigned && ch.key === "MARKETING_STUDIO") {

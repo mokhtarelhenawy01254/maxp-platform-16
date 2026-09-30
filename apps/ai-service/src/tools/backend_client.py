@@ -346,11 +346,43 @@ class BackendClient:
     ) -> dict[str, Any] | None:
         try:
             return await self._request(
-                "GET", "/api/v1/shipping-zones/public/{company_id}/calculate",
+                "GET", f"/api/v1/shipping-zones/public/{company_id}/calculate",
                 params={"governorate": governorate, "city": city or "", "weight": weight or 0},
             )
         except RuntimeError:
             return None
+
+    async def update_order_payment_status(
+        self,
+        company_id: str,
+        order_number: str,
+        payment_status: str,
+        notes: str | None = None,
+    ) -> dict[str, Any]:
+        """Update an order's payment status (e.g. REFUNDED) via orders-v2.
+
+        The backend route records the change (with reason notes) in the
+        order's status history — the real audit trail for refunds.
+        """
+        body: dict[str, Any] = {
+            "paymentStatus": payment_status.upper(),
+            "companyId": company_id,
+        }
+        if notes:
+            body["notes"] = notes
+        return await self._request(
+            "POST", f"/api/v1/orders-v2/simple/{order_number}/payment-status",
+            json_body=body,
+        )
+
+    async def create_coupon(
+        self, company_id: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Create a coupon via the coupons-pro app route (POST /coupons)."""
+        return await self._request(
+            "POST", "/api/v1/coupons",
+            json_body={**data, "companyId": company_id},
+        )
 
     # ── Customer APIs ──
 

@@ -176,7 +176,15 @@ class ToolGateway:
                 "error": f"Agent role '{agent_role}' is not permitted to use '{tool_name}'",
             }
 
-        is_approved = approval_granted or bool((input_data or {}).get("approved"))
+        # Approval may only be granted by the trusted caller (approval_granted,
+        # set by the approval executor) — never by model-provided input data.
+        if input_data and "approved" in input_data:
+            self._log.warning(
+                "approval_flag_stripped_from_input", tool_name=tool_name
+            )
+            input_data = {k: v for k, v in input_data.items() if k != "approved"}
+
+        is_approved = approval_granted
         if requires_approval and not is_approved:
             self._log.info(
                 "tool requires approval, routing to draft",

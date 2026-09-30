@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, History, RotateCcw, X, Cpu, Check, Link2, ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronDown, History, RotateCcw, X, Cpu, Check, Link2, ExternalLink, SlidersHorizontal } from 'lucide-react';
 import { SPECIALIST_AGENTS, SpecialistAgent } from './specialists';
 import { copyCopilotSessionLink, openCopilotSessionInNewTab } from './copilotLinkUtils';
 
@@ -28,6 +29,7 @@ export const CopilotHeader: React.FC<CopilotHeaderProps> = ({
   onClose,
   activeSessionId,
 }) => {
+  const navigate = useNavigate();
   const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -64,14 +66,19 @@ export const CopilotHeader: React.FC<CopilotHeaderProps> = ({
           className="flex items-center gap-2.5 p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors group text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           aria-label="تبديل تخصص الوكيل"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/60 transition-colors shadow-2xs">
-            <Cpu className="h-4 w-4" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/60 transition-colors shadow-2xs text-sm">
+            {selectedAgent.icon || <Cpu className="h-4 w-4" />}
           </div>
           <div>
             <div className="flex items-center gap-1.5">
               <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors tracking-tight">
                 {selectedAgent.name}
               </h3>
+              {selectedAgent.isDefault && (
+                <span className="text-[10px] bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/50 rounded px-1.5 py-0.2 font-medium">
+                  لوحة التحكم
+                </span>
+              )}
               <ChevronDown
                 className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-160 ${
                   isAgentMenuOpen ? 'rotate-180 text-slate-700 dark:text-slate-200' : ''
@@ -82,8 +89,8 @@ export const CopilotHeader: React.FC<CopilotHeaderProps> = ({
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
               <span className="truncate max-w-[140px] sm:max-w-[180px]">{pageContextLabel}</span>
               {contextReason && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200/70 dark:border-indigo-800/70 px-1.5 py-0.2 text-[9px] font-medium text-indigo-700 dark:text-indigo-300">
-                  <span className="h-1 w-1 rounded-full bg-indigo-500 animate-pulse" />
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.2 text-[9px] font-medium text-slate-600 dark:text-slate-300">
+                  <span className="h-1 w-1 rounded-full bg-emerald-500" />
                   {contextReason}
                 </span>
               )}
@@ -96,11 +103,11 @@ export const CopilotHeader: React.FC<CopilotHeaderProps> = ({
       {isAgentMenuOpen && (
         <div
           ref={menuRef}
-          className="absolute top-14 right-4 z-50 w-80 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 shadow-xl shadow-slate-900/10 dark:shadow-black/50 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150"
+          className="absolute top-14 right-4 z-50 w-84 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 shadow-xl shadow-slate-900/10 dark:shadow-black/50 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150"
         >
           <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 mb-1 flex items-center justify-between">
-            <span>تخصص الوكيل التنفيذي</span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans font-normal">اختر لتغيير الدور</span>
+            <span>فريق وكلاء المتجر المتاحين</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans font-normal">اختر للتحدث معه</span>
           </div>
           <div className="space-y-0.5 max-h-72 overflow-y-auto">
             {(specialists || SPECIALIST_AGENTS).map((agent) => {
@@ -121,7 +128,13 @@ export const CopilotHeader: React.FC<CopilotHeaderProps> = ({
                 >
                   <div className="min-w-0 pr-1">
                     <div className="flex items-center gap-1.5">
+                      <span className="text-sm shrink-0">{agent.icon || '🤖'}</span>
                       <span className="text-xs truncate">{agent.name}</span>
+                      {agent.isDefault && (
+                        <span className="text-[9px] bg-indigo-100 dark:bg-indigo-900/70 text-indigo-700 dark:text-indigo-300 px-1 rounded">
+                          لوحة التحكم
+                        </span>
+                      )}
                       {isSelected && <Check className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />}
                     </div>
                     <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5 font-normal">
@@ -134,6 +147,20 @@ export const CopilotHeader: React.FC<CopilotHeaderProps> = ({
                 </button>
               );
             })}
+          </div>
+
+          <div className="pt-1.5 mt-1 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => {
+                setIsAgentMenuOpen(false);
+                navigate('/admin/ai-hub?tab=routing');
+              }}
+              className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition-colors"
+            >
+              <SlidersHorizontal className="size-3" />
+              <span>إعدادات وتوجيه الوكلاء والقنوات</span>
+            </button>
           </div>
         </div>
       )}
