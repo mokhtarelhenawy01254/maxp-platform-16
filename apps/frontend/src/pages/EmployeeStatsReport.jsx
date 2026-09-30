@@ -148,6 +148,7 @@ const EmployeeStatsReport = () => {
         if (selectedChannel && selectedChannel !== "all") {
           params.append("channel", selectedChannel);
         }
+        params.append("activeOnly", "true");
 
         const headers = tokenManager.createAuthHeaders({
           "Content-Type": "application/json",
@@ -200,13 +201,22 @@ const EmployeeStatsReport = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.companyId, selectedChannel]);
 
-  // Totals calculations (Correct weighted arithmetic)
+  // Single source of truth: Active employees definition
+  // تعريف «نشط» = (conversationsCount > 0) أو (messagesCount > 0) — الموظف اللي رد فعلًا.
+  // وأي موظف كل أرقامه صفر يتشال من التقرير بالكامل (الجدول والعدّاد والتصدير والشارتات)
+  const activeEmployees = useMemo(() => {
+    return (statistics || []).filter(
+      (st) => (st.conversationsCount || 0) > 0 || (st.messagesCount || 0) > 0
+    );
+  }, [statistics]);
+
+  // Totals calculations (Correct weighted arithmetic for active employees)
   const totals = useMemo(() => {
-    const conversations = statistics.reduce((s, st) => s + (st.conversationsCount || 0), 0);
-    const messages = statistics.reduce((s, st) => s + (st.messagesCount || 0), 0);
-    const orders = statistics.reduce((s, st) => s + (st.ordersCount || 0), 0);
-    const revenue = statistics.reduce((s, st) => s + (st.totalRevenue || 0), 0);
-    const converted = statistics.reduce((s, st) => s + (st.convertedConversations || 0), 0);
+    const conversations = activeEmployees.reduce((s, st) => s + (st.conversationsCount || 0), 0);
+    const messages = activeEmployees.reduce((s, st) => s + (st.messagesCount || 0), 0);
+    const orders = activeEmployees.reduce((s, st) => s + (st.ordersCount || 0), 0);
+    const revenue = activeEmployees.reduce((s, st) => s + (st.totalRevenue || 0), 0);
+    const converted = activeEmployees.reduce((s, st) => s + (st.convertedConversations || 0), 0);
 
     const conversion =
       conversations > 0
@@ -221,11 +231,11 @@ const EmployeeStatsReport = () => {
       revenue: Math.round(revenue),
       conversion,
     };
-  }, [statistics, totalUniqueConversations]);
+  }, [activeEmployees, totalUniqueConversations]);
 
-  // Filtering & Sorting
+  // Filtering & Sorting (Search by name/email operates strictly within active employees)
   const filteredAndSortedStatistics = useMemo(() => {
-    return statistics
+    return activeEmployees
       .filter((st) => {
         if (!searchTerm.trim()) return true;
         const term = searchTerm.toLowerCase();
@@ -245,7 +255,7 @@ const EmployeeStatsReport = () => {
           return valA < valB ? 1 : -1;
         }
       });
-  }, [statistics, searchTerm, sortKey, sortOrder]);
+  }, [activeEmployees, searchTerm, sortKey, sortOrder]);
 
   // Sort toggle handler
   const handleSort = (key) => {
@@ -257,9 +267,9 @@ const EmployeeStatsReport = () => {
     }
   };
 
-  // Export to Excel
+  // Export to Excel (Exports the exact visible rows from the active set)
   const handleExport = () => {
-    if (statistics.length === 0) return;
+    if (filteredAndSortedStatistics.length === 0) return;
 
     const exportColumns = [
       { key: "employeeName", label: "اسم الموظف" },
@@ -272,7 +282,7 @@ const EmployeeStatsReport = () => {
       { key: "conversionRate", label: "نسبة التحويل (%)" },
     ];
 
-    const exportData = statistics.map((st) => ({
+    const exportData = filteredAndSortedStatistics.map((st) => ({
       employeeName: `${st.firstName || ""} ${st.lastName || ""}`.trim() || st.email,
       email: st.email,
       role: st.role,
@@ -290,16 +300,6 @@ const EmployeeStatsReport = () => {
       "تقرير الموظفين"
     );
   };
-
-  // Active employees for charts
-  const activeEmployees = useMemo(() => {
-    return statistics.filter(
-      (st) =>
-        (st.conversationsCount || 0) > 0 ||
-        (st.messagesCount || 0) > 0 ||
-        (st.ordersCount || 0) > 0
-    );
-  }, [statistics]);
 
   return (
     <div className="w-full space-y-4">
@@ -327,7 +327,7 @@ const EmployeeStatsReport = () => {
             variant="outline"
             size="sm"
             onClick={handleExport}
-            disabled={statistics.length === 0}
+            disabled={filteredAndSortedStatistics.length === 0}
             className="flex items-center gap-2"
           >
             <Download className="size-4 text-emerald-600" />
@@ -458,7 +458,9 @@ const EmployeeStatsReport = () => {
                 <p className="text-xs font-medium text-muted-foreground">
                   {t("employeeStatsReport.totalEmployees", "إجمالي الموظفين")}
                 </p>
-                <p className="text-2xl font-bold mt-1">{statistics.length}</p>
+                <p className="text-2xl font-bold mt-1 tabular-nums">
+                  {searchTerm.trim() ? filteredAndSortedStatistics.length : activeEmployees.length}
+                </p>
               </div>
               <div className="size-9 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center">
                 <User className="size-4" />
@@ -582,15 +584,30 @@ const EmployeeStatsReport = () => {
             <div className="flex justify-center items-center py-16">
               <LoadingSpinner size="lg" />
             </div>
-          ) : filteredAndSortedStatistics.length === 0 ? (
+          ) : activeEmployees.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground">
               <User className="size-10 mx-auto mb-3 opacity-30" />
-              <p className="text-base font-medium">
-                {t("employeeStatsReport.noData", "لا توجد إحصائيات للموظفين في هذه الفترة")}
+              <p className="text-base font-semibold text-foreground">
+                {t("employeeStatsReport.noActiveEmployees", "مفيش موظفين عندهم نشاط في الفترة دي")}
               </p>
-              <p className="text-xs mt-1">
-                تظهر هنا إحصائيات وأداء الموظفين تلقائياً عند الرد على محادثات العملاء وتأكيد
-                الطلبات.
+              <p className="text-xs mt-1.5 max-w-md mx-auto text-muted-foreground">
+                {t(
+                  "employeeStatsReport.noActiveSubtext",
+                  "لم يقم أي موظف بالرد على محادثات أو إرسال رسائل خلال الفترة المحددة. جرب تغيير الفترة الزمنية أو اختيار \"كل الأوقات\"."
+                )}
+              </p>
+            </div>
+          ) : filteredAndSortedStatistics.length === 0 ? (
+            <div className="py-12 text-center text-muted-foreground">
+              <Search className="size-10 mx-auto mb-3 opacity-30" />
+              <p className="text-base font-semibold text-foreground">
+                {t("employeeStatsReport.noSearchResults", "لا توجد نتائج مطابقة للبحث")} "{searchTerm}"
+              </p>
+              <p className="text-xs mt-1.5 max-w-md mx-auto text-muted-foreground">
+                {t(
+                  "employeeStatsReport.noSearchResultsSubtext",
+                  "لا يوجد موظف نشط يطابق كلمة البحث الحالية ضمن الفترة المختارة."
+                )}
               </p>
             </div>
           ) : (

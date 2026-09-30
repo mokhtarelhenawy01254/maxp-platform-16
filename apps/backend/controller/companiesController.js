@@ -3687,7 +3687,7 @@ const verifyCompanyDNS = async (req, res) => {
 const getUsersStatistics = async (req, res) => {
   try {
     const { companyId } = req.params;
-    const { startDate, endDate, channel } = req.query;
+    const { startDate, endDate, channel, activeOnly } = req.query;
 
     // Validate companyId
     if (!companyId || companyId === "null" || companyId === "undefined") {
@@ -3903,6 +3903,13 @@ const getUsersStatistics = async (req, res) => {
         b.ordersCount - a.ordersCount ||
         b.totalRevenue - a.totalRevenue
     );
+
+    // Optional activeOnly filter: only return employees who replied/sent messages
+    if (activeOnly === "true" || activeOnly === true) {
+      statistics = statistics.filter(
+        (st) => (st.conversationsCount || 0) > 0 || (st.messagesCount || 0) > 0
+      );
+    }
 
     // Calculate unique total conversations for the company in date range
     const totalUniqueResult = await prisma.$queryRaw`
