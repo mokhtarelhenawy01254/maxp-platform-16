@@ -55,7 +55,7 @@ const DEFAULT_ORDER_STATUSES = [
   { code: 'EXCHANGED', name: 'استبدال', nameEn: 'Exchanged', color: '#7C3AED', icon: 'ArrowLeftRight', sortOrder: 16, wooCommerceStatus: null },
   { code: 'TRASH', name: 'سلة المحذوفات', nameEn: 'Trash', color: '#6B7280', icon: 'Trash2', sortOrder: 17, wooCommerceStatus: 'trash' },
   { code: 'PENDING_CANCELLATION', name: 'إلغاء قيد التنفيذ', nameEn: 'Pending Cancellation', color: '#F43F5E', icon: 'AlertOctagon', sortOrder: 18, wooCommerceStatus: null },
-  { code: 'SHORTAGE_FAILED', name: 'عجز نهائي', nameEn: 'Final Shortage', color: '#7C3AED', icon: 'XCircle', sortOrder: 19, wooCommerceStatus: null }
+  { code: 'SHORTAGE_FAILED', name: 'عجز نهائي', nameEn: 'Final Shortage', color: '#7C3AED', icon: 'XCircle', sortOrder: 19, wooCommerceStatus: null, notifyCustomer: true }
 ];
 
 const DEFAULT_PAYMENT_STATUSES = [
@@ -99,7 +99,7 @@ const DEFAULT_PREPARATION_STATUSES = [
   { code: 'QUALITY_CHECK', name: 'فحص الجودة', nameEn: 'Quality Check', color: '#06B6D4', icon: 'CheckCircle', sortOrder: 4 },
   { code: 'PACKAGED', name: 'تم التغليف', nameEn: 'Packaged', color: '#3B82F6', icon: 'Package', sortOrder: 5 },
   { code: 'ON_HOLD_PREP', name: 'معلق', nameEn: 'On Hold', color: '#F97316', icon: 'AlertCircle', sortOrder: 6 },
-  { code: 'STOCK_SHORTAGE', name: 'عجز مخزون', nameEn: 'Stock Shortage', color: '#E11D48', icon: 'AlertTriangle', sortOrder: 7 }
+  { code: 'STOCK_SHORTAGE', name: 'عجز مخزون', nameEn: 'Stock Shortage', color: '#E11D48', icon: 'AlertTriangle', sortOrder: 7, notifyCustomer: true }
 ];
 
 // WooCommerce default statuses mapping

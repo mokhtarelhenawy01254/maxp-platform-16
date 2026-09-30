@@ -160,14 +160,60 @@ describe('orderStatusRuleController.createRule — validation hardening', () => 
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  // ── fromStatus: must be enum (cron queries order.status by it) ──
-  test('rejects fromStatus that is not a known enum value', async () => {
+  // ── fromStatus: enum OR custom with valid mapsToSystem ─────────
+  test('rejects fromStatus that is not a known enum and not in orderStatusConfig', async () => {
+    mockPrisma.orderStatusConfig.findFirst.mockResolvedValue(null);
     const res = buildRes();
     await controller.createRule(buildReq({
-      body: { fromStatus: 'DELAYED-WITH-CAPTAIN', toStatus: 'SHIPPED', waitTime: 30, timeUnit: 'Minutes' },
+      body: { fromStatus: 'UNKNOWN_RANDOM_STATUS', toStatus: 'SHIPPED', waitTime: 30, timeUnit: 'Minutes' },
     }), res);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json.mock.calls[0][0].message).toMatch(/حالة المصدر/);
+  });
+
+  test('accepts fromStatus = custom code with valid mapsToSystem', async () => {
+    mockPrisma.orderStatusConfig.findFirst.mockImplementation(async ({ where }) => {
+      if (where.code.equals === 'WITH_THE_CAPTAIN') {
+        return { code: 'WITH_THE_CAPTAIN', mapsToSystem: 'SHIPPED' };
+      }
+      return null;
+    });
+    mockPrisma.orderStatusAutoChangeRule.create.mockResolvedValue({ id: 'r_custom_from' });
+    const res = buildRes();
+    await controller.createRule(buildReq({
+      body: { fromStatus: 'WITH_THE_CAPTAIN', toStatus: 'DELIVERED', waitTime: 30, timeUnit: 'Minutes' },
+    }), res);
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(mockPrisma.orderStatusAutoChangeRule.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        fromStatus: 'WITH_THE_CAPTAIN',
+        toStatus: 'DELIVERED',
+      }),
+    });
+  });
+
+  test('accepts BOTH fromStatus and toStatus as custom codes with valid mapsToSystem', async () => {
+    mockPrisma.orderStatusConfig.findFirst.mockImplementation(async ({ where }) => {
+      if (where.code.equals === 'WITH_THE_CAPTAIN') {
+        return { code: 'WITH_THE_CAPTAIN', mapsToSystem: 'SHIPPED' };
+      }
+      if (where.code.equals === 'DELAYED-WITH-CAPTAIN') {
+        return { code: 'DELAYED-WITH-CAPTAIN', mapsToSystem: 'ON_HOLD' };
+      }
+      return null;
+    });
+    mockPrisma.orderStatusAutoChangeRule.create.mockResolvedValue({ id: 'r_both_custom' });
+    const res = buildRes();
+    await controller.createRule(buildReq({
+      body: { fromStatus: 'WITH_THE_CAPTAIN', toStatus: 'DELAYED-WITH-CAPTAIN', waitTime: 60, timeUnit: 'Minutes' },
+    }), res);
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(mockPrisma.orderStatusAutoChangeRule.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        fromStatus: 'WITH_THE_CAPTAIN',
+        toStatus: 'DELAYED-WITH-CAPTAIN',
+      }),
+    });
   });
 
   // ── toStatus: enum OR custom with valid mapsToSystem ───────────

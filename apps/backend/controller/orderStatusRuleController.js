@@ -78,42 +78,71 @@ exports.createRule = async (req, res) => {
       });
     }
 
-    // 6. fromStatus لازم يكون enum value — الـ cron بيـ query
-    // `order.status = rule.fromStatus` (orderStatusAutoChangeCron.js:61).
-    // لو مفيش match، الـ rule هيتنفذ على 0 orders (silent no-op).
-    if (!isValidOrderStatusEnum(normalizedFrom)) {
+    const prisma = getSharedPrismaClient();
+
+    // Helper: validate status candidate (either valid enum OR active custom status in orderStatusConfig with mapsToSystem)
+    const validateStatusCandidate = async (statusCandidate) => {
+      if (isValidOrderStatusEnum(statusCandidate)) {
+        return { valid: true, canonicalCode: statusCandidate, isCustom: false };
+      }
+      try {
+        const config = await prisma.orderStatusConfig.findFirst({
+          where: {
+            companyId,
+            code: { equals: statusCandidate, mode: "insensitive" },
+            isActive: true,
+          },
+          select: { code: true, mapsToSystem: true },
+        });
+        if (config?.mapsToSystem && isValidOrderStatusEnum(String(config.mapsToSystem).toUpperCase())) {
+          return {
+            valid: true,
+            canonicalCode: String(config.code || statusCandidate).trim().toUpperCase(),
+            isCustom: true,
+            mapsToSystem: String(config.mapsToSystem).toUpperCase(),
+          };
+        }
+      } catch (err) {
+        console.warn(`[ORDER-STATUS-RULE-CONTROLLER] Error validating status candidate "${statusCandidate}":`, err.message);
+      }
+      return { valid: false };
+    };
+
+    // 6. fromStatus: إما enum value مباشرة، أو custom code من orderStatusConfig
+    // عنده mapsToSystem صالح في إعدادات الشركة
+    const fromValidation = await validateStatusCandidate(normalizedFrom);
+    if (!fromValidation.valid) {
       return res.status(400).json({
         success: false,
-        message: `حالة المصدر "${normalizedFrom}" غير صالحة. يجب أن تكون من الحالات المعروفة للنظام (مثل PENDING, CONFIRMED, DELIVERED).`,
+        message: `حالة المصدر "${normalizedFrom}" غير صالحة. يجب أن تكون حالة نظامية معتمدة أو حالة مخصصة مفعلة في إعدادات المتجر ولها ربط بحالات النظام.`,
       });
     }
 
-    // 7. toStatus: إما enum value مباشرة، أو custom code من
-    // orderStatusConfig عنده mapsToSystem صالح (بيروح لـ updateOrderStatus
-    // اللي بيعمل resolve via resolveOrderStatusForStorage).
-    if (!isValidOrderStatusEnum(normalizedTo)) {
-      const prisma = getSharedPrismaClient();
-      const toConfig = await prisma.orderStatusConfig.findFirst({
-        where: {
-          companyId,
-          code: { equals: normalizedTo, mode: "insensitive" },
-          isActive: true,
-        },
-        select: { mapsToSystem: true },
+    // 7. toStatus: إما enum value مباشرة، أو custom code من orderStatusConfig
+    // عنده mapsToSystem صالح في إعدادات الشركة
+    const toValidation = await validateStatusCandidate(normalizedTo);
+    if (!toValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: `حالة الهدف "${normalizedTo}" غير صالحة. يجب أن تكون حالة نظامية معتمدة أو حالة مخصصة مفعلة في إعدادات المتجر ولها ربط بحالات النظام.`,
       });
-      if (!toConfig?.mapsToSystem || !isValidOrderStatusEnum(String(toConfig.mapsToSystem).toUpperCase())) {
-        return res.status(400).json({
-          success: false,
-          message: `حالة الهدف "${normalizedTo}" غير صالحة ولا يوجد لها ربط صحيح بحالات النظام في إعدادات الشركة.`,
-        });
-      }
+    }
+
+    const finalFrom = fromValidation.canonicalCode;
+    const finalTo = toValidation.canonicalCode;
+
+    if (finalFrom === finalTo) {
+      return res.status(400).json({
+        success: false,
+        message: "حالة المصدر وحالة الهدف يجب أن تكونا مختلفتين",
+      });
     }
 
     const rule = await getSharedPrismaClient().orderStatusAutoChangeRule.create({
       data: {
         companyId,
-        fromStatus: normalizedFrom,
-        toStatus: normalizedTo,
+        fromStatus: finalFrom,
+        toStatus: finalTo,
         waitTime: parsedWaitTime,
         timeUnit: normalizedTimeUnit,
       },

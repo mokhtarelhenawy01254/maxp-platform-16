@@ -49,37 +49,113 @@ async function runOrderStatusAutoChange() {
 
     const now = new Date();
 
+    const { isValidOrderStatusEnum } = require('../utils/orderStatusEnum');
+    const orderService = require('../services/orderService');
+    let socketService = null;
+    try {
+      socketService = require('../services/socketService');
+    } catch (_) {}
+
     for (const [companyId, companyRules] of Object.entries(rulesByCompany)) {
       for (const rule of companyRules) {
         try {
           const cutoffTime = new Date(now.getTime() - toMs(rule.waitTime, rule.timeUnit));
+          const fromStatusTrimmed = String(rule.fromStatus || '').trim();
+          const isSystemFromStatus = isValidOrderStatusEnum(fromStatusTrimmed);
 
-          // Find all orders matching the fromStatus that were last updated before the cutoff
-          const orders = await prisma.order.findMany({
-            where: {
-              companyId,
-              status: rule.fromStatus,
-              updatedAt: { lte: cutoffTime },
-            },
-            select: { id: true, status: true, updatedAt: true },
-            // 🚨 PRODUCTION-FIX (notifications-fix-plan §1.2): حدّ الدفعة —
-            // استدعاء updateOrderStatus لكل طلب أبطأ من updateMany، والكرون يعمل
-            // كل دقيقة فسيلحق بالدفعات اللاحقة.
-            take: 50,
-          });
+          // 🛡️ PRODUCTION-FIX (actual-status-engine):
+          // 1. لا نمرر حالة مخصصة إلى Prisma status (Enum) لمنع خطأ Invalid value for argument status.
+          // 2. نقارن الحالة الفعلية: إذا كانت مخصصة نفحص customStatusCode، وإذا كانت نظامية
+          //    نفحص status مع التأكد من خلو customStatusCode (ليست مغطاة بحالة مخصصة).
+          // 3. المؤقت يُحسب بدقة من تاريخ الدخول للحالة من OrderStatusHistory (أو createdAt
+          //    إذا لم يتغير status الطلب من قبل)، بحيث لا يتصفّر العدّاد بتعديل ملاحظة أو تاج.
+          let orders = [];
+          if (isSystemFromStatus) {
+            orders = await prisma.$queryRawUnsafe(`
+              SELECT o.id, o.status, o."customStatusCode", o."orderNumber", o."createdAt",
+                COALESCE(
+                  (
+                    SELECT osh."createdAt" 
+                    FROM "OrderStatusHistory" osh 
+                    WHERE osh."orderId" = o.id 
+                    ORDER BY osh."createdAt" DESC 
+                    LIMIT 1
+                  ),
+                  o."createdAt"
+                ) AS "statusEnteredAt"
+              FROM orders o
+              WHERE o."companyId" = $1
+                AND o.status = $2::"OrderStatus"
+                AND (o."customStatusCode" IS NULL OR o."customStatusCode" = '')
+                AND COALESCE(
+                  (
+                    SELECT osh."createdAt" 
+                    FROM "OrderStatusHistory" osh 
+                    WHERE osh."orderId" = o.id 
+                    ORDER BY osh."createdAt" DESC 
+                    LIMIT 1
+                  ),
+                  o."createdAt"
+                ) <= $3
+              ORDER BY COALESCE(
+                (
+                  SELECT osh."createdAt" 
+                  FROM "OrderStatusHistory" osh 
+                  WHERE osh."orderId" = o.id 
+                  ORDER BY osh."createdAt" DESC 
+                  LIMIT 1
+                ),
+                o."createdAt"
+              ) ASC
+              LIMIT 50
+            `, companyId, fromStatusTrimmed.toUpperCase(), cutoffTime);
+          } else {
+            orders = await prisma.$queryRawUnsafe(`
+              SELECT o.id, o.status, o."customStatusCode", o."orderNumber", o."createdAt",
+                COALESCE(
+                  (
+                    SELECT osh."createdAt" 
+                    FROM "OrderStatusHistory" osh 
+                    WHERE osh."orderId" = o.id 
+                    ORDER BY osh."createdAt" DESC 
+                    LIMIT 1
+                  ),
+                  o."createdAt"
+                ) AS "statusEnteredAt"
+              FROM orders o
+              WHERE o."companyId" = $1
+                AND LOWER(o."customStatusCode") = LOWER($2)
+                AND COALESCE(
+                  (
+                    SELECT osh."createdAt" 
+                    FROM "OrderStatusHistory" osh 
+                    WHERE osh."orderId" = o.id 
+                    ORDER BY osh."createdAt" DESC 
+                    LIMIT 1
+                  ),
+                  o."createdAt"
+                ) <= $3
+              ORDER BY COALESCE(
+                (
+                  SELECT osh."createdAt" 
+                  FROM "OrderStatusHistory" osh 
+                  WHERE osh."orderId" = o.id 
+                  ORDER BY osh."createdAt" DESC 
+                  LIMIT 1
+                ),
+                o."createdAt"
+              ) ASC
+              LIMIT 50
+            `, companyId, fromStatusTrimmed, cutoffTime);
+          }
 
-          if (orders.length === 0) continue;
+          if (!orders || orders.length === 0) continue;
 
-          console.log(`[ORDER-STATUS-AUTO-CHANGE-CRON] Company ${companyId}: Found ${orders.length} orders to transition ${rule.fromStatus} → ${rule.toStatus}`);
+          console.log(`[ORDER-STATUS-AUTO-CHANGE-CRON] Company ${companyId}: Found ${orders.length} orders to transition "${rule.fromStatus}" → "${rule.toStatus}"`);
 
-          // 🚨 PRODUCTION-FIX (notifications-fix-plan §1.2):
-          // مرّ عبر updateOrderStatus لضمان: إشعارات واتساب + metadata.preparationStatus +
-          // commission/loyalty/invoice side-effects.
-          // ملاحظة (تصحيح §3.1): updateOrderStatus يكتب OrderStatusHistory متداخلاً
-          // (statusHistory.create داخل order.update — orderService.js) — لذا لا createMany منفصل
-          // لتجنّب صفّي history مكررين. changedBy = 'SYSTEM_AUTO' عبر userId.
-          const orderService = require('../services/orderService');
           const reason = `Auto-changed by rule: after ${rule.waitTime} ${rule.timeUnit}`;
+          const isDelayedTargetStatus = String(rule.toStatus || '').toUpperCase().includes('DELAY') ||
+                                        String(rule.toStatus || '').toUpperCase().includes('HOLD');
 
           let updated = 0;
           let failed = 0;
@@ -101,6 +177,25 @@ async function runOrderStatusAutoChange() {
                 }
               );
               updated++;
+
+              // 📡 إشارة لإيجنت الشحن (shipping-agent) عند دخول الطلب حالة متأخرة
+              if (isDelayedTargetStatus) {
+                const enteredTime = new Date(order.statusEnteredAt || order.createdAt).getTime();
+                const daysDelayed = Math.max(1, Math.round((now.getTime() - enteredTime) / (1000 * 60 * 60 * 24)));
+                console.log(`📡 [SHIPPING-AGENT-SIGNAL] Delayed order detected: Order #${order.orderNumber || order.id} entered "${rule.toStatus}" (delayed ~${daysDelayed} days). Ready for shipping ticket creation.`);
+                if (socketService?.broadcastToCompany) {
+                  try {
+                    socketService.broadcastToCompany(companyId, 'shipping:delayed_order', {
+                      orderId: order.id,
+                      orderNumber: order.orderNumber,
+                      status: rule.toStatus,
+                      daysDelayed,
+                      timestamp: now.toISOString(),
+                      suggestedAction: 'shipping_ticket_create'
+                    });
+                  } catch (_) {}
+                }
+              }
             } catch (err) {
               failed++;
               console.error(`[ORDER-STATUS-AUTO-CHANGE-CRON] Order ${order.id} failed:`, err.message);
@@ -110,7 +205,7 @@ async function runOrderStatusAutoChange() {
           console.log(`[ORDER-STATUS-AUTO-CHANGE-CRON] Rule ${rule.fromStatus}→${rule.toStatus}: ${updated} ok, ${failed} failed`);
 
         } catch (ruleErr) {
-          console.error(`[ORDER-STATUS-AUTO-CHANGE-CRON] Error processing rule ${rule.id}:`, ruleErr.message);
+          console.error(`[ORDER-STATUS-AUTO-CHANGE-CRON] Error processing rule ${rule.id} (${rule.fromStatus}→${rule.toStatus}):`, ruleErr.message);
         }
       }
     }
@@ -131,4 +226,4 @@ function startOrderStatusAutoChangeCron() {
   console.log('[ORDER-STATUS-AUTO-CHANGE-CRON] Scheduler started (runs every 1 minute)');
 }
 
-module.exports = { startOrderStatusAutoChangeCron };
+module.exports = { startOrderStatusAutoChangeCron, runOrderStatusAutoChange };

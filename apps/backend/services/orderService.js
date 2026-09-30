@@ -1830,9 +1830,7 @@ class OrderService {
             status: status,
             // 🛡️ PRODUCTION-FIX (custom-status-persist): الكود المخصص بيتخزن جنب الـ enum،
             // وبيتمسح لما التاجر يرجّع لحالة نظامية مباشرة (مش مخصصة).
-            ...(prisma._dmmf?.modelMap?.Order?.fields?.some((f) => f.name === 'customStatusCode')
-              ? { customStatusCode: isRequestedCustom ? originalRequestedStatus : null }
-              : {}),
+            customStatusCode: isRequestedCustom ? originalRequestedStatus : null,
             notes: notes || undefined,
             ...((status === 'RETURNED' || status === 'PARTIALLY_RETURNED' || String(originalRequestedStatus || '').toUpperCase().includes('RETURN')) && notes ? { turboReturnReason: notes } : {}),
             ...(nextMetadata ? { metadata: nextMetadata } : {}),

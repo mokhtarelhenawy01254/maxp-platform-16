@@ -215,6 +215,32 @@ const META_ORDER_BLUEPRINTS = {
       { position: 2, name: 'cartTotal' },
       { position: 3, name: 'currency' }
     ]
+  },
+  STOCK_SHORTAGE: {
+    metaTemplateName: 'order_stock_shortage',
+    name: 'عجز مخزون مؤقت',
+    category: 'ORDERS',
+    content: 'أهلاً بحضرتك يا {{customerName}} 👋\nنود إبلاغك بوجود عجز مؤقت في مخزون بعض منتجات طلبك رقم {{orderNumber}}.\n\n📦 تفاصيل الطلب:\n{{orderItems}}\n\nفريق العمل يعمل حالياً على توفير المنتجات في أسرع وقت وسنوافيك بالتحديث فور توفرها 🙏',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'تواصل مع الدعم' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' },
+      { position: 3, name: 'orderItems' }
+    ]
+  },
+  SHORTAGE_FAILED: {
+    metaTemplateName: 'order_shortage_failed',
+    name: 'عجز نهائي في المخزون',
+    category: 'ORDERS',
+    content: 'أهلاً بحضرتك يا {{customerName}} 👋\nنعتذر بشدة لإبلاغك بنفاد كمية منتجات طلبك رقم {{orderNumber}} بشكل نهائي وعدم إمكانية توفيرها حالياً.\n\n📦 تفاصيل الطلب:\n{{orderItems}}\n\nيسعدنا دائماً مساعدتك في اختيار بديل مناسب أو إلغاء الطلب حسب رغبتك 🙏',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'تصفح البدائل' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' },
+      { position: 3, name: 'orderItems' }
+    ]
   }
 };
 
