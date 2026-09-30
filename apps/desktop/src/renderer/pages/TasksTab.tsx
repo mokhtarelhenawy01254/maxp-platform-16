@@ -227,19 +227,6 @@ export const TasksTab: React.FC = () => {
     return () => clearInterval(interval);
   }, [activeTasksMap, activeTask]);
 
-  // Real-time ticking stopwatch for all company active timers
-  useEffect(() => {
-    if (teamActiveTimers.length === 0) return;
-    const interval = setInterval(() => {
-      setTeamActiveTimers((prev) =>
-        prev.map((timer) => ({
-          ...timer,
-          elapsedSeconds: timer.elapsedSeconds + 1,
-        }))
-      );
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [teamActiveTimers.length]);
 
   const handleStartTask = async (task: any) => {
     if (activeTasksMap[task.id]) {
