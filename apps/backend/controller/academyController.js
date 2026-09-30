@@ -281,6 +281,9 @@ exports.enrollStudent = async (req, res) => {
     const { courseId } = req.params;
     const { studentName, studentPhone, studentEmail, customerId, orderId } = req.body;
 
+    // الأدمن المصادق عليه يستطيع التسجيل بدون دفع
+    const byAdmin = Boolean(req.user?.id);
+
     const enrollment = await academyService.enrollStudent({
       companyId,
       courseId,
@@ -290,9 +293,32 @@ exports.enrollStudent = async (req, res) => {
       studentName: studentName || req.user?.name,
       studentPhone: studentPhone || req.user?.phone,
       studentEmail: studentEmail || req.user?.email,
+      byAdmin,
     });
 
     res.status(201).json({ success: true, enrollment });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+
+exports.suspendEnrollment = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    const { enrollmentId } = req.params;
+    const enrollment = await academyService.suspendEnrollment({ enrollmentId, companyId });
+    res.json({ success: true, enrollment });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+
+exports.reactivateEnrollment = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    const { enrollmentId } = req.params;
+    const enrollment = await academyService.reactivateEnrollment({ enrollmentId, companyId });
+    res.json({ success: true, enrollment });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }

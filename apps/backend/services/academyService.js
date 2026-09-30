@@ -586,6 +586,7 @@ class AcademyService {
     studentName,
     studentPhone,
     studentEmail,
+    byAdmin = false,
   }) {
     const db = this.getDb();
     const course = await db.academyCourse.findFirst({
@@ -597,9 +598,18 @@ class AcademyService {
         ],
       },
     });
-    if (!course) throw new Error('Course not found');
+    if (!course) throw new Error('الكورس غير موجود');
 
-    // Find existing enrollment
+    // ─── حارس منع التسجيل المجاني في الكورسات المدفوعة ──────────────────────
+    // الاستثناء الوحيد: تسجيل بواسطة الأدمن (byAdmin=true) أو تسجيل تلقائي بعد دفع (orderId موجود)
+    const isPaidCourse = Number(course.price) > 0;
+    if (isPaidCourse && !byAdmin && !orderId) {
+      throw new Error(
+        'هذا الكورس مدفوع. يجب شراؤه من المتجر أولاً قبل التسجيل. سيتم تسجيلك تلقائياً بعد إتمام الدفع.'
+      );
+    }
+
+    // ─── فحص التسجيل المكرر ───────────────────────────────────────────────
     const existing = await db.academyEnrollment.findFirst({
       where: {
         courseId,
@@ -619,7 +629,15 @@ class AcademyService {
           data: { status: 'ACTIVE' },
         });
       }
-      return existing;
+      return existing; // مسجّل بالفعل — لا نعمل تسجيل مكرر
+    }
+
+    // ─── حساب تاريخ انتهاء الاشتراك ──────────────────────────────────────
+    const subDays = course.subscriptionDays ? Number(course.subscriptionDays) : null;
+    let expiresAt = null;
+    if (subDays && subDays > 0) {
+      expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + subDays);
     }
 
     const enrollment = await db.academyEnrollment.create({
@@ -634,6 +652,8 @@ class AcademyService {
         studentPhone: studentPhone || null,
         studentEmail: studentEmail || null,
         status: 'ACTIVE',
+        subscriptionDays: subDays,
+        expiresAt,
       },
     });
 
@@ -648,7 +668,20 @@ class AcademyService {
     });
     if (!course) return null;
 
-    return this.enrollStudent({
+    // ─── منع التسجيل المكرر لنفس الطلب ──────────────────────────────────
+    const alreadyEnrolled = await db.academyEnrollment.findFirst({
+      where: {
+        courseId: course.id,
+        companyId,
+        orderId,
+      },
+    });
+    if (alreadyEnrolled) {
+      console.log(`[academy] skip duplicate auto-enroll: orderId=${orderId}, courseId=${course.id}`);
+      return alreadyEnrolled;
+    }
+
+    const enrollment = await this.enrollStudent({
       companyId,
       courseId: course.id,
       customerId,
@@ -656,6 +689,54 @@ class AcademyService {
       studentName: customerName,
       studentPhone: customerPhone,
       studentEmail: customerEmail,
+      byAdmin: false, // بعد دفع — orderId موجود يتجاوز الحارس
+    });
+
+    // ─── إشعار الطالب بعد التسجيل التلقائي ──────────────────────────────
+    try {
+      const notificationService = require('./notificationService');
+      if (notificationService?.createNotification) {
+        await notificationService.createNotification({
+          companyId,
+          title: `تم تسجيلك في كورس: ${course.title}`,
+          body: `مبروك! تم تسجيلك تلقائياً في دورة "${course.title}" بعد إتمام الدفع. يمكنك الوصول للكورس من الأكاديمية الآن.`,
+          type: 'ACADEMY_ENROLLMENT',
+          recipientCustomerId: customerId || null,
+          metadata: { courseId: course.id, enrollmentId: enrollment?.id },
+        });
+      }
+    } catch (notifErr) {
+      console.warn('[academy] auto-enroll notification skipped:', notifErr.message);
+    }
+
+    return enrollment;
+  }
+
+  // ─── الأدمن يوقف اشتراك طالب ───────────────────────────────────────────
+  async suspendEnrollment({ enrollmentId, companyId }) {
+    const db = this.getDb();
+    const enrollment = await db.academyEnrollment.findFirst({
+      where: { id: enrollmentId, companyId },
+    });
+    if (!enrollment) throw new Error('الاشتراك غير موجود');
+
+    return db.academyEnrollment.update({
+      where: { id: enrollmentId },
+      data: { status: 'SUSPENDED' },
+    });
+  }
+
+  // ─── الأدمن يُعيد تفعيل اشتراك طالب ────────────────────────────────────
+  async reactivateEnrollment({ enrollmentId, companyId }) {
+    const db = this.getDb();
+    const enrollment = await db.academyEnrollment.findFirst({
+      where: { id: enrollmentId, companyId },
+    });
+    if (!enrollment) throw new Error('الاشتراك غير موجود');
+
+    return db.academyEnrollment.update({
+      where: { id: enrollmentId },
+      data: { status: 'ACTIVE' },
     });
   }
 
@@ -798,6 +879,12 @@ class AcademyService {
           ],
         },
       });
+
+      // ─── فحص انتهاء مدة الاشتراك ──────────────────────────────────────────
+      if (enrollment && enrollment.expiresAt && new Date(enrollment.expiresAt) < new Date()) {
+        // الاشتراك منتهي — نتعامل معه كغير مسجّل (يرى المعاينة فقط)
+        enrollment = null;
+      }
     }
 
     const isEnrolled = Boolean(enrollment);
@@ -1498,6 +1585,7 @@ ${studentUrl || 'لا يوجد رابط'}`;
     return enrollments.map((en) => {
       const completedCount = en.progress.filter((p) => p.status === 'DONE').length;
       const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+      const isExpired = en.expiresAt ? new Date(en.expiresAt) < new Date() : false;
       return {
         id: en.id,
         studentName: en.studentName,
@@ -1506,6 +1594,9 @@ ${studentUrl || 'لا يوجد رابط'}`;
         status: en.status,
         enrolledAt: en.enrolledAt,
         completedAt: en.completedAt,
+        expiresAt: en.expiresAt || null,
+        subscriptionDays: en.subscriptionDays || null,
+        isExpired,
         completedLessonsCount: completedCount,
         totalLessonsCount: totalLessons,
         progressPercent,
