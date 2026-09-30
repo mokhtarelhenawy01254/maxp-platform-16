@@ -307,7 +307,7 @@ const requirePermission = (permission) => {
  * Loads user permissions from DB on each request (no cache)
  */
 const requireDbPermission = (permissionKey) => {
-  return async (req, res, next) => {
+  const middleware = async (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
@@ -341,6 +341,10 @@ const requireDbPermission = (permissionKey) => {
       return res.status(500).json({ error: 'Permission check failed' });
     }
   };
+  // Capability-manifest metadata: recovered by /api/v1/internal/capabilities
+  // via route-stack reflection (see routes/internalCapabilitiesRoutes.js).
+  middleware._maxpMeta = { permissionKey };
+  return middleware;
 };
 
 /**

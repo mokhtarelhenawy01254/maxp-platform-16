@@ -105,7 +105,7 @@ const getCandidateAppSlugs = (appSlug) => {
  * @returns {Function} Express middleware function
  */
 const checkAppAccess = (appSlug) => {
-  return async (req, res, next) => {
+  const middleware = async (req, res, next) => {
     try {
       const { companyId } = req.user;
 
@@ -433,6 +433,10 @@ const checkAppAccess = (appSlug) => {
       });
     }
   };
+  // Capability-manifest metadata: recovered by /api/v1/internal/capabilities
+  // via route-stack reflection (see routes/internalCapabilitiesRoutes.js).
+  middleware._maxpMeta = { appSlug };
+  return middleware;
 };
 
 /**

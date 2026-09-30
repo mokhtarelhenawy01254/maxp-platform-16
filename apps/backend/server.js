@@ -376,6 +376,7 @@ const storePagesRoutes = require("./routes/storePagesRoutes");
 
 const superAdminRoutes = require("./routes/superAdminRoutes");
 const appExplanationsRoutes = require("./routes/appExplanationsRoutes");
+const internalCapabilitiesRoutes = require("./routes/internalCapabilitiesRoutes");
 const supportRoutes = require("./routes/supportRoutes");
 const systemManagementRoutes = require("./routes/systemManagementRoutes");
 const monitorRoutes = require("./routes/monitorRoutes");
@@ -866,6 +867,13 @@ app.use("/uploads", async (req, res, next) => {
 
 // 📖 App Explanations (public + admin routes — admin endpoints are protected by requireSuperAdmin inside the route file)
 app.use("/api/v1/app-explanations", appExplanationsRoutes);
+
+// 🤖 Internal Capability Manifest — machine-readable inventory of every mounted
+// route (service-token auth inside the route file). Mounted BEFORE globalSecurity
+// on purpose: the manifest is company-agnostic and globalSecurity's service-token
+// path requires a companyId. Reflection runs at request time, so every route
+// mounted later in this file is still included.
+app.use("/api/v1/internal", internalCapabilitiesRoutes);
 
 // 🚀 Apply Security for sensitive Admin/Company routes
 app.use(globalSecurity);
