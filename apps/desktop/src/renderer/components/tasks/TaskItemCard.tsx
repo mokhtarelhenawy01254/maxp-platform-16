@@ -409,58 +409,6 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
 
         {/* Col 5: Actions Area */}
         <div style={rowStyles.actionsCol} onClick={(e) => e.stopPropagation()}>
-          {/* Hover Action Tools */}
-          {isHovered && (
-            <div style={rowStyles.hoverTools}>
-              {/* One-Click Copy Description */}
-              <button
-                type="button"
-                onClick={handleCopyDescription}
-                style={{
-                  ...rowStyles.iconBtn,
-                  color: isCopied ? 'var(--accent-green)' : 'var(--text-muted)',
-                }}
-                title={isCopied ? 'تم نسخ الوصف بنجاح!' : 'نسخ وصف المهمة بنقرة واحدة'}
-              >
-                {isCopied ? <CheckCheck size={11} color="var(--accent-green)" /> : <Copy size={11} />}
-              </button>
-
-              {canEditTask && onEdit && !isCompleted && (
-                <button
-                  type="button"
-                  onClick={() => onEdit(task)}
-                  style={rowStyles.iconBtn}
-                  title="تعديل المهمة"
-                >
-                  <Edit3 size={11} color="var(--text-muted)" />
-                </button>
-              )}
-
-              {currentUserId && (
-                <button
-                  type="button"
-                  onClick={handleToggleWatch}
-                  style={{
-                    ...rowStyles.iconBtn,
-                    color: isWatching ? 'var(--accent-blue)' : 'var(--text-muted)',
-                  }}
-                  title={isWatching ? 'إلغاء المتابعة' : 'متابعة المهمة'}
-                >
-                  {isWatching ? <Eye size={11} color="var(--accent-blue)" /> : <EyeOff size={11} color="var(--text-muted)" />}
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={handleOpenInWeb}
-                style={rowStyles.iconBtn}
-                title="فتح على الويب"
-              >
-                <ExternalLink size={11} color="var(--text-muted)" />
-              </button>
-            </div>
-          )}
-
           {/* SINGLE DYNAMIC PRIMARY ACTION */}
           {isCompleted ? (
             <button

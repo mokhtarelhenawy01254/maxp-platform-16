@@ -75,6 +75,8 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   const [commentRefreshKey, setCommentRefreshKey] = useState(0);
   const [copiedLink, setCopiedLink] = useState(false);
   const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
+  const [copiedDesc, setCopiedDesc] = useState(false);
+  const [localWatching, setLocalWatching] = useState<boolean | null>(null);
 
   // Close on Escape key press
   useEffect(() => {
@@ -115,8 +117,6 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
 
   const attachments = task.taskAttachments || task.attachments || [];
   const watchers = task.taskWatchers || task.watchers || [];
-  const [copiedDesc, setCopiedDesc] = useState(false);
-  const [localWatching, setLocalWatching] = useState<boolean | null>(null);
   const isWatching = currentUserId
     ? watchers.some((w: any) => (w.userId || w.id || w.user?.id) === currentUserId)
     : false;
