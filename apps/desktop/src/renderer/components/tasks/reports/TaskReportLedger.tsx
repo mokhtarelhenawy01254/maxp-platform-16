@@ -171,6 +171,20 @@ export const TaskReportLedger: React.FC<TaskReportLedgerProps> = ({
                         </span>
                       )}
                     </div>
+                    {t.totalLifetimeMinutes != null && t.totalLifetimeMinutes > t.actualTrackedMinutes && (
+                      <span
+                        style={{
+                          fontSize: 9.5,
+                          color: 'var(--text-muted)',
+                          display: 'block',
+                          marginTop: 1.5,
+                          fontVariantNumeric: 'tabular-nums',
+                        }}
+                        title={`إجمالي الوقت التراكمي للمهمة: ${formatMinToH(t.totalLifetimeMinutes)}`}
+                      >
+                        (كلي: {formatMinToH(t.totalLifetimeMinutes)})
+                      </span>
+                    )}
                   </td>
                 </tr>
               );

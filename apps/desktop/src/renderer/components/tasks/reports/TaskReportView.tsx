@@ -129,17 +129,57 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
 
     return tasks.map((t: any) => {
       const estMin = Number(t.estimatedMinutes || t.estimated_minutes || (t.estimatedHours ? t.estimatedHours * 60 : 0));
-      const actualMin = Math.round(
-        Number(
-          t.totalDuration ??
-          t.total_duration ??
-          t.actualMinutes ??
-          t.actual_minutes ??
-          t.totalTimeMinutes ??
-          (t.totalSeconds != null ? t.totalSeconds / 60 : null) ??
-          (t.actualHours != null ? t.actualHours * 60 : 0)
+
+      // 1. Lifetime minutes (capped at 7200 minutes / 120 hours to eliminate corrupted runaway historical entries)
+      const lifetimeMin = Math.min(
+        7200,
+        Math.round(
+          Number(
+            t.lifetimeTrackedMinutes ??
+            t.totalDuration ??
+            t.total_duration ??
+            t.actualMinutes ??
+            t.actual_minutes ??
+            t.totalTimeMinutes ??
+            (t.totalSeconds != null ? t.totalSeconds / 60 : null) ??
+            (t.actualHours != null ? t.actualHours * 60 : 0)
+          )
         )
       );
+
+      // 2. Today's tracked minutes (strictly scoped to today's sessions, capped at 480m / 8h)
+      let todayMin = 0;
+      if (t.todayTrackedMinutes != null) {
+        todayMin = Number(t.todayTrackedMinutes);
+      } else if (t.todayMinutes != null) {
+        todayMin = Number(t.todayMinutes);
+      } else if (t.todayDuration != null) {
+        todayMin = Number(t.todayDuration);
+      } else if (Array.isArray(t.timeEntries) || Array.isArray(t.time_entries)) {
+        const entries = t.timeEntries || t.time_entries;
+        const todayStr = new Date().toISOString().slice(0, 10);
+        todayMin = entries.reduce((sum: number, e: any) => {
+          const entryDate = (e.startTime || e.createdAt || '').slice(0, 10);
+          if (e.isToday || entryDate === todayStr) {
+            return sum + Math.min(480, Number(e.duration || 0));
+          }
+          return sum;
+        }, 0);
+      } else {
+        const createdToday = (t.createdAt || '').slice(0, 10) === new Date().toISOString().slice(0, 10);
+        const completedToday = (t.completedAt || t.completedDate || '').slice(0, 10) === new Date().toISOString().slice(0, 10);
+        if (createdToday || completedToday) {
+          todayMin = Math.min(lifetimeMin, 480);
+        }
+      }
+      todayMin = Math.min(todayMin, 480);
+
+      // 3. Resolve actual minutes based on active date range
+      let actualMin = lifetimeMin;
+      if (filters.dateRange === 'today') {
+        actualMin = todayMin;
+      }
+
       const varianceMin = actualMin - estMin;
       const variancePct = estMin > 0 ? Math.round((actualMin / estMin) * 100) : 0;
 
@@ -173,6 +213,8 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         completedAt: completedDate,
         estimatedMinutes: estMin,
         actualTrackedMinutes: actualMin,
+        totalLifetimeMinutes: lifetimeMin,
+        todayTrackedMinutes: todayMin,
         varianceMinutes: varianceMin,
         variancePercent: variancePct,
         isOverdue,
@@ -180,7 +222,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         isReviewBlocked: isReview,
       };
     });
-  }, [tasks, users]);
+  }, [tasks, users, filters.dateRange]);
 
   // Filter tasks based on active controls
   const filteredItems = useMemo(() => {
@@ -204,14 +246,14 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         return isActive || isCompletedToday;
       }
 
-      if (filters.dateRange === 'week') {
+      if (filters.dateRange === '7days' || filters.dateRange === 'week') {
         const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
         const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
         const isCompletedInWeek = t.status === 'COMPLETED' && compDate >= sevenDaysAgo;
         return isActive || isCompletedInWeek;
       }
 
-      if (filters.dateRange === 'month') {
+      if (filters.dateRange === '30days' || filters.dateRange === 'month') {
         const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
         const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
         const isCompletedInMonth = t.status === 'COMPLETED' && compDate >= thirtyDaysAgo;
@@ -243,8 +285,8 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       (t) => Math.abs(t.actualTrackedMinutes - t.estimatedMinutes) <= t.estimatedMinutes * 0.3
     ).length;
     const realAccuracy = withEvidence.length > 0 ? Math.round((accurate / withEvidence.length) * 100) : 0;
-    // Real human work time: team aggregate for managers, own attendance day for employees
-    const actualSeconds = teamOverview.length > 0
+    // Real attendance work time: team aggregate for managers, own attendance day for employees
+    const attendanceActiveSeconds = teamOverview.length > 0
       ? teamOverview.reduce((s: number, r: any) => s + Number(r.activeSeconds || 0), 0)
       : myDayActiveSeconds;
 
@@ -255,7 +297,8 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       inProgressCount: inProgress,
       inReviewCount: inReview,
       totalTrackedSeconds: totalSeconds,
-      actualSeconds,
+      actualSeconds: totalSeconds,
+      attendanceActiveSeconds,
       overdueCount: overdue,
       timeLeakCount: timeLeaks,
       reviewBlockedCount: reviewBlocked,
@@ -543,6 +586,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         kpis={kpis}
         activeFilter={filters.exceptionFilter}
         onFilterChange={(f) => setFilters((p) => ({ ...p, exceptionFilter: f }))}
+        dateRange={filters.dateRange}
       />
 
       {/* ملخص يومي صادق — روح التقرير اليومي القديم بمصدر حقيقي */}

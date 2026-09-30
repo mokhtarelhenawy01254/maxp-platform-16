@@ -7,22 +7,34 @@ import {
   PauseCircle,
   TrendingUp,
 } from 'lucide-react';
-import { TaskReportKpiData, TaskExceptionFilter } from './TaskReportTypes';
+import { TaskReportKpiData, TaskExceptionFilter, TaskDateRange } from './TaskReportTypes';
 
 interface TaskReportKpisProps {
   kpis: TaskReportKpiData;
   activeFilter: TaskExceptionFilter;
   onFilterChange: (filter: TaskExceptionFilter) => void;
+  dateRange?: TaskDateRange;
 }
 
 export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
   kpis,
   activeFilter,
   onFilterChange,
+  dateRange = 'today',
 }) => {
   const formatHours = (seconds: number): string => {
-    const hours = (seconds / 3600).toFixed(1);
-    return `${hours}h`;
+    const totalMinutes = Math.round(seconds / 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    if (h === 0) return `${m}m`;
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  };
+
+  const getTimerLabel = (): string => {
+    if (dateRange === 'today') return 'ساعات التايمر (اليوم)';
+    if (dateRange === '7days') return 'ساعات التايمر (7 أيام)';
+    if (dateRange === '30days') return 'ساعات التايمر (30 يوم)';
+    return 'ساعات التايمر (الكل)';
   };
 
   return (
@@ -60,13 +72,13 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
       </div>
 
       {/* 2. Tracked Stopwatch Hours */}
-      <div style={styles.card} title="إجمالي الساعات المسجلة بالتايمر الفعلي">
+      <div style={styles.card} title="إجمالي الساعات المسجلة بتايمر المهام الفعلي وفق الفلترة المحددة">
         <div style={styles.cardHeader}>
-          <span style={styles.cardLabel}>الوقت الفعلي اليوم</span>
+          <span style={styles.cardLabel}>{getTimerLabel()}</span>
           <Clock size={13} style={{ color: 'var(--accent-blue)' }} />
         </div>
         <div style={styles.cardBody}>
-          <span style={styles.primaryNum}>{formatHours(kpis.actualSeconds || kpis.totalTrackedSeconds)}</span>
+          <span style={styles.primaryNum}>{formatHours(kpis.totalTrackedSeconds)}</span>
           <span style={{ ...styles.secondaryBadge, color: 'var(--accent-blue)' }}>
             <TrendingUp size={11} style={{ marginRight: 3 }} />
             {kpis.inProgressCount} جارية الآن

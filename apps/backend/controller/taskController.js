@@ -3405,15 +3405,31 @@ const taskController = {
       const nowMs = stopNow.getTime();
       for (const entry of runningEntries) {
         const taskStatus = String(entry.task?.status || "").toUpperCase();
+        const startMs = new Date(entry.startTime).getTime();
+        const elapsedSeconds = !isNaN(startMs) && nowMs > startMs ? Math.floor((nowMs - startMs) / 1000) : 0;
+
         if (["COMPLETED", "CANCELLED"].includes(taskStatus)) {
-          const dur = Math.max(1, Math.round((nowMs - new Date(entry.startTime).getTime()) / 60000));
+          // سقف أمان حتمي للمهام المكتملة أو الملغاة: حد أقصى 8 ساعات (480 دقيقة)
+          const rawDur = Math.max(1, Math.round((nowMs - startMs) / 60000));
+          const dur = Math.min(480, rawDur);
           await getSharedPrismaClient().timeEntry.update({
             where: { id: entry.id },
             data: { endTime: stopNow, duration: dur, isRunning: false },
           });
+        } else if (elapsedSeconds > 8 * 3600) {
+          // صمام أمان التايمر المعلق (Zombie Timer): مؤقت تُرك يعمل لأكثر من 8 ساعات متواصلة دون إيقاف
+          const cappedDuration = 480;
+          const cappedEndTime = new Date(startMs + 8 * 3600 * 1000);
+          await getSharedPrismaClient().timeEntry.update({
+            where: { id: entry.id },
+            data: {
+              endTime: cappedEndTime,
+              duration: cappedDuration,
+              isRunning: false,
+              description: [entry.description, '[إيقاف تلقائي: تجاوز السقف الأقصى 8 ساعات]'].filter(Boolean).join(' ').trim(),
+            },
+          });
         } else {
-          const startMs = new Date(entry.startTime).getTime();
-          const elapsedSeconds = !isNaN(startMs) && nowMs > startMs ? Math.floor((nowMs - startMs) / 1000) : 0;
           const durationMinutes = Math.max(0, Math.floor(elapsedSeconds / 60));
           validRunning.push({
             ...entry,

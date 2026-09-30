@@ -35,6 +35,8 @@ export interface DeviceInfo {
   deviceName: string;
   osVersion: string;
   appVersion: string;
+  isPaused?: boolean;
+  breakReason?: string | null;
 }
 
 export interface DailySummary {

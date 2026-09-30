@@ -11,6 +11,8 @@ export interface TaskReportItem {
   completedAt?: string | null;
   estimatedMinutes: number;
   actualTrackedMinutes: number;
+  totalLifetimeMinutes?: number;
+  todayTrackedMinutes?: number;
   varianceMinutes: number; // actual - estimated
   variancePercent: number; // (actual / estimated) * 100
   isOverdue: boolean;
@@ -26,6 +28,7 @@ export interface TaskReportKpiData {
   inReviewCount: number;
   totalTrackedSeconds: number;   // sum of per-task durations (parallel-inclusive)
   actualSeconds: number;         // real human work time (attendance-based, parallel-exclusive)
+  attendanceActiveSeconds?: number;
   overdueCount: number;
   timeLeakCount: number;
   reviewBlockedCount: number;

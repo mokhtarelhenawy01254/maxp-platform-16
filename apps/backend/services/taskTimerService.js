@@ -47,8 +47,9 @@ class TaskTimerService {
         const startTime = new Date(entry.startTime);
         let durationMinutes = Math.max(1, Math.round((stopTime.getTime() - startTime.getTime()) / 60000));
 
-        if (maxAllowedMinutes && durationMinutes > maxAllowedMinutes) {
-          durationMinutes = maxAllowedMinutes;
+        const effectiveCap = maxAllowedMinutes ? Math.min(maxAllowedMinutes, 480) : 480;
+        if (durationMinutes > effectiveCap) {
+          durationMinutes = effectiveCap;
         }
 
         const noteSuffix = ` [إيقاف تلقائي: ${reason}]`;
@@ -157,7 +158,11 @@ class TaskTimerService {
 
     const stopTime = customEndTime ? new Date(customEndTime) : new Date();
     const startTime = new Date(entry.startTime);
-    const durationMinutes = Math.max(1, Math.round((stopTime.getTime() - startTime.getTime()) / 60000));
+    let durationMinutes = Math.max(1, Math.round((stopTime.getTime() - startTime.getTime()) / 60000));
+    // سقف أمان حتمي: أي جلسة متواصلة تزيد عن 8 ساعات (480 دقيقة) يتم تقييدها بحد أقصى 480 دقيقة لمنع الأرقام المبالغ فيها
+    if (durationMinutes > 480) {
+      durationMinutes = 480;
+    }
 
     const noteSuffix = actingUserId !== entry.userId
       ? ' [إيقاف إداري بواسطة المشرف]'

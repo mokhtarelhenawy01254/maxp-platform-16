@@ -17,6 +17,8 @@ export class SyncEngine {
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
   private isSyncing = false;
   private isSuspended = false;
+  private isPaused = false;
+  private breakReason: string | null = null;
 
   private readonly SYNC_INTERVAL_MS = 60_000;           // Sync every 60 seconds
   private readonly HEARTBEAT_INTERVAL_MS = 120_000;      // Heartbeat every 2 minutes
@@ -183,8 +185,14 @@ export class SyncEngine {
     }
   }
 
+  public setBreakState(isPaused: boolean, reason: string | null = null): void {
+    this.isPaused = isPaused;
+    this.breakReason = reason;
+    this.sendHeartbeat();
+  }
+
   /** Send heartbeat to server */
-  private async sendHeartbeat(): Promise<void> {
+  public async sendHeartbeat(): Promise<void> {
     if (!apiClient.isConfigured) return;
 
     try {
@@ -192,6 +200,8 @@ export class SyncEngine {
         deviceName: os.hostname(),
         osVersion: `${os.platform()} ${os.release()}`,
         appVersion: app.getVersion(),
+        isPaused: this.isPaused,
+        breakReason: this.isPaused ? (this.breakReason || 'استراحة رسمية') : null,
       };
       await apiClient.sendHeartbeat(deviceInfo);
     } catch (err) {

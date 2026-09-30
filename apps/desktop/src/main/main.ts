@@ -577,6 +577,7 @@ function pauseTracking(reason: string = 'استراحة رسمية'): void {
   activityTracker.stop();
   windowTracker.stop();
   stopIdleReminder();
+  syncEngine.setBreakState(true, currentBreakReason);
   updateTrayMenu();
   sendStateToRenderer();
   showNotification('MaxP Workspace', `تم تفعيل استراحة: ${currentBreakReason} (توقف العداد)`, true);
@@ -592,6 +593,7 @@ async function resumeTracking(): Promise<void> {
   isPaused = false;
   currentBreakReason = '';
   remindedForThisIdleEpisode = false;
+  syncEngine.setBreakState(false, null);
   await activityTracker.start();
   await windowTracker.start();
   startIdleReminder();

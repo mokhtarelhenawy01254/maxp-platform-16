@@ -244,6 +244,7 @@ class MonitorService {
     this.computeProductivityScore = computeProductivityScore;
     this.evaluateOperationalSignal = evaluateOperationalSignal;
     this.classifyItemCategory = classifyItemCategory;
+    this.deviceBreakStatusMap = new Map();
   }
 
   async processActivityBatch(companyId, employeeId, activities) {
@@ -633,6 +634,16 @@ class MonitorService {
   }
 
   async updateHeartbeat(companyId, employeeId, deviceInfo = {}) {
+    if (deviceInfo.isPaused) {
+      this.deviceBreakStatusMap.set(employeeId, {
+        isPaused: true,
+        breakReason: deviceInfo.breakReason || 'استراحة رسمية',
+        updatedAt: Date.now(),
+      });
+    } else if (deviceInfo.isPaused === false) {
+      this.deviceBreakStatusMap.delete(employeeId);
+    }
+
     const existing = await this.prisma.monitorDeviceSession.findFirst({
       where: { companyId, employeeId, isOnline: true },
       orderBy: { lastHeartbeat: 'desc' }
@@ -1696,8 +1707,20 @@ class MonitorService {
       const lastActivityMs = item.lastActivityTime ? new Date(item.lastActivityTime).getTime() : 0;
       const isActivityRecent = lastActivityMs > 0 && (Date.now() - lastActivityMs < 4 * 60 * 1000);
 
+      const breakInfo = this.deviceBreakStatusMap.get(item.employeeId) ||
+        this.deviceBreakStatusMap.get(item.employee?.userId) ||
+        this.deviceBreakStatusMap.get(item.employee?.id);
+      const isCurrentlyOnBreak = Boolean(
+        breakInfo &&
+        breakInfo.isPaused &&
+        isDeviceConnected &&
+        (Date.now() - breakInfo.updatedAt < 4 * 3600 * 1000)
+      );
+
       let status = 'offline';
-      if (isActivityRecent) {
+      if (isCurrentlyOnBreak) {
+        status = 'break';
+      } else if (isActivityRecent) {
         status = 'active';
       } else if (isDeviceConnected) {
         status = 'idle';
@@ -1891,6 +1914,8 @@ class MonitorService {
         checkInMethod: item.checkInMethod,
         hasMissingClockOut,
         status,
+        isCurrentlyOnBreak,
+        breakReason: isCurrentlyOnBreak ? (breakInfo?.breakReason || 'استراحة رسمية') : null,
         topApp: item.topApp,
         completedTasksCount,
         openTasksCount,
