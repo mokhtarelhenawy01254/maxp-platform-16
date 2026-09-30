@@ -75,7 +75,10 @@ async def test_vector_product_search_falls_back_to_product_json_embeddings(monke
     async def fake_generate_embedding(**_):
         return [1, 0, 0]
 
-    monkeypatch.setattr(vector_module, "_generate_embedding", fake_generate_embedding)
+    async def fake_query_embedding(**_):
+        return {"vector": [1, 0, 0], "provider": "test"}
+
+    monkeypatch.setattr(vector_module, "_generate_query_embedding", fake_query_embedding)
     monkeypatch.setattr("src.db.session.async_session", lambda: _Session())
 
     results = await vector_module.vector_product_search(

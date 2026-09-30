@@ -220,7 +220,9 @@ async def test_followup_empty_no_tools_returns_empty(ctx: PipelineContext) -> No
 
 @pytest.mark.asyncio
 async def test_landmark_image_auto_populate_conditional_negative(ctx: PipelineContext) -> None:
-    """If the LLM response doesn't mention the landmarkImage, it should NOT be auto-populated."""
+    """If the LLM response doesn't mention the landmarkImage (and there are
+    multiple branches, so the single-branch always-show heuristic doesn't
+    apply), it should NOT be auto-populated."""
     from src.pipeline.stages.skills_pipeline import process_with_skills
     ctx.agent = MagicMock()
     ctx.agent.allowed_skills = None
@@ -231,7 +233,8 @@ async def test_landmark_image_auto_populate_conditional_negative(ctx: PipelineCo
             "tool": "booking_info",
             "result": {
                 "branches": [
-                    {"landmarkImage": "/uploads/booking-branches/test_landmark_123.jpg"}
+                    {"name": "Maadi Branch", "landmarkImage": "/uploads/booking-branches/test_landmark_123.jpg"},
+                    {"name": "Nasr City Branch", "landmarkImage": "/uploads/booking-branches/test_landmark_456.jpg"},
                 ]
             }
         }
@@ -247,7 +250,7 @@ async def test_landmark_image_auto_populate_conditional_negative(ctx: PipelineCo
         skill.name = "product_search"
         skill.to_openai_tool.return_value = {"type": "function", "function": {"name": "product_search"}}
         mock_registry.return_value.get_all.return_value = [skill]
-        
+
         first_response = MagicMock()
         first_response.text = "Hello! The clinic is open today."
         first_response.tool_calls = None
@@ -261,7 +264,6 @@ async def test_landmark_image_auto_populate_conditional_negative(ctx: PipelineCo
     assert len(result.response_attachments) == 0
 
 
-@pytest.mark.asyncio
 async def test_landmark_image_auto_populate_conditional_positive(ctx: PipelineContext) -> None:
     """If the LLM response mentions the landmarkImage, it SHOULD be auto-populated."""
     from src.pipeline.stages.skills_pipeline import process_with_skills

@@ -323,6 +323,29 @@ async def _log_search_analytic(
         logger.warning("search_analytic_log_failed", error=str(exc))
 
 
+async def _generate_query_embedding(
+    text: str | None,
+    image_bytes: bytes | None,
+    mime_type: str | None,
+) -> dict[str, Any]:
+    """Query-side embedding via the internal episodic-memory service.
+
+    Module-level so tests can monkeypatch it — the main search used to call
+    the service inline, which made the fallback tests unmockable after the
+    service moved behind EpisodicMemoryService.
+    """
+    import base64
+
+    from src.memory.episodic_memory import EpisodicMemoryService
+    svc = EpisodicMemoryService()
+    return await svc.generate_embedding_with_provider(
+        text=text,
+        image_bytes=base64.b64encode(image_bytes).decode() if image_bytes else None,
+        mime_type=mime_type,
+        task_type="RETRIEVAL_QUERY",
+    )
+
+
 async def vector_product_search(
     company_id: str,
     query: str,
@@ -360,13 +383,10 @@ async def vector_product_search(
     # Generate ONE multimodal embedding from text + image (or text-only, or image-only)
     _emb_provider = "unknown"
     try:
-        from src.memory.episodic_memory import EpisodicMemoryService
-        svc = EpisodicMemoryService()
-        emb_result = await svc.generate_embedding_with_provider(
+        emb_result = await _generate_query_embedding(
             text=_search_text or None,
-            image_bytes=base64.b64encode(image_bytes).decode() if image_bytes else None,
+            image_bytes=image_bytes,
             mime_type=mime_type,
-            task_type="RETRIEVAL_QUERY",
         )
         q_emb = emb_result.get("vector")
         _emb_provider = emb_result.get("provider", "unknown")
