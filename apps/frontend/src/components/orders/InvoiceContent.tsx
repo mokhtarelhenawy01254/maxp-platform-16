@@ -1,7 +1,7 @@
 import React from "react";
 import i18n from "../../i18n";
 import InvoiceBarcode from "./InvoiceBarcode";
-import { extractOrderCustomFields, cleanNotesWithoutCustomFields } from "../../utils/orderCustomFields";
+import { resolveCustomFieldsForDisplay } from "../../utils/orderCustomFields";
 
 export interface InvoicePrintSettings {
   showCompanyLogo: boolean;
@@ -194,11 +194,9 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
       : Math.max(0, effectiveSubtotal + effectiveShipping + effectiveTax - discountVal);
   
   const addressText = invoice.customerAddress ? formatAddress(invoice.customerAddress) : "";
-  const customFields = extractOrderCustomFields(invoice);
-  const rawNotes = invoice.notes || invoice.order?.notes || "";
-  const displayNotes = s.showCustomFields
-    ? cleanNotesWithoutCustomFields(rawNotes, customFields)
-    : rawNotes;
+  const { customFields, displayNotes } = resolveCustomFieldsForDisplay(invoice, {
+    showCustomFields: s.showCustomFields,
+  });
   
   let governorate = invoice.governorate;
   let city = invoice.city;
@@ -341,7 +339,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
                     color: "#334155",
                   }}
                 >
-                  🚗 {cf.label}:
+                  {cf.label}:
                 </span>
                 <span
                   style={{
