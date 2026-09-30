@@ -327,7 +327,7 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'var(--bg-surface)',
     border: '1px solid var(--accent-blue-border)',
     borderRadius: 10,
-    padding: '10px 14px',
+    padding: '7px 12px',
   },
   timerMain: {
     display: 'flex',
@@ -390,7 +390,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 6,
-    fontSize: 16,
+    fontSize: 13.5,
     fontWeight: 700,
     color: 'var(--text-primary)',
     fontVariantNumeric: 'tabular-nums',
