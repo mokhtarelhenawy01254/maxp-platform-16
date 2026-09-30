@@ -6,7 +6,7 @@ async function getSummary(req, res) {
     const { companyId, id: userId, role } = req.user;
     const requestedId = req.params.employeeId;
     const isSelf = requestedId === 'me' || requestedId === userId || requestedId === req.user.employeeId;
-    const isAdmin = ['ADMIN', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'HR_MANAGER', 'OWNER'].includes(role);
+    const isAdmin = ['ADMIN', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'HR_MANAGER', 'OWNER', 'MANAGER', 'AGENT'].includes(role);
 
     if (!isSelf && !isAdmin) {
       return res.status(403).json({ error: 'Unauthorized to view another employee summary' });
@@ -29,7 +29,7 @@ async function getTimeline(req, res) {
     const { companyId, id: userId, role } = req.user;
     const requestedId = req.params.employeeId;
     const isSelf = requestedId === 'me' || requestedId === userId || requestedId === req.user.employeeId;
-    const isAdmin = ['ADMIN', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'HR_MANAGER', 'OWNER'].includes(role);
+    const isAdmin = ['ADMIN', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'HR_MANAGER', 'OWNER', 'MANAGER', 'AGENT'].includes(role);
 
     if (!isSelf && !isAdmin) {
       return res.status(403).json({ error: 'Unauthorized to view another employee timeline' });
@@ -48,7 +48,7 @@ async function getTimeline(req, res) {
 
 function checkIsAdminOrHR(role) {
   const norm = String(role || '').toUpperCase();
-  return ['ADMIN', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'HR_MANAGER', 'OWNER', 'MANAGER'].includes(norm);
+  return ['ADMIN', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'HR_MANAGER', 'OWNER', 'MANAGER', 'AGENT'].includes(norm);
 }
 
 async function getTeamOverview(req, res) {

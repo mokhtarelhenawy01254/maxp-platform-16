@@ -103,14 +103,25 @@ def validate_states(*, exposure_state: str | None = None, risk_level: str | None
 # ── Generic bridge executor ────────────────────────────────────────────────
 
 
-def _substitute_path(endpoint: str, path_params: list[str], args: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+def _substitute_path(
+    endpoint: str,
+    path_params: list[str],
+    args: dict[str, Any],
+    company_id: str | None = None,
+) -> tuple[str, dict[str, Any]]:
     """Fill ``:param`` placeholders from args; return (path, leftover args)."""
     remaining = dict(args)
     path = endpoint
     for param in path_params:
         token = f":{param}"
         if token in path:
-            value = remaining.pop(param, None) or remaining.pop(param.replace("-", "_"), None)
+            value = (
+                remaining.pop(param, None)
+                or remaining.pop(param.replace("-", "_"), None)
+                or remaining.pop(param.lower(), None)
+            )
+            if value is None and param in ("companyId", "company_id", "companyID"):
+                value = company_id
             if value is None:
                 raise ValueError(f"Missing required path parameter '{param}'")
             path = path.replace(token, str(value))
@@ -123,7 +134,7 @@ async def execute_catalog_tool(row: AgentToolCatalog, args: dict[str, Any]) -> d
     """Execute an active catalog capability against the backend."""
     from src.tools.backend_client import get_backend_client
 
-    company_id = str(args.pop("company_id", "") or "")
+    company_id = str(args.pop("company_id", "") or args.pop("companyId", "") or "")
     user_id = args.pop("user_id", None)
     approved = args.pop("approved", None)  # approval is enforced by the gate, never by the tool
     if not company_id:
@@ -133,7 +144,7 @@ async def execute_catalog_tool(row: AgentToolCatalog, args: dict[str, Any]) -> d
         return {"success": False, "error": f"Catalog tool '{row.name}' has no endpoint configured"}
 
     try:
-        path, leftover = _substitute_path(row.endpoint, list(row.path_params or []), args)
+        path, leftover = _substitute_path(row.endpoint, list(row.path_params or []), args, company_id=company_id)
     except ValueError as exc:
         return {"success": False, "error": str(exc)}
 

@@ -857,44 +857,266 @@ CURATED_CAPABILITIES: list[dict] = [
         "source": "curated",
     },
 
-    # ── Staff (read-only for the bridge) ───────────────────────────────
+    # ── Staff & HR capabilities (read-only for the bridge) ───────────────
     {
         "name": "team_users_list",
         "domain": "staff",
         "description_en": (
-            "List team members (name, role, active status). READ-ONLY — staffing changes "
-            "must be done by the merchant in settings."
+            "List team members and staff (name, role, active status, email, phone, last login). "
+            "READ-ONLY — use when the merchant asks for an employee/team report or staff overview."
         ),
-        "usage_hint_ar": "استخدمها لعرض أعضاء الفريق وأدوارهم (قراءة فقط)",
+        "usage_hint_ar": "استخدمها لعرض تقرير أعضاء الفريق والموظفين وأدوارهم وحالة نشاطهم (قراءة فقط)",
         "endpoint": "/api/v1/companies/:companyId/users",
         "http_method": "GET",
         "input_schema": {"type": "object", "properties": {
             "companyId": {"type": "string", "description": "Company ID (auto-filled with the store ID)"},
-        }, "required": ["companyId"]},
+            "search": {"type": "string", "description": "Search term for name or email"},
+            "role": {"type": "string", "description": "Filter by role (OWNER, COMPANY_ADMIN, MANAGER, AGENT)"},
+            "isActive": {"type": "string", "description": "Filter by active state ('true' or 'false')"},
+            "limit": {"type": "integer", "description": "Max results to return (default 25)"},
+            "page": {"type": "integer", "description": "Page number (default 1)"},
+        }},
         "path_params": ["companyId"],
         "permission_key": "users.view",
         "app_slug": "order-core",
         "risk_level": "read",
         "exposure_state": "active",
-        "roles": ["STORE_MANAGER"],
+        "roles": ["STORE_MANAGER", "EXECUTIVE_ASSISTANT"],
         "source": "curated",
     },
     {
         "name": "team_users_statistics",
         "domain": "staff",
-        "description_en": "Team size and role-distribution statistics. READ-ONLY.",
-        "usage_hint_ar": "استخدمها لإحصائيات الفريق وتوزيع الأدوار (قراءة فقط)",
+        "description_en": "Team size, active headcount, and role-distribution statistics. READ-ONLY.",
+        "usage_hint_ar": "استخدمها لإحصائيات الفريق والعدد الإجمالي وتوزيع الأدوار (قراءة فقط)",
         "endpoint": "/api/v1/companies/:companyId/users/statistics",
         "http_method": "GET",
         "input_schema": {"type": "object", "properties": {
             "companyId": {"type": "string", "description": "Company ID (auto-filled with the store ID)"},
-        }, "required": ["companyId"]},
+        }},
         "path_params": ["companyId"],
         "permission_key": "users.view",
         "app_slug": "order-core",
         "risk_level": "read",
         "exposure_state": "active",
-        "roles": ["STORE_MANAGER"],
+        "roles": ["STORE_MANAGER", "EXECUTIVE_ASSISTANT"],
+        "source": "curated",
+    },
+    {
+        "name": "team_user_get",
+        "domain": "staff",
+        "description_en": "Detailed profile and settings of a specific company team member by ID. READ-ONLY.",
+        "usage_hint_ar": "استخدمها لعرض بيانات مستخدم أو عضو فريق محدد بالتفصيل (قراءة فقط)",
+        "endpoint": "/api/v1/companies/:companyId/users/:userId",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {
+            "companyId": {"type": "string", "description": "Company ID (auto-filled with the store ID)"},
+            "userId": {"type": "string", "description": "Target user ID"},
+        }, "required": ["userId"]},
+        "path_params": ["companyId", "userId"],
+        "permission_key": "users.view",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER", "EXECUTIVE_ASSISTANT"],
+        "source": "curated",
+    },
+    {
+        "name": "hr_employees_list",
+        "domain": "staff",
+        "description_en": (
+            "List HR employees with employeeNumber, department, position, hireDate, status, and contract. "
+            "Use when detailed HR roster information is requested."
+        ),
+        "usage_hint_ar": "استخدمها لعرض قائمة موظفي الموارد البشرية وتفاصيل أقسامهم ومناصبهم وعقودهم (قراءة فقط)",
+        "endpoint": "/api/v1/hr/employees",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {
+            "search": {"type": "string", "description": "Search by employee name or code"},
+            "departmentId": {"type": "string", "description": "Filter by department ID"},
+            "status": {"type": "string", "description": "ACTIVE, ON_LEAVE, PROBATION, TERMINATED"},
+            "limit": {"type": "integer", "description": "Max results (default 25)"},
+            "page": {"type": "integer", "description": "Page number (default 1)"},
+        }},
+        "permission_key": "users.view",
+        "app_slug": "hr-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER", "EXECUTIVE_ASSISTANT"],
+        "source": "curated",
+    },
+    {
+        "name": "hr_employees_stats",
+        "domain": "staff",
+        "description_en": "HR summary statistics: total employee count, active, on probation, on leave, and department distribution.",
+        "usage_hint_ar": "استخدمها لعرض إحصائيات الموظفين الإجمالية ومعدلات الحضور والإجازات (قراءة فقط)",
+        "endpoint": "/api/v1/hr/employees/stats",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {}},
+        "permission_key": "users.view",
+        "app_slug": "hr-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER", "EXECUTIVE_ASSISTANT"],
+        "source": "curated",
+    },
+    {
+        "name": "hr_employee_get",
+        "domain": "staff",
+        "description_en": "Get detailed profile and job records of a specific HR employee by ID. READ-ONLY.",
+        "usage_hint_ar": "استخدمها لعرض ملف موظف محدد ببياناته الوظيفية وعقده (قراءة فقط)",
+        "endpoint": "/api/v1/hr/employees/:id",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {
+            "id": {"type": "string", "description": "Employee ID"},
+        }, "required": ["id"]},
+        "path_params": ["id"],
+        "permission_key": "users.view",
+        "app_slug": "hr-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER", "EXECUTIVE_ASSISTANT"],
+        "source": "curated",
+    },
+    {
+        "name": "hr_online_team",
+        "domain": "staff",
+        "description_en": "List employees currently online and active in the system right now. READ-ONLY.",
+        "usage_hint_ar": "استخدمها لمعرفة أعضاء الفريق المتصلين أونلاين في الوقت الحالي (قراءة فقط)",
+        "endpoint": "/api/v1/hr/online-team",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {}},
+        "permission_key": "users.view",
+        "app_slug": "hr-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER", "EXECUTIVE_ASSISTANT"],
+        "source": "curated",
+    },
+    {
+        "name": "hr_departments_list",
+        "domain": "staff",
+        "description_en": "List company departments, their manager, and headcount. READ-ONLY.",
+        "usage_hint_ar": "استخدمها لعرض أقسام الشركة وإداراتها ومدرائها (قراءة فقط)",
+        "endpoint": "/api/v1/hr/departments",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {}},
+        "permission_key": "users.view",
+        "app_slug": "hr-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER", "EXECUTIVE_ASSISTANT"],
+        "source": "curated",
+    },
+    {
+        "name": "hr_departments_stats",
+        "domain": "staff",
+        "description_en": "Department headcount statistics and budget allocations. READ-ONLY.",
+        "usage_hint_ar": "استخدمها لإحصائيات وتوزيع الموظفين على الأقسام المختلفة (قراءة فقط)",
+        "endpoint": "/api/v1/hr/departments/stats",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {}},
+        "permission_key": "users.view",
+        "app_slug": "hr-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER", "EXECUTIVE_ASSISTANT"],
+        "source": "curated",
+    },
+    {
+        "name": "hr_attendance_list",
+        "domain": "staff",
+        "description_en": "List attendance records, check-in/out times, and work hours. READ-ONLY.",
+        "usage_hint_ar": "استخدمها لعرض سجلات الحضور والانصراف والتأخير وساعات العمل (قراءة فقط)",
+        "endpoint": "/api/v1/hr/attendance",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {
+            "date": {"type": "string", "description": "Specific date YYYY-MM-DD"},
+            "startDate": {"type": "string", "description": "Range start date YYYY-MM-DD"},
+            "endDate": {"type": "string", "description": "Range end date YYYY-MM-DD"},
+            "employeeId": {"type": "string", "description": "Filter by employee ID"},
+        }},
+        "permission_key": "users.view",
+        "app_slug": "hr-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER", "EXECUTIVE_ASSISTANT"],
+        "source": "curated",
+    },
+    {
+        "name": "hr_shifts_list",
+        "domain": "staff",
+        "description_en": "List work shifts, schedules, working hours, and grace periods. READ-ONLY.",
+        "usage_hint_ar": "استخدمها لعرض مواعيد الشيفتات وساعات العمل المعتمدة (قراءة فقط)",
+        "endpoint": "/api/v1/hr/shifts",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {}},
+        "permission_key": "users.view",
+        "app_slug": "hr-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER", "EXECUTIVE_ASSISTANT"],
+        "source": "curated",
+    },
+    {
+        "name": "hr_leaves_list",
+        "domain": "staff",
+        "description_en": "List employee leave requests, approved vacations, and pending balances. READ-ONLY.",
+        "usage_hint_ar": "استخدمها لعرض الإجازات وطلبات العطلات السنوية والمرضية (قراءة فقط)",
+        "endpoint": "/api/v1/hr/leaves",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {
+            "status": {"type": "string", "description": "PENDING, APPROVED, REJECTED"},
+            "employeeId": {"type": "string", "description": "Filter by employee ID"},
+            "startDate": {"type": "string", "description": "Filter from start date"},
+        }},
+        "permission_key": "users.view",
+        "app_slug": "hr-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER", "EXECUTIVE_ASSISTANT"],
+        "source": "curated",
+    },
+    {
+        "name": "team_monitor_overview",
+        "domain": "staff",
+        "description_en": (
+            "Live team monitoring telemetry: who is working right now, active work seconds, "
+            "idle/sleep time, break durations, and productivity scores. READ-ONLY."
+        ),
+        "usage_hint_ar": "استخدمها للرصد الحي لنشاط وإنتاجية الفريق وساعات العمل والتوقف والبريك (قراءة فقط)",
+        "endpoint": "/api/v1/employee-monitor/team/overview",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {
+            "date": {"type": "string", "description": "Target date YYYY-MM-DD (defaults to today)"},
+        }},
+        "permission_key": "users.view",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER", "EXECUTIVE_ASSISTANT"],
+        "source": "curated",
+    },
+    {
+        "name": "employee_monitor_summary",
+        "domain": "staff",
+        "description_en": (
+            "Daily productivity summary for an employee: active seconds, idle/sleep time, "
+            "break breakdown, top applications, and productivity score. READ-ONLY."
+        ),
+        "usage_hint_ar": "استخدمها لملخص إنتاجية موظف محدد وتفاصيل استخدام التطبيقات وفترات البريك (قراءة فقط)",
+        "endpoint": "/api/v1/employee-monitor/summary/:employeeId",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {
+            "employeeId": {"type": "string", "description": "Target employee ID"},
+            "date": {"type": "string", "description": "Target date YYYY-MM-DD (defaults to today)"},
+        }, "required": ["employeeId"]},
+        "path_params": ["employeeId"],
+        "permission_key": "users.view",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER", "EXECUTIVE_ASSISTANT"],
         "source": "curated",
     },
 
@@ -913,7 +1135,7 @@ async def seed_curated_capabilities(session: AsyncSession) -> dict[str, int]:
             session.add(AgentToolCatalog(**cap))
             stats["created"] += 1
         elif existing.exposure_state in ("draft", "active"):
-            # refresh curated fields but keep operator-controlled state/roles
+            # refresh curated fields but keep operator-controlled state
             changed = False
             for field in ("description_en", "endpoint", "http_method", "input_schema",
                           "path_params", "permission_key", "app_slug", "risk_level"):
@@ -921,7 +1143,16 @@ async def seed_curated_capabilities(session: AsyncSession) -> dict[str, int]:
                 if new_value is not None and getattr(existing, field) != new_value:
                     setattr(existing, field, new_value)
                     changed = True
+
+            # Merge newly curated roles into existing roles
+            curated_roles = cap.get("roles") or []
+            existing_roles = list(existing.roles or [])
+            for r in curated_roles:
+                if r not in existing_roles:
+                    existing_roles.append(r)
+                    changed = True
             if changed:
+                existing.roles = existing_roles
                 stats["updated"] += 1
             else:
                 stats["skipped"] += 1

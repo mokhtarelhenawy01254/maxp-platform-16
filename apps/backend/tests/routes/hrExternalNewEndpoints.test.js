@@ -442,5 +442,42 @@ describe('HR External API — New Endpoints & Timezone Fix Unit Tests', () => {
       expect(rewardEligibilityService._hasAttendanceConditions({ type: 'ATTENDANCE_COMMITMENT' })).toBe(true);
       expect(rewardEligibilityService._hasAttendanceConditions({ randomKey: true })).toBe(false);
     });
+
+    test('getRewardTypeById is exported as a controller function', () => {
+      expect(typeof hrExternalController.getRewardTypeById).toBe('function');
+    });
+
+    test('rewardEligibilityService rejects non-targeted employee with targetMismatch', async () => {
+      const rewardEligibilityService = require('../../services/hr/rewardEligibilityService');
+      rewardEligibilityService._mockPrisma = {
+        rewardType: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'rule-target-1',
+            companyId: 'company-1',
+            isActive: true,
+            eligibilityConditions: JSON.stringify({
+              targetUserId: 'target-user-ali',
+              maxAllowedAbsenceDays: 2
+            })
+          })
+        },
+        employee: {
+          findFirst: jest.fn().mockResolvedValue(null)
+        }
+      };
+
+      const result = await rewardEligibilityService.evaluateEligibility(
+        'company-1',
+        'different-user-habiba',
+        'rule-target-1',
+        new Date('2026-09-01'),
+        new Date('2026-09-30')
+      );
+
+      expect(result.isEligible).toBe(false);
+      expect(result.reason).toBe('القاعدة مخصصة لموظف آخر');
+      expect(result.details.targetMismatch).toBe(true);
+      rewardEligibilityService._mockPrisma = null;
+    });
   });
 });

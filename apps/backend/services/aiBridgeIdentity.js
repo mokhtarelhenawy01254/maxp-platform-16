@@ -34,6 +34,8 @@ const BRIDGE_PERMISSION_KEYS = [
   'settings.read',
   'settings.manage',
   'users.view',
+  'teams.view',
+  'analytics.view',
 ];
 
 const sessionCache = new Map(); // companyId -> { token, expiresAt }

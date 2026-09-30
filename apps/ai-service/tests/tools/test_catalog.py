@@ -183,6 +183,29 @@ async def test_executor_strips_approved_flag(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_executor_substitutes_company_id_in_path(monkeypatch):
+    """When endpoint has :companyId or :company_id, executor substitutes it from company_id."""
+    captured: dict[str, Any] = {}
+
+    class _MockClient:
+        async def request_capability(self, method, path, params=None, json_body=None):
+            captured.update(path=path)
+            return {"success": True}
+
+    monkeypatch.setattr("src.tools.backend_client.get_backend_client", lambda: _MockClient())
+
+    row = _catalog_row(
+        name="team_monitor_overview",
+        endpoint="/api/v1/monitor/company/:companyId/overview",
+        path_params=["companyId"],
+        http_method="GET",
+    )
+    result = await execute_catalog_tool(row, {"company_id": "comp_abc"})
+    assert result["success"] is True
+    assert captured["path"] == "/api/v1/monitor/company/comp_abc/overview"
+
+
+@pytest.mark.asyncio
 async def test_register_catalog_tools_collision_guard(monkeypatch):
     """A catalog row whose name collides with a code tool must be SKIPPED —
     SkillRegistry.register_tool silently overwrites (last-wins)."""

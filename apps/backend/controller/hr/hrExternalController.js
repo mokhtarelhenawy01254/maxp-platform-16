@@ -4439,6 +4439,9 @@ const listRewardTypes = async (req, res) => {
       }
       return {
         ...item,
+        targetEmployeeId: parsedConditions?.targetEmployeeId || null,
+        targetEmployeeNumber: parsedConditions?.targetEmployeeNumber || null,
+        targetUserId: parsedConditions?.targetUserId || null,
         eligibilityConditions: parsedConditions
       };
     });
@@ -4455,6 +4458,52 @@ const listRewardTypes = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ [ExternalHrController.listRewardTypes] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 35b. جلب نوع مكافأة محدد بالمعرف
+ * GET /reward-types/:id
+ */
+const getRewardTypeById = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+
+    const rewardType = await prisma.rewardType.findFirst({
+      where: { id, companyId }
+    });
+
+    if (!rewardType) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'REWARD_TYPE_NOT_FOUND', message: `Reward type not found with ID: ${id}` }
+      });
+    }
+
+    let parsedConditions = null;
+    if (rewardType.eligibilityConditions) {
+      try {
+        parsedConditions = JSON.parse(rewardType.eligibilityConditions);
+      } catch (_e) {
+        parsedConditions = rewardType.eligibilityConditions;
+      }
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        ...rewardType,
+        targetEmployeeId: parsedConditions?.targetEmployeeId || null,
+        targetEmployeeNumber: parsedConditions?.targetEmployeeNumber || null,
+        targetUserId: parsedConditions?.targetUserId || null,
+        eligibilityConditions: parsedConditions
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.getRewardTypeById] Error:', error);
     return res.status(500).json({ success: false, error: { message: error.message } });
   }
 };
@@ -4618,6 +4667,9 @@ const createRewardType = async (req, res) => {
       message: 'Reward type created successfully',
       data: {
         ...rewardType,
+        targetEmployeeId: parsedConditions?.targetEmployeeId || null,
+        targetEmployeeNumber: parsedConditions?.targetEmployeeNumber || null,
+        targetUserId: parsedConditions?.targetUserId || null,
         eligibilityConditions: parsedConditions
       }
     });
@@ -4779,6 +4831,9 @@ const updateRewardType = async (req, res) => {
       message: 'Reward type updated successfully',
       data: {
         ...updated,
+        targetEmployeeId: parsedConditions?.targetEmployeeId || null,
+        targetEmployeeNumber: parsedConditions?.targetEmployeeNumber || null,
+        targetUserId: parsedConditions?.targetUserId || null,
         eligibilityConditions: parsedConditions
       }
     });
@@ -4953,18 +5008,38 @@ const evaluateRewardType = async (req, res) => {
     const periodStart = new Date(Date.UTC(targetYear, targetMonth - 1, 1));
     const periodEnd = new Date(Date.UTC(targetYear, targetMonth, 0, 23, 59, 59, 999));
 
-    // Get active employees in company (optionally filtered by targetId)
+    // Parse eligibility conditions from rule
+    let ruleConditions = {};
+    if (rewardType.eligibilityConditions) {
+      try {
+        ruleConditions = typeof rewardType.eligibilityConditions === 'string'
+          ? JSON.parse(rewardType.eligibilityConditions)
+          : rewardType.eligibilityConditions;
+      } catch (_e) {
+        ruleConditions = {};
+      }
+    }
+
+    // Get active employees in company (filtered by caller override or rule target)
     const employeeWhere = {
       companyId,
       status: 'ACTIVE'
     };
 
     if (targetId) {
+      // Explicit caller filter override for testing
       employeeWhere.OR = [
         { id: targetId },
         { userId: targetId },
         { employeeNumber: targetId }
       ];
+    } else if (ruleConditions.targetEmployeeId || ruleConditions.targetUserId || ruleConditions.targetEmployeeNumber) {
+      // Rule is targeted to a specific employee
+      const targetConditions = [];
+      if (ruleConditions.targetEmployeeId) targetConditions.push({ id: ruleConditions.targetEmployeeId });
+      if (ruleConditions.targetUserId) targetConditions.push({ userId: ruleConditions.targetUserId });
+      if (ruleConditions.targetEmployeeNumber) targetConditions.push({ employeeNumber: ruleConditions.targetEmployeeNumber });
+      employeeWhere.OR = targetConditions;
     }
 
     const activeEmployees = await prisma.employee.findMany({
@@ -4991,6 +5066,14 @@ const evaluateRewardType = async (req, res) => {
         (emp.user ? [emp.user.firstName, emp.user.lastName].filter(Boolean).join(' ') : 'Unknown');
 
       if (!emp.userId) {
+        const detailsObj = {
+          absentDays: 0,
+          checkedDays: 0,
+          totalWorkingDays: 0,
+          maxAllowedAbsenceDays: ruleConditions.maxAllowedAbsenceDays !== undefined ? Number(ruleConditions.maxAllowedAbsenceDays) : null,
+          threshold: ruleConditions.maxAllowedAbsenceDays !== undefined ? Number(ruleConditions.maxAllowedAbsenceDays) : null,
+          absentDates: []
+        };
         results.push({
           employeeId: emp.id,
           userId: null,
@@ -4998,8 +5081,11 @@ const evaluateRewardType = async (req, res) => {
           employeeName,
           isEligible: false,
           absentDays: 0,
-          maxAllowedAbsenceDays: null,
+          checkedDays: 0,
+          totalWorkingDays: 0,
+          maxAllowedAbsenceDays: detailsObj.maxAllowedAbsenceDays,
           absentDates: [],
+          details: detailsObj,
           status: 'NOT_ELIGIBLE',
           reason: 'الموظف غير مربوط بحساب مستخدم في النظام'
         });
@@ -5019,10 +5105,24 @@ const evaluateRewardType = async (req, res) => {
         eligibility = { isEligible: false, reason: e.message, details: {} };
       }
 
-      const att = eligibility.details?.attendance || {};
-      const absentDays = att.actualAbsentDays !== undefined ? att.actualAbsentDays : (att.absentDays !== undefined ? att.absentDays : 0);
-      const maxAllowed = att.maxAllowedAbsenceDays !== undefined ? att.maxAllowedAbsenceDays : (att.threshold !== undefined ? att.threshold : null);
+      const att = eligibility.details?.attendance || eligibility.details || {};
+      const absentDays = att.absentDays !== undefined ? att.absentDays : (att.actualAbsentDays !== undefined ? att.actualAbsentDays : 0);
+      const maxAllowed = att.maxAllowedAbsenceDays !== undefined
+        ? att.maxAllowedAbsenceDays
+        : (att.threshold !== undefined
+          ? att.threshold
+          : (ruleConditions.maxAllowedAbsenceDays !== undefined ? Number(ruleConditions.maxAllowedAbsenceDays) : null));
+      const checkedDays = att.checkedDays || att.totalWorkingDays || 0;
       const absentDates = att.absentDates || [];
+
+      const detailsObj = {
+        absentDays,
+        checkedDays,
+        totalWorkingDays: checkedDays,
+        maxAllowedAbsenceDays: maxAllowed,
+        threshold: maxAllowed,
+        absentDates
+      };
 
       let reasonText = eligibility.reason || '';
       if (!reasonText && att.hasAbsenceCondition) {
@@ -5046,8 +5146,11 @@ const evaluateRewardType = async (req, res) => {
             employeeName,
             isEligible: true,
             absentDays,
+            checkedDays,
+            totalWorkingDays: checkedDays,
             maxAllowedAbsenceDays: maxAllowed,
             absentDates,
+            details: detailsObj,
             status: 'ELIGIBLE',
             calculatedValue: Number(rewardType.value || 0),
             reason: reasonText
@@ -5076,8 +5179,11 @@ const evaluateRewardType = async (req, res) => {
             employeeName,
             isEligible: true,
             absentDays,
+            checkedDays,
+            totalWorkingDays: checkedDays,
             maxAllowedAbsenceDays: maxAllowed,
             absentDates,
+            details: detailsObj,
             status: 'ALREADY_EXISTS',
             recordId: existingRecord.id,
             calculatedValue: Number(existingRecord.calculatedValue),
@@ -5106,8 +5212,11 @@ const evaluateRewardType = async (req, res) => {
               employeeName,
               isEligible: true,
               absentDays,
+              checkedDays,
+              totalWorkingDays: checkedDays,
               maxAllowedAbsenceDays: maxAllowed,
               absentDates,
+              details: detailsObj,
               status: 'CREATED',
               recordId: record.id,
               recordStatus: record.status,
@@ -5122,8 +5231,11 @@ const evaluateRewardType = async (req, res) => {
               employeeName,
               isEligible: true,
               absentDays,
+              checkedDays,
+              totalWorkingDays: checkedDays,
               maxAllowedAbsenceDays: maxAllowed,
               absentDates,
+              details: detailsObj,
               status: 'ERROR',
               error: appErr.message,
               reason: reasonText
@@ -5138,8 +5250,11 @@ const evaluateRewardType = async (req, res) => {
           employeeName,
           isEligible: false,
           absentDays,
+          checkedDays,
+          totalWorkingDays: checkedDays,
           maxAllowedAbsenceDays: maxAllowed,
           absentDates,
+          details: detailsObj,
           status: 'NOT_ELIGIBLE',
           reason: reasonText || 'لم يستوفِ شروط الاستحقاق'
         });
@@ -5177,7 +5292,11 @@ const evaluateRewardType = async (req, res) => {
           name: rewardType.name,
           category: rewardType.category,
           calculationMethod: rewardType.calculationMethod,
-          value: Number(rewardType.value)
+          value: Number(rewardType.value),
+          targetEmployeeId: ruleConditions.targetEmployeeId || null,
+          targetEmployeeNumber: ruleConditions.targetEmployeeNumber || null,
+          targetUserId: ruleConditions.targetUserId || null,
+          maxAllowedAbsenceDays: ruleConditions.maxAllowedAbsenceDays !== undefined ? Number(ruleConditions.maxAllowedAbsenceDays) : null
         },
         period: {
           month: targetMonth,
@@ -5247,6 +5366,7 @@ const listRewardRules = async (req, res) => {
         value: Number(r.value),
         maxAllowedAbsenceDays: conditions.maxAllowedAbsenceDays !== undefined ? Number(conditions.maxAllowedAbsenceDays) : null,
         targetEmployeeId: conditions.targetEmployeeId || null,
+        targetEmployeeNumber: conditions.targetEmployeeNumber || null,
         targetUserId: conditions.targetUserId || null,
         disburseAsPayrollBonus: conditions.disburseAsPayrollBonus !== false,
         category: r.category,
@@ -5312,6 +5432,7 @@ const getRewardRuleById = async (req, res) => {
         value: Number(rule.value),
         maxAllowedAbsenceDays: conditions.maxAllowedAbsenceDays !== undefined ? Number(conditions.maxAllowedAbsenceDays) : null,
         targetEmployeeId: conditions.targetEmployeeId || null,
+        targetEmployeeNumber: conditions.targetEmployeeNumber || null,
         targetUserId: conditions.targetUserId || null,
         disburseAsPayrollBonus: conditions.disburseAsPayrollBonus !== false,
         category: rule.category,
@@ -5705,7 +5826,24 @@ const evaluateRewardRule = async (req, res) => {
     } catch {}
 
     const maxAllowedAbsenceDays = Number(conditions.maxAllowedAbsenceDays ?? 2);
-    const targetUserId = conditions.targetUserId || null;
+    const queryOverride = req.query.employeeId || req.query.targetEmployeeId || req.query.userId || req.body?.employeeId || req.body?.targetEmployeeId || req.body?.userId;
+    let targetUserId = conditions.targetUserId || null;
+
+    if (queryOverride) {
+      const u = await prisma.user.findFirst({
+        where: { OR: [{ id: queryOverride }, { employeeNumber: queryOverride }], companyId },
+        select: { id: true }
+      });
+      if (u) {
+        targetUserId = u.id;
+      } else {
+        const e = await prisma.employee.findFirst({
+          where: { OR: [{ id: queryOverride }, { employeeNumber: queryOverride }], companyId },
+          select: { userId: true }
+        });
+        if (e && e.userId) targetUserId = e.userId;
+      }
+    }
 
     // Use official system attendance service to get real absence days respecting workDays, publicHolidays, leaves, and hireDate
     const absentReport = await attendanceService.getAbsentDaysReport(
@@ -5741,6 +5879,15 @@ const evaluateRewardRule = async (req, res) => {
         reason = `غير مستحق: غياب ${absentDays} يوم > الحد المسموح (${maxAllowedAbsenceDays} يوم)`;
       }
 
+      const detailsObj = {
+        absentDays,
+        checkedDays: absentReport?.totalWorkingDays || 0,
+        totalWorkingDays: absentReport?.totalWorkingDays || 0,
+        maxAllowedAbsenceDays,
+        threshold: maxAllowedAbsenceDays,
+        absentDates: emp.absentDates || []
+      };
+
       if (isDryRun) {
         if (isEligible) eligibleCount++;
         results.push({
@@ -5748,8 +5895,11 @@ const evaluateRewardRule = async (req, res) => {
           employeeNumber: emp.employeeNumber,
           employeeName: emp.name,
           absentDays,
-          absentDates: emp.absentDates || [],
+          checkedDays: absentReport?.totalWorkingDays || 0,
+          totalWorkingDays: absentReport?.totalWorkingDays || 0,
           maxAllowedAbsenceDays,
+          absentDates: emp.absentDates || [],
+          details: detailsObj,
           isEligible,
           reason,
           rewardValue: Number(rule.value),
@@ -5778,8 +5928,11 @@ const evaluateRewardRule = async (req, res) => {
               employeeNumber: emp.employeeNumber,
               employeeName: emp.name,
               absentDays,
-              absentDates: emp.absentDates || [],
+              checkedDays: absentReport?.totalWorkingDays || 0,
+              totalWorkingDays: absentReport?.totalWorkingDays || 0,
               maxAllowedAbsenceDays,
+              absentDates: emp.absentDates || [],
+              details: detailsObj,
               isEligible: true,
               reason,
               rewardValue: Number(rule.value),
@@ -5819,8 +5972,11 @@ const evaluateRewardRule = async (req, res) => {
                 employeeNumber: emp.employeeNumber,
                 employeeName: emp.name,
                 absentDays,
-                absentDates: emp.absentDates || [],
+                checkedDays: absentReport?.totalWorkingDays || 0,
+                totalWorkingDays: absentReport?.totalWorkingDays || 0,
                 maxAllowedAbsenceDays,
+                absentDates: emp.absentDates || [],
+                details: detailsObj,
                 isEligible: true,
                 reason,
                 rewardValue: Number(rule.value),
@@ -5834,6 +5990,11 @@ const evaluateRewardRule = async (req, res) => {
                 employeeNumber: emp.employeeNumber,
                 employeeName: emp.name,
                 absentDays,
+                checkedDays: absentReport?.totalWorkingDays || 0,
+                totalWorkingDays: absentReport?.totalWorkingDays || 0,
+                maxAllowedAbsenceDays,
+                absentDates: emp.absentDates || [],
+                details: detailsObj,
                 isEligible: true,
                 reason,
                 status: 'ERROR',
@@ -5847,8 +6008,11 @@ const evaluateRewardRule = async (req, res) => {
             employeeNumber: emp.employeeNumber,
             employeeName: emp.name,
             absentDays,
-            absentDates: emp.absentDates || [],
+            checkedDays: absentReport?.totalWorkingDays || 0,
+            totalWorkingDays: absentReport?.totalWorkingDays || 0,
             maxAllowedAbsenceDays,
+            absentDates: emp.absentDates || [],
+            details: detailsObj,
             isEligible: false,
             reason,
             rewardValue: 0,
@@ -5887,6 +6051,9 @@ const evaluateRewardRule = async (req, res) => {
           name: rule.name,
           value: Number(rule.value),
           maxAllowedAbsenceDays,
+          targetEmployeeId: conditions.targetEmployeeId || null,
+          targetEmployeeNumber: conditions.targetEmployeeNumber || null,
+          targetUserId: conditions.targetUserId || null,
           disburseAsPayrollBonus: conditions.disburseAsPayrollBonus !== false
         },
         period: {
@@ -5958,6 +6125,7 @@ module.exports = {
   updateAttendanceRecord,
   // Phase 4 endpoints
   listRewardTypes,
+  getRewardTypeById,
   createRewardType,
   updateRewardType,
   getRewardSettings,

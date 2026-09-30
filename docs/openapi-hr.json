@@ -2037,6 +2037,24 @@
       }
     },
     "/reward-types/{id}": {
+      "get": {
+        "summary": "Get reward type by ID",
+        "description": "Retrieves configuration and eligibility conditions of a specific reward type, including target employee fields.\n\n**Required Scope:** `hr:rewards:read` (or `hr:read`, `*`)",
+        "operationId": "hr_get_reward_type_by_id",
+        "x-required-scope": "hr:rewards:read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Reward type details" },
+          "404": { "description": "Reward type not found" }
+        }
+      },
       "patch": {
         "summary": "Update reward type",
         "description": "Updates definition, calculation formula, or status of an existing reward type.\n\n**Required Scope:** `hr:rewards:write` (or `hr:write`, `*`)",

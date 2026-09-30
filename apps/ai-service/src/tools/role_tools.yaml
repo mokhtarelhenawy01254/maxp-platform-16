@@ -33,6 +33,20 @@ roles:
     - manage_agent_skill
     - update_agent_identity
     - session_search
+    - team_users_list
+    - team_users_statistics
+    - team_user_get
+    - hr_employees_list
+    - hr_employees_stats
+    - hr_employee_get
+    - hr_online_team
+    - hr_departments_list
+    - hr_departments_stats
+    - hr_attendance_list
+    - hr_shifts_list
+    - hr_leaves_list
+    - team_monitor_overview
+    - employee_monitor_summary
 
   BROWSER_COPILOT:
     - product_search
@@ -406,6 +420,20 @@ roles:
     - update_agent_identity
     - agent_spawn
     - scheduler_create_job
+    - team_users_list
+    - team_users_statistics
+    - team_user_get
+    - hr_employees_list
+    - hr_employees_stats
+    - hr_employee_get
+    - hr_online_team
+    - hr_departments_list
+    - hr_departments_stats
+    - hr_attendance_list
+    - hr_shifts_list
+    - hr_leaves_list
+    - team_monitor_overview
+    - employee_monitor_summary
 
   HR_ASSISTANT:
     - hr_my_profile

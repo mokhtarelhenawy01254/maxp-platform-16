@@ -14,7 +14,11 @@ class RewardEligibilityService {
     }
 
     get prisma() {
-        return getSharedPrismaClient();
+        return this._mockPrisma || getSharedPrismaClient();
+    }
+
+    set prisma(val) {
+        this._mockPrisma = val;
     }
 
     /**
@@ -46,6 +50,38 @@ class RewardEligibilityService {
         // Evaluate based on category
         let result = { isEligible: true, details: {}, reason: '' };
 
+        // Target Employee Check (if rule is tailored for a specific employee)
+        if (conditions.targetUserId || conditions.targetEmployeeId || conditions.targetEmployeeNumber) {
+            const isTargetUser = conditions.targetUserId && conditions.targetUserId === userId;
+            let isTargetEmployee = false;
+            if (!isTargetUser && (conditions.targetEmployeeId || conditions.targetEmployeeNumber)) {
+                const emp = await this.prisma.employee.findFirst({
+                    where: {
+                        userId,
+                        companyId,
+                        OR: [
+                            ...(conditions.targetEmployeeId ? [{ id: conditions.targetEmployeeId }] : []),
+                            ...(conditions.targetEmployeeNumber ? [{ employeeNumber: conditions.targetEmployeeNumber }] : [])
+                        ]
+                    },
+                    select: { id: true }
+                });
+                if (emp) isTargetEmployee = true;
+            }
+
+            if (!isTargetUser && !isTargetEmployee) {
+                result.isEligible = false;
+                result.reason = 'القاعدة مخصصة لموظف آخر';
+                result.details = {
+                    targetMismatch: true,
+                    targetEmployeeId: conditions.targetEmployeeId || null,
+                    targetEmployeeNumber: conditions.targetEmployeeNumber || null,
+                    targetUserId: conditions.targetUserId || null
+                };
+                return result;
+            }
+        }
+
         // Common Checks
         if (conditions.minServiceDays) {
             // Check hire date
@@ -69,6 +105,12 @@ class RewardEligibilityService {
                 result.reason = result.reason ? result.reason + '; ' + attendanceResult.reason : attendanceResult.reason;
             }
             result.details.attendance = attendanceResult.details;
+            result.details.absentDays = attendanceResult.details.absentDays;
+            result.details.checkedDays = attendanceResult.details.checkedDays;
+            result.details.totalWorkingDays = attendanceResult.details.checkedDays;
+            result.details.maxAllowedAbsenceDays = attendanceResult.details.threshold;
+            result.details.threshold = attendanceResult.details.threshold;
+            result.details.absentDates = attendanceResult.details.absentDates;
         }
 
         // Performance Checks

@@ -119,6 +119,7 @@ router.get('/rewards', requireExternalHrScope('hr:rewards:read'), hrExternalCont
 router.post('/rewards', requireExternalHrScope('hr:rewards:write'), hrExternalController.createReward);
 router.post('/rewards/:id/void', requireExternalHrScope('hr:rewards:write'), hrExternalController.voidReward);
 router.get('/reward-types', requireExternalHrScope('hr:rewards:read'), hrExternalController.listRewardTypes);
+router.get('/reward-types/:id', requireExternalHrScope('hr:rewards:read'), hrExternalController.getRewardTypeById);
 router.post('/reward-types', requireExternalHrScope('hr:rewards:write'), hrExternalController.createRewardType);
 router.patch('/reward-types/:id', requireExternalHrScope('hr:rewards:write'), hrExternalController.updateRewardType);
 router.post('/reward-types/:id/evaluate', requireExternalHrScope('hr:rewards:write'), hrExternalController.evaluateRewardType);
