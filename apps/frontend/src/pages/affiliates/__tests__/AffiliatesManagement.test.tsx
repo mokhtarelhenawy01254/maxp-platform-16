@@ -7,13 +7,17 @@ const mockGet = jest.fn();
 const mockPut = jest.fn();
 const mockPrompt = jest.fn();
 
-jest.mock("sonner", () => ({
-  __esModule: true,
-  default: {
+jest.mock("sonner", () => {
+  const toastObj = {
     error: jest.fn(),
     success: jest.fn(),
-  },
-}));
+  };
+  return {
+    __esModule: true,
+    default: toastObj,
+    toast: toastObj,
+  };
+});
 
 jest.mock("../../../services/apiClient", () => ({
   apiClient: {
@@ -27,6 +31,15 @@ jest.mock("../../../hooks/useTheme", () => ({
   useTheme: () => ({
     actualTheme: "light",
   }),
+}));
+
+jest.mock("../../../utils/i18n-toast", () => ({
+  tToast: {
+    error: jest.fn(),
+    success: jest.fn(),
+    info: jest.fn(),
+    warning: jest.fn(),
+  },
 }));
 
 beforeAll(() => {
