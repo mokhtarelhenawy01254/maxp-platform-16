@@ -184,8 +184,22 @@ export default function AgentProfilesPage() {
           setProfile(null);
         }
       } else {
-        const res = await sandboxApi.getAgents(initialTargetId || undefined);
-        const list = (res.agents || []) as AgentItem[];
+        let list: AgentItem[] = [];
+        try {
+          const res = await sandboxApi.getAgents(initialTargetId || undefined);
+          list = (res.agents || []) as AgentItem[];
+        } catch (apiErr) {
+          console.warn("[AgentProfiles] sandboxApi.getAgents failed, falling back to /agent/agents:", apiErr);
+          const fallbackRes = await tryApiFetch<{ success: boolean; agents: AgentItem[] }>("/agent/agents");
+          list = fallbackRes?.agents || [];
+        }
+
+        if (list.length === 0) {
+          const fallbackRes = await tryApiFetch<{ success: boolean; agents: AgentItem[] }>("/agent/agents");
+          if (fallbackRes?.agents && fallbackRes.agents.length > 0) {
+            list = fallbackRes.agents;
+          }
+        }
 
         // Only on initial page load: if the URL agent is not in active list, check if it is archived
         if (initialTargetId && !list.some((a) => a.id === initialTargetId)) {
@@ -254,6 +268,51 @@ export default function AgentProfilesPage() {
       setDraftFiles({ ...(data.files || {}) });
       setDraftConfig({ ...((data.agent as { config?: Record<string, string> }).config || {}) });
     } catch (err: unknown) {
+      try {
+        const fallback = await tryApiFetch<{
+          success: boolean;
+          agent?: { id: string; name?: string; role?: string; icon?: string; description?: string; model?: string | null; status?: string; templateSlug?: string | null; config?: Record<string, string> };
+          files?: Record<string, string>;
+          allowedTools?: string[];
+          skills?: AgentProfileResponse["skills"];
+          skillIds?: string[];
+        }>(`/agent/agents/${id}/files`);
+        if (fallback?.agent) {
+          const fullAgent: AgentProfileResponse = {
+            success: true,
+            agent: {
+              id: fallback.agent.id || id,
+              name: fallback.agent.name || "",
+              role: fallback.agent.role || "",
+              icon: fallback.agent.icon || "🤖",
+              description: fallback.agent.description || "",
+              model: fallback.agent.model || null,
+              status: fallback.agent.status || "ACTIVE",
+              templateSlug: fallback.agent.templateSlug || null,
+              config: fallback.agent.config || {},
+            },
+            files: {
+              'SOUL.md': fallback.files?.['SOUL.md'] || '',
+              'AGENTS.md': fallback.files?.['AGENTS.md'] || '',
+              'TOOLS.md': fallback.files?.['TOOLS.md'] || '',
+              'PERSONA.md': fallback.files?.['PERSONA.md'] || '',
+            },
+            allowedTools: fallback.allowedTools || [],
+            skills: fallback.skills || [],
+            skillIds: fallback.skillIds || [],
+            modelPolicy: null,
+          };
+          setProfile(fullAgent);
+          setDraftName(fullAgent.agent.name || "");
+          setDraftIcon(fullAgent.agent.icon || "🤖");
+          setDraftDescription(fullAgent.agent.description || "");
+          setDraftFiles({ ...(fullAgent.files || {}) });
+          setDraftConfig({ ...(fullAgent.agent.config || {}) });
+          return;
+        }
+      } catch {
+        // ignore fallback error
+      }
       const errorMsg = err instanceof Error ? err.message : "Failed to load profile";
       setProfileError(errorMsg);
     } finally {
@@ -502,8 +561,10 @@ export default function AgentProfilesPage() {
       <div className="px-3 pb-2 flex gap-1 border-b border-border/20">
         <button
           onClick={() => {
-            setAgentsListTab("active");
-            setSearchQuery("");
+            if (agentsListTab !== "active") {
+              setAgentsListTab("active");
+              setSearchQuery("");
+            }
           }}
           className={cn(
             "flex-1 py-1 text-center text-[11px] font-semibold rounded-md transition-all",
@@ -516,8 +577,10 @@ export default function AgentProfilesPage() {
         </button>
         <button
           onClick={() => {
-            setAgentsListTab("archived");
-            setSearchQuery("");
+            if (agentsListTab !== "archived") {
+              setAgentsListTab("archived");
+              setSearchQuery("");
+            }
           }}
           className={cn(
             "flex-1 py-1 text-center text-[11px] font-semibold rounded-md transition-all",

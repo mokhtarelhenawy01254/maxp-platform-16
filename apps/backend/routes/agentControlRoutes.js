@@ -11,7 +11,12 @@ const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 
 const router = express.Router();
 router.use(verifyToken.authenticateToken);
-const getCompanyId = (req) => req.user?.companyId || req.companyId;
+const getCompanyId = (req) =>
+  req.user?.companyId ||
+  req.companyId ||
+  req.headers?.['x-company-id'] ||
+  req.headers?.['X-Company-Id'] ||
+  req.query?.companyId;
 const parseJson = (value, fallback = {}) => {
   if (!value) return fallback;
   try { return JSON.parse(value); } catch (_) { return fallback; }

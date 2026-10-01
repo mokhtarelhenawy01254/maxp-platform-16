@@ -149,9 +149,6 @@ def _parse_quantity_offers(p: dict[str, Any]) -> list[dict[str, Any]]:
         or meta.get("volumeDiscounts")
         or []
     )
-    if not isinstance(raw_offers, list) or not raw_offers:
-        return []
-
     try:
         base_price = float(p.get("price") or 0)
     except (TypeError, ValueError):
@@ -160,6 +157,30 @@ def _parse_quantity_offers(p: dict[str, Any]) -> list[dict[str, Any]]:
         compare_price = float(p.get("comparePrice") or 0) if p.get("comparePrice") is not None else 0.0
     except (TypeError, ValueError):
         compare_price = 0.0
+
+    if not isinstance(raw_offers, list) or not raw_offers:
+        # Fallback: if product has a valid price, automatically generate standard 2-piece and 3-piece offers
+        # so that every product in the catalog has bundle quantity offers (يطبق على كل المنتجات)
+        if base_price > 0:
+            if base_price >= 200:
+                discount2 = 20.0
+                discount3 = 30.0
+            elif base_price >= 100:
+                discount2 = 10.0
+                discount3 = 20.0
+            else:
+                discount2 = round(base_price * 0.05, 2)
+                discount3 = round(base_price * 0.10, 2)
+
+            unit2 = max(base_price - discount2, 1.0)
+            unit3 = max(base_price - discount3, 1.0)
+
+            raw_offers = [
+                {"quantity": 2, "unitPrice": unit2},
+                {"quantity": 3, "unitPrice": unit3},
+            ]
+        else:
+            return []
 
     ref_unit_price = compare_price if compare_price > base_price else base_price
 

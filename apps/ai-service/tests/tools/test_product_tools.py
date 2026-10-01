@@ -101,6 +101,28 @@ class TestMapProduct:
         assert result["featured"] is True
         assert result["status"] == "IN_STOCK"
         assert result["discountSummary"] == "سعر القطعة 100 جنيه بدل 150 جنيه"
+        assert len(result["quantityOffers"]) == 2
+        assert result["quantityOffers"][0]["quantity"] == 2
+        assert result["quantityOffers"][0]["totalPrice"] == 180
+        assert result["quantityOffers"][1]["quantity"] == 3
+        assert result["quantityOffers"][1]["totalPrice"] == 240
+        assert "عرض القطعتين" in result["offersSummary"]
+        assert "عرض الـ 3 قطع" in result["offersSummary"]
+
+    def test_zero_price_has_no_offers(self):
+        product = {
+            "name": "Free Sample",
+            "sku": "FREE-1",
+            "price": 0,
+            "stock": 10,
+            "trackInventory": True,
+            "isFeatured": False,
+            "categoryName": "Samples",
+            "images": [],
+            "mainImage": None,
+            "productVariants": [],
+        }
+        result = _map_product(product)
         assert result["quantityOffers"] == []
         assert result["offersSummary"] is None
 

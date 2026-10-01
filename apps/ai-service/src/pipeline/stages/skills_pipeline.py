@@ -1278,7 +1278,10 @@ def _strip_tool_messages(messages: list[dict], executed: list[dict]) -> list[dic
 
     if tool_summaries:
         summary = "نتائج استدعاء الأدوات للطلب:\n" + "\n".join(tool_summaries)
-        summary += "\n\n[توجيه حاسم]: بناءً على نتائج الأدوات أعلاه، اكتب الآن ردك للعميل بالعامية المصرية الطبيعية والمباشرة بدون أي وسوم أو أكواد برمجية."
+        summary += (
+            "\n\n[توجيه حاسم]: بناءً على نتائج الأدوات أعلاه، اكتب الآن ردك للعميل بالعامية المصرية الطبيعية والمباشرة بدون أي وسوم أو أكواد برمجية. "
+            "إذا كنت تعرض منتجاً أو سعره، اذكر السعر الفردي وسعر الخصم الأصلي إن وجد، واذكر دائماً عروض الكميات المتاحة (عرض القطعتين وعرض الـ 3 قطع) الموضحة في بيانات المنتج."
+        )
         result.append({"role": "system", "content": summary})
     return result
 
@@ -1331,6 +1334,11 @@ def _get_followup_directive(agent: Any) -> str:
     """Return the follow-up directive.
     
     Agent language/tone is already in the base_prompt via instructions.
-    This just adds the tool-result instruction.
+    This adds critical constraints for synthesizing tool results.
     """
-    return "Write a natural reply based on the tool results above. If the results don't contain all the needed information, share what's available and ask for the rest."
+    return (
+        "Write a natural reply based on the tool results above in the customer's language/dialect. "
+        "CRITICAL FOR PRODUCTS/PRICES: When quoting any product price or answering product queries, you MUST state the single unit price (with comparePrice discount if available) "
+        "AND ALWAYS state the available bundle offers (offersSummary / quantityOffers, like the 2-piece and 3-piece offers) from the tool results. "
+        "If the results don't contain all the needed information, share what's available and ask for the rest."
+    )

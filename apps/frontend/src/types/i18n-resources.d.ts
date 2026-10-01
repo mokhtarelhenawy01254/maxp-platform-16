@@ -17969,6 +17969,14 @@ declare module 'react-i18next' {
             label: string;
             benefit: string;
           };
+          productWishlist: {
+            label: string;
+            benefit: string;
+          };
+          productComparison: {
+            label: string;
+            benefit: string;
+          };
         };
         field: {
           freeShippingAmount: {
