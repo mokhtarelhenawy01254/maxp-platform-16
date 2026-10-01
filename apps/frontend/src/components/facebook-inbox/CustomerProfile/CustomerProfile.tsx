@@ -18,6 +18,10 @@ import {
   X,
   Plus,
   Check,
+  MapPin,
+  FileText,
+  Star,
+  Award,
 } from "lucide-react";
 import { NoSymbolIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import { format } from "date-fns";
@@ -844,6 +848,79 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                   </div>
                 </div>
 
+                {/* Customer Classification & Summary */}
+                {(customer?.customerRating || customer?.deliveryRate != null || (customer?.totalOrdersCount != null && customer.totalOrdersCount > 0)) && (
+                  <div className="p-3 rounded-lg" style={sectionSurfaceStyle}>
+                    <h4
+                      className="text-xs font-semibold uppercase mb-2"
+                      style={mutedHeadingStyle}
+                    >
+                      تصنيف وسجل العميل
+                    </h4>
+                    <div className="flex items-center gap-2 flex-wrap text-xs">
+                      {customer?.customerRating && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                          <Star size={13} className="text-amber-500 fill-amber-500" />
+                          <span>{customer.customerRating}</span>
+                        </span>
+                      )}
+                      {customer?.totalOrdersCount != null && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+                          <ShoppingBag size={13} />
+                          <span>{customer.totalOrdersCount} طلبات مسجلة</span>
+                        </span>
+                      )}
+                      {customer?.deliveryRate != null && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                          <Award size={13} className="text-emerald-600" />
+                          <span>{customer.deliveryRate}% نسبة التسليم</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Customer Address */}
+                {(customer?.address || customer?.governorate || customer?.city || customer?.area) && (
+                  <div className="p-3 rounded-lg" style={sectionSurfaceStyle}>
+                    <h4
+                      className="text-xs font-semibold uppercase mb-2"
+                      style={mutedHeadingStyle}
+                    >
+                      العنوان وموقع التوصيل
+                    </h4>
+                    <div className="space-y-1.5 text-xs">
+                      {(customer.governorate || customer.city) && (
+                        <div className="flex items-center gap-1.5 font-medium text-foreground">
+                          <MapPin size={14} className="text-primary shrink-0" />
+                          <span>{[customer.governorate, customer.city, customer.area].filter(Boolean).join(" - ")}</span>
+                        </div>
+                      )}
+                      {customer.address && (
+                        <div className="text-muted-foreground pr-5 leading-relaxed">
+                          {customer.address}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Customer Notes */}
+                {customer?.notes && (
+                  <div className="p-3 rounded-lg" style={sectionSurfaceStyle}>
+                    <h4
+                      className="text-xs font-semibold uppercase mb-2"
+                      style={mutedHeadingStyle}
+                    >
+                      ملاحظات العميل
+                    </h4>
+                    <div className="flex items-start gap-1.5 text-xs text-muted-foreground leading-relaxed">
+                      <FileText size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                      <span>{customer.notes}</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Tags */}
                 <div className="p-3 rounded-lg" style={sectionSurfaceStyle}>
                   <h4
@@ -1093,6 +1170,46 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                       </button>
                     )}
                   </div>
+
+                  {/* Customer Information Card (from phone lookup) */}
+                  {(customer?.name || customer?.address || customer?.governorate || customer?.city || customer?.customerRating) && (
+                    <div
+                      className="p-3 rounded-lg text-xs space-y-1.5 border"
+                      style={{
+                        background: "var(--business-surface-subtle)",
+                        borderColor: "var(--business-card-border)",
+                      }}
+                    >
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 font-bold text-sm" style={{ color: "var(--color-foreground)" }}>
+                          <User size={15} className="text-primary shrink-0" />
+                          <span>{customer.name || conversation.customerName}</span>
+                        </div>
+                        {customer.customerRating && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                            <Star size={11} className="text-amber-500 fill-amber-500" />
+                            {customer.customerRating}
+                          </span>
+                        )}
+                      </div>
+
+                      {(customer.governorate || customer.city || customer.address) && (
+                        <div className="flex items-start gap-1.5 text-muted-foreground">
+                          <MapPin size={13} className="text-primary shrink-0 mt-0.5" />
+                          <span className="leading-snug">
+                            {[customer.governorate, customer.city, customer.address].filter(Boolean).join(" · ")}
+                          </span>
+                        </div>
+                      )}
+
+                      {customer.notes && (
+                        <div className="flex items-start gap-1.5 text-muted-foreground">
+                          <FileText size={13} className="text-amber-500 shrink-0 mt-0.5" />
+                          <span className="leading-snug">{customer.notes}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {orders.length > 0 && (
                     <div
