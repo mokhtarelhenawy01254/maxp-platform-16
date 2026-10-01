@@ -161,8 +161,6 @@ const getApiError = (error: unknown): ApiErrorLike => {
     addConversationToList,
     // 🆕 Mark messages as read (for read receipts)
     markMessagesAsRead,
-    addMessage,
-    loadMessages,
   } = useInboxConversations();
 
   // Send message
