@@ -649,8 +649,23 @@ const recordPunchesBatch = async (req, res) => {
             updateData.checkIn = punchDate;
             updateData.checkInMethod = deviceId ? `BIOMETRIC_${deviceId}` : 'BIOMETRIC_API';
           } else if (!isCheckIn && (!attendance.checkOut || punchDate > attendance.checkOut)) {
+            // Debounce check: ignore checkout punch if within 5 minutes of checkIn
+            if (attendance.checkIn) {
+              const diffMs = punchDate.getTime() - new Date(attendance.checkIn).getTime();
+              if (diffMs < 5 * 60 * 1000) {
+                console.warn(`⚠️ [recordPunchesBatch] Debounced checkout punch within ${Math.round(diffMs / 1000)}s of checkIn for user ${employee.userId}`);
+                results.succeeded++;
+                continue;
+              }
+            }
             updateData.checkOut = punchDate;
             updateData.checkOutMethod = deviceId ? `BIOMETRIC_${deviceId}` : 'BIOMETRIC_API';
+
+            const checkInTime = updateData.checkIn || attendance.checkIn;
+            if (checkInTime) {
+              const workMinutes = Math.max(0, (punchDate.getTime() - new Date(checkInTime).getTime()) / 60000);
+              updateData.workHours = Math.max(0, Math.round((workMinutes / 60) * 100) / 100);
+            }
           }
 
           if (Object.keys(updateData).length > 0) {
@@ -1682,7 +1697,9 @@ const getAttendanceSummary = async (req, res) => {
             absentDates = empData.absentDates || [];
             derivedAttendanceRate = empData.attendanceRate;
           } else {
-            derivedAbsenceDays = absentReport.totalAbsentDays ?? 0;
+            derivedAbsenceDays = 0;
+            absentDates = [];
+            derivedAttendanceRate = 100;
           }
         } else {
           derivedAbsenceDays = absentReport.totalAbsentDays ?? 0;
@@ -4141,6 +4158,24 @@ const voidAttendanceRecord = async (req, res) => {
     await prisma.attendance.delete({
       where: { id }
     });
+
+    // Cancel any linked auto deductions
+    try {
+      await prisma.manualDeduction.updateMany({
+        where: {
+          companyId,
+          notes: { contains: id },
+          category: 'AUTO_DEDUCTION',
+          status: { in: ['PENDING', 'APPROVED'] }
+        },
+        data: {
+          status: 'CANCELLED',
+          notes: `Cancelled automatically: Attendance record ${id} was voided`
+        }
+      });
+    } catch (dedErr) {
+      console.warn(`[voidAttendanceRecord] Warning cancelling linked deductions for ${id}:`, dedErr?.message);
+    }
 
     await logExternalApiAction({
       req,

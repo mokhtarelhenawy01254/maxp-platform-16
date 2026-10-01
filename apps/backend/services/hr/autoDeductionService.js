@@ -12,7 +12,11 @@ class AutoDeductionService {
   }
 
   get prisma() {
-    return getSharedPrismaClient();
+    return this._mockPrisma || getSharedPrismaClient();
+  }
+
+  set prisma(client) {
+    this._mockPrisma = client;
   }
 
   /**
@@ -359,7 +363,6 @@ class AutoDeductionService {
         where: {
           id: deductionId,
           companyId,
-          type: 'LATE',
           category: 'AUTO_DEDUCTION'
         }
       });
@@ -389,7 +392,7 @@ class AutoDeductionService {
       const deductMinutesMatch = deduction.description.match(/إجمالي الدقائق المخصومة: (\d+)/);
       const deductMinutes = deductMinutesMatch ? parseInt(deductMinutesMatch[1]) : 0;
 
-      if (deductMinutes > 0) {
+      if (deductMinutes > 0 && deduction.type === 'LATE') {
         const balance = await this.prisma.latenessBalance.findUnique({
           where: {
             employeeId_month_year: {

@@ -758,6 +758,24 @@ class AttendanceService {
         throw new Error("تم تسجيل الانصراف مسبقاً لهذا السجل");
       }
 
+      // حماية البصمة المزدوجة (Double-Punch Bounce Guard)
+      // إذا تمت محاولة تسجيل الانصراف خلال أقل من 5 دقائق من تسجيل الدخول
+      if (attendance.checkIn) {
+        const checkInDate = new Date(attendance.checkIn);
+        const elapsedMs = now.getTime() - checkInDate.getTime();
+        const elapsedMinutes = elapsedMs / 60000;
+        if (elapsedMinutes < 5) {
+          console.warn(
+            `⚠️ [CHECKOUT] Ignored checkout attempt within ${Math.round(elapsedMs / 1000)}s of check-in (double-punch debounce protection for user ${employeeId})`,
+          );
+          return {
+            ...attendance,
+            debounced: true,
+            message: "تم تجاهل بصمة الانصراف لأنها تمت خلال أقل من 5 دقائق من بصمة الحضور (حماية البصمة المزدوجة)",
+          };
+        }
+      }
+
       // جلب مناوبة الموظف لتاريخ السجل
       const attendanceDayForCalc = getStartOfDayInTimezone(
         new Date(attendance.date),
@@ -809,9 +827,13 @@ class AttendanceService {
         `⏰ [CHECKOUT] Record Date: ${attendanceDayForCalc.toISOString()}, Work End: ${workEnd.toISOString()}, Now: ${now.toISOString()}`,
       );
 
+      // حساب ساعات العمل الفعلية
+      const checkInDate = new Date(attendance.checkIn);
+      const actualWorkMinutes = Math.max(0, (now - checkInDate) / 60000);
+
       // حساب دقائق الخروج المبكر
       let earlyLeaveMinutes = 0;
-      if (now < workEnd) {
+      if (actualWorkMinutes >= 5 && now < workEnd) {
         earlyLeaveMinutes = Math.floor((workEnd - now) / 60000);
       }
       console.log(
@@ -819,9 +841,10 @@ class AttendanceService {
       );
 
       // حساب ساعات العمل الفعلية
-      const actualWorkMinutes = (now - new Date(attendance.checkIn)) / 60000;
-      const breakDuration = shift?.breakDuration || 60;
-      const workHours = (actualWorkMinutes - breakDuration) / 60;
+      // في مصر وساعات العمل القياسية (10:00-18:00 = 8ساعات)، الراحة وساعة الغداء ضمن ساعات العمل ولا تُخصم من الراتب
+      // لا يتم خصم الراحة إلا إذا كان الشيفت يحدد صراحةً راحة غير مدفوعة (unpaidBreak === true)
+      const breakDuration = (shift?.unpaidBreak === true) ? (shift?.breakDuration || 0) : 0;
+      const workHours = Math.max(0, (actualWorkMinutes - breakDuration) / 60);
 
       // حساب ساعات إضافية
       let overtimeHours = 0;
@@ -841,7 +864,7 @@ class AttendanceService {
           checkOutMethod: data.method || "manual",
           workMode: data.workMode || attendance.workMode || "OFFICE",
           earlyLeaveMinutes,
-          workHours: Math.round(workHours * 100) / 100,
+          workHours: Math.max(0, Math.round(workHours * 100) / 100),
           overtimeHours: Math.round(overtimeHours * 100) / 100,
         },
       });
@@ -860,7 +883,7 @@ class AttendanceService {
       }
 
       // معالجة الخصم التلقائي للانصراف المبكر
-      if (earlyLeaveMinutes > 0) {
+      if (earlyLeaveMinutes > 0 && actualWorkMinutes >= 5) {
         try {
           const deductionResult =
             await autoDeductionService.processEarlyCheckout(
@@ -1501,42 +1524,6 @@ class AttendanceService {
         }
       }
 
-      // If lateMinutes is explicitly set to 0, cancel any related auto-deductions
-      if (data.lateMinutes === 0 || data.lateMinutes === "0") {
-        try {
-          // Import autoDeductionService if not already (it's usually required at top)
-          const autoDeductionService = require("./autoDeductionService");
-
-          // Find potential auto-deduction for this attendance
-          const relatedDeduction = await this.prisma.manualDeduction.findFirst({
-            where: {
-              companyId,
-              employeeId: existing.userId,
-              notes: { contains: attendanceId },
-              category: "AUTO_DEDUCTION",
-              status: "APPROVED",
-            },
-          });
-
-          if (relatedDeduction) {
-            console.log(
-              `🔄 [AttendanceService] Cancelling auto-deduction ${relatedDeduction.id} because lateMinutes was manually set to 0`,
-            );
-            await autoDeductionService.cancelAutoDeduction(
-              companyId,
-              relatedDeduction.id,
-              "ADMIN_MANUAL_EDIT",
-              "تم تصفير دقائق التأخير من سجل الحضور",
-            );
-          }
-        } catch (err) {
-          console.error(
-            "⚠️ [AttendanceService] Error cancelling related auto-deduction:",
-            err,
-          );
-        }
-      }
-
       const metrics = await this._calculateManualMetrics(
         companyId,
         data.employeeId || existing.userId,
@@ -1558,6 +1545,59 @@ class AttendanceService {
         where: { id: attendanceId },
         data: updateData,
       });
+
+      // إلغاء الخصومات التلقائية المربوطة بالسجل في حالة تصفير التأخير أو الانصراف المبكر
+      try {
+        const autoDeductionService = require("./autoDeductionService");
+
+        // 1. إذا تم تصفير التأخير أو أصبحت الحالة حاضراً بدون تأخير
+        if (metrics.lateMinutes === 0 || metrics.status === "PRESENT") {
+          const lateDeductions = await this.prisma.manualDeduction.findMany({
+            where: {
+              companyId,
+              employeeId: existing.userId,
+              notes: { contains: attendanceId },
+              category: "AUTO_DEDUCTION",
+              type: "LATE",
+              status: { in: ["PENDING", "APPROVED"] },
+            },
+          });
+          for (const d of lateDeductions) {
+            console.log(`🔄 [AttendanceService] Cancelling late auto-deduction ${d.id} for attendance ${attendanceId}`);
+            await autoDeductionService.cancelAutoDeduction(
+              companyId,
+              d.id,
+              "ADMIN_MANUAL_EDIT",
+              "تم تصفير دقائق التأخير من سجل الحضور",
+            ).catch(e => console.warn(`Warn cancelling deduction ${d.id}:`, e.message));
+          }
+        }
+
+        // 2. إذا تم تصفير الانصراف المبكر أو أصبحت الحالة حاضراً
+        if (metrics.earlyLeaveMinutes === 0 || metrics.status === "PRESENT") {
+          const earlyDeductions = await this.prisma.manualDeduction.findMany({
+            where: {
+              companyId,
+              employeeId: existing.userId,
+              notes: { contains: attendanceId },
+              category: "AUTO_DEDUCTION",
+              type: "EARLY_LEAVE",
+              status: { in: ["PENDING", "APPROVED"] },
+            },
+          });
+          for (const d of earlyDeductions) {
+            console.log(`🔄 [AttendanceService] Cancelling early leave auto-deduction ${d.id} for attendance ${attendanceId}`);
+            await autoDeductionService.cancelAutoDeduction(
+              companyId,
+              d.id,
+              "ADMIN_MANUAL_EDIT",
+              "تم تصفير دقائق الانصراف المبكر من سجل الحضور",
+            ).catch(e => console.warn(`Warn cancelling early deduction ${d.id}:`, e.message));
+          }
+        }
+      } catch (err) {
+        console.error("⚠️ [AttendanceService] Error cancelling related auto-deductions:", err);
+      }
 
       return updated;
     } catch (error) {
@@ -1587,6 +1627,24 @@ class AttendanceService {
       await this.prisma.attendance.delete({
         where: { id: attendanceId },
       });
+
+      // إلغاء أي خصم تلقائي مربوط بالسجل المحذوف
+      try {
+        await this.prisma.manualDeduction.updateMany({
+          where: {
+            companyId: existing.companyId,
+            notes: { contains: attendanceId },
+            category: "AUTO_DEDUCTION",
+            status: { in: ["PENDING", "APPROVED"] },
+          },
+          data: {
+            status: "CANCELLED",
+            notes: `Cancelled automatically: Attendance record ${attendanceId} was deleted`,
+          },
+        });
+      } catch (e) {
+        console.warn(`Warn cancelling deductions for deleted attendance ${attendanceId}:`, e.message);
+      }
 
       return true;
     } catch (error) {
@@ -1817,16 +1875,20 @@ class AttendanceService {
 
     // If checkOut is provided and we should auto-calculate
     if (checkOut) {
-      // Early leave
+      const elapsedWorkMinutes = checkIn ? Math.max(0, (checkOut - checkIn) / 60000) : 999;
+      // Early leave (only if presence is >= 5 minutes to avoid false early checkout on accidental double punches)
       if (
-        originalData.earlyLeaveMinutes === undefined ||
-        parseInt(originalData.earlyLeaveMinutes) === 0
+        elapsedWorkMinutes >= 5 &&
+        (originalData.earlyLeaveMinutes === undefined ||
+        parseInt(originalData.earlyLeaveMinutes) === 0)
       ) {
         const earlyGrace = settings?.earlyLeaveGracePeriod || 15;
         const graceTimeOut = new Date(workEnd.getTime() - earlyGrace * 60000);
         if (checkOut < graceTimeOut) {
           earlyLeaveMinutes = Math.floor((workEnd - checkOut) / 60000);
         }
+      } else if (elapsedWorkMinutes < 5) {
+        earlyLeaveMinutes = 0;
       }
 
       // Overtime
@@ -1837,10 +1899,10 @@ class AttendanceService {
       }
     }
 
-    // Work hours
+    // Work hours: standard shift includes paid break unless shift explicitly marks unpaidBreak === true
     if (checkIn && checkOut) {
-      const actualWorkMinutes = (checkOut - checkIn) / 60000;
-      const breakDuration = shift?.breakDuration || 60;
+      const actualWorkMinutes = Math.max(0, (checkOut - checkIn) / 60000);
+      const breakDuration = (shift?.unpaidBreak === true) ? (shift?.breakDuration || 0) : 0;
       workHours = Math.max(0, (actualWorkMinutes - breakDuration) / 60);
     }
 

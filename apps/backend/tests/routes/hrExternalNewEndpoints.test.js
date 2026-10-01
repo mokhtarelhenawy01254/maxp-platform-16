@@ -545,5 +545,189 @@ describe('HR External API — New Endpoints & Timezone Fix Unit Tests', () => {
       );
     });
   });
+
+  describe('Item 10: Attendance Deficit, Double-Punch Bounce Guard & Auto-Deductions Sync', () => {
+    test('cancelAutoDeduction can cancel both LATE and EARLY_LEAVE auto-deductions', async () => {
+      const autoDeductionService = require('../../services/hr/autoDeductionService');
+      const mockDeduction = {
+        id: 'ded-early-1',
+        companyId: 'company-1',
+        type: 'EARLY_LEAVE',
+        category: 'AUTO_DEDUCTION',
+        amount: 134.62,
+        description: 'خصم تلقائي - انصراف مبكر',
+        notes: 'Attendance ID: att-1',
+        appliedToPayroll: false
+      };
+
+      autoDeductionService.prisma = {
+        manualDeduction: {
+          findFirst: jest.fn().mockResolvedValue(mockDeduction),
+          update: jest.fn().mockResolvedValue({
+            ...mockDeduction,
+            status: 'CANCELLED'
+          })
+        }
+      };
+
+      const res = await autoDeductionService.cancelAutoDeduction('company-1', 'ded-early-1', 'TEST', 'Double punch bounce');
+      expect(res.status).toBe('CANCELLED');
+      expect(autoDeductionService.prisma.manualDeduction.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'ded-early-1' },
+          data: expect.objectContaining({ status: 'CANCELLED' })
+        })
+      );
+      autoDeductionService.prisma = null;
+    });
+
+    test('Full 8-hour presence (10:00 to 18:00) results in 0 unexcused deficit in payrollService', async () => {
+      const payrollService = require('../../services/hr/payrollService');
+      const mockEmployee = {
+        id: 'user-habiba',
+        companyId: 'comp-1',
+        employeeNumber: 'EMP00001',
+        firstName: 'حبيبة',
+        lastName: 'أحمد',
+        baseSalary: 10000,
+        employees: [{ id: 'emp-habiba', baseSalary: 10000, hireDate: new Date('2025-01-01') }]
+      };
+
+      const mockSettings = {
+        companyId: 'comp-1',
+        workingHoursPerDay: 8,
+        workingDaysPerMonth: 22,
+        workDays: '[0, 1, 2, 3, 4]',
+        absencePenaltyRate: 1.0,
+        autoDeductionEnabled: false
+      };
+
+      // Attendance record: 10:00 to 18:00 (8h presence), but workHours stored as 7.00 due to old break deduction bug
+      const mockAttendance = [
+        {
+          id: 'att-sep-1',
+          userId: 'user-habiba',
+          companyId: 'comp-1',
+          date: new Date('2026-09-06'),
+          checkIn: new Date('2026-09-06T08:00:00.000Z'), // 10:00 Cairo (+2)
+          checkOut: new Date('2026-09-06T16:00:00.000Z'), // 18:00 Cairo (+2)
+          workHours: 7.00, // Legacy bug stored 7h instead of 8h
+          status: 'PRESENT',
+          lateMinutes: 0,
+          earlyLeaveMinutes: 0
+        }
+      ];
+
+      payrollService.prisma = {
+        user: { findUnique: jest.fn().mockResolvedValue(mockEmployee) },
+        hRSettings: { findUnique: jest.fn().mockResolvedValue(mockSettings) },
+        attendance: { findMany: jest.fn().mockResolvedValue(mockAttendance) },
+        leaveRequest: { findMany: jest.fn().mockResolvedValue([]) },
+        hrPermissionRequest: { findMany: jest.fn().mockResolvedValue([]) },
+        manualDeduction: { findMany: jest.fn().mockResolvedValue([]) },
+        advanceRequest: { findMany: jest.fn().mockResolvedValue([]) },
+        latenessBalance: { findUnique: jest.fn().mockResolvedValue(null) },
+        rewardEligibilityAudit: { findMany: jest.fn().mockResolvedValue([]) }
+      };
+
+      const rewardPayrollIntegrationService = require('../../services/hr/rewardPayrollIntegrationService');
+      rewardPayrollIntegrationService.prisma = {
+        rewardRecord: { findMany: jest.fn().mockResolvedValue([]) }
+      };
+
+      const result = await payrollService.calculatePayrollData('comp-1', 'user-habiba', 9, 2026);
+      expect(result.deductions.deficitAmount || 0).toBe(0);
+      expect(result.deductions.deficitDetails).toBeUndefined();
+      payrollService.prisma = null;
+      rewardPayrollIntegrationService.prisma = null;
+    });
+
+    test('Stale auto-deductions are excluded from payroll when linked attendance lateMinutes is 0', async () => {
+      const payrollService = require('../../services/hr/payrollService');
+      const mockEmployee = {
+        id: 'user-ali',
+        companyId: 'comp-1',
+        employeeNumber: 'EMP00006',
+        firstName: 'علي',
+        lastName: 'وزيري',
+        baseSalary: 10000,
+        employees: [{ id: 'emp-ali', baseSalary: 10000, hireDate: new Date('2025-01-01') }]
+      };
+
+      const mockSettings = {
+        companyId: 'comp-1',
+        workingHoursPerDay: 8,
+        workingDaysPerMonth: 22,
+        workDays: '[0, 1, 2, 3, 4]',
+        absencePenaltyRate: 1.0,
+        autoDeductionEnabled: true
+      };
+
+      // Attendance was edited to lateMinutes = 0 and status = PRESENT
+      const mockAttendance = [
+        {
+          id: 'att-ali-sep29',
+          userId: 'user-ali',
+          companyId: 'comp-1',
+          date: new Date('2026-09-29'),
+          checkIn: new Date('2026-09-29T08:00:00.000Z'),
+          checkOut: new Date('2026-09-29T16:00:00.000Z'),
+          workHours: 8.00,
+          status: 'PRESENT',
+          lateMinutes: 0,
+          earlyLeaveMinutes: 0
+        }
+      ];
+
+      // Stale manualDeduction still lingering in DB from before attendance correction
+      const mockDeductions = [
+        {
+          id: 'ded-ali-stale',
+          employeeId: 'user-ali',
+          companyId: 'comp-1',
+          category: 'AUTO_DEDUCTION',
+          type: 'LATE',
+          amount: 42.90,
+          reason: 'خصم تلقائي - تأخير 189 دقيقة',
+          status: 'PENDING',
+          date: new Date('2026-09-29'),
+          notes: 'Attendance ID: att-ali-sep29',
+          effectiveMonth: 9,
+          effectiveYear: 2026
+        }
+      ];
+
+      payrollService.prisma = {
+        user: { findUnique: jest.fn().mockResolvedValue(mockEmployee) },
+        hRSettings: { findUnique: jest.fn().mockResolvedValue(mockSettings) },
+        attendance: { findMany: jest.fn().mockResolvedValue(mockAttendance) },
+        leaveRequest: { findMany: jest.fn().mockResolvedValue([]) },
+        hrPermissionRequest: { findMany: jest.fn().mockResolvedValue([]) },
+        manualDeduction: { findMany: jest.fn().mockResolvedValue(mockDeductions) },
+        advanceRequest: { findMany: jest.fn().mockResolvedValue([]) },
+        latenessBalance: { findUnique: jest.fn().mockResolvedValue(null) },
+        rewardEligibilityAudit: { findMany: jest.fn().mockResolvedValue([]) }
+      };
+
+      const rewardPayrollIntegrationService = require('../../services/hr/rewardPayrollIntegrationService');
+      rewardPayrollIntegrationService.prisma = {
+        rewardRecord: { findMany: jest.fn().mockResolvedValue([]) }
+      };
+
+      const result = await payrollService.calculatePayrollData('comp-1', 'user-ali', 9, 2026);
+      // The 42.90 EGP stale auto-deduction must be filtered out!
+      expect(result.deductions.manualDetails).toBeUndefined();
+      expect(result.deductions.manualAmount || 0).toBe(0);
+      payrollService.prisma = null;
+      rewardPayrollIntegrationService.prisma = null;
+    });
+
+    test('healHrAttendanceAndDeductions runs safely without error', async () => {
+      const { healHrAttendanceAndDeductions } = require('../../services/hr/hrDataHealer');
+      expect(typeof healHrAttendanceAndDeductions).toBe('function');
+      await expect(healHrAttendanceAndDeductions()).resolves.not.toThrow();
+    });
+  });
 });
+
 

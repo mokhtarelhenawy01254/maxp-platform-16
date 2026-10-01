@@ -1163,8 +1163,12 @@ class PayrollService {
       }
     });
 
-    // أيام الغياب غير المبررة (لا حضور ولا إجازة ولا راحة/عطلة)
+    // أيام الغياب غير المبررة (لا حضور ولا إجازة ولا راحة/عطلة ولا تسبق تاريخ التعيين)
+    const empHireDate = employee.hireDate || (Array.isArray(employee.employees) ? employee.employees[0]?.hireDate : employee.employees?.hireDate);
+    const hireDateStr = empHireDate ? this.toLocalDateKey(empHireDate) : null;
+
     const trulyAbsentDates = workingDates.filter(d =>
+      (!hireDateStr || d >= hireDateStr) &&
       !attendedFullDatesSet.has(d) &&
       !halfDayDatesSet.has(d) &&
       !paidLeaveDates.has(d) &&
@@ -1295,6 +1299,36 @@ class PayrollService {
         }
       });
     }
+
+    // استبعاد الخصومات التلقائية القديمة أو الشبحية التي تم تصحيح سجل حضورها أو إلغاؤه
+    manualDeductions = manualDeductions.filter(d => {
+      if (d.status === 'CANCELLED') return false;
+      if (d.category === 'AUTO_DEDUCTION') {
+        const attIdMatch = d.notes ? d.notes.match(/Attendance ID:\s*([a-zA-Z0-9_-]+)/) : null;
+        if (attIdMatch) {
+          const linkedAttId = attIdMatch[1];
+          const linkedAtt = attendance.find(a => a.id === linkedAttId);
+          if (!linkedAtt) {
+            // السجل ملغى أو محذوف
+            return false;
+          }
+          if (d.type === 'LATE' && ((linkedAtt.lateMinutes || 0) === 0 || linkedAtt.status === 'PRESENT')) {
+            // تم تصحيح التأخير لصفر أو أصبحت الحالة حاضر
+            return false;
+          }
+          if (d.type === 'EARLY_LEAVE') {
+            const durationMs = (linkedAtt.checkIn && linkedAtt.checkOut)
+              ? (new Date(linkedAtt.checkOut).getTime() - new Date(linkedAtt.checkIn).getTime())
+              : 0;
+            if ((linkedAtt.earlyLeaveMinutes || 0) === 0 || durationMs < 5 * 60 * 1000) {
+              // خطأ بصمة مزدوجة أقل من 5 دقائق أو تم تصفير دقائق الانصراف المبكر
+              return false;
+            }
+          }
+        }
+      }
+      return true;
+    });
 
     manualDeductions.forEach(d => {
       addDailyPenalty(d.date, parseFloat(d.amount), `يدوي: ${d.reason}`, 'manual');
@@ -1451,12 +1485,29 @@ class PayrollService {
       const dateStr = this.toLocalDateKey(a.date);
       const expectedHours = a.status === 'HALF_DAY' ? (workingHoursPerDay / 2) : workingHoursPerDay;
 
-      let actualHours = parseFloat(a.workHours || a.workingHours) || 0;
+      let actualHours = Math.max(0, parseFloat(a.workHours || a.workingHours) || 0);
       const checkOutTime = a.checkOut || a.check_out;
       const checkInTime = a.checkIn || a.check_in;
 
-      if (actualHours === 0 && checkInTime && checkOutTime) {
-        actualHours = Math.max(0, (new Date(checkOutTime) - new Date(checkInTime)) / (1000 * 60 * 60));
+      let isDoublePunch = false;
+      if (checkInTime && checkOutTime) {
+        const checkInDate = new Date(checkInTime);
+        const checkOutDate = new Date(checkOutTime);
+        if (!isNaN(checkInDate.getTime()) && !isNaN(checkOutDate.getTime())) {
+          const presenceMs = checkOutDate.getTime() - checkInDate.getTime();
+          if (presenceMs >= 0 && presenceMs < 5 * 60 * 1000) {
+            isDoublePunch = true;
+          }
+          if (presenceMs > 0) {
+            const grossHours = presenceMs / (1000 * 60 * 60);
+            // في مصر والورديات القياسية (مثل 10:00 إلى 18:00 = 8 ساعات)، الراحة مشمولة بالمرتب
+            // السجلات القديمة كانت تخصم ساعة راحة تلقائيًا فتوهم عجز ساعة يوميًا
+            // نعتمد التواجد الفعلي لكي لا يُظلم الموظف الذي حضر الوردية كاملة
+            if (grossHours > actualHours) {
+              actualHours = grossHours;
+            }
+          }
+        }
       }
 
       // إذن الخروج المصرح به في هذا اليوم
@@ -1466,7 +1517,7 @@ class PayrollService {
       // ساعات التأخير المحسوبة مسبقاً لتفادي الخصم المزدوج
       const lateHoursAlreadyPenalized = (a.lateMinutes || 0) / 60;
 
-      const rawDeficit = expectedHours - actualHours;
+      const rawDeficit = Math.max(0, expectedHours - actualHours);
       const unexcusedDeficit = Math.max(0, rawDeficit - lateHoursAlreadyPenalized - permittedHours);
 
       // إذا كان هناك عجز غير مبرر يتجاوز 15 دقيقة (0.25 ساعة)
@@ -1475,7 +1526,7 @@ class PayrollService {
         totalDeficitPenalty += deficitAmount;
         deficitDetails.push(`${dateStr}: عجز ${unexcusedDeficit.toFixed(2)}س = ${deficitAmount.toFixed(2)} ج.م`);
         addDailyPenalty(a.date, deficitAmount, `عجز ساعات عمل ${unexcusedDeficit.toFixed(1)}س`, 'deficit');
-      } else {
+      } else if (!isDoublePunch) {
         const unexcusedEarlyMinutes = Math.max(0, (a.earlyLeaveMinutes || 0) - (permittedHours * 60));
         if (unexcusedEarlyMinutes > 15) {
           const earlyHours = unexcusedEarlyMinutes / 60;
@@ -2357,7 +2408,7 @@ class PayrollService {
     const standaloneEmployees = await this.prisma.employee.findMany({
       where: {
         companyId,
-        isActive: true,
+        status: 'ACTIVE',
         userId: null
       }
     });

@@ -14,7 +14,11 @@ class RewardPayrollIntegrationService {
     }
 
     get prisma() {
-        return getSharedPrismaClient();
+        return this._mockPrisma || getSharedPrismaClient();
+    }
+
+    set prisma(client) {
+        this._mockPrisma = client;
     }
 
     /**

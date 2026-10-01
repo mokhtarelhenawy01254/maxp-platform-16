@@ -258,8 +258,8 @@ class AttendanceAutoCheckoutCron {
     }
 
     const checkInTime = new Date(attendance.checkIn);
-    const breakDuration = shiftAssignment?.shift?.breakDuration || 60;
-    const actualWorkMinutes = (checkoutTime - checkInTime) / 60000;
+    const breakDuration = (shiftAssignment?.shift?.unpaidBreak === true) ? (shiftAssignment?.shift?.breakDuration || 0) : 0;
+    const actualWorkMinutes = Math.max(0, (checkoutTime - checkInTime) / 60000);
     const workHours = Math.max(
       0,
       Math.round((((actualWorkMinutes - breakDuration) / 60) * 100)) / 100

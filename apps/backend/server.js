@@ -1823,6 +1823,11 @@ async function startServer() {
 
           const { startTelegramScheduler } = require("./cron/telegramScheduler");
           startTelegramScheduler();
+
+          const { healHrAttendanceAndDeductions } = require("./services/hr/hrDataHealer");
+          healHrAttendanceAndDeductions().catch((err) => {
+            console.warn("⚠️ [SERVER] HR data healer error:", err?.message || err);
+          });
         } catch (singletonErr) {
           console.error("⚠️ [SERVER] Error initializing singleton services:", singletonErr);
         }
