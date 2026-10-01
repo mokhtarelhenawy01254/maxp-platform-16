@@ -18,6 +18,10 @@ class LatenessCalculationService {
     return this._customPrisma || getSharedPrismaClient();
   }
 
+  set prisma(client) {
+    this._customPrisma = client;
+  }
+
   /**
    * حساب دقائق التأخير بناءً على وقت الدخول المحدد ووقت الدخول الفعلي
    */

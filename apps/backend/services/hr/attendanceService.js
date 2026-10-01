@@ -253,7 +253,11 @@ class AttendanceService {
   }
 
   get prisma() {
-    return getSharedPrismaClient();
+    return this._prisma || getSharedPrismaClient();
+  }
+
+  set prisma(val) {
+    this._prisma = val;
   }
 
   async getActiveCompanyUserIds(companyId) {
