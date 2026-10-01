@@ -22,7 +22,6 @@ const {
 } = require('../controller/aiSandboxController');
 
 router.use(verifyToken.authenticateToken);
-router.use(verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'AGENT']));
 
 router.get('/agents', listAgents);
 router.get('/agents/:agentId/profile', getAgentProfile);
