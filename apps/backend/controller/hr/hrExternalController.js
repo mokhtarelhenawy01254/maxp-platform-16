@@ -245,12 +245,16 @@ function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo', latene
       lateWarningLevels: safeParseSettingsArray(settings?.lateWarningLevels, []),
       autoDeductionEnabled: settings?.autoDeductionEnabled || false,
       gracePeriodMinutes: settings?.gracePeriodMinutes ?? 60,
-      maxDailyDeductionDays: Number(settings?.maxDailyDeductionDays) || 1.0,
+      maxDailyDeductionDays: (settings?.maxDailyDeductionDays !== undefined && settings?.maxDailyDeductionDays !== null)
+        ? Number(settings.maxDailyDeductionDays)
+        : 1.0,
       deductionCalculationMethod: settings?.deductionCalculationMethod || 'minute',
       workingDaysPerMonth: settings?.workingDaysPerMonth ?? 22,
       workingHoursPerDay: settings?.workingHoursPerDay ?? 8,
       requireDeductionReview: settings?.requireDeductionReview !== false,
-      absencePenaltyRate: Number(settings?.absencePenaltyRate) || 1.0,
+      absencePenaltyRate: (settings?.absencePenaltyRate !== undefined && settings?.absencePenaltyRate !== null)
+        ? Number(settings.absencePenaltyRate)
+        : 1.0,
       deductAbsenceInCurrentMonth: settings?.deductAbsenceInCurrentMonth !== false,
       delayPenaltyTiers: safeParseSettingsArray(settings?.delayPenaltyTiers, [])
     },
@@ -263,10 +267,18 @@ function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo', latene
     payroll: {
       payrollDay: settings?.payrollDay ?? 25,
       currency: 'EGP',
-      taxRate: Number(settings?.taxRate) || 0,
-      socialInsuranceRate: Number(settings?.socialInsuranceRate) || 14.0,
-      overtimeRate: Number(settings?.overtimeRate) || 1.5,
-      maxAdvancePercentage: Number(settings?.maxAdvancePercentage) || 50,
+      taxRate: (settings?.taxRate !== undefined && settings?.taxRate !== null)
+        ? Number(settings.taxRate)
+        : 0,
+      socialInsuranceRate: (settings?.socialInsuranceRate !== undefined && settings?.socialInsuranceRate !== null)
+        ? Number(settings.socialInsuranceRate)
+        : 14.0,
+      overtimeRate: (settings?.overtimeRate !== undefined && settings?.overtimeRate !== null)
+        ? Number(settings.overtimeRate)
+        : 1.5,
+      maxAdvancePercentage: (settings?.maxAdvancePercentage !== undefined && settings?.maxAdvancePercentage !== null)
+        ? Number(settings.maxAdvancePercentage)
+        : 50,
       maxActiveAdvances: settings?.maxActiveAdvances ?? 1,
       minMonthsForAdvance: settings?.minMonthsForAdvance ?? 3,
       advanceRepaymentMonths: settings?.advanceRepaymentMonths ?? 6
