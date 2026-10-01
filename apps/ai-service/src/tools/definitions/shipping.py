@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from agent_framework import FunctionTool
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.tools.definitions._helpers import _executed_result
 
@@ -98,6 +98,16 @@ class ShippingTicketReplyInput(BaseModel):
 class ShipmentTrackInput(BaseModel):
     tracking_code: str = Field(description="Shipment tracking number, order number, or AWB to track")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _alias(cls, data):  # noqa: N805
+        if isinstance(data, dict) and "tracking_code" not in data:
+            for alias in ("order_number", "order_id", "orderNumber", "tracking_number", "trackingNumber", "awb", "code"):
+                if alias in data and data[alias]:
+                    data["tracking_code"] = str(data[alias])
+                    break
+        return data
 
 
 
