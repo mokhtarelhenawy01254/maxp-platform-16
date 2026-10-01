@@ -213,6 +213,30 @@ function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo', latene
   const monthlyAllowanceMinutes = latenessRules?.monthlyAllowanceMinutes !== undefined ? latenessRules.monthlyAllowanceMinutes : null;
   const allowanceResetDay = latenessRules?.allowanceResetDay !== undefined ? latenessRules.allowanceResetDay : null;
 
+  // Single Source of Truth for Daily Lateness Grace/Threshold:
+  // If latenessRules has workStartTime & latestAllowedTime (e.g. 10:00 & 10:10), diff is 10 mins.
+  let derivedRulesDailyThreshold = null;
+  if (latenessRules?.workStartTime && latenessRules?.latestAllowedTime) {
+    const [startH, startM] = latenessRules.workStartTime.split(':').map(Number);
+    const [allowedH, allowedM] = latenessRules.latestAllowedTime.split(':').map(Number);
+    if (!isNaN(startH) && !isNaN(startM) && !isNaN(allowedH) && !isNaN(allowedM)) {
+      const diffMins = (allowedH * 60 + allowedM) - (startH * 60 + startM);
+      if (diffMins > 0) derivedRulesDailyThreshold = diffMins;
+    }
+  }
+
+  const effectiveDailyLateThreshold = derivedRulesDailyThreshold !== null
+    ? derivedRulesDailyThreshold
+    : ((settings?.lateThresholdMinutes !== undefined && settings?.lateThresholdMinutes !== null)
+        ? Number(settings.lateThresholdMinutes)
+        : ((settings?.lateGracePeriod !== undefined && settings?.lateGracePeriod !== null)
+            ? Number(settings.lateGracePeriod)
+            : 10));
+
+  const effectiveMonthlyGraceMinutes = latenessRules?.monthlyAllowanceMinutes !== undefined && latenessRules?.monthlyAllowanceMinutes !== null
+    ? Number(latenessRules.monthlyAllowanceMinutes)
+    : (settings?.gracePeriodMinutes ?? 60);
+
   return {
     workHours: {
       workingDays,
@@ -233,9 +257,9 @@ function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo', latene
       minAdvanceNotice: 3
     },
     attendance: {
-      lateThreshold: settings?.lateThresholdMinutes || settings?.lateGracePeriod || 15,
-      lateThresholdMinutes: settings?.lateThresholdMinutes ?? 10,
-      lateGracePeriod: settings?.lateGracePeriod ?? 15,
+      lateThreshold: effectiveDailyLateThreshold,
+      lateThresholdMinutes: effectiveDailyLateThreshold,
+      lateGracePeriod: effectiveDailyLateThreshold,
       earlyLeaveThreshold: settings?.earlyLeaveGracePeriod ?? 15,
       earlyLeaveGracePeriod: settings?.earlyLeaveGracePeriod ?? 15,
       earlyCheckoutEnabled: settings?.earlyCheckoutEnabled !== false,
@@ -244,7 +268,7 @@ function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo', latene
       lateWarningThreshold: settings?.lateWarningThreshold ?? 3,
       lateWarningLevels: safeParseSettingsArray(settings?.lateWarningLevels, []),
       autoDeductionEnabled: settings?.autoDeductionEnabled || false,
-      gracePeriodMinutes: settings?.gracePeriodMinutes ?? 60,
+      gracePeriodMinutes: effectiveMonthlyGraceMinutes,
       maxDailyDeductionDays: (settings?.maxDailyDeductionDays !== undefined && settings?.maxDailyDeductionDays !== null)
         ? Number(settings.maxDailyDeductionDays)
         : 1.0,
@@ -334,7 +358,10 @@ function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo', latene
       ? Number(primaryShift.breakDuration)
       : ((settings?.breakDuration !== undefined && settings?.breakDuration !== null) ? Number(settings.breakDuration) : 0),
     autoDeductionEnabled: settings?.autoDeductionEnabled || false,
-    gracePeriodMinutes: settings?.gracePeriodMinutes ?? 60,
+    gracePeriodMinutes: effectiveMonthlyGraceMinutes,
+    lateThresholdMinutes: effectiveDailyLateThreshold,
+    lateGracePeriod: effectiveDailyLateThreshold,
+    lateThreshold: effectiveDailyLateThreshold,
     payrollDay: settings?.payrollDay ?? 25
   };
 }
@@ -2965,17 +2992,81 @@ const updateHRSettings = async (req, res) => {
       }
     }
 
+    // Single source of truth for daily late allowance (threshold & grace) & monthly allowance
+    let unifiedDailyLateThreshold = null;
+    if (body.lateThresholdMinutes !== undefined) unifiedDailyLateThreshold = Number(body.lateThresholdMinutes);
+    else if (body.lateGracePeriod !== undefined) unifiedDailyLateThreshold = Number(body.lateGracePeriod);
+    else if (body.lateThreshold !== undefined) unifiedDailyLateThreshold = Number(body.lateThreshold);
+    else if (body.attendance?.lateThresholdMinutes !== undefined) unifiedDailyLateThreshold = Number(body.attendance.lateThresholdMinutes);
+    else if (body.attendance?.lateGracePeriod !== undefined) unifiedDailyLateThreshold = Number(body.attendance.lateGracePeriod);
+    else if (body.attendance?.lateThreshold !== undefined) unifiedDailyLateThreshold = Number(body.attendance.lateThreshold);
+
+    if (unifiedDailyLateThreshold !== null && !isNaN(unifiedDailyLateThreshold)) {
+      mergedAttendance.lateThresholdMinutes = unifiedDailyLateThreshold;
+      mergedAttendance.lateGracePeriod = unifiedDailyLateThreshold;
+      mergedAttendance.lateThreshold = unifiedDailyLateThreshold;
+    } else {
+      const existingThreshold = Number(
+        mergedAttendance.lateThresholdMinutes ?? mergedAttendance.lateGracePeriod ?? mergedAttendance.lateThreshold ?? 10
+      );
+      mergedAttendance.lateThresholdMinutes = existingThreshold;
+      mergedAttendance.lateGracePeriod = existingThreshold;
+      mergedAttendance.lateThreshold = existingThreshold;
+      unifiedDailyLateThreshold = existingThreshold;
+    }
+
+    let unifiedMonthlyGrace = null;
+    if (body.gracePeriodMinutes !== undefined) unifiedMonthlyGrace = Number(body.gracePeriodMinutes);
+    else if (body.monthlyAllowanceMinutes !== undefined) unifiedMonthlyGrace = Number(body.monthlyAllowanceMinutes);
+    else if (body.attendance?.gracePeriodMinutes !== undefined) unifiedMonthlyGrace = Number(body.attendance.gracePeriodMinutes);
+    else if (body.workHours?.monthlyAllowanceMinutes !== undefined) unifiedMonthlyGrace = Number(body.workHours.monthlyAllowanceMinutes);
+
+    if (unifiedMonthlyGrace !== null && !isNaN(unifiedMonthlyGrace)) {
+      mergedAttendance.gracePeriodMinutes = unifiedMonthlyGrace;
+      mergedWorkHours.monthlyAllowanceMinutes = unifiedMonthlyGrace;
+    }
+
     // Upsert lateness_rules with workStartTime, latestAllowedTime, monthlyAllowanceMinutes, allowanceResetDay
     const latenessUpdate = {};
     if (mergedWorkHours.workStartTime !== undefined && mergedWorkHours.workStartTime !== null) {
       latenessUpdate.workStartTime = String(mergedWorkHours.workStartTime).trim();
     }
+
+    // Derive or set latestAllowedTime
     if (mergedWorkHours.latestAllowedTime !== undefined && mergedWorkHours.latestAllowedTime !== null) {
       latenessUpdate.latestAllowedTime = String(mergedWorkHours.latestAllowedTime).trim();
+      // If user explicitly sent latestAllowedTime, update daily threshold diff as well
+      const [allowedH, allowedM] = latenessUpdate.latestAllowedTime.split(':').map(Number);
+      const startTimeStr = latenessUpdate.workStartTime || currentFormatted.workHours.workStartTime || '10:00';
+      const [startH, startM] = startTimeStr.split(':').map(Number);
+      if (!isNaN(allowedH) && !isNaN(allowedM) && !isNaN(startH) && !isNaN(startM)) {
+        const diffMins = (allowedH * 60 + allowedM) - (startH * 60 + startM);
+        if (diffMins > 0) {
+          mergedAttendance.lateThresholdMinutes = diffMins;
+          mergedAttendance.lateGracePeriod = diffMins;
+          mergedAttendance.lateThreshold = diffMins;
+        }
+      }
+    } else if (latenessUpdate.workStartTime || unifiedDailyLateThreshold !== null) {
+      // Calculate latestAllowedTime = workStartTime + unifiedDailyLateThreshold
+      const startTimeStr = latenessUpdate.workStartTime || currentFormatted.workHours.workStartTime || '10:00';
+      const [startH, startM] = startTimeStr.split(':').map(Number);
+      if (!isNaN(startH) && !isNaN(startM)) {
+        const totalStartMins = startH * 60 + startM;
+        const totalAllowedMins = totalStartMins + (unifiedDailyLateThreshold || 10);
+        const allowedH = Math.floor(totalAllowedMins / 60) % 24;
+        const allowedM = totalAllowedMins % 60;
+        latenessUpdate.latestAllowedTime = `${String(allowedH).padStart(2, '0')}:${String(allowedM).padStart(2, '0')}`;
+        mergedWorkHours.latestAllowedTime = latenessUpdate.latestAllowedTime;
+      }
     }
+
     if (mergedWorkHours.monthlyAllowanceMinutes !== undefined && mergedWorkHours.monthlyAllowanceMinutes !== null) {
       latenessUpdate.monthlyAllowanceMinutes = Number(mergedWorkHours.monthlyAllowanceMinutes);
+    } else if (mergedAttendance.gracePeriodMinutes !== undefined && mergedAttendance.gracePeriodMinutes !== null) {
+      latenessUpdate.monthlyAllowanceMinutes = Number(mergedAttendance.gracePeriodMinutes);
     }
+
     if (mergedWorkHours.allowanceResetDay !== undefined && mergedWorkHours.allowanceResetDay !== null) {
       latenessUpdate.allowanceResetDay = Number(mergedWorkHours.allowanceResetDay);
     }
@@ -3050,8 +3141,8 @@ const updateHRSettings = async (req, res) => {
       maxActiveAdvances: Number(mergedPayroll.maxActiveAdvances),
       minMonthsForAdvance: Number(mergedPayroll.minMonthsForAdvance),
       advanceRepaymentMonths: Number(mergedPayroll.advanceRepaymentMonths),
-      lateGracePeriod: Number(mergedAttendance.lateGracePeriod || mergedAttendance.lateThreshold || 15),
-      lateThresholdMinutes: Number(mergedAttendance.lateThresholdMinutes || 10),
+      lateGracePeriod: Number(mergedAttendance.lateThresholdMinutes || mergedAttendance.lateGracePeriod || 10),
+      lateThresholdMinutes: Number(mergedAttendance.lateThresholdMinutes || mergedAttendance.lateGracePeriod || 10),
       earlyLeaveGracePeriod: Number(mergedAttendance.earlyLeaveGracePeriod || mergedAttendance.earlyLeaveThreshold || 15),
       monthlyLateLimit: Number(mergedAttendance.monthlyLateLimit || 3),
       lateWarningThreshold: Number(mergedAttendance.lateWarningThreshold || 3),

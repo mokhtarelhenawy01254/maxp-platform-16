@@ -5971,9 +5971,11 @@ async function updateHRSettings(req, res) {
           ? Number(lateThresholdMinutes)
           : lateThreshold !== undefined
             ? Number(lateThreshold)
-            : 15,
+            : lateGracePeriod !== undefined
+              ? Number(lateGracePeriod)
+              : 10,
       earlyLeaveGracePeriod:
-        earlyLeaveThreshold !== undefined ? Number(earlyLeaveThreshold) : 15,
+        earlyLeaveThreshold !== undefined ? Number(earlyLeaveThreshold) : (earlyLeaveGracePeriod !== undefined ? Number(earlyLeaveGracePeriod) : 15),
       monthlyLateLimit:
         monthlyLateLimit !== undefined ? Number(monthlyLateLimit) : 3,
       lateWarningThreshold:
@@ -5993,7 +5995,14 @@ async function updateHRSettings(req, res) {
       autoDeductionEnabled:
         autoDeductionEnabled !== undefined ? autoDeductionEnabled : false,
       gracePeriodMinutes: gracePeriodMinutes || 60,
-      lateThresholdMinutes: lateThresholdMinutes || lateThreshold || 10,
+      lateThresholdMinutes:
+        lateThresholdMinutes !== undefined
+          ? Number(lateThresholdMinutes)
+          : lateThreshold !== undefined
+            ? Number(lateThreshold)
+            : lateGracePeriod !== undefined
+              ? Number(lateGracePeriod)
+              : 10,
       maxDailyDeductionDays:
         maxDailyDeductionDays !== undefined
           ? parseFloat(maxDailyDeductionDays)
@@ -6098,6 +6107,40 @@ async function updateHRSettings(req, res) {
       settingsId: settings?.id,
       companyId: settings?.companyId || companyId,
     });
+
+    // Sync lateness_rules for single source of truth across internal & external engines
+    try {
+      const unifiedThreshold = Number(settings?.lateThresholdMinutes || settings?.lateGracePeriod || 10);
+      const effectiveWorkStart = String(settings?.workStartTime || workStartTime || "10:00").trim();
+      const [sH, sM] = effectiveWorkStart.split(":").map(Number);
+      let calculatedLatestAllowedTime = "10:10";
+      if (!isNaN(sH) && !isNaN(sM)) {
+        const totalStartM = sH * 60 + sM;
+        const totalAllowedM = totalStartM + unifiedThreshold;
+        const aH = Math.floor(totalAllowedM / 60) % 24;
+        const aM = totalAllowedM % 60;
+        calculatedLatestAllowedTime = `${String(aH).padStart(2, "0")}:${String(aM).padStart(2, "0")}`;
+      }
+      const monthlyAllowance = Number(settings?.gracePeriodMinutes || gracePeriodMinutes || 60);
+
+      await prisma.latenessRules.upsert({
+        where: { companyId },
+        create: {
+          companyId,
+          workStartTime: effectiveWorkStart,
+          latestAllowedTime: calculatedLatestAllowedTime,
+          monthlyAllowanceMinutes: monthlyAllowance,
+          allowanceResetDay: 5
+        },
+        update: {
+          workStartTime: effectiveWorkStart,
+          latestAllowedTime: calculatedLatestAllowedTime,
+          monthlyAllowanceMinutes: monthlyAllowance
+        }
+      });
+    } catch (latenessRulesErr) {
+      console.warn("⚠️ [HR-SETTINGS-BACKEND] Error syncing latenessRules:", latenessRulesErr?.message);
+    }
 
     const notificationHealth = await buildHRNotificationHealth(
       prisma,

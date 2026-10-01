@@ -7,11 +7,15 @@ const { getSharedPrismaClient } = require('../sharedDatabase');
 
 class LatenessCalculationService {
   constructor() {
-    // Don't initialize prisma here - get it dynamically
+    this._customPrisma = null;
+  }
+
+  set prisma(client) {
+    this._customPrisma = client;
   }
 
   get prisma() {
-    return getSharedPrismaClient();
+    return this._customPrisma || getSharedPrismaClient();
   }
 
   /**
@@ -152,24 +156,29 @@ class LatenessCalculationService {
         else multiplier = parseFloat(settings.thirdViolationMultiplier || 3.0);
       }
 
-      // نجعل كل دقائق التأخير تمر أولاً على رصيد السماح الشهري
-      let immediateDeduct = 0;
-      let graceEligibleMinutes = lateMinutes;
-      let exceedsDaily = lateMinutes > maxDailyThreshold;
+      // 🛡️ تحديد دقائق السماح المؤهلة ودقائق الخصم المباشر
+      // إذا كان التأخير ضمن حد التسامح اليومي (maxDailyThreshold مثلاً 10د):
+      // يستهلك من رصيد السماح الشهري (monthlyGrace مثلاً 60د) بدون خصم مالي ما دام الرصيد كافياً.
+      // إذا تجاوز التأخير حد التسامح اليومي:
+      // الحد اليومي فقط (maxDailyThreshold) مؤهل للسماح الشهري، وما زاد عنه يعد تجاوزاً غير مسموح يُخصم مباشرة.
+      const dailyAllowedPortion = Math.min(lateMinutes, maxDailyThreshold);
+      const immediateExcessMinutes = Math.max(0, lateMinutes - maxDailyThreshold);
+      const exceedsDaily = lateMinutes > maxDailyThreshold;
 
-      // حساب ما يمكن استخدامه من رصيد المرونة
+      // حساب ما يمكن استخدامه من رصيد المرونة الشهري (يمتص حتى dailyAllowedPortion)
       let useGraceMinutes = 0;
-      let additionalDeduct = 0;
+      let graceExhaustedMinutes = 0;
 
-      if (graceEligibleMinutes <= remainingGrace) {
-        useGraceMinutes = graceEligibleMinutes;
-        additionalDeduct = 0;
+      if (remainingGrace > 0) {
+        useGraceMinutes = Math.min(dailyAllowedPortion, remainingGrace);
+        graceExhaustedMinutes = dailyAllowedPortion - useGraceMinutes;
       } else {
-        useGraceMinutes = remainingGrace > 0 ? remainingGrace : 0;
-        additionalDeduct = graceEligibleMinutes - useGraceMinutes;
+        useGraceMinutes = 0;
+        graceExhaustedMinutes = dailyAllowedPortion;
       }
 
-      const totalDeductMinutes = immediateDeduct + additionalDeduct;
+      // إجمالي الدقائق المخصومة = ما تجاوز الرصيد الشهري + ما تجاوز الحد اليومي
+      const totalDeductMinutes = graceExhaustedMinutes + immediateExcessMinutes;
       const effectiveDeductionRate = baseDeductionRate * multiplier;
       let totalDeduction = totalDeductMinutes * effectiveDeductionRate;
 
@@ -223,11 +232,12 @@ class LatenessCalculationService {
         breakdown: {
           lateMinutes,
           maxDaily: maxDailyThreshold,
-          immediateDeduct,
-          graceEligibleMinutes,
+          dailyAllowedPortion,
+          immediateExcessMinutes,
           remainingGrace,
           useGraceMinutes,
-          additionalDeduct,
+          graceExhaustedMinutes,
+          totalDeductMinutes,
           baseRate: baseDeductionRate,
           isDefaultRate,
           multiplier,

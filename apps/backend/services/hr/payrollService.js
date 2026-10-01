@@ -1432,19 +1432,25 @@ class PayrollService {
       }
 
       // حساب ديناميكي للتأخير غير المحفوظ مسبقاً
-      if (mins <= maxDailyThreshold) {
-        return; // ضمن حد التسامح اليومي
+      // ما هو ضمن حد التسامح اليومي (maxDailyThreshold مثلاً 10د) يمتصه رصيد المرونة الشهري (remainingGrace)
+      // ما زاد عن حد التسامح اليومي يذهب للخصم مباشرة بالإضافة لما تجاوز رصيد المرونة الشهري
+      const dailyAllowed = Math.min(mins, maxDailyThreshold);
+      const immediateExcess = Math.max(0, mins - maxDailyThreshold);
+
+      let graceUsed = 0;
+      let graceExhausted = 0;
+      if (remainingGrace > 0) {
+        graceUsed = Math.min(dailyAllowed, remainingGrace);
+        remainingGrace -= graceUsed;
+        graceExhausted = dailyAllowed - graceUsed;
+      } else {
+        graceExhausted = dailyAllowed;
       }
 
-      let effectiveLateMinutes = mins;
-      if (remainingGrace > 0) {
-        const graceUsed = Math.min(effectiveLateMinutes, remainingGrace);
-        remainingGrace -= graceUsed;
-        effectiveLateMinutes -= graceUsed;
-      }
+      const effectiveLateMinutes = graceExhausted + immediateExcess;
 
       if (effectiveLateMinutes <= 0) {
-        return; // مغطى برصيد التسامح الشهري
+        return; // مغطى بالكامل برصيد التسامح الشهري والحد اليومي
       }
 
       let dayLatePenalty = 0;

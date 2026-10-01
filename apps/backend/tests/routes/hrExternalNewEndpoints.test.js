@@ -750,6 +750,151 @@ describe('HR External API — New Endpoints & Timezone Fix Unit Tests', () => {
       expect(zeroCheck(settingsWithZeroes.maxAdvancePercentage, 50)).toBe(0);
     });
   });
+
+  describe('Item 11: Lateness Grace & Daily Threshold Unification', () => {
+    const latenessCalculationService = require('../../services/hr/latenessCalculationService');
+
+    it('5 minutes late with 60 min remaining grace yields 0 deduction and consumes 5 grace minutes', async () => {
+      // Mock prisma to return company settings with 10 min daily threshold & 60 min grace
+      const mockPrisma = {
+        hRSettings: {
+          findUnique: jest.fn().mockResolvedValue({
+            autoDeductionEnabled: true,
+            lateThresholdMinutes: 10,
+            lateGracePeriod: 10,
+            gracePeriodMinutes: 60,
+            workingDaysPerMonth: 22,
+            workingHoursPerDay: 8,
+            firstViolationMultiplier: 1.0,
+            secondViolationMultiplier: 2.0,
+            thirdViolationMultiplier: 3.0,
+            maxDailyDeductionDays: 1.0
+          })
+        },
+        user: {
+          findUnique: jest.fn().mockResolvedValue({
+            baseSalary: 4000,
+            monthlyGraceMinutes: 60,
+            maxDailyLateMinutes: 10,
+            enableAutoDeduction: true
+          })
+        },
+        latenessBalance: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'bal-1',
+            graceMinutesUsed: 0,
+            lateCount: 0
+          })
+        }
+      };
+
+      const origPrisma = latenessCalculationService.prisma;
+      latenessCalculationService.prisma = mockPrisma;
+
+      try {
+        const result = await latenessCalculationService.calculateDeduction('comp-1', 'emp-1', 5, '2026-09-15');
+        expect(result.deductMinutes).toBe(0);
+        expect(result.totalDeduction).toBe(0);
+        expect(result.useGraceMinutes).toBe(5);
+        expect(result.exceedsDaily).toBe(false);
+      } finally {
+        latenessCalculationService.prisma = origPrisma;
+      }
+    });
+
+    it('15 minutes late with 60 min remaining grace: 10 min consumed from grace, 5 min deducted', async () => {
+      const mockPrisma = {
+        hRSettings: {
+          findUnique: jest.fn().mockResolvedValue({
+            autoDeductionEnabled: true,
+            lateThresholdMinutes: 10,
+            lateGracePeriod: 10,
+            gracePeriodMinutes: 60,
+            workingDaysPerMonth: 22,
+            workingHoursPerDay: 8,
+            firstViolationMultiplier: 1.0,
+            secondViolationMultiplier: 2.0,
+            thirdViolationMultiplier: 3.0,
+            maxDailyDeductionDays: 1.0
+          })
+        },
+        user: {
+          findUnique: jest.fn().mockResolvedValue({
+            baseSalary: 4000,
+            monthlyGraceMinutes: 60,
+            maxDailyLateMinutes: 10,
+            enableAutoDeduction: true
+          })
+        },
+        latenessBalance: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'bal-1',
+            graceMinutesUsed: 0,
+            lateCount: 0
+          })
+        }
+      };
+
+      const origPrisma = latenessCalculationService.prisma;
+      latenessCalculationService.prisma = mockPrisma;
+
+      try {
+        const result = await latenessCalculationService.calculateDeduction('comp-1', 'emp-1', 15, '2026-09-15');
+        expect(result.useGraceMinutes).toBe(10);
+        expect(result.deductMinutes).toBe(5);
+        expect(result.totalDeduction).toBeGreaterThan(0);
+        expect(result.exceedsDaily).toBe(true);
+      } finally {
+        latenessCalculationService.prisma = origPrisma;
+      }
+    });
+
+    it('5 minutes late with 0 remaining grace (exhausted pool) results in 5 min deducted', async () => {
+      const mockPrisma = {
+        hRSettings: {
+          findUnique: jest.fn().mockResolvedValue({
+            autoDeductionEnabled: true,
+            lateThresholdMinutes: 10,
+            lateGracePeriod: 10,
+            gracePeriodMinutes: 60,
+            workingDaysPerMonth: 22,
+            workingHoursPerDay: 8,
+            firstViolationMultiplier: 1.0,
+            secondViolationMultiplier: 2.0,
+            thirdViolationMultiplier: 3.0,
+            maxDailyDeductionDays: 1.0
+          })
+        },
+        user: {
+          findUnique: jest.fn().mockResolvedValue({
+            baseSalary: 4000,
+            monthlyGraceMinutes: 60,
+            maxDailyLateMinutes: 10,
+            enableAutoDeduction: true
+          })
+        },
+        latenessBalance: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'bal-1',
+            graceMinutesUsed: 60, // fully used
+            lateCount: 2
+          })
+        }
+      };
+
+      const origPrisma = latenessCalculationService.prisma;
+      latenessCalculationService.prisma = mockPrisma;
+
+      try {
+        const result = await latenessCalculationService.calculateDeduction('comp-1', 'emp-1', 5, '2026-09-15');
+        expect(result.useGraceMinutes).toBe(0);
+        expect(result.deductMinutes).toBe(5);
+        expect(result.totalDeduction).toBeGreaterThan(0);
+      } finally {
+        latenessCalculationService.prisma = origPrisma;
+      }
+    });
+  });
 });
 
 
