@@ -118,11 +118,12 @@ function sanitizeAgentChatAttachments(attachments) {
   return sanitized;
 }
 
-async function chatWithAgent({ companyId, agentId, message, threadId, conversationId, customerId, channel, agentConfig, memoryContext, memory_context, attachments }) {
-  const incomingMemoryContext = memoryContext || memory_context || null;
-  const { enrichMemoryContextWithPostProduct } = require('../utils/postProductMappingHelper');
-  const enrichedContext = await enrichMemoryContextWithPostProduct(companyId, threadId || conversationId, incomingMemoryContext);
-
+/**
+ * Build the /admin/agents/chat request body. Pure and exported so the
+ * regression suite can assert that attachments pass through the sanitizer at
+ * the actual call-site, not just in isolation.
+ */
+function buildAgentChatRequestBody({ companyId, agentId, message, threadId, conversationId, customerId, channel, agentConfig, memoryContext, attachments }) {
   const body = {
     company_id: companyId,
     agent_id: agentId,
@@ -133,9 +134,20 @@ async function chatWithAgent({ companyId, agentId, message, threadId, conversati
   if (customerId) body.customer_id = customerId;
   body.channel = channel || 'dashboard';
   if (agentConfig) body.agent_config = agentConfig;
-  if (enrichedContext && Object.keys(enrichedContext).length > 0) body.memory_context = enrichedContext;
+  if (memoryContext && Object.keys(memoryContext).length > 0) body.memory_context = memoryContext;
   const safeAttachments = sanitizeAgentChatAttachments(attachments);
   if (safeAttachments && safeAttachments.length > 0) body.attachments = safeAttachments;
+  return body;
+}
+
+async function chatWithAgent({ companyId, agentId, message, threadId, conversationId, customerId, channel, agentConfig, memoryContext, memory_context, attachments }) {
+  const incomingMemoryContext = memoryContext || memory_context || null;
+  const { enrichMemoryContextWithPostProduct } = require('../utils/postProductMappingHelper');
+  const enrichedContext = await enrichMemoryContextWithPostProduct(companyId, threadId || conversationId, incomingMemoryContext);
+  const body = buildAgentChatRequestBody({
+    companyId, agentId, message, threadId, conversationId, customerId,
+    channel, agentConfig, memoryContext: enrichedContext, attachments,
+  });
   return request('POST', '/admin/agents/chat', body);
 }
 
@@ -474,6 +486,7 @@ async function notifyOrderCreated(data) {
 
 module.exports = {
   sanitizeAgentChatAttachments,
+  buildAgentChatRequestBody,
   listTools,
   listSkills,
   updateToolMeta,
