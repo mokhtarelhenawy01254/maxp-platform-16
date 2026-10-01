@@ -222,7 +222,7 @@ export const TeamDailyReportTab: React.FC = () => {
     const headers = [
       'الموظف', 'القسم', 'منجز اليوم', 'قيد العمل', 'متأخرة',
       'حضور (ساعة)', 'عمل فعلي (ساعة)', 'بريك (دقيقة)', 'عدد البريكات', 'سكون (دقيقة)',
-      'دخول', 'خروج', 'تأخير (دقيقة)', 'الإنتاجية %', 'أكثر تطبيق',
+      'دخول', 'خروج', 'أول نشاط بعد البصمة (دقيقة)', 'الإنتاجية %', 'أكثر تطبيق',
     ];
     const rows = filteredMembers.map((m) => [
       `"${m.name.replace(/"/g, '""')}"`,
@@ -260,8 +260,11 @@ export const TeamDailyReportTab: React.FC = () => {
         {formatClock(m.clockInTime)} ← {formatClock(m.clockOutTime)}
       </span>
       {m.lateStartMinutes > 5 && (
-        <span style={{ ...styles.miniBadge, color: '#f59e0b', borderColor: 'rgba(245,158,11,0.35)' }}>
-          تأخير {m.lateStartMinutes} د
+        <span
+          title={`أول نشاط فعلي على الجهاز بدأ بعد ${m.lateStartMinutes} دقيقة من بصمة الحضور — مؤشر مراقبة (وقت تسخين) ولا يُحسب خصماً على الراتب`}
+          style={{ ...styles.miniBadge, color: '#f59e0b', borderColor: 'rgba(245,158,11,0.35)' }}
+        >
+          {m.lateStartMinutes} د بدون نشاط بعد البصمة
         </span>
       )}
       {m.hasMissingClockOut && (
@@ -352,8 +355,11 @@ export const TeamDailyReportTab: React.FC = () => {
           <strong style={styles.num}>{totals.breakMin} د</strong>
         </div>
         {totals.late > 0 && (
-          <div style={styles.kpiPill}>
-            <span>متأخرون عن البصمة:</span>
+          <div
+            style={styles.kpiPill}
+            title="عدد من بدأ أول نشاط فعلي على جهازه بعد أكثر من 5 دقائق من بصمة الحضور"
+          >
+            <span>بدون نشاط بعد البصمة:</span>
             <strong style={styles.num}>{totals.late}</strong>
           </div>
         )}
