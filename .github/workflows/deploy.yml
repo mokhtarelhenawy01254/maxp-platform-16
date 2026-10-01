@@ -53,6 +53,7 @@ jobs:
       backend-deps-changed: ${{ steps.diff-check.outputs.backend-deps-changed }}
       prisma-changed: ${{ steps.diff-check.outputs.prisma-changed }}
       ai-changed: ${{ steps.diff-check.outputs.ai-changed }}
+      copilot-changed: ${{ steps.diff-check.outputs.copilot-changed }}
 
     steps:
       - name: Checkout code
@@ -131,6 +132,7 @@ jobs:
             echo "backend-deps-changed=true" >> "$GITHUB_OUTPUT"
             echo "prisma-changed=true" >> "$GITHUB_OUTPUT"
             echo "ai-changed=true" >> "$GITHUB_OUTPUT"
+            echo "copilot-changed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -146,6 +148,7 @@ jobs:
               echo "backend-deps-changed=true" >> "$GITHUB_OUTPUT"
               echo "prisma-changed=true" >> "$GITHUB_OUTPUT"
               echo "ai-changed=true" >> "$GITHUB_OUTPUT"
+              echo "copilot-changed=true" >> "$GITHUB_OUTPUT"
               exit 0
             fi
           fi
@@ -158,6 +161,13 @@ jobs:
             echo "fb-changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "fb-changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # 1b. Copilot reliability surface (agent chat history + attachments sanitizer)
+          if echo "$CHANGED" | grep -qE "apps/backend/(controller/aiAgentChatController|services/(aiServiceAdminClient|aiSessionService|agentStudioSessionService)|tests/(controller/aiAgentChatController|services/aiServiceAdminClient))"; then
+            echo "copilot-changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "copilot-changed=false" >> "$GITHUB_OUTPUT"
           fi
 
           # 2. Frontend Changes (apps/frontend, shared, nginx_configs, customer-portal guard)
