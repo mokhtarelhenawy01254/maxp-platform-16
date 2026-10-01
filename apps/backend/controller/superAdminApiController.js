@@ -775,7 +775,6 @@ const getSubscriptions = async (req, res) => {
           id: true,
           status: true,
           monthlyFee: true,
-          createdAt: true
         }
       }).catch(() => [])
     ]);
