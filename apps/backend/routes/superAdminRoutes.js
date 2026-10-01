@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const superAdminController = require("../controller/superAdminController");
 const devTaskIntegrationController = require("../controller/devTaskIntegrationController");
+const superAdminExternalApiController = require("../controller/superAdminExternalApiController");
 const storePagesController = require("../controller/storePagesController");
 const superAdminCompanyOrdersController = require("../controller/superAdminCompanyOrdersController");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
@@ -189,6 +190,38 @@ router.delete(
   "/dev/task-integrations/credentials/:credentialId",
   checkPermission("canManageSettings"),
   devTaskIntegrationController.revokeCredential,
+);
+
+// 🔑 External Marketing API Credentials & Audit Logs
+router.get(
+  "/external-api/credentials",
+  checkPermission("canViewReports"),
+  superAdminExternalApiController.listCredentials,
+);
+router.post(
+  "/external-api/credentials",
+  checkPermission("canManageSettings"),
+  superAdminExternalApiController.createCredential,
+);
+router.put(
+  "/external-api/credentials/:credentialId",
+  checkPermission("canManageSettings"),
+  superAdminExternalApiController.updateCredential,
+);
+router.delete(
+  "/external-api/credentials/:credentialId",
+  checkPermission("canManageSettings"),
+  superAdminExternalApiController.revokeCredential,
+);
+router.get(
+  "/external-api/audit-logs",
+  checkPermission("canViewReports"),
+  superAdminExternalApiController.listAuditLogs,
+);
+router.get(
+  "/external-api/companies",
+  checkPermission("canViewReports"),
+  superAdminExternalApiController.listTenantCompanies,
 );
 
 // 👨‍💻 Team Management - Protected

@@ -568,30 +568,53 @@ model Task {
 }
 
 model TaskApiCredential {
-  id                 String   @id @default(cuid())
-  companyId          String
+  id                 String                @id @default(cuid())
+  companyId          String?
   userId             String?
   defaultActingUserId String?
   name               String
   description        String?
-  keyPrefix          String   @unique
-  keyHash            String   @unique
+  keyPrefix          String                @unique
+  keyHash            String                @unique
   scopes             String
-  isActive           Boolean  @default(true)
+  isActive           Boolean               @default(true)
   lastUsedAt         DateTime?
   expiresAt          DateTime?
   revokedAt          DateTime?
   revokedReason      String?
-  createdByUserId    String
+  createdByUserId    String?
   revokedByUserId    String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  allowedIps         String[]              @default([])
+  lastUsedIp         String?
+  requestCount       Int                   @default(0)
+  label              String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  company            Company?              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  auditLogs          ExternalApiAuditLog[]
 
   @@index([companyId, isActive])
   @@index([companyId, userId])
   @@index([expiresAt])
   @@map("task_api_credentials")
+}
+
+model ExternalApiAuditLog {
+  id             String             @id @default(cuid())
+  credentialId   String
+  companyId      String?
+  path           String
+  method         String
+  statusCode     Int
+  ip             String?
+  userAgent      String?
+  responseTimeMs Int?
+  createdAt      DateTime           @default(now())
+  credential     TaskApiCredential  @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+
+  @@index([credentialId, createdAt])
+  @@index([companyId, createdAt])
+  @@map("external_api_audit_logs")
 }
 
 model TaskWebhookEndpoint {

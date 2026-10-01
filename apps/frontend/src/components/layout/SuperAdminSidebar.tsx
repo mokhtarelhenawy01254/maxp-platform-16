@@ -295,6 +295,11 @@ export const getMenuGroups = (t: (key: string) => string): SuperAdminMenuGroup[]
         path: "/super-admin/ai-key-logs",
       },
       {
+        text: "مفاتيح API الخارجية",
+        icon: <Key className="h-4 w-4" />,
+        path: "/super-admin/external-api",
+      },
+      {
         text: "رصد أعطال أدوات الوكلاء",
         icon: <ShieldAlert className="h-4 w-4 text-rose-500" />,
         path: "/super-admin/ai-incidents",

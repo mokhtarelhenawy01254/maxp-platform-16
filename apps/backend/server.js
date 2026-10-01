@@ -385,6 +385,7 @@ const taskRoutes = require("./routes/taskRoutes");
 const taskExternalRoutes = require("./routes/taskExternalRoutes");
 const hrExternalRoutes = require("./routes/hrExternalRoutes");
 const devTaskExternalRoutes = require("./routes/devTaskExternalRoutes");
+const externalMarketingRoutes = require("./routes/externalMarketingRoutes");
 const telegramRoutes = require("./routes/telegramRoutes");
 const telegramAdvancedRoutes = require("./routes/telegramAdvancedRoutes");
 const userbotRoutes = require("./routes/userbotRoutes");
@@ -772,6 +773,7 @@ app.use("/api/v1/funnels", funnelRoutes);
   app.use("/api/v1/external/tasks", taskExternalRoutes);
   app.use("/api/v1/external/hr", hrExternalRoutes);
   app.use("/api/v1/external/dev-tasks", devTaskExternalRoutes);
+  app.use("/api/v1/external", externalMarketingRoutes);
 
 // Static User Content Surface
 // 2026-08 security: sensitive upload folders (HR, payments, affiliate, dental-lab,

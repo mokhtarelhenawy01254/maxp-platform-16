@@ -1343,6 +1343,9 @@ const DevTaskSettings = React.lazy(
 const DevTaskIntegrations = React.lazy(
   () => import("./pages/super-admin/DevTaskIntegrations"),
 );
+const ExternalApiCredentialsPage = React.lazy(
+  () => import("./pages/super-admin/external-api/ExternalApiCredentialsPage"),
+);
 const DevGoalsList = React.lazy(
   () => import("./pages/super-admin/DevGoalsList"),
 );
@@ -2896,6 +2899,14 @@ const AppContent = () => {
               element={
                 <Layout>
                   <DevTaskIntegrations />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/external-api"
+              element={
+                <Layout>
+                  <ExternalApiCredentialsPage />
                 </Layout>
               }
             />

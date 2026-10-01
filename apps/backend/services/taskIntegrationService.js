@@ -7,7 +7,31 @@ const AGENT_INBOX_API_SCOPES = [
   'facebook-inbox:evaluate',
   'facebook-inbox:draft'
 ];
-const EXTERNAL_API_SCOPES = [...TASK_API_SCOPES, ...AGENT_INBOX_API_SCOPES];
+const MARKETING_API_SCOPES = [
+  'analytics:read',
+  'orders:read',
+  'products:read',
+  'subscriptions:read',
+  'leads:read',
+  'landing:read',
+  'ads:read',
+  'customers:read',
+  'platform:read',
+  '*'
+];
+const MARKETING_DEFAULT_SCOPES = [
+  'analytics:read',
+  'orders:read',
+  'products:read',
+  'landing:read',
+  'leads:read',
+  'subscriptions:read'
+];
+const EXTERNAL_API_SCOPES = [
+  ...TASK_API_SCOPES,
+  ...AGENT_INBOX_API_SCOPES,
+  ...MARKETING_API_SCOPES
+];
 const AGENT_INBOX_DEFAULT_SCOPES = ['facebook-inbox:read', 'facebook-inbox:evaluate'];
 const TASK_WEBHOOK_EVENTS = ['task.created', 'task.updated', 'task.status_changed', 'task.deleted'];
 const TASK_WEBHOOK_PROVIDER_TYPES = ['GENERIC', 'OPENCLAW'];
@@ -171,7 +195,7 @@ const normalizeWebhookProviderConfig = (providerType, value) => {
 };
 
 const generateTaskApiKey = (prefix = 'tsk') => {
-  const normalizedPrefix = ['tsk', 'ain'].includes(String(prefix || '').trim())
+  const normalizedPrefix = ['tsk', 'ain', 'ext'].includes(String(prefix || '').trim())
     ? String(prefix).trim()
     : 'tsk';
   const publicPart = crypto.randomBytes(8).toString('hex');
@@ -185,6 +209,7 @@ const generateTaskApiKey = (prefix = 'tsk') => {
   };
 };
 
+const generateExternalApiKey = () => generateTaskApiKey('ext');
 const generateAgentInboxApiKey = () => generateTaskApiKey('ain');
 
 const generateSigningSecret = () => crypto.randomBytes(32).toString('hex');
@@ -207,7 +232,7 @@ const extractKeyPrefix = (rawKey) => {
   const trimmed = rawKey.trim();
   const segments = trimmed.split('_');
   if (segments.length < 3) return null;
-  if (!['tsk', 'ain'].includes(segments[0])) return null;
+  if (!['tsk', 'ain', 'ext'].includes(segments[0])) return null;
 
   return `${segments[0]}_${segments[1]}`;
 };
@@ -223,6 +248,8 @@ module.exports = {
   AGENT_INBOX_API_SCOPES,
   AGENT_INBOX_DEFAULT_SCOPES,
   EXTERNAL_API_SCOPES,
+  MARKETING_API_SCOPES,
+  MARKETING_DEFAULT_SCOPES,
   TASK_API_DEFAULT_SCOPES,
   TASK_API_SCOPES,
   TASK_WEBHOOK_EVENTS,
@@ -232,6 +259,7 @@ module.exports = {
   credentialHasScope,
   extractKeyPrefix,
   generateAgentInboxApiKey,
+  generateExternalApiKey,
   generateSigningSecret,
   generateTaskApiKey,
   hashTaskApiKey,
