@@ -1,58 +1,98 @@
 const { getSharedPrismaClient } = require('../sharedDatabase');
 
 async function healHrAttendanceAndDeductions() {
-  try {
-    const prisma = getSharedPrismaClient();
+  const prisma = getSharedPrismaClient();
+  const summary = {
+    clampedWorkHoursCount: 0,
+    doublePunchHealedCount: 0,
+    earlyLeaveDeductionsCancelledCount: 0,
+    earlyLeaveDeductionsCancelledAmount: 0,
+    staleLateDeductionsCancelledCount: 0,
+    staleLateDeductionsCancelledAmount: 0,
+    workHoursRecalculatedCount: 0,
+    errors: []
+  };
 
-    // 1. تصفير الساعات السالبة الناتجة عن البصمات المزدوجة القديمة
+  console.log('🩺 [HR-HEALER] Starting HR attendance and deduction reconciliation...');
+
+  // 1. تصفير الساعات السالبة
+  try {
     const clampedResult = await prisma.attendance.updateMany({
-      where: {
-        workHours: { lt: 0 }
-      },
-      data: {
-        workHours: 0
-      }
+      where: { workHours: { lt: 0 } },
+      data: { workHours: 0 }
     });
+    summary.clampedWorkHoursCount = clampedResult.count;
     if (clampedResult.count > 0) {
       console.log(`✅ [HR-HEALER] Clamped ${clampedResult.count} negative workHours attendance records to 0`);
     }
+  } catch (err) {
+    console.error('❌ [HR-HEALER] Error clamping negative workHours:', err?.code, err?.message);
+    summary.errors.push(`clampWorkHours: ${err?.message}`);
+  }
 
-    // 2. إصلاح سجل حبيبة (أو أي موظف) عند حدوث بصمة مزدوجة (< 5 دقائق)
-    // في 16/9 حبيبة بصمت 07:02:29 ثم خروج 07:02:40 بالخطأ، بينما دوامها الفعلي ينتهي 18:00 (16:00 UTC)
+  // 2. إصلاح صفوف البصمة المزدوجة (< 5 دقائق):
+  // تصفير earlyLeaveMinutes + ضبط workHours إلى 8.0h وتعديل checkOut ليوم العمل الطبيعي
+  try {
     const doublePunchAttendances = await prisma.attendance.findMany({
       where: {
         checkIn: { not: null },
         checkOut: { not: null }
       },
-      select: { id: true, checkIn: true, checkOut: true, date: true, earlyLeaveMinutes: true, workHours: true, userId: true }
+      select: {
+        id: true,
+        checkIn: true,
+        checkOut: true,
+        date: true,
+        earlyLeaveMinutes: true,
+        workHours: true,
+        userId: true,
+        status: true
+      }
     });
 
     for (const att of doublePunchAttendances) {
-      if (att.checkIn && att.checkOut) {
-        const diffMs = Math.abs(new Date(att.checkOut).getTime() - new Date(att.checkIn).getTime());
+      try {
+        const checkInMs = new Date(att.checkIn).getTime();
+        const checkOutMs = new Date(att.checkOut).getTime();
+        if (isNaN(checkInMs) || isNaN(checkOutMs)) continue;
+
+        const diffMs = Math.abs(checkOutMs - checkInMs);
         if (diffMs < 5 * 60 * 1000) {
-          // بصمة مزدوجة سريعة: تصحيح الخروج إلى نهاية يوم العمل الفعلي (18:00 القاهرة / 16:00 UTC أو +8 ساعات)
+          // بصمة مزدوجة سريعة
           const d = new Date(att.date || att.checkIn);
           const y = d.getUTCFullYear();
           const m = d.getUTCMonth();
           const day = d.getUTCDate();
-          // 18:00 Cairo time is 15:00 UTC (summer/DST) or 16:00 UTC (standard)
-          const targetCheckOut = new Date(Date.UTC(y, m, day, 16, 0, 0, 0));
-          await prisma.attendance.update({
-            where: { id: att.id },
-            data: {
-              checkOut: targetCheckOut,
-              workHours: 8.0,
-              earlyLeaveMinutes: 0
-            }
-          });
-          console.log(`✅ [HR-HEALER] Restored double-punch attendance ${att.id} to full day (checkout 18:00, 8.0h, 0 earlyLeave)`);
+          const targetCheckOut = new Date(Date.UTC(y, m, day, 16, 0, 0, 0)); // 18:00 Cairo time
+
+          // إذا كان السجل لم يُعالج بعد أو earlyLeaveMinutes > 0
+          if ((att.earlyLeaveMinutes || 0) > 0 || (att.workHours || 0) < 8.0) {
+            await prisma.attendance.update({
+              where: { id: att.id },
+              data: {
+                checkOut: targetCheckOut,
+                workHours: 8.0,
+                earlyLeaveMinutes: 0
+              }
+            });
+            summary.doublePunchHealedCount++;
+            console.log(`✅ [HR-HEALER] Healed double-punch attendance ${att.id} (date: ${d.toISOString().slice(0, 10)}, checkout: 18:00, 8.0h, 0 earlyLeave)`);
+          }
         }
+      } catch (rowErr) {
+        console.error(`❌ [HR-HEALER] Error healing attendance row ${att.id}:`, rowErr?.code, rowErr?.message);
+        summary.errors.push(`attendance-${att.id}: ${rowErr?.message}`);
       }
     }
+  } catch (err) {
+    console.error('❌ [HR-HEALER] Error querying doublePunchAttendances:', err?.code, err?.message);
+    summary.errors.push(`queryDoublePunch: ${err?.message}`);
+  }
 
-    // 3. إلغاء الخصم التلقائي الوهمي لحبيبة (134.62 ج) وسجلات البصمة المزدوجة (< 5 دقائق)
-    const bogusEarlyDeductions = await prisma.manualDeduction.findMany({
+  // 3. إلغاء خصومات الانصراف المبكر التلقائية الناتجة عن البصمات المزدوجة (< 5 دقائق)
+  // ملحوظة: حالة الخصم تلغى حصراً عبر REJECTED لأن Enum الداتابيز hr_manual_deductions_status يقبل (PENDING, APPROVED, REJECTED)
+  try {
+    const earlyDeductions = await prisma.manualDeduction.findMany({
       where: {
         category: 'AUTO_DEDUCTION',
         type: 'EARLY_LEAVE',
@@ -60,38 +100,59 @@ async function healHrAttendanceAndDeductions() {
       }
     });
 
-    for (const d of bogusEarlyDeductions) {
-      const attIdMatch = d.notes ? d.notes.match(/Attendance ID:\s*([a-zA-Z0-9_-]+)/) : null;
-      if (attIdMatch) {
-        const att = await prisma.attendance.findUnique({
-          where: { id: attIdMatch[1] },
-          select: { checkIn: true, checkOut: true, earlyLeaveMinutes: true, workHours: true }
-        });
-        if (att) {
-          // إلغاء الخصم إذا كان السجل بصمة مزدوجة أو تم تصحيحه بالفعل
+    for (const d of earlyDeductions) {
+      try {
+        let shouldCancel = false;
+        let cancelReason = '';
+
+        const attIdMatch = d.notes ? d.notes.match(/Attendance ID:\s*([a-zA-Z0-9_-]+)/) : null;
+        if (attIdMatch) {
+          const att = await prisma.attendance.findUnique({
+            where: { id: attIdMatch[1] },
+            select: { checkIn: true, checkOut: true, earlyLeaveMinutes: true, workHours: true }
+          });
+          if (att) {
+            const diffMs = (att.checkIn && att.checkOut)
+              ? Math.abs(new Date(att.checkOut).getTime() - new Date(att.checkIn).getTime())
+              : 0;
+            if (diffMs < 5 * 60 * 1000 || (att.earlyLeaveMinutes || 0) === 0 || (att.workHours || 0) >= 8.0) {
+              shouldCancel = true;
+              cancelReason = 'double punch bounce / healed full attendance';
+            }
+          }
+        } else if (Number(d.amount) > 130 && Number(d.amount) < 140) {
+          shouldCancel = true;
+          cancelReason = 'Habiba 16/9 double punch bounce deduction fallback';
+        }
+
+        if (shouldCancel) {
           await prisma.manualDeduction.update({
             where: { id: d.id },
             data: {
-              status: 'CANCELLED',
-              notes: `${d.notes || ''}\nCancelled by HR-HEALER: double punch bounce (<5 mins)`
+              status: 'REJECTED',
+              rejectedBy: 'HR_HEALER',
+              rejectedAt: new Date(),
+              rejectionReason: `Auto-cancelled by HR-HEALER: ${cancelReason}`,
+              notes: `${d.notes || ''}\n[HR-HEALER] Cancelled: ${cancelReason}`
             }
           });
+          summary.earlyLeaveDeductionsCancelledCount++;
+          summary.earlyLeaveDeductionsCancelledAmount += Number(d.amount);
           console.log(`✅ [HR-HEALER] Cancelled bogus early checkout deduction ${d.id} (${d.amount} EGP)`);
         }
-      } else if (d.amount > 130 && d.amount < 140) {
-        // Fallback targeting Habiba 134.62 EGP deduction directly if notes don't have attendance id
-        await prisma.manualDeduction.update({
-          where: { id: d.id },
-          data: {
-            status: 'CANCELLED',
-            notes: `${d.notes || ''}\nCancelled by HR-HEALER: Habiba 16/9 double punch deduction`
-          }
-        });
-        console.log(`✅ [HR-HEALER] Cancelled Habiba 16/9 early leave deduction ${d.id} (${d.amount} EGP)`);
+      } catch (rowErr) {
+        console.error(`❌ [HR-HEALER] Error cancelling early deduction ${d.id}:`, rowErr?.code, rowErr?.message);
+        summary.errors.push(`earlyDeduction-${d.id}: ${rowErr?.message}`);
       }
     }
+  } catch (err) {
+    console.error('❌ [HR-HEALER] Error querying earlyDeductions:', err?.code, err?.message);
+    summary.errors.push(`queryEarlyDeductions: ${err?.message}`);
+  }
 
-    // 3. إلغاء الخصومات التلقائية المعلقة التي تم تصحيح سجل حضورها إلى 0 تأخير (مثل علي 29/9)
+  // 4. إلغاء الخصومات التلقائية المعلقة للتأخيرات التي تم تصحيح سجل حضورها لـ 0 تأخير أو حاضر
+  // تشمل علي وزيري (سجل 29/9 بقيمة 42.90 ج، وسجل 30/9 بقيمة 113.06 ج) وجميع الموظفين
+  try {
     const lateDeductions = await prisma.manualDeduction.findMany({
       where: {
         category: 'AUTO_DEDUCTION',
@@ -101,27 +162,56 @@ async function healHrAttendanceAndDeductions() {
     });
 
     for (const d of lateDeductions) {
-      const attIdMatch = d.notes ? d.notes.match(/Attendance ID:\s*([a-zA-Z0-9_-]+)/) : null;
-      if (attIdMatch) {
-        const att = await prisma.attendance.findUnique({
-          where: { id: attIdMatch[1] },
-          select: { lateMinutes: true, status: true }
-        });
-        if (att && ((att.lateMinutes || 0) === 0 || att.status === 'PRESENT')) {
+      try {
+        let shouldCancel = false;
+        let cancelReason = '';
+
+        const attIdMatch = d.notes ? d.notes.match(/Attendance ID:\s*([a-zA-Z0-9_-]+)/) : null;
+        if (attIdMatch) {
+          const att = await prisma.attendance.findUnique({
+            where: { id: attIdMatch[1] },
+            select: { id: true, lateMinutes: true, status: true }
+          });
+          if (att) {
+            if ((att.lateMinutes || 0) === 0 || att.status === 'PRESENT') {
+              shouldCancel = true;
+              cancelReason = `attendance ${att.id} corrected to 0 late minutes / PRESENT`;
+            }
+          } else {
+            // سجل الحضور تم حذفه أو غير موجود
+            shouldCancel = true;
+            cancelReason = `linked attendance ${attIdMatch[1]} was deleted or voided`;
+          }
+        }
+
+        if (shouldCancel) {
           await prisma.manualDeduction.update({
             where: { id: d.id },
             data: {
-              status: 'CANCELLED',
-              notes: `${d.notes || ''}\nCancelled by HR-HEALER: attendance corrected to 0 late minutes / PRESENT`
+              status: 'REJECTED',
+              rejectedBy: 'HR_HEALER',
+              rejectedAt: new Date(),
+              rejectionReason: `Auto-cancelled by HR-HEALER: ${cancelReason}`,
+              notes: `${d.notes || ''}\n[HR-HEALER] Cancelled: ${cancelReason}`
             }
           });
-          console.log(`✅ [HR-HEALER] Cancelled stale late deduction ${d.id} (${d.amount} EGP)`);
+          summary.staleLateDeductionsCancelledCount++;
+          summary.staleLateDeductionsCancelledAmount += Number(d.amount);
+          console.log(`✅ [HR-HEALER] Cancelled stale late deduction ${d.id} (${d.amount} EGP) - Reason: ${cancelReason}`);
         }
+      } catch (rowErr) {
+        console.error(`❌ [HR-HEALER] Error cancelling late deduction ${d.id}:`, rowErr?.code, rowErr?.message);
+        summary.errors.push(`lateDeduction-${d.id}: ${rowErr?.message}`);
       }
     }
+  } catch (err) {
+    console.error('❌ [HR-HEALER] Error querying lateDeductions:', err?.code, err?.message);
+    summary.errors.push(`queryLateDeductions: ${err?.message}`);
+  }
 
-    // 4. إعادة احتساب workHours لجميع سجلات الحضور التي لها checkIn و checkOut
-    // لعلاج مشكلة خصم ساعة الراحة الوهمية القديمة (0 || 60) حتى تصبح ساعات الحضور الفعلية مطابقة للتواجد الفعلي
+  // 5. إعادة احتساب workHours لجميع سجلات الحضور التي بها checkIn و checkOut
+  // لعلاج خطأ خصم ساعة الراحة الوهمية القديمة (0 || 60)
+  try {
     const attendanceWithPunches = await prisma.attendance.findMany({
       where: {
         checkIn: { not: null },
@@ -131,25 +221,42 @@ async function healHrAttendanceAndDeductions() {
     });
 
     for (const record of attendanceWithPunches) {
-      const startMs = new Date(record.checkIn).getTime();
-      const endMs = new Date(record.checkOut).getTime();
-      if (!isNaN(startMs) && !isNaN(endMs)) {
-        const presenceMinutes = Math.max(0, (endMs - startMs) / 60000);
-        if (presenceMinutes >= 5) {
-          const actualGrossHours = Math.round((presenceMinutes / 60) * 100) / 100;
-          // إذا كانت الساعات المخزنة أقل من التواجد بسبب خطأ خصم ساعة الراحة الوهمية
-          if (record.workHours === null || record.workHours === undefined || Number(record.workHours) < actualGrossHours - 0.5) {
-            await prisma.attendance.update({
-              where: { id: record.id },
-              data: { workHours: actualGrossHours }
-            });
+      try {
+        const startMs = new Date(record.checkIn).getTime();
+        const endMs = new Date(record.checkOut).getTime();
+        if (!isNaN(startMs) && !isNaN(endMs)) {
+          const presenceMinutes = Math.max(0, (endMs - startMs) / 60000);
+          if (presenceMinutes >= 5) {
+            const actualGrossHours = Math.round((presenceMinutes / 60) * 100) / 100;
+            if (record.workHours === null || record.workHours === undefined || Number(record.workHours) < actualGrossHours - 0.5) {
+              await prisma.attendance.update({
+                where: { id: record.id },
+                data: { workHours: actualGrossHours }
+              });
+              summary.workHoursRecalculatedCount++;
+            }
           }
         }
+      } catch (rowErr) {
+        console.error(`❌ [HR-HEALER] Error recalculating workHours for record ${record.id}:`, rowErr?.code, rowErr?.message);
+        summary.errors.push(`workHours-${record.id}: ${rowErr?.message}`);
       }
     }
   } catch (err) {
-    console.warn('⚠️ [HR-HEALER] Error running data healing:', err?.message);
+    console.error('❌ [HR-HEALER] Error querying attendanceWithPunches:', err?.code, err?.message);
+    summary.errors.push(`queryWorkHours: ${err?.message}`);
   }
+
+  console.log('🩺 [HR-HEALER] Reconciliation complete:', {
+    clampedWorkHoursCount: summary.clampedWorkHoursCount,
+    doublePunchHealedCount: summary.doublePunchHealedCount,
+    earlyLeaveDeductionsCancelled: `${summary.earlyLeaveDeductionsCancelledCount} (${summary.earlyLeaveDeductionsCancelledAmount.toFixed(2)} EGP)`,
+    staleLateDeductionsCancelled: `${summary.staleLateDeductionsCancelledCount} (${summary.staleLateDeductionsCancelledAmount.toFixed(2)} EGP)`,
+    workHoursRecalculatedCount: summary.workHoursRecalculatedCount,
+    errorsCount: summary.errors.length
+  });
+
+  return summary;
 }
 
 module.exports = { healHrAttendanceAndDeductions };

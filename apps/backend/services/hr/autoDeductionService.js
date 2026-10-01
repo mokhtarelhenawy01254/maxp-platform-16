@@ -375,11 +375,14 @@ class AutoDeductionService {
         throw new Error('لا يمكن إلغاء خصم تم تطبيقه على الراتب');
       }
 
-      // تحديث حالة الخصم
+      // تحديث حالة الخصم (نستخدم REJECTED للتوافق مع Enum قاعدة البيانات hr_manual_deductions_status)
       const updated = await this.prisma.manualDeduction.update({
         where: { id: deductionId },
         data: {
-          status: 'CANCELLED',
+          status: 'REJECTED',
+          rejectedBy: cancelledBy,
+          rejectedAt: new Date(),
+          rejectionReason: reason,
           notes: `${deduction.notes || ''}\nتم الإلغاء بواسطة: ${cancelledBy}\nسبب الإلغاء: ${reason}`
         }
       });

@@ -302,7 +302,40 @@ function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo', latene
         'TRAINING'
       ]),
       aiNotificationTone: settings?.aiNotificationTone || 'PROFESSIONAL'
-    }
+    },
+    // Top-level aliases for direct key accessibility
+    workStartTime: workStartTime || null,
+    workEndTime: workEndTime || null,
+    latestAllowedTime,
+    monthlyAllowanceMinutes,
+    allowanceResetDay,
+    workingDaysPerMonth: (settings?.workingDaysPerMonth !== undefined && settings?.workingDaysPerMonth !== null)
+      ? Number(settings.workingDaysPerMonth)
+      : 22,
+    workingHoursPerDay: (settings?.workingHoursPerDay !== undefined && settings?.workingHoursPerDay !== null)
+      ? Number(settings.workingHoursPerDay)
+      : 8,
+    absencePenaltyRate: (settings?.absencePenaltyRate !== undefined && settings?.absencePenaltyRate !== null)
+      ? Number(settings.absencePenaltyRate)
+      : 1.0,
+    maxDailyDeductionDays: (settings?.maxDailyDeductionDays !== undefined && settings?.maxDailyDeductionDays !== null)
+      ? Number(settings.maxDailyDeductionDays)
+      : 1.0,
+    socialInsuranceRate: (settings?.socialInsuranceRate !== undefined && settings?.socialInsuranceRate !== null)
+      ? Number(settings.socialInsuranceRate)
+      : 14.0,
+    taxRate: (settings?.taxRate !== undefined && settings?.taxRate !== null)
+      ? Number(settings.taxRate)
+      : 0,
+    overtimeRate: (settings?.overtimeRate !== undefined && settings?.overtimeRate !== null)
+      ? Number(settings.overtimeRate)
+      : 1.5,
+    breakDuration: (primaryShift?.breakDuration !== undefined && primaryShift?.breakDuration !== null)
+      ? Number(primaryShift.breakDuration)
+      : ((settings?.breakDuration !== undefined && settings?.breakDuration !== null) ? Number(settings.breakDuration) : 0),
+    autoDeductionEnabled: settings?.autoDeductionEnabled || false,
+    gracePeriodMinutes: settings?.gracePeriodMinutes ?? 60,
+    payrollDay: settings?.payrollDay ?? 25
   };
 }
 
@@ -4171,7 +4204,7 @@ const voidAttendanceRecord = async (req, res) => {
       where: { id }
     });
 
-    // Cancel any linked auto deductions
+    // Cancel any linked auto deductions (use REJECTED status for Prisma enum validity)
     try {
       await prisma.manualDeduction.updateMany({
         where: {
@@ -4181,7 +4214,10 @@ const voidAttendanceRecord = async (req, res) => {
           status: { in: ['PENDING', 'APPROVED'] }
         },
         data: {
-          status: 'CANCELLED',
+          status: 'REJECTED',
+          rejectedBy: req.user?.id || 'EXTERNAL_API',
+          rejectedAt: new Date(),
+          rejectionReason: `Attendance record ${id} was voided`,
           notes: `Cancelled automatically: Attendance record ${id} was voided`
         }
       });

@@ -565,17 +565,17 @@ describe('HR External API — New Endpoints & Timezone Fix Unit Tests', () => {
           findFirst: jest.fn().mockResolvedValue(mockDeduction),
           update: jest.fn().mockResolvedValue({
             ...mockDeduction,
-            status: 'CANCELLED'
+            status: 'REJECTED'
           })
         }
       };
 
       const res = await autoDeductionService.cancelAutoDeduction('company-1', 'ded-early-1', 'TEST', 'Double punch bounce');
-      expect(res.status).toBe('CANCELLED');
+      expect(res.status).toBe('REJECTED');
       expect(autoDeductionService.prisma.manualDeduction.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'ded-early-1' },
-          data: expect.objectContaining({ status: 'CANCELLED' })
+          data: expect.objectContaining({ status: 'REJECTED' })
         })
       );
       autoDeductionService.prisma = null;

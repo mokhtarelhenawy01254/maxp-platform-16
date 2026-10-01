@@ -1302,7 +1302,7 @@ class PayrollService {
 
     // استبعاد الخصومات التلقائية القديمة أو الشبحية التي تم تصحيح سجل حضورها أو إلغاؤه
     manualDeductions = manualDeductions.filter(d => {
-      if (d.status === 'CANCELLED') return false;
+      if (d.status === 'CANCELLED' || d.status === 'REJECTED') return false;
       if (d.category === 'AUTO_DEDUCTION') {
         const attIdMatch = d.notes ? d.notes.match(/Attendance ID:\s*([a-zA-Z0-9_-]+)/) : null;
         if (attIdMatch) {
@@ -1331,6 +1331,8 @@ class PayrollService {
     });
 
     manualDeductions.forEach(d => {
+      // الخصومات التلقائية AUTO_DEDUCTION تُعالج عبر محرك التأخير والانصراف المبكر لتفادي الازدواج وتصنيفها كـ "خصم يدوي"
+      if (d.category === 'AUTO_DEDUCTION') return;
       addDailyPenalty(d.date, parseFloat(d.amount), `يدوي: ${d.reason}`, 'manual');
     });
 
@@ -1497,8 +1499,11 @@ class PayrollService {
           const presenceMs = checkOutDate.getTime() - checkInDate.getTime();
           if (presenceMs >= 0 && presenceMs < 5 * 60 * 1000) {
             isDoublePunch = true;
+            // البصمة المزدوجة (< 5 دقائق): الموظف بصم حضوراً وحدث ارتداد/خروج خاطئ بالثواني
+            // نعامل اليوم كيوم عمل عادي دون عجز ساعات أو انصراف مبكر
+            actualHours = Math.max(actualHours, expectedHours);
           }
-          if (presenceMs > 0) {
+          if (presenceMs > 0 && !isDoublePunch) {
             const grossHours = presenceMs / (1000 * 60 * 60);
             // في مصر والورديات القياسية (مثل 10:00 إلى 18:00 = 8 ساعات)، الراحة مشمولة بالمرتب
             // السجلات القديمة كانت تخصم ساعة راحة تلقائيًا فتوهم عجز ساعة يوميًا
@@ -1580,7 +1585,8 @@ class PayrollService {
     // تصنيف الخصومات وحفظها بوضوح
     if (totalCappedManualPenalty > 0) {
       deductions['خصم يدوي'] = totalCappedManualPenalty;
-      deductions.manualDetails = manualDeductions.map(d => `${d.reason}(${d.amount})`).join(' | ');
+      const trueManualDeductions = manualDeductions.filter(d => d.category !== 'AUTO_DEDUCTION');
+      deductions.manualDetails = trueManualDeductions.map(d => `${d.reason}(${d.amount})`).join(' | ');
     }
 
     attendanceDeduction = totalCappedAttendancePenalty;
