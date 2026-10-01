@@ -448,7 +448,7 @@ class AttendanceService {
 
       // حساب دقائق التأخير
       let lateMinutes = 0;
-      const gracePeriod = settings?.lateThresholdMinutes || settings?.lateGracePeriod || 10;
+      const gracePeriod = settings?.lateGracePeriod || settings?.lateThresholdMinutes || 15;
       const graceTime = new Date(workStart.getTime() + gracePeriod * 60000);
 
       if (now > graceTime) {
@@ -1855,7 +1855,7 @@ class AttendanceService {
       : originalData.lateMinutes === undefined || originalLateMinutes === 0;
 
     if (checkIn && shouldAutoCalculateLate) {
-      const gracePeriod = settings?.lateThresholdMinutes || settings?.lateGracePeriod || 10;
+      const gracePeriod = settings?.lateGracePeriod || settings?.lateThresholdMinutes || 15;
       const graceTime = new Date(workStart.getTime() + gracePeriod * 60000);
 
       console.log(

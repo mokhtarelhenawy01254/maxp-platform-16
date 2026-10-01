@@ -1431,7 +1431,11 @@ class PayrollService {
         return;
       }
 
-      // حساب ديناميكي للتأخير غير المحفوظ مسبقاً
+      // حساب ديناميكي للتأخير غير المحفوظ مسبقاً (فقط إذا كان الخصم التلقائي مفعلاً)
+      if (!isAutoDeductionEnabled) {
+        return;
+      }
+
       // ما هو ضمن حد التسامح اليومي (maxDailyThreshold مثلاً 10د) يمتصه رصيد المرونة الشهري (remainingGrace)
       // ما زاد عن حد التسامح اليومي يذهب للخصم مباشرة بالإضافة لما تجاوز رصيد المرونة الشهري
       const dailyAllowed = Math.min(mins, maxDailyThreshold);

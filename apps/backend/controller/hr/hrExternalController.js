@@ -213,8 +213,10 @@ function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo', latene
   const monthlyAllowanceMinutes = latenessRules?.monthlyAllowanceMinutes !== undefined ? latenessRules.monthlyAllowanceMinutes : null;
   const allowanceResetDay = latenessRules?.allowanceResetDay !== undefined ? latenessRules.allowanceResetDay : null;
 
-  // Single Source of Truth for Daily Lateness Grace/Threshold:
-  // If latenessRules has workStartTime & latestAllowedTime (e.g. 10:00 & 10:10), diff is 10 mins.
+  // Lateness Rules & Grace:
+  // If company has latenessRules (e.g. H2M with 10:00 & 10:10), derive unified daily threshold (10 mins).
+  // If company has NO latenessRules row (the other 94 companies), preserve their exact stored settings:
+  // lateThresholdMinutes (e.g. 10) and lateGracePeriod (e.g. 15) without any distortion.
   let derivedRulesDailyThreshold = null;
   if (latenessRules?.workStartTime && latenessRules?.latestAllowedTime) {
     const [startH, startM] = latenessRules.workStartTime.split(':').map(Number);
@@ -229,9 +231,13 @@ function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo', latene
     ? derivedRulesDailyThreshold
     : ((settings?.lateThresholdMinutes !== undefined && settings?.lateThresholdMinutes !== null)
         ? Number(settings.lateThresholdMinutes)
-        : ((settings?.lateGracePeriod !== undefined && settings?.lateGracePeriod !== null)
-            ? Number(settings.lateGracePeriod)
-            : 10));
+        : 10);
+
+  const effectiveLateGracePeriod = derivedRulesDailyThreshold !== null
+    ? derivedRulesDailyThreshold
+    : ((settings?.lateGracePeriod !== undefined && settings?.lateGracePeriod !== null)
+        ? Number(settings.lateGracePeriod)
+        : 15);
 
   const effectiveMonthlyGraceMinutes = latenessRules?.monthlyAllowanceMinutes !== undefined && latenessRules?.monthlyAllowanceMinutes !== null
     ? Number(latenessRules.monthlyAllowanceMinutes)
@@ -259,7 +265,7 @@ function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo', latene
     attendance: {
       lateThreshold: effectiveDailyLateThreshold,
       lateThresholdMinutes: effectiveDailyLateThreshold,
-      lateGracePeriod: effectiveDailyLateThreshold,
+      lateGracePeriod: effectiveLateGracePeriod,
       earlyLeaveThreshold: settings?.earlyLeaveGracePeriod ?? 15,
       earlyLeaveGracePeriod: settings?.earlyLeaveGracePeriod ?? 15,
       earlyCheckoutEnabled: settings?.earlyCheckoutEnabled !== false,
@@ -360,7 +366,7 @@ function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo', latene
     autoDeductionEnabled: settings?.autoDeductionEnabled || false,
     gracePeriodMinutes: effectiveMonthlyGraceMinutes,
     lateThresholdMinutes: effectiveDailyLateThreshold,
-    lateGracePeriod: effectiveDailyLateThreshold,
+    lateGracePeriod: effectiveLateGracePeriod,
     lateThreshold: effectiveDailyLateThreshold,
     payrollDay: settings?.payrollDay ?? 25
   };
@@ -2992,28 +2998,35 @@ const updateHRSettings = async (req, res) => {
       }
     }
 
-    // Single source of truth for daily late allowance (threshold & grace) & monthly allowance
-    let unifiedDailyLateThreshold = null;
-    if (body.lateThresholdMinutes !== undefined) unifiedDailyLateThreshold = Number(body.lateThresholdMinutes);
-    else if (body.lateGracePeriod !== undefined) unifiedDailyLateThreshold = Number(body.lateGracePeriod);
-    else if (body.lateThreshold !== undefined) unifiedDailyLateThreshold = Number(body.lateThreshold);
-    else if (body.attendance?.lateThresholdMinutes !== undefined) unifiedDailyLateThreshold = Number(body.attendance.lateThresholdMinutes);
-    else if (body.attendance?.lateGracePeriod !== undefined) unifiedDailyLateThreshold = Number(body.attendance.lateGracePeriod);
-    else if (body.attendance?.lateThreshold !== undefined) unifiedDailyLateThreshold = Number(body.attendance.lateThreshold);
+    // Daily late allowance & grace period preservation
+    const callerProvidedLateThreshold = body.lateThresholdMinutes !== undefined ? Number(body.lateThresholdMinutes)
+      : (body.lateThreshold !== undefined ? Number(body.lateThreshold)
+      : (body.attendance?.lateThresholdMinutes !== undefined ? Number(body.attendance.lateThresholdMinutes)
+      : (body.attendance?.lateThreshold !== undefined ? Number(body.attendance.lateThreshold) : null)));
 
-    if (unifiedDailyLateThreshold !== null && !isNaN(unifiedDailyLateThreshold)) {
-      mergedAttendance.lateThresholdMinutes = unifiedDailyLateThreshold;
-      mergedAttendance.lateGracePeriod = unifiedDailyLateThreshold;
-      mergedAttendance.lateThreshold = unifiedDailyLateThreshold;
-    } else {
-      const existingThreshold = Number(
-        mergedAttendance.lateThresholdMinutes ?? mergedAttendance.lateGracePeriod ?? mergedAttendance.lateThreshold ?? 10
-      );
-      mergedAttendance.lateThresholdMinutes = existingThreshold;
-      mergedAttendance.lateGracePeriod = existingThreshold;
-      mergedAttendance.lateThreshold = existingThreshold;
-      unifiedDailyLateThreshold = existingThreshold;
+    const callerProvidedLateGrace = body.lateGracePeriod !== undefined ? Number(body.lateGracePeriod)
+      : (body.attendance?.lateGracePeriod !== undefined ? Number(body.attendance.lateGracePeriod) : null);
+
+    if (callerProvidedLateThreshold !== null && !isNaN(callerProvidedLateThreshold)) {
+      mergedAttendance.lateThresholdMinutes = callerProvidedLateThreshold;
+      mergedAttendance.lateThreshold = callerProvidedLateThreshold;
+      // If caller provided threshold but not gracePeriod, synchronize gracePeriod if company is H2M (has latenessRules)
+      if (callerProvidedLateGrace === null && latenessRules) {
+        mergedAttendance.lateGracePeriod = callerProvidedLateThreshold;
+      }
     }
+
+    if (callerProvidedLateGrace !== null && !isNaN(callerProvidedLateGrace)) {
+      mergedAttendance.lateGracePeriod = callerProvidedLateGrace;
+      if (callerProvidedLateThreshold === null && latenessRules) {
+        mergedAttendance.lateThresholdMinutes = callerProvidedLateGrace;
+        mergedAttendance.lateThreshold = callerProvidedLateGrace;
+      }
+    }
+
+    const unifiedDailyLateThreshold = Number(
+      mergedAttendance.lateThresholdMinutes ?? mergedAttendance.lateGracePeriod ?? 10
+    );
 
     let unifiedMonthlyGrace = null;
     if (body.gracePeriodMinutes !== undefined) unifiedMonthlyGrace = Number(body.gracePeriodMinutes);
@@ -3071,7 +3084,17 @@ const updateHRSettings = async (req, res) => {
       latenessUpdate.allowanceResetDay = Number(mergedWorkHours.allowanceResetDay);
     }
 
-    if (Object.keys(latenessUpdate).length > 0) {
+    const hasExplicitLatenessUpdate = Boolean(
+      body.workHours?.latestAllowedTime !== undefined ||
+      body.workHours?.monthlyAllowanceMinutes !== undefined ||
+      body.workHours?.allowanceResetDay !== undefined ||
+      body.latestAllowedTime !== undefined ||
+      body.monthlyAllowanceMinutes !== undefined ||
+      body.allowanceResetDay !== undefined
+    );
+
+    // Only upsert lateness_rules if the company already had a latenessRules row OR explicit lateness rule fields were sent
+    if ((latenessRules || hasExplicitLatenessUpdate) && Object.keys(latenessUpdate).length > 0) {
       await prisma.latenessRules.upsert({
         where: { companyId },
         create: {
@@ -3141,8 +3164,8 @@ const updateHRSettings = async (req, res) => {
       maxActiveAdvances: Number(mergedPayroll.maxActiveAdvances),
       minMonthsForAdvance: Number(mergedPayroll.minMonthsForAdvance),
       advanceRepaymentMonths: Number(mergedPayroll.advanceRepaymentMonths),
-      lateGracePeriod: Number(mergedAttendance.lateThresholdMinutes || mergedAttendance.lateGracePeriod || 10),
-      lateThresholdMinutes: Number(mergedAttendance.lateThresholdMinutes || mergedAttendance.lateGracePeriod || 10),
+      lateGracePeriod: Number(mergedAttendance.lateGracePeriod ?? 15),
+      lateThresholdMinutes: Number(mergedAttendance.lateThresholdMinutes ?? 10),
       earlyLeaveGracePeriod: Number(mergedAttendance.earlyLeaveGracePeriod || mergedAttendance.earlyLeaveThreshold || 15),
       monthlyLateLimit: Number(mergedAttendance.monthlyLateLimit || 3),
       lateWarningThreshold: Number(mergedAttendance.lateWarningThreshold || 3),
