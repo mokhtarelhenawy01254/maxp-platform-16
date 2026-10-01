@@ -15,10 +15,11 @@ import {
   FileText,
   Timer,
   Users,
+  CalendarDays,
 } from 'lucide-react';
 import { useTheme } from '../theme/ThemeContext';
 
-export type TabId = 'tasks' | 'timers' | 'goals' | 'reports' | 'team' | 'cockpit' | 'apps' | 'attendance';
+export type TabId = 'tasks' | 'timers' | 'goals' | 'reports' | 'team' | 'cockpit' | 'apps' | 'attendance' | 'daily';
 
 interface SidebarProps {
   activeTab: TabId;
@@ -55,6 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {
           label: 'فريقي',
           items: [
+            { id: 'daily', label: 'يومية الفريق', icon: <CalendarDays size={17} /> },
             { id: 'team', label: 'أعضاء الفريق قيد العمل', icon: <Users size={17} /> },
             { id: 'reports', label: 'تقارير الأداء', icon: <FileText size={17} /> },
             { id: 'attendance', label: 'مطابقة الحضور والتدقيق', icon: <Clock size={17} /> },

@@ -11,6 +11,7 @@ import GoalsTab from './GoalsTab';
 import { TaskReportView } from '../components/tasks/reports/TaskReportView';
 import AppsTimelineTab from './AppsTimelineTab';
 import AttendanceAuditTab from './AttendanceAuditTab';
+import { TeamDailyReportTab } from './TeamDailyReportTab';
 import SettingsModal from '../components/SettingsModal';
 import { BreakReasonModal } from '../components/BreakReasonModal';
 import { ShiftHandoverModal } from '../components/ShiftHandoverModal';
@@ -24,6 +25,7 @@ interface DashboardPageProps {
 export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) => {
   const roleStr = String(user?.role || '').toUpperCase();
   const isAdmin = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER'].includes(roleStr);
+  const isManager = isAdmin || ['MANAGER', 'HR_MANAGER'].includes(roleStr);
 
   // Real connectivity state (wired to browser online/offline events) — drives the Sidebar live indicator
   const [isOnline, setIsOnline] = useState<boolean>(() => navigator.onLine);
@@ -47,6 +49,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
       if (!isAdmin && (saved === 'attendance' || saved === 'system')) {
         return 'tasks';
       }
+      if (saved === 'daily' && !isManager) {
+        return 'tasks';
+      }
       return saved;
     } catch {
       return 'tasks';
@@ -65,6 +70,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
 
   const setActiveTab = (tab: TabId) => {
     if (!isAdmin && (tab === 'attendance' || tab === 'system')) {
+      setActiveTabState('tasks');
+      return;
+    }
+    if (tab === 'daily' && !isManager) {
       setActiveTabState('tasks');
       return;
     }
@@ -112,7 +121,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
     if (!isAdmin && (activeTab === 'attendance' || activeTab === 'system')) {
       setActiveTab('tasks');
     }
-  }, [isAdmin, activeTab]);
+    if (activeTab === 'daily' && !isManager) {
+      setActiveTab('tasks');
+    }
+  }, [isAdmin, isManager, activeTab]);
 
   // Load attendance clock-in time for affirmative top-bar badge
   useEffect(() => {
@@ -311,6 +323,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
         return 'المؤقتات الحية — زمن المهام والشغل المتوازي';
       case 'team':
         return 'أعضاء الفريق قيد العمل المباشر';
+      case 'daily':
+        return 'يومية الفريق — الإنجاز والزمن والإنتاجية';
       case 'goals':
         return 'الأهداف ومؤشرات الأداء (OKRs)';
       case 'reports':
@@ -556,6 +570,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
           {activeTab === 'reports' && <TabErrorBoundary key="reports" tabName="تقارير الأداء"><TaskReportView isExecutiveMode={false} /></TabErrorBoundary>}
           {activeTab === 'team' && <TabErrorBoundary key="team" tabName="أعضاء الفريق"><TeamLiveTab /></TabErrorBoundary>}
 
+          {activeTab === 'daily' && (
+            <TabErrorBoundary key="daily" tabName="يومية الفريق">
+              <TeamDailyReportTab />
+            </TabErrorBoundary>
+          )}
+
           {activeTab === 'apps' && (
             <TabErrorBoundary key="apps" tabName="البرامج والمواقع">
               <AppsTimelineTab formatTime={formatTime} />
@@ -564,7 +584,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
 
           {activeTab === 'attendance' && (
             <TabErrorBoundary key="attendance" tabName="مطابقة الحضور">
-              <AttendanceAuditTab formatTime={formatTime} />
+              <AttendanceAuditTab />
             </TabErrorBoundary>
           )}
 

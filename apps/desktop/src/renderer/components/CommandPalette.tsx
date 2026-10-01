@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Search, CheckSquare, Timer, Target, FileText, Activity, Globe, Clock,
-  Cpu, Plus, Moon, Sun, RefreshCw, CornerDownLeft, Palette, Play,
+  Cpu, Plus, Moon, Sun, RefreshCw, CornerDownLeft, Palette, Play, CalendarDays,
 } from 'lucide-react';
 import { THEME_PRESETS } from '../theme/tokens';
 
@@ -48,6 +48,7 @@ export const CommandPalette: React.FC<PaletteProps> = ({ open, onClose }) => {
       { id: 'nav-timers', label: 'المؤقتات الحية', icon: <Timer size={14} />, keywords: 'timers مؤقت مؤقتات', run: () => nav('timers') },
       { id: 'nav-goals', label: 'الأهداف ومؤشرات الأداء', icon: <Target size={14} />, keywords: 'goals أهداف okr', run: () => nav('goals') },
       { id: 'nav-reports', label: 'تقارير الأداء', icon: <FileText size={14} />, keywords: 'reports تقرير تقارير', run: () => nav('reports') },
+      { id: 'nav-daily', label: 'يومية الفريق', icon: <CalendarDays size={14} />, keywords: 'daily يومية يوميه الفريق إنجاز انتاجية', run: () => nav('daily') },
       { id: 'nav-cockpit', label: 'سجل النشاط وساعات العمل', icon: <Activity size={14} />, keywords: 'cockpit نشاط سجل ساعات', run: () => nav('cockpit') },
       { id: 'nav-apps', label: 'البرامج والمواقع', icon: <Globe size={14} />, keywords: 'apps برامج مواقع', run: () => nav('apps') },
       { id: 'nav-attendance', label: 'مطابقة الحضور والتدقيق', icon: <Clock size={14} />, keywords: 'attendance حضور تدقيق', run: () => nav('attendance') },
