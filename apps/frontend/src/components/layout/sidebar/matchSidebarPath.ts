@@ -29,8 +29,6 @@ export const isSidebarPathActive = (
     );
   }
 
-  // Base dashboard paths that have distinct sibling sub-paths in the sidebar.
-  // We do not want to highlight these parent paths when viewing their sub-paths.
   const baseDashboardPaths = [
     "/",
     "/settings",
@@ -39,6 +37,10 @@ export const isSidebarPathActive = (
     "/admin/booking",
     "/admin/education"
   ];
+
+  if (target.pathname === "/settings" && current.pathname.startsWith("/settings/store")) {
+    return false;
+  }
 
   const isBaseDashboard = baseDashboardPaths.includes(target.pathname);
 

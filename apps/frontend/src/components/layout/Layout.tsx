@@ -251,6 +251,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     location.pathname.startsWith("/advertising/facebook-pixel") ||
     location.pathname.startsWith("/inventory/studio") ||
     location.pathname.startsWith("/products/studio") ||
+    location.pathname.startsWith("/settings/store/tools") ||
     location.pathname.startsWith("/settings/turbo-tickets") ||
     location.pathname.startsWith("/admin/agent-chat") ||
     location.pathname.startsWith("/admin/agent-profiles") ||

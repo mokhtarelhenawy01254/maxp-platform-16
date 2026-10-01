@@ -85,5 +85,19 @@ describe('Products & Inventory Navigation Separation', () => {
 
     const boughtTogetherApp = getAppByPath('/settings/store/tools/boughtTogether', sections);
     expect(boughtTogetherApp?.id).toBe('storefront-design');
+
+    // When storefront-design is hidden or user lacks store apps, it MUST NEVER fallback to 'settings'!
+    const noStoreUser = {
+      role: 'COMPANY_ADMIN',
+      company: {
+        activeApps: ['inventory-pro'],
+      },
+    };
+    const noStoreSections = getSidebarConfig(mockT as any, noStoreUser as any);
+    const noStoreToolsApp = getAppByPath('/settings/store/tools', noStoreSections);
+    expect(noStoreToolsApp).toBeUndefined();
+
+    const noStoreBoughtTogetherApp = getAppByPath('/settings/store/tools/boughtTogether', noStoreSections);
+    expect(noStoreBoughtTogetherApp).toBeUndefined();
   });
 });

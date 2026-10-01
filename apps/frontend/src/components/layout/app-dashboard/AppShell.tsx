@@ -341,6 +341,23 @@ export const getAppByPath = (
 ): AppDefinition | undefined => {
   const normalized = normalizePathname(pathname);
 
+  // Conversion Tools & Storefront Studio routes belong strictly to 'storefront-design',
+  // and MUST NEVER be hijacked by the general 'settings' section or sidebar.
+  if (
+    normalized === '/settings/store/tools' ||
+    normalized.startsWith('/settings/store/tools/')
+  ) {
+    const storefrontSection = allSections.find(
+      (s) => !s.hidden && s.id === 'storefront-design',
+    );
+    if (storefrontSection) {
+      return buildAppFromSection(storefrontSection);
+    }
+    // If storefront-design is hidden or absent for the current user/company,
+    // return undefined so AppShell renders the page in clean standalone mode without any sidebar.
+    return undefined;
+  }
+
   // 1. Direct section prefix match when that section actually owns a matching item via isSidebarPathActive
   // (e.g. /inventory/studio matches section 'inventory' rather than duplicate shortcut in 'products',
   // while /settings/store/tools/* does NOT match 'settings' because '/settings' is a baseDashboardPath)

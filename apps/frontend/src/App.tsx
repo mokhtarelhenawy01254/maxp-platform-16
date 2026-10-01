@@ -6660,7 +6660,7 @@ const AppContent = () => {
                 <Route
                   path="/settings/store/tools"
                   element={
-                    <Layout>
+                    <Layout fullWidth>
                       <ConversionToolsIndexPage />
                     </Layout>
                   }
@@ -6668,7 +6668,7 @@ const AppContent = () => {
                 <Route
                   path="/settings/store/tools/:toolId"
                   element={
-                    <Layout>
+                    <Layout fullWidth>
                       <ConversionToolPage />
                     </Layout>
                   }
