@@ -2,6 +2,36 @@ const express = require('express');
 const router = express.Router();
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
+const fs = require('fs');
+const path = require('path');
+
+// Candidate paths for maxp.apk on production or local disk
+const APK_CANDIDATE_PATHS = [
+  '/var/www/frontend2/dist/download/maxp.apk',
+  '/var/www/frontend2/dist/downloads/maxp.apk',
+  path.join(__dirname, '../../frontend/public/download/maxp.apk'),
+  path.join(__dirname, '../../frontend/dist/download/maxp.apk')
+];
+
+function getActualApkStats() {
+  for (const apkPath of APK_CANDIDATE_PATHS) {
+    try {
+      if (fs.existsSync(apkPath)) {
+        const stat = fs.statSync(apkPath);
+        if (stat.size > 1000000) { // Valid APK > 1MB
+          const sizeMB = Math.round(stat.size / (1024 * 1024));
+          return {
+            fileSizeBytes: stat.size,
+            fileSizeFormatted: `${sizeMB} MB`,
+            releaseDate: stat.mtime.toISOString().split('T')[0]
+          };
+        }
+      }
+    } catch {}
+  }
+  return null;
+}
+
 // Default fallback configuration for Android application
 const DEFAULT_ANDROID_VERSION_CONFIG = {
   platform: 'android',
@@ -17,7 +47,7 @@ const DEFAULT_ANDROID_VERSION_CONFIG = {
   storeUrl: 'https://maxp.online/download/maxp.apk',
   releaseNotesAr: 'تحسينات شاملة في الأداء وسرعة الاستجابة، وإصلاح مشكلات المزامنة مع تحسين تجربة المستخدم على الهواتف الذكية.',
   releaseNotesEn: 'Performance improvements, enhanced sync stability, and optimized mobile experience.',
-  releaseDate: '2026-09-23',
+  releaseDate: '2026-10-01',
   fileSizeBytes: 44040192,
   fileSizeFormatted: '42 MB',
   featuresAr: [
@@ -36,6 +66,8 @@ const DEFAULT_ANDROID_VERSION_CONFIG = {
  * Helper to fetch android version config from DB or fallback
  */
 async function getAndroidVersionConfig() {
+  const dynamicStats = getActualApkStats();
+
   try {
     const prisma = getSharedPrismaClient();
     if (prisma?.systemSettings) {
@@ -48,6 +80,7 @@ async function getAndroidVersionConfig() {
         return {
           ...DEFAULT_ANDROID_VERSION_CONFIG,
           ...parsed,
+          ...(dynamicStats || {}),
           isEnabled: dbSetting.isEnabled ?? true,
           updatedAt: dbSetting.updatedAt || new Date().toISOString()
         };
@@ -59,6 +92,7 @@ async function getAndroidVersionConfig() {
 
   return {
     ...DEFAULT_ANDROID_VERSION_CONFIG,
+    ...(dynamicStats || {}),
     isEnabled: true,
     updatedAt: new Date().toISOString()
   };

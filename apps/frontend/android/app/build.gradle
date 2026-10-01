@@ -7,8 +7,8 @@ android {
         applicationId "online.maxp.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 7
-        versionName "1.0.7"
+        versionCode 8
+        versionName "1.0.8"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +16,22 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            def keystoreFile = file("maxp-release.keystore")
+            if (keystoreFile.exists()) {
+                storeFile keystoreFile
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: "maxp2026"
+                keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: "maxp"
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: "maxp2026"
+            }
+        }
+    }
     buildTypes {
         release {
+            if (file("maxp-release.keystore").exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

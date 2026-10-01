@@ -30,17 +30,28 @@ interface Activity {
   metadata?: string;
 }
 
-interface Customer {
-  id: string;
+export interface Customer {
+  id: string | null;
   firstName: string;
   lastName: string;
+  name?: string;
   email: string | null;
   phone: string | null;
   phone2?: string | null;
-  avatar: string | null;
+  avatar?: string | null;
+  address?: string | null;
+  governorate?: string | null;
   city: string | null;
-  country: string | null;
+  area?: string | null;
+  country?: string | null;
+  notes?: string | null;
   tags?: string | string[];
+  customerRating?: string;
+  status?: string;
+  totalOrdersCount?: number;
+  totalDelivered?: number;
+  deliveryRate?: number;
+  successScore?: number;
   metadata?: any;
 }
 
@@ -108,12 +119,86 @@ export const useCustomerProfile = () => {
           );
         }
 
+        const phoneDigits = String(options?.phone || "").replace(/\D/g, "");
+        const canLookupPhone = phoneDigits.length >= 9;
+        if (canLookupPhone) {
+          const byPhoneQuery = options?.conversationId
+            ? `?conversationId=${encodeURIComponent(options.conversationId)}`
+            : "";
+          promises.push(
+            apiClient.get(
+              `/customers/by-phone/${encodeURIComponent(options?.phone || "")}${byPhoneQuery}`
+            )
+          );
+        }
+
         const results = await Promise.allSettled(promises);
         const ordersRes = results[0].status === "fulfilled" ? results[0].value : null;
-        const activityRes = results[1]?.status === "fulfilled" ? results[1].value : null;
-        const customerRes = results[2]?.status === "fulfilled" ? results[2].value : null;
+        let activityRes: any = null;
+        let customerRes: any = null;
+        let byPhoneRes: any = null;
 
-        if (ordersRes?.data?.data) {
+        if (hasRealCustomerId) {
+          activityRes = results[1]?.status === "fulfilled" ? results[1].value : null;
+          customerRes = results[2]?.status === "fulfilled" ? results[2].value : null;
+          if (canLookupPhone) {
+            byPhoneRes = results[3]?.status === "fulfilled" ? results[3].value : null;
+          }
+        } else if (canLookupPhone) {
+          byPhoneRes = results[1]?.status === "fulfilled" ? results[1].value : null;
+        }
+
+        const mergedOrdersMap = new Map<string, Order>();
+
+        // 1) Load from standard orders endpoint
+        if (ordersRes?.data?.data && Array.isArray(ordersRes.data.data)) {
+          for (const ord of ordersRes.data.data) {
+            const key = ord.orderNumber || ord.id;
+            if (key) mergedOrdersMap.set(key, ord);
+          }
+        }
+
+        // 2) Merge with by-phone lookup previousOrders (all history)
+        if (byPhoneRes?.data?.success && byPhoneRes.data?.data) {
+          const { customer: phoneCustomer, previousOrders } = byPhoneRes.data.data;
+          if (phoneCustomer) {
+            setCustomer(phoneCustomer);
+          }
+
+          if (Array.isArray(previousOrders)) {
+            for (const prevOrd of previousOrders) {
+              const key = prevOrd.orderNumber || prevOrd.id;
+              if (key && !mergedOrdersMap.has(key)) {
+                mergedOrdersMap.set(key, {
+                  id: prevOrd.id,
+                  orderNumber: prevOrd.orderNumber,
+                  status: prevOrd.status,
+                  total: Number(prevOrd.total || 0),
+                  createdAt: prevOrd.createdAt,
+                  conversationId: prevOrd.conversationId || null,
+                  items: Array.isArray(prevOrd.orderItems)
+                    ? prevOrd.orderItems.map((it: any) => ({
+                        name: it.productName || it.name || "منتج",
+                        productName: it.productName || it.name || "منتج",
+                        quantity: Number(it.quantity || 1),
+                        price: Number(it.price || 0),
+                        image: it.image || null,
+                        productColor: it.productColor || null,
+                        productSize: it.productSize || null,
+                      }))
+                    : [],
+                });
+              }
+            }
+          }
+        }
+
+        if (mergedOrdersMap.size > 0) {
+          const sorted = Array.from(mergedOrdersMap.values()).sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setOrders(sorted);
+        } else if (ordersRes?.data?.data) {
           setOrders(ordersRes.data.data);
         }
 

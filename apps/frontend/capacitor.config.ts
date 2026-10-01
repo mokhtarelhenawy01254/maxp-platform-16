@@ -5,8 +5,14 @@ const config: CapacitorConfig = {
   appName: 'MaxP',
   webDir: 'dist',
   server: {
+    url: 'https://maxp.online',
     androidScheme: 'https',
     cleartext: true,
+    errorPath: 'index.html',
+    allowNavigation: [
+      'maxp.online',
+      '*.maxp.online',
+    ],
   },
   plugins: {
     SplashScreen: {

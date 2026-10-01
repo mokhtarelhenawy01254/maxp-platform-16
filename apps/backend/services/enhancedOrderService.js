@@ -681,6 +681,8 @@ class EnhancedOrderService {
           lastMessageAt: new Date(),
           lastMessagePreview: `تم إنشاء طلب #${order.orderNumber} (${totalAmount} ج.م)`,
           lastMessageIsFromCustomer: false,
+          ...(!conv.customerId && order.customerId ? { customerId: order.customerId } : {}),
+          ...(!conv.customerPhone && order.customerPhone ? { customerPhone: order.customerPhone } : {}),
           updatedAt: new Date()
         }
       }).catch(convErr => console.warn('⚠️ [ORDER-CONFIRMATION] Failed to update conversation preview:', convErr.message));
@@ -715,6 +717,12 @@ class EnhancedOrderService {
 
       // 6) إرسال للعميل عبر Facebook Messenger (إذا كانت القناة Facebook ولديه معرف فيسبوك)
       let recipientId = conv.customer?.facebookId;
+      if (!recipientId) {
+        try {
+          const meta = typeof conv.metadata === 'string' ? JSON.parse(conv.metadata) : (conv.metadata || {});
+          recipientId = meta.facebookId || meta.psid || meta.senderId || null;
+        } catch (_) {}
+      }
       if (!recipientId && conv.customerId && /^\d+$/.test(String(conv.customerId))) {
         recipientId = String(conv.customerId);
       }
@@ -729,31 +737,45 @@ class EnhancedOrderService {
             pageId = convMeta.pageId || convMeta.facebookPageId || null;
           } catch (_) {}
 
-          const fbPage = (pageId
-            ? await prisma.facebookPage.findFirst({
-                where: {
-                  companyId: data.companyId,
-                  pageId,
-                  isConnected: true,
-                  pageAccessToken: { not: null }
-                }
-              })
-            : null) || await prisma.facebookPage.findFirst({
-            where: {
-              companyId: data.companyId,
-              isConnected: true,
-              pageAccessToken: { not: null }
-            }
-          });
+          let pageAccessToken = null;
+          let actualPageId = null;
 
-          if (fbPage?.pageAccessToken) {
+          if (pageId) {
+            try {
+              const { getPageToken } = require('../controller/conversation/conversationShared');
+              const pageData = await getPageToken(pageId);
+              if (pageData?.pageAccessToken) {
+                pageAccessToken = pageData.pageAccessToken;
+                actualPageId = pageId;
+              }
+            } catch (tokenErr) {
+              console.warn('⚠️ [ORDER-CONFIRMATION] Error fetching page token from cache/DB:', tokenErr.message);
+            }
+          }
+
+          if (!pageAccessToken) {
+            const fbPage = await prisma.facebookPage.findFirst({
+              where: {
+                companyId: data.companyId,
+                status: 'connected',
+                pageAccessToken: { not: null }
+              },
+              orderBy: { connectedAt: 'desc' }
+            });
+            if (fbPage?.pageAccessToken) {
+              pageAccessToken = fbPage.pageAccessToken;
+              actualPageId = fbPage.pageId;
+            }
+          }
+
+          if (pageAccessToken && actualPageId) {
             const { sendProductionFacebookMessage } = require('../utils/production-facebook-fix');
             const sendResult = await sendProductionFacebookMessage(
               recipientId,
               confirmationText,
               'TEXT',
-              fbPage.pageId,
-              fbPage.pageAccessToken
+              actualPageId,
+              pageAccessToken
             );
 
             if (sendResult?.success) {
@@ -781,7 +803,7 @@ class EnhancedOrderService {
                       tag: 'POST_PURCHASE_UPDATE'
                     },
                     {
-                      params: { access_token: fbPage.pageAccessToken },
+                      params: { access_token: pageAccessToken },
                       timeout: 10000
                     }
                   );

@@ -6,11 +6,11 @@ on:
       build_type:
         description: 'نوع الحزمة (Build Type)'
         required: true
-        default: 'debug'
+        default: 'release'
         type: choice
         options:
-          - debug
           - release
+          - debug
       deploy_to_server:
         description: 'نشر تلقائي للسيرفر لرابط التحميل المباشر (Deploy to maxp.online/download/maxp.apk)'
         required: false
@@ -67,27 +67,85 @@ jobs:
         working-directory: apps/frontend
         run: npx cap sync android
 
+      - name: Prepare Signing Keystore
+        working-directory: apps/frontend/android/app
+        run: |
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > maxp-release.keystore
+            echo "✅ Release keystore loaded from GitHub Secrets."
+          elif [ -f "maxp-release.keystore" ]; then
+            echo "ℹ️ Using existing repository maxp-release.keystore."
+          fi
+
       - name: Build Android APK with Gradle
         working-directory: apps/frontend/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || 'maxp2026' }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || 'maxp' }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || 'maxp2026' }}
         run: |
           chmod +x gradlew
-          if [ "${{ github.event.inputs.build_type }}" = "release" ]; then
+          BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
+          if [ "$BUILD_TYPE" = "release" ]; then
             ./gradlew assembleRelease --stacktrace
           else
             ./gradlew assembleDebug --stacktrace
           fi
 
-      - name: Locate Generated APK
+      - name: Locate Generated APK & Calculate Metadata
         id: apk-finder
         run: |
-          APK_PATH=$(find apps/frontend/android/app/build/outputs/apk/ -name "*.apk" | head -n 1)
+          BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
+          if [ "$BUILD_TYPE" = "release" ]; then
+            APK_PATH=$(find apps/frontend/android/app/build/outputs/apk/ -name "*release*.apk" | grep -v "unaligned" | head -n 1)
+          fi
+          if [ -z "$APK_PATH" ]; then
+            APK_PATH=$(find apps/frontend/android/app/build/outputs/apk/ -name "*.apk" | grep -v "unaligned" | head -n 1)
+          fi
           echo "Found APK at: $APK_PATH"
           echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+
+          FILE_SIZE_BYTES=$(stat -c%s "$APK_PATH")
+          FILE_SIZE_MB=$(( (FILE_SIZE_BYTES + 1048576/2) / 1048576 ))
+          RELEASE_DATE=$(date -u +"%Y-%m-%d")
+
+          echo "size_bytes=$FILE_SIZE_BYTES" >> $GITHUB_OUTPUT
+          echo "size_formatted=${FILE_SIZE_MB} MB" >> $GITHUB_OUTPUT
+          echo "release_date=$RELEASE_DATE" >> $GITHUB_OUTPUT
+
+          echo "📊 APK Metrics: $FILE_SIZE_BYTES bytes (~${FILE_SIZE_MB} MB) built on $RELEASE_DATE"
+
+          cat <<EOF > latest-android.json
+          {
+            "platform": "android",
+            "appName": "MaxP",
+            "appId": "online.maxp.app",
+            "latestVersion": "1.0.8",
+            "latestVersionCode": 8,
+            "minRequiredVersion": "1.0.7",
+            "minRequiredVersionCode": 7,
+            "forceUpdate": false,
+            "downloadUrl": "https://maxp.online/download/maxp.apk",
+            "directApkUrl": "https://maxp.online/download/maxp.apk",
+            "storeUrl": "https://maxp.online/download/maxp.apk",
+            "releaseNotesAr": "تحسينات شاملة في الأداء وسرعة الاستجابة، ودعم فتح المنصة الحية مباشرة مع الرجوع التلقائي للنسخة المدمجة في حال انقطاع الإنترنت.",
+            "releaseNotesEn": "Live platform streaming support with offline fallback, speed and sync improvements.",
+            "releaseDate": "$RELEASE_DATE",
+            "fileSizeBytes": $FILE_SIZE_BYTES,
+            "fileSizeFormatted": "${FILE_SIZE_MB} MB",
+            "featuresAr": [
+              "فتح الموقع الحي والتحديثات الفورية بدون إعادة تثبيت",
+              "رجوع تلقائي آمن للنسخة المخزنة في حالة عدم توفر إنترنت",
+              "تسريع فتح الصفحات والمزامنة الفورية",
+              "إصلاحات لاستقرار التنبيهات وإشعارات الدفع"
+            ]
+          }
+          EOF
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MaxP-Mobile-Android-${{ github.event.inputs.build_type || 'debug' }}-${{ github.run_number }}
+          name: MaxP-Mobile-Android-${{ github.event.inputs.build_type || 'release' }}-${{ github.run_number }}
           path: ${{ steps.apk-finder.outputs.apk_path }}
           retention-days: 30
 
@@ -107,8 +165,11 @@ jobs:
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_PORT: ${{ secrets.SERVER_PORT || '22' }}
           APK_FILE: ${{ steps.apk-finder.outputs.apk_path }}
+          SIZE_BYTES: ${{ steps.apk-finder.outputs.size_bytes }}
+          SIZE_FORMATTED: ${{ steps.apk-finder.outputs.size_formatted }}
+          RELEASE_DATE: ${{ steps.apk-finder.outputs.release_date }}
         run: |
-          echo "🚀 Deploying APK to production server..."
+          echo "🚀 Deploying APK and latest-android.json to production server..."
           ssh -4 -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_PORT" \
             -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
             "$SERVER_USER@$SERVER_HOST" \
@@ -118,9 +179,15 @@ jobs:
             -o StrictHostKeyChecking=accept-new \
             "$APK_FILE" "$SERVER_USER@$SERVER_HOST:/var/www/frontend2/dist/download/maxp.apk"
 
+          scp -4 -i "$HOME/.ssh/maxp_deploy_key" -P "$SERVER_PORT" \
+            -o StrictHostKeyChecking=accept-new \
+            latest-android.json "$SERVER_USER@$SERVER_HOST:/var/www/frontend2/dist/download/latest-android.json"
+
           ssh -4 -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_PORT" \
             -o StrictHostKeyChecking=accept-new \
             "$SERVER_USER@$SERVER_HOST" \
-            "cp -f /var/www/frontend2/dist/download/maxp.apk /var/www/frontend2/dist/downloads/maxp.apk"
+            "cp -f /var/www/frontend2/dist/download/maxp.apk /var/www/frontend2/dist/downloads/maxp.apk && \
+             cp -f /var/www/frontend2/dist/download/latest-android.json /var/www/frontend2/dist/downloads/latest-android.json && \
+             chmod 644 /var/www/frontend2/dist/download/maxp.apk /var/www/frontend2/dist/downloads/maxp.apk /var/www/frontend2/dist/download/latest-android.json /var/www/frontend2/dist/downloads/latest-android.json"
 
           echo "✅ APK successfully published to https://maxp.online/download/maxp.apk"

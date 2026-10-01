@@ -1715,7 +1715,7 @@ const getCustomerLookupByPhone = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     const { findCustomerByPhone } = require('../utils/customerIdentity');
-    const { stripPhone, toCanonicalE164 } = require('../utils/phoneNormalization');
+    const { stripPhone, toCanonicalE164, getPhoneVariants } = require('../utils/phoneNormalization');
     const orderService = require('../services/orderService');
 
     const digits = stripPhone(phone);
@@ -1741,11 +1741,35 @@ const getCustomerLookupByPhone = async (req, res) => {
 
     const seenDigits = new Set();
     const phoneFilterList = [];
-    for (const p of [phone, digits, toCanonicalE164(phone), ...(customer?.phone ? [customer.phone] : []), ...(customer?.phoneNormalized ? [customer.phoneNormalized] : []), ...phoneVariations]) {
+    const rawVariants = [
+      phone,
+      digits,
+      toCanonicalE164(phone),
+      ...(customer?.phone ? [customer.phone] : []),
+      ...(customer?.phoneNormalized ? [customer.phoneNormalized] : []),
+      ...phoneVariations,
+      ...(getPhoneVariants ? getPhoneVariants(phone) : [])
+    ];
+
+    for (const p of rawVariants) {
       const d = String(p || '').replace(/\D/g, '');
       if (d.length >= 8 && !seenDigits.has(d)) {
         seenDigits.add(d);
         phoneFilterList.push({ customerPhone: { contains: d } });
+      }
+      // إضافة السلسلة المجرّدة بدون بادئة الدولة 20 وبدون الصفر الأولي (9-10 أرقام) لضمان التطابق مع أي صيغة مسجلة
+      if (d.startsWith('0') && d.length >= 10) {
+        const sub = d.slice(1);
+        if (sub.length >= 8 && !seenDigits.has(sub)) {
+          seenDigits.add(sub);
+          phoneFilterList.push({ customerPhone: { contains: sub } });
+        }
+      } else if (d.startsWith('20') && d.length >= 12) {
+        const sub = d.slice(2);
+        if (sub.length >= 8 && !seenDigits.has(sub)) {
+          seenDigits.add(sub);
+          phoneFilterList.push({ customerPhone: { contains: sub } });
+        }
       }
     }
 
@@ -1982,9 +2006,9 @@ const getCustomerLookupByPhone = async (req, res) => {
           phoneNormalized: customer.phoneNormalized,
           phone2: customerMeta?.phone2 || customerMeta?.alternativePhone || null,
           email: customer.email || null,
-          address: cleanLocation.address || customerMeta?.address || null,
-          governorate: cleanLocation.governorate || customerMeta?.governorate || null,
-          city: cleanLocation.city || customerMeta?.city || null,
+          address: cleanLocation.address || customer.address || customerMeta?.address || null,
+          governorate: cleanLocation.governorate || customer.city || customerMeta?.governorate || null,
+          city: cleanLocation.city || customer.city || customerMeta?.city || null,
           area: cleanLocation.area || customerMeta?.area || null,
           notes: customer.notes || latestOrder?.notes || null,
           tags: parsedTags,
