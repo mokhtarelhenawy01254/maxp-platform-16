@@ -267,6 +267,13 @@ jobs:
           npm test -- --testPathPattern="tests/controller/facebookAdsController.fullAd.test.js"
         continue-on-error: false
 
+      - name: Run Copilot Reliability Regression Tests
+        if: steps.diff-check.outputs.copilot-changed == 'true'
+        working-directory: ./apps/backend
+        run: |
+          npm test -- --testPathPattern="(tests/controller/aiAgentChatController.history.test.js|tests/services/aiServiceAdminClient.attachments.test.js)"
+        continue-on-error: false
+
       # Build Frontend (skipped when only backend files changed)
       - name: Install Frontend Dependencies
         if: steps.diff-check.outputs.fe-needed == 'true'
