@@ -92,11 +92,14 @@ async function sendMessage(req, res) {
       if (sessionData) {
         sessionContext = sessionData.session?.context || {};
         if (Array.isArray(sessionData.messages) && sessionData.messages.length > 1) {
-          // Exclude the current user message we just appended (the last one) so current turn is not duplicated
+          // Exclude the current user message we just appended (the last one) so current turn is not duplicated.
+          // Window of 50 turns: long merchant sessions keep their early facts (bundle specs, agreements);
+          // the ai-service compacts oldest history into a summary when its 12k token budget is exceeded,
+          // so a wider window never explodes the prompt.
           sessionRecentMessages = sessionData.messages
             .filter(m => !m.isDeleted)
             .slice(0, -1)
-            .slice(-15)
+            .slice(-50)
             .map(m => ({
               role: m.role || (m.sender === 'user' ? 'user' : 'assistant'),
               content: m.content || m.text || '',
@@ -156,6 +159,24 @@ async function sendMessage(req, res) {
         }
       } catch (agentErr) {
         console.warn('[AI-CHAT-CTRL] chatWithAgent fallback to default chat:', agentErr.message);
+        // Silent downgrade to the generic chat changes the merchant's agent
+        // personality and tool set — record it in the observability ledger
+        // instead of leaving it as a console line that pm2 rotation loses.
+        try {
+          const { recordToolIncident } = require('./superAdminAiIncidentsController');
+          recordToolIncident({
+            companyId,
+            conversationId: activeSessionId,
+            customerId: userId,
+            errorType: 'AGENT_CHAT_FALLBACK',
+            errorMessage: agentErr.message,
+            toolName: 'chatWithAgent',
+            agentId: targetAgentId,
+            model: 'unknown',
+            userMessage: effectiveMessage,
+            category: 'SYSTEM_ERROR',
+          }).catch(() => {});
+        } catch (_) {}
       }
     }
 

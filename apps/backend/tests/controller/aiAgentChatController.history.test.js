@@ -109,7 +109,6 @@ async function testConversationHistoryPreservation() {
   }
 }
 
-testConversationHistoryPreservation().catch((err) => {
-  console.error('❌ Test failed:', err);
-  process.exit(1);
+test('multi-turn history: prior turns are loaded and injected into recentMessages without duplicating the current turn', async () => {
+  await testConversationHistoryPreservation();
 });
