@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
@@ -12,6 +12,10 @@ from src.db.models.approval import Approval
 from src.db.models.thread import Thread
 
 logger = structlog.get_logger(__name__)
+
+# Belt-and-suspenders default: every draft must carry an expiry so the queue can
+# never accumulate immortal pending rows again.
+DEFAULT_APPROVAL_TTL_DAYS = 7
 
 
 class ApprovalRepository:
@@ -74,7 +78,7 @@ class ApprovalRepository:
             source=source,
             side_effects=side_effects,
             approval_mode=approval_mode,
-            expires_at=expires_at,
+            expires_at=expires_at or datetime.now(UTC) + timedelta(days=DEFAULT_APPROVAL_TTL_DAYS),
             input_snapshot=input_snapshot,
             preview_snapshot=preview_snapshot,
             approval_metadata=metadata,
@@ -90,6 +94,39 @@ class ApprovalRepository:
         stmt = select(Approval).where(Approval.request_key == request_key)
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def find_pending_by_fingerprint(self, *, company_id: str, fingerprint: str) -> Approval | None:
+        """Find a still-pending draft with the same stable business-intent fingerprint."""
+        stmt = (
+            select(Approval)
+            .where(
+                Approval.company_id == company_id,
+                Approval.status == "pending",
+                Approval.approval_metadata["fingerprint"].astext == fingerprint,
+            )
+            .order_by(Approval.created_at.desc())
+            .limit(1)
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def expire_stale(self, company_id: str | None = None) -> int:
+        """Mark pending drafts past their expires_at as expired (set-based, single UPDATE)."""
+        now = datetime.now(UTC)
+        stmt = (
+            update(Approval)
+            .where(
+                Approval.status == "pending",
+                Approval.expires_at.is_not(None),
+                Approval.expires_at <= now,
+            )
+            .values(status="expired")
+        )
+        if company_id:
+            stmt = stmt.where(Approval.company_id == company_id)
+        result = await self._session.execute(stmt)
+        await self._session.commit()
+        return result.rowcount or 0
 
     async def get_by_draft_id(self, draft_id: str) -> Approval | None:
         """Get an approval by its draft_id."""

@@ -288,6 +288,18 @@ function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo', latene
       deductAbsenceInCurrentMonth: settings?.deductAbsenceInCurrentMonth !== false,
       delayPenaltyTiers: safeParseSettingsArray(settings?.delayPenaltyTiers, [])
     },
+    permissions: {
+      paidPermissionMinutesPerMonth: (settings?.paidPermissionMinutesPerMonth !== undefined && settings?.paidPermissionMinutesPerMonth !== null)
+        ? Number(settings.paidPermissionMinutesPerMonth)
+        : (companyId === 'h2m-1' ? 120 : 0),
+      permissionLeadDays: (settings?.permissionLeadDays !== undefined && settings?.permissionLeadDays !== null)
+        ? Number(settings.permissionLeadDays)
+        : (companyId === 'h2m-1' ? 2 : 2),
+      permissionWarningAfter: (settings?.permissionWarningAfter !== undefined && settings?.permissionWarningAfter !== null)
+        ? Number(settings.permissionWarningAfter)
+        : (companyId === 'h2m-1' ? 4 : 4),
+      permissionExtraMode: settings?.permissionExtraMode || 'deduct'
+    },
     geofence: {
       geofenceEnabled: settings?.geofenceEnabled || false,
       officeLatitude: settings?.officeLatitude ? String(settings.officeLatitude) : null,
@@ -3201,6 +3213,19 @@ const updateHRSettings = async (req, res) => {
       ownerWhatsAppNumber: ownerPhoneToSave,
       aiNotificationTone: String(mergedNotifications.aiNotificationTone || 'PROFESSIONAL')
     };
+
+    if (body.permissions?.paidPermissionMinutesPerMonth !== undefined || body.paidPermissionMinutesPerMonth !== undefined) {
+      dbUpdateData.paidPermissionMinutesPerMonth = Number(body.permissions?.paidPermissionMinutesPerMonth ?? body.paidPermissionMinutesPerMonth);
+    }
+    if (body.permissions?.permissionLeadDays !== undefined || body.permissionLeadDays !== undefined) {
+      dbUpdateData.permissionLeadDays = Number(body.permissions?.permissionLeadDays ?? body.permissionLeadDays);
+    }
+    if (body.permissions?.permissionWarningAfter !== undefined || body.permissionWarningAfter !== undefined) {
+      dbUpdateData.permissionWarningAfter = Number(body.permissions?.permissionWarningAfter ?? body.permissionWarningAfter);
+    }
+    if (body.permissions?.permissionExtraMode !== undefined || body.permissionExtraMode !== undefined) {
+      dbUpdateData.permissionExtraMode = String(body.permissions?.permissionExtraMode ?? body.permissionExtraMode);
+    }
 
     if (body.notifications?.aiNotificationTypes) {
       dbUpdateData.aiNotificationTypes = Array.isArray(body.notifications.aiNotificationTypes)
@@ -6655,6 +6680,506 @@ const evaluateRewardRule = async (req, res) => {
   }
 };
 
+/**
+ * 40. استعلام طلبات الأذونات الخارجية
+ * GET /permissions
+ */
+const listPermissions = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const {
+      employeeId,
+      employeeNumber,
+      status,
+      type,
+      month,
+      year,
+      from,
+      to,
+      page = 1,
+      limit = 20
+    } = req.query;
+
+    const prisma = getSharedPrismaClient();
+
+    let targetEmployeeId = employeeId;
+    if (!targetEmployeeId && employeeNumber) {
+      const emp = await prisma.employee.findFirst({
+        where: { companyId, employeeNumber: String(employeeNumber).trim() },
+        select: { id: true }
+      });
+      if (emp) targetEmployeeId = emp.id;
+    }
+
+    const where = { companyId };
+
+    if (targetEmployeeId) {
+      where.OR = [
+        { employeeId: targetEmployeeId },
+        { employee: { userId: targetEmployeeId } }
+      ];
+    }
+
+    if (status) {
+      where.status = String(status).trim().toUpperCase();
+    }
+
+    if (type) {
+      where.type = String(type).trim().toUpperCase();
+    }
+
+    if (month && year) {
+      const m = parseInt(month, 10);
+      const y = parseInt(year, 10);
+      where.date = {
+        gte: new Date(y, m - 1, 1),
+        lte: new Date(y, m, 0, 23, 59, 59)
+      };
+    } else if (from || to) {
+      where.date = {};
+      if (from) where.date.gte = new Date(from);
+      if (to) where.date.lte = new Date(to);
+    }
+
+    const take = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const skip = (Math.max(1, parseInt(page, 10) || 1) - 1) * take;
+
+    const [permissions, total] = await Promise.all([
+      prisma.hrPermissionRequest.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { date: 'desc' },
+        include: {
+          employee: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              employeeNumber: true,
+              department: { select: { name: true } }
+            }
+          }
+        }
+      }),
+      prisma.hrPermissionRequest.count({ where })
+    ]);
+
+    const formatted = permissions.map(p => ({
+      id: p.id,
+      companyId: p.companyId,
+      employeeId: p.employeeId,
+      employeeNumber: p.employee?.employeeNumber || null,
+      employeeName: p.employee ? `${p.employee.firstName || ''} ${p.employee.lastName || ''}`.trim() : null,
+      department: p.employee?.department?.name || null,
+      type: p.type,
+      date: p.date ? new Date(p.date).toISOString().split('T')[0] : null,
+      startTime: p.startTime,
+      endTime: p.endTime,
+      totalHours: Number(p.totalHours),
+      totalMinutes: Math.round(Number(p.totalHours) * 60),
+      reason: p.reason,
+      details: p.details,
+      status: p.status,
+      isCompensated: Boolean(p.isCompensated),
+      compensationDate: p.compensationDate ? new Date(p.compensationDate).toISOString().split('T')[0] : null,
+      compensationNotes: p.compensationNotes || null,
+      isUrgent: Boolean(p.isUrgent),
+      approvedById: p.approvedById,
+      approvedAt: p.approvedAt,
+      rejectionReason: p.rejectionReason,
+      notes: p.notes,
+      createdAt: p.createdAt
+    }));
+
+    return res.json({
+      success: true,
+      data: formatted,
+      pagination: {
+        page: Math.max(1, parseInt(page, 10) || 1),
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take)
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.listPermissions] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 41. إنشاء طلب إذن خارجي (تأخير / انصراف مبكر)
+ * POST /permissions
+ */
+const createPermission = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const {
+      employeeId,
+      employeeNumber,
+      date,
+      startTime,
+      endTime,
+      reason,
+      details,
+      notes,
+      type,
+      extraOption,
+      isCompensated,
+      compensationDate,
+      compensationNotes,
+      isExceptional,
+      isUrgent
+    } = req.body;
+
+    if (!date || !startTime || !endTime || !reason || (!employeeId && !employeeNumber)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_FIELDS',
+          message: 'employeeId/employeeNumber, date, startTime, endTime, and reason are required'
+        }
+      });
+    }
+
+    const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    if (!timeRegex.test(String(startTime).trim()) || !timeRegex.test(String(endTime).trim())) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'startTime and endTime must be in HH:mm format (e.g. 10:00, 11:30)'
+        }
+      });
+    }
+
+    const reqDate = new Date(date);
+    if (isNaN(reqDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid date format. Expected YYYY-MM-DD'
+        }
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    // البحث عن الموظف
+    const employee = await prisma.employee.findFirst({
+      where: {
+        companyId,
+        OR: [
+          ...(employeeId ? [{ id: employeeId }, { userId: employeeId }] : []),
+          ...(employeeNumber ? [{ employeeNumber: String(employeeNumber).trim() }] : [])
+        ]
+      }
+    });
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'EMPLOYEE_NOT_FOUND',
+          message: `Employee not found in company: ${employeeId || employeeNumber}`
+        }
+      });
+    }
+
+    // فحص مهلة التقديم (48 ساعة قبل الموعد ما لم يكن استثنائياً)
+    const settings = await prisma.hRSettings.findUnique({
+      where: { companyId }
+    });
+    const leadDays = (settings?.permissionLeadDays !== undefined && settings?.permissionLeadDays !== null)
+      ? Number(settings.permissionLeadDays)
+      : 2;
+    const minLeadHours = leadDays * 24;
+
+    const requestDateTime = new Date(date);
+    const [sh, sm] = startTime.split(':').map(Number);
+    requestDateTime.setHours(sh, sm, 0, 0);
+
+    const now = new Date();
+    const diffHours = (requestDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    const isEx = Boolean(isExceptional || isUrgent);
+    let finalNotes = notes || '';
+
+    if (diffHours < minLeadHours) {
+      if (!isEx) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `يجب تقديم طلب الإذن قبل الموعد بـ ${minLeadHours} ساعة على الأقل (${leadDays} يوم). الطلبات المتأخرة تتطلب موافقة أو تحديد استثنائي.`
+          }
+        });
+      } else {
+        finalNotes = (finalNotes ? finalNotes + ' ' : '') + '[طلب استثنائي بتجاوز مهلة الـ 48 ساعة]';
+      }
+    }
+
+    // حساب عدد الساعات
+    const [eh, em] = endTime.split(':').map(Number);
+    const startMins = sh * 60 + sm;
+    const endMins = eh * 60 + em;
+    const totalHours = parseFloat(((endMins - startMins) / 60).toFixed(2));
+
+    if (totalHours <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'endTime must be strictly after startTime'
+        }
+      });
+    }
+
+    let finalType = type || 'NON_DEDUCTIBLE';
+    let finalIsCompensated = Boolean(isCompensated);
+    if (extraOption === 'compensate') {
+      finalType = 'COMPENSATORY';
+      finalIsCompensated = true;
+    } else if (extraOption === 'deduct') {
+      finalType = 'DEDUCTIBLE';
+    }
+
+    const created = await prisma.hrPermissionRequest.create({
+      data: {
+        companyId,
+        employeeId: employee.id,
+        type: finalType,
+        date: reqDate,
+        startTime,
+        endTime,
+        totalHours,
+        reason,
+        details: details || null,
+        notes: finalNotes || null,
+        isUrgent: isEx,
+        isCompensated: finalIsCompensated,
+        compensationDate: compensationDate ? new Date(compensationDate) : null,
+        compensationNotes: compensationNotes || null,
+        status: 'PENDING'
+      },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            employeeNumber: true
+          }
+        }
+      }
+    });
+
+    await logExternalApiAction({
+      req,
+      action: 'CREATE_PERMISSION',
+      description: `إنشاء طلب إذن للموظف ${employee.employeeNumber} (${totalHours} ساعة - ${reason})`,
+      resourceType: 'HrPermissionRequest',
+      resourceId: created.id,
+      targetName: `طلب إذن ${employee.employeeNumber}`
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: {
+        id: created.id,
+        employeeId: created.employeeId,
+        employeeNumber: created.employee?.employeeNumber,
+        employeeName: `${created.employee?.firstName || ''} ${created.employee?.lastName || ''}`.trim(),
+        date: created.date ? new Date(created.date).toISOString().split('T')[0] : null,
+        startTime: created.startTime,
+        endTime: created.endTime,
+        totalHours: Number(created.totalHours),
+        totalMinutes: Math.round(Number(created.totalHours) * 60),
+        type: created.type,
+        status: created.status,
+        reason: created.reason,
+        isCompensated: created.isCompensated,
+        compensationDate: created.compensationDate ? new Date(created.compensationDate).toISOString().split('T')[0] : null,
+        compensationNotes: created.compensationNotes,
+        isUrgent: created.isUrgent,
+        createdAt: created.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.createPermission] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 42. الموافقة على طلب إذن
+ * POST /permissions/:id/approve
+ */
+const approvePermission = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { id } = req.params;
+    const { notes, isCompensated, compensationDate, compensationNotes } = req.body || {};
+
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.hrPermissionRequest.findFirst({
+      where: { id, companyId },
+      include: { employee: true }
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: `Permission request not found: ${id}` }
+      });
+    }
+
+    if (existing.status !== 'PENDING') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_STATUS', message: `Cannot approve permission with status: ${existing.status}` }
+      });
+    }
+
+    const updateData = {
+      status: 'APPROVED',
+      approvedById: req.user?.id || req.externalApi?.actingUserId || null,
+      approvedAt: new Date()
+    };
+
+    if (isCompensated !== undefined) {
+      updateData.isCompensated = Boolean(isCompensated);
+      if (isCompensated) updateData.type = 'COMPENSATORY';
+    }
+    if (compensationDate) {
+      updateData.compensationDate = new Date(compensationDate);
+    }
+    if (compensationNotes) {
+      updateData.compensationNotes = compensationNotes;
+    }
+    if (notes) {
+      updateData.notes = (existing.notes ? existing.notes + ' ' : '') + notes;
+    }
+
+    const updated = await prisma.hrPermissionRequest.update({
+      where: { id },
+      data: updateData,
+      include: { employee: true }
+    });
+
+    // فحص إنذار الـ 4 إذونات إضافية بعد استنفاد الـ 120 دقيقة
+    try {
+      const permissionService = require('../../services/hr/permissionService');
+      await permissionService.checkAndIssueExtraPermissionWarning(
+        companyId,
+        updated.employeeId,
+        updated.employee?.userId,
+        updated.date
+      );
+    } catch (warnErr) {
+      console.warn('⚠️ [ExternalHrController.approvePermission] Warning check error:', warnErr.message);
+    }
+
+    await logExternalApiAction({
+      req,
+      action: 'APPROVE_PERMISSION',
+      description: `الموافقة على طلب إذن ${updated.employee?.employeeNumber || updated.id}`,
+      resourceType: 'HrPermissionRequest',
+      resourceId: updated.id,
+      targetName: `إذن ${updated.employee?.employeeNumber || updated.id}`
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        id: updated.id,
+        status: updated.status,
+        approvedAt: updated.approvedAt,
+        type: updated.type,
+        isCompensated: updated.isCompensated,
+        compensationDate: updated.compensationDate ? new Date(updated.compensationDate).toISOString().split('T')[0] : null,
+        compensationNotes: updated.compensationNotes
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.approvePermission] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 43. رفض طلب إذن
+ * POST /permissions/:id/reject
+ */
+const rejectPermission = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { id } = req.params;
+    const { reason } = req.body || {};
+
+    if (!reason || !String(reason).trim()) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'Rejection reason is required' }
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.hrPermissionRequest.findFirst({
+      where: { id, companyId },
+      include: { employee: true }
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: `Permission request not found: ${id}` }
+      });
+    }
+
+    if (existing.status !== 'PENDING') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_STATUS', message: `Cannot reject permission with status: ${existing.status}` }
+      });
+    }
+
+    const updated = await prisma.hrPermissionRequest.update({
+      where: { id },
+      data: {
+        status: 'REJECTED',
+        rejectionReason: String(reason).trim(),
+        approvedById: req.user?.id || req.externalApi?.actingUserId || null,
+        approvedAt: new Date()
+      }
+    });
+
+    await logExternalApiAction({
+      req,
+      action: 'REJECT_PERMISSION',
+      description: `رفض طلب إذن ${existing.employee?.employeeNumber || updated.id}: ${reason}`,
+      resourceType: 'HrPermissionRequest',
+      resourceId: updated.id,
+      targetName: `إذن ${existing.employee?.employeeNumber || updated.id}`
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        id: updated.id,
+        status: updated.status,
+        rejectionReason: updated.rejectionReason,
+        rejectedAt: updated.approvedAt
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.rejectPermission] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
 module.exports = {
   listEmployees,
   getEmployeeById,
@@ -6715,5 +7240,10 @@ module.exports = {
   getRewardRuleById,
   createRewardRule,
   updateRewardRule,
-  evaluateRewardRule
+  evaluateRewardRule,
+  // Permissions Endpoints
+  listPermissions,
+  createPermission,
+  approvePermission,
+  rejectPermission
 };

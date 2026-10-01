@@ -12,7 +12,7 @@ const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const MAX_REQUESTS_PER_MINUTE = 60;
 
-const checkRateLimit = (credentialId) => {
+const checkRateLimit = (credentialId, maxLimit = MAX_REQUESTS_PER_MINUTE) => {
   const now = Date.now();
   let record = rateLimitMap.get(credentialId);
 
@@ -21,16 +21,16 @@ const checkRateLimit = (credentialId) => {
     rateLimitMap.set(credentialId, record);
     return {
       allowed: true,
-      limit: MAX_REQUESTS_PER_MINUTE,
-      remaining: MAX_REQUESTS_PER_MINUTE - 1,
+      limit: maxLimit,
+      remaining: maxLimit - 1,
       reset: Math.ceil(record.resetTime / 1000)
     };
   }
 
-  if (record.count >= MAX_REQUESTS_PER_MINUTE) {
+  if (record.count >= maxLimit) {
     return {
       allowed: false,
-      limit: MAX_REQUESTS_PER_MINUTE,
+      limit: maxLimit,
       remaining: 0,
       reset: Math.ceil(record.resetTime / 1000)
     };
@@ -39,8 +39,8 @@ const checkRateLimit = (credentialId) => {
   record.count += 1;
   return {
     allowed: true,
-    limit: MAX_REQUESTS_PER_MINUTE,
-    remaining: MAX_REQUESTS_PER_MINUTE - record.count,
+    limit: maxLimit,
+    remaining: maxLimit - record.count,
     reset: Math.ceil(record.resetTime / 1000)
   };
 };
@@ -185,8 +185,12 @@ const authenticateExternalApi = async (req, res, next) => {
       }
     }
 
-    // 5. Rate limiting (60 req/min)
-    const rateLimit = checkRateLimit(credential.id);
+    // 5. Rate limiting (120 req/min reads, 20 req/min writes for admin-api, 60 req/min default)
+    const isWrite = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method.toUpperCase());
+    const isAdminApi = (req.originalUrl || req.path || '').includes('/admin-api');
+    const dynamicLimit = isAdminApi ? (isWrite ? 20 : 120) : MAX_REQUESTS_PER_MINUTE;
+
+    const rateLimit = checkRateLimit(credential.id, dynamicLimit);
     res.setHeader('X-RateLimit-Limit', rateLimit.limit);
     res.setHeader('X-RateLimit-Remaining', rateLimit.remaining);
     res.setHeader('X-RateLimit-Reset', rateLimit.reset);
@@ -195,7 +199,7 @@ const authenticateExternalApi = async (req, res, next) => {
       res.setHeader('Retry-After', Math.max(1, rateLimit.reset - Math.floor(Date.now() / 1000)));
       return res.status(429).json({
         success: false,
-        message: 'Rate limit exceeded. Maximum 60 requests per minute.'
+        message: `Rate limit exceeded. Maximum ${rateLimit.limit} requests per minute.`
       });
     }
 

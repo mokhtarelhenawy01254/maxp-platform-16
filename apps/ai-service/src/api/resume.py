@@ -85,6 +85,27 @@ async def resume(
     if approval.company_id != company_id:
         raise HTTPException(status_code=403, detail="Cross-tenant access denied")
 
+    # Expired guard: a pending draft past its expires_at can no longer be acted on.
+    if str(approval.status or "") == "pending" and approval.expires_at is not None:
+        from datetime import UTC as _UTC, datetime as _datetime
+
+        _expires = approval.expires_at
+        if isinstance(_expires, _datetime):
+            if _expires.tzinfo is None:
+                _expires = _expires.replace(tzinfo=_UTC)
+            if _expires <= _datetime.now(_UTC):
+                from src.db.repo.approval_repo import ApprovalRepository as _ApprovalRepo
+
+                await _ApprovalRepo(session).transition_status(
+                    draft_id=body.draft_id,
+                    current_status="pending",
+                    next_status="expired",
+                )
+                raise HTTPException(
+                    status_code=410,
+                    detail="انتهت صلاحية مسودة الموافقة (7 أيام) — اطلب الإجراء من جديد وسيتم إنشاء مسودة حالية",
+                )
+
     resolved_thread_id = body.thread_id or str(approval.thread_id)
     action_type = str(getattr(approval, "action_type", "") or "") or None
 

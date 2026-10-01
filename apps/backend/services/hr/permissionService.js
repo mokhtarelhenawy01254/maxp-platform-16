@@ -58,6 +58,37 @@ class PermissionService {
 
             console.log(`✅ [Permission] Found employee: ${employee.id} (${employee.firstName} ${employee.lastName})`);
 
+            // 🕒 فحص مهلة التقديم (48 ساعة على الأقل قبل موعد الإذن)
+            const settings = await this.prisma.hRSettings.findUnique({
+                where: { companyId }
+            });
+            const leadDays = (settings?.permissionLeadDays !== undefined && settings?.permissionLeadDays !== null)
+                ? Number(settings.permissionLeadDays)
+                : 2;
+            const minLeadHours = leadDays * 24;
+
+            const requestDateTime = new Date(data.date);
+            if (data.startTime) {
+                const [h, m] = data.startTime.split(':').map(Number);
+                requestDateTime.setHours(h, m, 0, 0);
+            } else {
+                requestDateTime.setHours(0, 0, 0, 0);
+            }
+
+            const now = new Date();
+            const diffHours = (requestDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+            let isUrgent = Boolean(data.isUrgent || data.isExceptional);
+            let notes = data.notes || '';
+
+            if (diffHours < minLeadHours) {
+                if (!isUrgent) {
+                    throw new ValidationError(`يجب تقديم طلب الإذن قبل الموعد بـ ${minLeadHours} ساعة على الأقل (${leadDays} يوم)`);
+                } else {
+                    notes = (notes ? notes + ' ' : '') + '[طلب استثنائي بتجاوز مهلة الـ 48 ساعة]';
+                }
+            }
+
             // حساب عدد الساعات وتأمين حساب الوقت الصحيح
             let totalHours = data.totalHours;
             if (!totalHours) {
@@ -75,21 +106,31 @@ class PermissionService {
                 }
             }
 
+            // تحديد نوع الإذن وخيار التعويض / الخصم
+            let type = data.type || 'NON_DEDUCTIBLE';
+            let isCompensated = Boolean(data.isCompensated);
+            if (data.extraOption === 'compensate') {
+                type = 'COMPENSATORY';
+                isCompensated = true;
+            } else if (data.extraOption === 'deduct') {
+                type = 'DEDUCTIBLE';
+            }
+
             const permissionRequest = await this.prisma.hrPermissionRequest.create({
                 data: {
                     companyId,
                     employeeId: employee.id,
-                    type: data.type,
+                    type,
                     date: requestDate,
                     startTime: data.startTime,
                     endTime: data.endTime,
                     totalHours: totalHours,
                     reason: data.reason,
                     details: data.details,
-                    notes: data.notes,
+                    notes,
                     attachments: data.attachments,
-                    isUrgent: data.isUrgent || false,
-                    isCompensated: data.isCompensated || false,
+                    isUrgent,
+                    isCompensated,
                     compensationDate: data.compensationDate ? new Date(data.compensationDate) : null,
                     compensationNotes: data.compensationNotes,
                     status: 'PENDING'
@@ -230,7 +271,7 @@ class PermissionService {
     /**
      * الموافقة على طلب إذن
      */
-    async approvePermissionRequest(companyId, requestId, approverEmployeeId) {
+    async approvePermissionRequest(companyId, requestId, approverEmployeeId, options = {}) {
         try {
             const request = await this.prisma.hrPermissionRequest.findFirst({
                 where: { id: requestId, companyId }
@@ -244,13 +285,29 @@ class PermissionService {
                 throw new ValidationError('لا يمكن الموافقة على طلب ليس في حالة الانتظار');
             }
 
+            const updateData = {
+                status: 'APPROVED',
+                approvedById: approverEmployeeId,
+                approvedAt: new Date()
+            };
+
+            if (options.isCompensated !== undefined) {
+                updateData.isCompensated = Boolean(options.isCompensated);
+                if (options.isCompensated) updateData.type = 'COMPENSATORY';
+            }
+            if (options.compensationDate) {
+                updateData.compensationDate = new Date(options.compensationDate);
+            }
+            if (options.compensationNotes) {
+                updateData.compensationNotes = options.compensationNotes;
+            }
+            if (options.notes) {
+                updateData.notes = options.notes;
+            }
+
             const updated = await this.prisma.hrPermissionRequest.update({
                 where: { id: requestId },
-                data: {
-                    status: 'APPROVED',
-                    approvedById: approverEmployeeId,
-                    approvedAt: new Date()
-                },
+                data: updateData,
                 include: {
                     employee: true
                 }
@@ -291,11 +348,19 @@ class PermissionService {
                 'PERMISSION',
                 requestId,
                 {
-                    type: request.type,
-                    hours: request.totalHours,
-                    date: request.date
+                    type: updated.type,
+                    hours: updated.totalHours,
+                    date: updated.date,
+                    isCompensated: updated.isCompensated
                 }
             );
+
+            // ⚠️ فحص تجاوز حد الأذونات الإضافية (4 إذونات بعد استنفاد الـ 120 دقيقة) وإصدار إنذار تلقائي
+            try {
+                await this.checkAndIssueExtraPermissionWarning(companyId, updated.employeeId, updated.employee?.userId, updated.date);
+            } catch (warnErr) {
+                console.warn('⚠️ [Permission Service] Error checking extra permission warning:', warnErr.message);
+            }
 
             // 📢 إرسال إشعار الواتساب للموظف (في الخلفية لتجنب التأخير)
             setImmediate(async () => {
@@ -461,6 +526,101 @@ class PermissionService {
         } catch (error) {
             console.error('❌ Error deleting permission request:', error);
             throw error;
+        }
+    }
+
+    /**
+     * ⚠️ فحص تجاوز حد الأذونات الإضافية في الشهر (4 إذونات بعد استنفاد الـ 120 دقيقة المدفوعة) وإصدار إنذار تلقائي
+     */
+    async checkAndIssueExtraPermissionWarning(companyId, employeeId, userId, date) {
+        try {
+            const reqDate = new Date(date);
+            const month = reqDate.getMonth() + 1;
+            const year = reqDate.getFullYear();
+            const monthStart = new Date(year, month - 1, 1, 0, 0, 0);
+            const monthEnd = new Date(year, month, 0, 23, 59, 59);
+
+            const settings = await this.prisma.hRSettings.findUnique({
+                where: { companyId }
+            });
+
+            const paidQuota = (settings?.paidPermissionMinutesPerMonth !== undefined && settings?.paidPermissionMinutesPerMonth !== null)
+                ? Number(settings.paidPermissionMinutesPerMonth)
+                : (companyId === 'h2m-1' ? 120 : 0);
+
+            const warningThreshold = (settings?.permissionWarningAfter !== undefined && settings?.permissionWarningAfter !== null)
+                ? Number(settings.permissionWarningAfter)
+                : 4;
+
+            if (warningThreshold <= 0) return;
+
+            // جلب الأذونات المعتمدة في هذا الشهر للموظف
+            const monthApproved = await this.prisma.hrPermissionRequest.findMany({
+                where: {
+                    companyId,
+                    status: 'APPROVED',
+                    date: { gte: monthStart, lte: monthEnd },
+                    OR: [
+                        { employeeId },
+                        ...(userId ? [{ employee: { userId } }] : [])
+                    ]
+                },
+                orderBy: { date: 'asc' }
+            });
+
+            let accumulatedMinutes = 0;
+            let extraPermissionsCount = 0;
+
+            for (const perm of monthApproved) {
+                const mins = Math.round((parseFloat(perm.totalHours) || 0) * 60);
+                accumulatedMinutes += mins;
+                if (accumulatedMinutes > paidQuota) {
+                    extraPermissionsCount++;
+                }
+            }
+
+            if (extraPermissionsCount >= warningThreshold) {
+                let targetUserId = userId;
+                if (!targetUserId && this.prisma.employee) {
+                    const emp = await this.prisma.employee.findUnique({
+                        where: { id: employeeId },
+                        select: { userId: true }
+                    });
+                    targetUserId = emp?.userId;
+                }
+                if (!targetUserId) return;
+
+                // التحقق من عدم تكرار الإنذار لنفس الشهر (يُصدر مرة واحدة فقط)
+                if (this.prisma.employeeWarning) {
+                    const existingWarning = await this.prisma.employeeWarning.findFirst({
+                        where: {
+                            companyId,
+                            userId: targetUserId,
+                            title: { contains: 'إنذار تجاوز حد الأذونات الإضافية' },
+                            incidentDate: { gte: monthStart, lte: monthEnd }
+                        }
+                    });
+
+                    if (!existingWarning) {
+                        await this.prisma.employeeWarning.create({
+                            data: {
+                                companyId,
+                                userId: targetUserId,
+                                type: 'ATTENDANCE',
+                                severity: 'minor',
+                                title: 'إنذار تجاوز حد الأذونات الإضافية الشهري',
+                                description: `تم إصدار إنذار تلقائي لتجاوز الحد الأقصى للأذونات الإضافية (${extraPermissionsCount} إذونات بعد استنفاد رصيد الـ ${paidQuota} دقيقة المدفوعة) لشهر ${month}/${year}.`,
+                                incidentDate: new Date(),
+                                actionTaken: 'إنذار تلقائي',
+                                issuedBy: 'SYSTEM'
+                            }
+                        });
+                        console.log(`⚠️ [Permission] Auto-warning created for employee ${targetUserId}: ${extraPermissionsCount} extra permissions in month ${month}`);
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('⚠️ [Permission] Error in checkAndIssueExtraPermissionWarning:', err.message);
         }
     }
 }

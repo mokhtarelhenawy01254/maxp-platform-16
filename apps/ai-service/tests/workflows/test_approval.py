@@ -30,8 +30,10 @@ def mock_session():
 async def test_create_approval_draft_success(mock_session):
     thread_uuid = uuid.uuid4()
     # 1st execute: get_by_request_key (no duplicate) → None.
-    # 2nd execute: repo.create thread lookup → thread uuid.
+    # 2nd execute: find_pending_by_fingerprint (no twin) → None.
+    # 3rd execute: repo.create thread lookup → thread uuid.
     mock_session.execute.side_effect = [
+        MagicMock(scalar_one_or_none=MagicMock(return_value=None)),
         MagicMock(scalar_one_or_none=MagicMock(return_value=None)),
         MagicMock(scalar_one_or_none=MagicMock(return_value=thread_uuid)),
     ]
@@ -80,7 +82,8 @@ async def test_create_approval_draft_is_idempotent_for_identical_pending_request
 async def test_create_approval_draft_stores_sdk_approval_metadata(mock_session):
     thread_uuid = uuid.uuid4()
     mock_session.execute.side_effect = [
-        MagicMock(scalar_one_or_none=MagicMock(return_value=None)),
+        MagicMock(scalar_one_or_none=MagicMock(return_value=None)),  # get_by_request_key
+        MagicMock(scalar_one_or_none=MagicMock(return_value=None)),  # find_pending_by_fingerprint
         MagicMock(scalar_one_or_none=MagicMock(return_value=thread_uuid)),
     ]
 

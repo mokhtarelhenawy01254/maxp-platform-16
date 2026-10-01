@@ -156,14 +156,142 @@ class LatenessCalculationService {
         else multiplier = parseFloat(settings.thirdViolationMultiplier || 3.0);
       }
 
+      // 🕒 فحص الأذونات المعتمدة لهذا الموظف في هذا اليوم والشهر
+      const dayStart = new Date(checkInDate.getFullYear(), checkInDate.getMonth(), checkInDate.getDate(), 0, 0, 0);
+      const dayEnd = new Date(checkInDate.getFullYear(), checkInDate.getMonth(), checkInDate.getDate(), 23, 59, 59);
+
+      let dayApprovedPermissions = [];
+      try {
+        if (this.prisma.hrPermissionRequest) {
+          dayApprovedPermissions = await this.prisma.hrPermissionRequest.findMany({
+            where: {
+              companyId,
+              status: 'APPROVED',
+              date: { gte: dayStart, lte: dayEnd },
+              OR: [
+                { employeeId },
+                { employee: { userId: employeeId } },
+                { employee: { id: employeeId } }
+              ]
+            }
+          });
+        }
+      } catch (permErr) {
+        console.warn('⚠️ [LatenessCalc] Error querying day permissions:', permErr.message);
+      }
+
+      const dayPermissionMinutes = dayApprovedPermissions.reduce((sum, p) => {
+        return sum + Math.round((parseFloat(p.totalHours) || 0) * 60);
+      }, 0);
+
+      let permissionDeduction = 0;
+      let permissionMinutesExceeded = 0;
+      let isFullyCoveredByPermission = false;
+      let countsAsLateOccurrence = true;
+      let effectiveLateMinutes = lateMinutes;
+
+      if (dayPermissionMinutes > 0) {
+        // فحص رصيد الأذونات المدفوعة الشهري (افتراضي 120 دقيقة لشركة H2M)
+        const monthlyPaidQuota = (settings?.paidPermissionMinutesPerMonth !== undefined && settings?.paidPermissionMinutesPerMonth !== null)
+          ? Number(settings.paidPermissionMinutesPerMonth)
+          : (companyId === 'h2m-1' ? 120 : 0);
+
+        const monthStart = new Date(year, month - 1, 1, 0, 0, 0);
+
+        let priorMonthPermissions = [];
+        try {
+          if (this.prisma.hrPermissionRequest) {
+            priorMonthPermissions = await this.prisma.hrPermissionRequest.findMany({
+              where: {
+                companyId,
+                status: 'APPROVED',
+                date: { gte: monthStart, lt: dayStart },
+                OR: [
+                  { employeeId },
+                  { employee: { userId: employeeId } },
+                  { employee: { id: employeeId } }
+                ]
+              }
+            });
+          }
+        } catch (permMonthErr) {
+          console.warn('⚠️ [LatenessCalc] Error querying prior permissions:', permMonthErr.message);
+        }
+
+        const priorUsedMinutes = priorMonthPermissions.reduce((sum, p) => {
+          return sum + Math.round((parseFloat(p.totalHours) || 0) * 60);
+        }, 0);
+
+        const remainingPaidQuota = Math.max(0, monthlyPaidQuota - priorUsedMinutes);
+        const paidMinutesToday = Math.min(dayPermissionMinutes, remainingPaidQuota);
+        const extraMinutesToday = Math.max(0, dayPermissionMinutes - paidMinutesToday);
+
+        const isCompensatedToday = dayApprovedPermissions.some(p =>
+          p.isCompensated || p.type === 'COMPENSATORY' || p.compensationDate
+        );
+
+        if (extraMinutesToday > 0 && !isCompensatedToday) {
+          // خيار الخصم دقيقة بدقيقة بسعر الدقيقة العادي دون مضاعفات
+          permissionDeduction = extraMinutesToday * minuteSalary;
+          permissionMinutesExceeded = extraMinutesToday;
+        }
+
+        // الأذونات تغطي دقائق التأخير
+        const coveredPortion = Math.min(lateMinutes, dayPermissionMinutes);
+        effectiveLateMinutes = Math.max(0, lateMinutes - coveredPortion);
+
+        if (effectiveLateMinutes === 0) {
+          isFullyCoveredByPermission = true;
+          countsAsLateOccurrence = false; // لا تُحسب مرة تأخير ولا تزيد المضاعف ولا تولّد إنذاراً
+        }
+      }
+
+      if (isFullyCoveredByPermission) {
+        return {
+          deductMinutes: permissionMinutesExceeded,
+          useGraceMinutes: 0,
+          exceedsDaily: false,
+          totalDeduction: Number(permissionDeduction.toFixed(2)),
+          isCapped: false,
+          originalAmount: permissionDeduction,
+          multiplier: 1.0,
+          appliedTier: null,
+          skipDeduction: false,
+          isFullyCoveredByPermission: true,
+          countsAsLateOccurrence: false,
+          dayPermissionMinutes,
+          breakdown: {
+            lateMinutes,
+            effectiveLateMinutes: 0,
+            dayPermissionMinutes,
+            permissionDeduction,
+            maxDaily: maxDailyThreshold,
+            dailyAllowedPortion: 0,
+            immediateExcessMinutes: 0,
+            remainingGrace,
+            useGraceMinutes: 0,
+            graceExhaustedMinutes: 0,
+            totalDeductMinutes: permissionMinutesExceeded,
+            baseRate: baseDeductionRate,
+            isDefaultRate,
+            multiplier: 1.0,
+            effectiveRate: baseDeductionRate,
+            dailySalary,
+            minuteSalary,
+            maxDailyDeductionDays,
+            maxDeductionAmount
+          }
+        };
+      }
+
       // 🛡️ تحديد دقائق السماح المؤهلة ودقائق الخصم المباشر
       // إذا كان التأخير ضمن حد التسامح اليومي (maxDailyThreshold مثلاً 10د):
       // يستهلك من رصيد السماح الشهري (monthlyGrace مثلاً 60د) بدون خصم مالي ما دام الرصيد كافياً.
       // إذا تجاوز التأخير حد التسامح اليومي:
       // الحد اليومي فقط (maxDailyThreshold) مؤهل للسماح الشهري، وما زاد عنه يعد تجاوزاً غير مسموح يُخصم مباشرة.
-      const dailyAllowedPortion = Math.min(lateMinutes, maxDailyThreshold);
-      const immediateExcessMinutes = Math.max(0, lateMinutes - maxDailyThreshold);
-      const exceedsDaily = lateMinutes > maxDailyThreshold;
+      const dailyAllowedPortion = Math.min(effectiveLateMinutes, maxDailyThreshold);
+      const immediateExcessMinutes = Math.max(0, effectiveLateMinutes - maxDailyThreshold);
+      const exceedsDaily = effectiveLateMinutes > maxDailyThreshold;
 
       // حساب ما يمكن استخدامه من رصيد المرونة الشهري (يمتص حتى dailyAllowedPortion)
       let useGraceMinutes = 0;
@@ -177,10 +305,10 @@ class LatenessCalculationService {
         graceExhaustedMinutes = dailyAllowedPortion;
       }
 
-      // إجمالي الدقائق المخصومة = ما تجاوز الرصيد الشهري + ما تجاوز الحد اليومي
-      const totalDeductMinutes = graceExhaustedMinutes + immediateExcessMinutes;
+      // إجمالي الدقائق المخصومة = ما تجاوز الرصيد الشهري + ما تجاوز الحد اليومي + أي إذن إضافي غير معوض
+      const totalDeductMinutes = graceExhaustedMinutes + immediateExcessMinutes + permissionMinutesExceeded;
       const effectiveDeductionRate = baseDeductionRate * multiplier;
-      let totalDeduction = totalDeductMinutes * effectiveDeductionRate;
+      let totalDeduction = (graceExhaustedMinutes + immediateExcessMinutes) * effectiveDeductionRate + permissionDeduction;
 
       // 🕒 Apply Tiered Penalties (if configured)
       let appliedTier = null;
@@ -193,13 +321,13 @@ class LatenessCalculationService {
           if (Array.isArray(tiers) && tiers.length > 0) {
             // Sort tiers by minMinutes descending to find the highest applicable tier
             const applicableTiers = tiers
-              .filter(t => lateMinutes >= t.minMinutes)
+              .filter(t => effectiveLateMinutes >= t.minMinutes)
               .sort((a, b) => b.minMinutes - a.minMinutes);
 
             if (applicableTiers.length > 0) {
               appliedTier = applicableTiers[0];
               // Tier-based deduction overrides per-minute deduction
-              totalDeduction = appliedTier.deductionDays * dailySalary;
+              totalDeduction = appliedTier.deductionDays * dailySalary + permissionDeduction;
             }
           }
         } catch (e) {
@@ -229,8 +357,13 @@ class LatenessCalculationService {
         multiplier,
         appliedTier,
         skipDeduction: false,
+        isFullyCoveredByPermission: false,
+        countsAsLateOccurrence: true,
+        dayPermissionMinutes,
         breakdown: {
           lateMinutes,
+          effectiveLateMinutes,
+          dayPermissionMinutes,
           maxDaily: maxDailyThreshold,
           dailyAllowedPortion,
           immediateExcessMinutes,
@@ -265,23 +398,25 @@ class LatenessCalculationService {
 
       const balance = await this.getOrCreateMonthlyBalance(companyId, employeeId, month, year);
 
+      const countIncrement = calculation.countsAsLateOccurrence === false ? 0 : 1;
+
       const updated = await this.prisma.latenessBalance.update({
         where: { id: balance.id },
         data: {
           totalLateMinutes: {
-            increment: calculation.breakdown.lateMinutes
+            increment: calculation.breakdown?.lateMinutes || 0
           },
           graceMinutesUsed: {
-            increment: calculation.useGraceMinutes
+            increment: calculation.useGraceMinutes || 0
           },
           deductedMinutes: {
-            increment: calculation.deductMinutes
+            increment: calculation.deductMinutes || 0
           },
           totalDeductionAmount: {
-            increment: calculation.totalDeduction
+            increment: calculation.totalDeduction || 0
           },
           lateCount: {
-            increment: 1
+            increment: countIncrement
           }
         }
       });
@@ -326,20 +461,48 @@ class LatenessCalculationService {
         baseDeductionRate = minuteSalary;
       }
 
-      console.log(`🔍 [EARLY_CALC] Checking early leave: ${earlyMinutes} mins. Threshold: ${threshold}, Rate: ${baseDeductionRate}, CompanyEnabled: ${isCompanyEnabled}, EmployeeEnabled: ${isEmployeeEnabled}`);
+      // 🕒 فحص الأذونات المعتمدة للانصراف المبكر في هذا اليوم
+      const checkoutDate = new Date(date);
+      const dayStart = new Date(checkoutDate.getFullYear(), checkoutDate.getMonth(), checkoutDate.getDate(), 0, 0, 0);
+      const dayEnd = new Date(checkoutDate.getFullYear(), checkoutDate.getMonth(), checkoutDate.getDate(), 23, 59, 59);
 
-      if (!isCompanyEnabled || !isEmployeeEnabled || earlyMinutes <= threshold) {
-        console.log(`🛑 [EARLY_CALC] Skipping deduction. Reason: ${!isCompanyEnabled ? 'DISABLED_GLOBALLY' : (!isEmployeeEnabled ? 'EMPLOYEE_EXCLUDED' : 'BELOW_THRESHOLD')}`);
+      let dayApprovedPermissions = [];
+      try {
+        if (this.prisma.hrPermissionRequest) {
+          dayApprovedPermissions = await this.prisma.hrPermissionRequest.findMany({
+            where: {
+              companyId,
+              status: 'APPROVED',
+              date: { gte: dayStart, lte: dayEnd },
+              OR: [
+                { employeeId },
+                { employee: { userId: employeeId } },
+                { employee: { id: employeeId } }
+              ]
+            }
+          });
+        }
+      } catch (permErr) {
+        console.warn('⚠️ [EARLY_CALC] Error querying permissions:', permErr.message);
+      }
+
+      const dayPermMinutes = dayApprovedPermissions.reduce((sum, p) => sum + Math.round((parseFloat(p.totalHours) || 0) * 60), 0);
+      const effectiveEarlyMinutes = Math.max(0, earlyMinutes - dayPermMinutes);
+
+      console.log(`🔍 [EARLY_CALC] Checking early leave: ${earlyMinutes} mins (perms: ${dayPermMinutes} mins, net: ${effectiveEarlyMinutes} mins). Threshold: ${threshold}, Rate: ${baseDeductionRate}, CompanyEnabled: ${isCompanyEnabled}, EmployeeEnabled: ${isEmployeeEnabled}`);
+
+      if (!isCompanyEnabled || !isEmployeeEnabled || effectiveEarlyMinutes <= threshold) {
+        console.log(`🛑 [EARLY_CALC] Skipping deduction. Reason: ${!isCompanyEnabled ? 'DISABLED_GLOBALLY' : (!isEmployeeEnabled ? 'EMPLOYEE_EXCLUDED' : (effectiveEarlyMinutes <= threshold ? 'COVERED_BY_PERMISSION_OR_THRESHOLD' : 'BELOW_THRESHOLD'))}`);
         return {
           deductMinutes: 0,
           totalDeduction: 0,
           skipDeduction: true,
-          skipReason: !isCompanyEnabled ? 'DISABLED_GLOBALLY' : (!isEmployeeEnabled ? 'EMPLOYEE_EXCLUDED' : 'BELOW_THRESHOLD')
+          skipReason: !isCompanyEnabled ? 'DISABLED_GLOBALLY' : (!isEmployeeEnabled ? 'EMPLOYEE_EXCLUDED' : (dayPermMinutes > 0 ? 'COVERED_BY_PERMISSION' : 'BELOW_THRESHOLD'))
         };
       }
 
-      // الانصراف المبكر يخصم كامل الدقائق
-      const deductMinutes = earlyMinutes;
+      // الانصراف المبكر يخصم الدقائق غير المغطاة بالإذن
+      const deductMinutes = effectiveEarlyMinutes;
       const totalDeduction = deductMinutes * baseDeductionRate;
 
       return {
@@ -348,6 +511,8 @@ class LatenessCalculationService {
         skipDeduction: false,
         breakdown: {
           earlyMinutes,
+          effectiveEarlyMinutes,
+          dayPermMinutes,
           threshold,
           deductMinutes,
           baseRate: baseDeductionRate

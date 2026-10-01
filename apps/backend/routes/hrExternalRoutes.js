@@ -148,6 +148,12 @@ router.get('/warnings', requireExternalHrScope('hr:warnings:read'), hrExternalCo
 // 📝 Resignations & Offboarding
 router.get('/resignations', requireExternalHrScope('hr:resignations:read'), hrExternalController.listResignations);
 
+// 🕒 Permissions (Delay / Early Departure)
+router.get('/permissions', requireExternalHrScope('hr:permissions:read'), hrExternalController.listPermissions);
+router.post('/permissions', requireExternalHrScope('hr:permissions:write'), hrExternalController.createPermission);
+router.post('/permissions/:id/approve', requireExternalHrScope('hr:permissions:approve'), hrExternalController.approvePermission);
+router.post('/permissions/:id/reject', requireExternalHrScope('hr:permissions:approve'), hrExternalController.rejectPermission);
+
 // 🔔 Outbound Webhooks Management
 router.get('/webhooks', requireExternalHrScope('hr:write'), hrExternalController.listWebhookEndpoints);
 router.post('/webhooks', requireExternalHrScope('hr:write'), hrExternalController.createWebhookEndpoint);

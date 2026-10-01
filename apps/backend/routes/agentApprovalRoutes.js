@@ -175,4 +175,93 @@ router.post('/:id/reject', async (req, res) => {
   }
 });
 
+// ── Internal: draft-created notification (called by the AI service) ──────────
+// The Python pipeline fires this fire-and-forget right after persisting a NEW
+// pending draft; we push a WhatsApp heads-up to the merchant's owners/admins so
+// drafts stop dying unseen in a queue (the Sep-2026 incident: 13 stale drafts).
+
+const APPROVAL_ACTION_LABELS = {
+  conversion_tool_toggle: 'تشغيل/إيقاف أداة تحويل',
+  conversion_tool_set_threshold: 'ضبط عتبة أداة تحويل',
+  product_configure_conversion: 'إعداد أداة تحويل لمنتج',
+  product_create: 'إنشاء منتج جديد',
+  inventory_adjust: 'تعديل مخزون',
+  record_learned_rule: 'تسجيل قاعدة تعلّم في الذاكرة',
+  unlock_advanced_tools: 'فتح أدوات متقدمة',
+};
+
+function normalizeOwnerPhone(raw) {
+  const digits = String(raw || '').replace(/\D/g, '');
+  if (digits.length < 8) return null;
+  if (digits.length === 11 && digits.startsWith('0')) return `20${digits.slice(1)}`;
+  if (digits.length === 10 && digits.startsWith('1')) return `2${digits}`;
+  return digits;
+}
+
+function summarizeApprovalArgs(actionType, args = {}) {
+  if (actionType === 'conversion_tool_toggle') {
+    return `${args.enable ? 'تفعيل' : 'إيقاف'} «${args.tool_key || args.toolKey || ''}»`;
+  }
+  if (actionType === 'product_create') return args.name ? `«${args.name}»` : '';
+  if (actionType === 'record_learned_rule') return args.rule_title ? `«${args.rule_title}»` : '';
+  if (actionType === 'inventory_adjust' || actionType === 'product_configure_conversion') {
+    return args.product_id || args.productId || '';
+  }
+  return '';
+}
+
+router.post('/internal/notify', async (req, res) => {
+  try {
+    if (!req.user?.service) {
+      return res.status(403).json({ error: 'Service access only' });
+    }
+    const companyId = req.user?.companyId || req.headers['x-company-id'];
+    const { draftId, actionType, actionArgs } = req.body || {};
+    if (!companyId || !draftId) {
+      return res.status(400).json({ error: 'companyId and draftId are required' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const staff = await prisma.userCompany.findMany({
+      where: { companyId, role: { in: ['OWNER', 'COMPANY_ADMIN'] } },
+      select: { role: true, user: { select: { phone: true, firstName: true } } },
+    });
+    const phones = [...new Set(staff.map((s) => normalizeOwnerPhone(s.user?.phone)).filter(Boolean))];
+    if (phones.length === 0) {
+      return res.json({ success: true, notified: 0, reason: 'no owner/admin phone on file' });
+    }
+
+    const label = APPROVAL_ACTION_LABELS[actionType] || actionType;
+    const detail = summarizeApprovalArgs(actionType, actionArgs || {});
+    const message = [
+      '🔔 *طلب اعتماد جديد من مساعدك الذكي*',
+      `الإجراء: ${label}${detail ? ` — ${detail}` : ''}`,
+      '',
+      'اعتماده أو رفضه من مركز الموافقات في الداشبورد:',
+      'https://maxp.online/dashboard',
+    ].join('\n');
+
+    const whatsappNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
+    let notified = 0;
+    for (const phone of phones) {
+      try {
+        const sendResult = await whatsappNotificationService.sendViaLocalWhatsApp({
+          companyId,
+          phone,
+          message,
+          eventType: 'AGENT_APPROVAL_REQUEST',
+        });
+        if (sendResult?.success) notified++;
+      } catch (sendErr) {
+        console.warn('[AgentApprovals] WhatsApp notify failed for', phone, sendErr.message);
+      }
+    }
+
+    return res.json({ success: true, notified, recipients: phones.length });
+  } catch (error) {
+    console.error('[AgentApprovals] Error notifying draft created:', error.message);
+    res.status(500).json({ error: 'Failed to notify draft created' });
+  }
+});
+
 module.exports = router;

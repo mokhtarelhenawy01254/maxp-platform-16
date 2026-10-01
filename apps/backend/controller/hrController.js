@@ -5517,6 +5517,10 @@ const HR_SETTINGS_DB_SAFE_SELECT = {
   notificationRecipients: true,
   aiNotificationTypes: true,
   aiNotificationTone: true,
+  paidPermissionMinutesPerMonth: true,
+  permissionLeadDays: true,
+  permissionWarningAfter: true,
+  permissionExtraMode: true,
   createdAt: true,
   updatedAt: true,
 };
@@ -5745,6 +5749,40 @@ function mapHRSettingsPayload(settings, notificationHealth) {
         safeParseSettingsArray,
       ),
       aiNotificationTone: settings?.aiNotificationTone || "PROFESSIONAL",
+      paidPermissionMinutesPerMonth:
+        settings?.paidPermissionMinutesPerMonth !== undefined &&
+        settings?.paidPermissionMinutesPerMonth !== null
+          ? Number(settings.paidPermissionMinutesPerMonth)
+          : (settings?.companyId === "h2m-1" ? 120 : 0),
+      permissionLeadDays:
+        settings?.permissionLeadDays !== undefined &&
+        settings?.permissionLeadDays !== null
+          ? Number(settings.permissionLeadDays)
+          : 2,
+      permissionWarningAfter:
+        settings?.permissionWarningAfter !== undefined &&
+        settings?.permissionWarningAfter !== null
+          ? Number(settings.permissionWarningAfter)
+          : 4,
+      permissionExtraMode: settings?.permissionExtraMode || "deduct",
+      permissions: {
+        paidPermissionMinutesPerMonth:
+          settings?.paidPermissionMinutesPerMonth !== undefined &&
+          settings?.paidPermissionMinutesPerMonth !== null
+            ? Number(settings.paidPermissionMinutesPerMonth)
+            : (settings?.companyId === "h2m-1" ? 120 : 0),
+        permissionLeadDays:
+          settings?.permissionLeadDays !== undefined &&
+          settings?.permissionLeadDays !== null
+            ? Number(settings.permissionLeadDays)
+            : 2,
+        permissionWarningAfter:
+          settings?.permissionWarningAfter !== undefined &&
+          settings?.permissionWarningAfter !== null
+            ? Number(settings.permissionWarningAfter)
+            : 4,
+        permissionExtraMode: settings?.permissionExtraMode || "deduct",
+      },
     },
   };
 }

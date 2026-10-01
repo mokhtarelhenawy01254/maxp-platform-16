@@ -516,6 +516,13 @@ const PUBLIC_ROUTES = [
   'PATCH /api/v1/external/hr/*',
   'DELETE /api/v1/external/hr/*',
 
+  // Super Admin API uses x-api-key / Bearer in its own router (apps/backend/routes/superAdminApiRoutes.js)
+  'GET /api/v1/admin-api/*',
+  'POST /api/v1/admin-api/*',
+  'PUT /api/v1/admin-api/*',
+  'PATCH /api/v1/admin-api/*',
+  'DELETE /api/v1/admin-api/*',
+
   // Teacher Portal (public login endpoint)
   'POST /api/v1/education/teacher-portal/login',
 
@@ -701,7 +708,8 @@ function needsCompanyIsolation(path) {
     '/api/v1/whatsapp/meta/webhook',
     '/api/v1/whatsapp-meta',
     '/api/v1/hr/recruitment/forms/public',
-    '/api/v1/external/hr'
+    '/api/v1/external/hr',
+    '/api/v1/admin-api'
   ];
 
   if (excludedPaths.some(excluded => path === excluded || path.startsWith(excluded + '?') || path.startsWith(excluded + '/'))) {

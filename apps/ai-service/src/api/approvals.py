@@ -23,6 +23,9 @@ async def list_approvals(
     """List approval drafts for the authenticated company."""
     company_id = get_company_id(request)
     repo = ApprovalRepository(session)
+    # Lazy sweep: anything past its expires_at flips to 'expired' before we list,
+    # so the queue the merchant sees is always actionable.
+    await repo.expire_stale(company_id)
     approvals = await repo.list_by_company(company_id, status, limit, offset)
 
     return {

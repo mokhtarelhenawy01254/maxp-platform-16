@@ -1336,10 +1336,52 @@ class PayrollService {
       addDailyPenalty(d.date, parseFloat(d.amount), `يدوي: ${d.reason}`, 'manual');
     });
 
-    // 1.05. Deductible Permissions (أذونات الخروج بخصم)
-    approvedPermissions.filter(p => p.type === 'DEDUCTIBLE').forEach(p => {
-      const deductionAmount = parseFloat(p.totalHours) * hourlyRate;
-      addDailyPenalty(p.date, deductionAmount, `إذن خروج مخصوم (${p.totalHours}س)`);
+    // 1.05. Permissions Accounting (حساب الأذونات: المدفوع حتى 120 دقيقة، والإضافي خصم أو تعويض)
+    const monthlyPaidPermissionQuota = (settings?.paidPermissionMinutesPerMonth !== undefined && settings?.paidPermissionMinutesPerMonth !== null)
+      ? Number(settings.paidPermissionMinutesPerMonth)
+      : (companyId === 'h2m-1' ? 120 : 0);
+
+    let cumulativePermissionMins = 0;
+    const permissionLines = [];
+    let totalExtraPermissionDeduction = 0;
+    const permissionsByDate = new Map();
+
+    const sortedApprovedPermissions = [...approvedPermissions].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    sortedApprovedPermissions.forEach(p => {
+      const pDateStr = this.toLocalDateKey(p.date);
+      const pMins = Math.round((parseFloat(p.totalHours || p.hours) || 0) * 60);
+      if (pMins <= 0) return;
+
+      if (!permissionsByDate.has(pDateStr)) {
+        permissionsByDate.set(pDateStr, { totalMinutes: 0, items: [] });
+      }
+      const dayData = permissionsByDate.get(pDateStr);
+      dayData.totalMinutes += pMins;
+      dayData.items.push(p);
+
+      const quotaRemaining = Math.max(0, monthlyPaidPermissionQuota - cumulativePermissionMins);
+      const paidPortion = Math.min(pMins, quotaRemaining);
+      const extraPortion = Math.max(0, pMins - paidPortion);
+      cumulativePermissionMins += pMins;
+
+      const isCompensated = p.isCompensated || p.type === 'COMPENSATORY' || Boolean(p.compensationDate);
+      const compDateStr = p.compensationDate ? this.toLocalDateKey(p.compensationDate) : null;
+
+      if (paidPortion > 0) {
+        permissionLines.push(`${pDateStr}: إذن معتمد ${paidPortion} دقيقة — بدون خصم`);
+      }
+
+      if (extraPortion > 0) {
+        if (isCompensated) {
+          permissionLines.push(`${pDateStr}: إذن إضافي ${extraPortion} دقيقة — تعويض بتاريخ ${compDateStr || 'شفت بديل'}`);
+        } else {
+          const permDeduct = extraPortion * minuteRate;
+          totalExtraPermissionDeduction += permDeduct;
+          permissionLines.push(`${pDateStr}: إذن إضافي ${extraPortion} دقيقة — خصم (${permDeduct.toFixed(2)} ج.م)`);
+          addDailyPenalty(p.date, permDeduct, `إذن إضافي ${extraPortion}د (${permDeduct.toFixed(2)} ج.م)`, 'permission');
+        }
+      }
     });
 
     // 1.1 Unpaid Leave Deduction (خصم إجازة بدون راتب - قيمة اليوم العادية بدون مضاعف)
@@ -1436,10 +1478,20 @@ class PayrollService {
         return;
       }
 
+      // الأذونات المعتمدة لهذا اليوم تخصم من دقائق التأخير لتفادي الخصم أو استهلاك السماح
+      const dayPermInfo = permissionsByDate.get(dateStr);
+      const dayPermMins = dayPermInfo ? dayPermInfo.totalMinutes : 0;
+      const effectiveMins = Math.max(0, mins - dayPermMins);
+
+      if (effectiveMins === 0) {
+        // مغطى بالكامل بالإذن المعتمد — لا يُخصم كتأخير ولا يستهلك رصيد السماح
+        return;
+      }
+
       // ما هو ضمن حد التسامح اليومي (maxDailyThreshold مثلاً 10د) يمتصه رصيد المرونة الشهري (remainingGrace)
       // ما زاد عن حد التسامح اليومي يذهب للخصم مباشرة بالإضافة لما تجاوز رصيد المرونة الشهري
-      const dailyAllowed = Math.min(mins, maxDailyThreshold);
-      const immediateExcess = Math.max(0, mins - maxDailyThreshold);
+      const dailyAllowed = Math.min(effectiveMins, maxDailyThreshold);
+      const immediateExcess = Math.max(0, effectiveMins - maxDailyThreshold);
 
       let graceUsed = 0;
       let graceExhausted = 0;
@@ -1480,7 +1532,8 @@ class PayrollService {
 
       if (dayLatePenalty > 0) {
         totalLatePenalty += dayLatePenalty;
-        lateDetails.push(`${dateStr}: تأخير ${mins}د (مخصوم ${effectiveLateMinutes}د) = ${dayLatePenalty.toFixed(2)} ج.م`);
+        const coveredNote = dayPermMins > 0 ? ` (مغطى بإذن ${dayPermMins}د)` : '';
+        lateDetails.push(`${dateStr}: تأخير ${mins}د${coveredNote} (مخصوم ${effectiveLateMinutes}د) = ${dayLatePenalty.toFixed(2)} ج.م`);
         addDailyPenalty(occ.date, dayLatePenalty, `تأخير ${mins}د (${dayLatePenalty.toFixed(2)} ج.م)`, 'late');
       }
     });
@@ -1610,6 +1663,8 @@ class PayrollService {
     if (totalAbsencePenalty > 0) deductions.absenceAmount = Number(totalAbsencePenalty.toFixed(2));
     if (totalLatePenalty > 0) deductions.lateAmount = Number(totalLatePenalty.toFixed(2));
     if (totalDeficitPenalty > 0) deductions.deficitAmount = Number(totalDeficitPenalty.toFixed(2));
+    if (permissionLines.length > 0) deductions.permissionDetails = permissionLines.join(' | ');
+    if (totalExtraPermissionDeduction > 0) deductions.permissionAmount = Number(totalExtraPermissionDeduction.toFixed(2));
 
     if (capAuditTrail.length > 0) {
       deductions.capNotes = capAuditTrail.join(' | ');

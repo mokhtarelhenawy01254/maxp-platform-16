@@ -27,10 +27,58 @@ const MARKETING_DEFAULT_SCOPES = [
   'leads:read',
   'subscriptions:read'
 ];
+const ADMIN_API_READ_SCOPES = [
+  'admin:analytics:read',
+  'admin:orders:read',
+  'admin:products:read',
+  'admin:customers:read',
+  'admin:subscriptions:read',
+  'admin:billing:read',
+  'admin:revenue:read',
+  'admin:marketplace:read',
+  'admin:support:read',
+  'admin:ai-usage:read',
+  'admin:logs:read',
+  'admin:users:read',
+  'admin:tenants:read',
+  'admin:coupons:read',
+  'admin:landing:read',
+  'admin:partners:read',
+  'admin:settings:read',
+  'admin:audit:read'
+];
+const ADMIN_API_WRITE_SCOPES = [
+  'admin:coupons:write',
+  'admin:landing:write',
+  'admin:tasks:write',
+  'admin:notes:write',
+  'admin:leads:write',
+  'admin:subscriptions:write',
+  'admin:billing:write',
+  'admin:modules:write',
+  'admin:tenant-settings:write',
+  'admin:subscriptions:cancel',
+  'admin:refunds:write',
+  'admin:tenants:suspend',
+  'admin:broadcast:write',
+  'admin:exports:write',
+  'admin:tenants:delete',
+  'admin:users:write',
+  'admin:pricing:write',
+  'admin:invoices:void'
+];
+const ADMIN_API_SCOPES = [
+  'admin:*',
+  'admin:*:read',
+  'admin:*:write',
+  ...ADMIN_API_READ_SCOPES,
+  ...ADMIN_API_WRITE_SCOPES
+];
 const EXTERNAL_API_SCOPES = [
   ...TASK_API_SCOPES,
   ...AGENT_INBOX_API_SCOPES,
-  ...MARKETING_API_SCOPES
+  ...MARKETING_API_SCOPES,
+  ...ADMIN_API_SCOPES
 ];
 const AGENT_INBOX_DEFAULT_SCOPES = ['facebook-inbox:read', 'facebook-inbox:evaluate'];
 const TASK_WEBHOOK_EVENTS = ['task.created', 'task.updated', 'task.status_changed', 'task.deleted'];
@@ -119,7 +167,12 @@ const normalizeScopes = (value, fallback = TASK_API_DEFAULT_SCOPES) => {
     return ['*'];
   }
 
-  const filtered = normalized.filter((scope) => EXTERNAL_API_SCOPES.includes(scope));
+  const filtered = normalized.filter((scope) => {
+    if (EXTERNAL_API_SCOPES.includes(scope)) return true;
+    if (/^admin:[a-z0-9_-]+:(read|write|\*)$/.test(scope)) return true;
+    if (/^admin:\*$/.test(scope)) return true;
+    return false;
+  });
   const unique = [...new Set(filtered)];
 
   return unique.length > 0 ? unique : [...fallback];
@@ -241,10 +294,39 @@ const hashTaskApiKey = (rawKey) => crypto.createHash('sha256').update(String(raw
 
 const credentialHasScope = (credential, requiredScope) => {
   const scopes = normalizeScopes(credential?.scopes || []);
-  return scopes.includes('*') || scopes.includes(requiredScope);
+  if (scopes.includes('*')) return true;
+  if (scopes.includes(requiredScope)) return true;
+
+  if (requiredScope.startsWith('admin:')) {
+    if (scopes.includes('admin:*')) return true;
+    const parts = requiredScope.split(':');
+    if (parts.length === 3) {
+      const [prefix, domain, action] = parts;
+      if (scopes.includes(`${prefix}:${domain}:*`)) return true;
+      if (action === 'read' && scopes.includes('admin:*:read')) return true;
+      if (action === 'write' && scopes.includes('admin:*:write')) return true;
+      // Also map backward compatible scopes e.g. 'analytics:read' -> 'admin:analytics:read'
+      if (action === 'read' && scopes.includes(`${domain}:read`)) return true;
+      // Also check normalized domain without hyphens e.g. 'landing-pages' vs 'landing_pages'
+      const altDomain = domain.includes('-') ? domain.replace(/-/g, '_') : domain.replace(/_/g, '-');
+      if (scopes.includes(`${prefix}:${altDomain}:${action}`) || scopes.includes(`${prefix}:${altDomain}:*`)) return true;
+    }
+  }
+
+  // Domain prefix matching e.g. 'tasks:*' matches 'tasks:read'
+  const colonIndex = requiredScope.indexOf(':');
+  if (colonIndex !== -1) {
+    const domainPrefix = requiredScope.substring(0, colonIndex);
+    if (scopes.includes(`${domainPrefix}:*`)) return true;
+  }
+
+  return false;
 };
 
 module.exports = {
+  ADMIN_API_READ_SCOPES,
+  ADMIN_API_WRITE_SCOPES,
+  ADMIN_API_SCOPES,
   AGENT_INBOX_API_SCOPES,
   AGENT_INBOX_DEFAULT_SCOPES,
   EXTERNAL_API_SCOPES,

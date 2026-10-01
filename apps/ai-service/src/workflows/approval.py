@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
+import os
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import httpx
 import structlog
 from agent_framework import Content, WorkflowCheckpoint
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +20,102 @@ from src.workflows.postgres_checkpoint import PostgresCheckpointStorage
 
 logger = structlog.get_logger(__name__)
 PIPELINE_WORKFLOW_NAME = "maxp-orchestration-pipeline"
+
+# How long a pending approval draft stays actionable before it auto-expires.
+APPROVAL_TTL_DAYS = 7
+
+# Fields that vary between retries of the SAME business intent (actor identity,
+# session/bookkeeping ids, timestamps). Excluded from the dedup fingerprint so a
+# merchant asking twice for the same action reuses the pending draft instead of
+# stacking identical copies (the Sep-2026 incident: 6 duplicate freeShippingBar
+# drafts from one request because each attempt carried a different user_id).
+_VOLATILE_ARG_KEYS = {
+    "user_id",
+    "customer_id",
+    "thread_id",
+    "session_id",
+    "conversation_id",
+    "company_id",
+    "channel",
+    "source",
+    "draft_id",
+    "request_id",
+    "message_id",
+    "attempt",
+    "attempts",
+    "nonce",
+    "approved",
+    "_db_session",
+}
+
+
+def _strip_volatile_args(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: _strip_volatile_args(item)
+            for key, item in value.items()
+            if key not in _VOLATILE_ARG_KEYS and not key.endswith(("_at", "_timestamp", "_time"))
+        }
+    if isinstance(value, list):
+        return [_strip_volatile_args(item) for item in value]
+    return value
+
+
+def _stable_fingerprint(*, company_id: str, action_type: str, action_args: dict[str, Any]) -> str:
+    payload = json.dumps(
+        _strip_volatile_args(action_args or {}),
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+    digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+    return f"{company_id}:{action_type}:{digest}"
+
+
+def _fire_created_notification(
+    *,
+    draft_id: str,
+    action_type: str,
+    action_args: dict[str, Any],
+    company_id: str,
+    thread_id: str,
+    expires_at: str,
+) -> None:
+    """Fire-and-forget: tell the Node backend so it can WhatsApp the merchant.
+
+    Never blocks or fails draft creation — the notification is best-effort.
+    """
+
+    async def _post() -> None:
+        base = (os.getenv("MAXP_API_URL") or "").rstrip("/")
+        token = os.getenv("MAXP_SERVICE_TOKEN") or os.getenv("AI_SERVICE_TOKEN") or ""
+        if not base or not token:
+            return
+        try:
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                await client.post(
+                    f"{base}/api/v1/agent/approvals/internal/notify",
+                    json={
+                        "draftId": draft_id,
+                        "actionType": action_type,
+                        "actionArgs": action_args,
+                        "threadId": thread_id,
+                        "expiresAt": expires_at,
+                    },
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "X-Company-Id": company_id,
+                        "Content-Type": "application/json",
+                    },
+                )
+        except Exception as exc:
+            logger.warning("approval created notification failed", draft_id=draft_id, error=str(exc))
+
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(_post())
+    except RuntimeError:
+        logger.debug("approval created notification skipped: no running loop", draft_id=draft_id)
 
 
 def _request_key(
@@ -73,6 +173,29 @@ async def create_approval_draft(
 
         request_key = f"{request_key}:{_uuid.uuid4().hex[:8]}"
 
+    # Cross-thread dedup: the same business intent already pending → reuse that
+    # draft instead of stacking an identical copy from a retried/parallel turn.
+    fingerprint = _stable_fingerprint(
+        company_id=company_id,
+        action_type=action_type,
+        action_args=action_args,
+    )
+    pending_twin = await repo.find_pending_by_fingerprint(company_id=company_id, fingerprint=fingerprint)
+    if pending_twin is not None:
+        twin_draft_id = str(pending_twin.draft_id or pending_twin.id or "")
+        logger.info(
+            "approval deduped by fingerprint",
+            action_type=action_type,
+            company_id=company_id,
+            existing_draft_id=twin_draft_id,
+        )
+        return {"draft_id": twin_draft_id, "status": "pending"}
+
+    expires_at = datetime.now(UTC) + timedelta(days=APPROVAL_TTL_DAYS)
+    metadata: dict[str, Any] = {"fingerprint": fingerprint}
+    if sdk_approval_id:
+        metadata["sdk_approval_id"] = sdk_approval_id
+
     approval = await repo.create(
         company_id=company_id,
         thread_id=thread_id,
@@ -81,11 +204,21 @@ async def create_approval_draft(
         action_type=action_type,
         action_args=action_args,
         channel=channel,
-        metadata={"sdk_approval_id": sdk_approval_id} if sdk_approval_id else None,
+        expires_at=expires_at,
+        metadata=metadata,
     )
     draft_id = str(approval.draft_id or approval.id or "")
 
-    return {"draft_id": draft_id, "status": "pending"}
+    _fire_created_notification(
+        draft_id=draft_id,
+        action_type=action_type,
+        action_args=action_args,
+        company_id=company_id,
+        thread_id=thread_id,
+        expires_at=expires_at.isoformat(),
+    )
+
+    return {"draft_id": draft_id, "status": "pending", "expires_at": expires_at.isoformat()}
 
 
 async def create_sdk_approval_response(

@@ -3,6 +3,44 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronDown, History, RotateCcw, X, Cpu, Check, Link2, ExternalLink, SlidersHorizontal } from 'lucide-react';
 import { SPECIALIST_AGENTS, SpecialistAgent } from './specialists';
 import { copyCopilotSessionLink, openCopilotSessionInNewTab } from './copilotLinkUtils';
+import { apiClient } from '../../services/apiClient';
+
+/**
+ * عدّاد المسودات المعلقة — يظهر بجوار اسم الوكيل حتى لا تموت مسودة اعتماد
+ * منسية في الطابور من غير ما التاجر يشوفها (يظهر العدد عند فتح المساعد).
+ */
+const PendingApprovalsBadge: React.FC = () => {
+  const [count, setCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiClient
+      .get<{ approvals?: unknown[]; count?: number }>('/agent-approvals?status=pending')
+      .then((res) => {
+        if (cancelled) return;
+        const approvals = res.data?.approvals;
+        setCount(Array.isArray(approvals) ? approvals.length : res.data?.count ?? 0);
+      })
+      .catch(() => {
+        if (!cancelled) setCount(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (count === null || count <= 0) return null;
+  const label = `${count} مسودة اعتماد معلقة`;
+  return (
+    <span
+      className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-500/15 border border-amber-200/70 dark:border-amber-500/30 px-1.5 py-0.2 text-[10px] font-semibold tabular-nums text-amber-700 dark:text-amber-300"
+      title={label}
+      aria-label={label}
+    >
+      {count}
+    </span>
+  );
+};
 
 interface CopilotHeaderProps {
   selectedAgent: SpecialistAgent;
@@ -74,6 +112,7 @@ export const CopilotHeader: React.FC<CopilotHeaderProps> = ({
               <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors tracking-tight">
                 {selectedAgent.name}
               </h3>
+              <PendingApprovalsBadge />
               {selectedAgent.isDefault && (
                 <span className="text-[10px] bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/50 rounded px-1.5 py-0.2 font-medium">
                   لوحة التحكم
