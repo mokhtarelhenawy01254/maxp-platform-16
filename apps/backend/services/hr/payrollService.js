@@ -973,13 +973,43 @@ class PayrollService {
    * حساب تفاصيل الراتب (بدون حفظ)
    */
   async calculatePayrollData(companyId, employeeId, month, year, data = {}) {
-    // جلب بيانات الموظف (User)
-    const employee = await this.prisma.user.findUnique({
+    // جلب بيانات الموظف (User أو Employee)
+    let employee = await this.prisma.user.findUnique({
       where: { id: employeeId },
       include: {
-        employees: true // جلب بيانات الموظف الإضافية (مثل metadata)
+        employees: true
       }
     });
+
+    if (!employee) {
+      const empRecord = await this.prisma.employee.findFirst({
+        where: {
+          companyId,
+          OR: [
+            { id: employeeId },
+            { employeeNumber: employeeId },
+            { userId: employeeId }
+          ]
+        },
+        include: { user: { include: { employees: true } } }
+      });
+
+      if (empRecord?.user) {
+        employee = empRecord.user;
+        employeeId = employee.id;
+      } else if (empRecord) {
+        employee = {
+          id: empRecord.userId || empRecord.id,
+          companyId: empRecord.companyId,
+          firstName: empRecord.firstName,
+          lastName: empRecord.lastName,
+          employeeNumber: empRecord.employeeNumber,
+          baseSalary: empRecord.baseSalary,
+          employees: [empRecord]
+        };
+        employeeId = employee.id;
+      }
+    }
 
     if (!employee) {
       throw new NotFoundError('الموظف', employeeId);
@@ -1071,7 +1101,7 @@ class PayrollService {
     }
 
     // جلب أذونات الحضور (Exit Permits)
-    const hrEmployeeId = employee.employees?.[0]?.id;
+    const hrEmployeeId = Array.isArray(employee.employees) ? employee.employees[0]?.id : employee.employees?.id;
     let approvedPermissions = [];
     if (hrEmployeeId) {
       approvedPermissions = await this.prisma.hrPermissionRequest.findMany({
@@ -1163,7 +1193,11 @@ class PayrollService {
     const totalEarlyMinutes = attendance.reduce((sum, a) => sum + (a.earlyLeaveMinutes || 0), 0);
 
     // الراتب الأساسي وسعر اليوم والساعة والدقيقة
-    const fullMonthBaseSalary = parseFloat(data.overrides?.baseSalary || employee.baseSalary) || 0;
+    const empRecord = Array.isArray(employee.employees) ? employee.employees[0] : employee.employees;
+    const fullMonthBaseSalary = parseFloat(
+      data.overrides?.baseSalary ??
+      (empRecord?.baseSalary ?? employee.baseSalary)
+    ) || 0;
     const dailyRate = fullMonthBaseSalary / totalWorkingDaysInMonth;
     const workingHoursPerDay = settings?.workingHoursPerDay || 8;
     const hourlyRate = dailyRate / workingHoursPerDay;
@@ -1458,11 +1492,13 @@ class PayrollService {
     let totalCappedManualPenalty = 0;
     let capAuditTrail = [];
     let deductionBreakdown = [];
+    let dailyDeductions = [];
 
     dailyPenaltyMap.forEach((dayData, dateStr) => {
       let dailyTotal = dayData.total;
+      const isCapped = dailyCapLimit > 0 && dailyTotal > dailyCapLimit;
 
-      if (dailyTotal > dailyCapLimit) {
+      if (isCapped) {
         capAuditTrail.push(`${dateStr}: تم خفض من ${dailyTotal.toFixed(2)} إلى ${dailyCapLimit.toFixed(2)} (سقف)`);
         dailyTotal = dailyCapLimit;
       }
@@ -1473,6 +1509,16 @@ class PayrollService {
 
       deductionBreakdown.push(`${dateStr}: ${dailyTotal.toFixed(2)} (${dayData.details.join(', ')}) - [${typeLabel}]`);
 
+      dailyDeductions.push({
+        date: dateStr,
+        amount: Number(dailyTotal.toFixed(2)),
+        rawAmount: Number(dayData.total.toFixed(2)),
+        isCapped,
+        type: typeLabel,
+        reasons: dayData.details,
+        types: dayData.types
+      });
+
       if (isManual || dayData.details.some(d => d.includes('يدوي'))) {
         totalCappedManualPenalty += dailyTotal;
       } else {
@@ -1481,15 +1527,6 @@ class PayrollService {
     });
 
     // تصنيف الخصومات وحفظها بوضوح
-    if (totalAbsencePenalty > 0) {
-      deductions['غياب'] = totalAbsencePenalty;
-    }
-    if (totalLatePenalty > 0) {
-      deductions['تأخيرات'] = totalLatePenalty;
-    }
-    if (totalDeficitPenalty > 0) {
-      deductions['عجز ساعات العمل'] = totalDeficitPenalty;
-    }
     if (totalCappedManualPenalty > 0) {
       deductions['خصم يدوي'] = totalCappedManualPenalty;
       deductions.manualDetails = manualDeductions.map(d => `${d.reason}(${d.amount})`).join(' | ');
@@ -1503,6 +1540,9 @@ class PayrollService {
     if (absenceDetails.length > 0) deductions.absenceDetails = absenceDetails.join(' | ');
     if (lateDetails.length > 0) deductions.lateDetails = lateDetails.join(' | ');
     if (deficitDetails.length > 0) deductions.deficitDetails = deficitDetails.join(' | ');
+    if (totalAbsencePenalty > 0) deductions.absenceAmount = Number(totalAbsencePenalty.toFixed(2));
+    if (totalLatePenalty > 0) deductions.lateAmount = Number(totalLatePenalty.toFixed(2));
+    if (totalDeficitPenalty > 0) deductions.deficitAmount = Number(totalDeficitPenalty.toFixed(2));
 
     if (capAuditTrail.length > 0) {
       deductions.capNotes = capAuditTrail.join(' | ');
@@ -1558,10 +1598,23 @@ class PayrollService {
       Object.assign(deductions, data.deductions);
     }
 
-    const totalDeductions = Object.values(deductions).reduce((sum, val) => {
-      if (Array.isArray(val) || typeof val === 'string') return sum;
-      return sum + (parseFloat(val) || 0);
-    }, 0);
+    // حساب إجمالي الخصومات بدقة وتجنب الازدواجية بين البنود التفصيلية والمجمعة
+    let calculatedTotalDeductions = totalCappedAttendancePenalty + totalCappedManualPenalty + totalAdvanceDeduction;
+    if (data.deductions && typeof data.deductions === 'object') {
+      const skipKeys = new Set([
+        'details', 'manualDetails', 'capNotes', 'advanceDetails',
+        'absenceDetails', 'lateDetails', 'deficitDetails',
+        'absenceAmount', 'lateAmount', 'deficitAmount',
+        'غياب', 'تأخيرات', 'عجز ساعات العمل', 'خصم يدوي', 'غياب وتأخير', 'سلف'
+      ]);
+      Object.entries(data.deductions).forEach(([k, v]) => {
+        if (!skipKeys.has(k)) {
+          calculatedTotalDeductions += (parseFloat(v) || 0);
+        }
+      });
+    }
+
+    const totalDeductions = calculatedTotalDeductions;
 
     // حساب الإضافي
     const overtimeRate = parseFloat(settings?.overtimeRate) || 1.5;
@@ -1616,9 +1669,15 @@ class PayrollService {
       totalWorkingDaysInMonth,
       presentDays,
       absentDays,
+      absenceDeduction: Number(totalAbsencePenalty.toFixed(2)),
+      lateMinutes: totalLateMinutes,
+      totalLateMinutes,
+      earlyMinutes: totalEarlyMinutes,
+      totalEarlyMinutes,
       allowances,
       totalAllowances,
       deductions,
+      dailyDeductions,
       totalDeductions,
       attendanceDeduction,
       latePenalty,
@@ -2171,6 +2230,246 @@ class PayrollService {
       console.error('❌ Error getting payroll automation status:', error);
       throw error;
     }
+  }
+
+  /**
+   * معاينة مسير الرواتب (Dry-Run / Read-Only) بدون أي كتابة في قاعدة البيانات
+   * @param {string} companyId 
+   * @param {object} options { month, year, employeeId, employeeCode, employeeNumber, overrides }
+   */
+  async previewPayroll(companyId, options = {}) {
+    const month = parseInt(options.month, 10);
+    const year = parseInt(options.year, 10);
+
+    if (!month || isNaN(month) || month < 1 || month > 12) {
+      const err = new Error('الشهر مطلوب ويجب أن يكون بين 1 و 12');
+      err.code = 'INVALID_MONTH';
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (!year || isNaN(year) || year < 2000 || year > 2100) {
+      const err = new Error('السنة مطلوبة ويجب أن تكون صالحة (مثال: 2026)');
+      err.code = 'INVALID_YEAR';
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const employeeIdentifier = options.employeeId || options.employeeCode || options.employeeNumber;
+
+    // حالة 1: معاينة موظف محدد
+    if (employeeIdentifier) {
+      let targetEmployee = null;
+      let targetEmployeeId = null;
+
+      // 1. البحث في User
+      const user = await this.prisma.user.findFirst({
+        where: {
+          id: employeeIdentifier,
+          OR: [
+            { companyId },
+            { userCompanies: { some: { companyId, isActive: true } } }
+          ]
+        },
+        include: { employees: true }
+      });
+
+      if (user) {
+        targetEmployee = user;
+        targetEmployeeId = user.id;
+      } else {
+        // 2. البحث في Employee (بـ id أو employeeNumber أو userId)
+        const emp = await this.prisma.employee.findFirst({
+          where: {
+            companyId,
+            OR: [
+              { id: employeeIdentifier },
+              { employeeNumber: employeeIdentifier },
+              { userId: employeeIdentifier }
+            ]
+          },
+          include: {
+            user: { include: { employees: true } }
+          }
+        });
+
+        if (emp?.user) {
+          targetEmployee = emp.user;
+          targetEmployeeId = emp.user.id;
+        } else if (emp) {
+          targetEmployee = {
+            id: emp.userId || emp.id,
+            companyId: emp.companyId,
+            firstName: emp.firstName,
+            lastName: emp.lastName,
+            employeeNumber: emp.employeeNumber,
+            baseSalary: emp.baseSalary,
+            employees: emp
+          };
+          targetEmployeeId = targetEmployee.id;
+        }
+      }
+
+      if (!targetEmployee) {
+        const err = new Error(`الموظف بالمعرف/الكود "${employeeIdentifier}" غير موجود في هذه الشركة`);
+        err.code = 'EMPLOYEE_NOT_FOUND';
+        err.statusCode = 400;
+        throw err;
+      }
+
+      const payrollData = await this.calculatePayrollData(
+        companyId,
+        targetEmployeeId,
+        month,
+        year,
+        { overrides: options.overrides }
+      );
+
+      const previewItem = this._formatPayrollPreviewItem(payrollData, month, year);
+
+      return {
+        success: true,
+        dryRun: true,
+        readOnly: true,
+        message: 'تمت معاينة الراتب بنجاح بدون كتابة في قاعدة البيانات',
+        companyId,
+        month,
+        year,
+        data: previewItem,
+        employees: [previewItem]
+      };
+    }
+
+    // حالة 2: معاينة جميع الموظفين في الشركة
+    const users = await this.prisma.user.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { companyId },
+          { userCompanies: { some: { companyId, isActive: true } } }
+        ]
+      },
+      include: {
+        employees: true
+      }
+    });
+
+    const standaloneEmployees = await this.prisma.employee.findMany({
+      where: {
+        companyId,
+        isActive: true,
+        userId: null
+      }
+    });
+
+    const allTargets = [
+      ...users.map(u => ({ id: u.id, user: u })),
+      ...standaloneEmployees.map(e => ({
+        id: e.id,
+        user: {
+          id: e.id,
+          companyId: e.companyId,
+          firstName: e.firstName,
+          lastName: e.lastName,
+          employeeNumber: e.employeeNumber,
+          baseSalary: e.baseSalary,
+          employees: [e]
+        }
+      }))
+    ];
+
+    const previews = [];
+    const totals = {
+      totalBaseSalary: 0,
+      totalGrossSalary: 0,
+      totalNetSalary: 0,
+      totalDeductions: 0,
+      totalAbsenceDeductions: 0,
+      totalLatePenalties: 0,
+      totalSocialInsurance: 0,
+      totalTax: 0,
+      totalBonuses: 0,
+      totalAllowances: 0
+    };
+
+    for (const target of allTargets) {
+      try {
+        const payrollData = await this.calculatePayrollData(
+          companyId,
+          target.id,
+          month,
+          year,
+          { overrides: options.overrides }
+        );
+        const item = this._formatPayrollPreviewItem(payrollData, month, year);
+        previews.push(item);
+
+        totals.totalBaseSalary += item.baseSalary;
+        totals.totalGrossSalary += item.grossSalary;
+        totals.totalNetSalary += item.netSalary;
+        totals.totalDeductions += item.totalDeductions;
+        totals.totalAbsenceDeductions += item.absenceDeduction;
+        totals.totalLatePenalties += item.latePenalty;
+        totals.totalSocialInsurance += item.socialInsurance;
+        totals.totalTax += item.tax;
+        totals.totalBonuses += item.bonuses;
+        totals.totalAllowances += item.totalAllowances;
+      } catch (err) {
+        console.warn(`⚠️ [PAYROLL-PREVIEW] Failed to calculate for employee ${target.id}:`, err.message);
+      }
+    }
+
+    Object.keys(totals).forEach(k => {
+      totals[k] = Number(totals[k].toFixed(2));
+    });
+
+    return {
+      success: true,
+      dryRun: true,
+      readOnly: true,
+      message: 'تمت معاينة الرواتب لجميع الموظفين بنجاح بدون كتابة في قاعدة البيانات',
+      companyId,
+      month,
+      year,
+      count: previews.length,
+      totals,
+      employees: previews
+    };
+  }
+
+  _formatPayrollPreviewItem(payrollData, month, year) {
+    const emp = payrollData.employee || {};
+    const empRecord = Array.isArray(emp.employees) ? emp.employees[0] : emp.employees;
+
+    return {
+      employeeId: empRecord?.id || emp.id,
+      userId: emp.id,
+      employeeNumber: empRecord?.employeeNumber || emp.employeeNumber || null,
+      employeeName: `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'موظف',
+      month,
+      year,
+      baseSalary: Number(payrollData.baseSalary.toFixed(2)),
+      fullMonthBaseSalary: Number(payrollData.fullMonthBaseSalary.toFixed(2)),
+      totalWorkingDays: payrollData.totalWorkingDaysInMonth,
+      presentDays: payrollData.presentDays,
+      absentDays: payrollData.absentDays,
+      absenceDeduction: Number((payrollData.absenceDeduction || 0).toFixed(2)),
+      lateMinutes: payrollData.totalLateMinutes || 0,
+      latePenalty: Number((payrollData.latePenalty || 0).toFixed(2)),
+      earlyMinutes: payrollData.totalEarlyMinutes || 0,
+      allowances: payrollData.allowances || {},
+      totalAllowances: Number((payrollData.totalAllowances || 0).toFixed(2)),
+      overtimeHours: payrollData.totalOvertimeHours || 0,
+      overtimeAmount: Number((payrollData.overtimeAmount || 0).toFixed(2)),
+      bonuses: Number((payrollData.bonuses || 0).toFixed(2)),
+      totalDeductions: Number(payrollData.totalDeductions.toFixed(2)),
+      socialInsurance: Number(payrollData.socialInsurance.toFixed(2)),
+      tax: Number((payrollData.taxAmount || 0).toFixed(2)),
+      grossSalary: Number(payrollData.grossSalary.toFixed(2)),
+      netSalary: Number(payrollData.netSalary.toFixed(2)),
+      dailyDeductions: payrollData.dailyDeductions || [],
+      deductionsBreakdown: payrollData.deductions || {}
+    };
   }
 
 }

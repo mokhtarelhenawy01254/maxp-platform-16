@@ -12,7 +12,7 @@ const {
   HR_WEBHOOK_EVENTS,
   logExternalApiAction
 } = require('../../services/hrIntegrationService');
-const { attendanceService, shiftService } = require('../../services/hr');
+const { attendanceService, shiftService, payrollService } = require('../../services/hr');
 
 const VALID_EMPLOYEE_STATUSES = [
   'ACTIVE',
@@ -1897,6 +1897,117 @@ const getPayrollRunItems = async (req, res) => {
   } catch (error) {
     console.error('❌ [ExternalHrController.getPayrollRunItems] Error:', error);
     return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * D1b: معاينة مسير رواتب بدون كتابة في قاعدة البيانات (Dry-Run / Read-Only)
+ * POST /payroll/preview (Scope: hr:payroll:read)
+ * POST /payroll/runs?dryRun=true
+ */
+const previewPayroll = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const {
+      month,
+      year,
+      employeeId,
+      employeeCode,
+      employeeNumber,
+      overrides
+    } = {
+      ...req.query,
+      ...req.body
+    };
+
+    if (!month || !year) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'month and year are required for payroll preview'
+        }
+      });
+    }
+
+    const preview = await payrollService.previewPayroll(companyId, {
+      month,
+      year,
+      employeeId,
+      employeeCode,
+      employeeNumber,
+      overrides
+    });
+
+    return res.json(preview);
+  } catch (error) {
+    console.error('❌ [ExternalHrController.previewPayroll] Error:', error);
+    const status = error.statusCode || error.status || (error.code ? 400 : 500);
+    return res.status(status).json({
+      success: false,
+      error: {
+        code: error.code || 'PREVIEW_ERROR',
+        message: error.message
+      }
+    });
+  }
+};
+
+/**
+ * D1c: إنشاء مسير رواتب فعلي أو تحويله لمعاينة إذا كان dryRun=true
+ * POST /payroll/runs (Scope: hr:payroll:write)
+ */
+const createPayrollRun = async (req, res) => {
+  try {
+    const isDryRun = req.query?.dryRun === 'true' || req.body?.dryRun === true;
+    if (isDryRun) {
+      return previewPayroll(req, res);
+    }
+
+    const { companyId } = req;
+    const { month, year, forceRegenerate = false } = req.body;
+
+    if (!month || !year) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'month and year are required to create a payroll run'
+        }
+      });
+    }
+
+    const result = await payrollService.generateMonthlyPayroll(
+      companyId,
+      parseInt(month, 10),
+      parseInt(year, 10),
+      forceRegenerate === true
+    );
+
+    await logExternalApiAction({
+      req,
+      action: 'CREATE_PAYROLL_RUN',
+      description: `Generated payroll run for ${month}/${year} (Success: ${result?.success?.length || 0}, Regenerated: ${result?.regenerated?.length || 0})`,
+      resourceType: 'PayrollRun',
+      resourceId: `${year}-${String(month).padStart(2, '0')}`,
+      targetName: `Payroll ${month}/${year}`,
+      companyId
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.createPayrollRun] Error:', error);
+    const status = error.statusCode || error.status || 500;
+    return res.status(status).json({
+      success: false,
+      error: {
+        code: error.code || 'PAYROLL_GENERATION_FAILED',
+        message: error.message
+      }
+    });
   }
 };
 
@@ -6372,6 +6483,8 @@ module.exports = {
   getAttendanceSummary,
   listPayrollRuns,
   getPayrollRunItems,
+  previewPayroll,
+  createPayrollRun,
   decideLeaveRequest,
   // New read endpoints
   listAdvances,

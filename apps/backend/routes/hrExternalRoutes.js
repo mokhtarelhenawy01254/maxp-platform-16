@@ -106,6 +106,8 @@ router.post('/leaves/:id/decision', requireExternalHrScope('hr:leaves:approve'),
 
 // 💰 Payroll Runs & Slips
 router.get('/payroll/runs', requireExternalHrScope('hr:payroll:read'), hrExternalController.listPayrollRuns);
+router.post('/payroll/runs', requireExternalHrScope('hr:payroll:write'), hrExternalController.createPayrollRun);
+router.post('/payroll/preview', requireExternalHrScope('hr:payroll:read'), hrExternalController.previewPayroll);
 router.get('/payroll/runs/:id/items', requireExternalHrScope('hr:payroll:read'), hrExternalController.getPayrollRunItems);
 
 // 💳 Advances (Financial Loans)

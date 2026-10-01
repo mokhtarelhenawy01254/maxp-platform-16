@@ -951,6 +951,87 @@
             "$ref": "#/components/responses/RateLimited"
           }
         }
+      },
+      "post": {
+        "summary": "Create payroll run or dry-run preview",
+        "description": "Generates a monthly payroll run for all employees, or returns a dry-run preview if `dryRun=true` without writing to the database.\n\n**Required Scope:** `hr:payroll:write` (or `hr:payroll:read` if dryRun=true)",
+        "operationId": "hr_create_payroll_run",
+        "x-required-scope": "hr:payroll:write",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "description": "If true, simulates payroll calculation without creating records in database",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["month", "year"],
+                "properties": {
+                  "month": { "type": "integer", "minimum": 1, "maximum": 12, "example": 9 },
+                  "year": { "type": "integer", "example": 2026 },
+                  "dryRun": { "type": "boolean", "default": false },
+                  "forceRegenerate": { "type": "boolean", "default": false }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Dry-run preview results (when dryRun=true)" },
+          "201": { "description": "Payroll run created" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/payroll/preview": {
+      "post": {
+        "summary": "Preview payroll calculation (Dry-Run / Read-Only)",
+        "description": "Calculates exact payroll figures (base salary, present days, absent days, absence deduction, late minutes, late penalty, total deductions, social insurance, tax, net salary, and daily deduction breakdown) for a specific employee or all employees without writing to the database (strictly read-only).\n\n**Required Scope:** `hr:payroll:read` (or `hr:read`, `*`)",
+        "operationId": "hr_preview_payroll",
+        "x-required-scope": "hr:payroll:read",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["month", "year"],
+                "properties": {
+                  "month": { "type": "integer", "minimum": 1, "maximum": 12, "example": 9, "description": "Target month (1-12)" },
+                  "year": { "type": "integer", "example": 2026, "description": "Target year" },
+                  "employeeId": { "type": "string", "description": "Optional Employee UUID or User UUID" },
+                  "employeeCode": { "type": "string", "example": "EMP00006", "description": "Optional employee badge / code number" },
+                  "overrides": { "type": "object", "description": "Optional calculation overrides (e.g. baseSalary)" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Read-only payroll preview with detailed breakdown and zero database writes"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
       }
     },
     "/payroll/runs/{id}/items": {

@@ -2877,11 +2877,60 @@ async function createPayroll(req, res) {
 }
 
 /**
+/**
+ * معاينة مسير الرواتب بدون إنشاء أو كتابة في قاعدة البيانات (Dry-Run / Read-Only)
+ * POST /api/hr/payroll/preview
+ */
+async function previewPayroll(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { month, year, employeeId, employeeCode, employeeNumber, overrides } = {
+      ...req.query,
+      ...req.body
+    };
+
+    if (!month || !year) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'الشهر والسنة مطلوبان لمعاينة مسير الرواتب'
+        }
+      });
+    }
+
+    const result = await payrollService.previewPayroll(companyId, {
+      month,
+      year,
+      employeeId,
+      employeeCode,
+      employeeNumber,
+      overrides
+    });
+
+    return res.json(result);
+  } catch (error) {
+    console.error('❌ Error previewing payroll:', error);
+    const status = error.statusCode || error.status || (error.code ? 400 : 500);
+    return res.status(status).json({
+      success: false,
+      error: {
+        code: error.code || 'PREVIEW_ERROR',
+        message: error.message || 'حدث خطأ أثناء معاينة مسير الرواتب'
+      }
+    });
+  }
+}
+
+/**
  * توليد كشوف رواتب لجميع الموظفين
  * POST /api/hr/payroll/generate
  */
 async function generateMonthlyPayroll(req, res) {
   try {
+    if (req.query?.dryRun === 'true' || req.body?.dryRun === true) {
+      return previewPayroll(req, res);
+    }
     const { companyId } = req.user;
     const { month, year, forceRegenerate } = req.body;
     const result = await payrollService.generateMonthlyPayroll(
@@ -7142,6 +7191,7 @@ module.exports = {
 
   // Payroll
   createPayroll,
+  previewPayroll,
   generateMonthlyPayroll,
   autoCalculateAndDeductPayrolls,
   getPayrollAutomationStatus,

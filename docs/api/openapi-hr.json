@@ -581,14 +581,48 @@
             }
           },
           {
-            "name": "departmentId",
+            "name": "month",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "description": "Calendar month (1-12)"
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Calendar year (e.g. 2026)"
+          },
+          {
+            "name": "employeeId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Employee ID, Employee Number, or User ID"
+          },
+          {
+            "name": "employeeCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Alias for employeeId"
+          },
+          {
+            "name": "userId",
             "in": "query",
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "employeeCode",
+            "name": "departmentId",
             "in": "query",
             "schema": {
               "type": "string"
@@ -915,6 +949,87 @@
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create payroll run or dry-run preview",
+        "description": "Generates a monthly payroll run for all employees, or returns a dry-run preview if `dryRun=true` without writing to the database.\n\n**Required Scope:** `hr:payroll:write` (or `hr:payroll:read` if dryRun=true)",
+        "operationId": "hr_create_payroll_run",
+        "x-required-scope": "hr:payroll:write",
+        "parameters": [
+          {
+            "name": "dryRun",
+            "in": "query",
+            "description": "If true, simulates payroll calculation without creating records in database",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["month", "year"],
+                "properties": {
+                  "month": { "type": "integer", "minimum": 1, "maximum": 12, "example": 9 },
+                  "year": { "type": "integer", "example": 2026 },
+                  "dryRun": { "type": "boolean", "default": false },
+                  "forceRegenerate": { "type": "boolean", "default": false }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Dry-run preview results (when dryRun=true)" },
+          "201": { "description": "Payroll run created" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/payroll/preview": {
+      "post": {
+        "summary": "Preview payroll calculation (Dry-Run / Read-Only)",
+        "description": "Calculates exact payroll figures (base salary, present days, absent days, absence deduction, late minutes, late penalty, total deductions, social insurance, tax, net salary, and daily deduction breakdown) for a specific employee or all employees without writing to the database (strictly read-only).\n\n**Required Scope:** `hr:payroll:read` (or `hr:read`, `*`)",
+        "operationId": "hr_preview_payroll",
+        "x-required-scope": "hr:payroll:read",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["month", "year"],
+                "properties": {
+                  "month": { "type": "integer", "minimum": 1, "maximum": 12, "example": 9, "description": "Target month (1-12)" },
+                  "year": { "type": "integer", "example": 2026, "description": "Target year" },
+                  "employeeId": { "type": "string", "description": "Optional Employee UUID or User UUID" },
+                  "employeeCode": { "type": "string", "example": "EMP00006", "description": "Optional employee badge / code number" },
+                  "overrides": { "type": "object", "description": "Optional calculation overrides (e.g. baseSalary)" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Read-only payroll preview with detailed breakdown and zero database writes"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -1603,6 +1718,11 @@
                       "REMOTE"
                     ]
                   },
+                  "date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-09-30"
+                  },
                   "notes": {
                     "type": "string"
                   },
@@ -1617,6 +1737,105 @@
         "responses": {
           "200": {
             "description": "Corrected attendance record"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Void and delete attendance record",
+        "description": "Permanently voids and deletes an erroneous or future attendance record with mandatory audit logging.\n\n**Required Scope:** `hr:attendance:write` (or `hr:write`, `*`)",
+        "operationId": "hr_void_attendance_record",
+        "x-required-scope": "hr:attendance:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Attendance Record ID"
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Mandatory explanation for voiding the record"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "Mandatory reason for voiding this record"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Attendance record voided successfully"
+          },
+          "400": {
+            "description": "Validation error (missing reason)"
+          },
+          "404": {
+            "description": "Attendance record not found"
+          }
+        }
+      }
+    },
+    "/attendance/{id}/void": {
+      "post": {
+        "summary": "Void and delete attendance record",
+        "description": "Alias for DELETE /attendance/{id} with mandatory reason in body or query.\n\n**Required Scope:** `hr:attendance:write` (or `hr:write`, `*`)",
+        "operationId": "hr_void_attendance_post",
+        "x-required-scope": "hr:attendance:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Attendance Record ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["reason"],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "Mandatory reason for voiding this record"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Attendance record voided successfully"
+          },
+          "400": {
+            "description": "Validation error (missing reason)"
+          },
+          "404": {
+            "description": "Attendance record not found"
           }
         }
       }
@@ -1805,6 +2024,55 @@
         }
       }
     },
+    "/rewards/{id}/void": {
+      "post": {
+        "summary": "Void / cancel a reward record",
+        "description": "Voids an applied/approved reward record before payroll processing. Requires mandatory reason.\n\n**Required Scope:** hr:rewards:write (or hr:write, *)",
+        "operationId": "hr_void_reward",
+        "x-required-scope": "hr:rewards:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Reward Record ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "Mandatory explanation for voiding the reward"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reward voided successfully"
+          },
+          "404": {
+            "description": "Reward record not found"
+          },
+          "409": {
+            "description": "Reward already processed in payroll"
+          }
+        }
+      }
+    },
     "/shifts": {
       "get": {
         "summary": "List shifts",
@@ -1988,6 +2256,24 @@
       }
     },
     "/reward-types/{id}": {
+      "get": {
+        "summary": "Get reward type by ID",
+        "description": "Retrieves configuration and eligibility conditions of a specific reward type, including target employee fields.\n\n**Required Scope:** `hr:rewards:read` (or `hr:read`, `*`)",
+        "operationId": "hr_get_reward_type_by_id",
+        "x-required-scope": "hr:rewards:read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Reward type details" },
+          "404": { "description": "Reward type not found" }
+        }
+      },
       "patch": {
         "summary": "Update reward type",
         "description": "Updates definition, calculation formula, or status of an existing reward type.\n\n**Required Scope:** `hr:rewards:write` (or `hr:write`, `*`)",

@@ -512,5 +512,38 @@ describe('HR External API — New Endpoints & Timezone Fix Unit Tests', () => {
       );
     });
   });
+
+  describe('Item 9: Read-Only Payroll Preview & Dry-Run Runs', () => {
+    test('previewPayroll and createPayrollRun are exported as functions', () => {
+      expect(typeof hrExternalController.previewPayroll).toBe('function');
+      expect(typeof hrExternalController.createPayrollRun).toBe('function');
+    });
+
+    test('previewPayroll returns 400 VALIDATION_ERROR when month or year is missing', async () => {
+      mockReq.query = {};
+      mockReq.body = {};
+      await hrExternalController.previewPayroll(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({ code: 'VALIDATION_ERROR' })
+        })
+      );
+    });
+
+    test('createPayrollRun returns 400 when month or year is missing and dryRun is false', async () => {
+      mockReq.query = {};
+      mockReq.body = {};
+      await hrExternalController.createPayrollRun(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({ code: 'VALIDATION_ERROR' })
+        })
+      );
+    });
+  });
 });
 
