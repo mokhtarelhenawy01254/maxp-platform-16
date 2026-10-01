@@ -9,8 +9,11 @@ import {
   LayoutList,
   Sparkles,
   MessageSquare,
-  Plus
+  Plus,
+  Link2,
+  Check
 } from "lucide-react";
+import { toast } from "sonner";
 import type { AgentConfig, ModelConfig } from "../types/sandbox.types";
 import type { CentralKeyConfig } from "../types/sandbox.types";
 
@@ -24,8 +27,10 @@ interface HeaderBarProps {
   onAgentChange: (agentId: string) => void;
   onModelChange: (model: string, provider: string, keyId?: string | null) => void;
   onSessions?: () => void;
+  activeSessionId?: string | null;
   activeSessionTitle?: string;
   onNewSession?: () => void;
+  onCopySessionLink?: (sessionId?: string) => void;
   onEvaluate: () => void;
   onInspector?: () => void;
   onCompare?: () => void;
@@ -45,8 +50,10 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   onAgentChange,
   onModelChange,
   onSessions,
+  activeSessionId,
   activeSessionTitle,
   onNewSession,
+  onCopySessionLink,
   onEvaluate,
   onInspector,
   onCompare,
@@ -55,6 +62,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   isStreaming,
   isSuper = false,
 }) => {
+  const [copiedLink, setCopiedLink] = React.useState(false);
   const optionValue = (m: ModelConfig) => `${m.provider}::${m.model}::${m.keyId || ""}`;
   const currentModel = models.find((m) => m.model === model && (!keyId || m.keyId === keyId))
     || models.find((m) => m.model === model);
@@ -107,7 +115,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
           )}
         </div>
 
-        {/* Sessions Trigger Button (Mobile & Compact View) */}
+        {/* Sessions Trigger Button & Conversation Link (Mobile & Compact View) */}
         <div className="flex items-center gap-1 shrink-0">
           {onSessions && (
             <Button
@@ -119,6 +127,40 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
             >
               <MessageSquare className="size-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
               <span className="truncate">{activeSessionTitle || "الجلسات"}</span>
+            </Button>
+          )}
+
+          {activeSessionId && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                if (onCopySessionLink) {
+                  onCopySessionLink(activeSessionId);
+                } else {
+                  const origin = typeof window !== "undefined" && window.location.origin ? window.location.origin : "https://maxp.online";
+                  const link = `${origin}/admin/ai-hub?tab=sandbox&sessionId=${encodeURIComponent(activeSessionId)}`;
+                  navigator?.clipboard?.writeText?.(link);
+                  toast.success("تم نسخ رابط المحادثة بنجاح");
+                }
+                setCopiedLink(true);
+                setTimeout(() => setCopiedLink(false), 2000);
+              }}
+              className="h-7 text-xs font-semibold flex items-center gap-1 px-2 rounded-lg border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer active:scale-95 shadow-2xs shrink-0"
+              title="نسخ رابط المحادثة"
+              aria-label="نسخ رابط المحادثة"
+            >
+              {copiedLink ? (
+                <>
+                  <Check className="size-3.5 text-emerald-500" />
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">تم النسخ</span>
+                </>
+              ) : (
+                <>
+                  <Link2 className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span className="hidden sm:inline text-[11px]">نسخ رابط المحادثة</span>
+                </>
+              )}
             </Button>
           )}
 

@@ -10,8 +10,11 @@ import {
   Star,
   Pin,
   X,
-  Loader2
+  Loader2,
+  Link2,
+  Check
 } from "lucide-react";
+import { toast } from "sonner";
 import type { Session } from "../types/sandbox.types";
 
 interface SessionListProps {
@@ -22,6 +25,7 @@ interface SessionListProps {
   onDeleteSession: (id: string) => void;
   onUpdateTitle: (id: string, title: string) => void;
   formatCost: (cost: number) => string;
+  onCopySessionLink?: (sessionId: string) => void;
   collapsed?: boolean;
   isSessionsLoading?: boolean;
   width?: number;
@@ -37,6 +41,7 @@ export const SessionList: React.FC<SessionListProps> = ({
   onDeleteSession,
   onUpdateTitle,
   formatCost,
+  onCopySessionLink,
   collapsed = false,
   isSessionsLoading = false,
   width = 256,
@@ -48,6 +53,7 @@ export const SessionList: React.FC<SessionListProps> = ({
   const [editTitle, setEditTitle] = React.useState("");
   const [pinnedIds, setPinnedIds] = React.useState<Set<string>>(new Set());
   const [deleteConfirmId, setDeleteConfirmId] = React.useState<string | null>(null);
+  const [copiedSessionId, setCopiedSessionId] = React.useState<string | null>(null);
 
   const handleTogglePin = (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
@@ -209,6 +215,31 @@ export const SessionList: React.FC<SessionListProps> = ({
                     {session.title}
                   </span>
                 )}
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onCopySessionLink) {
+                      onCopySessionLink(session.id);
+                    } else {
+                      const origin = typeof window !== "undefined" && window.location.origin ? window.location.origin : "https://maxp.online";
+                      const link = `${origin}/admin/ai-hub?tab=sandbox&sessionId=${encodeURIComponent(session.id)}`;
+                      navigator?.clipboard?.writeText?.(link);
+                      toast.success("تم نسخ رابط المحادثة بنجاح");
+                    }
+                    setCopiedSessionId(session.id);
+                    setTimeout(() => setCopiedSessionId(null), 2000);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-opacity flex-shrink-0 p-0.5"
+                  title="نسخ رابط المحادثة"
+                  aria-label="نسخ رابط المحادثة"
+                >
+                  {copiedSessionId === session.id ? (
+                    <Check className="size-3.5 text-emerald-500" />
+                  ) : (
+                    <Link2 className="size-3.5" />
+                  )}
+                </button>
 
                 <button
                   onClick={(e) => {

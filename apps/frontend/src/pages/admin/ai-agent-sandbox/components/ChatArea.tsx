@@ -92,8 +92,58 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
   useEffect(() => {
     if (!isAtBottom) return;
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView?.({ behavior: "smooth" });
   }, [messages, isAtBottom]);
+
+  const renderFormattedText = (content: string) => {
+    const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>"'()]+)/g;
+    const elements: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = linkRegex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        elements.push(content.slice(lastIndex, match.index));
+      }
+
+      if (match[1] && match[2]) {
+        const label = match[1];
+        const url = match[2];
+        elements.push(
+          <a
+            key={`md-link-${match.index}`}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-indigo-600 dark:text-indigo-400 underline font-medium hover:text-indigo-700 dark:hover:text-indigo-300 break-all inline-flex items-center gap-0.5 cursor-pointer"
+          >
+            {label}
+          </a>
+        );
+      } else if (match[3]) {
+        const url = match[3];
+        elements.push(
+          <a
+            key={`url-${match.index}`}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-indigo-600 dark:text-indigo-400 underline font-medium hover:text-indigo-700 dark:hover:text-indigo-300 break-all inline-flex items-center gap-0.5 cursor-pointer"
+          >
+            {url}
+          </a>
+        );
+      }
+
+      lastIndex = linkRegex.lastIndex;
+    }
+
+    if (lastIndex < content.length) {
+      elements.push(content.slice(lastIndex));
+    }
+
+    return elements.length > 0 ? elements : content;
+  };
 
   if (!agent) {
     return (
@@ -220,10 +270,29 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       }
     }
 
-    const cleanText = content
+    let cleanText = content
       .replace(mdImageRegex, "")
       .replace(plainImageRegex, "")
       .trim();
+
+    // Filter reasoning/draft lines that should never reach users
+    const bulletRe = /^\s*[-*]\s*\*?\s*/;
+    const draftRe = /Draft\s+\d+/i;
+    const reasoningKeywordRe = /^\s*[-*]\s*\*?\s*(?:Option|Goal|Context|Constraint|User\s*Question|Agent\s*(?:Identity|Persona)|Persona|Knowledge\s*Base|Knowledge|Refined|Analysis|Reasoning|Input|Meaning|Language|Plan|Step|Note|Consideration|Evaluation|Draft|Final(?:\s*Answer)?|Response|Output)[\s\d]*:/i;
+    const checklistRe = /\?\s*(?:Yes|No|Maybe|Y|N|true|false|✓|✗)\b/i;
+    const bracketReasoningRe = /^\s*\[[^\]]+\]\s*(?:Yes|No|Maybe|Y|N|true|false|✓|✗)?\s*$/i;
+    const monologueRe = /^\s*[-*]\s*\*?\s*(?:The\s+user|I\s+(?:need|should|will|must|think|can|have)|Usually,|The\s+goal|The\s+persona|Agent\s+(?:Identity|Persona)|Knowledge\s*Base|Final(?:\s+answer)?|Response|Output)\b/i;
+
+    const kept: string[] = [];
+    for (const rawLine of cleanText.split('\n')) {
+      const trimmed = rawLine.trim();
+      const isBullet = bulletRe.test(trimmed);
+      if (isBullet && (draftRe.test(trimmed) || reasoningKeywordRe.test(trimmed) || checklistRe.test(trimmed) || monologueRe.test(trimmed))) continue;
+      if (bracketReasoningRe.test(trimmed)) continue;
+      kept.push(rawLine);
+    }
+    cleanText = kept.join('\n').trim();
+
     return { images, text: cleanText };
   };
 
@@ -300,7 +369,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                   
                   {text && (
                     <p className="whitespace-pre-wrap leading-relaxed pr-7">
-                      {text}
+                      {renderFormattedText(text)}
                     </p>
                   )}
 

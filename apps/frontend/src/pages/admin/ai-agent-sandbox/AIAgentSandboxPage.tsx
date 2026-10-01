@@ -52,6 +52,7 @@ const AIAgentSandboxPage: React.FC = () => {
     sendMessage = () => {},
     evaluateLastResponse = () => {},
     exportSession = () => {},
+    copyConversationLink = () => false,
     formatCost = () => "",
     formatTokens = () => "",
     clearError = () => {},
@@ -184,6 +185,8 @@ const AIAgentSandboxPage: React.FC = () => {
           }
         }}
         activeSessionTitle={activeSession?.title}
+        activeSessionId={activeSessionId}
+        onCopySessionLink={copyConversationLink}
         onNewSession={() => {
           createSession();
           if (typeof window !== "undefined" && window.innerWidth < 1024) {
@@ -232,6 +235,7 @@ const AIAgentSandboxPage: React.FC = () => {
             onDeleteSession={deleteSession}
             onUpdateTitle={updateSessionTitle}
             formatCost={formatCost}
+            onCopySessionLink={copyConversationLink}
             collapsed={desktopSidebarCollapsed}
             isSessionsLoading={isSessionsLoading}
             width={280}
@@ -263,6 +267,7 @@ const AIAgentSandboxPage: React.FC = () => {
                 onDeleteSession={deleteSession}
                 onUpdateTitle={updateSessionTitle}
                 formatCost={formatCost}
+                onCopySessionLink={copyConversationLink}
                 collapsed={false}
                 isSessionsLoading={isSessionsLoading}
                 width={320}

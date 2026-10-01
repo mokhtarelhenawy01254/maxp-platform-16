@@ -362,4 +362,30 @@ describe("useAgentSandbox", () => {
       expect.any(Function)
     );
   });
+
+  test("generates and copies conversation direct link", async () => {
+    const { result } = renderHook(() => useAgentSandbox());
+
+    await waitFor(() => {
+      expect(result.current.isSessionsLoading).toBe(false);
+    });
+
+    const link = result.current.getConversationLink("session_abc");
+    expect(link).toContain("/admin/ai-hub?tab=sandbox&sessionId=session_abc");
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock,
+      },
+    });
+
+    let success = false;
+    await act(async () => {
+      success = await result.current.copyConversationLink("session_abc");
+    });
+
+    expect(success).toBe(true);
+    expect(writeTextMock).toHaveBeenCalledWith(link);
+  });
 });

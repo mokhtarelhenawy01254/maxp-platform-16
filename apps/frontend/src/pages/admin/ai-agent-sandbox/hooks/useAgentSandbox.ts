@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import type {
   Session,
   ChatMessage,
@@ -289,9 +291,22 @@ function mapSessionFromSummary(s: SessionSummary): Session {
 
 export function useAgentSandbox() {
   const { t } = useTranslation();
+  let searchParams: URLSearchParams;
+  let setSearchParams: (updater: (prev: URLSearchParams) => URLSearchParams, options?: { replace?: boolean }) => void;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    [searchParams, setSearchParams] = useSearchParams();
+  } catch {
+    searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
+    setSearchParams = () => {};
+  }
+
+  const urlSessionId = searchParams.get("sessionId") || searchParams.get("session") || null;
+  const urlAgentId = searchParams.get("agent") || searchParams.get("agentId") || null;
+
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [selectedAgentId, setSelectedAgentId] = useState<string>("ceo");
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(urlSessionId);
+  const [selectedAgentId, setSelectedAgentId] = useState<string>(urlAgentId || "ceo");
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [selectedProvider, setSelectedProvider] = useState<string>("");
   const [selectedKeyId, setSelectedKeyId] = useState<string | null>(null);
@@ -363,8 +378,10 @@ export function useAgentSandbox() {
           }));
           setSkills(derivedSkills);
           
+          const agentFromUrl = urlAgentId ? mappedAgents.find((a) => a.id === urlAgentId) : null;
           preferredAgent =
-            mappedAgents.find((agent) => agent.role === "FACEBOOK_SALES_SUPPORT")
+            agentFromUrl
+            || mappedAgents.find((agent) => agent.role === "FACEBOOK_SALES_SUPPORT")
             || mappedAgents[0]
             || null;
           if (preferredAgent && (selectedAgentId === "ceo" || !mappedAgents.some((agent) => agent.id === selectedAgentId))) {
@@ -403,11 +420,42 @@ export function useAgentSandbox() {
           priority: key.priority,
         })));
 
+        let allSessions: Session[] = [];
         if (sessionsRes.status === "fulfilled" && sessionsRes.value.sessions?.length) {
-          const mapped = sessionsRes.value.sessions.map(mapSessionFromSummary);
-          setSessions(mapped);
-          setActiveSessionId(mapped[0].id);
-          loadSessionMessages(mapped[0].id);
+          allSessions = sessionsRes.value.sessions.map(mapSessionFromSummary);
+        }
+
+        let targetSession: Session | null = null;
+        if (urlSessionId) {
+          targetSession = allSessions.find((s) => s.id === urlSessionId) || null;
+          if (!targetSession) {
+            try {
+              const singleRes = await sandboxApi.getSession(urlSessionId);
+              if (singleRes.success && singleRes.session) {
+                targetSession = mapSessionFromDetail(singleRes.session);
+                allSessions = [targetSession, ...allSessions];
+              }
+            } catch (err) {
+              console.warn('[Sandbox] Could not fetch requested session from URL:', err);
+            }
+          }
+        }
+
+        if (allSessions.length > 0) {
+          setSessions(allSessions);
+          if (targetSession) {
+            setActiveSessionId(targetSession.id);
+            if (targetSession.agentId) {
+              setSelectedAgentId(targetSession.agentId);
+            }
+            loadSessionMessages(targetSession.id);
+          } else {
+            const matchingSession = preferredAgent
+              ? allSessions.find((s) => s.agentId === preferredAgent!.id) || allSessions[0]
+              : allSessions[0];
+            setActiveSessionId(matchingSession.id);
+            loadSessionMessages(matchingSession.id);
+          }
         }
 
         if (toolsRes.status === "fulfilled" && toolsRes.value.tools?.length) {
@@ -421,7 +469,7 @@ export function useAgentSandbox() {
       }
     })();
     return () => { cancelled = true; };
-  }, [loadSessionMessages]);
+  }, [loadSessionMessages, urlSessionId, urlAgentId]);
 
   useEffect(() => {
     if (!selectedAgentId) return;
@@ -483,6 +531,9 @@ export function useAgentSandbox() {
     if (id) {
       const existing = sessions.find((s) => s.id === id);
       if (existing) {
+        if (existing.agentId && existing.agentId !== selectedAgentId) {
+          setSelectedAgentId(existing.agentId);
+        }
         if (existing.messages.length === 0) {
           loadSessionMessages(id);
         } else {
@@ -490,7 +541,58 @@ export function useAgentSandbox() {
         }
       }
     }
-  }, [sessions, loadSessionMessages]);
+  }, [sessions, selectedAgentId, loadSessionMessages]);
+
+  // Sync activeSessionId to URL search params
+  useEffect(() => {
+    if (!activeSessionId) return;
+    setSearchParams((prev) => {
+      const current = prev.get("sessionId") || prev.get("session");
+      if (current === activeSessionId) return prev;
+      const next = new URLSearchParams(prev);
+      next.set("sessionId", activeSessionId);
+      next.delete("session");
+      return next;
+    }, { replace: true });
+  }, [activeSessionId, setSearchParams]);
+
+  // Sync from URL changes (back/forward navigation)
+  useEffect(() => {
+    const paramId = searchParams.get("sessionId") || searchParams.get("session");
+    if (paramId && paramId !== activeSessionId) {
+      const match = sessions.find((s) => s.id === paramId);
+      if (match) {
+        setActiveSessionId(match.id);
+        if (match.agentId && match.agentId !== selectedAgentId) {
+          setSelectedAgentId(match.agentId);
+        }
+        loadSessionMessages(match.id);
+      }
+    }
+  }, [searchParams, activeSessionId, sessions, selectedAgentId, loadSessionMessages]);
+
+  const getConversationLink = useCallback((sessionId?: string) => {
+    const id = sessionId || activeSessionId;
+    if (!id) return "";
+    const origin = typeof window !== "undefined" && window.location.origin ? window.location.origin : "https://maxp.online";
+    return `${origin}/admin/ai-hub?tab=sandbox&sessionId=${encodeURIComponent(id)}`;
+  }, [activeSessionId]);
+
+  const copyConversationLink = useCallback(async (sessionId?: string) => {
+    const link = getConversationLink(sessionId);
+    if (!link) return false;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(link);
+      }
+      toast.success("تم نسخ رابط المحادثة بنجاح");
+      return true;
+    } catch (err) {
+      console.error("[Sandbox] Failed to copy conversation link:", err);
+      toast.error("فشل نسخ رابط المحادثة");
+      return false;
+    }
+  }, [getConversationLink]);
 
   const createSession = useCallback(async () => {
     setError(null);
@@ -1152,6 +1254,8 @@ export function useAgentSandbox() {
     evaluateLastResponse,
     runQuickScenario,
     exportSession,
+    getConversationLink,
+    copyConversationLink,
     formatCost: costTracker.formatCost,
     formatTokens: costTracker.formatTokens,
     clearActivityLog: () => setActivityLog([]),

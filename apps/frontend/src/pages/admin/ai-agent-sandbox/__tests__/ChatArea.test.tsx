@@ -1,17 +1,21 @@
+// @vitest-environment jsdom
+
+import "@testing-library/jest-dom/vitest";
 import React from "react";
 import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { ChatArea } from "../components/ChatArea";
 
-jest.mock("react-i18next", () => ({
+vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
 }));
 
-jest.mock("sonner", () => ({
+vi.mock("sonner", () => ({
   toast: {
-    success: jest.fn(),
-    error: jest.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
@@ -73,7 +77,7 @@ describe("ChatArea", () => {
         isLoading={false}
         isStreaming={false}
         canSend={true}
-        onSendMessage={jest.fn()}
+        onSendMessage={vi.fn()}
       />
     );
 
@@ -114,7 +118,7 @@ describe("ChatArea", () => {
         isLoading={false}
         isStreaming={false}
         canSend={true}
-        onSendMessage={jest.fn()}
+        onSendMessage={vi.fn()}
       />
     );
 
@@ -143,10 +147,42 @@ describe("ChatArea", () => {
         isLoading={false}
         isStreaming={false}
         canSend={true}
-        onSendMessage={jest.fn()}
+        onSendMessage={vi.fn()}
       />
     );
 
     expect(screen.getByText("Hello, how can I help you today?")).toBeInTheDocument();
+  });
+
+  it("renders markdown links and raw URLs as interactive clickable links", () => {
+    const messages = [
+      {
+        id: "m_links",
+        role: "assistant" as const,
+        content: "Check this [Sandbox Chat](https://maxp.online/admin/ai-hub?tab=sandbox&sessionId=test_123) and visit https://example.com for info.",
+        timestamp: new Date().toISOString(),
+      },
+    ];
+
+    render(
+      <ChatArea
+        messages={messages}
+        agent={agent}
+        model="gemma-4-31b-it"
+        providers={providers}
+        isLoading={false}
+        isStreaming={false}
+        canSend={true}
+        onSendMessage={vi.fn()}
+      />
+    );
+
+    const mdLink = screen.getByRole("link", { name: "Sandbox Chat" });
+    expect(mdLink).toHaveAttribute("href", "https://maxp.online/admin/ai-hub?tab=sandbox&sessionId=test_123");
+    expect(mdLink).toHaveAttribute("target", "_blank");
+
+    const rawLink = screen.getByRole("link", { name: "https://example.com" });
+    expect(rawLink).toHaveAttribute("href", "https://example.com");
+    expect(rawLink).toHaveAttribute("target", "_blank");
   });
 });
