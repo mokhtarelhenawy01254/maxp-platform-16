@@ -1935,6 +1935,38 @@ const getApiError = (error: unknown): ApiErrorLike => {
     markMessagesAsRead,
   ]);
 
+  // Real-time synchronization when order is created from conversation
+  useEffect(() => {
+    const handleOrderCreated = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        order: any;
+        orderId: string;
+        orderNumber?: string;
+        conversationId?: string;
+        confirmationMessage?: any;
+      }>;
+      const detail = customEvent.detail;
+      if (!detail) return;
+
+      const orderConvId = detail.conversationId || detail.order?.conversationId;
+      if (orderConvId && selectedConversation?.id === orderConvId) {
+        if (detail.confirmationMessage) {
+          addMessage(detail.confirmationMessage);
+        } else {
+          loadMessages(orderConvId);
+        }
+      }
+
+      // Refresh conversation list to show updated status or last message
+      debouncedLoadConversations(activeTabRef.current);
+    };
+
+    window.addEventListener("inbox:order-created", handleOrderCreated);
+    return () => {
+      window.removeEventListener("inbox:order-created", handleOrderCreated);
+    };
+  }, [selectedConversation?.id, addMessage, loadMessages, debouncedLoadConversations]);
+
   // Fetch post details when conversation is selected
   const fetchPostDetails = useCallback(
     async (conversationId: string) => {
