@@ -43,6 +43,7 @@ async function main() {
   console.log(`✅ [sync:${SLUG}] Updated successfully: isActive=${updated.isActive}, isPublic=${updated.isPublic}, mainRoute=${updated.mainRoute}, adminRoute=${updated.adminRoute}, requiredApps=${JSON.stringify(updated.requiredApps)}`);
 
   await closeSharedDatabase();
+  process.exit(0);
 }
 
 main().catch((err) => {
