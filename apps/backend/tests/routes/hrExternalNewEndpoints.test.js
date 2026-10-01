@@ -1069,6 +1069,407 @@ describe('HR External API — New Endpoints & Timezone Fix Unit Tests', () => {
       expect(mockUpsert).not.toHaveBeenCalled();
     });
   });
+
+  describe('Item 12: Permission System (Delay & Early Departure)', () => {
+    const latenessCalculationService = require('../../services/hr/latenessCalculationService');
+    const permissionService = require('../../services/hr/permissionService');
+
+    it('Criterion 1: 60m approved permission with 11:00 check-in yields 0 deduction, 0 grace consumption, 0 late count increment', async () => {
+      const mockPrisma = {
+        hRSettings: {
+          findUnique: jest.fn().mockResolvedValue({
+            autoDeductionEnabled: true,
+            lateThresholdMinutes: 10,
+            lateGracePeriod: 10,
+            gracePeriodMinutes: 60,
+            paidPermissionMinutesPerMonth: 120,
+            workingDaysPerMonth: 22,
+            workingHoursPerDay: 8,
+            firstViolationMultiplier: 1.0,
+            secondViolationMultiplier: 2.0,
+            thirdViolationMultiplier: 3.0,
+            maxDailyDeductionDays: 1.0
+          })
+        },
+        user: {
+          findUnique: jest.fn().mockResolvedValue({
+            baseSalary: 4000,
+            monthlyGraceMinutes: 60,
+            maxDailyLateMinutes: 10,
+            enableAutoDeduction: true
+          })
+        },
+        latenessBalance: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'bal-12',
+            graceMinutesUsed: 0,
+            lateCount: 0
+          })
+        },
+        hrPermissionRequest: {
+          findMany: jest.fn().mockImplementation(({ where }) => {
+            if (where.date && where.date.gte) {
+              return Promise.resolve([
+                {
+                  id: 'perm-1',
+                  type: 'NON_DEDUCTIBLE',
+                  status: 'APPROVED',
+                  minutes: 60,
+                  isCompensated: false,
+                  date: new Date('2026-10-15T00:00:00Z')
+                }
+              ]);
+            }
+            return Promise.resolve([]);
+          })
+        }
+      };
+
+      const origPrisma = latenessCalculationService.prisma;
+      latenessCalculationService.prisma = mockPrisma;
+
+      try {
+        const calc = await latenessCalculationService.calculateDeduction('h2m-1', 'emp-1', 60, '2026-10-15');
+
+        expect(calc.coveredByPermission).toBe(60);
+        expect(calc.effectiveLateMinutes).toBe(0);
+        expect(calc.useGraceMinutes).toBe(0);
+        expect(calc.deductMinutes).toBe(0);
+        expect(calc.totalDeduction).toBe(0);
+        expect(calc.countsAsLateOccurrence).toBe(false);
+      } finally {
+        latenessCalculationService.prisma = origPrisma;
+      }
+    });
+
+    it('Criterion 2: 120m paid quota used + 30m extra permission with deduct option yields exact 30 * minuteRate deduction without multiplier', async () => {
+      const mockPrisma = {
+        hRSettings: {
+          findUnique: jest.fn().mockResolvedValue({
+            autoDeductionEnabled: true,
+            lateThresholdMinutes: 10,
+            lateGracePeriod: 10,
+            gracePeriodMinutes: 60,
+            paidPermissionMinutesPerMonth: 120,
+            workingDaysPerMonth: 22,
+            workingHoursPerDay: 8,
+            firstViolationMultiplier: 2.0,
+            maxDailyDeductionDays: 1.0
+          })
+        },
+        user: {
+          findUnique: jest.fn().mockResolvedValue({
+            baseSalary: 4224,
+            monthlyGraceMinutes: 60,
+            maxDailyLateMinutes: 10,
+            enableAutoDeduction: true
+          })
+        },
+        latenessBalance: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'bal-12',
+            graceMinutesUsed: 0,
+            lateCount: 2
+          })
+        },
+        hrPermissionRequest: {
+          findMany: jest.fn().mockImplementation(({ where }) => {
+            if (where.date && where.date.lte) {
+              return Promise.resolve([
+                {
+                  id: 'perm-extra-1',
+                  type: 'DEDUCTIBLE',
+                  status: 'APPROVED',
+                  minutes: 30,
+                  isCompensated: false,
+                  date: new Date('2026-10-20T00:00:00Z')
+                }
+              ]);
+            }
+            if (where.date && where.date.lt) {
+              return Promise.resolve([
+                { id: 'perm-p1', status: 'APPROVED', minutes: 60, isCompensated: false, date: new Date('2026-10-02T00:00:00Z') },
+                { id: 'perm-p2', status: 'APPROVED', minutes: 60, isCompensated: false, date: new Date('2026-10-05T00:00:00Z') }
+              ]);
+            }
+            return Promise.resolve([]);
+          })
+        }
+      };
+
+      const origPrisma = latenessCalculationService.prisma;
+      latenessCalculationService.prisma = mockPrisma;
+
+      try {
+        const calc = await latenessCalculationService.calculateDeduction('h2m-1', 'emp-1', 30, '2026-10-20');
+
+        expect(calc.paidQuotaRemaining).toBe(0);
+        expect(calc.extraPermissionMinutes).toBe(30);
+        expect(calc.permissionDeductionAmount).toBe(12);
+        expect(calc.totalDeduction).toBe(12);
+        expect(calc.useGraceMinutes).toBe(0);
+        expect(calc.countsAsLateOccurrence).toBe(false);
+      } finally {
+        latenessCalculationService.prisma = origPrisma;
+      }
+    });
+
+    it('Criterion 3: Extra permission with compensate option yields 0 financial deduction', async () => {
+      const mockPrisma = {
+        hRSettings: {
+          findUnique: jest.fn().mockResolvedValue({
+            autoDeductionEnabled: true,
+            paidPermissionMinutesPerMonth: 120,
+            workingDaysPerMonth: 22,
+            workingHoursPerDay: 8
+          })
+        },
+        user: {
+          findUnique: jest.fn().mockResolvedValue({
+            baseSalary: 4224,
+            enableAutoDeduction: true
+          })
+        },
+        latenessBalance: { findUnique: jest.fn().mockResolvedValue(null) },
+        hrPermissionRequest: {
+          findMany: jest.fn().mockImplementation(({ where }) => {
+            if (where.date && where.date.lte) {
+              return Promise.resolve([
+                {
+                  id: 'perm-comp-1',
+                  type: 'COMPENSATORY',
+                  status: 'APPROVED',
+                  minutes: 45,
+                  isCompensated: true,
+                  compensationDate: new Date('2026-10-25T00:00:00Z'),
+                  date: new Date('2026-10-21T00:00:00Z')
+                }
+              ]);
+            }
+            if (where.date && where.date.lt) {
+              return Promise.resolve([
+                { id: 'perm-p1', status: 'APPROVED', minutes: 120, isCompensated: false, date: new Date('2026-10-02T00:00:00Z') }
+              ]);
+            }
+            return Promise.resolve([]);
+          })
+        }
+      };
+
+      const origPrisma = latenessCalculationService.prisma;
+      latenessCalculationService.prisma = mockPrisma;
+
+      try {
+        const calc = await latenessCalculationService.calculateDeduction('h2m-1', 'emp-1', 45, '2026-10-21');
+
+        expect(calc.isCompensated).toBe(true);
+        expect(calc.permissionDeductionAmount).toBe(0);
+        expect(calc.totalDeduction).toBe(0);
+        expect(calc.useGraceMinutes).toBe(0);
+        expect(calc.countsAsLateOccurrence).toBe(false);
+      } finally {
+        latenessCalculationService.prisma = origPrisma;
+      }
+    });
+
+    it('Criterion 4: Request submitted < 48 hours before date throws validation error unless urgent/exceptional', async () => {
+      const now = new Date();
+      const shortNoticeDate = new Date(now.getTime() + 20 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const validNoticeDate = new Date(now.getTime() + 72 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      const mockPrisma = {
+        employee: {
+          findFirst: jest.fn().mockResolvedValue({ id: 'emp-1', companyId: 'h2m-1', firstName: 'Ali', lastName: 'Waziry' })
+        },
+        hRSettings: {
+          findUnique: jest.fn().mockResolvedValue({ permissionLeadDays: 2 })
+        },
+        hrPermissionRequest: {
+          findMany: jest.fn().mockResolvedValue([]),
+          create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'perm-created', ...data }))
+        }
+      };
+
+      permissionService._prisma = mockPrisma;
+
+      try {
+        await expect(
+          permissionService.createPermissionRequest('h2m-1', 'emp-1', {
+            date: shortNoticeDate,
+            startTime: '10:00',
+            endTime: '11:00',
+            reason: 'Personal errand',
+            permissionType: 'PERSONAL',
+            isUrgent: false
+          })
+        ).rejects.toThrow(/48 ساعة|يومي عمل/);
+
+        const urgentReq = await permissionService.createPermissionRequest('h2m-1', 'emp-1', {
+          date: shortNoticeDate,
+          startTime: '10:00',
+          endTime: '11:00',
+          reason: 'Emergency medical visit',
+          permissionType: 'MEDICAL',
+          isUrgent: true
+        });
+        expect(urgentReq).toBeDefined();
+
+        const validReq = await permissionService.createPermissionRequest('h2m-1', 'emp-1', {
+          date: validNoticeDate,
+          startTime: '10:00',
+          endTime: '11:00',
+          reason: 'Scheduled appointment',
+          permissionType: 'PERSONAL'
+        });
+        expect(validReq).toBeDefined();
+      } finally {
+        permissionService._prisma = null;
+      }
+    });
+
+    it('Criterion 5: 4 extra permissions after 120m exhausted creates automatic warning once', async () => {
+      const mockWarnings = [];
+      const mockPrisma = {
+        hRSettings: {
+          findUnique: jest.fn().mockResolvedValue({
+            paidPermissionMinutesPerMonth: 120,
+            permissionWarningAfter: 4
+          })
+        },
+        hrPermissionRequest: {
+          findMany: jest.fn().mockResolvedValue([
+            { id: 'p1', minutes: 120, isCompensated: false, createdAt: new Date('2026-10-01T00:00:00Z') },
+            { id: 'p2', minutes: 30, isCompensated: false, createdAt: new Date('2026-10-05T00:00:00Z') },
+            { id: 'p3', minutes: 30, isCompensated: false, createdAt: new Date('2026-10-10T00:00:00Z') },
+            { id: 'p4', minutes: 30, isCompensated: false, createdAt: new Date('2026-10-15T00:00:00Z') },
+            { id: 'p5', minutes: 30, isCompensated: false, createdAt: new Date('2026-10-20T00:00:00Z') }
+          ])
+        },
+        employeeWarning: {
+          findFirst: jest.fn().mockImplementation(() => Promise.resolve(mockWarnings[0] || null)),
+          create: jest.fn().mockImplementation(({ data }) => {
+            const warning = { id: 'warn-1', ...data };
+            mockWarnings.push(warning);
+            return Promise.resolve(warning);
+          })
+        }
+      };
+
+      permissionService._prisma = mockPrisma;
+
+      try {
+        const warning = await permissionService.checkAndIssueExtraPermissionWarning(
+          'h2m-1', 'emp-1', 'user-1', new Date('2026-10-20T00:00:00Z')
+        );
+
+        expect(warning).toBeDefined();
+        expect(mockPrisma.employeeWarning.create).toHaveBeenCalledTimes(1);
+        expect(warning.warningType).toBe('PERMISSIONS_EXCEEDED');
+
+        const duplicate = await permissionService.checkAndIssueExtraPermissionWarning(
+          'h2m-1', 'emp-1', 'user-1', new Date('2026-10-21T00:00:00Z')
+        );
+        expect(duplicate).toBeNull();
+        expect(mockPrisma.employeeWarning.create).toHaveBeenCalledTimes(1);
+      } finally {
+        permissionService._prisma = null;
+      }
+    });
+
+    it('Criterion 6: 10:30 check-in without permission retains standard lateness deduction & grace consumption', async () => {
+      const mockPrisma = {
+        hRSettings: {
+          findUnique: jest.fn().mockResolvedValue({
+            autoDeductionEnabled: true,
+            lateThresholdMinutes: 10,
+            lateGracePeriod: 10,
+            gracePeriodMinutes: 60,
+            paidPermissionMinutesPerMonth: 120,
+            workingDaysPerMonth: 22,
+            workingHoursPerDay: 8,
+            firstViolationMultiplier: 1.0,
+            maxDailyDeductionDays: 1.0
+          })
+        },
+        user: {
+          findUnique: jest.fn().mockResolvedValue({
+            baseSalary: 4000,
+            monthlyGraceMinutes: 60,
+            maxDailyLateMinutes: 10,
+            enableAutoDeduction: true
+          })
+        },
+        latenessBalance: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'bal-12',
+            graceMinutesUsed: 0,
+            lateCount: 0
+          })
+        },
+        hrPermissionRequest: {
+          findMany: jest.fn().mockResolvedValue([])
+        }
+      };
+
+      const origPrisma = latenessCalculationService.prisma;
+      latenessCalculationService.prisma = mockPrisma;
+
+      try {
+        const calc = await latenessCalculationService.calculateDeduction('h2m-1', 'emp-1', 30, '2026-10-22');
+
+        expect(calc.coveredByPermission).toBe(0);
+        expect(calc.useGraceMinutes).toBe(10);
+        expect(calc.deductMinutes).toBe(20);
+        expect(calc.totalDeduction).toBeGreaterThan(0);
+        expect(calc.countsAsLateOccurrence).toBe(true);
+      } finally {
+        latenessCalculationService.prisma = origPrisma;
+      }
+    });
+
+    it('Criterion 7: External routes for permissions are exported and validate scopes & inputs', async () => {
+      expect(typeof hrExternalController.listPermissions).toBe('function');
+      expect(typeof hrExternalController.createPermission).toBe('function');
+      expect(typeof hrExternalController.approvePermission).toBe('function');
+      expect(typeof hrExternalController.rejectPermission).toBe('function');
+
+      mockReq.body = {
+        employeeNumber: 'EMP001',
+        date: '2026-10-25',
+        startTime: '10:00',
+        endTime: '11:00',
+        reason: 'Personal reason',
+        permissionType: 'INVALID_TYPE'
+      };
+      await hrExternalController.createPermission(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR',
+            allowedValues: expect.arrayContaining(['PERSONAL', 'WORK_RELATED', 'MEDICAL', 'EMERGENCY'])
+          })
+        })
+      );
+
+      mockRes.json.mockClear();
+      mockRes.status.mockClear();
+      mockReq.params = { id: 'perm-999' };
+      mockReq.body = {};
+      await hrExternalController.rejectPermission(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR',
+            message: expect.stringMatching(/rejection/i)
+          })
+        })
+      );
+    });
+  });
 });
 
 

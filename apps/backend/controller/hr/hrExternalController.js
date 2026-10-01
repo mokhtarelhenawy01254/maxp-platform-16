@@ -92,6 +92,7 @@ const VALID_REWARD_TYPE_CATEGORIES = ['FINANCIAL', 'NON_FINANCIAL'];
 const VALID_REWARD_CALCULATION_METHODS = ['FIXED', 'PERCENTAGE'];
 const VALID_REWARD_TRIGGER_TYPES = ['MANUAL', 'AUTOMATIC'];
 const VALID_REWARD_FREQUENCIES = ['ONCE', 'MONTHLY', 'QUARTERLY', 'YEARLY'];
+const VALID_PERMISSION_TYPES = ['PERSONAL', 'WORK_RELATED', 'MEDICAL', 'EMERGENCY', 'NON_DEDUCTIBLE', 'DEDUCTIBLE', 'COMPENSATORY'];
 
 const rewardEligibilityService = require('../../services/hr/rewardEligibilityService');
 const rewardApplicationService = require('../../services/hr/rewardApplicationService');
@@ -6825,6 +6826,7 @@ const createPermission = async (req, res) => {
       details,
       notes,
       type,
+      permissionType,
       extraOption,
       isCompensated,
       compensationDate,
@@ -6841,6 +6843,21 @@ const createPermission = async (req, res) => {
           message: 'employeeId/employeeNumber, date, startTime, endTime, and reason are required'
         }
       });
+    }
+
+    const rawType = permissionType || type;
+    if (rawType) {
+      const normalizedType = String(rawType).trim().toUpperCase();
+      if (!VALID_PERMISSION_TYPES.includes(normalizedType)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Invalid permissionType: '${rawType}'. Allowed values are: ${VALID_PERMISSION_TYPES.join(', ')}`,
+            allowedValues: VALID_PERMISSION_TYPES
+          }
+        });
+      }
     }
 
     const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;

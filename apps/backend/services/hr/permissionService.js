@@ -8,6 +8,7 @@ const { validatePermissionData } = require('../../utils/hrValidation');
 const auditService = require('./auditService');
 const { NotFoundError, ValidationError } = require('../../utils/hrErrors');
 const whatsAppNotificationService = require('../whatsapp/WhatsAppNotificationService');
+const hrOwnerNotificationAgent = require('./hrOwnerNotificationAgent');
 
 class PermissionService {
     constructor() {
@@ -15,7 +16,7 @@ class PermissionService {
     }
 
     get prisma() {
-        return getSharedPrismaClient();
+        return this._prisma || getSharedPrismaClient();
     }
 
     /**
@@ -23,6 +24,11 @@ class PermissionService {
      */
     async createPermissionRequest(companyId, employeeId, data) {
         try {
+            // تطبيع أوقات البداية والنهاية ونوع الإذن
+            if (!data.startTime && data.fromTime) data.startTime = data.fromTime;
+            if (!data.endTime && data.toTime) data.endTime = data.toTime;
+            if (!data.type) data.type = 'NON_DEDUCTIBLE';
+
             // التحقق من صحة البيانات
             validatePermissionData(data);
 
@@ -148,19 +154,21 @@ class PermissionService {
             });
 
             // Send WhatsApp notification to owner
-            setImmediate(async () => {
-                try {
-                    const hrOwnerNotificationAgent = require('./hrOwnerNotificationAgent');
-                    await hrOwnerNotificationAgent.sendOwnerNotification({
-                        companyId,
-                        employeeName: employee ? `${employee.firstName || ''} ${employee.lastName || ''}`.trim() : 'موظف',
-                        actionType: 'طلب إذن (خروج/تأخير)',
-                        details: `التاريخ: ${new Date(requestDate).toLocaleDateString('ar-EG')}\nالوقت: من ${data.startTime} إلى ${data.endTime} (${totalHours} ساعة)\nالسبب: ${data.reason || 'غير محدد'}`,
-                        requiresApproval: true
-                    });
-                } catch (waOwnerError) {
-                    console.error('❌ [Permission-Owner-Notify] Error:', waOwnerError);
-                }
+            setImmediate(() => {
+                Promise.resolve().then(async () => {
+                    const notifyFn = hrOwnerNotificationAgent?.sendOwnerNotification || hrOwnerNotificationAgent?.default?.sendOwnerNotification;
+                    if (typeof notifyFn === 'function') {
+                        await notifyFn({
+                            companyId,
+                            employeeName: employee ? `${employee.firstName || ''} ${employee.lastName || ''}`.trim() : 'موظف',
+                            actionType: 'طلب إذن (خروج/تأخير)',
+                            details: `التاريخ: ${new Date(requestDate).toLocaleDateString('ar-EG')}\nالوقت: من ${data.startTime} إلى ${data.endTime} (${totalHours} ساعة)\nالسبب: ${data.reason || 'غير محدد'}`,
+                            requiresApproval: true
+                        });
+                    }
+                }).catch((waOwnerError) => {
+                    console.warn('⚠️ [Permission-Owner-Notify] Error:', waOwnerError.message);
+                });
             });
 
             return permissionRequest;
@@ -572,7 +580,7 @@ class PermissionService {
             let extraPermissionsCount = 0;
 
             for (const perm of monthApproved) {
-                const mins = Math.round((parseFloat(perm.totalHours) || 0) * 60);
+                const mins = perm.minutes !== undefined ? Number(perm.minutes) : Math.round((parseFloat(perm.totalHours) || 0) * 60);
                 accumulatedMinutes += mins;
                 if (accumulatedMinutes > paidQuota) {
                     extraPermissionsCount++;
@@ -588,7 +596,7 @@ class PermissionService {
                     });
                     targetUserId = emp?.userId;
                 }
-                if (!targetUserId) return;
+                if (!targetUserId) return null;
 
                 // التحقق من عدم تكرار الإنذار لنفس الشهر (يُصدر مرة واحدة فقط)
                 if (this.prisma.employeeWarning) {
@@ -601,26 +609,32 @@ class PermissionService {
                         }
                     });
 
-                    if (!existingWarning) {
-                        await this.prisma.employeeWarning.create({
-                            data: {
-                                companyId,
-                                userId: targetUserId,
-                                type: 'ATTENDANCE',
-                                severity: 'minor',
-                                title: 'إنذار تجاوز حد الأذونات الإضافية الشهري',
-                                description: `تم إصدار إنذار تلقائي لتجاوز الحد الأقصى للأذونات الإضافية (${extraPermissionsCount} إذونات بعد استنفاد رصيد الـ ${paidQuota} دقيقة المدفوعة) لشهر ${month}/${year}.`,
-                                incidentDate: new Date(),
-                                actionTaken: 'إنذار تلقائي',
-                                issuedBy: 'SYSTEM'
-                            }
-                        });
-                        console.log(`⚠️ [Permission] Auto-warning created for employee ${targetUserId}: ${extraPermissionsCount} extra permissions in month ${month}`);
+                    if (existingWarning) {
+                        return null;
                     }
+
+                    const warning = await this.prisma.employeeWarning.create({
+                        data: {
+                            companyId,
+                            userId: targetUserId,
+                            type: 'ATTENDANCE',
+                            warningType: 'PERMISSIONS_EXCEEDED',
+                            severity: 'minor',
+                            title: 'إنذار تجاوز حد الأذونات الإضافية الشهري',
+                            description: `تم إصدار إنذار تلقائي لتجاوز الحد الأقصى للأذونات الإضافية (${extraPermissionsCount} إذونات بعد استنفاد رصيد الـ ${paidQuota} دقيقة المدفوعة) لشهر ${month}/${year}.`,
+                            incidentDate: new Date(),
+                            actionTaken: 'إنذار تلقائي',
+                            issuedBy: 'SYSTEM'
+                        }
+                    });
+                    console.log(`⚠️ [Permission] Auto-warning created for employee ${targetUserId}: ${extraPermissionsCount} extra permissions in month ${month}`);
+                    return warning;
                 }
             }
+            return null;
         } catch (err) {
             console.warn('⚠️ [Permission] Error in checkAndIssueExtraPermissionWarning:', err.message);
+            return null;
         }
     }
 }

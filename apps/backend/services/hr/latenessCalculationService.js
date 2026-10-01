@@ -51,8 +51,22 @@ class LatenessCalculationService {
       });
 
       if (!balance) {
-        balance = await this.prisma.latenessBalance.create({
-          data: {
+        if (typeof this.prisma.latenessBalance?.create === 'function') {
+          balance = await this.prisma.latenessBalance.create({
+            data: {
+              companyId,
+              employeeId,
+              month,
+              year,
+              totalLateMinutes: 0,
+              graceMinutesUsed: 0,
+              deductedMinutes: 0,
+              totalDeductionAmount: 0,
+              lateCount: 0
+            }
+          });
+        } else {
+          balance = {
             companyId,
             employeeId,
             month,
@@ -62,8 +76,8 @@ class LatenessCalculationService {
             deductedMinutes: 0,
             totalDeductionAmount: 0,
             lateCount: 0
-          }
-        });
+          };
+        }
       }
 
       return balance;
@@ -139,6 +153,7 @@ class LatenessCalculationService {
       }
 
       const maxDailyDeductionDays = settings ? parseFloat(settings.maxDailyDeductionDays || 1.0) : 1.0;
+      const maxDeductionAmount = dailySalary * maxDailyDeductionDays;
 
       // الحصول على رصيد المرونة الشهري الحالي
       const checkInDate = new Date(date);
@@ -181,7 +196,8 @@ class LatenessCalculationService {
       }
 
       const dayPermissionMinutes = dayApprovedPermissions.reduce((sum, p) => {
-        return sum + Math.round((parseFloat(p.totalHours) || 0) * 60);
+        const mins = p.minutes !== undefined ? Number(p.minutes) : Math.round((parseFloat(p.totalHours) || 0) * 60);
+        return sum + mins;
       }, 0);
 
       let permissionDeduction = 0;
@@ -189,12 +205,15 @@ class LatenessCalculationService {
       let isFullyCoveredByPermission = false;
       let countsAsLateOccurrence = true;
       let effectiveLateMinutes = lateMinutes;
+      let remainingPaidQuota = (settings?.paidPermissionMinutesPerMonth !== undefined && settings?.paidPermissionMinutesPerMonth !== null)
+        ? Number(settings.paidPermissionMinutesPerMonth)
+        : (companyId === 'h2m-1' ? 120 : 0);
+      let extraMinutesToday = 0;
+      let isCompensatedToday = false;
 
       if (dayPermissionMinutes > 0) {
         // فحص رصيد الأذونات المدفوعة الشهري (افتراضي 120 دقيقة لشركة H2M)
-        const monthlyPaidQuota = (settings?.paidPermissionMinutesPerMonth !== undefined && settings?.paidPermissionMinutesPerMonth !== null)
-          ? Number(settings.paidPermissionMinutesPerMonth)
-          : (companyId === 'h2m-1' ? 120 : 0);
+        const monthlyPaidQuota = remainingPaidQuota;
 
         const monthStart = new Date(year, month - 1, 1, 0, 0, 0);
 
@@ -219,14 +238,15 @@ class LatenessCalculationService {
         }
 
         const priorUsedMinutes = priorMonthPermissions.reduce((sum, p) => {
-          return sum + Math.round((parseFloat(p.totalHours) || 0) * 60);
+          const mins = p.minutes !== undefined ? Number(p.minutes) : Math.round((parseFloat(p.totalHours) || 0) * 60);
+          return sum + mins;
         }, 0);
 
-        const remainingPaidQuota = Math.max(0, monthlyPaidQuota - priorUsedMinutes);
+        remainingPaidQuota = Math.max(0, monthlyPaidQuota - priorUsedMinutes);
         const paidMinutesToday = Math.min(dayPermissionMinutes, remainingPaidQuota);
-        const extraMinutesToday = Math.max(0, dayPermissionMinutes - paidMinutesToday);
+        extraMinutesToday = Math.max(0, dayPermissionMinutes - paidMinutesToday);
 
-        const isCompensatedToday = dayApprovedPermissions.some(p =>
+        isCompensatedToday = dayApprovedPermissions.some(p =>
           p.isCompensated || p.type === 'COMPENSATORY' || p.compensationDate
         );
 
@@ -260,6 +280,12 @@ class LatenessCalculationService {
           isFullyCoveredByPermission: true,
           countsAsLateOccurrence: false,
           dayPermissionMinutes,
+          coveredByPermission: Math.min(lateMinutes, dayPermissionMinutes),
+          effectiveLateMinutes: 0,
+          paidQuotaRemaining: remainingPaidQuota,
+          extraPermissionMinutes: extraMinutesToday,
+          permissionDeductionAmount: Number(permissionDeduction.toFixed(2)),
+          isCompensated: isCompensatedToday,
           breakdown: {
             lateMinutes,
             effectiveLateMinutes: 0,
@@ -337,8 +363,6 @@ class LatenessCalculationService {
 
       // 🛡️ Apply Deduction Cap (Max Daily Deduction)
       // Cap is expressed in "days". We need to convert it to actual amount.
-      const maxDeductionAmount = dailySalary * maxDailyDeductionDays;
-
       let isCapped = false;
       let originalAmount = totalDeduction;
 
@@ -360,6 +384,12 @@ class LatenessCalculationService {
         isFullyCoveredByPermission: false,
         countsAsLateOccurrence: true,
         dayPermissionMinutes,
+        coveredByPermission: Math.min(lateMinutes, dayPermissionMinutes),
+        effectiveLateMinutes,
+        paidQuotaRemaining: remainingPaidQuota,
+        extraPermissionMinutes: extraMinutesToday,
+        permissionDeductionAmount: Number(permissionDeduction.toFixed(2)),
+        isCompensated: isCompensatedToday,
         breakdown: {
           lateMinutes,
           effectiveLateMinutes,

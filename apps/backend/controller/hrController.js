@@ -5975,6 +5975,12 @@ async function updateHRSettings(req, res) {
       notificationRecipients,
       aiNotificationTypes,
       aiNotificationTone,
+      // Permission settings
+      paidPermissionMinutesPerMonth,
+      permissionLeadDays,
+      permissionWarningAfter,
+      permissionExtraMode,
+      permissions,
     } = settingsData;
 
     // تحويل workingDays من أسماء الأيام إلى أرقام
@@ -6122,6 +6128,31 @@ async function updateHRSettings(req, res) {
         notifyOnProbationEnd !== undefined ? notifyOnProbationEnd : true,
       notifyOnContractExpiry:
         notifyOnContractExpiry !== undefined ? notifyOnContractExpiry : true,
+      // Permission settings
+      paidPermissionMinutesPerMonth:
+        paidPermissionMinutesPerMonth !== undefined
+          ? Number(paidPermissionMinutesPerMonth)
+          : (permissions?.paidPermissionMinutesPerMonth !== undefined
+              ? Number(permissions.paidPermissionMinutesPerMonth)
+              : undefined),
+      permissionLeadDays:
+        permissionLeadDays !== undefined
+          ? Number(permissionLeadDays)
+          : (permissions?.permissionLeadDays !== undefined
+              ? Number(permissions.permissionLeadDays)
+              : undefined),
+      permissionWarningAfter:
+        permissionWarningAfter !== undefined
+          ? Number(permissionWarningAfter)
+          : (permissions?.permissionWarningAfter !== undefined
+              ? Number(permissions.permissionWarningAfter)
+              : undefined),
+      permissionExtraMode:
+        permissionExtraMode !== undefined
+          ? String(permissionExtraMode)
+          : (permissions?.permissionExtraMode !== undefined
+              ? String(permissions.permissionExtraMode)
+              : undefined),
     };
 
     const dbSafeUpdateData = sanitizeHRSettingsWriteData(updateData);
