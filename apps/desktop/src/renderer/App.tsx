@@ -20,6 +20,7 @@ declare global {
       getSystemInfo: () => Promise<any>;
       syncNow: () => Promise<{ success: boolean; error?: string }>;
       getAttendanceAudit: () => Promise<any>;
+      clockIn: () => Promise<{ success: boolean; attendance?: any; error?: string }>;
       login: (data: { email: string; password: string; serverUrl: string }) => Promise<{ success: boolean; user?: any; error?: string }>;
       logout: () => Promise<boolean>;
       getAuthState: () => Promise<{ isLoggedIn: boolean; user: any; serverUrl: string }>;

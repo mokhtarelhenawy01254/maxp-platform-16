@@ -163,6 +163,20 @@ export const AttendanceAuditTab: React.FC<AttendanceAuditTabProps> = () => {
   }[banner.tone];
 
   const punchLabel = PUNCH_LABELS[auditData?.clockInMethod || ''] || 'بصمة الحضور';
+  const punchSource =
+    auditData?.clockInMethod === 'desktop_workspace'
+      ? 'device'
+      : auditData?.clockInMethod === 'manual'
+        ? 'admin'
+        : 'mobile';
+  const punchIcon =
+    punchSource === 'device' ? (
+      <Monitor size={15} color="var(--accent-blue)" />
+    ) : punchSource === 'admin' ? (
+      <Clock size={15} color="var(--accent-blue)" />
+    ) : (
+      <Smartphone size={15} color="var(--accent-blue)" />
+    );
 
   return (
     <div style={styles.container}>
@@ -205,7 +219,7 @@ export const AttendanceAuditTab: React.FC<AttendanceAuditTabProps> = () => {
       {hasPunch ? (
         <div style={styles.compare}>
           <div style={styles.anchor}>
-            <Smartphone size={15} color="var(--accent-blue)" />
+            {punchIcon}
             <span style={styles.anchorLabel}>{punchLabel}</span>
             <span style={styles.anchorValue}>{formatClock(clockInTime)}</span>
           </div>
@@ -387,7 +401,6 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     borderTop: '1px solid var(--border-subtle)',
     padding: '12px 14px 0',
-    marginTop: 'auto',
   },
   stat: {
     flex: 1,

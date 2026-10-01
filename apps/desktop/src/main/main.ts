@@ -930,6 +930,7 @@ function registerIpcHandlers(): void {
     } catch {}
 
     const clockInTime = todayAtt?.checkInTime || todayAtt?.checkIn || todayAtt?.createdAt || serverDaily?.clockInTime || null;
+    const clockInMethod = todayAtt?.checkInMethod || null;
     const firstActivityTime = serverDaily?.firstActivityTime || localDaily?.first_activity || null;
     const clockOutTime = todayAtt?.checkOutTime || todayAtt?.checkOut || serverDaily?.clockOutTime || null;
     const lastActivityTime = serverDaily?.lastActivityTime || localDaily?.last_activity || null;
@@ -949,6 +950,7 @@ function registerIpcHandlers(): void {
     return {
       date: today,
       clockInTime,
+      clockInMethod,
       firstActivityTime,
       clockOutTime,
       lastActivityTime,
@@ -956,6 +958,24 @@ function registerIpcHandlers(): void {
       totalActiveSeconds: totalActive,
       totalIdleSeconds: totalIdle,
     };
+  });
+
+  ipcMain.handle('attendance:clock-in', async () => {
+    if (currentDeviceType !== 'OFFICE') {
+      return { success: false, error: 'بصمة الحضور من الأجهزة الشخصية بتتسجل من صفحة الحضور على الويب، مش من التطبيق ده.' };
+    }
+    try {
+      const res = await apiClient.autoClockIn();
+      if (res?.success) {
+        showNotification('MaxP Workspace', 'تم توثيق حضورك بنجاح.');
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('attendance:updated', res.attendance);
+        }
+      }
+      return res;
+    } catch (err: any) {
+      return { success: false, error: err?.message };
+    }
   });
 
   ipcMain.handle(IPC_CHANNELS.GET_DAILY_SUMMARY, async (_, targetDate?: string) => {

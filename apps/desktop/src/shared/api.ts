@@ -809,7 +809,7 @@ class MonitorApiClient {
     }
   }
 
-  async autoClockIn(workMode: 'office' | 'remote' = 'office'): Promise<{ success: boolean; attendance?: any }> {
+  async autoClockIn(workMode: 'office' | 'remote' = 'office'): Promise<{ success: boolean; attendance?: any; error?: string }> {
     try {
       const base = this.serverUrl;
       let res;
@@ -843,9 +843,9 @@ class MonitorApiClient {
           throw err;
         }
       }
-      return res.data;
-    } catch {
-      return { success: false };
+      return { success: true, attendance: res.data?.attendance ?? res.data?.data ?? res.data };
+    } catch (err: any) {
+      return { success: false, error: err.response?.data?.error || err.message };
     }
   }
 

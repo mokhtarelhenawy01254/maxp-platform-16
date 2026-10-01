@@ -19,6 +19,7 @@ const CHANNELS = {
   GET_SYSTEM_INFO: 'tracker:get-system-info',
   SYNC_NOW: 'tracker:sync-now',
   GET_ATTENDANCE_AUDIT: 'tracker:get-attendance-audit',
+  CLOCK_IN: 'attendance:clock-in',
 } as const;
 
 /**
@@ -46,6 +47,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSystemInfo: () => ipcRenderer.invoke(CHANNELS.GET_SYSTEM_INFO),
   syncNow: () => ipcRenderer.invoke(CHANNELS.SYNC_NOW),
   getAttendanceAudit: () => ipcRenderer.invoke(CHANNELS.GET_ATTENDANCE_AUDIT),
+  clockIn: () => ipcRenderer.invoke(CHANNELS.CLOCK_IN),
 
   // Auth
   login: (data: { email: string; password: string; serverUrl: string }) =>
