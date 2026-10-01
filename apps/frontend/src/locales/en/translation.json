@@ -552,10 +552,6 @@
       }
     }
   },
-  "BillingOverview": {
-    "error_fetch_fec6": "خطأ في جلب بيانات الفواتير",
-    "msg_23a3": "تمت إعادة محاولة الدفع بنجاح"
-  },
   "BostaSettings": {
     "failed_load_f24b": "فشل تحميل إعدادات Bosta",
     "msg_d142": "يرجى إدخال Bosta API Key",
@@ -5463,9 +5459,6 @@
     "unable_load_eddf": "تعذر تحميل إعدادات المتجر",
     "failed_save_8619": "فشل حفظ تعديلات الصفحة الرئيسية",
     "msg_e1b9": "فشل إعادة تعيين إعدادات المتجر"
-  },
-  "SubscriptionCenter": {
-    "unable_fetch_f426": "تعذر جلب تقرير الفرق"
   },
   "SuperAdminAIImageGeneratorSettings": {
     "success_save_d643": "تم حفظ الإعدادات",

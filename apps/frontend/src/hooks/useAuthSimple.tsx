@@ -17,7 +17,6 @@ interface Company {
   phone?: string | null;
   customDomain?: string | null;
   logo?: string | null;
-  plan: string;
   currency?: string;
   isActive?: boolean;
   role?: string;

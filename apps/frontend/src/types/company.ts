@@ -12,7 +12,6 @@ export interface CompanySettings {
   timezone?: string;
   language: string;
   subscription?: {
-    plan: string;
     status: string;
     expiresAt?: string;
   };

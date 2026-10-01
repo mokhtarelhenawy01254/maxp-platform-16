@@ -13,7 +13,7 @@ async function main() {
       take: 10
     });
 
-    console.log('Companies:', JSON.stringify(companies.map(c => ({ id: c.id, email: c.email, name: c.name, plan: c.plan })), null, 2));
+    console.log('Companies:', JSON.stringify(companies.map(c => ({ id: c.id, email: c.email, name: c.name })), null, 2));
 
     // Try to find the specific company
     const company = await prisma.company.findUnique({

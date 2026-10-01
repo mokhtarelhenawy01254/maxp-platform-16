@@ -90,6 +90,7 @@ async function payFromWallet(prisma, { companyId, amount, appSlugs, description 
           nextBillingDate,
           failedAttempts: 0,
           lastBillingDate: new Date(),
+          monthlyFee: amount,
         },
         create: {
           companyId,
@@ -346,15 +347,24 @@ exports.getBillingHistory = async (req, res) => {
 };
 
 
+const resolveMessagingBundlePrice = async () => {
+  const bundle = await marketplaceCatalogService.getBundleBySlug('messaging-bundle');
+  const price = Number(bundle?.monthlyPrice);
+  if (!Number.isFinite(price) || price <= 0) {
+    throw new Error('Messaging bundle price is not configured in marketplace catalog');
+  }
+  return price;
+};
+
 /**
  * @route POST /api/v1/platform-subscription/messaging-checkout
- * @desc Activate AI + Inbox Bundle (MESSAGING plan, 999 EGP/month)
+ * @desc Activate AI + Inbox Bundle (from catalog messaging-bundle)
  * @access Protected
  */
 exports.messagingCheckout = async (req, res) => {
   try {
     const { companyId, email, phone } = req.user;
-    const amount = 999;
+    const amount = await resolveMessagingBundlePrice();
     const prisma = getSharedPrismaClient();
 
     // 1) إذا كان رصيد المحفظة كافياً → دفع من المحفظة وتفعيل مباشر (بدون بوابة فيزا)
@@ -362,7 +372,7 @@ exports.messagingCheckout = async (req, res) => {
       companyId,
       amount,
       appSlugs: MESSAGING_APPS_DIRECT,
-      description: 'اشتراك باقة AI + Inbox (999 ج.م/شهر) - دفع من المحفظة',
+      description: `اشتراك باقة AI + Inbox (${amount} ج.م/شهر) - دفع من المحفظة`,
     });
 
     if (walletResult.ok) {
@@ -387,7 +397,7 @@ exports.messagingCheckout = async (req, res) => {
           walletPaid: true,
           billingId: walletResult.billingRecord.id,
         },
-        message: 'تم تفعيل باقة AI + Inbox وخصم 999 ج.م من رصيد المحفظة',
+        message: `تم تفعيل باقة AI + Inbox وخصم ${amount} ج.م من رصيد المحفظة`,
       });
     }
 
@@ -397,7 +407,7 @@ exports.messagingCheckout = async (req, res) => {
         companyId,
         type: "PLATFORM_FEE",
         amount,
-        description: "اشتراك باقة AI + Inbox (999 ج.م/شهر)",
+        description: `اشتراك باقة AI + Inbox (${amount} ج.م/شهر)`,
         status: "PENDING"
       }
     });
@@ -453,7 +463,7 @@ exports.messagingCheckout = async (req, res) => {
 exports.messagingUpgrade = async (req, res) => {
   try {
     const { companyId, email, phone } = req.user;
-    const amount = 999;
+    const amount = await resolveMessagingBundlePrice();
     const prisma = getSharedPrismaClient();
 
     const sub = await prisma.platformSubscription.findUnique({ where: { companyId } });
@@ -489,7 +499,7 @@ exports.messagingUpgrade = async (req, res) => {
           walletPaid: true,
           billingId: walletResult.billingRecord.id,
         },
-        message: 'تم تفعيل الاشتراك وخصم 999 ج.م من رصيد المحفظة',
+        message: `تم تفعيل الاشتراك وخصم ${amount} ج.م من رصيد المحفظة`,
       });
     }
 
@@ -789,7 +799,8 @@ exports.handleWebhook = async (req, res) => {
             status: "ACTIVE",
             nextBillingDate,
             failedAttempts: 0,
-            lastBillingDate: new Date()
+            lastBillingDate: new Date(),
+            monthlyFee: billingRecord.amount
           },
           create: {
             companyId: billingRecord.companyId,

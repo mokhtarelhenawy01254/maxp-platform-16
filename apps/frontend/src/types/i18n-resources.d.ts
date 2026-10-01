@@ -557,10 +557,6 @@ declare module 'react-i18next' {
           };
         };
       };
-      BillingOverview: {
-        error_fetch_fec6: string;
-        msg_23a3: string;
-      };
       BostaSettings: {
         failed_load_f24b: string;
         msg_d142: string;
@@ -5468,9 +5464,6 @@ declare module 'react-i18next' {
         unable_load_eddf: string;
         failed_save_8619: string;
         msg_e1b9: string;
-      };
-      SubscriptionCenter: {
-        unable_fetch_f426: string;
       };
       SuperAdminAIImageGeneratorSettings: {
         success_save_d643: string;

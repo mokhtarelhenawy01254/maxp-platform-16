@@ -13,7 +13,6 @@ interface Company {
   id: string;
   name: string;
   email: string;
-  plan: string;
   currency: string;
   isActive: boolean;
   settings?: any;

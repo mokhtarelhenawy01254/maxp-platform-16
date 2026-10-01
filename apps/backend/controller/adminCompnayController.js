@@ -217,6 +217,8 @@ const getCurrentMonthWindow = () => {
     end.setMilliseconds(end.getMilliseconds() - 1);
 
     return { start, end };
+};
+
 const isMissingTableError = (error, tableName) =>
     String(error?.message || '').includes(`The table \`public.${tableName}\` does not exist`);
 
@@ -235,37 +237,6 @@ const buildSyntheticPlatformSubscription = (company, monthlyFee) => {
         failedAttempts: 0,
         isFallback: true,
     };
-};
-
-const withEnterpriseOverrides = (limits, enterprisePlan) => {
-    const customLimits =
-        enterprisePlan?.customLimits &&
-        typeof enterprisePlan.customLimits === 'object' &&
-        !Array.isArray(enterprisePlan.customLimits)
-            ? enterprisePlan.customLimits
-            : null;
-
-    if (!customLimits) {
-        return limits;
-    }
-
-    const nextLimits = { ...(limits || {}) };
-
-    ['maxEmployees', 'maxProducts', 'maxOrdersPerMonth', 'maxCustomers'].forEach((key) => {
-        if (customLimits[key] !== undefined && customLimits[key] !== null) {
-            nextLimits[key] = Number(customLimits[key]);
-        }
-    });
-
-    if (typeof customLimits.hasAdvancedReports === 'boolean') {
-        nextLimits.hasAdvancedReports = customLimits.hasAdvancedReports;
-    }
-
-    if (typeof customLimits.hasAPIAccess === 'boolean') {
-        nextLimits.hasAPIAccess = customLimits.hasAPIAccess;
-    }
-
-    return nextLimits;
 };
 
 const buildLimitEntry = ({ key, label, current, limit, bonus = 0 }) => {

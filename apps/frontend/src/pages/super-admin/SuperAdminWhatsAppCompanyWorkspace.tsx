@@ -30,7 +30,6 @@ interface CompanySummaryResponse {
     name: string;
     slug: string | null;
     email: string;
-    plan: string;
   };
   summary: {
     sessionsTotal: number;

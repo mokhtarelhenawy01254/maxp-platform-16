@@ -21,7 +21,7 @@ type CompanyActivity = {
     recentConversations: number; recentAiInteractions: number; hasWhatsApp: boolean;
   };
   lastLogin: string | null; lastActivity: string | null; daysSinceLastActivity: number;
-  subscription: { status: string; plan: string | null };
+  subscription: { status: string };
 };
 
 type Summary = { total: number; active: number; dormant: number; dead: number };

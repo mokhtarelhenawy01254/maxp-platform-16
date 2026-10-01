@@ -31,7 +31,6 @@ interface CompanyRow {
   name: string;
   slug: string | null;
   email: string;
-  plan: string;
   isActive: boolean;
   whatsapp: {
     status: string;

@@ -36,7 +36,7 @@ const CompaniesManagement = () => {
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0, totalPages: 0 });
-  const [filters, setFilters] = useState({ search: "", plan: "", isActive: "" });
+  const [filters, setFilters] = useState({ search: "", isActive: "" });
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
 
