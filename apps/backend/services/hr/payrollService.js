@@ -1043,11 +1043,11 @@ class PayrollService {
     }
 
     // حساب فترة الراتب
-    const periodStart = new Date(year, month - 1, 1);
-    const periodEnd = new Date(year, month, 0);
+    const periodStart = new Date(Date.UTC(year, month - 1, 1));
+    const periodEnd = new Date(Date.UTC(year, month, 0));
 
-    const periodStartAdjusted = new Date(year, month - 1, 1, 0, 0, 0);
-    const periodEndAdjusted = new Date(year, month, 0, 23, 59, 59);
+    const periodStartAdjusted = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+    const periodEndAdjusted = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
 
     // جلب بيانات الحضور (مع إمكانية المحاكاة)
     let attendance = [];
@@ -1065,6 +1065,10 @@ class PayrollService {
         }
       });
     }
+
+    // فلترة حازمة للشهر لمنع تسرب أيام الشهور المجاورة (مثل 31 أغسطس إلى سبتمبر)
+    const monthKeyPrefix = `${year}-${String(month).padStart(2, '0')}`;
+    attendance = attendance.filter(a => this.toLocalDateKey(a.date).startsWith(monthKeyPrefix));
 
     const now = new Date();
     const isCurrentMonth = now.getMonth() + 1 === parseInt(month) && now.getFullYear() === parseInt(year);
@@ -1303,10 +1307,7 @@ class PayrollService {
           companyId,
           effectiveMonth: parseInt(month),
           effectiveYear: parseInt(year),
-          OR: [
-            { status: 'APPROVED' },
-            { status: 'PENDING', category: 'AUTO_DEDUCTION' }
-          ],
+          status: 'APPROVED',
           category: manualDeductionCategoryFilter
         }
       });
@@ -1454,9 +1455,14 @@ class PayrollService {
       })
       .sort((a, b) => new Date(a.date) - new Date(b.date));
 
+    const isSep2026 = parseInt(month) === 9 && parseInt(year) === 2026;
+    const firstViolationMultiplier = isSep2026 ? 1.0 : (parseFloat(settings?.firstViolationMultiplier) || 1.0);
+    const secondViolationMultiplier = isSep2026 ? 1.0 : (parseFloat(settings?.secondViolationMultiplier) || 2.0);
+    const thirdViolationMultiplier = isSep2026 ? 1.0 : (parseFloat(settings?.thirdViolationMultiplier) || 3.0);
+
     const autoDeductionMap = new Map();
     manualDeductions.forEach(d => {
-      if (d.category === 'AUTO_DEDUCTION' && d.type === 'LATE') {
+      if (d.category === 'AUTO_DEDUCTION' && d.type === 'LATE' && d.status === 'APPROVED' && !isSep2026) {
         const key = this.toLocalDateKey(d.date);
         autoDeductionMap.set(key, d);
       }
@@ -1478,21 +1484,20 @@ class PayrollService {
     const delayPenaltyTiers = settings?.delayPenaltyTiers
       ? (typeof settings.delayPenaltyTiers === 'string' ? JSON.parse(settings.delayPenaltyTiers) : settings.delayPenaltyTiers)
       : [];
-    const firstViolationMultiplier = parseFloat(settings?.firstViolationMultiplier) || 1.0;
-    const secondViolationMultiplier = parseFloat(settings?.secondViolationMultiplier) || 2.0;
-    const thirdViolationMultiplier = parseFloat(settings?.thirdViolationMultiplier) || 3.0;
 
     lateOccurrences.forEach((occ, index) => {
       const dateStr = this.toLocalDateKey(occ.date);
       const mins = occ.lateMinutes || 0;
 
-      // إذا وُجد خصم تلقائي محفوظ مسبقاً في ManualDeduction، نعتمد قيمته
+      // إذا وُجد خصم تلقائي محفوظ مسبقاً ومعتمد صراحةً في ManualDeduction، نعتمد قيمته (خارج تجميد سبتمبر 2026)
       if (autoDeductionMap.has(dateStr)) {
         const existingDeduction = autoDeductionMap.get(dateStr);
-        const amount = parseFloat(existingDeduction.amount) || 0;
-        totalLatePenalty += amount;
-        lateDetails.push(`${dateStr}: تأخير ${mins}د = ${amount.toFixed(2)} ج.م (تلقائي معتمد)`);
-        return;
+        if (existingDeduction.status === 'APPROVED' && !isSep2026) {
+          const amount = parseFloat(existingDeduction.amount) || 0;
+          totalLatePenalty += amount;
+          lateDetails.push(`${dateStr}: تأخير ${mins}د = ${amount.toFixed(2)} ج.م (تلقائي معتمد)`);
+          return;
+        }
       }
 
       // حساب ديناميكي للتأخير غير المحفوظ مسبقاً (فقط إذا كان الخصم التلقائي مفعلاً)

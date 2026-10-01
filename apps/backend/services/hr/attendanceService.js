@@ -512,6 +512,15 @@ class AttendanceService {
     const now = getNowInTimezone(timezone);
 
     try {
+      // التحقق من حالة الموظف والحساب التجريبي لمنع التسجيل بحسابات معطلة أو تجريبية
+      const empUser = await this.prisma.user.findUnique({
+        where: { id: employeeId },
+        select: { id: true, isActive: true, email: true, role: true }
+      });
+      if (empUser && empUser.isActive === false) {
+        throw new AttendanceError("الحساب معطل أو تجريبي ولا يمكن تسجيل الحضور به");
+      }
+
       // Normalize location data to JSON string for database storage
       const normalizedLocation =
         data.location && typeof data.location === "object"

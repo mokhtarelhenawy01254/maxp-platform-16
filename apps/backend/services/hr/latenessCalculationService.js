@@ -163,9 +163,10 @@ class LatenessCalculationService {
       const balance = await this.getOrCreateMonthlyBalance(companyId, employeeId, month, year);
       const remainingGrace = monthlyGrace - balance.graceMinutesUsed;
 
-      // حساب المضاعف (Multiplier) بناءً على عدد مرات التأخير هذا الشهر
+      // حساب المضاعف (Multiplier) بناءً على عدد مرات التأخير هذا الشهر (تجميد مضاعفات سبتمبر 2026 بقرار المالك)
       let multiplier = 1.0;
-      if (settings) {
+      const isSep2026 = month === 9 && year === 2026;
+      if (settings && !isSep2026) {
         if (balance.lateCount === 0) multiplier = parseFloat(settings.firstViolationMultiplier || 1.0);
         else if (balance.lateCount === 1) multiplier = parseFloat(settings.secondViolationMultiplier || 2.0);
         else multiplier = parseFloat(settings.thirdViolationMultiplier || 3.0);
