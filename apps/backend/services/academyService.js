@@ -64,13 +64,13 @@ async function resolveAcademyAgentId(companyId, kind) {
   }
 }
 
-async function askAcademyAgent({ companyId, kind, message, threadId, timeoutMs }) {
+async function askAcademyAgent({ companyId, kind, message, threadId, timeoutMs, customerId }) {
   try {
     const agentId = await resolveAcademyAgentId(companyId, kind);
     if (!agentId) return null;
     const client = require('./aiServiceAdminClient');
     const res = await withAgentTimeout(
-      client.chatWithAgent({ companyId, agentId, message, threadId }),
+      client.chatWithAgent({ companyId, agentId, customerId: customerId || undefined, message, threadId }),
       timeoutMs || 45000
     );
     if (res && res.status === 'ok' && typeof res.reply === 'string' && res.reply.trim()) {
@@ -1129,7 +1129,7 @@ class AcademyService {
   // AI Coach Grounded Q&A
   // -------------------------------------------------------------
 
-  async askCoachOnLesson({ lessonId, companyId, userMessage, quizContext }) {
+  async askCoachOnLesson({ lessonId, companyId, userMessage, quizContext, userId }) {
     if (!userMessage || !userMessage.trim()) {
       throw new Error('Message is required');
     }
@@ -1190,6 +1190,7 @@ ${exerciseText}
       kind: 'COACH',
       threadId: `academy-lesson-${lessonId}`,
       timeoutMs: 45000,
+      customerId: userId,
       message: `[سياق الدرس]\nالكورس: ${courseTitle}\nالدرس: ${lessonTitle}\n\nسكريبت الدرس:\n"""\n${scriptText}\n"""\n\nالتمرين العملي:\n"""\n${exerciseText}\n"""\n${quizContextBlock}\n\n[سؤال الطالب]\n${userMessage}`,
     });
     if (agentReply) return { reply: agentReply, source: 'agent' };
@@ -1231,7 +1232,7 @@ ${exerciseText}
   // AI Grader & Exercise Submissions (M2 & M3)
   // -------------------------------------------------------------
 
-  async gradeSubmission({ lessonId, submission, companyId }) {
+  async gradeSubmission({ lessonId, submission, companyId, userId }) {
     const db = this.getDb();
     const lesson = await db.academyLesson.findFirst({
       where: { id: lessonId },
@@ -1261,6 +1262,7 @@ ${exerciseText}
         kind: 'GRADER',
         threadId: `academy-grade-${lessonId}`,
         timeoutMs: 45000,
+        customerId: userId,
         message: `[الدرس] ${lessonTitle} — ${courseTitle}\n\n[مسطرة التمرين (معايير القبول/الرفض)]\n"""\n${exerciseText}\n"""\n\n[تسليم الطالب]\nنص الإجابة / التطبيق:\n"""\n${studentText || 'لم يكتب نصاً'}\n"""\nرابط المرفق / الصورة: ${studentUrl || 'لا يوجد'}\n\nأعد JSON فقط بالحقول: verdict, missing, coachLine, nextStep.`,
       });
       const agentVerdict = parseGraderVerdict(graderReply);

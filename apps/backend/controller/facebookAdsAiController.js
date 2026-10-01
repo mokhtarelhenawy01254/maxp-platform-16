@@ -440,6 +440,7 @@ class FacebookAdsAiController {
   async chat(req, res) {
     try {
       const companyId = req.user?.companyId;
+      const userId = req.user?.id || req.user?.userId || null;
       if (!companyId) {
         return res.status(401).json({ success: false, error: 'Company ID is required' });
       }
@@ -726,6 +727,7 @@ class FacebookAdsAiController {
         const result = await aiServiceAdminClient.chatWithAgent({
           companyId,
           agentId: targetAgentId,
+          customerId: userId || undefined,
           message: effectiveMessage,
           threadId: scopedThreadId,
           conversationId: threadId,
@@ -862,6 +864,7 @@ class FacebookAdsAiController {
               const synthResult = await aiServiceAdminClient.chatWithAgent({
                 companyId,
                 agentId: targetAgentId,
+                customerId: userId || undefined,
                 message: synthesisPrompt,
                 threadId: scopedThreadId,
                 conversationId: threadId,

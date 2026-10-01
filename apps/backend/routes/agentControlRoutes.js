@@ -378,6 +378,7 @@ router.post('/agents/:id/run-task', async (req, res) => {
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
     const result = await aiServiceAdminClient.chatWithAgent({
       companyId, agentId: req.params.id,
+      customerId: req.user?.id || req.user?.userId || undefined,
       message: req.body?.task || req.body?.title || '',
       threadId: req.body?.traceId || `run-task-${Date.now()}`,
     });
@@ -393,6 +394,7 @@ router.post('/agents/orchestrate', async (req, res) => {
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
     const result = await aiServiceAdminClient.chatWithAgent({
       companyId, agentId: '',
+      customerId: req.user?.id || req.user?.userId || undefined,
       message: req.body?.goal || 'أنجز المهمة الموكلة',
       threadId: `orchestrate-${Date.now()}`,
     });

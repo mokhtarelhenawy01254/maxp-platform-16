@@ -17,6 +17,7 @@ class InventoryAiController {
   async chat(req, res) {
     try {
       const companyId = req.user?.companyId || req.companyId;
+      const userId = req.user?.id || req.user?.userId || null;
       if (!companyId) {
         return res.status(401).json({ success: false, error: 'Company ID is required' });
       }
@@ -89,6 +90,7 @@ class InventoryAiController {
         result = await aiServiceAdminClient.chatWithAgent({
           companyId,
           agentId: targetAgentId,
+          customerId: userId || undefined,
           message: augmentedMessage,
           threadId: scopedThreadId,
           channel: 'inventory_studio',

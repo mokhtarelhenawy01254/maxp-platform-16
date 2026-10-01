@@ -373,6 +373,7 @@ exports.askCoach = async (req, res) => {
       companyId,
       userMessage: message,
       quizContext,
+      userId: req.user?.id || req.user?.userId || null,
     });
 
     res.json({ success: true, ...result });

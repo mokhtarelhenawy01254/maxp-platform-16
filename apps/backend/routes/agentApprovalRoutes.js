@@ -9,6 +9,7 @@ const router = express.Router();
 const verifyToken = require('../utils/verifyToken');
 const aiSdkClient = require('../services/aiSdkClient');
 const aiSessionService = require('../services/aiSessionService');
+const agentStudioSessionService = require('../services/agentStudioSessionService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 router.use(verifyToken.authenticateToken);
@@ -42,6 +43,14 @@ function buildApprovalNote({ approved, result, draftId }) {
 async function mirrorApprovalOutcome(companyId, threadId, note) {
   if (!threadId || !note) return;
   try {
+    // Only mirror into an existing chat session — approvals raised from
+    // non-session threads (e.g. run-task traces) have no ledger to show the
+    // note in, and appending would create an orphan session row.
+    const existing = await agentStudioSessionService.getSession(companyId, threadId);
+    if (!existing) {
+      console.warn('[AgentApprovals] Skipping mirror: no chat session for thread', threadId);
+      return;
+    }
     await aiSessionService.appendMessage(companyId, threadId, {
       sender: 'assistant',
       text: note,

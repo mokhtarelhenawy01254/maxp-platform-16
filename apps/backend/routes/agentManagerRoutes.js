@@ -46,7 +46,7 @@ const agentManagerService = {
   chat: async (companyId, { message, userId }) => {
     try {
       const result = await aiServiceAdminClient.chatWithAgent({
-        companyId, agentId: '', message, threadId: `manager_${companyId}`,
+        companyId, agentId: '', customerId: userId || undefined, message, threadId: `manager_${companyId}`,
       });
       return result || { success: false, reply: '', context: null };
     } catch (_) {
