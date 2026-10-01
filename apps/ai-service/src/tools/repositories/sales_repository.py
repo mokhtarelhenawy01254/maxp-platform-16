@@ -93,6 +93,25 @@ class SalesRepository(BaseRepository):
         l_row = low_stock_res.first()
         low_stock_cnt = l_row.cnt if l_row else 0
 
+        shipping_companies: list[dict[str, Any]] = []
+        try:
+            sc_res = await self._session.execute(text("""
+                SELECT name, "providerKey", "integrationMode"
+                FROM shipping_companies
+                WHERE "companyId" = :cid AND "isActive" = TRUE
+                ORDER BY "createdAt" ASC
+            """), {"cid": company_id})
+            shipping_companies = [
+                {
+                    "name": r.name,
+                    "providerKey": getattr(r, "providerKey", ""),
+                    "integrationMode": getattr(r, "integrationMode", ""),
+                }
+                for r in sc_res
+            ]
+        except Exception:
+            pass
+
         return {
             "todayOrders": today.get("total", 0),
             "pendingOrders": pending_total,
@@ -103,4 +122,5 @@ class SalesRepository(BaseRepository):
             "todayShipped": today.get("shipped", 0),
             "todayDelivered": today.get("delivered", 0),
             "todayCancelled": today.get("cancelled", 0),
+            "shippingCompanies": shipping_companies,
         }

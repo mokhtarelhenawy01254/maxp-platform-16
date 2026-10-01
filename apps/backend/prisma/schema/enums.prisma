@@ -553,14 +553,6 @@ enum AiKeysProvider {
   @@map("ai_keys_provider")
 }
 
-enum SubscriptionsPlanType {
-  BASIC
-  PRO
-  ENTERPRISE
-
-  @@map("subscriptions_planType")
-}
-
 enum ReturnReasonCategoriesDefaultRole {
   CUSTOMER
   STORE

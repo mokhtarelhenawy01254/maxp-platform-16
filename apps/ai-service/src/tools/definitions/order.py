@@ -172,11 +172,30 @@ async def order_lookup(input_data: OrderLookupInput) -> dict[str, Any]:
     async with sf() as sess:
         repo = OrderRepository(sess)
         order = await repo.get_order(company_id, order_number)
+        if not order:
+            return {"order": {"found": False, "code": "ORDER_NOT_FOUND", "orderNumber": order_number}}
+        items = await repo.get_order_items(order["id"])
 
-    if not order:
-        return {"order": {"found": False, "code": "ORDER_NOT_FOUND", "orderNumber": order_number}}
+    if not items and order.get("guestItems"):
+        import json
+        try:
+            raw_guest_items = order["guestItems"]
+            parsed_items = json.loads(raw_guest_items) if isinstance(raw_guest_items, str) else raw_guest_items
+            if isinstance(parsed_items, list):
+                items = [
+                    {
+                        "name": gi.get("name") or gi.get("productName") or "",
+                        "qty": gi.get("quantity") or gi.get("qty") or 1,
+                        "price": gi.get("price") or 0,
+                        "productColor": gi.get("color") or gi.get("productColor") or "",
+                        "productSize": gi.get("size") or gi.get("productSize") or "",
+                    }
+                    for gi in parsed_items
+                    if isinstance(gi, dict)
+                ]
+        except Exception:
+            pass
 
-    items = await repo.get_order_items(order["id"])
     customer_name = order.get("customerName") or ""
     customer_phone = order.get("customerPhone") or ""
 
@@ -184,12 +203,37 @@ async def order_lookup(input_data: OrderLookupInput) -> dict[str, Any]:
         "found": True,
         "orderNumber": str(order.get("orderNumber", order_number)),
         "status": order.get("status"),
+        "customStatusCode": order.get("customStatusCode") or "",
         "paymentStatus": order.get("paymentStatus"),
+        "paymentMethod": str(order.get("paymentMethod") or ""),
         "total": str(order.get("total", 0)),
+        "shippingCost": str(order.get("shipping", 0)),
         "customer": customer_name,
         "phone": customer_phone,
+        "governorate": order.get("governorate") or "",
+        "city": order.get("city") or "",
+        "address": order.get("customerAddress") or order.get("shippingAddress") or "",
+        "notes": order.get("notes") or "",
+        "shippingCompany": order.get("shippingCompany") or "",
+        "shippingCarrier": order.get("shippingCarrier") or "",
+        "trackingNumber": order.get("trackingNumber") or "",
+        "shipmentStatus": order.get("shipmentStatus") or "",
+        "shippedAt": str(order.get("shippedAt") or ""),
+        "captainName": order.get("captainName") or "",
+        "captainPhone": order.get("captainPhone") or "",
+        "branchName": order.get("branchName") or "",
+        "branchPhone": order.get("branchPhone") or "",
+        "delayReason": order.get("delayReason") or "",
+        "returnReason": order.get("returnReason") or "",
+        "shipments": order.get("shipments") or [],
         "items": [
-            {"name": i.get("name", ""), "qty": i.get("qty", 1), "price": str(i.get("price", 0))}
+            {
+                "name": i.get("name", ""),
+                "qty": i.get("qty", 1),
+                "price": str(i.get("price", 0)),
+                "color": i.get("productColor") or "",
+                "size": i.get("productSize") or "",
+            }
             for i in items
         ],
         "createdAt": str(order.get("createdAt") or ""),
@@ -234,6 +278,10 @@ async def order_lookup_by_phone(input_data: OrderLookupByPhoneInput) -> dict[str
                 "paymentStatus": o.get("paymentStatus", ""),
                 "total": str(o.get("total", 0)),
                 "customerName": o.get("customerName") or o.get("customer_name") or o.get("guestName") or "",
+                "shippingCompany": o.get("shippingCompany") or "",
+                "shippingCarrier": o.get("shippingCarrier") or "",
+                "trackingNumber": o.get("trackingNumber") or "",
+                "shipmentStatus": o.get("shipmentStatus") or "",
                 "createdAt": str(o.get("createdAt") or o.get("created_at") or ""),
             }
             for o in orders
@@ -510,6 +558,7 @@ def _format_order_lookup(result: dict) -> str:
     status_ar = {
         "PENDING": "قيد المراجعة والتجهيز",
         "CONFIRMED": "تم تأكيد الطلب وجاري تجهيزه للشحن",
+        "PROCESSING": "جاري التجهيز والشحن",
         "SHIPPED": "تم شحن الطلب وهو في الطريق للعميل مع شركة الشحن",
         "DELIVERED": "تم تسليم الطلب بنجاح للعميل",
         "CANCELLED": "تم إلغاء الطلب",
@@ -520,7 +569,26 @@ def _format_order_lookup(result: dict) -> str:
     items_str = ", ".join(i.get("name", "") for i in items if isinstance(i, dict) and i.get("name"))
     total_part = f"، الإجمالي: {total} ج" if total else ""
     items_part = f"، المنتجات: {items_str}" if items_str else ""
-    return f"طلب رقم #{num} - حالته: {status_ar}{total_part}{items_part}"
+
+    shipping_company = order_data.get("shippingCompany") or ""
+    tracking_number = order_data.get("trackingNumber") or ""
+    shipped_at = order_data.get("shippedAt") or ""
+    captain_name = order_data.get("captainName") or ""
+    captain_phone = order_data.get("captainPhone") or ""
+
+    shipping_parts = []
+    if shipping_company:
+        shipping_parts.append(f"شركة الشحن: {shipping_company}")
+    if tracking_number:
+        shipping_parts.append(f"رقم البوليصة/التتبع: {tracking_number}")
+    if shipped_at:
+        shipping_parts.append(f"تاريخ الشحن: {shipped_at}")
+    if captain_name:
+        cap_str = f"{captain_name} ({captain_phone})" if captain_phone else captain_name
+        shipping_parts.append(f"المندوب: {cap_str}")
+
+    shipping_summary = f" | {'، '.join(shipping_parts)}" if shipping_parts else ""
+    return f"طلب رقم #{num} - حالته: {status_ar}{total_part}{items_part}{shipping_summary}"
 
 
 def _format_order_lookup_by_phone(result: dict) -> str:
@@ -528,17 +596,20 @@ def _format_order_lookup_by_phone(result: dict) -> str:
     if not orders:
         return "لم يتم العثور على طلبات سابقة مسجلة برقم هذا الهاتف"
     summaries = []
-    for o in orders[:3]:
+    for o in orders[:5]:
         num = o.get("orderNumber") or o.get("id") or ""
         st = o.get("status") or ""
         tot = o.get("total") or ""
-        summaries.append(f"طلب #{num} (الحالة: {st}، المبلغ: {tot} ج)")
+        carrier = o.get("shippingCompany") or ""
+        track = o.get("trackingNumber") or ""
+        ship_txt = f"، الشحن: {carrier}" + (f" #{track}" if track else "") if carrier else ""
+        summaries.append(f"طلب #{num} (الحالة: {st}، المبلغ: {tot} ج{ship_txt})")
     return f"تم العثور على {len(orders)} طلب: " + " | ".join(summaries)
 
 
 order_lookup_tool = FunctionTool(
     name="order_lookup",
-    description="Look up an order by its order number. Use when customer asks about order status, delivery status, or wants to check their existing order. Returns order status, items, and delivery info.",
+    description="Look up an order by its order number or tracking number (AWB). Use when merchant or customer asks about order status, which shipping company/carrier the order belongs to, tracking/AWB number, delivery status, or items. Returns order status, shippingCompany, trackingNumber, shipment details, items, and customer info.",
     func=order_lookup,
     input_model=OrderLookupInput,
     format_result=_format_order_lookup,

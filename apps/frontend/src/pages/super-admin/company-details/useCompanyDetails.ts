@@ -84,7 +84,7 @@ interface UseCompanyDetailsReturn {
   scrollToActivationSection: () => void; reviewAlerts: ReviewAlert[]; detailMetrics: Metric[]; financialMetrics: Metric[]; ownerUser: CompanyUser | null;
   refreshCompanyWorkspace: (opts?: { background?: boolean }) => Promise<void>; refreshing: boolean;
   openTopUpModal: () => void; openEditModal: () => void; handleLoginAsAdmin: () => Promise<void>;
-  planAction: string; bundleAction: string; appAction: string; installAllLoading: boolean; activationLoading: boolean; activationError: string;
+  bundleAction: string; appAction: string; installAllLoading: boolean; activationLoading: boolean; activationError: string;
   orderedCatalogApps: any[]; resolvedBundles: any[]; appNameBySlug: Map<string, string>;
   handleInstallApp: (app: any) => Promise<void>; handleSubscribeBundle: (bundleSlug: string) => Promise<void>;
   handleActivateAllTools: () => Promise<void>; refreshActivationCatalog: () => Promise<void>;
@@ -104,7 +104,6 @@ interface UseCompanyDetailsReturn {
   handleToggleUserStatus: (userId: string) => Promise<void>;
   handleDeleteUser: (userId: string) => Promise<void>;
   deleteConfirmUserId: string | null; setDeleteConfirmUserId: (id: string | null) => void; deleteUserLoading: boolean;
-  handleCancelSubscription: () => Promise<void>; handleRetryPayment: () => Promise<void>;
   companyTickets: TicketListItem[]; ticketsLoading: boolean;
   companyActivities: ActivityEntry[]; activitiesLoading: boolean;
   toggleFeatureLoading: boolean;
@@ -160,10 +159,8 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
 
   const [activationLoading, setActivationLoading] = useState(true);
   const [activationError, setActivationError] = useState("");
-  const [catalogPlans, setCatalogPlans] = useState<any[]>([]); // ponytail: kept as state placeholder, not used for plan tiers
   const [catalogApps, setCatalogApps] = useState<any[]>([]);
   const [catalogBundles, setCatalogBundles] = useState<any[]>([]);
-  const [planAction, setPlanAction] = useState("");
   const [bundleAction, setBundleAction] = useState("");
   const [appAction, setAppAction] = useState("");
   const [installAllLoading, setInstallAllLoading] = useState(false);
@@ -239,11 +236,9 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   };
 
   const refreshActivationCatalog = async (): Promise<void> => {
-    if (!companyId) { setCatalogPlans([]); setCatalogApps([]); setCatalogBundles([]); setActivationLoading(false); setActivationError(""); return; }
+    if (!companyId) { setCatalogApps([]); setCatalogBundles([]); setActivationLoading(false); setActivationError(""); return; }
     setActivationLoading(true); setActivationError("");
     try {
-      // ponytail: /admin/plans/plans removed — plan catalog deleted
-      setCatalogPlans([]);
       const [appsResult, bundlesResult] = await Promise.allSettled([
         apiClient.get("/marketplace/apps", getCompanyScopedRequestConfig({ params: { sort: "featured" }, _skipTransientRetry: true })),
         apiClient.get("/marketplace/bundles", getCompanyScopedRequestConfig({ _skipTransientRetry: true })),
@@ -259,7 +254,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
       const activationSourcesFailed = !appsData?.success && !bundlesData?.success;
       if (activationSourcesFailed) setActivationError("تعذر تحميل خيارات التفعيل والاشتراكات لهذه الشركة.");
     } catch (nextError) {
-      setCatalogPlans([]); setCatalogApps([]); setCatalogBundles([]);
+      setCatalogApps([]); setCatalogBundles([]);
       setActivationError(extractErrorMessage(nextError, "تعذر تحميل خيارات التفعيل والاشتراكات"));
     } finally { setActivationLoading(false); }
   };
@@ -340,26 +335,6 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
       else toast.error(response.data?.message || "فشل في حذف العضو");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في حذف العضو")); }
     finally { setDeleteUserLoading(false); }
-  };
-
-  const handleCancelSubscription = async (): Promise<void> => {
-    const subscriptionId = review?.subscription?.id;
-    if (!subscriptionId) { tToast.error("companyDetails.msg_8a85"); return; }
-    try {
-      const response: any = await apiClient.put(`/super-admin/platform/subscription/${subscriptionId}`, { status: "CANCELLED" });
-      if (response.data?.success) { tToast.success("companyDetails.msg_624b"); void refreshCompanyWorkspace({ background: true }); }
-      else toast.error(response.data?.message || "فشل في إلغاء الاشتراك");
-    } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في إلغاء الاشتراك")); }
-  };
-
-  const handleRetryPayment = async (): Promise<void> => {
-    const subscriptionId = review?.subscription?.id;
-    if (!subscriptionId) { tToast.error("companyDetails.msg_2bcf"); return; }
-    try {
-      const response: any = await apiClient.post(`/super-admin/platform/retry-failed-payment/${subscriptionId}`);
-      if (response.data?.success) { tToast.success("companyDetails.msg_06f8"); void refreshCompanyWorkspace({ background: true }); }
-      else toast.error(response.data?.message || "فشلت إعادة محاولة الدفع");
-    } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشلت إعادة محاولة الدفع")); }
   };
 
   const handleTransferOwnership = async (): Promise<void> => {
@@ -480,8 +455,6 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     }
   };
 
-  void catalogPlans; void setPlanAction; // suppress unused — ponytail remnants
-
   const companyInstalledAppsBySlug = useMemo(() => {
     const entries = (review?.usage?.installedApps || []).filter((companyApp) => ["ACTIVE", "TRIAL"].includes(companyApp.status));
     return new Map(entries.filter((companyApp) => companyApp?.app?.slug).map((companyApp) => [companyApp.app.slug, companyApp]));
@@ -591,7 +564,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     scrollToActivationSection, reviewAlerts, detailMetrics, financialMetrics, ownerUser,
     refreshCompanyWorkspace, refreshing,
     openTopUpModal, openEditModal, handleLoginAsAdmin,
-    planAction, bundleAction, appAction, installAllLoading, activationLoading, activationError,
+    bundleAction, appAction, installAllLoading, activationLoading, activationError,
     orderedCatalogApps, resolvedBundles, appNameBySlug,
     handleInstallApp, handleSubscribeBundle, handleActivateAllTools, refreshActivationCatalog,
     companyUsers, usersLoading, facebookPages, pagesLoading, openAddEmployeeModal,
@@ -605,7 +578,6 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   trialActive, trialEndsAt, trialStartedAt, trialDaysRemaining,
   handleUpdateUserRole, handleToggleUserStatus, handleDeleteUser,
     deleteConfirmUserId, setDeleteConfirmUserId, deleteUserLoading,
-    handleCancelSubscription, handleRetryPayment,
     companyTickets, ticketsLoading,
     companyActivities, activitiesLoading,
     toggleFeatureLoading, handleToggleFeature,

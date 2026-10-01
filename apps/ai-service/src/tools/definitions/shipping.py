@@ -459,7 +459,7 @@ async def shipping_ticket_reply(input_data: ShippingTicketReplyInput) -> dict[st
 async def shipment_track(input_data: ShipmentTrackInput) -> dict[str, Any]:
     """Track a shipment by order number, tracking code, or AWB in real time."""
     company_id = input_data.company_id or ""
-    code = (input_data.tracking_code or "").strip()
+    code = (input_data.tracking_code or "").strip().lstrip("#").strip()
     if not company_id or not code:
         return {"found": False, "error": "Missing company_id or tracking_code"}
 
@@ -476,14 +476,21 @@ async def shipment_track(input_data: ShipmentTrackInput) -> dict[str, Any]:
         except Exception:
             pass
 
+    shipping_carrier = str((order_info and order_info.get("shippingCarrier")) or "").upper()
+    shipping_company = str((order_info and order_info.get("shippingCompany")) or "")
+    resolved_tracking = str((order_info and order_info.get("trackingNumber")) or "")
+    turbo_tracking = str((order_info and order_info.get("turboTrackingNumber")) or "")
+
     client = get_backend_client()
     carrier_tracking: dict[str, Any] | None = None
-    try:
-        track_res = await client.track_shipment_by_code(company_id, code)
-        if track_res.get("success") or track_res.get("data"):
-            carrier_tracking = track_res.get("data") or track_res
-    except Exception:
-        pass
+    # Query Turbo live API only when carrier is TURBO, turboTrackingNumber exists, or order wasn't found locally
+    if not order_info or shipping_carrier == "TURBO" or turbo_tracking:
+        try:
+            track_res = await client.track_shipment_by_code(company_id, turbo_tracking or code)
+            if track_res.get("success") or track_res.get("data"):
+                carrier_tracking = track_res.get("data") or track_res
+        except Exception:
+            pass
 
     if not order_info and not carrier_tracking:
         return {
@@ -494,22 +501,54 @@ async def shipment_track(input_data: ShipmentTrackInput) -> dict[str, Any]:
 
     status = (
         (carrier_tracking and (carrier_tracking.get("status") or carrier_tracking.get("internalStatus")))
-        or (order_info and order_info.get("status"))
+        or (order_info and (order_info.get("shipmentStatus") or order_info.get("status")))
         or "PROCESSING"
     )
+    order_status = (order_info and order_info.get("status")) or status
 
-    captain_name = (carrier_tracking and carrier_tracking.get("captainName")) or ""
-    captain_phone = (carrier_tracking and carrier_tracking.get("captainPhone")) or ""
+    captain_name = (
+        (carrier_tracking and carrier_tracking.get("captainName"))
+        or (order_info and order_info.get("captainName"))
+        or ""
+    )
+    captain_phone = (
+        (carrier_tracking and carrier_tracking.get("captainPhone"))
+        or (order_info and order_info.get("captainPhone"))
+        or ""
+    )
+    branch_name = (
+        (carrier_tracking and carrier_tracking.get("branchName"))
+        or (order_info and order_info.get("branchName"))
+        or ""
+    )
+    shipped_at = str((order_info and order_info.get("shippedAt")) or "")
+
+    carrier_display = (
+        shipping_company
+        or ("تربو للشحن (Turbo)" if carrier_tracking else "غير محدد بعد")
+    )
+    final_tracking = resolved_tracking or turbo_tracking or code
 
     return {
         "found": True,
-        "trackingCode": code,
+        "trackingCode": final_tracking,
+        "trackingNumber": final_tracking,
         "orderNumber": (order_info and order_info.get("orderNumber")) or code,
+        "orderStatus": order_status,
         "status": status,
         "customerName": (order_info and order_info.get("customerName")) or "",
-        "carrier": "شركة الشحن (Turbo)",
+        "customerPhone": (order_info and order_info.get("customerPhone")) or "",
+        "governorate": (order_info and order_info.get("governorate")) or "",
+        "city": (order_info and order_info.get("city")) or "",
+        "address": (order_info and (order_info.get("customerAddress") or order_info.get("shippingAddress"))) or "",
+        "carrier": carrier_display,
+        "shippingCompany": carrier_display,
+        "shippingCarrier": shipping_carrier or ("TURBO" if carrier_tracking else ""),
+        "shippedAt": shipped_at,
         "captainName": captain_name,
         "captainPhone": captain_phone,
+        "branchName": branch_name,
+        "shipments": (order_info and order_info.get("shipments")) or [],
         "liveCarrierData": carrier_tracking,
     }
 
@@ -534,9 +573,21 @@ def _format_shipment_track(result: dict[str, Any]) -> str:
     res = result.get("result", result)
     if not res.get("found"):
         return res.get("message") or f"لم يتم العثور على بيانات تتبع للشحنة {res.get('trackingCode')}."
+    order_num = res.get("orderNumber") or ""
+    carrier = res.get("shippingCompany") or res.get("carrier") or "غير محدد"
+    tracking_num = res.get("trackingNumber") or res.get("trackingCode") or ""
     status = res.get("status", "قيد المعالجة")
-    captain = f" - المندوب: {res.get('captainName')} ({res.get('captainPhone')})" if res.get("captainName") else ""
-    return f"حالة الشحنة ({res.get('trackingCode')}): {status}{captain}."
+    order_status = res.get("orderStatus") or ""
+    shipped_at = res.get("shippedAt") or ""
+    captain = f" | المندوب: {res.get('captainName')} ({res.get('captainPhone')})" if res.get("captainName") else ""
+    branch = f" | الفرع: {res.get('branchName')}" if res.get("branchName") else ""
+    date_part = f" | تاريخ الشحن: {shipped_at}" if shipped_at else ""
+    order_part = f"الطلب #{order_num} — " if order_num else ""
+    status_part = f"{order_status} ({status})" if order_status and order_status != status else status
+    return (
+        f"{order_part}شركة الشحن: {carrier} | رقم البوليصة/التتبع: {tracking_num} | "
+        f"الحالة: {status_part}{date_part}{captain}{branch}."
+    )
 
 
 shipping_rates_tool = FunctionTool(

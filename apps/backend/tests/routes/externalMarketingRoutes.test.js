@@ -141,7 +141,6 @@ const subscriptionsStore = [
   {
     id: 'sub-1',
     companyId: companyId1,
-    plan: 'PRO',
     status: 'ACTIVE',
     monthlyFee: 1500,
     nextBillingDate: new Date('2026-10-15T00:00:00.000Z'),
@@ -151,7 +150,6 @@ const subscriptionsStore = [
   {
     id: 'sub-2',
     companyId: companyId2,
-    plan: 'ENTERPRISE',
     status: 'ACTIVE',
     monthlyFee: 3000,
     nextBillingDate: new Date('2026-10-20T00:00:00.000Z'),

@@ -40,6 +40,32 @@ def _department_key_for_role(role: str) -> str:
     return "operations"
 
 
+ROLE_DEFAULT_TEMPLATES: dict[str, tuple[str, str]] = {
+    "ORDER_CONFIRMATION": ("order-confirmation-agent", "منى — مسؤولة تأكيد الطلبات والشحن"),
+    "SHIPPING": ("shipping-agent", "مروان — منسق الشحن والعمليات اللوجستية"),
+    "STORE_MANAGER": ("store-manager-agent", "كريم — المساعد التنفيذي لإدارة المتجر"),
+    "MEDIA_BUYER": ("facebook-media-buyer-agent", "عباس — الميديا باير وخبير الإعلانات"),
+    "INVENTORY": ("inventory-pricing-agent", "خبير المخزون والتسعير"),
+    "COMPETITOR": ("competitor-analysis", "محلل المنافسين والأسعار"),
+    "SUPPORT": ("support-agent", "خدمة العملاء والدعم الفني"),
+    "AOV_SPECIALIST": ("aov-specialist-agent", "شادي — مسؤول رفع متوسط قيمة الطلب"),
+    "PRODUCT_CREATOR": ("product-creator-agent", "أكرم — اختصاصي إدارة وإدراج المنتجات"),
+    "HR_ASSISTANT": ("hr-assistant-agent", "مستشارة شؤون الموظفين"),
+}
+
+ROLE_ALIASES: dict[str, str] = {
+    "LOGISTICS": "SHIPPING",
+    "شحن": "SHIPPING",
+    "الشحن": "SHIPPING",
+    "مسؤولة الشحن": "ORDER_CONFIRMATION",
+    "تأكيد الطلبات": "ORDER_CONFIRMATION",
+    "منى": "ORDER_CONFIRMATION",
+    "مروان": "SHIPPING",
+    "كريم": "STORE_MANAGER",
+    "عباس": "MEDIA_BUYER",
+}
+
+
 class AgentManagerService:
     """Facade for agent lifecycle management.
 
@@ -153,14 +179,29 @@ class AgentManagerService:
     ) -> dict[str, Any]:
         """Find an agent (بالـ role أو الـ id) وشغّل المهمة عليه."""
         agent: Any = None
+        clean_role = (role or "").strip()
+        canonical_role = ROLE_ALIASES.get(clean_role, ROLE_ALIASES.get(clean_role.upper(), clean_role.upper()))
+
         if agent_id:
             agent = self._registry.get(company_id, agent_id)
-        if not agent and role:
+        if not agent and canonical_role:
             for aid, a, _ in self._registry.list_agents(company_id):
-                if getattr(a, "role", "").upper() == role.upper():
+                if getattr(a, "role", "").upper() == canonical_role:
                     agent = a
                     agent_id = aid
                     break
+
+        if not agent and canonical_role in ROLE_DEFAULT_TEMPLATES and company_id:
+            template_slug, default_name = ROLE_DEFAULT_TEMPLATES[canonical_role]
+            try:
+                agent, agent_id = await self._registry.spawn(
+                    company_id=company_id,
+                    role=canonical_role,
+                    name=default_name,
+                    template_slug=template_slug,
+                )
+            except Exception as spawn_err:
+                logger.warning("auto_spawn_specialist_failed", role=canonical_role, error=str(spawn_err))
 
         if not agent:
             msg = f"Agent not found: id={agent_id}, role={role}"

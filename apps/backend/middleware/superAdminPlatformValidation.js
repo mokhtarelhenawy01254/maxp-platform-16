@@ -1,31 +1,5 @@
 const { body, param, validationResult } = require("express-validator");
 
-/**
- * Platform Subscription Validation Rules
- */
-const updateSubscriptionRules = () => {
-  return [
-    param("id").isUUID().withMessage("معرف الاشتراك غير صحيح"),
-    body("status")
-      .optional()
-      .isIn(["ACTIVE", "SUSPENDED", "CANCELLED", "PAST_DUE"])
-      .withMessage("حالة الاشتراك غير صحيحة"),
-    body("plan")
-      .optional()
-      .isIn(["FREE", "BASIC", "PRO", "ENTERPRISE"])
-      .withMessage("الخطة غير صحيحة"),
-    body("monthlyFee")
-      .optional()
-      .isFloat({ min: 0 })
-      .withMessage("الرسوم الشهرية يجب أن تكون رقم موجب"),
-  ];
-};
-
-const retryPaymentRules = () => {
-  return [
-    param("id").isUUID().withMessage("معرف سجل الفاتورة غير صحيح"),
-  ];
-};
 
 const upsertSignupCouponRules = () => {
   return [
@@ -156,9 +130,6 @@ const validate = (req, res, next) => {
 };
 
 module.exports = {
-  updateSubscriptionRules,
-
-  retryPaymentRules,
   upsertSignupCouponRules,
   updateSignupCouponRules,
   deleteSignupCouponRules,
@@ -167,3 +138,4 @@ module.exports = {
   deleteBusinessSpecialtyRules,
   validate,
 };
+

@@ -1113,7 +1113,6 @@ model StorefrontSettings {
 model Subscription {
   id              String                @id
   companyId       String
-  planType        SubscriptionsPlanType
   status          SubscriptionsStatus   @default(ACTIVE)
   startDate       DateTime              @default(now())
   endDate         DateTime?

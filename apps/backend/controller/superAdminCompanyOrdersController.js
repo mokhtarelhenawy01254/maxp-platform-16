@@ -171,7 +171,6 @@ const getDailyOrdersSummary = async (req, res) => {
           platformSubscription: {
             select: {
               status: true,
-              plan: true,
             },
           },
         },
@@ -282,7 +281,6 @@ const getDailyOrdersSummary = async (req, res) => {
         currency: c.currency || "EGP",
         createdAt: c.createdAt,
         subscriptionStatus: c.platformSubscription?.status || "NONE",
-        subscriptionPlan: c.platformSubscription?.plan || null,
         ordersCount: stats.ordersCount,
         ordersGMV: Math.round(stats.ordersGMV * 100) / 100,
         avgOrderValue: Math.round(aov * 100) / 100,
@@ -568,7 +566,7 @@ const getOperationsPulse = async (req, res) => {
             phone: true,
             trialEndsAt: true,
             platformSubscription: {
-              select: { trialEndDate: true, plan: true },
+              select: { trialEndDate: true },
             },
           },
           take: 5,

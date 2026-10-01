@@ -1286,11 +1286,8 @@ const SuperAdminUsersManagement = React.lazy(
   () => import("./pages/SuperAdminUsersManagement"),
 ); // Super Admin Users Management
 
-const BillingOverview = React.lazy(
-  () => import("./pages/super-admin/BillingOverview"),
-);
-const SubscriptionCenter = React.lazy(
-  () => import("./pages/super-admin/SubscriptionCenter"),
+const MarketplaceAppsManagement = React.lazy(
+  () => import("./pages/super-admin/MarketplaceAppsManagement"),
 );
 const SuperAdminAppDetail = React.lazy(
   () => import("./pages/super-admin/SuperAdminAppDetail"),
@@ -2516,7 +2513,7 @@ const AppContent = () => {
               path="/super-admin/app-pricing"
               element={
                 <Layout>
-                  <SubscriptionCenter initialTab={6} />
+                  <MarketplaceAppsManagement initialTab={6} />
                 </Layout>
               }
             />
@@ -2977,14 +2974,6 @@ const AppContent = () => {
             />
             {/* Super Admin Platform Management Routes */}
             <Route
-              path="/super-admin/billing-overview"
-              element={
-                <Layout>
-                  <BillingOverview />
-                </Layout>
-              }
-            />
-            <Route
               path="/super-admin/queue-monitor"
               element={
                 <Layout>
@@ -2996,7 +2985,7 @@ const AppContent = () => {
               path="/super-admin/apps"
               element={
                 <Layout>
-                  <SubscriptionCenter />
+                  <MarketplaceAppsManagement />
                 </Layout>
               }
             />

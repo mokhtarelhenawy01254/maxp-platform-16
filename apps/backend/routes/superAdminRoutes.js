@@ -465,7 +465,7 @@ router.get("/company-activity", checkPermission("canViewReports"), async (req, r
         select: {
           id: true, name: true, email: true, phone: true, isActive: true, createdAt: true,
           _count: { select: { users: true, customers: true } },
-          platformSubscription: { select: { status: true, plan: true, trialEndDate: true } },
+          platformSubscription: { select: { status: true, trialEndDate: true } },
         },
         orderBy: { createdAt: "desc" },
       }),
@@ -549,7 +549,7 @@ router.get("/company-activity", checkPermission("canViewReports"), async (req, r
           recentAiInteractions: recentAiCount, hasWhatsApp,
         },
         lastLogin, lastActivity, daysSinceLastActivity,
-        subscription: { status: subStatus, plan: c.platformSubscription?.plan || null },
+        subscription: { status: subStatus },
       };
     });
 

@@ -766,26 +766,24 @@ const getSubscriptions = async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
 
-    const [totalSubs, activeSubs, plans] = await Promise.all([
+    const [totalSubs, activeSubs, subs] = await Promise.all([
       prisma.platformSubscription.count().catch(() => 0),
       prisma.platformSubscription.count({ where: { status: 'ACTIVE' } }).catch(() => 0),
       prisma.platformSubscription.findMany({
         take: 20,
         select: {
           id: true,
-          plan: true,
           status: true,
-          interval: true,
-          amount: true,
+          monthlyFee: true,
           createdAt: true
         }
       }).catch(() => [])
     ]);
 
-    const planBreakdown = {};
-    for (const s of plans) {
-      const pl = s.plan || 'STANDARD';
-      planBreakdown[pl] = (planBreakdown[pl] || 0) + 1;
+    const statusBreakdown = {};
+    for (const s of subs) {
+      const st = s.status || 'ACTIVE';
+      statusBreakdown[st] = (statusBreakdown[st] || 0) + 1;
     }
 
     return res.status(200).json({
@@ -793,8 +791,8 @@ const getSubscriptions = async (req, res) => {
       data: {
         totalSubscriptions: totalSubs,
         activeSubscriptions: activeSubs,
-        planBreakdown,
-        estimatedMRR: plans.reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
+        statusBreakdown,
+        estimatedMRR: subs.reduce((acc, curr) => acc + Number(curr.monthlyFee || 0), 0)
       }
     });
   } catch (error) {

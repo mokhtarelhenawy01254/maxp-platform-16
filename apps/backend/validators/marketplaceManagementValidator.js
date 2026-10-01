@@ -49,15 +49,6 @@ const pricingRuleSchema = z.object({
   isActive: z.boolean().nullish(),
 });
 
-const enterprisePlanSchema = z.object({
-  companyId: z.string().min(1, 'Company ID is required'),
-  name: z.string().min(1, 'Plan name is required').max(200),
-  description: z.string().max(2000).nullish(),
-  price: z.number().min(0).nullish(),
-  isActive: z.boolean().nullish(),
-  features: z.union([z.string(), z.array(z.string()), z.record(z.unknown())]).nullish(),
-});
-
 function validate(schema) {
   return (req, res, next) => {
     // Sanitize body: convert empty strings to null for nullish fields,
@@ -95,6 +86,4 @@ module.exports = {
   validateUpdateBundle: validate(bundleSchema.partial()),
   validateCreatePricingRule: validate(pricingRuleSchema),
   validateUpdatePricingRule: validate(pricingRuleSchema.partial()),
-  validateCreateEnterprisePlan: validate(enterprisePlanSchema),
-  validateUpdateEnterprisePlan: validate(enterprisePlanSchema.partial()),
 };

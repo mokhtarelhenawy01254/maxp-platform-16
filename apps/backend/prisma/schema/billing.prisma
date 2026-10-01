@@ -1,15 +1,14 @@
 model PlatformSubscription {
-  id              String                @id @default(cuid())
-  companyId       String                @unique
-  plan            SubscriptionsPlanType @default(BASIC)
-  monthlyFee      Decimal               @db.Decimal(10, 2)
-  status          SubscriptionsStatus   @default(ACTIVE)
-  billingDay      Int                   @default(1)
+  id              String              @id @default(cuid())
+  companyId       String              @unique
+  monthlyFee      Decimal             @db.Decimal(10, 2)
+  status          SubscriptionsStatus @default(ACTIVE)
+  billingDay      Int                 @default(1)
   nextBillingDate DateTime
   trialEndDate    DateTime?
   lastBillingDate DateTime?
-  failedAttempts  Int                   @default(0)
-  company         Company               @relation("PlatformSubscription", fields: [companyId], references: [id], onDelete: Cascade)
+  failedAttempts  Int                 @default(0)
+  company         Company             @relation("PlatformSubscription", fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@map("platform_subscriptions")
@@ -60,21 +59,6 @@ model PlatformSignupCouponRedemption {
   @@index([couponId])
   @@index([redeemedAt])
   @@map("platform_signup_coupon_redemptions")
-}
-
-model PlatformEnterprisePlan {
-  id               String   @id @default(cuid())
-  companyId        String   @unique
-  customMonthlyFee Decimal  @db.Decimal(10, 2)
-  customLimits     Json
-  dedicatedSupport Boolean  @default(true)
-  apiAccess        Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  company          Company  @relation("PlatformEnterprisePlan", fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@index([companyId])
-  @@map("platform_enterprise_plans")
 }
 
 model BillingHistory {

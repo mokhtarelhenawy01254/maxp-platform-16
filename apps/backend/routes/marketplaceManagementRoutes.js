@@ -10,8 +10,6 @@ const {
   validateUpdateBundle,
   validateCreatePricingRule,
   validateUpdatePricingRule,
-  validateCreateEnterprisePlan,
-  validateUpdateEnterprisePlan,
 } = require('../validators/marketplaceManagementValidator');
 
 // All routes require authentication and super admin role
@@ -41,12 +39,6 @@ router.get('/bundles', marketplaceManagementController.getAllBundles);
 router.post('/bundles', validateCreateBundle, marketplaceManagementController.createBundle);
 router.put('/bundles/:id', validateUpdateBundle, marketplaceManagementController.updateBundle);
 router.delete('/bundles/:id', marketplaceManagementController.deleteBundle);
-
-// Enterprise Plans Management
-router.get('/enterprise-plans', marketplaceManagementController.getAllEnterprisePlans);
-router.post('/enterprise-plans', validateCreateEnterprisePlan, marketplaceManagementController.createEnterprisePlan);
-router.put('/enterprise-plans/:id', validateUpdateEnterprisePlan, marketplaceManagementController.updateEnterprisePlan);
-router.delete('/enterprise-plans/:id', marketplaceManagementController.deleteEnterprisePlan);
 
 // 📦 Migration Routes (Consolidated)
 router.get('/export', migrationController.exportMarketplace);

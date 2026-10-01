@@ -217,10 +217,6 @@ const getCurrentMonthWindow = () => {
     end.setMilliseconds(end.getMilliseconds() - 1);
 
     return { start, end };
-};
-
-const getDefaultPlatformFee = (plan) => 0;
-
 const isMissingTableError = (error, tableName) =>
     String(error?.message || '').includes(`The table \`public.${tableName}\` does not exist`);
 
@@ -403,7 +399,6 @@ const buildCompanyDetailsInclude = ({ includeCouponRedemptions = true } = {}) =>
         },
     },
     platformSubscription: true,
-    platformEnterprisePlan: true,
     ...(includeCouponRedemptions
         ? {
             platformSignupCouponRedemptions: {
@@ -538,7 +533,6 @@ const getAllCompanies = async (req, res) => {
                     platformSubscription: {
                         select: {
                             id: true,
-                            plan: true,
                             status: true,
                             monthlyFee: true,
                             billingDay: true,
@@ -934,12 +928,7 @@ const getCompanyDetails = async (req, res) => {
 
         const resolvedSubscription =
             company.platformSubscription ||
-            buildSyntheticPlatformSubscription(
-                company,
-                toNumber(
-                    company.platformEnterprisePlan?.customMonthlyFee ?? 0,
-                ),
-            );
+            buildSyntheticPlatformSubscription(company, 0);
         const currentSeats = Math.max(toNumber(company._count?.users), toNumber(employeeCount));
 
         const invoiceStatsMap = invoiceStats.reduce((acc, entry) => {
@@ -965,17 +954,13 @@ const getCompanyDetails = async (req, res) => {
             },
             subscription: {
                 id: resolvedSubscription.id,
-                monthlyFee: toNumber(
-                    company.platformEnterprisePlan?.customMonthlyFee ??
-                        resolvedSubscription.monthlyFee,
-                ),
+                monthlyFee: toNumber(resolvedSubscription.monthlyFee),
                 status: resolvedSubscription.status || 'ACTIVE',
                 billingDay: resolvedSubscription.billingDay || 1,
                 nextBillingDate: resolvedSubscription.nextBillingDate || null,
                 lastBillingDate: resolvedSubscription.lastBillingDate || null,
                 failedAttempts: resolvedSubscription.failedAttempts || 0,
                 isFallback: Boolean(resolvedSubscription.isFallback),
-                hasEnterpriseOverrides: Boolean(company.platformEnterprisePlan),
             },
             usage: {
                 period: {

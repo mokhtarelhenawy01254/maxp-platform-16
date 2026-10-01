@@ -22,7 +22,6 @@ async function main() {
       email: 'demo@example.com',
       phone: '+966501234567',
       website: 'https://demo.example.com',
-      plan: SubscriptionPlan.PRO,
       address: 'الرياض، المملكة العربية السعودية',
       settings: {
         timezone: 'Asia/Riyadh',

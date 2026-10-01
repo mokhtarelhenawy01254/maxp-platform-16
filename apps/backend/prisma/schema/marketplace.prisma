@@ -179,18 +179,3 @@ model Transaction {
   @@map("transactions")
 }
 
-model EnterprisePlan {
-  id          String   @id @default(cuid())
-  companyId   String
-  name        String
-  price       Decimal  @db.Decimal(10, 2)
-  description String?
-  features    Json?    @default("[]")
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@index([companyId])
-  @@map("enterprise_plans")
-}

@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import axios from "axios";
 import { toast } from "sonner";
 
-import SubscriptionCenter from "../SubscriptionCenter";
+import MarketplaceAppsManagement from "../MarketplaceAppsManagement";
 
 jest.mock("axios");
 jest.mock("sonner", () => ({
@@ -126,7 +126,7 @@ const storefrontThemesPayload = [
   },
 ];
 
-describe("SubscriptionCenter storefront themes bulk actions", () => {
+describe("MarketplaceAppsManagement storefront themes bulk actions", () => {
   beforeAll(() => {
     if (!globalThis.PointerEvent) {
       Object.defineProperty(globalThis, "PointerEvent", {
@@ -170,7 +170,7 @@ describe("SubscriptionCenter storefront themes bulk actions", () => {
 
   test("bulk action enables and shows every storefront theme", async () => {
     render(
-      <SubscriptionCenter
+      <MarketplaceAppsManagement
         storefrontThemesOnly
         pageTitle="إدارة القوالب"
         pageDescription="اختبار"
@@ -214,7 +214,7 @@ describe("SubscriptionCenter storefront themes bulk actions", () => {
 
   test("filters storefront themes by search query", async () => {
     render(
-      <SubscriptionCenter
+      <MarketplaceAppsManagement
         storefrontThemesOnly
         pageTitle="إدارة القوالب"
         pageDescription="اختبار"
@@ -237,7 +237,7 @@ describe("SubscriptionCenter storefront themes bulk actions", () => {
 
   test("archives selected storefront themes without deleting them", async () => {
     render(
-      <SubscriptionCenter
+      <MarketplaceAppsManagement
         storefrontThemesOnly
         pageTitle="إدارة القوالب"
         pageDescription="اختبار"
@@ -275,7 +275,7 @@ describe("SubscriptionCenter storefront themes bulk actions", () => {
 
   test("sets a storefront theme as the default for new stores", async () => {
     render(
-      <SubscriptionCenter
+      <MarketplaceAppsManagement
         storefrontThemesOnly
         pageTitle="إدارة القوالب"
         pageDescription="اختبار"

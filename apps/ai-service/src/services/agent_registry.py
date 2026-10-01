@@ -117,14 +117,22 @@ class AgentRegistry:
 
         resolved_policy = model_policy or {}
         resolved_skills = allowed_skills or []
-        resolved_persona = {}
-        resolved_guardrails = {}
+        resolved_persona: dict[str, Any] = {}
+        resolved_guardrails: dict[str, Any] = {}
+        resolved_instructions: dict[str, str] = {}
 
-        if template_slug and db_session:
-            from src.agents.loader import get_template
+        if template_slug:
+            from src.agents.loader import get_template, _discover_templates
             from src.agents._internals import _TemplateAdapter
             try:
-                template = await get_template(template_slug, db_session)
+                template = None
+                if db_session:
+                    template = await get_template(template_slug, db_session)
+                if not template:
+                    match_data = next((d for d in _discover_templates() if d["slug"] == template_slug), None)
+                    if match_data:
+                        from src.db.models.agent import AgentTemplate
+                        template = AgentTemplate(**match_data)
                 if template:
                     profile = _TemplateAdapter.from_db_or_proxy(template, template_slug, company_id)
                     if not resolved_policy:
@@ -136,6 +144,16 @@ class AgentRegistry:
                         "dialect": profile.persona_meta.get("dialect"),
                         "tone": profile.persona_meta.get("tone", "professional"),
                         "formality": profile.persona_meta.get("formality", "formal"),
+                        "soulInstructions": template.instructions_soul or "",
+                        "toolsInstructions": template.instructions_tools or "",
+                        "agentInstructions": template.instructions_agents or "",
+                        "personaInstructions": template.instructions_persona or "",
+                    }
+                    resolved_instructions = {
+                        "soul": template.instructions_soul or "",
+                        "persona": template.instructions_persona or "",
+                        "agents": template.instructions_agents or "",
+                        "tools": template.instructions_tools or "",
                     }
                     resolved_guardrails = profile.guardrails or {}
             except Exception as e:
@@ -169,6 +187,7 @@ class AgentRegistry:
             parent_id=parent_id,
             template_slug=template_slug,
             persona=resolved_persona,
+            instructions=resolved_instructions,
             policies={
                 "model_policy": resolved_policy,
                 "guardrails": resolved_guardrails,
@@ -282,8 +301,8 @@ async def init_registry_from_db(session_factory) -> None:
                         if "manage_agent_skill" not in tool_names:
                             tool_names.append("manage_agent_skill")
 
-                    # Ensure any role-specific tools from manifest are populated
-                    for t in role_spec.tools:
+                    # Ensure any role-specific tools from manifest and role_tools.yaml are populated
+                    for t in list(role_spec.tools) + get_tool_names_for_role(db_agent.role):
                         if t not in tool_names:
                             tool_names.append(t)
 

@@ -152,9 +152,6 @@ CREATE INDEX IF NOT EXISTS idx_conversationMemory_aiResponse ON "ConversationMem
 CREATE INDEX IF NOT EXISTS idx_aiKey_name ON "AiKey" USING gin (name gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_aiKey_provider ON "AiKey" (provider);
 
--- PlatformSubscription
-CREATE INDEX IF NOT EXISTS idx_platformSubscription_plan ON "PlatformSubscription" (plan);
-
 -- WorkReportForm
 CREATE INDEX IF NOT EXISTS idx_workReportForm_title ON "WorkReportForm" USING gin (title gin_trgm_ops);
 

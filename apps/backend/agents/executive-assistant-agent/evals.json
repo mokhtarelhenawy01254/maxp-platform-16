@@ -59,6 +59,22 @@
         "المساعد التنفيذي",
         "معاك"
       ]
+    },
+    {
+      "id": "scenario_order_shipping_carrier_lookup",
+      "name": "استخراج شركة الشحن ورقم البوليصة لطلب معين",
+      "userMessage": "الاوردر ORD-534074-835 تبع انهي شركة شحن ورقم البوليصة كام؟",
+      "expectedTools": [
+        "order_lookup",
+        "shipment_track"
+      ],
+      "forbiddenKeywords": [
+        "غير مسجلة",
+        "مش متسجل",
+        "عند منى",
+        "تواصل مع شركة الشحن"
+      ],
+      "assertHonesty": true
     }
   ]
 }

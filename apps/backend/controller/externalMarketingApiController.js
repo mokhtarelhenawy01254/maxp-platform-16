@@ -319,7 +319,6 @@ const getSubscriptionsSummary = async (req, res) => {
       where: subWhere,
       select: {
         id: true,
-        plan: true,
         status: true,
         monthlyFee: true,
         nextBillingDate: true,
@@ -336,12 +335,8 @@ const getSubscriptionsSummary = async (req, res) => {
     let trialSubscriptions = 0;
     let cancelledSubscriptions = 0;
     let upcomingRenewals = 0;
-    const plansBreakdown = {};
 
     for (const sub of subscriptions) {
-      const plan = String(sub.plan || 'BASIC');
-      plansBreakdown[plan] = (plansBreakdown[plan] || 0) + 1;
-
       if (sub.status === 'ACTIVE') {
         activeSubscriptions++;
         mrr += Number(sub.monthlyFee || 0);
@@ -364,8 +359,7 @@ const getSubscriptionsSummary = async (req, res) => {
         activeSubscriptions,
         trialSubscriptions,
         cancelledSubscriptions,
-        upcomingRenewals,
-        plansBreakdown
+        upcomingRenewals
       },
       meta: {
         companyId: companyCtx.effectiveCompanyId || 'all',

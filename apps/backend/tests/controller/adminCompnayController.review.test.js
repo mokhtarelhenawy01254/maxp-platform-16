@@ -151,7 +151,6 @@ describe("adminCompnayController.getCompanyDetails review payload", () => {
       platformSubscription: {
         id: "sub-1",
         companyId: "company-1",
-        plan: "PRO",
         monthlyFee: 199,
         status: "ACTIVE",
         billingDay: 5,
@@ -159,7 +158,6 @@ describe("adminCompnayController.getCompanyDetails review payload", () => {
         lastBillingDate: new Date("2026-04-05T00:00:00.000Z"),
         failedAttempts: 1,
       },
-      platformEnterprisePlan: null,
       platformSignupCouponRedemptions: [
         {
           appliedCode: "BONUS50",

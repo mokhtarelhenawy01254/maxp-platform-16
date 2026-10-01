@@ -41,7 +41,7 @@ import {
   LayoutGrid, Columns3, List, CheckCircle2, XCircle, Copy, ExternalLink, ChevronDown, ChevronUp, Sparkles, Filter,
 } from "lucide-react";
 
-type SubscriptionCenterProps = {
+type MarketplaceAppsManagementProps = {
   initialTab?: number;
   storefrontThemesOnly?: boolean;
   pageTitle?: string;
@@ -64,46 +64,12 @@ if (typeof document !== "undefined") {
 
 type CatalogMeta = Record<string, unknown>;
 type PricingModel = "FREE" | "SUBSCRIPTION" | "PAY_PER_USE" | string;
-type MarketplaceItemType = "app" | "pricing" | "bundle" | "enterprise";
-
-type PlatformPlanFeatures = {
-  maxUsers: number;
-  maxCustomers: number;
-  maxConversations: number;
-  maxMessages: number;
-  aiResponses: number;
-  customBranding: boolean;
-  advancedReports: boolean;
-  apiAccess: boolean;
-  prioritySupport: boolean;
-  customIntegrations: boolean;
-  whatsappBusiness: boolean;
-  facebookMessenger: boolean;
-  webChat: boolean;
-  mobileApp: boolean;
-  multiLanguage: boolean;
-  customFields: number;
-  automatedWorkflows: number;
-  dataRetention: number;
-  storageLimit: number;
-  exportData: boolean;
-  dedicatedSupport: boolean;
-  customDevelopment: boolean;
-  onPremiseDeployment: boolean;
-  sla: string;
-  accountManager?: string;
-  [key: string]: string | number | boolean | undefined;
-};
+type MarketplaceItemType = "app" | "pricing" | "bundle";
 
 type MarketplaceAppReference = string | { id?: string; name?: string; category?: string; slug?: string };
 
 type MarketplaceInstallCounts = {
   installations?: number;
-};
-
-type EnterpriseCompany = {
-  name?: string;
-  email?: string;
 };
 
 type MarketplaceManagementItem = {
@@ -137,7 +103,6 @@ type MarketplaceManagementItem = {
   discount?: number;
   apps?: MarketplaceAppReference[];
   companyId?: string;
-  company?: EnterpriseCompany;
   features?: unknown;
   _count?: MarketplaceInstallCounts;
   installCount?: number;
@@ -149,7 +114,7 @@ type MarketplaceDialogFormData = Omit<
   MarketplaceManagementItem,
   "features" | "apps"
 > & {
-  features: string[] | PlatformPlanFeatures;
+  features: string[];
   screenshots: string[];
   apps: MarketplaceAppReference[];
 };
@@ -177,55 +142,6 @@ const getErrorMessage = (
   }
 
   return fallbackMessage;
-};
-
-const createDefaultPlanFeatures = (): PlatformPlanFeatures => ({
-  maxUsers: 5,
-  maxCustomers: 1000,
-  maxConversations: 5000,
-  maxMessages: 50000,
-  aiResponses: 1000,
-  customBranding: false,
-  advancedReports: false,
-  apiAccess: false,
-  prioritySupport: false,
-  customIntegrations: false,
-  whatsappBusiness: true,
-  facebookMessenger: true,
-  webChat: true,
-  mobileApp: false,
-  multiLanguage: false,
-  customFields: 10,
-  automatedWorkflows: 5,
-  dataRetention: 90,
-  storageLimit: 1,
-  exportData: false,
-  dedicatedSupport: false,
-  customDevelopment: false,
-  onPremiseDeployment: false,
-  sla: "99.9%",
-  accountManager: "",
-});
-
-const parsePlanFeatures = (value: unknown): PlatformPlanFeatures => {
-  const defaults = createDefaultPlanFeatures();
-
-  if (typeof value === "string") {
-    try {
-      const parsed = JSON.parse(value) as unknown;
-      return isRecord(parsed)
-        ? { ...defaults, ...(parsed as Partial<PlatformPlanFeatures>) }
-        : defaults;
-    } catch {
-      return defaults;
-    }
-  }
-
-  if (isRecord(value)) {
-    return { ...defaults, ...(value as Partial<PlatformPlanFeatures>) };
-  }
-
-  return defaults;
 };
 
 const parseStringList = (value: unknown): string[] => {
@@ -315,11 +231,11 @@ const createDefaultMarketplaceFormData = (
   features: [],
 });
 
-const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
+const MarketplaceAppsManagement: React.FC<MarketplaceAppsManagementProps> = ({
   initialTab = 1,
   storefrontThemesOnly = false,
-  pageTitle = "مركز إدارة الاشتراكات والفوترة",
-  pageDescription = "إدارة الخطط الأساسية، تطبيقات المتجر، والعروض المخصصة للمؤسسات",
+  pageTitle = "إدارة تطبيقات وأدوات المتجر",
+  pageDescription = "إدارة تطبيقات المتجر، حزم الأدوات، وقوالب الواجهة",
 }) => {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
@@ -331,9 +247,6 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
     [],
   );
   const [bundles, setBundles] = useState<MarketplaceManagementItem[]>([]);
-  const [enterprisePlans, setEnterprisePlans] = useState<
-    MarketplaceManagementItem[]
-  >([]);
   const [storefrontThemes, setStorefrontThemes] = useState<
     StorefrontThemeCatalogItem[]
   >([]);
@@ -389,7 +302,7 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
     } catch (err: unknown) {
       console.error("Catalog diff fetch error:", err);
       setCatalogDiff(null);
-      setCatalogDiffError(getErrorMessage(err, i18n.t("SubscriptionCenter.unable_fetch_f426")));
+      setCatalogDiffError(getErrorMessage(err, "تعذر جلب تقرير الفرق"));
       if (showToast) {
         tToast.error("subscriptionCenter.msg_b558");
       }
@@ -423,14 +336,11 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
       }
 
       const [
-
         appsRes,
         pricingRes,
         bundlesRes,
-        enterpriseRes,
         themesRes,
       ] = await Promise.allSettled([
-
         axios.get(buildApiUrl("super-admin/marketplace-management/apps"), {
           headers,
         }),
@@ -441,10 +351,6 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
         axios.get(buildApiUrl("super-admin/marketplace-management/bundles"), {
           headers,
         }),
-        axios.get(
-          buildApiUrl("super-admin/marketplace-management/enterprise-plans"),
-          { headers },
-        ),
         axios.get(buildApiUrl("super-admin/storefront-theme-catalog"), {
           headers,
         }),
@@ -459,14 +365,6 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
       if (bundlesRes.status === "fulfilled" && bundlesRes.value.data.success) {
         setBundles(bundlesRes.value.data.data as MarketplaceManagementItem[]);
       }
-      if (
-        enterpriseRes.status === "fulfilled" &&
-        enterpriseRes.value.data.success
-      ) {
-        setEnterprisePlans(
-          enterpriseRes.value.data.data as MarketplaceManagementItem[],
-        );
-      }
       if (themesRes.status === "fulfilled" && themesRes.value.data.success) {
         setStorefrontThemes(themesRes.value.data.data as StorefrontThemeCatalogItem[]);
       }
@@ -475,11 +373,10 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
         appsRes,
         pricingRes,
         bundlesRes,
-        enterpriseRes,
         themesRes,
       ].every((result) => result.status === "rejected");
 
-      setError(allFailed ? "فشل في جلب البيانات الموحدة للاشتراكات" : null);
+      setError(allFailed ? "فشل في جلب البيانات" : null);
 
       // Catalog diff is operational telemetry; keep it separate from base data.
       void fetchCatalogDiff();
@@ -488,7 +385,7 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
       setError(
         storefrontThemesOnly
           ? "فشل في جلب كتالوج قوالب المتجر"
-          : "فشل في جلب البيانات الموحدة للاشتراكات",
+          : "فشل في جلب البيانات",
       );
     } finally {
       setLoading(false);
@@ -496,7 +393,7 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
   }, [fetchCatalogDiff, storefrontThemesOnly]);
 
   const handleDelete = useCallback(
-    (id: string, typePath: "apps" | "pricing-rules" | "bundles" | "enterprise-plans") => {
+    (id: string, typePath: "apps" | "pricing-rules" | "bundles") => {
       setConfirmState({
         title: "تأكيد الحذف",
         message: "هل أنت متأكد من حذف هذا العنصر؟ لا يمكن التراجع عن هذه الخطوة.",
@@ -531,7 +428,6 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
         if (activeTab === 1) typePath = "apps";
         else if (activeTab === 2)
           typePath = item?.feature ? "pricing-rules" : "bundles";
-        else if (activeTab === 3) typePath = "enterprise-plans";
 
         const { apps: _apps, screenshots, ...restData } = itemData;
         const payload =
@@ -628,10 +524,7 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
               <ShoppingBag className="size-4" />تطبيقات المتجر
             </TabsTrigger>
             <TabsTrigger value="2" className="h-9 rounded-t-lg border-b-2 border-transparent px-3 text-sm data-active:border-primary data-active:bg-transparent data-active:text-primary">
-              <Package className="size-4" />الباقات والأسعار
-            </TabsTrigger>
-            <TabsTrigger value="3" className="h-9 rounded-t-lg border-b-2 border-transparent px-3 text-sm data-active:border-primary data-active:bg-transparent data-active:text-primary">
-              <Building2 className="size-4" />تعاقدات المؤسسات
+              <Package className="size-4" />حزم الأدوات والأسعار
             </TabsTrigger>
             <TabsTrigger value="4" className="h-9 rounded-t-lg border-b-2 border-transparent px-3 text-sm data-active:border-primary data-active:bg-transparent data-active:text-primary">
               <Store className="size-4" />قوالب المتجر
@@ -671,16 +564,6 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
           onRefresh={fetchAllData}
         />
       )}
-      {!storefrontThemesOnly && activeTab === 3 && (
-        <EnterprisePlansTab
-          enterprisePlans={enterprisePlans}
-          onEdit={(plan) => {
-            setEditingItem(plan);
-            setMarketplaceDialog(true);
-          }}
-          onDelete={handleDelete}
-        />
-      )}
       {(storefrontThemesOnly || activeTab === 4) && (
         <StorefrontThemesTab
           themes={storefrontThemes}
@@ -707,11 +590,9 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
           type={
             activeTab === 1
               ? "app"
-              : activeTab === 3
-                ? "enterprise"
-                : editingItem?.feature
-                  ? "pricing"
-                  : "bundle"
+              : editingItem?.feature
+                ? "pricing"
+                : "bundle"
           }
           availableApps={apps}
           onSave={async (itemData) => {
@@ -804,7 +685,7 @@ const MarketplaceAppsTab = ({
   catalogDiffError: string | null;
   onDelete: (
     id: string,
-    typePath: "apps" | "pricing-rules" | "bundles" | "enterprise-plans",
+    typePath: "apps" | "pricing-rules" | "bundles",
   ) => void;
   onRefresh: () => Promise<void> | void;
   onRefreshCatalogDiff: () => void;
@@ -2417,7 +2298,7 @@ const BundlesAndPricingTab = ({
   onEdit: (item: MarketplaceManagementItem | null) => void;
   onDelete: (
     id: string,
-    typePath: "apps" | "pricing-rules" | "bundles" | "enterprise-plans",
+    typePath: "apps" | "pricing-rules" | "bundles",
   ) => void;
   onRefresh: () => Promise<void> | void;
 }) => {
@@ -2640,86 +2521,6 @@ const BundlesAndPricingTab = ({
         </div>
       )}
     </div>
-    </div>
-  );
-};
-
-const EnterprisePlansTab = ({
-  enterprisePlans,
-  onEdit,
-  onDelete,
-}: {
-  enterprisePlans: MarketplaceManagementItem[];
-  onEdit: (plan: MarketplaceManagementItem | null) => void;
-  onDelete: (
-    id: string,
-    typePath: "apps" | "pricing-rules" | "bundles" | "enterprise-plans",
-  ) => void;
-}) => {
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-base font-semibold">تعاقدات المؤسسات</h3>
-          <span className="text-xs text-muted-foreground">{enterprisePlans.length} خطة مؤسسة</span>
-        </div>
-        <Button variant="default" size="sm" onClick={() => onEdit({ companyId: "", name: "", price: 0, description: "", isActive: true })}>
-          <Plus className="h-4 w-4 ml-1" />إضافة خطة
-        </Button>
-      </div>
-      <div className="rounded-lg border bg-card shadow-sm overflow-x-auto">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow>
-              <TableHead>الشركة</TableHead>
-              <TableHead>الرسوم الشهرية</TableHead>
-              <TableHead>مدير الحساب</TableHead>
-              <TableHead>دعم مخصص</TableHead>
-              <TableHead>الحالة</TableHead>
-              <TableHead>إجراءات</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {enterprisePlans.map((plan) => {
-              const features = parsePlanFeatures(plan.features);
-              return (
-                <TableRow key={plan.id}>
-                  <TableCell>
-                    <p className="text-sm font-medium text-muted-foreground">{plan.company?.name}</p>
-                    <span className="text-xs">{plan.company?.email}</span>
-                  </TableCell>
-                  <TableCell>{plan.price} ج</TableCell>
-                  <TableCell>{features.accountManager || "غير محدد"}</TableCell>
-                  <TableCell>
-                    {features.dedicatedSupport ? (
-                      <Check className="text-green-500 h-5 w-5" />
-                    ) : (
-                      <X className="text-red-500 h-5 w-5" />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="default" className="bg-amber-500">Enterprise</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="icon" aria-label="تعديل خطة المؤسسة" onClick={() => onEdit(plan)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" aria-label="حذف خطة المؤسسة" onClick={() => plan.id && onDelete(plan.id, "enterprise-plans")}>
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-      {enterprisePlans.length === 0 && (
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-10 text-center">
-          <Building2 className="mx-auto h-10 w-10 text-muted-foreground/40" />
-          <p className="text-base font-semibold text-muted-foreground mt-3">لا توجد تعاقدات مؤسسات</p>
-        </div>
-      )}
     </div>
   );
 };
@@ -4157,9 +3958,6 @@ const MarketplaceItemDialog = ({
   const [formData, setFormData] = useState<MarketplaceDialogFormData>(() =>
     createDefaultMarketplaceFormData(type),
   );
-  const [enterpriseFeatures, setEnterpriseFeatures] = useState<PlatformPlanFeatures>(
-    () => createDefaultPlanFeatures(),
-  );
 
   const categoryMap = [
     { id: "ECOMMERCE", name: "التجارة الإلكترونية" },
@@ -4201,14 +3999,8 @@ const MarketplaceItemDialog = ({
             ? parseStringList(item.screenshots ?? item.images)
             : [],
       });
-      if (type === "enterprise") {
-        setEnterpriseFeatures(parsePlanFeatures(item.features));
-      }
     } else {
       setFormData(defaultFormData);
-      if (type === "enterprise") {
-        setEnterpriseFeatures(createDefaultPlanFeatures());
-      }
     }
   }, [item, open, type]);
 
@@ -4237,9 +4029,7 @@ const MarketplaceItemDialog = ({
       ? "تطبيق"
       : type === "pricing"
         ? "قاعدة تسعير"
-        : type === "enterprise"
-          ? "خطة مؤسسة"
-          : "باقة";
+        : "باقة";
 
   const [bundleSearch, setBundleSearch] = useState("");
   const [uploadingField, setUploadingField] = useState<
@@ -4343,63 +4133,6 @@ const MarketplaceItemDialog = ({
                 <div className="space-y-1">
                   <Label>الوحدة</Label>
                   <Input name="unit" value={formData.unit ?? ""} onChange={handleChange} />
-                </div>
-              </div>
-              <div className="col-span-12">
-                <div className="flex gap-3">
-                  <label className="flex items-center gap-1 cursor-pointer">
-                    <span className="text-sm">نشط:</span>
-                    <input type="checkbox" name="isActive" checked={!!formData.isActive} onChange={handleChange} />
-                  </label>
-                </div>
-              </div>
-            </>
-          ) : type === "enterprise" ? (
-            <>
-              <div className="col-span-12">
-                <div className="space-y-1">
-                  <Label>معرف الشركة (Company ID)</Label>
-                  <Input name="companyId" value={formData.companyId ?? ""} onChange={handleChange} disabled={!!item} />
-                </div>
-              </div>
-              <div className="col-span-12">
-                <div className="space-y-1">
-                  <Label>اسم الخطة</Label>
-                  <Input name="name" value={formData.name ?? ""} onChange={handleChange} />
-                </div>
-              </div>
-              <div className="col-span-12">
-                <div className="space-y-1">
-                  <Label>السعر</Label>
-                  <Input name="price" type="number" value={formData.price ?? 0} onChange={handleChange} />
-                </div>
-              </div>
-              <div className="col-span-12">
-                <div className="space-y-1">
-                  <Label>الوصف</Label>
-                  <Textarea name="description" rows={3} value={formData.description ?? ""} onChange={handleChange} />
-                </div>
-              </div>
-              <div className="col-span-12 md:col-span-6">
-                <div className="space-y-1">
-                  <Label>مدير الحساب (Account Manager)</Label>
-                  <Input value={enterpriseFeatures.accountManager || ""} onChange={(e) => setEnterpriseFeatures((prev) => ({ ...prev, accountManager: e.target.value }))} placeholder="اسم مدير الحساب" />
-                </div>
-              </div>
-              <div className="col-span-6 md:col-span-3">
-                <div className="flex items-end h-full pb-1">
-                  <label className="flex items-center gap-1 cursor-pointer">
-                    <input type="checkbox" checked={!!enterpriseFeatures.dedicatedSupport} onChange={(e) => setEnterpriseFeatures((prev) => ({ ...prev, dedicatedSupport: e.target.checked }))} />
-                    <span className="text-sm">دعم مخصص</span>
-                  </label>
-                </div>
-              </div>
-              <div className="col-span-6 md:col-span-3">
-                <div className="flex items-end h-full pb-1">
-                  <label className="flex items-center gap-1 cursor-pointer">
-                    <input type="checkbox" checked={!!enterpriseFeatures.customDevelopment} onChange={(e) => setEnterpriseFeatures((prev) => ({ ...prev, customDevelopment: e.target.checked }))} />
-                    <span className="text-sm">تطوير مخصص</span>
-                  </label>
                 </div>
               </div>
               <div className="col-span-12">
@@ -4731,22 +4464,6 @@ const MarketplaceItemDialog = ({
                 toast.error("اكتب اسم الميزة أولاً");
                 return;
               }
-              if (type === "enterprise" && !item && !formData.companyId?.trim()) {
-                toast.error("معرف الشركة (Company ID) مطلوب");
-                return;
-              }
-              if (type === "enterprise") {
-                void onSave({
-                  ...formData,
-                  features: {
-                    ...enterpriseFeatures,
-                    accountManager: enterpriseFeatures.accountManager,
-                    dedicatedSupport: !!enterpriseFeatures.dedicatedSupport,
-                    customDevelopment: !!enterpriseFeatures.customDevelopment,
-                  },
-                });
-                return;
-              }
               void onSave(formData);
             }}
           >
@@ -4758,4 +4475,5 @@ const MarketplaceItemDialog = ({
   );
 };
 
-export default SubscriptionCenter;
+export default MarketplaceAppsManagement;
+

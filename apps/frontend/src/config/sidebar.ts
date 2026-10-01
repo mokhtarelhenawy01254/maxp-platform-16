@@ -1655,7 +1655,6 @@ export const getSidebarConfig = (
             items: [
                 { to: '/super-admin/dashboard', icon: LayoutDashboard, label: isEn ? 'Super Admin Dashboard' : 'لوحة تحكم السوبر أدمن' },
                 { to: '/super-admin/companies-v2', icon: Building, label: isEn ? 'Companies Management' : (t('sidebar.companiesManagement') || 'إدارة الشركات') },
-                { to: '/super-admin/billing-overview', icon: Banknote, label: isEn ? 'Billing & Subscriptions' : (t('sidebar.billingOverview') || 'المالية والاشتراكات') },
                 { to: '/super-admin/server-usage', icon: HardDrive, label: isEn ? 'Server Usage & Monitoring' : 'استهلاك الخوادم والمراقبة' },
             ]
         }] : []),

@@ -8,23 +8,289 @@ from src.tools.repositories.base import BaseRepository
 from src.tools.definitions._helpers import period_date_range, period_start_date
 
 
+import json
+
+CARRIER_LABELS: dict[str, str] = {
+    "QP_EXPRESS": "كيو بي إكسبريس (QP Express)",
+    "QPEXPRESS": "كيو بي إكسبريس (QP Express)",
+    "TURBO": "تربو للشحن (Turbo)",
+    "BOSTA": "بوستا (Bosta)",
+    "BOSTA_DEMO": "بوستا (Bosta)",
+    "MYLERZ": "مايلرز (Mylerz)",
+    "MYLERZ_DEMO": "مايلرز (Mylerz)",
+    "ARAMEX": "أرامكس (Aramex)",
+    "ARAMEX_DEMO": "أرامكس (Aramex)",
+    "MANUAL": "توصيل داخلي / مندوب خاص",
+}
+
+
+def _carrier_display_name(
+    carrier_code: str | None,
+    company_name: str | None = None,
+    courier_name: str | None = None,
+) -> str:
+    if company_name and str(company_name).strip():
+        clean_name = str(company_name).strip()
+        if clean_name.upper() in CARRIER_LABELS:
+            return CARRIER_LABELS[clean_name.upper()]
+        return clean_name
+    code = str(carrier_code or "").strip().upper()
+    if code == "MANUAL" and courier_name:
+        return f"مندوب توصيل ({courier_name})"
+    if code in CARRIER_LABELS:
+        return CARRIER_LABELS[code]
+    return code or ""
+
+
+def _parse_json_safe(raw: Any) -> dict[str, Any]:
+    if not raw:
+        return {}
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str):
+        try:
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else {}
+        except Exception:
+            return {}
+    return {}
+
+
+def _extract_shipping_info(
+    order_row: dict[str, Any],
+    shipments_rows: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Resolve canonical shipping company, tracking number, and shipment details from all sources."""
+    meta = _parse_json_safe(order_row.get("metadata"))
+    qp_meta = meta.get("qpExpress") if isinstance(meta.get("qpExpress"), dict) else {}
+    qp_raw = qp_meta.get("raw") if isinstance(qp_meta.get("raw"), dict) else {}
+
+    shipments_list: list[dict[str, Any]] = []
+    seen_Input_keys: set[str] = set()
+
+    for s in shipments_rows or []:
+        c_type = str(s.get("carrierType") or s.get("providerKey") or "").strip().upper()
+        c_name = _carrier_display_name(
+            c_type,
+            s.get("shippingCompanyName"),
+            s.get("courierName"),
+        )
+        t_num = str(s.get("trackingNumber") or s.get("externalShipmentId") or "").strip()
+        s_status = str(s.get("shipmentStatus") or s.get("status") or "").strip()
+        s_date = str(s.get("shippedAt") or s.get("createdAt") or "").strip()
+        key = f"{c_type}:{t_num}"
+        seen_Input_keys.add(key)
+        shipments_list.append({
+            "shipmentId": str(s.get("id") or ""),
+            "shippingCompany": c_name,
+            "carrierCode": c_type,
+            "trackingNumber": t_num,
+            "status": s_status,
+            "shippedAt": s_date,
+            "courierName": str(s.get("courierName") or ""),
+            "courierPhone": str(s.get("courierPhone") or ""),
+            "cost": str(s.get("cost") or "") if s.get("cost") is not None else "",
+        })
+
+    # Check inline scalar subquery fields from get_recent_orders / get_orders_by_phone
+    inline_carrier = str(order_row.get("shipmentCarrierType") or "").strip().upper()
+    inline_company = str(order_row.get("shipmentCompanyName") or "").strip()
+    inline_tracking = str(order_row.get("shipmentTrackingNumber") or "").strip()
+    inline_status = str(order_row.get("shipmentStatus") or "").strip()
+    inline_shipped_at = str(order_row.get("shipmentCreatedAt") or "").strip()
+    if (inline_carrier or inline_company or inline_tracking) and f"{inline_carrier}:{inline_tracking}" not in seen_Input_keys:
+        seen_Input_keys.add(f"{inline_carrier}:{inline_tracking}")
+        shipments_list.append({
+            "shipmentId": "",
+            "shippingCompany": _carrier_display_name(inline_carrier, inline_company),
+            "carrierCode": inline_carrier,
+            "trackingNumber": inline_tracking,
+            "status": inline_status,
+            "shippedAt": inline_shipped_at,
+            "courierName": "",
+            "courierPhone": "",
+            "cost": "",
+        })
+
+    # Check metadata (e.g. QP_EXPRESS / BOSTA stored in orders.metadata)
+    meta_carrier = str(meta.get("shippingCarrier") or ("QP_EXPRESS" if qp_meta else "")).strip().upper()
+    meta_tracking = str(
+        meta.get("trackingNumber")
+        or qp_meta.get("trackingNumber")
+        or qp_meta.get("orderSerial")
+        or qp_meta.get("serial")
+        or ""
+    ).strip()
+    meta_shipped_at = str(qp_raw.get("order_date") or "").strip()
+    if (meta_carrier or meta_tracking) and f"{meta_carrier}:{meta_tracking}" not in seen_Input_keys:
+        seen_Input_keys.add(f"{meta_carrier}:{meta_tracking}")
+        shipments_list.append({
+            "shipmentId": str(qp_meta.get("serial") or ""),
+            "shippingCompany": _carrier_display_name(meta_carrier),
+            "carrierCode": meta_carrier,
+            "trackingNumber": meta_tracking,
+            "status": str(qp_meta.get("orderDeliveryStatus") or order_row.get("status") or ""),
+            "shippedAt": meta_shipped_at,
+            "courierName": "",
+            "courierPhone": "",
+            "cost": str(qp_meta.get("totalFees") or ""),
+        })
+
+    # Check Turbo columns on order
+    turbo_tracking = str(order_row.get("turboTrackingNumber") or order_row.get("turboShipmentId") or "").strip()
+    turbo_status = str(order_row.get("turboShipmentStatus") or "").strip()
+    if turbo_tracking and f"TURBO:{turbo_tracking}" not in seen_Input_keys:
+        seen_Input_keys.add(f"TURBO:{turbo_tracking}")
+        shipments_list.append({
+            "shipmentId": str(order_row.get("turboShipmentId") or ""),
+            "shippingCompany": _carrier_display_name("TURBO"),
+            "carrierCode": "TURBO",
+            "trackingNumber": turbo_tracking,
+            "status": turbo_status or str(order_row.get("status") or ""),
+            "shippedAt": "",
+            "courierName": str(order_row.get("turboCaptainName") or ""),
+            "courierPhone": str(order_row.get("turboCaptainPhone") or ""),
+            "cost": "",
+        })
+
+    primary = shipments_list[0] if shipments_list else {}
+    shipping_company = primary.get("shippingCompany") or ""
+    shipping_carrier = primary.get("carrierCode") or ""
+    tracking_number = primary.get("trackingNumber") or ""
+    shipment_status = primary.get("status") or turbo_status or ""
+    shipped_at = primary.get("shippedAt") or meta_shipped_at or ""
+    captain_name = str(order_row.get("turboCaptainName") or primary.get("courierName") or "").strip()
+    captain_phone = str(order_row.get("turboCaptainPhone") or primary.get("courierPhone") or "").strip()
+    branch_name = str(order_row.get("turboBranchName") or order_row.get("turboExpectedBranch") or "").strip()
+    branch_phone = str(order_row.get("turboBranchPhone") or "").strip()
+    delay_reason = str(order_row.get("turboDelayReason") or "").strip()
+    return_reason = str(order_row.get("turboReturnReason") or "").strip()
+
+    return {
+        "shippingCompany": shipping_company,
+        "shippingCarrier": shipping_carrier,
+        "trackingNumber": tracking_number,
+        "shipmentStatus": shipment_status,
+        "shippedAt": shipped_at,
+        "captainName": captain_name,
+        "captainPhone": captain_phone,
+        "branchName": branch_name,
+        "branchPhone": branch_phone,
+        "delayReason": delay_reason,
+        "returnReason": return_reason,
+        "shipments": shipments_list,
+    }
+
+
 class OrderRepository(BaseRepository):
     """Data access for orders, order items, and order statistics."""
 
     async def get_order(self, company_id: str, order_number: str) -> dict[str, Any] | None:
-        sql = text("""
-            SELECT o.id, o."orderNumber", o.status, o."paymentStatus", o.total,
+        clean_num = str(order_number or "").strip().lstrip("#").strip()
+        if not clean_num:
+            return None
+
+        order_select_cols = """
+            SELECT o.id, o."orderNumber", o.status, o."customStatusCode",
+                   o."paymentStatus", o."paymentMethod",
+                   o.total, o.subtotal, o.shipping, o.discount,
                    o."customerName", o."customerPhone", o."customerEmail",
                    o."createdAt", o."confirmedAt", o."updatedAt",
-                   o."customerAddress", o.city, o.governorate, o.notes,
-                   o."customerId"
+                   o."customerAddress", o."shippingAddress", o.city, o.governorate, o.notes,
+                   o."customerId", o.metadata,
+                   o."turboShipmentId", o."turboTrackingNumber", o."turboShipmentStatus",
+                   o."turboCaptainName", o."turboCaptainPhone", o."turboBranchName",
+                   o."turboBranchPhone", o."turboDelayReason", o."turboReturnReason",
+                   o."turboExpectedBranch", o."turboLabelUrl"
             FROM orders o
-            WHERE o."companyId" = :cid AND o."orderNumber" = :onum
+        """
+
+        # 1. Direct match by orderNumber or turboTrackingNumber
+        sql = text(f"""
+            {order_select_cols}
+            WHERE o."companyId" = :cid
+              AND (o."orderNumber" = :onum OR o."turboTrackingNumber" = :onum OR o."turboShipmentId" = :onum)
             LIMIT 1
         """)
-        result = await self._session.execute(sql, {"cid": company_id, "onum": order_number})
+        result = await self._session.execute(sql, {"cid": company_id, "onum": clean_num})
         row = result.first()
-        return dict(row._mapping) if row else None
+
+        # 2. Match via shipments table trackingNumber / externalShipmentId
+        if not row:
+            ship_lookup_sql = text(f"""
+                {order_select_cols}
+                JOIN shipments s ON s."orderId" = o.id
+                WHERE o."companyId" = :cid
+                  AND (s."trackingNumber" = :onum OR s."externalShipmentId" = :onum)
+                ORDER BY s."createdAt" DESC
+                LIMIT 1
+            """)
+            res2 = await self._session.execute(ship_lookup_sql, {"cid": company_id, "onum": clean_num})
+            row = res2.first()
+
+        # 3. Match via metadata trackingNumber
+        if not row:
+            meta_lookup_sql = text(f"""
+                {order_select_cols}
+                WHERE o."companyId" = :cid
+                  AND o.metadata IS NOT NULL
+                  AND o.metadata LIKE :meta_pat
+                ORDER BY o."createdAt" DESC
+                LIMIT 1
+            """)
+            res3 = await self._session.execute(
+                meta_lookup_sql,
+                {"cid": company_id, "meta_pat": f'%"{clean_num}"%'},
+            )
+            row = res3.first()
+
+        if row:
+            order_dict = dict(row._mapping)
+            shipments_sql = text("""
+                SELECT s.id, s."carrierType", s.status AS "shipmentStatus",
+                       s."trackingNumber", s."externalShipmentId", s."labelUrl",
+                       s.cost, s."deliveryNotes", s.metadata AS "shipmentMetadata",
+                       s."createdAt" AS "shippedAt", s."updatedAt" AS "shipmentUpdatedAt",
+                       sc.name AS "shippingCompanyName", sc."providerKey", sc.slug AS "shippingCompanySlug",
+                       c.name AS "courierName", c.phone AS "courierPhone"
+                FROM shipments s
+                LEFT JOIN shipping_companies sc ON sc.id = s."shippingCompanyId"
+                LEFT JOIN couriers c ON c.id = s."courierId"
+                WHERE s."orderId" = :oid AND s."companyId" = :cid
+                ORDER BY s."createdAt" DESC
+            """)
+            s_rows = await self._session.execute(shipments_sql, {"oid": order_dict["id"], "cid": company_id})
+            shipments_list = [dict(r._mapping) for r in s_rows]
+            order_dict.update(_extract_shipping_info(order_dict, shipments_list))
+            return order_dict
+
+        # 4. Fallback to guest_orders
+        guest_sql = text("""
+            SELECT g.id, g."orderNumber", g.status, 'PENDING' AS "paymentStatus",
+                   g."paymentMethod", g.total, g."shippingCost" AS shipping,
+                   g."discountAmount" AS discount,
+                   g."guestName" AS "customerName", g."guestPhone" AS "customerPhone",
+                   g."guestEmail" AS "customerEmail", g.items AS "guestItems",
+                   g."createdAt", g."confirmationNotifiedAt" AS "confirmedAt", g."updatedAt",
+                   g."shippingAddress" AS "customerAddress", g."shippingAddress",
+                   '' AS city, '' AS governorate, g.notes, g.metadata,
+                   g."turboShipmentId", g."turboTrackingNumber", g."turboShipmentStatus",
+                   g."turboCaptainName", g."turboCaptainPhone", g."turboBranchName",
+                   g."turboBranchPhone", g."turboDelayReason", g."turboReturnReason",
+                   g."turboExpectedBranch", g."turboLabelUrl"
+            FROM guest_orders g
+            WHERE g."companyId" = :cid
+              AND (g."orderNumber" = :onum OR g."turboTrackingNumber" = :onum OR g."turboShipmentId" = :onum)
+            LIMIT 1
+        """)
+        g_res = await self._session.execute(guest_sql, {"cid": company_id, "onum": clean_num})
+        g_row = g_res.first()
+        if g_row:
+            g_dict = dict(g_row._mapping)
+            g_dict.update(_extract_shipping_info(g_dict, []))
+            return g_dict
+
+        return None
 
     async def get_order_items(self, order_id: str) -> list[dict[str, Any]]:
         sql = text("""
@@ -80,8 +346,14 @@ class OrderRepository(BaseRepository):
             params[f"p{i}"] = p
 
         sql = text(f"""
-            SELECT o.id, o."orderNumber", o.status, o."paymentStatus", o.total,
-                   o."customerName", o."customerPhone", o."createdAt"
+            SELECT o.id, o."orderNumber", o.status, o."customStatusCode", o."paymentStatus", o.total,
+                   o."customerName", o."customerPhone", o."createdAt",
+                   o."turboTrackingNumber", o."turboShipmentStatus", o.metadata,
+                   (SELECT sc.name FROM shipments s LEFT JOIN shipping_companies sc ON sc.id = s."shippingCompanyId" WHERE s."orderId" = o.id ORDER BY s."createdAt" DESC LIMIT 1) AS "shipmentCompanyName",
+                   (SELECT s."carrierType" FROM shipments s WHERE s."orderId" = o.id ORDER BY s."createdAt" DESC LIMIT 1) AS "shipmentCarrierType",
+                   (SELECT s."trackingNumber" FROM shipments s WHERE s."orderId" = o.id ORDER BY s."createdAt" DESC LIMIT 1) AS "shipmentTrackingNumber",
+                   (SELECT s.status FROM shipments s WHERE s."orderId" = o.id ORDER BY s."createdAt" DESC LIMIT 1) AS "shipmentStatus",
+                   (SELECT s."createdAt" FROM shipments s WHERE s."orderId" = o.id ORDER BY s."createdAt" DESC LIMIT 1) AS "shipmentCreatedAt"
             FROM orders o
             WHERE o."companyId" = :cid
               AND ({phone_or})
@@ -90,7 +362,11 @@ class OrderRepository(BaseRepository):
             LIMIT :lim
         """)
         rows = await self._session.execute(sql, params)
-        regular = [dict(r._mapping) for r in rows]
+        regular = []
+        for r in rows:
+            d = dict(r._mapping)
+            d.update(_extract_shipping_info(d))
+            regular.append(d)
 
         guest_phone_or = " OR ".join([f'g."guestPhone" LIKE :g{i}' for i in range(len(patterns))])
         guest_params: dict[str, Any] = {"cid": company_id, "lim": max(1, min(limit, 50))}
@@ -102,7 +378,7 @@ class OrderRepository(BaseRepository):
         guest_sql = text(f"""
             SELECT g.id, g."orderNumber", g.status, g.total,
                    g."guestName" AS "customerName", g."guestPhone" AS "customerPhone",
-                   g."createdAt"
+                   g."createdAt", g."turboTrackingNumber", g."turboShipmentStatus", g.metadata
             FROM guest_orders g
             WHERE g."companyId" = :cid
               AND ({guest_phone_or})
@@ -111,7 +387,11 @@ class OrderRepository(BaseRepository):
             LIMIT :lim
         """)
         guest_rows = await self._session.execute(guest_sql, guest_params)
-        guest = [dict(r._mapping) for r in guest_rows]
+        guest = []
+        for r in guest_rows:
+            d = dict(r._mapping)
+            d.update(_extract_shipping_info(d))
+            guest.append(d)
 
         merged = regular + guest
         merged.sort(key=lambda o: o.get("createdAt") or "", reverse=True)
@@ -233,36 +513,49 @@ class OrderRepository(BaseRepository):
 
         where_orders = " AND ".join(order_conditions)
         order_sql = text(f"""
-            SELECT o."orderNumber", o."customerName", o."customerPhone",
-                   o.status, o."paymentStatus", o.total, o."createdAt" AS date,
-                   o."confirmedAt", o.city, o.governorate
+            SELECT o.id, o."orderNumber", o."customerName", o."customerPhone",
+                   o.status, o."customStatusCode", o."paymentStatus", o.total, o."createdAt" AS date,
+                   o."confirmedAt", o.city, o.governorate,
+                   o."turboTrackingNumber", o."turboShipmentStatus", o.metadata,
+                   (SELECT sc.name FROM shipments s LEFT JOIN shipping_companies sc ON sc.id = s."shippingCompanyId" WHERE s."orderId" = o.id ORDER BY s."createdAt" DESC LIMIT 1) AS "shipmentCompanyName",
+                   (SELECT s."carrierType" FROM shipments s WHERE s."orderId" = o.id ORDER BY s."createdAt" DESC LIMIT 1) AS "shipmentCarrierType",
+                   (SELECT s."trackingNumber" FROM shipments s WHERE s."orderId" = o.id ORDER BY s."createdAt" DESC LIMIT 1) AS "shipmentTrackingNumber",
+                   (SELECT s.status FROM shipments s WHERE s."orderId" = o.id ORDER BY s."createdAt" DESC LIMIT 1) AS "shipmentStatus",
+                   (SELECT s."createdAt" FROM shipments s WHERE s."orderId" = o.id ORDER BY s."createdAt" DESC LIMIT 1) AS "shipmentCreatedAt"
             FROM orders o
             WHERE {where_orders}
             ORDER BY COALESCE(o."confirmedAt", o."createdAt") DESC
             LIMIT :lim
         """)
         rows = await self._session.execute(order_sql, params)
-        regular = [
-            {
+        regular = []
+        for r in rows:
+            row_dict = dict(r._mapping)
+            ship_info = _extract_shipping_info(row_dict)
+            regular.append({
                 "orderNumber": r.orderNumber,
                 "customerName": r.customerName or "",
                 "phone": r.customerPhone or "",
                 "status": r.status or "",
+                "customStatusCode": getattr(r, "customStatusCode", "") or "",
                 "paymentStatus": r.paymentStatus or "",
                 "total": str(r.total or 0),
                 "date": str(r.date or ""),
                 "confirmedAt": str(r.confirmedAt or "") if getattr(r, "confirmedAt", None) else "",
                 "city": r.city or "",
                 "governorate": r.governorate or "",
-            }
-            for r in rows
-        ]
+                "shippingCompany": ship_info["shippingCompany"],
+                "shippingCarrier": ship_info["shippingCarrier"],
+                "trackingNumber": ship_info["trackingNumber"],
+                "shipmentStatus": ship_info["shipmentStatus"],
+            })
 
         where_guest = " AND ".join(guest_conditions)
         guest_sql = text(f"""
-            SELECT g."orderNumber", g."guestName" AS "customerName", g."guestPhone" AS "customerPhone",
+            SELECT g.id, g."orderNumber", g."guestName" AS "customerName", g."guestPhone" AS "customerPhone",
                    g.status, 'PENDING' AS "paymentStatus", g.total, g."createdAt" AS date,
-                   g."confirmationNotifiedAt" AS "confirmedAt", '' AS city, '' AS governorate
+                   g."confirmationNotifiedAt" AS "confirmedAt", '' AS city, '' AS governorate,
+                   g."turboTrackingNumber", g."turboShipmentStatus", g.metadata
             FROM guest_orders g
             WHERE {where_guest}
             ORDER BY COALESCE(g."confirmationNotifiedAt", g."createdAt") DESC
@@ -270,21 +563,27 @@ class OrderRepository(BaseRepository):
         """)
         try:
             g_rows = await self._session.execute(guest_sql, params)
-            guest = [
-                {
+            guest = []
+            for r in g_rows:
+                row_dict = dict(r._mapping)
+                ship_info = _extract_shipping_info(row_dict)
+                guest.append({
                     "orderNumber": r.orderNumber,
                     "customerName": r.customerName or "",
                     "phone": r.customerPhone or "",
                     "status": r.status or "",
+                    "customStatusCode": "",
                     "paymentStatus": r.paymentStatus or "",
                     "total": str(r.total or 0),
                     "date": str(r.date or ""),
                     "confirmedAt": str(r.confirmedAt or "") if getattr(r, "confirmedAt", None) else "",
                     "city": "",
                     "governorate": "",
-                }
-                for r in g_rows
-            ]
+                    "shippingCompany": ship_info["shippingCompany"],
+                    "shippingCarrier": ship_info["shippingCarrier"],
+                    "trackingNumber": ship_info["trackingNumber"],
+                    "shipmentStatus": ship_info["shipmentStatus"],
+                })
         except Exception:
             guest = []
 

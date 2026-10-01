@@ -43,6 +43,7 @@ async def delegate_task(input_data: DelegateTaskInput) -> dict[str, Any]:
         import uuid
         task_token = uuid.uuid4().hex[:8]
         thread_id = f"subtask_{target_role.lower()}_{time.time_ns()}_{task_token}"
+        delegator_title = (input_data.delegator_role or "المساعد التنفيذي").strip()
         message = f"[مهمة مفوضة من {delegator_title}]\nالهدف المطلوب تنفيذه بدقة: {input_data.task_goal}"
 
         result = await manager.run_agent_task(

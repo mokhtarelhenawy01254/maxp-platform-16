@@ -1,9 +1,9 @@
 import React from "react";
-import SubscriptionCenter from "./SubscriptionCenter";
+import MarketplaceAppsManagement from "./MarketplaceAppsManagement";
 
 const StorefrontThemesManagement: React.FC = () => {
   return (
-    <SubscriptionCenter
+    <MarketplaceAppsManagement
       initialTab={4}
       storefrontThemesOnly
       pageTitle="إدارة وتسعير قوالب المتجر"

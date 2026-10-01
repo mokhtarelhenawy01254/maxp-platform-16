@@ -34,12 +34,6 @@ enum UserRole {
   AGENT
 }
 
-enum SubscriptionPlan {
-  BASIC
-  PRO
-  ENTERPRISE
-}
-
 enum SubscriptionStatus {
   ACTIVE
   INACTIVE
@@ -199,12 +193,6 @@ enum AiKeyProvider {
   GROQ
   OPENROUTER
   NVIDIA
-}
-
-enum SubscriptionPlanType {
-  BASIC
-  PRO
-  ENTERPRISE
 }
 
 enum StockAlertPriority {
@@ -576,13 +564,6 @@ enum AiKeysProvider {
   @@map("ai_keys_provider")
 }
 
-enum SubscriptionsPlanType {
-  BASIC
-  PRO
-  ENTERPRISE
-
-  @@map("subscriptions_planType")
-}
 
 enum ReturnReasonCategoriesDefaultRole {
   CUSTOMER

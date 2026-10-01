@@ -11,6 +11,7 @@ roles:
     - order_recent_list
     - order_lookup
     - order_lookup_by_phone
+    - shipment_track
     - customer_info
     - returns_requests_list
     - returns_request_get
@@ -27,6 +28,11 @@ roles:
     - conversion_tool_set_threshold
     - payment_settings_read
     - shipping_rates
+    - shipping_company_governorates
+    - shipping_company_areas
+    - search_area_by_text
+    - shipping_ticket_list
+    - shipping_ticket_get
     - offers_list_active
     - knowledge_search
     - knowledge_ask_merchant
@@ -63,6 +69,7 @@ roles:
     - order_lookup_by_phone
     - order_summary
     - order_recent_list
+    - shipment_track
     - customer_info
     - shipping_rates
     - knowledge_search
@@ -76,6 +83,8 @@ roles:
   SUPPORT:
     - product_search
     - order_lookup
+    - order_lookup_by_phone
+    - shipment_track
     - order_cancel
     - customer_info
     - shipping_rates
@@ -92,6 +101,7 @@ roles:
     - customer_info
     - order_lookup
     - order_lookup_by_phone
+    - shipment_track
     - order_summary
     - order_recent_list
     - order_create_draft
@@ -105,6 +115,7 @@ roles:
   ORDER_CONFIRMATION:
     - order_lookup
     - order_lookup_by_phone
+    - shipment_track
     - order_confirm
     - order_update_details
     - order_cancel
@@ -112,6 +123,30 @@ roles:
     - shipping_company_governorates
     - shipping_company_areas
     - search_area_by_text
+    - shipping_ticket_list
+    - shipping_ticket_get
+    - customer_info
+    - whatsapp_send
+    - agent_handoff_to
+
+  SHIPPING:
+    - shipping_rates
+    - search_area_by_text
+    - shipping_company_governorates
+    - shipping_company_areas
+    - shipping_update
+    - shipping_zone_set
+    - shipment_track
+    - shipping_ticket_create
+    - shipping_ticket_reply
+    - shipping_ticket_get
+    - shipping_ticket_list
+    - shipping_ticket_categories
+    - order_lookup
+    - order_lookup_by_phone
+    - order_recent_list
+    - order_update_details
+    - order_confirm
     - customer_info
     - whatsapp_send
     - agent_handoff_to
@@ -119,6 +154,7 @@ roles:
   VOICE_ORDER_CONFIRMATION:
     - order_lookup
     - order_lookup_by_phone
+    - shipment_track
     - order_confirm
     - order_update_details
     - order_cancel
@@ -405,10 +441,13 @@ roles:
     - coupon_validate
     - shipping_rates
     - shipping_update
+    - shipment_track
     - shipping_company_governorates
     - shipping_company_areas
     - search_area_by_text
     - shipping_zone_set
+    - shipping_ticket_list
+    - shipping_ticket_get
     - knowledge_search
     - knowledge_ask_merchant
     - knowledge_create_faq

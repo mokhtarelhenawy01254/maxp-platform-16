@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import axios from "axios";
-import SubscriptionCenter from "../SubscriptionCenter";
+import MarketplaceAppsManagement from "../MarketplaceAppsManagement";
 import { toast } from "sonner";
 
 jest.mock("axios");
@@ -25,9 +25,6 @@ const mockedToast = toast as unknown as {
 };
 
 function mockMainEndpoint(url: string, data: unknown) {
-  if (url.includes("admin/plans/plans")) {
-    return Promise.resolve({ data: { success: true, data: [] } });
-  }
   if (url.includes("super-admin/marketplace-management/apps")) {
     return Promise.resolve({ data: { success: true, data: [] } });
   }
@@ -37,16 +34,13 @@ function mockMainEndpoint(url: string, data: unknown) {
   if (url.includes("super-admin/marketplace-management/bundles")) {
     return Promise.resolve({ data: { success: true, data: [] } });
   }
-  if (url.includes("super-admin/marketplace-management/enterprise-plans")) {
-    return Promise.resolve({ data: { success: true, data: [] } });
-  }
   if (url.includes("super-admin/marketplace-management/catalog/diff")) {
     return Promise.resolve({ data: { success: true, data } });
   }
   return Promise.reject(new Error(`Unexpected GET URL: ${url}`));
 }
 
-describe("SubscriptionCenter Catalog Diff UI", () => {
+describe("MarketplaceAppsManagement Catalog Diff UI", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (global.localStorage.getItem as jest.Mock).mockReturnValue("test-token");
@@ -78,7 +72,7 @@ describe("SubscriptionCenter Catalog Diff UI", () => {
       mockMainEndpoint(String(url), diffResponse),
     );
 
-    render(<SubscriptionCenter />);
+    render(<MarketplaceAppsManagement />);
 
     await waitFor(() =>
       expect(mockedAxios.get).toHaveBeenCalledWith(
@@ -158,7 +152,7 @@ describe("SubscriptionCenter Catalog Diff UI", () => {
       return mockMainEndpoint(String(url), firstDiff);
     });
 
-    render(<SubscriptionCenter />);
+    render(<MarketplaceAppsManagement />);
 
     const tabs = await screen.findAllByRole("tab");
     const marketplaceTab = tabs[0];

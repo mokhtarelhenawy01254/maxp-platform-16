@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/ta
 import {
   CompanyHeroCard, StatusBadge, MiniStat, MetricCard, FormField, ResponsiveOverlay, ModalFooter,
   CompanyBillingSection, CompanyTeamSection, CompanyWalletSection,
-  CompanySubscriptionSection, CompanyLimitsSection, CompanyUsageSection,
+  CompanyLimitsSection, CompanyUsageSection,
   CompanyActivationCenter, CompanyPulse, CompanySupportTickets, CompanyRecentActivity,
   SectionShell,
 } from "./company-details";
@@ -42,16 +42,15 @@ const EMPLOYEE_ROLE_OPTIONS = [
 
 const SuperAdminCompanyDetails = () => {
   const {
-    navigate, isMobile, company, loading, error, review, reviewCurrency, limitEntries, nextBillingDate,
-    scrollToActivationSection, reviewAlerts, detailMetrics, financialMetrics, ownerUser,
+    navigate, isMobile, company, loading, error, review, reviewCurrency, limitEntries,
+    reviewAlerts, detailMetrics, financialMetrics, ownerUser,
     refreshCompanyWorkspace, refreshing, openTopUpModal, openEditModal, handleLoginAsAdmin,
-    planAction, bundleAction, appAction, installAllLoading, activationLoading, activationError,
+    bundleAction, appAction, installAllLoading, activationLoading, activationError,
     orderedCatalogApps, resolvedBundles, appNameBySlug,
     handleInstallApp, handleSubscribeBundle, handleActivateAllTools,
     companyUsers, usersLoading, facebookPages, pagesLoading, openAddEmployeeModal, setTransferOpen,
     handleUpdateUserRole, handleToggleUserStatus, handleDeleteUser,
     deleteConfirmUserId, setDeleteConfirmUserId, deleteUserLoading,
-    handleCancelSubscription, handleRetryPayment,
     companyTickets, ticketsLoading,
     companyActivities, activitiesLoading,
     toggleFeatureLoading, handleToggleFeature,
@@ -106,10 +105,6 @@ const SuperAdminCompanyDetails = () => {
       setLinking(false);
     }
   }, [company?.id, partnerCodeInput, refreshCompanyWorkspace]);
-  const handleScrollToActivation = useCallback(() => {
-    setActiveTab("activation");
-    setTimeout(() => scrollToActivationSection(), 50);
-  }, [scrollToActivationSection]);
 
   return (
     <div className="space-y-4" dir={i18n.dir()}>
@@ -230,10 +225,7 @@ const SuperAdminCompanyDetails = () => {
                   ))}
                 </div>
               ) : null}
-              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
-                <CompanyWalletSection review={review} reviewCurrency={reviewCurrency} openTopUpModal={openTopUpModal} navigate={navigate} />
-                <CompanySubscriptionSection review={review} reviewCurrency={reviewCurrency} company={company} nextBillingDate={nextBillingDate} scrollToActivationSection={handleScrollToActivation} handleCancelSubscription={handleCancelSubscription} handleRetryPayment={handleRetryPayment} />
-              </div>
+              <CompanyWalletSection review={review} reviewCurrency={reviewCurrency} openTopUpModal={openTopUpModal} navigate={navigate} />
               <CompanyBillingSection review={review} reviewCurrency={reviewCurrency} navigate={navigate} />
             </div>
           </TabsContent>

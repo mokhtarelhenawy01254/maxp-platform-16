@@ -124,7 +124,25 @@ roles:
       learning: true
       approvals: true
     approval_policy:
-      allowed_scopes: ["ORDERS"]
+      allowed_scopes: ["ORDERS", "SHIPPING"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 60
+      auto_embed: true
+
+  SHIPPING:
+    label: "مروان — منسق الشحن والعمليات اللوجستية"
+    domain: "OPERATIONS"
+    playbook_id: "shipping_playbook"
+    playbook_title: "كتيب الشحن والعمليات اللوجستية"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["SHIPPING", "ORDERS"]
       forbidden_prefixes: ["hr_", "payroll_", "internal_"]
     memory_policy:
       retain_days: 60

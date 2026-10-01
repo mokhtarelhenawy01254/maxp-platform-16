@@ -14,26 +14,9 @@ const platformValidator = require('../middleware/superAdminPlatformValidation');
 router.use(authenticateToken);
 router.use(requireSuperAdmin);
 
-// Platform Subscriptions Management
-router.get('/subscriptions', superAdminPlatformController.getAllSubscriptions);
-router.put(
-  '/subscription/:id',
-  platformValidator.updateSubscriptionRules(),
-  platformValidator.validate,
-  superAdminPlatformController.updateSubscription
-);
-
-// Billing & Revenue
-router.get('/billing-overview', superAdminPlatformController.getBillingOverview);
-router.post(
-  '/retry-failed-payment/:id',
-  platformValidator.retryPaymentRules(),
-  platformValidator.validate,
-  superAdminPlatformController.retryFailedPayment
-);
-
 // Marketplace Management
 router.get('/marketplace-stats', superAdminPlatformController.getMarketplaceStats);
+
 
 // Platform Site Meta Pixel
 router.get('/site-homepage', platformSiteHomepageController.getAdminSettings);

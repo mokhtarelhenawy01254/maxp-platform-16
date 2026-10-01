@@ -4,7 +4,6 @@ export interface CompanyData {
   email: string;
   phone?: string;
   website?: string;
-  plan: string;
   currency: string;
   isActive: boolean;
   slug?: string;
@@ -65,10 +64,9 @@ export interface CompanyReview {
     recentTransactions?: Array<{ id: string; type: string; amount: number; createdAt: string; description?: string; status?: string }>;
   };
   subscription?: {
-    id: string; monthlyFee: number; status: string; plan?: string;
+    id: string; monthlyFee: number; status: string;
     nextBillingDate?: string; failedAttempts: number;
     lastBillingDate?: string; billingDay?: number;
-    hasEnterpriseOverrides?: boolean;
   };
   billing?: {
     stats?: { unpaidInvoices: number; overdueInvoices: number; pendingReceipts: number; failedPayments: number; pendingPayments?: number; paidInvoices?: number; totalInvoices?: number };

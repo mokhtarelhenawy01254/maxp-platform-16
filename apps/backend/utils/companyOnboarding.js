@@ -17,7 +17,6 @@ const buildCompanyResponseWithOnboarding = (company) => {
   const settings = parseCompanySettings(company.settings);
   nextCompany.aiToolsEnabled = settings.aiToolsEnabled === true;
   delete nextCompany.settings;
-  nextCompany.plan = company.plan || company.platformSubscription?.plan || 'basic';
   return nextCompany;
 };
 
