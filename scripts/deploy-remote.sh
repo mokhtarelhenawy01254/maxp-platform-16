@@ -641,6 +641,9 @@ else
   echo "ℹ️ Skipping marketplace catalog sync (no catalog files changed)"
 fi
 
+echo "🧩 Ensuring POS app (pos-pro) is active and public..."
+NODE_ENV=production timeout 60 node scripts/catalog/sync_pos_pro_app.js || echo "⚠️ sync_pos_pro_app skipped, continuing..."
+
 # Restart services
 echo "🔄 Restarting services..."
 if [ -n "$PM2_BIN" ]; then
