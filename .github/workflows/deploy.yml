@@ -225,10 +225,10 @@ jobs:
           restore-keys: |
             frontend-node-
 
-      # Only install backend deps + run the Facebook Ads regression when
-      # facebook-related files actually changed — otherwise skip (saves ~56s/deploy).
+      # Only install backend deps + run the backend regressions when
+      # backend test surfaces actually changed — otherwise skip (saves ~56s/deploy).
       - name: Install Backend Test Dependencies
-        if: steps.diff-check.outputs.fb-changed == 'true'
+        if: steps.diff-check.outputs.fb-changed == 'true' || steps.diff-check.outputs.copilot-changed == 'true'
         working-directory: ./apps/backend
         run: |
           npm ci --ignore-scripts
