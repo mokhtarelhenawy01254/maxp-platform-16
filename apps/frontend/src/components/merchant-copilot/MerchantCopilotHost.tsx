@@ -5,7 +5,7 @@ import { useAuth } from '../../hooks/useAuthSimple';
 import { shouldUseSuperAdminShell } from '../layout/layoutMode';
 import { MerchantCopilotDrawer } from './MerchantCopilotDrawer';
 
-export type CopilotTriggerMode = 'expanded' | 'minimized' | 'hidden';
+export type CopilotTriggerMode = 'circular' | 'expanded' | 'minimized' | 'hidden';
 
 export const COPILOT_TRIGGER_MODE_KEY = 'maxp_copilot_trigger_mode';
 
@@ -72,18 +72,19 @@ export const MerchantCopilotHost: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
 
-  // Persistent floating trigger mode: expanded | minimized | hidden
+  // Persistent floating trigger mode: circular | hidden
+  // Defaults to 'circular' so the trigger is a sleek circle that does not block dashboard tabs/cards.
   const [triggerMode, setTriggerMode] = useState<CopilotTriggerMode>(() => {
-    if (typeof window === 'undefined') return 'expanded';
+    if (typeof window === 'undefined') return 'circular';
     try {
       const stored = localStorage.getItem(COPILOT_TRIGGER_MODE_KEY);
-      if (stored === 'expanded' || stored === 'minimized' || stored === 'hidden') {
-        return stored;
-      }
+      if (stored === 'hidden') return 'hidden';
+      // Any other stored value or empty defaults to circular
+      return 'circular';
     } catch (err) {
       console.warn('[MerchantCopilotHost] localStorage read error:', err);
     }
-    return 'expanded';
+    return 'circular';
   });
 
   const updateTriggerMode = useCallback((newMode: CopilotTriggerMode) => {
@@ -200,102 +201,58 @@ export const MerchantCopilotHost: React.FC = () => {
             isNearBottom ? '-translate-y-4' : 'translate-y-0'
           }`}
         >
-          {triggerMode === 'expanded' ? (
-            <div className="pointer-events-auto flex items-center shadow-xl shadow-slate-900/10 dark:shadow-black/50 rounded-full border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl transition-all duration-160 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-indigo-500/15 group">
+          <div className="pointer-events-auto relative group flex items-center">
+            {/* Origin-aware floating tooltip pill on hover */}
+            <div
+              role="tooltip"
+              className="pointer-events-none group-hover:pointer-events-auto opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out translate-y-1 group-hover:translate-y-0 absolute bottom-full mb-3 rtl:right-0 ltr:left-0 flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-slate-900/95 dark:bg-slate-900/95 text-white text-xs font-medium shadow-xl shadow-slate-950/25 border border-slate-750/80 backdrop-blur-md whitespace-nowrap z-50"
+            >
+              <span className="relative flex h-2 w-2 items-center justify-center">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" />
+              </span>
+
+              <span className="font-bold text-slate-100 text-[11px] tracking-tight">
+                المساعد التنفيذي
+              </span>
+
+              <span className="inline-flex items-center rounded-md border border-slate-700 bg-slate-800 px-1.5 py-0.5 font-mono text-[9px] text-slate-300 font-semibold">
+                Ctrl+J
+              </span>
+
               <button
                 type="button"
-                onClick={() => setIsOpen(true)}
-                className="flex items-center gap-2.5 h-11 px-3.5 sm:px-4 rounded-full text-slate-800 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400 active:scale-[0.97] transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                title="المساعد التنفيذي للمتجر (Ctrl + J)"
-                aria-label="فتح المساعد التنفيذي للمتجر"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateTriggerMode('hidden');
+                }}
+                className="ms-0.5 p-1 rounded-full text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors active:scale-95 cursor-pointer"
+                title="إخفاء الشيب العائم (يبقى متاحاً عبر الشريط العلوي أو Ctrl+J)"
+                aria-label="إخفاء الشيب العائم"
               >
-                {/* Steady status micro-indicator */}
-                <span className="relative flex h-2 w-2 items-center justify-center">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" />
-                </span>
-
-                <Cpu className="h-4 w-4 text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform" />
-
-                <span className="text-xs font-bold tracking-tight text-slate-800 dark:text-slate-100">
-                  المساعد التنفيذي
-                </span>
-
-                <span className="inline-flex items-center gap-0.5 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 font-mono text-[9px] text-slate-500 dark:text-slate-400 font-semibold">
-                  Ctrl+J
-                </span>
+                <X className="h-3 w-3" />
               </button>
 
-              {/* Sub-action controls: Minimize and Hide */}
-              <div className="flex items-center pe-2 ps-0.5 border-s border-slate-200/70 dark:border-slate-800/80 gap-0.5 text-slate-400 dark:text-slate-500">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    updateTriggerMode('minimized');
-                  }}
-                  className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors active:scale-95 cursor-pointer"
-                  title="تصغير إلى أيقونة مدمجة"
-                  aria-label="تصغير المساعد التنفيذي"
-                >
-                  <Minus className="h-3 w-3" />
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    updateTriggerMode('hidden');
-                  }}
-                  className="p-1 rounded-full hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400 transition-colors active:scale-95 cursor-pointer"
-                  title="إخفاء الشيب العائم (يبقى متاحاً عبر الشريط العلوي أو Ctrl+J)"
-                  aria-label="إخفاء الشيب العائم"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
+              {/* Triangle pointer indicator */}
+              <span className="absolute -bottom-1 rtl:right-5 ltr:left-5 w-2 h-2 bg-slate-900/95 border-b border-e border-slate-750/80 rotate-45" />
             </div>
-          ) : (
-            /* Minimized Mode: Compact 38px micro-pill with hover controls */
-            <div className="pointer-events-auto relative group flex items-center">
-              <button
-                type="button"
-                onClick={() => setIsOpen(true)}
-                className="h-10 w-10 sm:h-9 sm:w-9 rounded-full bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500 shadow-lg shadow-slate-900/10 dark:shadow-black/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center transition-all duration-160 active:scale-95 cursor-pointer backdrop-blur-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                title="المساعد التنفيذي للمتجر (Ctrl + J)"
-                aria-label="المساعد التنفيذي للمتجر (مُصغّر)"
-              >
-                <Cpu className="h-4 w-4" />
-                <span className="absolute top-1 end-1 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
-              </button>
 
-              {/* Quick actions popup on hover in minimized mode */}
-              <div className="hidden group-hover:flex items-center gap-1 absolute bottom-full mb-1.5 start-0 bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-lg p-0.5 shadow-md backdrop-blur-md animate-in fade-in zoom-in-95 duration-100">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    updateTriggerMode('expanded');
-                  }}
-                  className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-                  title="تكبير الشيب"
-                  aria-label="تكبير الشيب"
-                >
-                  <Maximize2 className="h-3 w-3" />
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    updateTriggerMode('hidden');
-                  }}
-                  className="p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-500 hover:text-rose-600 transition-colors cursor-pointer"
-                  title="إخفاء الشيب"
-                  aria-label="إخفاء الشيب"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            </div>
-          )}
+            {/* Circular FAB Button */}
+            <button
+              type="button"
+              onClick={() => setIsOpen(true)}
+              className="relative flex items-center justify-center w-12 h-12 rounded-full bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500/80 shadow-[0_8px_24px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.2)] dark:shadow-[0_10px_28px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] hover:shadow-xl hover:shadow-indigo-500/20 text-indigo-600 dark:text-indigo-400 active:scale-95 hover:scale-105 transition-all duration-160 cursor-pointer backdrop-blur-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              title="المساعد التنفيذي للمتجر (Ctrl + J)"
+              aria-label="فتح المساعد التنفيذي للمتجر"
+            >
+              {/* Steady status micro-indicator with ambient pulse on ping */}
+              <span className="absolute top-1.5 end-1.5 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
+              </span>
+
+              <Cpu className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" />
+            </button>
+          </div>
         </aside>
       )}
 

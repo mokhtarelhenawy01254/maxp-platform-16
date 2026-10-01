@@ -63,13 +63,16 @@ describe('MerchantCopilotHost - Non-blocking Trigger & RTL Controls', () => {
     expect(openBtn).toBeInTheDocument();
   });
 
-  it('minimizes into compact micro-pill and persists to localStorage when minimize button is clicked', () => {
+  it('renders circular trigger button and opens drawer when clicked', () => {
     render(<MerchantCopilotHost />);
-    const minimizeBtn = screen.getByRole('button', { name: /تصغير المساعد التنفيذي/i });
-    fireEvent.click(minimizeBtn);
+    const openBtn = screen.getByRole('button', { name: /فتح المساعد التنفيذي للمتجر/i });
+    expect(openBtn).toBeInTheDocument();
+    expect(openBtn.className).toContain('rounded-full');
+    expect(openBtn.className).toContain('w-12');
+    expect(openBtn.className).toContain('h-12');
 
-    expect(localStorage.getItem(COPILOT_TRIGGER_MODE_KEY)).toBe('minimized');
-    expect(screen.getByRole('button', { name: /المساعد التنفيذي للمتجر \(مُصغّر\)/i })).toBeInTheDocument();
+    fireEvent.click(openBtn);
+    expect(screen.getByTestId('copilot-drawer')).toBeInTheDocument();
   });
 
   it('hides completely and persists to localStorage when close/hide button is clicked', () => {
@@ -81,11 +84,12 @@ describe('MerchantCopilotHost - Non-blocking Trigger & RTL Controls', () => {
     expect(screen.queryByLabelText('المساعد التنفيذي للمتجر')).not.toBeInTheDocument();
   });
 
-  it('initializes from localStorage in minimized mode if previously minimized', () => {
+  it('initializes from localStorage in circular mode by default even if legacy minimized is present', () => {
     localStorage.setItem(COPILOT_TRIGGER_MODE_KEY, 'minimized');
     render(<MerchantCopilotHost />);
 
-    expect(screen.getByRole('button', { name: /المساعد التنفيذي للمتجر \(مُصغّر\)/i })).toBeInTheDocument();
+    const openBtn = screen.getByRole('button', { name: /فتح المساعد التنفيذي للمتجر/i });
+    expect(openBtn).toBeInTheDocument();
   });
 
   it('initializes from localStorage in hidden mode if previously hidden', () => {
