@@ -247,6 +247,41 @@ async function healHrAttendanceAndDeductions() {
     summary.errors.push(`queryWorkHours: ${err?.message}`);
   }
 
+  // 6. إلغاء جميع الخصومات التلقائية المعلّقة (AUTO_DEDUCTION) لتفادي أي خصم مزدوج
+  try {
+    const pendingAutoDeds = await prisma.manualDeduction.findMany({
+      where: {
+        category: 'AUTO_DEDUCTION',
+        status: 'PENDING'
+      }
+    });
+
+    for (const d of pendingAutoDeds) {
+      try {
+        await prisma.manualDeduction.update({
+          where: { id: d.id },
+          data: {
+            status: 'CANCELLED',
+            rejectedBy: 'HR_HEALER',
+            rejectedAt: new Date(),
+            rejectionReason: 'Auto-cancelled by HR-HEALER to prevent double deduction with lateness engine',
+            notes: `${d.notes || ''}\n[HR-HEALER] Cancelled: duplicate prevention`
+          }
+        });
+        summary.staleLateDeductionsCancelledCount++;
+        summary.staleLateDeductionsCancelledAmount += Number(d.amount);
+      } catch (err) {
+        summary.errors.push(`cancelPendingAuto-${d.id}: ${err?.message}`);
+      }
+    }
+    if (pendingAutoDeds.length > 0) {
+      console.log(`✅ [HR-HEALER] Cancelled ${pendingAutoDeds.length} pending AUTO_DEDUCTION rows`);
+    }
+  } catch (err) {
+    console.error('❌ [HR-HEALER] Error cancelling pending auto deductions:', err?.message);
+    summary.errors.push(`queryPendingAutoDeds: ${err?.message}`);
+  }
+
   console.log('🩺 [HR-HEALER] Reconciliation complete:', {
     clampedWorkHoursCount: summary.clampedWorkHoursCount,
     doublePunchHealedCount: summary.doublePunchHealedCount,

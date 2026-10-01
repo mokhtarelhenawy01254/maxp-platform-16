@@ -274,6 +274,7 @@ class AttendanceAutoCheckoutCron {
       data: {
         checkOut: checkoutTime,
         checkOutMethod: 'auto_system',
+        earlyLeaveMinutes: 0,
         workHours,
         overtimeHours: 0,
         notes: attendance.notes

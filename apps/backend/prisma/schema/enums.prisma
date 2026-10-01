@@ -1666,6 +1666,7 @@ enum HrManualDeductionsStatus {
   PENDING
   APPROVED
   REJECTED
+  CANCELLED
 
   @@map("hr_manual_deductions_status")
 }

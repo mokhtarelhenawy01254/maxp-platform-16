@@ -1243,15 +1243,39 @@ class PayrollService {
       sum + (parseFloat(val) || 0), 0
     );
 
-    // حساب الراتب والبدلات المستحقة بناءً على الأيام التي مرت (للشهر الحالي فقط)
+    // حساب الراتب والبدلات المستحقة مع التقسيم على تاريخ التعيين (سواء للشهر الحالي أو الشهور السابقة)
     let baseSalary = fullMonthBaseSalary;
     let totalAllowances = fullMonthAllowances;
+    let isProratedHire = false;
+    let hireProrationNote = null;
 
-    if (isCurrentMonth) {
+    if (empHireDate) {
+      const hireDateObj = new Date(empHireDate);
+      if (
+        hireDateObj.getUTCFullYear() === parseInt(year) &&
+        (hireDateObj.getUTCMonth() + 1) === parseInt(month) &&
+        hireDateObj.getUTCDate() > 1
+      ) {
+        // حساب أيام العمل المستحقة من تاريخ التعيين وحتى نهاية الشهر
+        const workingDaysFromHire = workingDates.filter(d => d >= hireDateStr).length;
+        if (workingDaysFromHire < totalWorkingDaysInMonth) {
+          const hireRatio = workingDaysFromHire / totalWorkingDaysInMonth;
+          baseSalary = Math.round(fullMonthBaseSalary * hireRatio * 100) / 100;
+          totalAllowances = Math.round(fullMonthAllowances * hireRatio * 100) / 100;
+          isProratedHire = true;
+          const hireDay = hireDateObj.getUTCDate();
+          const hireMonth = hireDateObj.getUTCMonth() + 1;
+          hireProrationNote = `أساسي مُقسَّم (تعيين ${hireDay}/${hireMonth}): ${baseSalary.toFixed(2)}`;
+          console.log(`📅 [PAYROLL-PRORATION] Mid-month hire (${hireDay}/${hireMonth}): ${workingDaysFromHire}/${totalWorkingDaysInMonth} work days. Prorated base: ${baseSalary}`);
+        }
+      }
+    }
+
+    if (isCurrentMonth && !isProratedHire) {
       const daysPassedWorking = this.getWorkingDaysInMonth(year, month, now.getDate(), workingDaysConfig, publicHolidays);
       const earnedRatio = daysPassedWorking / totalWorkingDaysInMonth;
-      baseSalary = fullMonthBaseSalary * earnedRatio;
-      totalAllowances = fullMonthAllowances * earnedRatio;
+      baseSalary = Math.round(fullMonthBaseSalary * earnedRatio * 100) / 100;
+      totalAllowances = Math.round(fullMonthAllowances * earnedRatio * 100) / 100;
 
       console.log('📊 [PAYROLL-CALC] Current month - calculating earned salary:', {
         totalWorkingDays: totalWorkingDaysInMonth,
@@ -1281,10 +1305,15 @@ class PayrollService {
     const addDailyPenalty = (date, amount, reason, type = 'auto') => {
       const dateStr = this.toLocalDateKey(date);
       if (!dailyPenaltyMap.has(dateStr)) {
-        dailyPenaltyMap.set(dateStr, { total: 0, details: [], types: [] });
+        dailyPenaltyMap.set(dateStr, { total: 0, attendanceTotal: 0, manualTotal: 0, details: [], types: [] });
       }
       const dayData = dailyPenaltyMap.get(dateStr);
       dayData.total += amount;
+      if (type === 'manual') {
+        dayData.manualTotal = (dayData.manualTotal || 0) + amount;
+      } else {
+        dayData.attendanceTotal = (dayData.attendanceTotal || 0) + amount;
+      }
       dayData.details.push(reason);
       dayData.types.push(type);
     };
@@ -1348,6 +1377,18 @@ class PayrollService {
       return true;
     });
 
+    // إذا كان الراتب الأساسي مقسماً بالفعل على تاريخ التعيين، نتأكد من عدم ازدواج خصم التناسب اليدوي
+    if (isProratedHire) {
+      manualDeductions = manualDeductions.filter(d => {
+        const reasonLower = (d.reason || '').toLowerCase();
+        if (reasonLower.includes('تناسب') || reasonLower.includes('تاريخ التعيين')) {
+          console.log(`ℹ️ [PAYROLL] Skipping manual deduction ${d.id} because baseSalary was already prorated on hireDate`);
+          return false;
+        }
+        return true;
+      });
+    }
+
     manualDeductions.forEach(d => {
       // الخصومات التلقائية AUTO_DEDUCTION تُعالج عبر محرك التأخير والانصراف المبكر لتفادي الازدواج وتصنيفها كـ "خصم يدوي"
       if (d.category === 'AUTO_DEDUCTION') return;
@@ -1377,6 +1418,13 @@ class PayrollService {
       const dayData = permissionsByDate.get(pDateStr);
       dayData.totalMinutes += pMins;
       dayData.items.push(p);
+
+      // إذا كان الإذن مصنفاً كغير خاضع للخصم صراحةً (NON_DEDUCTIBLE)
+      const isNonDeductible = p.type === 'NON_DEDUCTIBLE' || p.isNonDeductible === true;
+      if (isNonDeductible) {
+        permissionLines.push(`${pDateStr}: إذن معتمد (${p.reason || 'إذن غير خاضع للخصم'}) ${pMins}د — بدون خصم`);
+        return;
+      }
 
       const quotaRemaining = Math.max(0, monthlyPaidPermissionQuota - cumulativePermissionMins);
       const paidPortion = Math.min(pMins, quotaRemaining);
@@ -1479,7 +1527,7 @@ class PayrollService {
     });
 
     const monthlyGrace = settings?.gracePeriodMinutes !== undefined ? settings.gracePeriodMinutes : 60;
-    let remainingGrace = Math.max(0, monthlyGrace - (latenessBalance?.graceMinutesUsed || 0));
+    let remainingGrace = monthlyGrace;
     const maxDailyThreshold = settings?.lateThresholdMinutes || settings?.lateGracePeriod || 10;
     const delayPenaltyTiers = settings?.delayPenaltyTiers
       ? (typeof settings.delayPenaltyTiers === 'string' ? JSON.parse(settings.delayPenaltyTiers) : settings.delayPenaltyTiers)
@@ -1515,25 +1563,18 @@ class PayrollService {
         return;
       }
 
-      // ما هو ضمن حد التسامح اليومي (maxDailyThreshold مثلاً 10د) يمتصه رصيد المرونة الشهري (remainingGrace)
-      // ما زاد عن حد التسامح اليومي يذهب للخصم مباشرة بالإضافة لما تجاوز رصيد المرونة الشهري
-      const dailyAllowed = Math.min(effectiveMins, maxDailyThreshold);
-      const immediateExcess = Math.max(0, effectiveMins - maxDailyThreshold);
-
+      // رصيد السماح الشهري (مثلاً 60 دقيقة) يمتص دقائق التأخير أولاً بأول حتى نفاده
       let graceUsed = 0;
-      let graceExhausted = 0;
       if (remainingGrace > 0) {
-        graceUsed = Math.min(dailyAllowed, remainingGrace);
+        graceUsed = Math.min(effectiveMins, remainingGrace);
         remainingGrace -= graceUsed;
-        graceExhausted = dailyAllowed - graceUsed;
-      } else {
-        graceExhausted = dailyAllowed;
       }
 
-      const effectiveLateMinutes = graceExhausted + immediateExcess;
+      const effectiveLateMinutes = Math.max(0, effectiveMins - graceUsed);
 
       if (effectiveLateMinutes <= 0) {
-        return; // مغطى بالكامل برصيد التسامح الشهري والحد اليومي
+        lateDetails.push(`${dateStr}: تأخير ${mins}د (مغطى برصيد السماح الشهري)`);
+        return;
       }
 
       let dayLatePenalty = 0;
@@ -1560,7 +1601,8 @@ class PayrollService {
       if (dayLatePenalty > 0) {
         totalLatePenalty += dayLatePenalty;
         const coveredNote = dayPermMins > 0 ? ` (مغطى بإذن ${dayPermMins}د)` : '';
-        lateDetails.push(`${dateStr}: تأخير ${mins}د${coveredNote} (مخصوم ${effectiveLateMinutes}د) = ${dayLatePenalty.toFixed(2)} ج.م`);
+        const graceNote = graceUsed > 0 ? ` (سماح ${graceUsed}د)` : '';
+        lateDetails.push(`${dateStr}: تأخير ${mins}د${coveredNote}${graceNote} (مخصوم ${effectiveLateMinutes}د) = ${dayLatePenalty.toFixed(2)} ج.م`);
         addDailyPenalty(occ.date, dayLatePenalty, `تأخير ${mins}د (${dayLatePenalty.toFixed(2)} ج.م)`, 'late');
       }
     });
@@ -1590,19 +1632,20 @@ class PayrollService {
           if (presenceMs >= 0 && presenceMs < 5 * 60 * 1000) {
             isDoublePunch = true;
             // البصمة المزدوجة (< 5 دقائق): الموظف بصم حضوراً وحدث ارتداد/خروج خاطئ بالثواني
-            // نعامل اليوم كيوم عمل عادي دون عجز ساعات أو انصراف مبكر
             actualHours = Math.max(actualHours, expectedHours);
           }
           if (presenceMs > 0 && !isDoublePunch) {
             const grossHours = presenceMs / (1000 * 60 * 60);
-            // في مصر والورديات القياسية (مثل 10:00 إلى 18:00 = 8 ساعات)، الراحة مشمولة بالمرتب
-            // السجلات القديمة كانت تخصم ساعة راحة تلقائيًا فتوهم عجز ساعة يوميًا
-            // نعتمد التواجد الفعلي لكي لا يُظلم الموظف الذي حضر الوردية كاملة
             if (grossHours > actualHours) {
               actualHours = grossHours;
             }
           }
         }
+      }
+
+      // إذا كان السجل مغلقاً تلقائياً أو منقولاً من حساب المكتب مع صفر انصراف مبكر
+      if ((a.earlyLeaveMinutes || 0) === 0 && (a.notes?.includes('Auto-checkout') || a.notes?.includes('Reassigned'))) {
+        actualHours = Math.max(actualHours, expectedHours);
       }
 
       // إذن الخروج المصرح به في هذا اليوم
@@ -1641,14 +1684,18 @@ class PayrollService {
     let dailyDeductions = [];
 
     dailyPenaltyMap.forEach((dayData, dateStr) => {
-      let dailyTotal = dayData.total;
-      const isCapped = dailyCapLimit > 0 && dailyTotal > dailyCapLimit;
+      let attendanceDailyTotal = dayData.attendanceTotal || 0;
+      const manualDailyTotal = dayData.manualTotal || 0;
+
+      // سقف الخصم اليومي يطبق حصراً على خصومات الحضور والغياب (وليس الخصومات اليدوية أو التسويات)
+      const isCapped = dailyCapLimit > 0 && attendanceDailyTotal > dailyCapLimit;
 
       if (isCapped) {
-        capAuditTrail.push(`${dateStr}: تم خفض من ${dailyTotal.toFixed(2)} إلى ${dailyCapLimit.toFixed(2)} (سقف)`);
-        dailyTotal = dailyCapLimit;
+        capAuditTrail.push(`${dateStr}: تم خفض خصم الحضور من ${attendanceDailyTotal.toFixed(2)} إلى ${dailyCapLimit.toFixed(2)} (سقف)`);
+        attendanceDailyTotal = dailyCapLimit;
       }
 
+      const dailyTotal = attendanceDailyTotal + manualDailyTotal;
       const deductionTypes = dayData.types || [];
       const isManual = deductionTypes.some(t => t === 'manual');
       const typeLabel = isManual ? 'يدوي' : 'تلقائي';
@@ -1665,11 +1712,8 @@ class PayrollService {
         types: dayData.types
       });
 
-      if (isManual || dayData.details.some(d => d.includes('يدوي'))) {
-        totalCappedManualPenalty += dailyTotal;
-      } else {
-        totalCappedAttendancePenalty += dailyTotal;
-      }
+      totalCappedManualPenalty += manualDailyTotal;
+      totalCappedAttendancePenalty += attendanceDailyTotal;
     });
 
     // تصنيف الخصومات وحفظها بوضوح
@@ -1692,6 +1736,7 @@ class PayrollService {
     if (totalDeficitPenalty > 0) deductions.deficitAmount = Number(totalDeficitPenalty.toFixed(2));
     if (permissionLines.length > 0) deductions.permissionDetails = permissionLines.join(' | ');
     if (totalExtraPermissionDeduction > 0) deductions.permissionAmount = Number(totalExtraPermissionDeduction.toFixed(2));
+    if (hireProrationNote) deductions.prorationNote = hireProrationNote;
 
     if (capAuditTrail.length > 0) {
       deductions.capNotes = capAuditTrail.join(' | ');
@@ -1754,7 +1799,8 @@ class PayrollService {
         'details', 'manualDetails', 'capNotes', 'advanceDetails',
         'absenceDetails', 'lateDetails', 'deficitDetails',
         'absenceAmount', 'lateAmount', 'deficitAmount',
-        'غياب', 'تأخيرات', 'عجز ساعات العمل', 'خصم يدوي', 'غياب وتأخير', 'سلف'
+        'غياب', 'تأخيرات', 'عجز ساعات العمل', 'خصم يدوي', 'غياب وتأخير', 'سلف',
+        'prorationNote', 'permissionDetails', 'permissionAmount'
       ]);
       Object.entries(data.deductions).forEach(([k, v]) => {
         if (!skipKeys.has(k)) {
@@ -1763,7 +1809,7 @@ class PayrollService {
       });
     }
 
-    const totalDeductions = calculatedTotalDeductions;
+    const totalDeductions = Math.round(calculatedTotalDeductions * 100) / 100;
 
     // حساب الإضافي (بدون مضاعف إلا لو مُفعّل من الإعدادات)
     const parsedOvertimeRate = parseFloat(settings?.overtimeRate);

@@ -5694,7 +5694,9 @@ function mapHRSettingsPayload(settings, notificationHealth) {
       allowRemoteCheckIn: true,
       requireLocation: false,
       lateThreshold:
-        settings?.lateThresholdMinutes || settings?.lateGracePeriod || 15,
+        settings?.lateThresholdMinutes || settings?.lateGracePeriod || 10,
+      lateGracePeriod:
+        settings?.lateThresholdMinutes || settings?.lateGracePeriod || 10,
       earlyLeaveThreshold: settings?.earlyLeaveGracePeriod || 15,
       autoAbsentMarking: true,
       monthlyLateLimit: settings?.monthlyLateLimit ?? 3,
@@ -5710,7 +5712,7 @@ function mapHRSettingsPayload(settings, notificationHealth) {
       geofenceRadius: settings?.geofenceRadius || 200,
       autoDeductionEnabled: settings?.autoDeductionEnabled || false,
       gracePeriodMinutes: settings?.gracePeriodMinutes || 60,
-      lateThresholdMinutes: settings?.lateThresholdMinutes || 10,
+      lateThresholdMinutes: settings?.lateThresholdMinutes || settings?.lateGracePeriod || 10,
       maxDailyDeductionDays: settings?.maxDailyDeductionDays
         ? Number(settings.maxDailyDeductionDays)
         : 1.0,
@@ -6032,11 +6034,13 @@ async function updateHRSettings(req, res) {
       taxRate: taxRate !== undefined ? parseFloat(taxRate) : 0,
       ...(overtimeRate !== undefined ? { overtimeRate: parseFloat(overtimeRate) } : {}),
       lateGracePeriod:
-        lateGracePeriod !== undefined
-          ? Number(lateGracePeriod)
-          : lateThreshold !== undefined
-            ? Number(lateThreshold)
-            : 15,
+        lateThresholdMinutes !== undefined
+          ? Number(lateThresholdMinutes)
+          : (lateThreshold !== undefined
+              ? Number(lateThreshold)
+              : (lateGracePeriod !== undefined
+                  ? Number(lateGracePeriod)
+                  : 10)),
       earlyLeaveGracePeriod:
         earlyLeaveThreshold !== undefined ? Number(earlyLeaveThreshold) : (earlyLeaveGracePeriod !== undefined ? Number(earlyLeaveGracePeriod) : 15),
       monthlyLateLimit:
@@ -6061,9 +6065,11 @@ async function updateHRSettings(req, res) {
       lateThresholdMinutes:
         lateThresholdMinutes !== undefined
           ? Number(lateThresholdMinutes)
-          : lateThreshold !== undefined
-            ? Number(lateThreshold)
-            : 10,
+          : (lateThreshold !== undefined
+              ? Number(lateThreshold)
+              : (lateGracePeriod !== undefined
+                  ? Number(lateGracePeriod)
+                  : 10)),
       maxDailyDeductionDays:
         maxDailyDeductionDays !== undefined
           ? parseFloat(maxDailyDeductionDays)

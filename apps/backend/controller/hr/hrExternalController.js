@@ -4,7 +4,7 @@
  */
 
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
-const { getDateStringInTimezone } = require('../../utils/dateUtils');
+const { getDateStringInTimezone, combineDateAndTime } = require('../../utils/dateUtils');
 const {
   dispatchHrWebhook,
   generateHrApiKey,
@@ -709,12 +709,19 @@ const recordPunchesBatch = async (req, res) => {
         where: {
           companyId_employeeNumber: { companyId, employeeNumber }
         },
-        select: { id: true, userId: true, firstName: true, lastName: true }
+        select: {
+          id: true,
+          userId: true,
+          firstName: true,
+          lastName: true,
+          status: true,
+          user: { select: { id: true, isActive: true } }
+        }
       });
 
-      if (!employee || !employee.userId) {
+      if (!employee || !employee.userId || employee.status === 'TERMINATED' || employee.user?.isActive === false) {
         results.failed++;
-        results.errors.push({ punch, error: 'Employee not found or unlinked to User record' });
+        results.errors.push({ punch, error: 'Employee not found, terminated, or user is inactive' });
         continue;
       }
 
@@ -723,6 +730,22 @@ const recordPunchesBatch = async (req, res) => {
       const dayStart = new Date(`${dateStr}T00:00:00.000Z`);
 
       try {
+        const hrSettings = await prisma.hRSettings.findUnique({
+          where: { companyId }
+        });
+        const shift = await attendanceService.getEmployeeShiftForDate(
+          companyId,
+          employee.id,
+          punchDate,
+          timezone
+        );
+
+        const isRest = attendanceService.isRestDay(punchDate, hrSettings, timezone);
+        const workStartTime = shift?.startTime || hrSettings?.workStartTime || '10:00';
+        const workEndTime = shift?.endTime || hrSettings?.workEndTime || '18:00';
+        const workStart = combineDateAndTime(dayStart, workStartTime, timezone);
+        const workEnd = combineDateAndTime(dayStart, workEndTime, timezone);
+
         const attendance = await prisma.attendance.findUnique({
           where: {
             userId_date: {
@@ -739,6 +762,21 @@ const recordPunchesBatch = async (req, res) => {
           if (isCheckIn && (!attendance.checkIn || punchDate < attendance.checkIn)) {
             updateData.checkIn = punchDate;
             updateData.checkInMethod = deviceId ? `BIOMETRIC_${deviceId}` : 'BIOMETRIC_API';
+
+            if (isRest) {
+              updateData.status = 'WEEKEND';
+              updateData.lateMinutes = 0;
+            } else {
+              const gracePeriod = hrSettings?.lateGracePeriod || hrSettings?.lateThresholdMinutes || 10;
+              const graceTime = new Date(workStart.getTime() + gracePeriod * 60000);
+              if (punchDate > graceTime) {
+                updateData.lateMinutes = Math.floor((punchDate - workStart) / 60000);
+                updateData.status = 'LATE';
+              } else {
+                updateData.lateMinutes = 0;
+                updateData.status = 'PRESENT';
+              }
+            }
           } else if (!isCheckIn && (!attendance.checkOut || punchDate > attendance.checkOut)) {
             // Debounce check: ignore checkout punch if within 5 minutes of checkIn
             if (attendance.checkIn) {
@@ -753,9 +791,41 @@ const recordPunchesBatch = async (req, res) => {
             updateData.checkOutMethod = deviceId ? `BIOMETRIC_${deviceId}` : 'BIOMETRIC_API';
 
             const checkInTime = updateData.checkIn || attendance.checkIn;
+            let workHours = 0;
             if (checkInTime) {
               const workMinutes = Math.max(0, (punchDate.getTime() - new Date(checkInTime).getTime()) / 60000);
-              updateData.workHours = Math.max(0, Math.round((workMinutes / 60) * 100) / 100);
+              workHours = Math.max(0, Math.round((workMinutes / 60) * 100) / 100);
+              updateData.workHours = workHours;
+            }
+
+            if (isRest) {
+              updateData.status = 'WEEKEND';
+              updateData.lateMinutes = 0;
+              updateData.earlyLeaveMinutes = 0;
+              // Overtime on rest days: hours worked after scheduled shift end
+              if (workEnd && punchDate > workEnd) {
+                updateData.overtimeHours = Math.max(0, Math.round(((punchDate.getTime() - workEnd.getTime()) / 3600000) * 100) / 100);
+              } else {
+                updateData.overtimeHours = workHours;
+              }
+            } else {
+              // Normal working day: calculate early leave if leaving before shift end
+              const earlyGrace = hrSettings?.earlyLeaveGracePeriod || 15;
+              const graceTimeOut = new Date(workEnd.getTime() - earlyGrace * 60000);
+              if (punchDate < graceTimeOut) {
+                updateData.earlyLeaveMinutes = Math.floor((workEnd.getTime() - punchDate.getTime()) / 60000);
+              } else {
+                updateData.earlyLeaveMinutes = 0;
+              }
+
+              // Overtime on normal working day: hours worked after scheduled shift end
+              if (workEnd && punchDate > workEnd) {
+                const minOvertime = parseFloat(hrSettings?.overtimeMinHours) || 1;
+                const overtime = (punchDate.getTime() - workEnd.getTime()) / 3600000;
+                if (overtime >= minOvertime) {
+                  updateData.overtimeHours = Math.round(overtime * 100) / 100;
+                }
+              }
             }
           }
 
@@ -766,6 +836,27 @@ const recordPunchesBatch = async (req, res) => {
             });
           }
         } else {
+          let status = 'PRESENT';
+          let lateMinutes = 0;
+          let earlyLeaveMinutes = 0;
+
+          if (isRest) {
+            status = 'WEEKEND';
+          } else if (isCheckIn) {
+            const gracePeriod = hrSettings?.lateGracePeriod || hrSettings?.lateThresholdMinutes || 10;
+            const graceTime = new Date(workStart.getTime() + gracePeriod * 60000);
+            if (punchDate > graceTime) {
+              lateMinutes = Math.floor((punchDate - workStart) / 60000);
+              status = 'LATE';
+            }
+          } else {
+            const earlyGrace = hrSettings?.earlyLeaveGracePeriod || 15;
+            const graceTimeOut = new Date(workEnd.getTime() - earlyGrace * 60000);
+            if (punchDate < graceTimeOut) {
+              earlyLeaveMinutes = Math.floor((workEnd.getTime() - punchDate.getTime()) / 60000);
+            }
+          }
+
           await prisma.attendance.create({
             data: {
               companyId,
@@ -776,7 +867,11 @@ const recordPunchesBatch = async (req, res) => {
               checkOut: !isCheckIn ? punchDate : null,
               checkInMethod: isCheckIn ? (deviceId ? `BIOMETRIC_${deviceId}` : 'BIOMETRIC_API') : null,
               checkOutMethod: !isCheckIn ? (deviceId ? `BIOMETRIC_${deviceId}` : 'BIOMETRIC_API') : null,
-              status: 'PRESENT'
+              status,
+              lateMinutes,
+              earlyLeaveMinutes,
+              workHours: 0,
+              overtimeHours: 0
             }
           });
         }
