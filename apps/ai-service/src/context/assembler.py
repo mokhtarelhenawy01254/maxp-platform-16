@@ -120,7 +120,7 @@ class ContextAssembler:
                 try:
                     fb_query = text(
                         'SELECT content, role FROM public.facebook_ads_ai_chat_messages '
-                        'WHERE ("sessionId" = :clean_id OR "sessionId" = :raw_id) AND ("isDeleted" IS FALSE OR "isDeleted" IS NULL) '
+                        'WHERE ("sessionId" = :clean_id OR "sessionId" = :raw_id) '
                         'ORDER BY "createdAt" DESC LIMIT :limit'
                     )
                     fb_result = await ctx.session.execute(
@@ -142,6 +142,10 @@ class ContextAssembler:
                                 deduped.pop()
                             return deduped
                 except Exception as fb_err:
+                    try:
+                        await ctx.session.rollback()
+                    except Exception:
+                        pass
                     logger.warning("failed to fetch marketing message history from DB", error=str(fb_err))
 
             # 2. General Agent Studio sessions table (Merchant Copilot, Specialist Agents, Operations, Inventory, etc.)
@@ -170,6 +174,10 @@ class ContextAssembler:
                             deduped.pop()
                         return deduped
             except Exception as studio_err:
+                try:
+                    await ctx.session.rollback()
+                except Exception:
+                    pass
                 logger.warning("failed to fetch agent studio message history from DB", error=str(studio_err))
 
             # 3. Fallback to facebook_ads_ai_chat_messages if not checked above
@@ -177,7 +185,7 @@ class ContextAssembler:
                 try:
                     fb_query = text(
                         'SELECT content, role FROM public.facebook_ads_ai_chat_messages '
-                        'WHERE ("sessionId" = :clean_id OR "sessionId" = :raw_id) AND ("isDeleted" IS FALSE OR "isDeleted" IS NULL) '
+                        'WHERE ("sessionId" = :clean_id OR "sessionId" = :raw_id) '
                         'ORDER BY "createdAt" DESC LIMIT :limit'
                     )
                     fb_result = await ctx.session.execute(
@@ -199,6 +207,10 @@ class ContextAssembler:
                                 deduped.pop()
                             return deduped
                 except Exception as fb_err:
+                    try:
+                        await ctx.session.rollback()
+                    except Exception:
+                        pass
                     logger.warning("failed to fetch dashboard message history from DB", error=str(fb_err))
 
             query = text(
