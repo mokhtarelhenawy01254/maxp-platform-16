@@ -125,9 +125,11 @@ async function seedMarketplace() {
         'بيع سريع',
         'فاتورة بيع فورية'
       ]),
-      isActive: false,
-      isPublic: false,
-      isFeatured: false
+      isActive: true,
+      isPublic: true,
+      isFeatured: false,
+      mainRoute: '/pos',
+      adminRoute: '/pos'
     },
     {
       slug: 'coupons-pro',

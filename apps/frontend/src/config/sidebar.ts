@@ -671,7 +671,7 @@ export const getSidebarConfig = (
                 { to: '/orders/status-templates', icon: FileText, label: t('sidebar.orderStatusTemplates'), requiredPermissions: ['orders.whatsapp-notifications.view'], hidden: !isAppActive('whatsapp-business') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isStoreActive()
+            hidden: user?.role === 'AFFILIATE' || (!isStoreActive() && !isAnyAppActive(['pos-pro', 'order-core', 'cafe-restaurant-pro']))
         },
 
         // 3️⃣.2 أسطول المناديب والتوصيل الداخلي (قسم مستقل شامل معزول تماماً)
@@ -746,7 +746,7 @@ export const getSidebarConfig = (
                     label: isEn ? 'AI Product & Inventory Studio' : 'مركز المنتجات والمخزون الذكي (AI Studio)',
                 },
             ],
-            hidden: user?.role === 'AFFILIATE' || !isStoreActive()
+            hidden: user?.role === 'AFFILIATE' || (!isStoreActive() && !isAnyAppActive(['pos-pro', 'inventory-pro', 'cafe-restaurant-pro']))
         },
 
         // 4️⃣.0 المدونة والـ SEO (Blog & Affiliate) — mens-grooming-pro compatible

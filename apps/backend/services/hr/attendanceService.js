@@ -65,8 +65,191 @@ function parseDbDateInput(value, timezone = "Africa/Cairo") {
 }
 
 class AttendanceService {
+  DAY_NAME_TO_NUMBER = {
+    sunday: 0,
+    monday: 1,
+    tuesday: 2,
+    wednesday: 3,
+    thursday: 4,
+    friday: 5,
+    saturday: 6,
+  };
+
+  NUMBER_TO_DAY_NAME = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
+
+  DEFAULT_WORK_DAYS = [0, 1, 2, 3, 4, 6]; // Saturday through Thursday
+  DEFAULT_REST_DAYS = [5]; // Friday
+
   constructor() {
     // Don't initialize prisma here - get it dynamically
+  }
+
+  parseDayList(raw) {
+    if (!raw) return [];
+    let list = raw;
+    if (typeof list === "string") {
+      try {
+        list = JSON.parse(list);
+      } catch (e) {
+        list = list.split(",").map((s) => s.trim());
+      }
+    }
+    if (!Array.isArray(list)) return [];
+    return list
+      .map((item) => {
+        if (typeof item === "number" && item >= 0 && item <= 6) return item;
+        if (typeof item === "string") {
+          const lower = item.trim().toLowerCase();
+          if (this.DAY_NAME_TO_NUMBER[lower] !== undefined) {
+            return this.DAY_NAME_TO_NUMBER[lower];
+          }
+          const num = Number(lower);
+          if (!isNaN(num) && num >= 0 && num <= 6) return num;
+        }
+        return null;
+      })
+      .filter((n) => n !== null);
+  }
+
+  parseWorkAndRestDays(workDaysRaw, restDaysRaw = null) {
+    const parsedWork = this.parseDayList(workDaysRaw);
+    const parsedRest = this.parseDayList(restDaysRaw);
+
+    let workDays = parsedWork.length > 0 ? [...new Set(parsedWork)] : null;
+    let restDays = parsedRest.length > 0 ? [...new Set(parsedRest)] : null;
+
+    if (!workDays && !restDays) {
+      workDays = [...this.DEFAULT_WORK_DAYS];
+      restDays = [...this.DEFAULT_REST_DAYS];
+    } else if (workDays && !restDays) {
+      restDays = [0, 1, 2, 3, 4, 5, 6].filter((d) => !workDays.includes(d));
+    } else if (!workDays && restDays) {
+      workDays = [0, 1, 2, 3, 4, 5, 6].filter((d) => !restDays.includes(d));
+    }
+
+    return {
+      workDays: workDays.sort((a, b) => a - b),
+      restDays: restDays.sort((a, b) => a - b),
+    };
+  }
+
+  getDayOfWeekInTimezone(date, timezone = "Africa/Cairo") {
+    const d = date instanceof Date ? date : new Date(date);
+    const dateStr = getDateStringInTimezone(d, timezone);
+    const [y, m, day] = dateStr.split("-").map(Number);
+    const localDate = new Date(Date.UTC(y, m - 1, day));
+    return localDate.getUTCDay();
+  }
+
+  isRestDay(date, settings = null, timezone = "Africa/Cairo") {
+    const dow = this.getDayOfWeekInTimezone(date, timezone);
+    const { restDays } = this.parseWorkAndRestDays(
+      settings?.workDays,
+      settings?.restDays || settings?.weeklyRestDays,
+    );
+    return restDays.includes(dow);
+  }
+
+  classifyAttendanceRecord({
+    recordDate,
+    checkIn,
+    checkOut,
+    settings = null,
+    timezone = "Africa/Cairo",
+    shift = null,
+  }) {
+    const isRest = this.isRestDay(recordDate || checkIn, settings, timezone);
+
+    let workHours = 0;
+    if (checkIn && checkOut) {
+      const startMs = new Date(checkIn).getTime();
+      const endMs = new Date(checkOut).getTime();
+      if (endMs > startMs) {
+        workHours = parseFloat(((endMs - startMs) / (1000 * 60 * 60)).toFixed(2));
+      }
+    }
+
+    if (isRest) {
+      return {
+        isRestDay: true,
+        status: "OVERTIME",
+        lateMinutes: 0,
+        earlyLeaveMinutes: 0,
+        workHours,
+        overtimeHours: workHours,
+      };
+    }
+
+    // Normal working day
+    let lateMinutes = 0;
+    let earlyLeaveMinutes = 0;
+    let status = "PRESENT";
+
+    if (checkIn) {
+      const workStartTime = shift?.startTime || settings?.workStartTime || "09:00";
+      const [h, m] = workStartTime.split(":").map(Number);
+      const checkInParts = new Intl.DateTimeFormat("en-US", {
+        timeZone: timezone,
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).formatToParts(new Date(checkIn));
+      const actualH = Number(checkInParts.find((p) => p.type === "hour")?.value || 0);
+      const actualM = Number(checkInParts.find((p) => p.type === "minute")?.value || 0);
+
+      const actualMinutesOfDay = actualH * 60 + actualM;
+      const scheduledMinutesOfDay = h * 60 + m;
+
+      if (actualMinutesOfDay > scheduledMinutesOfDay) {
+        const diffMinutes = actualMinutesOfDay - scheduledMinutesOfDay;
+        const grace = Number(settings?.lateGracePeriod || settings?.lateThreshold || 15);
+        if (diffMinutes > grace) {
+          lateMinutes = diffMinutes;
+          status = "LATE";
+        }
+      }
+    }
+
+    if (checkOut) {
+      const workEndTime = shift?.endTime || settings?.workEndTime || "17:00";
+      const [endH, endM] = workEndTime.split(":").map(Number);
+      const checkOutParts = new Intl.DateTimeFormat("en-US", {
+        timeZone: timezone,
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).formatToParts(new Date(checkOut));
+      const actualEndH = Number(checkOutParts.find((p) => p.type === "hour")?.value || 0);
+      const actualEndM = Number(checkOutParts.find((p) => p.type === "minute")?.value || 0);
+
+      const actualEndMinutesOfDay = actualEndH * 60 + actualEndM;
+      const scheduledEndMinutesOfDay = endH * 60 + endM;
+
+      if (actualEndMinutesOfDay < scheduledEndMinutesOfDay) {
+        const diffEarly = scheduledEndMinutesOfDay - actualEndMinutesOfDay;
+        const earlyGrace = Number(settings?.earlyLeaveGracePeriod || 15);
+        if (diffEarly > earlyGrace) {
+          earlyLeaveMinutes = diffEarly;
+        }
+      }
+    }
+
+    return {
+      isRestDay: false,
+      status,
+      lateMinutes,
+      earlyLeaveMinutes,
+      workHours,
+      overtimeHours: 0,
+    };
   }
 
   get prisma() {
@@ -446,13 +629,24 @@ class AttendanceService {
         timezone,
       );
 
-      // حساب دقائق التأخير
-      let lateMinutes = 0;
-      const gracePeriod = settings?.lateGracePeriod || settings?.lateThresholdMinutes || 15;
-      const graceTime = new Date(workStart.getTime() + gracePeriod * 60000);
+      // التحقق مما إذا كان اليوم يوم راحة أسبوعية
+      const isTodayRestDay = this.isRestDay(todayForCalc, settings, timezone);
 
-      if (now > graceTime) {
-        lateMinutes = Math.floor((now - workStart) / 60000);
+      // حساب دقائق التأخير والحالة
+      let lateMinutes = 0;
+      let status = "PRESENT";
+
+      if (isTodayRestDay) {
+        status = "OVERTIME";
+        lateMinutes = 0;
+      } else {
+        const gracePeriod = settings?.lateGracePeriod || settings?.lateThresholdMinutes || 15;
+        const graceTime = new Date(workStart.getTime() + gracePeriod * 60000);
+
+        if (now > graceTime) {
+          lateMinutes = Math.floor((now - workStart) / 60000);
+          status = "LATE";
+        }
       }
 
       const attendance = existing
@@ -464,7 +658,7 @@ class AttendanceService {
               checkInMethod: data.method || "manual",
               workMode: data.workMode || "OFFICE",
               lateMinutes,
-              status: lateMinutes > 0 ? "LATE" : "PRESENT",
+              status,
             },
           })
         : await this.prisma.attendance.create({
@@ -478,7 +672,7 @@ class AttendanceService {
               checkInMethod: data.method || "manual",
               workMode: data.workMode || "OFFICE",
               lateMinutes,
-              status: lateMinutes > 0 ? "LATE" : "PRESENT",
+              status,
             },
           });
 
@@ -831,9 +1025,16 @@ class AttendanceService {
       const checkInDate = new Date(attendance.checkIn);
       const actualWorkMinutes = Math.max(0, (now - checkInDate) / 60000);
 
+      // التحقق مما إذا كان يوم السجل يوم راحة أسبوعية
+      const isRecordRestDay = this.isRestDay(
+        attendanceDayForCalc,
+        settings,
+        timezone,
+      );
+
       // حساب دقائق الخروج المبكر
       let earlyLeaveMinutes = 0;
-      if (actualWorkMinutes >= 5 && now < workEnd) {
+      if (!isRecordRestDay && actualWorkMinutes >= 5 && now < workEnd) {
         earlyLeaveMinutes = Math.floor((workEnd - now) / 60000);
       }
       console.log(
@@ -846,13 +1047,21 @@ class AttendanceService {
       const breakDuration = (shift?.unpaidBreak === true) ? (shift?.breakDuration || 0) : 0;
       const workHours = Math.max(0, (actualWorkMinutes - breakDuration) / 60);
 
-      // حساب ساعات إضافية
+      // حساب ساعات إضافية والحالة النهائية
       let overtimeHours = 0;
-      const minOvertimeHours = parseFloat(settings?.overtimeMinHours) || 1;
-      if (now > workEnd) {
-        const overtime = (now - workEnd) / 3600000;
-        if (overtime >= minOvertimeHours) {
-          overtimeHours = overtime;
+      let finalStatus = attendance.status;
+
+      if (isRecordRestDay) {
+        finalStatus = "OVERTIME";
+        earlyLeaveMinutes = 0;
+        overtimeHours = workHours; // كامل ساعات العمل في يوم الراحة تُحسب إضافي
+      } else {
+        const minOvertimeHours = parseFloat(settings?.overtimeMinHours) || 1;
+        if (now > workEnd) {
+          const overtime = (now - workEnd) / 3600000;
+          if (overtime >= minOvertimeHours) {
+            overtimeHours = overtime;
+          }
         }
       }
 
@@ -863,6 +1072,8 @@ class AttendanceService {
           checkOutLocation: normalizedLocation,
           checkOutMethod: data.method || "manual",
           workMode: data.workMode || attendance.workMode || "OFFICE",
+          status: finalStatus,
+          lateMinutes: isRecordRestDay ? 0 : attendance.lateMinutes,
           earlyLeaveMinutes,
           workHours: Math.max(0, Math.round(workHours * 100) / 100),
           overtimeHours: Math.round(overtimeHours * 100) / 100,
@@ -883,7 +1094,7 @@ class AttendanceService {
       }
 
       // معالجة الخصم التلقائي للانصراف المبكر
-      if (earlyLeaveMinutes > 0 && actualWorkMinutes >= 5) {
+      if (!isRecordRestDay && earlyLeaveMinutes > 0 && actualWorkMinutes >= 5) {
         try {
           const deductionResult =
             await autoDeductionService.processEarlyCheckout(
@@ -1550,8 +1761,8 @@ class AttendanceService {
       try {
         const autoDeductionService = require("./autoDeductionService");
 
-        // 1. إذا تم تصفير التأخير أو أصبحت الحالة حاضراً بدون تأخير
-        if (metrics.lateMinutes === 0 || metrics.status === "PRESENT") {
+        // 1. إذا تم تصفير التأخير أو أصبحت الحالة حاضراً أو ساعات إضافية (يوم راحة)
+        if (metrics.lateMinutes === 0 || metrics.status === "PRESENT" || metrics.status === "OVERTIME") {
           const lateDeductions = await this.prisma.manualDeduction.findMany({
             where: {
               companyId,
@@ -1830,6 +2041,22 @@ class AttendanceService {
     const settings = await this.prisma.hRSettings.findUnique({
       where: { companyId },
     });
+
+    const isRest = this.isRestDay(date, settings, timezone) || originalData.status === "OVERTIME";
+    if (isRest) {
+      if (checkIn && checkOut) {
+        const actualWorkMinutes = Math.max(0, (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 60000);
+        workHours = Math.max(0, actualWorkMinutes / 60);
+        overtimeHours = workHours;
+      }
+      return {
+        status: "OVERTIME",
+        lateMinutes: 0,
+        earlyLeaveMinutes: 0,
+        workHours: workHours !== null ? Math.round(workHours * 100) / 100 : null,
+        overtimeHours: Math.round(overtimeHours * 100) / 100,
+      };
+    }
 
     const workStartTime =
       shift?.startTime || settings?.workStartTime || "09:00";
@@ -3105,17 +3332,7 @@ class AttendanceService {
         select: { workDays: true },
       });
 
-      let workDays = [1, 2, 3, 4, 5];
-      try {
-        if (settings?.workDays) {
-          workDays =
-            typeof settings.workDays === "string"
-              ? JSON.parse(settings.workDays)
-              : settings.workDays;
-        }
-      } catch (e) {
-        console.error("⚠️ [Attendance] Error parsing workDays settings:", e);
-      }
+      const { workDays } = this.parseWorkAndRestDays(settings?.workDays);
 
       // جلب آخر 60 سجل حضور
       const records = await this.prisma.attendance.findMany({
@@ -3154,7 +3371,7 @@ class AttendanceService {
         const status = recordMap[checkDate.getTime()];
         const isMatch =
           type === "PRESENT"
-            ? status === "PRESENT"
+            ? (status === "PRESENT" || status === "OVERTIME")
             : status && status !== "ABSENT";
 
         if (isMatch) {

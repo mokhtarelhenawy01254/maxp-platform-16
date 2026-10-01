@@ -156,6 +156,11 @@ const statusConfig: Record<
     color: "bg-indigo-100 text-indigo-800",
     icon: Monitor,
   },
+  OVERTIME: {
+    label: "إضافي (يوم راحة)",
+    color: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400",
+    icon: Timer,
+  },
 };
 
 const autoCloseReviewConfig: Record<
@@ -894,6 +899,7 @@ const Attendance: React.FC = () => {
                 <SelectItem value="ON_LEAVE">إجازة</SelectItem>
                 <SelectItem value="HOLIDAY">عطلة</SelectItem>
                 <SelectItem value="REMOTE">عن بُعد</SelectItem>
+                <SelectItem value="OVERTIME">إضافي (يوم راحة)</SelectItem>
               </SelectContent>
             </Select>
             <select
@@ -1245,6 +1251,7 @@ const Attendance: React.FC = () => {
                     <SelectItem value="ON_LEAVE">إجازة</SelectItem>
                     <SelectItem value="HOLIDAY">عطلة</SelectItem>
                     <SelectItem value="REMOTE">عن بُعد</SelectItem>
+                    <SelectItem value="OVERTIME">إضافي (يوم راحة)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -1248,14 +1248,16 @@ async function seedMarketplace() {
         "unitPrice": null,
         "unitName": null,
         "features": "[\"كاشير POS\",\"بيع سريع\",\"فاتورة بيع فورية\"]",
-        "isActive": false,
-        "isPublic": false,
+        "isActive": true,
+        "isPublic": true,
         "isFeatured": false,
         "isPopular": false,
         "category": "ECOMMERCE",
-        "requiredApps": "[\"store\"]",
+        "requiredApps": "[]",
+        "mainRoute": "/pos",
+        "adminRoute": "/pos",
         "trialDays": 14,
-        "icon": "🖥️"
+        "icon": "monitor"
       },
       {
         "slug": "coupons-pro",

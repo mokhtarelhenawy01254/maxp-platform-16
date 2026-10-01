@@ -208,7 +208,7 @@ interface HRSettingsData {
 }
 
 const defaultSettings: HRSettingsData = {
-  workingDays: ["sunday", "monday", "tuesday", "wednesday", "thursday"],
+  workingDays: ["saturday", "sunday", "monday", "tuesday", "wednesday", "thursday"],
 
   annualLeaveDefault: 21,
   sickLeaveDefault: 15,
@@ -227,7 +227,7 @@ const defaultSettings: HRSettingsData = {
   currency: "EGP",
   taxRate: 0, // تم تعديل القيمة الافتراضية للضرائب
   socialInsuranceRate: 0, // تم تعديل القيمة الافتراضية للتأمينات
-  overtimeRate: 1.5,
+  overtimeRate: 1.0,
 
   transportationAllowance: 0,
   housingAllowance: 0,
@@ -1398,6 +1398,38 @@ const HRSettings: React.FC = () => {
                           تم اختيار {settings.workingDays.length} يوم عمل
                         </p>
                       )}
+
+                      {/* Weekly Rest Days Section */}
+                      <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/40 p-3.5 space-y-2.5">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            أيام الراحة الأسبوعية المحددة:
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            (الأيام غير المحددة كأيام عمل تُعتبر راحة أسبوعية)
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {weekDays
+                            .filter((day) => !settings.workingDays.includes(day.value))
+                            .map((day) => (
+                              <Badge
+                                key={day.value}
+                                className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-300 px-3 py-1 font-medium"
+                              >
+                                {day.label} (راحة أسبوعية)
+                              </Badge>
+                            ))}
+                          {weekDays.filter((day) => !settings.workingDays.includes(day.value)).length === 0 && (
+                            <span className="text-xs text-amber-600 font-medium">
+                              لا توجد أيام راحة أسبوعية (كل الأيام عمل)
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed border-t border-slate-200 dark:border-slate-800 pt-2">
+                          قاعدة النظام: أي بصمة حضور لموظف في يوم الراحة تُسجّل تلقائياً كـ <strong>ساعات إضافية (OVERTIME)</strong> بكامل ساعات الحضور الفعلي، مع استبعادها تماماً من أي خصومات تأخير أو غياب (صفر دقائق خصم).
+                        </p>
+                      </div>
                     </div>
 
                     <div className="col-span-2">
@@ -1762,9 +1794,10 @@ const HRSettings: React.FC = () => {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value="1">1.0x (الساعة بساعة - بدون مضاعف)</SelectItem>
                               <SelectItem value="1.25">1.25x</SelectItem>
                               <SelectItem value="1.5">1.5x</SelectItem>
-                              <SelectItem value="2">2x</SelectItem>
+                              <SelectItem value="2">2.0x (ساعة بساعتين)</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

@@ -5651,7 +5651,7 @@ async function upsertHRSettingsCompat(
 
 function mapHRSettingsPayload(settings, notificationHealth) {
   const workDaysArray = safeParseSettingsArray(
-    settings?.workDays || "[1,2,3,4,5]",
+    settings?.workDays || "[0,1,2,3,4,6]",
   );
   const dayNames = [
     "sunday",
@@ -5665,6 +5665,10 @@ function mapHRSettingsPayload(settings, notificationHealth) {
   const workingDays = workDaysArray
     .map((dayIndex) => dayNames[dayIndex])
     .filter(Boolean);
+  const weeklyRestDaysNumbers = [0, 1, 2, 3, 4, 5, 6].filter(
+    (dayIndex) => !workDaysArray.includes(dayIndex),
+  );
+  const weeklyRestDays = weeklyRestDaysNumbers.map((dayIndex) => dayNames[dayIndex]);
 
   return {
     notificationHealth,
@@ -5673,6 +5677,10 @@ function mapHRSettingsPayload(settings, notificationHealth) {
       workEndTime: settings?.workEndTime || "17:00",
       breakDuration: settings?.breakDuration ?? 60,
       workingDays,
+      workDays: workDaysArray,
+      weeklyRestDays,
+      weeklyRestDaysNumbers,
+      restDays: weeklyRestDays,
       annualLeaveDefault: settings?.annualLeaveDefault ?? 21,
       sickLeaveDefault: settings?.sickLeaveDefault ?? 15,
       carryOverLimit: settings?.carryOverLimit ?? 5,
@@ -5682,7 +5690,7 @@ function mapHRSettingsPayload(settings, notificationHealth) {
       currency: "EGP",
       taxRate: Number(settings?.taxRate) || 0,
       socialInsuranceRate: Number(settings?.socialInsuranceRate) || 0,
-      overtimeRate: Number(settings?.overtimeRate) || 1.5,
+      overtimeRate: settings?.overtimeRate !== null && settings?.overtimeRate !== undefined ? Number(settings.overtimeRate) : 1.0,
       allowRemoteCheckIn: true,
       requireLocation: false,
       lateThreshold:
@@ -5874,7 +5882,7 @@ async function getHRSettings(req, res) {
       settings = await upsertHRSettingsCompat(
         prisma,
         companyId,
-        { workDays: JSON.stringify([1, 2, 3, 4, 5]) },
+        { workDays: JSON.stringify([0, 1, 2, 3, 4, 6]) },
         runtimeColumns,
       );
     }
@@ -5983,7 +5991,7 @@ async function updateHRSettings(req, res) {
       permissions,
     } = settingsData;
 
-    // تحويل workingDays من أسماء الأيام إلى أرقام
+    // تحويل workingDays أو weeklyRestDays أو workDays
     const dayNames = [
       "sunday",
       "monday",
@@ -5993,13 +6001,26 @@ async function updateHRSettings(req, res) {
       "friday",
       "saturday",
     ];
-    const workDaysNumbers = workingDays
-      ?.map((day) => dayNames.indexOf(day))
-      .filter((d) => d !== -1) || [1, 2, 3, 4, 5];
+
+    let workDaysNumbers;
+    if (Array.isArray(settingsData.workDays)) {
+      workDaysNumbers = settingsData.workDays
+        .map((d) => (typeof d === "string" ? dayNames.indexOf(d.toLowerCase()) : Number(d)))
+        .filter((d) => d >= 0 && d <= 6);
+    } else if (Array.isArray(workingDays)) {
+      workDaysNumbers = workingDays
+        .map((day) => (typeof day === "string" ? dayNames.indexOf(day.toLowerCase()) : Number(day)))
+        .filter((d) => d >= 0 && d <= 6);
+    } else if (Array.isArray(settingsData.weeklyRestDays) || Array.isArray(settingsData.restDays)) {
+      const restArr = (settingsData.weeklyRestDays || settingsData.restDays)
+        .map((d) => (typeof d === "string" ? dayNames.indexOf(d.toLowerCase()) : Number(d)))
+        .filter((d) => d >= 0 && d <= 6);
+      workDaysNumbers = [0, 1, 2, 3, 4, 5, 6].filter((d) => !restArr.includes(d));
+    }
 
     // بناء object للحقول المتاحة في الـ schema فقط
     const updateData = {
-      workDays: JSON.stringify(workDaysNumbers),
+      ...(workDaysNumbers ? { workDays: JSON.stringify(workDaysNumbers) } : {}),
       annualLeaveDefault:
         annualLeaveDefault !== undefined ? Number(annualLeaveDefault) : 21,
       sickLeaveDefault:
@@ -6009,7 +6030,7 @@ async function updateHRSettings(req, res) {
       socialInsuranceRate:
         socialInsuranceRate !== undefined ? parseFloat(socialInsuranceRate) : 0,
       taxRate: taxRate !== undefined ? parseFloat(taxRate) : 0,
-      overtimeRate: overtimeRate !== undefined ? parseFloat(overtimeRate) : 1.5,
+      ...(overtimeRate !== undefined ? { overtimeRate: parseFloat(overtimeRate) } : {}),
       lateGracePeriod:
         lateGracePeriod !== undefined
           ? Number(lateGracePeriod)
@@ -6308,7 +6329,7 @@ async function getMyCompaniesToday(req, res) {
       });
 
       const present = attendances.filter((a) =>
-        ["PRESENT", "LATE", "HALF_DAY"].includes(a.status),
+        ["PRESENT", "LATE", "HALF_DAY", "OVERTIME"].includes(a.status),
       ).length;
       const late = attendances.filter((a) => a.status === "LATE").length;
       // Absent logic can be complex (did not check in vs marked absent), simplified here:
@@ -6409,7 +6430,7 @@ async function getMyCompaniesAttendanceReport(req, res) {
       });
 
       const presentDays = attendances.filter((a) =>
-        ["PRESENT", "LATE", "HALF_DAY"].includes(a.status),
+        ["PRESENT", "LATE", "HALF_DAY", "OVERTIME"].includes(a.status),
       ).length;
       const lateDays = attendances.filter((a) => a.status === "LATE").length;
       const absentDays = attendances.filter(
@@ -6525,7 +6546,7 @@ async function exportMyCompaniesReport(req, res) {
         where: { companyId, isActive: true },
       });
       const present = attendances.filter((a) =>
-        ["PRESENT", "LATE", "HALF_DAY"].includes(a.status),
+        ["PRESENT", "LATE", "HALF_DAY", "OVERTIME"].includes(a.status),
       ).length;
       const absent = attendances.filter((a) => a.status === "ABSENT").length;
       const hours = attendances.reduce(
@@ -6872,7 +6893,7 @@ async function getEmployeeReport(req, res) {
     const attendanceStats = {
       totalDays: attendanceRecords.length,
       presentDays: attendanceRecords.filter((r) =>
-        ["PRESENT", "LATE", "HALF_DAY", "REMOTE", "EARLY_LEAVE"].includes(
+        ["PRESENT", "LATE", "HALF_DAY", "REMOTE", "EARLY_LEAVE", "OVERTIME"].includes(
           r.status,
         ),
       ).length,

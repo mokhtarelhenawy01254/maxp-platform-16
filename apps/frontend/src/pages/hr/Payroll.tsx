@@ -1344,7 +1344,14 @@ const Payroll: React.FC = () => {
                           )}
                           <TableCell>{formatCurrency(payroll.fullMonthBaseSalary || payroll.baseSalary)}</TableCell>
                           <TableCell className="text-green-600">
-                            +{formatCurrency(payroll.totalAllowances)}
+                            <span className="font-semibold block tabular-nums">
+                              +{formatCurrency(payroll.totalAllowances)}
+                            </span>
+                            {payroll.overtimeAmount && Number(payroll.overtimeAmount) > 0 ? (
+                              <div className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold tabular-nums mt-0.5" title={`ساعات إضافية: ${payroll.overtimeHours || 0}س`}>
+                                إضافي: +{formatCurrency(payroll.overtimeAmount)} ({Number(payroll.overtimeHours).toFixed(1)}س)
+                              </div>
+                            ) : null}
                           </TableCell>
                           <TableCell className="text-red-600">
                             <span className="font-semibold block tabular-nums">
@@ -1782,7 +1789,9 @@ const Payroll: React.FC = () => {
                         })()}
 
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600 text-sm">العمل الإضافي</span>
+                          <span className="text-gray-600 text-sm">
+                            العمل الإضافي {selectedPayroll.overtimeHours ? `(${Number(selectedPayroll.overtimeHours).toFixed(1)} س @ ${selectedPayroll.overtimeRate || 1}x)` : ''}
+                          </span>
                           <span className="font-medium text-sm text-green-700">+{formatCurrency(selectedPayroll.overtimeAmount)}</span>
                         </div>
                         <div className="flex justify-between items-center">

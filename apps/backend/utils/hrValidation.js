@@ -256,7 +256,7 @@ function validateAttendanceData(data) {
 
   // التحقق من الحالة
   if (data.status) {
-    const validStatuses = ['PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'ON_LEAVE', 'HOLIDAY', 'WEEKEND', 'REMOTE'];
+    const validStatuses = ['PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'ON_LEAVE', 'HOLIDAY', 'WEEKEND', 'REMOTE', 'OVERTIME'];
     if (!validStatuses.includes(data.status)) {
       errors.push({ field: 'status', message: 'حالة الحضور غير صحيحة' });
     }

@@ -2405,10 +2405,12 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [],
+    "mainRoute": "/pos",
+    "adminRoute": "/pos",
     "positioning": {
-      "audience": "المتاجر التي تبيع من نقطة البيع أو المعرض مباشرة.",
-      "surface": "داخل صفحة نقطة البيع (POS) لإتمام البيع الفوري.",
-      "outcome": "بيع أسرع مع فواتير فورية وتقليل الأخطاء اليدوية."
+      "audience": "المتاجر ومحلات التجزئة ونقاط البيع التي تبيع بشكل مباشر للعملاء.",
+      "surface": "داخل صفحة كاشير نقطة البيع (POS) لإتمام البيع الفوري.",
+      "outcome": "بيع فوري أسرع مع طباعة فواتير حرارية وتقليل الأخطاء."
     },
     "features": {
       "posCashier": {
@@ -2430,8 +2432,8 @@
         "access": "PAID"
       }
     },
-    "isActive": false,
-    "isPublic": false,
+    "isActive": true,
+    "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
     "icon": "monitor",
@@ -2439,7 +2441,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-05T00:00:00.000Z",
-    "updatedAt": "2026-09-10T20:50:02.655Z"
+    "updatedAt": "2026-10-01T12:00:00.000Z"
   },
   {
     "id": "cat-app-coupons-pro",

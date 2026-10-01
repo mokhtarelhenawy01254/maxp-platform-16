@@ -47,6 +47,7 @@ export const APP_SLUG_ALIASES: Record<string, string[]> = {
     "order-shipping-bosta",
     "order-shipping-qpexpress",
   ],
+  "pos-pro": ["cafe-restaurant-pro", "store-pro", "ecommerce-pro"],
 };
 
 function getCandidateSlugs(slug: string): string[] {

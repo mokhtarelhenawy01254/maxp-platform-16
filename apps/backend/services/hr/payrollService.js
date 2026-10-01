@@ -1021,10 +1021,12 @@ class PayrollService {
     });
 
     // Parse workDays and publicHolidays
-    let workingDaysConfig = [0, 1, 2, 3, 4]; // Default: Sun-Thu (Standard in many MENA offices)
+    let workingDaysConfig = [0, 1, 2, 3, 4, 6]; // Default: Sat-Thu working, Friday rest
     try {
       if (settings?.workDays) {
-        workingDaysConfig = JSON.parse(settings.workDays);
+        workingDaysConfig = typeof settings.workDays === 'string'
+          ? JSON.parse(settings.workDays)
+          : settings.workDays;
       }
     } catch (e) {
       console.error('⚠️ [PAYROLL] Error parsing workDays:', e);
@@ -1140,11 +1142,11 @@ class PayrollService {
     attendance.forEach(a => {
       const dateKey = this.toLocalDateKey(a.date);
       attendanceMapByDate.set(dateKey, a);
-      if (['PRESENT', 'LATE', 'REMOTE'].includes(a.status)) {
+      if (['PRESENT', 'LATE', 'REMOTE', 'OVERTIME'].includes(a.status)) {
         attendedFullDatesSet.add(dateKey);
       } else if (a.status === 'HALF_DAY') {
         halfDayDatesSet.add(dateKey);
-      } else if (['HOLIDAY', 'REST_DAY', 'ON_LEAVE'].includes(a.status)) {
+      } else if (['HOLIDAY', 'REST_DAY', 'ON_LEAVE', 'WEEKEND'].includes(a.status)) {
         restOrHolidayDatesSet.add(dateKey);
       }
     });
@@ -1192,9 +1194,19 @@ class PayrollService {
       sum + (parseFloat(a.overtimeHours) || 0), 0
     );
 
-    // حساب دقائق التأخير والخروج المبكر
-    const totalLateMinutes = attendance.reduce((sum, a) => sum + (a.lateMinutes || 0), 0);
-    const totalEarlyMinutes = attendance.reduce((sum, a) => sum + (a.earlyLeaveMinutes || 0), 0);
+    // حساب دقائق التأخير والخروج المبكر (استبعاد أيام الراحة وحالة OVERTIME)
+    const totalLateMinutes = attendance.reduce((sum, a) => {
+      if (a.status === 'OVERTIME') return sum;
+      const recordDate = new Date(a.date);
+      if (!workingDaysConfig.includes(recordDate.getDay())) return sum;
+      return sum + (a.lateMinutes || 0);
+    }, 0);
+    const totalEarlyMinutes = attendance.reduce((sum, a) => {
+      if (a.status === 'OVERTIME') return sum;
+      const recordDate = new Date(a.date);
+      if (!workingDaysConfig.includes(recordDate.getDay())) return sum;
+      return sum + (a.earlyLeaveMinutes || 0);
+    }, 0);
 
     // الراتب الأساسي وسعر اليوم والساعة والدقيقة
     const empRecord = Array.isArray(employee.employees) ? employee.employees[0] : employee.employees;
@@ -1312,8 +1324,13 @@ class PayrollService {
             // السجل ملغى أو محذوف
             return false;
           }
-          if (d.type === 'LATE' && ((linkedAtt.lateMinutes || 0) === 0 || linkedAtt.status === 'PRESENT')) {
-            // تم تصحيح التأخير لصفر أو أصبحت الحالة حاضر
+          const dayOfWeek = new Date(linkedAtt.date).getDay();
+          if (!workingDaysConfig.includes(dayOfWeek)) {
+            // بصمة حضور في يوم راحة أسبوعية
+            return false;
+          }
+          if (d.type === 'LATE' && ((linkedAtt.lateMinutes || 0) === 0 || linkedAtt.status === 'PRESENT' || linkedAtt.status === 'OVERTIME')) {
+            // تم تصحيح التأخير لصفر أو أصبحت الحالة حاضر أو ساعات إضافية
             return false;
           }
           if (d.type === 'EARLY_LEAVE') {
@@ -1429,7 +1446,12 @@ class PayrollService {
     const lateDetails = [];
 
     const lateOccurrences = attendance
-      .filter(a => (a.lateMinutes > 0 || a.status === 'LATE'))
+      .filter(a => {
+        if (a.status === 'OVERTIME') return false;
+        const recordDate = new Date(a.date);
+        if (!workingDaysConfig.includes(recordDate.getDay())) return false;
+        return (a.lateMinutes > 0 || a.status === 'LATE');
+      })
       .sort((a, b) => new Date(a.date) - new Date(b.date));
 
     const autoDeductionMap = new Map();
@@ -1738,8 +1760,9 @@ class PayrollService {
 
     const totalDeductions = calculatedTotalDeductions;
 
-    // حساب الإضافي
-    const overtimeRate = parseFloat(settings?.overtimeRate) || 1.5;
+    // حساب الإضافي (بدون مضاعف إلا لو مُفعّل من الإعدادات)
+    const parsedOvertimeRate = parseFloat(settings?.overtimeRate);
+    const overtimeRate = (!isNaN(parsedOvertimeRate) && parsedOvertimeRate > 0) ? parsedOvertimeRate : 1.0;
     const overtimeAmount = totalOvertimeHours * hourlyRate * overtimeRate;
 
     // Fetch approved rewards for this period
@@ -1816,7 +1839,7 @@ class PayrollService {
   }
 
 
-  getWorkingDaysInMonth(year, month, uptoDay = null, workDays = [0, 1, 2, 3, 4], publicHolidays = []) {
+  getWorkingDaysInMonth(year, month, uptoDay = null, workDays = [0, 1, 2, 3, 4, 6], publicHolidays = []) {
     const daysInMonth = new Date(year, month, 0).getDate();
     const limit = uptoDay ? Math.min(uptoDay, daysInMonth) : daysInMonth;
     let workingDays = 0;
@@ -1875,7 +1898,7 @@ class PayrollService {
   /**
    * جلب تواريخ أيام العمل المتوقعة في الشهر
    */
-  getWorkingDaysDates(year, month, uptoDay = null, workDays = [0, 1, 2, 3, 4], publicHolidays = []) {
+  getWorkingDaysDates(year, month, uptoDay = null, workDays = [0, 1, 2, 3, 4, 6], publicHolidays = []) {
     const daysInMonth = new Date(year, month, 0).getDate();
     const limit = uptoDay ? Math.min(uptoDay, daysInMonth) : daysInMonth;
     let dates = [];
@@ -1942,7 +1965,7 @@ class PayrollService {
       where: { companyId }
     });
 
-    let workingDaysConfig = [0, 1, 2, 3, 4];
+    let workingDaysConfig = [0, 1, 2, 3, 4, 6];
     let publicHolidays = [];
     try {
       if (settings?.workDays) workingDaysConfig = JSON.parse(settings.workDays);
