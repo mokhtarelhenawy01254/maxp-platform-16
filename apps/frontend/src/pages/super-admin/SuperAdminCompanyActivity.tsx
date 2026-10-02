@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Button } from "../../components/ui/button";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import { Search, RefreshCw, Building2, Activity, Zap, Skull, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, RefreshCw, Building2, Activity, Zap, Skull, ChevronLeft, ChevronRight, UserCheck, Hammer } from "lucide-react";
 import { Input } from "../../components/ui/input";
 
 const PAGE_SIZE = 25;
@@ -20,11 +20,16 @@ type CompanyActivity = {
     users: number; customers: number; recentOrders: number;
     recentConversations: number; recentAiInteractions: number; hasWhatsApp: boolean;
   };
+  today: { actions: number; users: number; apps: string[]; lastBeatAt: string | null };
+  login: { lastAt: string | null; lastUserName: string | null; logins30d: number; users30d: number };
   lastLogin: string | null; lastActivity: string | null; daysSinceLastActivity: number;
   subscription: { status: string };
 };
 
-type Summary = { total: number; active: number; dormant: number; dead: number };
+type Summary = {
+  total: number; active: number; dormant: number; dead: number;
+  workedToday?: number; loggedInToday?: number; windowDays?: number;
+};
 
 const statusColors: Record<string, string> = {
   active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300",
@@ -38,12 +43,36 @@ const statusLabels: Record<string, string> = {
   dead: "ميتة",
 };
 
+const APP_LABELS: Record<string, string> = {
+  "dental-lab": "معمل أسنان",
+  clinic: "عيادة",
+  hr: "موارد بشرية",
+  orders: "طلبات",
+  catalog: "منتجات/مخزون",
+  customers: "عملاء/ولاء",
+  conversations: "محادثات",
+  finance: "حسابات",
+  settings: "إعدادات",
+  ai: "ذكاء اصطناعي",
+  other: "أخرى",
+};
+
 function formatDate(iso: string | null) {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("ar-EG", {
     day: "2-digit", month: "2-digit", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: false,
   });
+}
+
+function formatRelative(iso: string | null) {
+  if (!iso) return "";
+  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (minutes < 1) return "الآن";
+  if (minutes < 60) return `منذ ${minutes} دقيقة`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `منذ ${hours} ساعة`;
+  return `منذ ${Math.floor(hours / 24)} يوم`;
 }
 
 function daysLabel(days: number) {
@@ -57,7 +86,11 @@ function daysLabel(days: number) {
 function SuperAdminCompanyActivity() {
   return (
     <div className="p-4 max-w-[1440px] mx-auto">
-      <h1 className="text-2xl font-bold mb-4">نشاط الشركات</h1>
+      <h1 className="text-2xl font-bold mb-1">نشاط الشركات</h1>
+      <p className="text-xs text-muted-foreground mb-4">
+        «شغل النهاردة» = نبضة نشاط لكل ساعة كحد أقصى من أي تطبيق (معمل، موارد بشرية، طلبات…)، و«آخر حركة» = الأحدث من
+        (تسجيل دخول · عمل داخل أي تطبيق · طلب/محادثة/ذكاء اصطناعي). التصنيف: نشط ≤ 7 أيام · خامل ≤ 30 يوم · ميتة &gt; 30 يوم.
+      </p>
       <Content />
     </div>
   );
@@ -148,7 +181,7 @@ function Content() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -201,27 +234,52 @@ function Content() {
                 </div>
               </CardContent>
             </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">اشتُغل عليها النهاردة</p>
+                    <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{summary?.workedToday ?? "—"}</p>
+                  </div>
+                  <div className="size-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                    <Hammer className="size-5 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">دخل عليها مستخدمون النهاردة</p>
+                    <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">{summary?.loggedInToday ?? "—"}</p>
+                  </div>
+                  <div className="size-10 rounded-full bg-cyan-100 dark:bg-cyan-900 flex items-center justify-center">
+                    <UserCheck className="size-5 text-cyan-600 dark:text-cyan-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          <div className="border rounded bg-card">
+          <div className="border rounded bg-card overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>الشركة</TableHead>
                   <TableHead>الحالة</TableHead>
-                  <TableHead className="text-center">المستخدمون</TableHead>
-                  <TableHead className="text-center">العملاء</TableHead>
-                  <TableHead className="text-center">الطلبيات (30 يوم)</TableHead>
-                  <TableHead className="text-center">المحادثات</TableHead>
-                  <TableHead className="text-center">AI</TableHead>
-                  <TableHead>آخر نشاط</TableHead>
+                  <TableHead className="text-center">شغل النهاردة</TableHead>
+                  <TableHead>آخر حركة</TableHead>
+                  <TableHead>آخر دخول</TableHead>
+                  <TableHead className="text-center">مستخدمون / عملاء</TableHead>
+                  <TableHead className="text-center">طلبات / محادثات / AI (30 يوم)</TableHead>
                   <TableHead>الاشتراك</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paged.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                       لا توجد شركات
                     </TableCell>
                   </TableRow>
@@ -235,21 +293,56 @@ function Content() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={`text-xs ${statusColors[c.status] || ""}`}>
-                          {statusLabels[c.status] || c.status}
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          <Badge className={`text-xs ${statusColors[c.status] || ""}`}>
+                            {statusLabels[c.status] || c.status}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                            {daysLabel(c.daysSinceLastActivity)}
+                          </span>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-center font-mono text-sm">{c.metrics.users}</TableCell>
-                      <TableCell className="text-center font-mono text-sm">{c.metrics.customers}</TableCell>
-                      <TableCell className="text-center font-mono text-sm">{c.metrics.recentOrders}</TableCell>
-                      <TableCell className="text-center font-mono text-sm">{c.metrics.recentConversations}</TableCell>
-                      <TableCell className="text-center font-mono text-sm">{c.metrics.recentAiInteractions}</TableCell>
+                      <TableCell className="text-center">
+                        {c.today?.actions ? (
+                          <div className="flex flex-col items-center"
+                            title={(c.today.apps || []).map(a => APP_LABELS[a] || a).join(" · ")}>
+                            <Badge className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+                              {c.today.actions} نبضة
+                            </Badge>
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                              {c.today.users} مستخدم
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         {c.lastActivity ? (
-                          <span>{formatDate(c.lastActivity)}</span>
+                          <div className="flex flex-col">
+                            <span>{formatDate(c.lastActivity)}</span>
+                            <span className="text-[10px]">{formatRelative(c.lastActivity)}</span>
+                          </div>
                         ) : (
                           <span className="text-slate-400">لا يوجد</span>
                         )}
+                      </TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {c.login?.lastAt ? (
+                          <div className="flex flex-col"
+                            title={`${c.login.logins30d} تسجيل دخول · ${c.login.users30d} مستخدم مختلف (30 يوم)`}>
+                            <span className="font-medium">{c.login.lastUserName || "—"}</span>
+                            <span className="text-[10px] text-muted-foreground">{formatDate(c.login.lastAt)}</span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400">لا يوجد</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center font-mono text-sm">
+                        {c.metrics.users} / {c.metrics.customers}
+                      </TableCell>
+                      <TableCell className="text-center font-mono text-sm">
+                        {c.metrics.recentOrders} / {c.metrics.recentConversations} / {c.metrics.recentAiInteractions}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs">

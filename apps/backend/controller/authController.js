@@ -850,6 +850,43 @@ const login = async (req, res) => {
       }
     }
 
+    // 🫀 [AUTH] سجلّ دخول دائم — يغذّي «مين دخل وامتى» في السوبر أدمن (fire-and-forget، لا يؤثر على تسجيل الدخول)
+    try {
+      const forwarded = req.headers['x-forwarded-for'];
+      const firstForwarded = Array.isArray(forwarded)
+        ? forwarded[0]
+        : String(forwarded || '').split(',')[0];
+      const auditIp = (req.headers['cf-connecting-ip'] || firstForwarded || req.ip || '').trim() || null;
+      const auditName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.email;
+      Promise.resolve(
+        getSharedPrismaClient().activityLog.create({
+          data: {
+            userId: user.id,
+            companyId: user.companyId || null,
+            category: 'AUTH',
+            action: 'LOGIN_SUCCESS',
+            description: `تسجيل دخول: ${auditName}`,
+            targetType: 'USER',
+            targetId: user.id,
+            targetName: user.email || auditName,
+            severity: 'LOW',
+            isSuccess: true,
+            metadata: JSON.stringify({
+              ip: auditIp,
+              userAgent: String(req.headers['user-agent'] || '').slice(0, 500),
+              role: user.role || null,
+              source: 'authController.login',
+            }),
+          },
+          select: { id: true },
+        }),
+      ).catch(() => {
+        /* لا يجب أن يفشل تسجيل الدخول بسبب سجل النشاط */
+      });
+    } catch (auditError) {
+      /* صامت بالقصد */
+    }
+
     await ensureUserCompanySlugs(user);
 
     // Resolve custom roles from Role table when roleRef relation didn't populate

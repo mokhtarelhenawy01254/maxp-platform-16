@@ -460,7 +460,10 @@ router.get("/company-activity", checkPermission("canViewReports"), async (req, r
     const dateThreshold = new Date();
     dateThreshold.setDate(dateThreshold.getDate() - days);
 
-    const [companies, userLastLogin, recentOrders, recentConvs, recentAiLogs, waSessions] = await Promise.all([
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const [companies, userLastLogin, recentOrders, recentConvs, recentAiLogs, waSessions, loginAgg, pulseAgg] = await Promise.all([
       prisma.company.findMany({
         select: {
           id: true, name: true, email: true, phone: true, isActive: true, createdAt: true,
@@ -474,81 +477,152 @@ router.get("/company-activity", checkPermission("canViewReports"), async (req, r
         where: { companyId: { not: null } },
       }),
       prisma.order.groupBy({
-        by: ["companyId"], _count: { id: true },
+        by: ["companyId"], _count: { id: true }, _max: { createdAt: true },
         where: { createdAt: { gte: dateThreshold } },
       }),
       prisma.conversation.groupBy({
-        by: ["companyId"], _count: { id: true },
+        by: ["companyId"], _count: { id: true }, _max: { lastMessageAt: true },
         where: { lastMessageAt: { gte: dateThreshold } },
       }),
       prisma.aiProviderLog.groupBy({
-        by: ["companyId"], _count: { id: true },
+        by: ["companyId"], _count: { id: true }, _max: { createdAt: true },
         where: { createdAt: { gte: dateThreshold }, companyId: { not: null } },
       }),
       prisma.whatsAppSession.findMany({
         select: { companyId: true },
         where: { status: "CONNECTED" },
       }),
+      // 🫀 سجل الدخول الحقيقي (AUTH/LOGIN_SUCCESS) — آخر 30 يوم، مع اسم آخر من دخل
+      prisma.$queryRawUnsafe(`
+        SELECT a."companyId" AS "companyId",
+               COUNT(*)::int AS logins,
+               COUNT(DISTINCT a."userId")::int AS users,
+               MAX(a."createdAt") AS "lastLoginAt",
+               (ARRAY_AGG(COALESCE(a."targetName", a."description") ORDER BY a."createdAt" DESC))[1] AS "lastUserName"
+        FROM activity_logs a
+        WHERE a.category = 'AUTH' AND a.action = 'LOGIN_SUCCESS'
+          AND a."companyId" IS NOT NULL
+          AND a."createdAt" >= NOW() - INTERVAL '30 days'
+        GROUP BY a."companyId"
+      `),
+      // 🫀 نبض النشاط التشغيلي لليوم — أي تطبيق على المنصة
+      prisma.$queryRawUnsafe(`
+        SELECT a."companyId" AS "companyId",
+               COUNT(*)::int AS beats,
+               COUNT(DISTINCT a."userId")::int AS users,
+               MAX(a."createdAt") AS "lastBeatAt",
+               (ARRAY_AGG(DISTINCT a."targetName") FILTER (WHERE a."targetName" IS NOT NULL))[1:6] AS apps
+        FROM activity_logs a
+        WHERE a.category = 'PULSE'
+          AND a."companyId" IS NOT NULL
+          AND a."createdAt" >= $1
+        GROUP BY a."companyId"
+      `, startOfToday),
     ]);
 
     const loginMap = {};
     for (const u of userLastLogin) { if (u.companyId) loginMap[u.companyId] = u._max.lastLoginAt; }
     const orderMap = {};
-    for (const o of recentOrders) orderMap[o.companyId] = o._count.id;
+    const orderLastMap = {};
+    for (const o of recentOrders) {
+      orderMap[o.companyId] = o._count.id;
+      orderLastMap[o.companyId] = o._max?.createdAt || null;
+    }
     const convMap = {};
-    for (const c of recentConvs) convMap[c.companyId] = c._count.id;
+    const convLastMap = {};
+    for (const c of recentConvs) {
+      convMap[c.companyId] = c._count.id;
+      convLastMap[c.companyId] = c._max?.lastMessageAt || null;
+    }
     const aiMap = {};
-    for (const a of recentAiLogs) { if (a.companyId) aiMap[a.companyId] = a._count.id; }
+    const aiLastMap = {};
+    for (const a of recentAiLogs) {
+      if (a.companyId) {
+        aiMap[a.companyId] = a._count.id;
+        aiLastMap[a.companyId] = a._max?.createdAt || null;
+      }
+    }
     const waSet = new Set(waSessions.map(w => w.companyId));
+
+    // 🫀 سجل الدخول: آخر دخول + عدد الدخولات + اسم آخر من دخل (آخر 30 يوم)
+    const loginAggMap = {};
+    for (const row of loginAgg) {
+      if (!row || !row.companyId) continue;
+      loginAggMap[row.companyId] = {
+        lastLoginAt: row.lastLoginAt ? new Date(row.lastLoginAt) : null,
+        logins: Number(row.logins) || 0,
+        users: Number(row.users) || 0,
+        lastUserName: row.lastUserName || null,
+      };
+    }
+
+    // 🫀 نبض اليوم: عدد النبضات + عدد المستخدمين النشطين + التطبيقات التي استُخدمت
+    const pulseMap = {};
+    for (const row of pulseAgg) {
+      if (!row || !row.companyId) continue;
+      pulseMap[row.companyId] = {
+        beats: Number(row.beats) || 0,
+        users: Number(row.users) || 0,
+        lastBeatAt: row.lastBeatAt ? new Date(row.lastBeatAt) : null,
+        apps: Array.isArray(row.apps) ? row.apps.filter(Boolean) : [],
+      };
+    }
 
     const now = new Date();
     const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const pickLatest = (values) => values.reduce((acc, v) => (v && (!acc || v > acc) ? v : acc), null);
 
     const result = companies.map(c => {
-      const lastLogin = loginMap[c.id] || null;
-      const userCount = c._count.users;
-      const customerCount = c._count.customers;
+      const pulse = pulseMap[c.id] || { beats: 0, users: 0, lastBeatAt: null, apps: [] };
+      const loginStats = loginAggMap[c.id] || { lastLoginAt: null, logins: 0, users: 0, lastUserName: null };
+      const loginFallback = loginMap[c.id] ? new Date(loginMap[c.id]) : null;
+      const lastLogin = pickLatest([loginStats.lastLoginAt, loginFallback]);
+
       const recentOrderCount = orderMap[c.id] || 0;
       const recentConvCount = convMap[c.id] || 0;
       const recentAiCount = aiMap[c.id] || 0;
+      const lastCommercialMoment = pickLatest([orderLastMap[c.id], convLastMap[c.id], aiLastMap[c.id]]);
+
+      // «آخر حركة» = الأحدث من: تسجيل دخول، نبض نشاط داخل أي تطبيق، أو حركة تجارية (طلب/محادثة/AI)
+      const lastActivity = pickLatest([lastLogin, pulse.lastBeatAt, lastCommercialMoment]);
       const hasWhatsApp = waSet.has(c.id);
       const subStatus = c.platformSubscription?.status || "NONE";
       const isActive = c.isActive;
-
-      const dates = [lastLogin].filter(Boolean);
-      const lastActivity = dates.length > 0
-        ? dates.reduce((a, b) => a > b ? a : b)
-        : null;
-
-      const hasRecentLogin = lastLogin && lastLogin >= sevenDaysAgo;
-      const hasRecentActivity = recentOrderCount > 0 || recentConvCount > 0 || recentAiCount > 0;
-      const hasAnyUsers = userCount > 0;
-      const hasAnyCustomers = customerCount > 0;
-
-      let status;
-      if (hasRecentLogin || hasRecentActivity || (hasWhatsApp && (hasAnyCustomers || hasAnyUsers))) {
-        status = "active";
-      } else if (hasAnyUsers || hasAnyCustomers || subStatus !== "NONE" || isActive) {
-        status = "dormant";
-      } else {
-        status = "dead";
-      }
+      const hasAnyUsers = (c._count.users || 0) > 0;
+      const hasAnyCustomers = (c._count.customers || 0) > 0;
 
       const daysSinceCreation = Math.floor((now - c.createdAt) / (24 * 60 * 60 * 1000));
       const daysSinceLastActivity = lastActivity
         ? Math.floor((now - lastActivity) / (24 * 60 * 60 * 1000))
         : daysSinceCreation;
 
+      // التصنيف مبني على آخر حركة حقيقية: نشط ≤ 7 أيام · خامل ≤ 30 يوم · ميتة > 30 يوم أو لا شيء إطلاقًا
+      let status;
+      if (lastActivity && lastActivity >= sevenDaysAgo) status = "active";
+      else if (lastActivity && lastActivity >= thirtyDaysAgo) status = "dormant";
+      else if (lastActivity) status = "dead";
+      else if (hasAnyUsers || hasAnyCustomers || subStatus !== "NONE" || isActive) status = "dormant";
+      else status = "dead";
+
       return {
         id: c.id, name: c.name, email: c.email, phone: c.phone,
         isActive: c.isActive, createdAt: c.createdAt, daysSinceCreation, status,
         metrics: {
-          users: userCount, customers: customerCount,
+          users: c._count.users, customers: c._count.customers,
           recentOrders: recentOrderCount, recentConversations: recentConvCount,
           recentAiInteractions: recentAiCount, hasWhatsApp,
         },
-        lastLogin, lastActivity, daysSinceLastActivity,
+        today: { actions: pulse.beats, users: pulse.users, apps: pulse.apps, lastBeatAt: pulse.lastBeatAt },
+        login: {
+          lastAt: lastLogin,
+          lastUserName: loginStats.lastUserName,
+          logins30d: loginStats.logins,
+          users30d: loginStats.users,
+        },
+        lastLogin,
+        lastActivity,
+        daysSinceLastActivity,
         subscription: { status: subStatus },
       };
     });
@@ -560,11 +634,15 @@ router.get("/company-activity", checkPermission("canViewReports"), async (req, r
     const active = result.filter(c => c.status === "active").length;
     const dormant = result.filter(c => c.status === "dormant").length;
     const dead = result.filter(c => c.status === "dead").length;
+    // 🫀 ملخص اليوم: شركات اشتغل عليها فعلًا النهاردة (نبض أو دخول أو حركة تجارية)
+    const workedToday = result.filter(c => c.lastActivity && new Date(c.lastActivity) >= startOfToday).length;
+    const loggedInToday = result.filter(c => c.login.lastAt && new Date(c.login.lastAt) >= startOfToday).length;
 
     res.json({
       success: true,
-      summary: { total, active, dormant, dead },
+      summary: { total, active, dormant, dead, workedToday, loggedInToday, windowDays: days },
       companies: filtered,
+      generatedAt: new Date().toISOString(),
     });
   } catch (error) {
     console.error("[SA] company-activity error:", error.message);

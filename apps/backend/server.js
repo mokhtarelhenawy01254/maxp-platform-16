@@ -615,6 +615,17 @@ app.use(express.json({ limit: "15mb", verify: captureRawJsonBody }));
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 app.use(cookieParser());
 
+// 🫀 [TENANT-PULSE] نبض نشاط الشركات — يسجّل نبضة واحدة لكل شركة كل ساعة (بعد إرسال الرد، بدون تأثير على زمن الاستجابة).
+// يُغذّي عمود «شغل النهاردة» و«آخر حركة» في /super-admin/company-activity لأي تطبيق (معمل، HR، طلبات، …).
+try {
+  const { tenantPulse } = require("./middleware/tenantPulse");
+  app.use(tenantPulse);
+  console.log("🫀 [TENANT-PULSE] Tenant pulse middleware mounted");
+} catch (error) {
+  console.error("⚠️ [TENANT-PULSE] Failed to mount tenant pulse middleware:", error.message);
+}
+
+
 // Static serving for uploads (task attachments, images, documents)
 const uploadsStaticPath = path.resolve(__dirname, 'uploads');
 if (fs.existsSync(uploadsStaticPath)) {
@@ -1423,6 +1434,14 @@ try {
     "❌ [DENTAL-LAB-OVERDUE-CRON] Failed to start dental lab overdue service:",
     error,
   );
+}
+
+// 🧹 Activity log retention — يُقلّم نبضات النشاط (PULSE) القديمة ليمنع تضخم الجدول
+try {
+  const { startActivityLogRetentionCron } = require("./cron/activityLogRetentionCron");
+  startActivityLogRetentionCron();
+} catch (error) {
+  console.error("❌ [ACTIVITY-RETENTION] Failed to start activity log retention cron:", error.message);
 }
 
 // Product Embedding Cron — daily backfill via Python ai-service
