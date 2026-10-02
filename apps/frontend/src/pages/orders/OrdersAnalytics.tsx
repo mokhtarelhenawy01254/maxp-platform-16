@@ -7,6 +7,7 @@ import {
   ArrowTopRightOnSquareIcon,
   CalendarIcon,
   ChevronDownIcon,
+  BoltIcon,
 } from "@heroicons/react/24/outline";
 
 // Modular Analytics Components
@@ -190,6 +191,16 @@ export const OrdersAnalytics: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => navigate("/analytics/orders/fulfillment-velocity")}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200/80 dark:border-blue-800 transition-all active:scale-[0.97]"
+              title="سرعة الإنجاز وشحن اليوم وتوزيع تواريخ ورود الطلبات"
+            >
+              <BoltIcon className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+              <span className="hidden sm:inline">شحن اليوم (سرعة الإنجاز)</span>
+            </button>
+
             <button
               type="button"
               onClick={() => navigate("/analytics/orders")}

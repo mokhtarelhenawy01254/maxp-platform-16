@@ -1,8 +1,10 @@
-import React, { Suspense, useState } from "react";
-import { Calendar, Grid3X3, GitBranch, Route, Clock, Flag, Users, Hourglass, ClipboardCheck } from "lucide-react";
+import React, { Suspense, useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Calendar, Grid3X3, GitBranch, Route, Clock, Flag, Users, Hourglass, ClipboardCheck, Zap } from "lucide-react";
 import { LoadingState, ModeToggle, type MovementFilterProps, type MovementMode } from "./orderMovementShared";
 
 const StatusMatrixTab = React.lazy(() => import("./tabs/StatusMatrixTab"));
+const VelocityTab = React.lazy(() => import("../fulfillmentVelocity/FulfillmentVelocityPage"));
 const SankeyTab = React.lazy(() => import("./tabs/SankeyTab"));
 const PathsTab = React.lazy(() => import("./tabs/PathsTab"));
 const DwellTimeTab = React.lazy(() => import("./tabs/DwellTimeTab"));
@@ -13,6 +15,7 @@ const ApprovalsTab = React.lazy(() => import("./tabs/ApprovalsTab"));
 
 type TabId =
   | "matrix"
+  | "velocity"
   | "sankey"
   | "paths"
   | "dwell"
@@ -23,6 +26,7 @@ type TabId =
 
 const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "matrix", label: "مصفوفة الانتقالات", icon: Grid3X3 },
+  { id: "velocity", label: "سرعة الإنجاز وشحن اليوم (Vintage)", icon: Zap },
   { id: "sankey", label: "خريطة التدفق", icon: GitBranch },
   { id: "paths", label: "تحليل المسارات", icon: Route },
   { id: "dwell", label: "زمن المكوث", icon: Clock },
@@ -57,11 +61,32 @@ const daysAgoStr = (n: number) => {
 };
 
 export default function OrderMovementPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get("tab") as TabId | null;
+  const [activeTab, setActiveTab] = useState<TabId>(() => {
+    if (urlTab && ["matrix", "velocity", "sankey", "paths", "dwell", "outcomes", "team", "aging", "approvals"].includes(urlTab)) {
+      return urlTab;
+    }
+    return "matrix";
+  });
+
+  useEffect(() => {
+    if (urlTab && ["matrix", "velocity", "sankey", "paths", "dwell", "outcomes", "team", "aging", "approvals"].includes(urlTab)) {
+      setActiveTab(urlTab);
+    }
+  }, [urlTab]);
+
+  const handleTabChange = (id: TabId) => {
+    setActiveTab(id);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("tab", id);
+    setSearchParams(newParams, { replace: true });
+  };
+
   const [period, setPeriod] = useState("30");
   const [startDate, setStartDate] = useState(daysAgoStr(29));
   const [endDate, setEndDate] = useState(todayStr());
   const [mode, setMode] = useState<MovementMode>("all");
-  const [activeTab, setActiveTab] = useState<TabId>("matrix");
 
   const applyPeriod = (p: string) => {
     setPeriod(p);
@@ -71,12 +96,18 @@ export default function OrderMovementPage() {
     setEndDate(todayStr());
   };
 
-  const filterProps: MovementFilterProps = { startDate, endDate, mode };
+  const filterProps: MovementFilterProps = {
+    startDate,
+    endDate,
+    mode,
+    onSwitchToVelocity: () => handleTabChange("velocity"),
+  };
 
   const renderTab = () => {
     const common = { key: activeTab, ...filterProps };
     switch (activeTab) {
       case "matrix": return <StatusMatrixTab {...common} />;
+      case "velocity": return <VelocityTab embedded />;
       case "sankey": return <SankeyTab {...common} />;
       case "paths": return <PathsTab {...common} />;
       case "dwell": return <DwellTimeTab {...common} />;
@@ -149,7 +180,7 @@ export default function OrderMovementPage() {
             {TABS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
-                onClick={() => setActiveTab(id)}
+                onClick={() => handleTabChange(id)}
                 className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium transition-all ${
                   activeTab === id
                     ? "bg-gradient-to-l from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/20"

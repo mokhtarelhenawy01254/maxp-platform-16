@@ -43,13 +43,22 @@ export const OverviewPipelineFlow: React.FC<OverviewPipelineFlowProps> = ({
             توزيع تدفق الطلبات عبر محطات التشغيل من التسجيل وحتى التحصيل النهائي
           </p>
         </div>
-        <Link
-          to="/analytics/orders/status-movement"
-          className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
-        >
-          <span>مصفوفة انتقال الحالات التفصيلية</span>
-          <ArrowRightIcon className="h-3 w-3 rotate-180" />
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            to="/analytics/orders/fulfillment-velocity"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline bg-blue-50 dark:bg-blue-950/40 px-2 py-1 rounded-md"
+          >
+            <span>سرعة الإنجاز وشحن اليوم</span>
+            <ArrowRightIcon className="h-3 w-3 rotate-180" />
+          </Link>
+          <Link
+            to="/analytics/orders/status-movement"
+            className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:underline"
+          >
+            <span>مصفوفة انتقال الحالات</span>
+            <ArrowRightIcon className="h-3 w-3 rotate-180" />
+          </Link>
+        </div>
       </div>
 
       {/* Segmented Pipeline Bar */}

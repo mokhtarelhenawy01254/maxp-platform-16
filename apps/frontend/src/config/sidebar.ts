@@ -663,6 +663,7 @@ export const getSidebarConfig = (
                 { to: '/orders/activity-log', icon: Clock, label: isEn ? 'Orders Activity Log' : 'سجل نشاط الطلبات', requiredPermissions: ['orders.view'] },
                 { to: '/orders/quick-status', icon: RefreshCcw, label: t('sidebar.quickStatusChange'), requiredPermissions: ['orders.quickstatus.view'], hidden: !isAppActive('quick-status') },
                 { to: '/orders/analytics', icon: BarChart3, label: t('sidebar.orderAnalytics'), requiredPermissions: ['orders.stats.view'], hidden: !isAnyAppActive(['analytics-advanced', 'analytics-basic', 'orders-analytics']) },
+                { to: '/analytics/orders/fulfillment-velocity', icon: Zap, label: isEn ? 'Fulfillment Velocity & Vintage' : t('sidebar.fulfillmentVelocity', 'سرعة الإنجاز وشحن اليوم'), requiredPermissions: ['orders.stats.view'] },
                 { to: '/orders/status-summary', icon: FileBarChart, label: t('sidebar.orderStatusSummary'), requiredPermissions: ['orders.status-summary.view'], hidden: !isAppActive('status-summary') },
                 { to: '/returns/settings', icon: Cog, label: t('sidebar.returnSettings'), requiredPermissions: ['orders.return-settings.view'], hidden: !isAppActive('returns-settings') },
                 { to: '/platform-integrations', icon: Zap, label: t('sidebar.platformIntegrations'), requiredPermissions: ['orders.integrations.view'], hidden: !isAnyAppActive(['woocommerce-pro', 'webhooks-pro']) },
