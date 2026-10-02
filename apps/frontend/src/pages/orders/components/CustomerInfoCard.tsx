@@ -13,6 +13,7 @@ import {
   ShoppingBagIcon,
 } from "@heroicons/react/24/outline";
 import { WhatsAppIcon } from "../../../components/icons/brands";
+import { OrderCallButton } from "../../../components/telephony/OrderCallButton";
 import { OrderDetailsType, Government, Area } from "../types";
 import { GovernorateAreaSearch } from "../../../components/ui/GovernorateAreaSearch";
 import { validateEgyptianPhone, toStandardDigits } from "../../../utils/validation";
@@ -455,16 +456,27 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
                   </span>
                 )}
               </div>
-              {order.customerPhone && getWhatsAppChatUrl(order.customerPhone) && (
-                <Link
-                  to={getWhatsAppChatUrl(order.customerPhone)!}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition active:scale-97 shrink-0 shadow-xs"
-                  title="فتح محادثة العميل على واتساب المنصة"
-                >
-                  <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>محادثة واتساب</span>
-                </Link>
-              )}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {order.customerPhone && (
+                  <OrderCallButton
+                    orderId={order.id}
+                    orderNumber={order.orderNumber}
+                    customerName={order.customerName}
+                    customerPhone={order.customerPhone}
+                    compact
+                  />
+                )}
+                {order.customerPhone && getWhatsAppChatUrl(order.customerPhone) && (
+                  <Link
+                    to={getWhatsAppChatUrl(order.customerPhone)!}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition active:scale-97 shrink-0 shadow-xs"
+                    title="فتح محادثة العميل على واتساب المنصة"
+                  >
+                    <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>محادثة واتساب</span>
+                  </Link>
+                )}
+              </div>
             </div>
           )}
         </div>

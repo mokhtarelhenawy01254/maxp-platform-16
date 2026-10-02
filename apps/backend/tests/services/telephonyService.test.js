@@ -1,9 +1,36 @@
+const mockPrisma = {
+  callAttemptLog: {
+    findFirst: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    findMany: jest.fn()
+  },
+  order: {
+    findFirst: jest.fn(),
+    update: jest.fn()
+  },
+  employeeDevice: {
+    findFirst: jest.fn(),
+    upsert: jest.fn()
+  }
+};
+
+jest.mock('../../services/sharedDatabase', () => ({
+  getSharedPrismaClient: jest.fn(() => mockPrisma)
+}));
+
+jest.mock('../../services/socketService', () => ({
+  io: {
+    to: jest.fn().mockReturnThis(),
+    emit: jest.fn()
+  }
+}));
+
 const telephonyService = require('../../services/telephonyService');
-const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 
 describe('TelephonyService - Production Grade Unit Tests', () => {
   const companyId = 'test_comp_telephony_1';
-  const otherCompanyId = 'test_comp_telephony_2';
   const userId = 'test_user_telephony_1';
   const deviceId = 'test_device_uuid_123';
 
@@ -13,21 +40,22 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
 
   describe('Outbound Phone Normalization (E.164 & Egyptian Formats)', () => {
     test('normalizes standard 11-digit Egyptian mobile starting with 01', async () => {
-      // Mock prisma calls
-      const prisma = getSharedPrismaClient();
-      jest.spyOn(prisma.callAttemptLog, 'findFirst').mockResolvedValue(null);
-      jest.spyOn(prisma.order, 'findFirst').mockResolvedValue({
+      mockPrisma.callAttemptLog.findFirst.mockResolvedValue(null);
+      mockPrisma.order.findFirst.mockResolvedValue({
         id: 'ord_1',
         orderNumber: '1001',
         customerName: 'أحمد محمود',
         customerPhone: '01012345678',
         companyId
       });
-      jest.spyOn(telephonyService, 'getDevicePresence').mockResolvedValue({
-        isOnline: true,
-        device: { id: 'dev_1', deviceId, deviceName: 'Samsung A15' }
+      mockPrisma.employeeDevice.findFirst.mockResolvedValue({
+        id: 'dev_1',
+        deviceId,
+        deviceName: 'Samsung A15',
+        lastSeenAt: new Date(),
+        isOnline: true
       });
-      jest.spyOn(prisma.callAttemptLog, 'create').mockImplementation(({ data }) =>
+      mockPrisma.callAttemptLog.create.mockImplementation(({ data }) =>
         Promise.resolve({ id: 'log_1', ...data })
       );
 
@@ -43,18 +71,20 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
     });
 
     test('rejects non-Egyptian or invalid phone format to prevent toll fraud', async () => {
-      const prisma = getSharedPrismaClient();
-      jest.spyOn(prisma.callAttemptLog, 'findFirst').mockResolvedValue(null);
-      jest.spyOn(prisma.order, 'findFirst').mockResolvedValue({
+      mockPrisma.callAttemptLog.findFirst.mockResolvedValue(null);
+      mockPrisma.order.findFirst.mockResolvedValue({
         id: 'ord_fraud',
         orderNumber: '9999',
         customerName: 'مجهول',
-        customerPhone: '0900123456', // Premium rate / invalid
+        customerPhone: '01912345678', // Invalid Egyptian carrier (019)
         companyId
       });
-      jest.spyOn(telephonyService, 'getDevicePresence').mockResolvedValue({
-        isOnline: true,
-        device: { id: 'dev_1', deviceId, deviceName: 'Samsung A15' }
+      mockPrisma.employeeDevice.findFirst.mockResolvedValue({
+        id: 'dev_1',
+        deviceId,
+        deviceName: 'Samsung A15',
+        lastSeenAt: new Date(),
+        isOnline: true
       });
 
       await expect(
@@ -69,10 +99,9 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
 
   describe('Tenant Isolation & Rate Limiting Enforcement', () => {
     test('strictly enforces Tenant Isolation - cannot call orders of another company', async () => {
-      const prisma = getSharedPrismaClient();
-      jest.spyOn(prisma.callAttemptLog, 'findFirst').mockResolvedValue(null);
+      mockPrisma.callAttemptLog.findFirst.mockResolvedValue(null);
       // Order belongs to other company, so finding with companyId returns null
-      jest.spyOn(prisma.order, 'findFirst').mockResolvedValue(null);
+      mockPrisma.order.findFirst.mockResolvedValue(null);
 
       await expect(
         telephonyService.initiateCall({
@@ -84,9 +113,8 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
     });
 
     test('enforces 20-second rate limit between calls for the same user', async () => {
-      const prisma = getSharedPrismaClient();
       // Mock an attempt from 5 seconds ago
-      jest.spyOn(prisma.callAttemptLog, 'findFirst').mockResolvedValue({
+      mockPrisma.callAttemptLog.findFirst.mockResolvedValue({
         id: 'log_recent',
         companyId,
         userId,
@@ -103,19 +131,15 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
     });
 
     test('blocks outbound call when employee device is offline (Presence Guard)', async () => {
-      const prisma = getSharedPrismaClient();
-      jest.spyOn(prisma.callAttemptLog, 'findFirst').mockResolvedValue(null);
-      jest.spyOn(prisma.order, 'findFirst').mockResolvedValue({
+      mockPrisma.callAttemptLog.findFirst.mockResolvedValue(null);
+      mockPrisma.order.findFirst.mockResolvedValue({
         id: 'ord_1',
         orderNumber: '1001',
         customerName: 'أحمد',
         customerPhone: '01123456789',
         companyId
       });
-      jest.spyOn(telephonyService, 'getDevicePresence').mockResolvedValue({
-        isOnline: false,
-        device: null
-      });
+      mockPrisma.employeeDevice.findFirst.mockResolvedValue(null);
 
       await expect(
         telephonyService.initiateCall({
@@ -129,20 +153,19 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
 
   describe('Call Completion & TelephonyManager Official Duration', () => {
     test('updates CallAttemptLog with official duration and increments order attempts', async () => {
-      const prisma = getSharedPrismaClient();
       const sessionId = 'call_test_123';
 
-      jest.spyOn(prisma.callAttemptLog, 'findUnique').mockResolvedValue({
+      mockPrisma.callAttemptLog.findUnique.mockResolvedValue({
         id: 'log_1',
         sessionId,
         orderId: 'ord_1',
         companyId,
         callerPhone: null
       });
-      jest.spyOn(prisma.callAttemptLog, 'update').mockImplementation(({ data }) =>
+      mockPrisma.callAttemptLog.update.mockImplementation(({ data }) =>
         Promise.resolve({ id: 'log_1', sessionId, ...data })
       );
-      jest.spyOn(prisma.order, 'update').mockResolvedValue({ id: 'ord_1' });
+      mockPrisma.order.update.mockResolvedValue({ id: 'ord_1' });
 
       const updated = await telephonyService.completeCall({
         companyId,
@@ -157,7 +180,7 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
       expect(updated.durationSeconds).toBe(85);
       expect(updated.callStatus).toBe('COMPLETED');
       expect(updated.result).toBe('reached');
-      expect(prisma.order.update).toHaveBeenCalledWith(
+      expect(mockPrisma.order.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'ord_1' },
           data: expect.objectContaining({

@@ -457,10 +457,17 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
       {/* 4. Action Command Bar */}
       <section className="pt-3">
         {order.isIncomplete ? (
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {/* Confirm / Convert Button */}
             <button
               type="button"
-              onClick={() => onConvertIncomplete?.(order.cartId || order.id)}
+              onClick={() => {
+                if (onConvertIncomplete) {
+                  void onConvertIncomplete(order.cartId || order.id);
+                } else {
+                  onConfirm(order);
+                }
+              }}
               disabled={isBusy}
               className="flex min-h-[38px] items-center justify-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-bold text-white transition-all active:scale-[0.98] hover:bg-amber-700 disabled:opacity-50"
             >
@@ -468,22 +475,35 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
               <span>
                 {busyAction === 'confirm'
                   ? isArabic
-                    ? 'جارٍ التحويل…'
-                    : 'Converting…'
+                    ? 'جارٍ الاعتماد…'
+                    : 'Confirming…'
                   : isArabic
-                  ? '⚡ استرجاع واعتماد كطلب مؤكد'
-                  : 'Convert to Confirmed Order'}
+                  ? '⚡ اعتماد وتأكيد الطلب'
+                  : 'Confirm Order'}
               </span>
             </button>
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex min-h-[38px] items-center justify-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400"
+
+            {/* Follow-up Button */}
+            <button
+              type="button"
+              onClick={() => onOpenFollowUp(order)}
+              disabled={isBusy}
+              className="flex min-h-[38px] items-center justify-center gap-1.5 rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs font-bold text-blue-600 transition-all active:scale-[0.98] hover:bg-blue-500/20 disabled:opacity-50 dark:text-blue-400"
             >
-              <ChatBubbleOvalLeftEllipsisIcon className="h-4 w-4" />
-              <span>{isArabic ? 'إرسال عرض استرجاع واتساب' : 'Send WhatsApp Recovery'}</span>
-            </a>
+              <CalendarIcon className="h-4 w-4" />
+              <span>{t('orders.scheduleFollowUp')}</span>
+            </button>
+
+            {/* Cancel Button */}
+            <button
+              type="button"
+              onClick={() => onCancel(order)}
+              disabled={isCancelled || isBusy}
+              className="flex min-h-[38px] items-center justify-center gap-1.5 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs font-bold text-destructive transition-all active:scale-[0.98] hover:bg-destructive/20 disabled:opacity-50"
+            >
+              <XCircleIcon className="h-4 w-4" />
+              <span>{t('orders.cancelOrder')}</span>
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">

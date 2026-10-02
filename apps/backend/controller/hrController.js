@@ -5763,7 +5763,7 @@ function mapHRSettingsPayload(settings, notificationHealth) {
         settings?.paidPermissionMinutesPerMonth !== undefined &&
         settings?.paidPermissionMinutesPerMonth !== null
           ? Number(settings.paidPermissionMinutesPerMonth)
-          : (settings?.companyId === "h2m-1" ? 120 : 0),
+          : 0,
       permissionLeadDays:
         settings?.permissionLeadDays !== undefined &&
         settings?.permissionLeadDays !== null
@@ -5780,7 +5780,7 @@ function mapHRSettingsPayload(settings, notificationHealth) {
           settings?.paidPermissionMinutesPerMonth !== undefined &&
           settings?.paidPermissionMinutesPerMonth !== null
             ? Number(settings.paidPermissionMinutesPerMonth)
-            : (settings?.companyId === "h2m-1" ? 120 : 0),
+            : 0,
         permissionLeadDays:
           settings?.permissionLeadDays !== undefined &&
           settings?.permissionLeadDays !== null

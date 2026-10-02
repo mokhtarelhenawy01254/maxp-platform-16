@@ -10,6 +10,7 @@ import {
 import { saveLastPath } from "./utils/postAuthRouting";
 import { pushNotificationService } from "./services/pushNotificationService";
 import { isCapacitorNative } from "./config/environment";
+import { telephonyClientService } from "./services/telephonyService";
 // fallback for old deployed bundles that reference undefined getStatusText
 // (injected as inline script in index.html instead to avoid tree-shaking)
 
@@ -1856,6 +1857,7 @@ const AppContent = () => {
   useEffect(() => {
     if (isAuthenticated && user) {
       pushNotificationService.syncTokenWithBackend();
+      telephonyClientService.initMobileTelephonyAgent();
     }
   }, [isAuthenticated, user]);
 

@@ -103,7 +103,7 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
 
           return (
             <article
-              key={order.id}
+              key={order.id || order.cartId || order.orderNumber}
               onClick={() => onSelectOrder(order.id)}
               className={`group relative cursor-pointer p-3 transition-colors ${
                 isSelected

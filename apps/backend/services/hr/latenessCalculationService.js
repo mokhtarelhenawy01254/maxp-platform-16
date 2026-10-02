@@ -212,7 +212,7 @@ class LatenessCalculationService {
       let effectiveLateMinutes = lateMinutes;
       let remainingPaidQuota = (settings?.paidPermissionMinutesPerMonth !== undefined && settings?.paidPermissionMinutesPerMonth !== null)
         ? Number(settings.paidPermissionMinutesPerMonth)
-        : (companyId === 'h2m-1' ? 120 : 0);
+        : 0;
       let extraMinutesToday = 0;
       let isCompensatedToday = false;
 

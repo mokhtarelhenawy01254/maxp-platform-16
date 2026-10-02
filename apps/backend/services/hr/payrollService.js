@@ -1398,7 +1398,7 @@ class PayrollService {
     // 1.05. Permissions Accounting (حساب الأذونات: المدفوع حتى 120 دقيقة، والإضافي خصم أو تعويض)
     const monthlyPaidPermissionQuota = (settings?.paidPermissionMinutesPerMonth !== undefined && settings?.paidPermissionMinutesPerMonth !== null)
       ? Number(settings.paidPermissionMinutesPerMonth)
-      : (companyId === 'h2m-1' ? 120 : 0);
+      : 0;
 
     let cumulativePermissionMins = 0;
     const permissionLines = [];

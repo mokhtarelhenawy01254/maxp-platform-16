@@ -112,13 +112,18 @@ beforeEach(() => {
   mockPost = apiClient.post as jest.Mock;
   mockGet.mockReset();
   mockPost.mockReset();
-  mockGet.mockResolvedValue(
-    mockOrdersResponse({
-      orders: [],
-      stats: defaultStats(0),
-      pagination: { total: 0, page: 1, limit: 50, pages: 1 },
-    }),
-  );
+  mockGet.mockImplementation((url: string) => {
+    if (url.includes('/orders-new/incomplete')) {
+      return Promise.resolve({ data: { success: true, data: [] } });
+    }
+    return Promise.resolve(
+      mockOrdersResponse({
+        orders: [],
+        stats: defaultStats(0),
+        pagination: { total: 0, page: 1, limit: 50, pages: 1 },
+      }),
+    );
+  });
   mockPost.mockResolvedValue({ data: { success: true, data: {} } });
 });
 
@@ -217,21 +222,28 @@ describe("AgentWorkspace", () => {
   });
 
   it("loads more orders on button click and appends page 2", async () => {
-    mockGet
-      .mockResolvedValueOnce(
+    mockGet.mockImplementation((url: string, config?: any) => {
+      if (url.includes("/orders-new/incomplete")) {
+        return Promise.resolve({ data: { success: true, data: [] } });
+      }
+      const requestedPage = config?.params?.page || 1;
+      if (requestedPage === 2) {
+        return Promise.resolve(
+          mockOrdersResponse({
+            orders: [makeOrder({ id: "o2", orderNumber: "ORD-2" })],
+            stats: defaultStats(60),
+            pagination: { total: 60, page: 2, limit: 50, pages: 2 },
+          }),
+        );
+      }
+      return Promise.resolve(
         mockOrdersResponse({
           orders: [makeOrder({ id: "o1", orderNumber: "ORD-1" })],
           stats: defaultStats(60),
           pagination: { total: 60, page: 1, limit: 50, pages: 2 },
         }),
-      )
-      .mockResolvedValueOnce(
-        mockOrdersResponse({
-          orders: [makeOrder({ id: "o2", orderNumber: "ORD-2" })],
-          stats: defaultStats(60),
-          pagination: { total: 60, page: 2, limit: 50, pages: 2 },
-        }),
       );
+    });
 
     renderWorkspace();
 
@@ -247,7 +259,6 @@ describe("AgentWorkspace", () => {
         params: expect.objectContaining({ page: 2 }),
       }),
     );
-    expect(mockGet).toHaveBeenCalledTimes(2);
   });
 
   it("sends quick-action confirm and shows a success toast", async () => {
@@ -341,24 +352,32 @@ describe("AgentWorkspace", () => {
   });
 
   it("removes order instantly from queue when quick-action confirm succeeds", async () => {
-    mockGet
-      .mockResolvedValueOnce(
-        mockOrdersResponse({
-          orders: [
-            makeOrder({ id: "o1", orderNumber: "ORD-1" }),
-            makeOrder({ id: "o2", orderNumber: "ORD-2" }),
-          ],
-          stats: defaultStats(2),
-          pagination: { total: 2, page: 1, limit: 50, pages: 1 },
-        }),
-      )
-      .mockResolvedValueOnce(
+    let callCount = 0;
+    mockGet.mockImplementation((url: string) => {
+      if (url.includes("/orders-new/incomplete")) {
+        return Promise.resolve({ data: { success: true, data: [] } });
+      }
+      callCount++;
+      if (callCount === 1) {
+        return Promise.resolve(
+          mockOrdersResponse({
+            orders: [
+              makeOrder({ id: "o1", orderNumber: "ORD-1" }),
+              makeOrder({ id: "o2", orderNumber: "ORD-2" }),
+            ],
+            stats: defaultStats(2),
+            pagination: { total: 2, page: 1, limit: 50, pages: 1 },
+          }),
+        );
+      }
+      return Promise.resolve(
         mockOrdersResponse({
           orders: [makeOrder({ id: "o2", orderNumber: "ORD-2" })],
           stats: defaultStats(1),
           pagination: { total: 1, page: 1, limit: 50, pages: 1 },
         }),
       );
+    });
 
     renderWorkspace();
 
@@ -421,10 +440,10 @@ describe("AgentWorkspace", () => {
     expect(screen.getByText("(15)")).toBeInTheDocument();
   });
 
-  it("fetches abandoned carts and renders recover CTA when incomplete tab is active", async () => {
+  it("fetches abandoned carts and merges them into pending queue", async () => {
     mockCurrentUser = { id: "u1", role: "AGENT" };
     mockGet.mockImplementation((url: string) => {
-      if (url === "/orders-new/incomplete") {
+      if (url.includes("/orders-new/incomplete")) {
         return Promise.resolve({
           data: {
             success: true,
@@ -454,23 +473,27 @@ describe("AgentWorkspace", () => {
       }
       return Promise.resolve(
         mockOrdersResponse({
-          orders: [],
-          stats: { ...defaultStats(0), incomplete: 1 },
-          pagination: { total: 0, page: 1, limit: 50, pages: 1 },
+          orders: [makeOrder({ id: "o1", orderNumber: "ORD-1", customerName: "محمود حسن" })],
+          stats: { ...defaultStats(1), incomplete: 1 },
+          pagination: { total: 1, page: 1, limit: 50, pages: 1 },
         }),
       );
     });
 
     render(
-      <MemoryRouter initialEntries={["/orders/workspace?tab=incomplete"]}>
+      <MemoryRouter initialEntries={["/orders/workspace?tab=pending"]}>
         <AgentWorkspace />
       </MemoryRouter>,
     );
 
-    // Verify incomplete cart is loaded and shows recovery CTA
+    // Verify both normal pending order and incomplete cart are loaded in pending queue
+    const normalNames = await screen.findAllByText("محمود حسن");
+    expect(normalNames.length).toBeGreaterThanOrEqual(1);
     const nameElements = await screen.findAllByText("سارة أحمد");
     expect(nameElements.length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByRole("button", { name: /Convert to Confirmed Order|استرجاع واعتماد/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /اعتماد وتأكيد الطلب|Confirm Order|confirmOrder/i }),
+    ).toBeInTheDocument();
   });
 
   it("renders live edit items button in inspector", async () => {

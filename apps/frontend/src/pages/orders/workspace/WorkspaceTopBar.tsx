@@ -45,13 +45,15 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
 
+  const pendingCount = (stats?.pending || 0) + (stats?.incomplete || 0);
+  const totalCount = (stats?.total || 0) + (stats?.incomplete || 0);
+
   const tabs: { key: FilterTab; label: string; count?: number }[] = [
-    { key: 'pending', label: t('orders.workspacePending'), count: stats?.pending },
-    { key: 'incomplete', label: isArabic ? 'سلات متروكة' : 'Abandoned Carts', count: stats?.incomplete },
+    { key: 'pending', label: t('orders.workspacePending'), count: pendingCount },
     { key: 'followup', label: t('orders.workspaceFollowUpLater'), count: stats?.followup },
     { key: 'confirmed', label: t('orders.workspaceConfirmed'), count: stats?.confirmed },
     { key: 'cancelled', label: t('orders.workspaceCancelled'), count: stats?.cancelled },
-    { key: 'all', label: t('orders.workspaceAll'), count: stats?.total },
+    { key: 'all', label: t('orders.workspaceAll'), count: totalCount },
   ];
 
   return (

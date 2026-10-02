@@ -554,7 +554,7 @@ class PermissionService {
 
             const paidQuota = (settings?.paidPermissionMinutesPerMonth !== undefined && settings?.paidPermissionMinutesPerMonth !== null)
                 ? Number(settings.paidPermissionMinutesPerMonth)
-                : (companyId === 'h2m-1' ? 120 : 0);
+                : 0;
 
             const warningThreshold = (settings?.permissionWarningAfter !== undefined && settings?.permissionWarningAfter !== null)
                 ? Number(settings.permissionWarningAfter)

@@ -26,6 +26,7 @@ import orderConfirmationService, {
 } from '../../services/orderConfirmationService';
 import api from '../../services/api';
 import PostponeOrderModal from './components/PostponeOrderModal';
+import { OrderCallButton } from '../../components/telephony/OrderCallButton';
 
 interface ConfirmationOrderItem {
   id: string;
@@ -359,6 +360,19 @@ const OrderRow = React.memo(({
           <CreditCardIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>الدفع</span>
         </Link>
+
+        {/* زر الاتصال الهاتفي الحقيقي عبر هاتف الموظف المقترن */}
+        <OrderCallButton
+          orderId={order.id}
+          orderNumber={order.orderNumber}
+          customerName={order.customerName}
+          customerPhone={order.customerPhone}
+          compact
+          onConfirm={() => onConfirm(order.id)}
+          onNoAnswer={() => onLogCall(order, 'unreached')}
+          onPostpone={() => onPostpone(order)}
+          onCancel={() => onCancel(order)}
+        />
 
         <button
           onClick={() => onLogCall(order, 'unreached')}
