@@ -175,11 +175,39 @@ const formatWorkspaceOrderRecord = (order, isGuest, assignedAt, assignedTo = nul
   const rawShippingAddress = isGuest
     ? order.shippingAddress
     : (order.shippingAddress || order.customerAddress || '');
-  const shippingAddressStr = typeof rawShippingAddress === 'string'
-    ? rawShippingAddress
-    : (typeof rawShippingAddress === 'object' && rawShippingAddress !== null
-        ? (rawShippingAddress.address || rawShippingAddress.street || '')
-        : '');
+
+  let shippingAddressStr = '';
+  let secondaryPhone = null;
+
+  if (typeof rawShippingAddress === 'string') {
+    const trimmed = rawShippingAddress.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed && typeof parsed === 'object') {
+          shippingAddressStr = parsed.address || parsed.addressLine1 || parsed.street || '';
+          if (parsed.phone2) secondaryPhone = String(parsed.phone2).trim();
+        } else {
+          shippingAddressStr = rawShippingAddress;
+        }
+      } catch {
+        shippingAddressStr = rawShippingAddress;
+      }
+    } else {
+      shippingAddressStr = rawShippingAddress;
+    }
+  } else if (typeof rawShippingAddress === 'object' && rawShippingAddress !== null) {
+    shippingAddressStr = rawShippingAddress.address || rawShippingAddress.addressLine1 || rawShippingAddress.street || '';
+    if (rawShippingAddress.phone2) secondaryPhone = String(rawShippingAddress.phone2).trim();
+  }
+
+  // Also check notes for alternative phone number pattern
+  if (!secondaryPhone && order.notes) {
+    const phoneMatch = String(order.notes).match(/(?:هاتف بديل|رقم بديل|هاتف آخر)[:\s]*([0-9]{10,11})/i);
+    if (phoneMatch && phoneMatch[1]) {
+      secondaryPhone = phoneMatch[1].trim();
+    }
+  }
 
   let attribution = null;
   if (order.metadata) {
@@ -223,6 +251,7 @@ const formatWorkspaceOrderRecord = (order, isGuest, assignedAt, assignedTo = nul
     type: isGuest ? 'GUEST' : 'REGULAR',
     customerName: isGuest ? order.guestName : (order.customerName || `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim()),
     customerPhone: isGuest ? order.guestPhone : (order.customerPhone || order.customer?.phone || ''),
+    secondaryPhone: secondaryPhone || null,
     governorate: order.governorate || order.shippingAddress?.governorate || '',
     city: order.city || order.shippingAddress?.city || '',
     shippingAddress: shippingAddressStr,

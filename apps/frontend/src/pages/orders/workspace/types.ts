@@ -55,6 +55,7 @@ export interface WorkspaceOrder {
   type?: OrderType;
   customerName: string;
   customerPhone: string;
+  secondaryPhone?: string | null;
   governorate: string;
   city: string;
   shippingAddress?: string;

@@ -48,10 +48,27 @@ interface WorkspaceInspectorProps {
   ) => Promise<void>;
 }
 
+function parseCleanAddress(raw?: string): string {
+  if (!raw) return '';
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed === 'object') {
+        return parsed.address || parsed.addressLine1 || parsed.street || '';
+      }
+    } catch {
+      return raw;
+    }
+  }
+  return raw;
+}
+
 function buildWhatsAppUrl(order: WorkspaceOrder, isArabic: boolean): string {
-  const cleanPhone = (order.customerPhone || '').replace(/\D/g, '');
+  const cleanPhone = (order.customerPhone || '').replace(/[^0-9]/g, '');
   if (!cleanPhone) return '#';
-  const phone = cleanPhone.startsWith('01') ? `2${cleanPhone}` : cleanPhone;
+
+  const phone = cleanPhone.startsWith('0') ? `2${cleanPhone}` : cleanPhone;
 
   const itemsList =
     order.items
@@ -61,6 +78,8 @@ function buildWhatsAppUrl(order: WorkspaceOrder, isArabic: boolean): string {
       })
       .join('\n') || '';
 
+  const cleanAddr = parseCleanAddress(order.shippingAddress) || [order.governorate, order.city].filter(Boolean).join('، ');
+
   if (order.isIncomplete) {
     const message = isArabic
       ? `أهلاً بحضرتك أ/ ${order.customerName}،\nلاحظنا اهتمامك بطلب:\n${itemsList}\nولم يتم استكمال الطلب حتى الآن. هل واجهت أي صعوبة في الدفع أو العنوان؟ يسعدنا مساعدتك وتأكيد الطلب لك فوراً!`
@@ -69,8 +88,8 @@ function buildWhatsAppUrl(order: WorkspaceOrder, isArabic: boolean): string {
   }
 
   const message = isArabic
-    ? `أهلاً بحضرتك أ/ ${order.customerName}،\nبخصوص طلبك رقم #${order.orderNumber}:\n${itemsList}\nالإجمالي: ${order.total} ج.م\nالعنوان: ${order.shippingAddress || [order.governorate, order.city].filter(Boolean).join('، ')}\nهل نعتمد الشحن اليوم؟`
-    : `Hello ${order.customerName},\nRegarding your order #${order.orderNumber}:\n${itemsList}\nTotal: ${order.total}\nAddress: ${order.shippingAddress || [order.governorate, order.city].filter(Boolean).join(', ')}\nWould you like to confirm for shipment?`;
+    ? `أهلاً بحضرتك أ/ ${order.customerName}،\nبخصوص طلبك رقم #${order.orderNumber}:\n${itemsList}\nالإجمالي: ${order.total} ج.م\nالعنوان: ${cleanAddr}\nهل نعتمد الشحن اليوم؟`
+    : `Hello ${order.customerName},\nRegarding your order #${order.orderNumber}:\n${itemsList}\nTotal: ${order.total}\nAddress: ${cleanAddr}\nWould you like to confirm for shipment?`;
 
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }
@@ -101,7 +120,7 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
   const [isSavingCustomer, setIsSavingCustomer] = useState(false);
   const [customerName, setCustomerName] = useState(order?.customerName || '');
   const [customerPhone, setCustomerPhone] = useState(order?.customerPhone || '');
-  const [shippingAddress, setShippingAddress] = useState(order?.shippingAddress || '');
+  const [shippingAddress, setShippingAddress] = useState(parseCleanAddress(order?.shippingAddress));
 
   // Reset local edit states when selected order changes
   React.useEffect(() => {
@@ -110,7 +129,7 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
     if (order) {
       setCustomerName(order.customerName || '');
       setCustomerPhone(order.customerPhone || '');
-      setShippingAddress(order.shippingAddress || '');
+      setShippingAddress(parseCleanAddress(order.shippingAddress));
     }
   }, [order?.id]);
 
@@ -170,7 +189,10 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
           </div>
           {order.abandonReason && (
             <p className="mt-1 text-muted-foreground">
-              {isArabic ? 'سبب التوقف:' : 'Abandon reason:'} {order.abandonReason}
+              {isArabic ? 'سبب التوقف:' : 'Abandon reason:'}{' '}
+              {typeof order.abandonReason === 'string'
+                ? order.abandonReason
+                : (order.abandonReason as any)?.code || JSON.stringify(order.abandonReason)}
             </p>
           )}
         </div>
@@ -198,9 +220,15 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
                 </button>
               )}
             </div>
-            <p className="mt-0.5 font-mono text-xs text-muted-foreground" dir="ltr">
-              {order.customerPhone || t('orders.noPhone')}
-            </p>
+            <div className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-xs text-muted-foreground" dir="ltr">
+              <span>{order.customerPhone || t('orders.noPhone')}</span>
+              {order.secondaryPhone && order.secondaryPhone !== order.customerPhone && (
+                <span className="inline-flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.2 text-[11px] font-semibold text-foreground">
+                  <span className="text-[10px] text-muted-foreground">{isArabic ? 'بديل:' : 'Alt:'}</span>
+                  <span>{order.secondaryPhone}</span>
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Quick Communication Buttons */}
@@ -289,7 +317,7 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
           <div className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
             <MapPinIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
             <span className="leading-snug">
-              {[order.governorate, order.city, order.shippingAddress].filter(Boolean).join(' • ') || '—'}
+              {[order.governorate, order.city, parseCleanAddress(order.shippingAddress)].filter(Boolean).join(' • ') || '—'}
             </span>
           </div>
         )}
