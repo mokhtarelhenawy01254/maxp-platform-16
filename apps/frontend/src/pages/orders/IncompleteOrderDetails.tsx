@@ -220,6 +220,9 @@ const IncompleteOrderDetails: React.FC = () => {
       const data = response.data;
       if (data?.success) {
         toast.success(t("orders.incompleteConvertSuccess"));
+        if (data?.conversionLogFailed) {
+          toast.warning(t("orders.incompleteConvertLogFailed"), { duration: 8000 });
+        }
         const orderNumber = data.data?.orderNumber || data.data?.id;
         if (orderNumber) {
           navigate(`/orders/${encodeURIComponent(String(orderNumber))}`);
@@ -244,6 +247,9 @@ const IncompleteOrderDetails: React.FC = () => {
             const forceData = forceResponse.data;
             if (forceData?.success) {
               toast.success(t("orders.incompleteConvertSuccess"));
+              if (forceData?.conversionLogFailed) {
+                toast.warning(t("orders.incompleteConvertLogFailed"), { duration: 8000 });
+              }
               const orderNumber = forceData.data?.orderNumber || forceData.data?.id;
               if (orderNumber) {
                 navigate(`/orders/${encodeURIComponent(String(orderNumber))}`);

@@ -286,6 +286,9 @@ const IncompleteOrders: React.FC = () => {
       const data = response.data;
       if (data?.success) {
         toast.success(t("orders.incompleteConvertSuccess"));
+        if (data?.conversionLogFailed) {
+          toast.warning(t("orders.incompleteConvertLogFailed"), { duration: 8000 });
+        }
         setConfirmConvertCartId(null);
         handleRetry();
       } else {
@@ -305,6 +308,9 @@ const IncompleteOrders: React.FC = () => {
             );
             if (forceRes.data?.success) {
               toast.success(t("orders.incompleteConvertSuccess"));
+              if (forceRes.data?.conversionLogFailed) {
+                toast.warning(t("orders.incompleteConvertLogFailed"), { duration: 8000 });
+              }
               setConfirmConvertCartId(null);
               handleRetry();
               return;

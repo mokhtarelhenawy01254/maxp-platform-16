@@ -1,34 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
-import {
-  ChartBarIcon,
-  ShoppingCartIcon,
-  CurrencyDollarIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  ClockIcon,
-  TruckIcon,
-  UsersIcon,
-  RectangleStackIcon,
-  ArrowDownTrayIcon,
-} from "@heroicons/react/24/outline";
+import { ArrowDownTrayIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
-import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
 import PeriodSelector, {
   PeriodRange,
@@ -41,22 +14,14 @@ import {
   setWithExpiry,
 } from "../../../utils/storage";
 
-interface DashboardStats {
-  totalOrders: number;
-  completedOrders: number;
-  cancelledOrders: number;
-  returnedOrders: number;
-  pendingOrders: number;
-  totalRevenue: number;
-  averageOrderValue: number;
-  conversionRate: number;
-  multiPieceOrders: number;
-  multiPiecePercentage: number;
-  dailyTrend: Array<{ date: string; orders: number; revenue: number }>;
-}
+import { DashboardStats } from "./overview/types";
+import OverviewAlertBanner from "./overview/OverviewAlertBanner";
+import OverviewKpiStrip from "./overview/OverviewKpiStrip";
+import OverviewPipelineFlow from "./overview/OverviewPipelineFlow";
+import OverviewDualTrendChart from "./overview/OverviewDualTrendChart";
+import OverviewPulseMatrix from "./overview/OverviewPulseMatrix";
 
 const OverviewDashboard: React.FC = () => {
-  const { t } = useTranslation();
   const { user } = useAuth();
   const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
@@ -70,15 +35,15 @@ const OverviewDashboard: React.FC = () => {
     try {
       setExporting(true);
       const params: Record<string, string> = {};
-      if (range?.startDate) params.startDate = range.startDate;
-      if (range?.endDate) params.endDate = range.endDate;
+      if (range?.startDate) params["startDate"] = range.startDate;
+      if (range?.endDate) params["endDate"] = range.endDate;
 
       const response = await apiClient.get("/orders/export", {
         params,
         responseType: "blob",
       });
 
-      const blob = new Blob([response.data], {
+      const blob = new Blob([response.data as BlobPart], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
       const url = window.URL.createObjectURL(blob);
@@ -102,7 +67,6 @@ const OverviewDashboard: React.FC = () => {
 
   const cacheKey = useMemo(() => {
     let companyId = "unknown";
-
     const storefrontCompanyId = localStorage.getItem("storefront_companyId");
     if (storefrontCompanyId) {
       companyId = storefrontCompanyId;
@@ -112,77 +76,120 @@ const OverviewDashboard: React.FC = () => {
       try {
         const storedCompany = localStorage.getItem("company");
         if (storedCompany) {
-          const parsedCompany = JSON.parse(storedCompany);
+          const parsedCompany = JSON.parse(storedCompany) as { id?: string } | null;
           companyId = parsedCompany?.id || companyId;
         }
       } catch {
-        companyId = companyId;
-      }
-
-      if (companyId === "unknown") {
-        try {
-          const rawUser = localStorage.getItem("user");
-          const parsedUser = rawUser ? JSON.parse(rawUser) : null;
-          companyId =
-            parsedUser?.companyId || parsedUser?.company?.id || companyId;
-        } catch {
-          companyId = companyId;
-        }
+        // ignore fallback
       }
     }
 
     return createStorageKey(
-      "orders-overview-dashboard",
+      "orders-overview-dashboard-v2",
       `${companyId}:${range?.period || ""}:${range?.startDate || ""}:${range?.endDate || ""}`,
     );
   }, [range, user?.company?.id, user?.companyId]);
 
   const fetchDashboardData = useCallback(
-    async ({ signal, background = false } = {}) => {
+    async ({
+      signal,
+      background = false,
+    }: { signal?: AbortSignal; background?: boolean } = {}) => {
       try {
         if (!background) {
           setLoading(true);
           setError(null);
         }
 
-        const [storeData, dailyData] = await Promise.all([
-          analyticsService.getStoreAnalytics(
-            range?.period,
-            range?.startDate,
-            range?.endDate,
-            undefined,
-            signal,
-          ),
-          analyticsService.getDailyAnalytics(
-            range?.period,
-            range?.startDate,
-            range?.endDate,
-            signal,
-          ),
-        ]);
+        const [storeResult, dailyResult, codResult, todayOpsResult] =
+          await Promise.allSettled([
+            analyticsService.getStoreAnalytics(
+              range?.period,
+              range?.startDate,
+              range?.endDate,
+              undefined,
+              signal,
+            ),
+            analyticsService.getDailyAnalytics(
+              range?.period,
+              range?.startDate,
+              range?.endDate,
+              signal,
+            ),
+            analyticsService.getCODPerformanceAnalytics(
+              range?.period,
+              range?.startDate,
+              range?.endDate,
+            ),
+            analyticsService.getTodayOps(),
+          ]);
 
-        if (storeData.success && dailyData.success) {
-          const storeStats = storeData.data;
-          const aov = Number(storeStats.averageOrderValue ?? storeStats.avgOrderValue ?? 0);
+        const storeVal = storeResult.status === "fulfilled" ? (storeResult.value as any) : null;
+        const dailyVal = dailyResult.status === "fulfilled" ? (dailyResult.value as any) : null;
+        const codVal = codResult.status === "fulfilled" ? (codResult.value as any) : null;
+        const todayOpsVal = todayOpsResult.status === "fulfilled" ? (todayOpsResult.value as any) : null;
+
+        if (storeVal?.success) {
+          const storeStats = storeVal.data || {};
+          const dailyTrend = dailyVal?.success ? dailyVal.data || [] : [];
+          const codStats = codVal?.success ? codVal.data || {} : {};
+          const todayOps = todayOpsVal?.success ? todayOpsVal.data || {} : {};
+
+          const aov = Number(
+            storeStats.averageOrderValue ?? storeStats.avgOrderValue ?? 0,
+          );
+          const ordersByStatus = storeStats.ordersByStatus || {};
+
           const nextStats: DashboardStats = {
             totalOrders: Number(storeStats.totalOrders || 0),
-            completedOrders: Number(storeStats.completedOrders || 0),
-            cancelledOrders: Number(storeStats.cancelledOrders || 0),
-            returnedOrders: Number(storeStats.returnedOrders || 0),
-            pendingOrders: Number(storeStats.pendingOrders || 0),
+            completedOrders: Number(
+              storeStats.completedOrders || ordersByStatus.delivered || 0,
+            ),
+            cancelledOrders: Number(
+              storeStats.cancelledOrders || ordersByStatus.cancelled || 0,
+            ),
+            returnedOrders: Number(
+              storeStats.returnedOrders || ordersByStatus.returned || 0,
+            ),
+            pendingOrders: Number(
+              storeStats.pendingOrders || ordersByStatus.pending || 0,
+            ),
+            processingOrders: Number(
+              ordersByStatus.processing || ordersByStatus.preparations || 0,
+            ),
+            shippedOrders: Number(ordersByStatus.shipped || 0),
+            confirmedOrders: Number(ordersByStatus.confirmed || 0),
             totalRevenue: Number(storeStats.totalRevenue || 0),
             averageOrderValue: isNaN(aov) ? 0 : aov,
-            conversionRate: Number(storeStats.conversionRate || 0),
+            deliveryRate: Number(
+              storeStats.deliveryRate || codStats.successRate || 0,
+            ),
             multiPieceOrders: Number(storeStats.multiPieceOrders || 0),
             multiPiecePercentage: Number(storeStats.multiPiecePercentage || 0),
-            dailyTrend: dailyData.data || [],
+            singlePieceOrders: Number(storeStats.singlePieceOrders || 0),
+            totalPieces: Number(storeStats.totalPieces || 0),
+            codOrders: Number(storeStats.codOrders || 0),
+            prepaidOrders: Number(storeStats.prepaidOrders || 0),
+            lostRevenue: Number(codStats.lostRevenue || 0),
+            returnRate: Number(codStats.returnRate || 0),
+            cancellationRate: Number(codStats.cancellationRate || 0),
+            dailyTrend,
+            prevPeriod: storeStats.prevPeriod || null,
+            regionalPerformance: codStats.regionalPerformance || [],
+            todayPendingCount:
+              (todayOps?.daySnapshot?.pendingList?.length || 0) +
+              (todayOps?.daySnapshot?.pendingListGuests?.length || 0),
+            todayConfirmsCount: todayOps?.todayActions?.confirms || 0,
           };
+
           setStats(nextStats);
           setWithExpiry(cacheKey, nextStats, CACHE_TTL_MS);
+        } else if (storeResult.status === "rejected") {
+          throw storeResult.reason;
         }
       } catch (err: any) {
         if (!background) {
-          setError(err.message || "حدث خطأ في جلب البيانات");
+          setError(err.message || "حدث خطأ في جلب بيانات التحليلات");
         }
       } finally {
         if (!background) {
@@ -208,86 +215,23 @@ const OverviewDashboard: React.FC = () => {
     return () => controller.abort();
   }, [cacheKey, fetchDashboardData]);
 
-  const StatCard: React.FC<{
-    title: string;
-    value: string | number;
-    subBadge?: string;
-    description: string;
-    icon: React.ElementType;
-    color: string;
-    trend?: number;
-    link?: string;
-  }> = ({ title, value, subBadge, description, icon: Icon, color, trend, link }) => {
-    const content = (
-      <div
-        className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow flex flex-col justify-between h-full"
-      >
-        <div>
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
-            <div className={`p-2.5 rounded-lg shrink-0 ${color}`}>
-              <Icon className="h-5 w-5 text-white" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2 mt-2 flex-wrap">
-            <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
-              {value}
-            </p>
-            {subBadge && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 tabular-nums">
-                {subBadge}
-              </span>
-            )}
-          </div>
-          {trend !== undefined && (
-            <div
-              className={`flex items-center mt-2 text-xs font-medium ${trend >= 0 ? "text-green-600" : "text-red-600"}`}
-            >
-              {trend >= 0 ? (
-                <ArrowTrendingUpIcon className="h-3.5 w-3.5 ml-1" />
-              ) : (
-                <ArrowTrendingDownIcon className="h-3.5 w-3.5 ml-1" />
-              )}
-              <span>{Math.abs(trend)}% عن الفترة السابقة</span>
-            </div>
-          )}
-        </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-700/60 leading-relaxed">
-          {description}
-        </p>
-      </div>
-    );
-
-    return link ? <Link to={link} className="block h-full">{content}</Link> : content;
-  };
-
-  const COLORS = ["#10B981", "#EF4444", "#F59E0B", "#6366F1"];
-
-  const orderStatusData = stats
-    ? [
-        { name: "مكتمل", value: stats.completedOrders, color: "#10B981" },
-        { name: "ملغي", value: stats.cancelledOrders, color: "#EF4444" },
-        { name: "مرتجع", value: stats.returnedOrders, color: "#F59E0B" },
-        { name: "قيد الانتظار", value: stats.pendingOrders, color: "#6366F1" },
-      ]
-    : [];
-
   if (loading && !stats) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center min-h-[360px]">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent" />
       </div>
     );
   }
 
-  if (error) {
+  if (error && !stats) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl text-center">
-        <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-        <p className="text-red-600 dark:text-red-400">{error}</p>
+      <div className="bg-rose-50 dark:bg-rose-950/20 p-6 rounded-xl border border-rose-200 dark:border-rose-900/30 text-center">
+        <XCircleIcon className="h-10 w-10 text-rose-500 mx-auto mb-3" />
+        <p className="text-rose-700 dark:text-rose-300 text-sm font-medium">{error}</p>
         <button
-          onClick={fetchDashboardData}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          type="button"
+          onClick={() => fetchDashboardData()}
+          className="mt-3 px-4 py-2 bg-rose-600 text-white text-xs font-semibold rounded-lg hover:bg-rose-700 active:scale-[0.98] transition-all"
         >
           إعادة المحاولة
         </button>
@@ -295,222 +239,64 @@ const OverviewDashboard: React.FC = () => {
     );
   }
 
+  if (!stats) return null;
+
   return (
-    <div className="space-y-6" dir="rtl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="space-y-4 sm:space-y-5" dir="rtl">
+      {/* 1. Header Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-gray-100 dark:border-white/5">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            نظرة عامة على الأداء
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+            نظرة عامة على أداء الطلبات
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            ملخص شامل لأداء المتجر وحركة الطلبات والمبيعات
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+            مركز القيادة التنفيذي: مؤشرات التسليم والسيولة وحركة دورة حياة الأوردر
           </p>
         </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
+
+        <div className="flex items-center gap-2.5 w-full sm:w-auto flex-wrap">
           <button
+            type="button"
             onClick={handleExportOrders}
             disabled={exporting}
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors shadow-sm disabled:opacity-50"
-            title="تصدير بيانات الطلبات وعدد القطع للفترة المحددة"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#121214] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50"
+            title="تصدير بيانات الطلبات للفترة المحددة بصيغة Excel"
           >
-            <ArrowDownTrayIcon className={`h-4 w-4 ${exporting ? "animate-bounce" : ""}`} />
-            <span>{exporting ? "جاري التصدير..." : "تصدير الطلبات (Excel)"}</span>
+            <ArrowDownTrayIcon
+              className={`h-3.5 w-3.5 ${exporting ? "animate-bounce" : ""}`}
+            />
+            <span>{exporting ? "جاري التصدير…" : "تصدير (Excel)"}</span>
           </button>
           <PeriodSelector onRangeChange={setRange} />
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 lg:gap-5">
-        <StatCard
-          title="إجمالي الطلبات"
-          value={`${stats?.totalOrders?.toLocaleString() || 0} طلب`}
-          description="إجمالي كافة الطلبات المسجلة خلال الفترة (باستثناء المسودات والمكرر والمحذوف)"
-          icon={ShoppingCartIcon}
-          color="bg-blue-500"
-          link="/analytics/orders/orders"
-        />
-        <StatCard
-          title="الطلبات اللي فيها أكتر من قطعة"
-          value={`${stats?.multiPieceOrders?.toLocaleString() || 0} طلب`}
-          subBadge={`${stats?.multiPiecePercentage || 0}% من الطلبات`}
-          description="الطلبات التي تحتوي على قطعتين أو أكثر ونسبتها من إجمالي الطلبات"
-          icon={RectangleStackIcon}
-          color="bg-indigo-600"
-        />
-        <StatCard
-          title="الطلبات المكتملة"
-          value={`${stats?.completedOrders?.toLocaleString() || 0} طلب`}
-          subBadge={stats?.totalOrders ? `${((stats.completedOrders / stats.totalOrders) * 100).toFixed(1)}%` : undefined}
-          description="الطلبات التي تم تسليمها بنجاح للعميل خلال الفترة"
-          icon={CheckCircleIcon}
-          color="bg-green-500"
-        />
-        <StatCard
-          title="إجمالي الإيرادات"
-          value={formatPrice(stats?.totalRevenue || 0)}
-          description="مجموع قيمة المبيعات للطلبات المؤكدة والناجحة خلال الفترة"
-          icon={CurrencyDollarIcon}
-          color="bg-purple-500"
-          link="/analytics/orders/revenue"
-        />
-        <StatCard
-          title="متوسط قيمة الطلب"
-          value={formatPrice(stats?.averageOrderValue || 0)}
-          description="متوسط قيمة الشراء للطلب الواحد خلال هذه الفترة"
-          icon={ArrowTrendingUpIcon}
-          color="bg-orange-500"
-        />
-      </div>
+      {/* 2. Operational Alert Banner */}
+      <OverviewAlertBanner
+        pendingCount={stats.todayPendingCount}
+        lostRevenue={stats.lostRevenue}
+        formattedLostRevenue={formatPrice(stats.lostRevenue)}
+        cancellationRate={stats.cancellationRate}
+      />
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Daily Trend Chart */}
-        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            اتجاه الطلبات اليومي
-          </h3>
-          <div className="min-w-0 h-[300px]">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <AreaChart data={stats?.dailyTrend || []}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="currentColor"
-                  className="stroke-gray-300 dark:stroke-gray-600"
-                />
-                <XAxis
-                  dataKey="date"
-                  stroke="currentColor"
-                  className="stroke-gray-600 dark:stroke-gray-400"
-                  fontSize={12}
-                />
-                <YAxis
-                  stroke="currentColor"
-                  className="stroke-gray-600 dark:stroke-gray-400"
-                  fontSize={12}
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: "8px",
-                  }}
-                  wrapperClassName="[&_.recharts-tooltip-wrapper]:!bg-white dark:[&_.recharts-tooltip-wrapper]:!bg-gray-800 [&_.recharts-tooltip-wrapper]:!border-gray-200 dark:[&_.recharts-tooltip-wrapper]:!border-gray-700 [&_.recharts-tooltip-wrapper]:!text-gray-900 dark:[&_.recharts-tooltip-wrapper]:!text-gray-100"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="orders"
-                  stroke="#3B82F6"
-                  fill="#3B82F6"
-                  fillOpacity={0.3}
-                  name="الطلبات"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+      {/* 3. Executive KPI Strip */}
+      <OverviewKpiStrip stats={stats} formatPrice={formatPrice} />
+
+      {/* 4. Asymmetrical Bento: Trend Chart & Velocity Pipeline */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="lg:col-span-7">
+          <OverviewDualTrendChart
+            data={stats.dailyTrend}
+            formatPrice={formatPrice}
+          />
         </div>
-
-        {/* Order Status Pie Chart */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            توزيع حالات الطلبات
-          </h3>
-          <div style={{ width: "100%", height: 250 }}>
-            <ResponsiveContainer width="100%" height={250} minHeight={250}>
-              <PieChart>
-                <Pie
-                  data={orderStatusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {orderStatusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex flex-wrap justify-center gap-4 mt-4">
-            {orderStatusData.map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                ></div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {item.name}: {item.value}
-                </span>
-              </div>
-            ))}
-          </div>
+        <div className="lg:col-span-5">
+          <OverviewPipelineFlow stats={stats} />
         </div>
       </div>
 
-      {/* Quick Links */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          الوصول السريع للتحليلات
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {[
-            {
-              to: "/analytics/orders/orders",
-              icon: ShoppingCartIcon,
-              label: "الطلبات",
-              color:
-                "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400",
-            },
-            {
-              to: "/analytics/orders/revenue",
-              icon: CurrencyDollarIcon,
-              label: "الإيرادات",
-              color:
-                "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400",
-            },
-            {
-              to: "/analytics/orders/products",
-              icon: ChartBarIcon,
-              label: "المنتجات",
-              color:
-                "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
-            },
-            {
-              to: "/analytics/orders/categories",
-              icon: ClockIcon,
-              label: "الأقسام",
-              color:
-                "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400",
-            },
-            {
-              to: "/analytics/orders/coupons",
-              icon: TruckIcon,
-              label: "الكوبونات",
-              color:
-                "bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400",
-            },
-            {
-              to: "/analytics/orders/stock",
-              icon: UsersIcon,
-              label: "المخزون",
-              color:
-                "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400",
-            },
-          ].map((item, index) => (
-            <Link
-              key={index}
-              to={item.to}
-              className={`flex flex-col items-center p-4 rounded-xl ${item.color} hover:opacity-80 transition-all duration-200`}
-            >
-              <item.icon className="h-8 w-8 mb-2" />
-              <span className="text-sm font-medium">{item.label}</span>
-            </Link>
-          ))}
-        </div>
-      </div>
+      {/* 5. Executive Live Pulse Matrix */}
+      <OverviewPulseMatrix stats={stats} formatPrice={formatPrice} />
     </div>
   );
 };

@@ -1991,8 +1991,13 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
       if (!m) return null;
       const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-      // ارفض التواريخ اللي JS سحبها (مثل 2026-02-30 -> 2026-03-02)
-      if (Number.isNaN(d.getTime()) || d.getDate() !== Number(m[3])) return null;
+      // ارفض التواريخ اللي JS سحبها (مثل 2026-02-30 -> 2026-03-02 أو 2026-13-15 -> 2027-01-14)
+      // لازم الشهر واليوم الاتنين يتطابقوا — مقارنة اليوم لوحده كانت بتقبل شهور مستحيلة بصمت
+      if (
+        Number.isNaN(d.getTime()) ||
+        d.getMonth() !== Number(m[2]) - 1 ||
+        d.getDate() !== Number(m[3])
+      ) return null;
       return d;
     };
     // مفتاح اليوم حسب التوقيت المحلي (مش UTC) لتجميع الترند على تقويم التاجر
@@ -2028,7 +2033,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     }
     const timeRange = toDate ? { gte: since, lte: toDate } : { gte: since };
 
-    const [totalAgg, activeAgg, lostAgg, convWindow, contactWindow, orderSourceAgg] = await Promise.all([
+    const [totalAgg, activeAgg, lostAgg, windowAgg, convWindow, contactWindow, orderSourceAgg] = await Promise.all([
       prisma.guestCart.aggregate({
         where: { companyId },
         _count: { _all: true },
@@ -2041,6 +2046,12 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       }),
       prisma.guestCart.aggregate({
         where: { companyId, ...lostClause },
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      // سلات الفترة نفسها (اتعملت داخل النافذة ومازالت موجودة) — أساس مقام نسبة التحويل الصحيح
+      prisma.guestCart.aggregate({
+        where: { companyId, createdAt: timeRange },
         _count: { _all: true },
         _sum: { total: true }
       }),
@@ -2081,73 +2092,11 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
 
     const total = totalAgg._count._all || 0;
     const converted = convWindow.length;
-    const convertedValue = convWindow.reduce((s, c) => s + Number(c.cartValue || 0), 0);
     const naturalConverted = convWindow.filter((c) => !c.employeeId && c.channel === 'natural').length;
     const byTeamConverted = converted - naturalConverted;
-    // قاعدة القمع: السلات المتبقية حالياً + اللي اتحولت (اتحذفت) خلال الفترة.
-    // pipeline.total لوحده مضلل لأن السلة بتحذف بعد التحويل فيقل المقام ويعدّي المعدل 100%.
-    const recoveryFunnelBase = total + converted;
-
-    // trend by day (JS aggregation over the window rows)
-    const dayMap = new Map();
-    convWindow.forEach((c) => {
-      const day = c.convertedAt ? localDayKey(c.convertedAt) : 'unknown';
-      const entry = dayMap.get(day) || { date: day, conversions: 0, value: 0 };
-      entry.conversions += 1;
-      entry.value += Number(c.cartValue || 0);
-      dayMap.set(day, entry);
-    });
-    const trend = Array.from(dayMap.values()).sort((a, b) => (a.date < b.date ? -1 : 1));
-
-    // team performance by employee (skips natural conversions - no employee)
-    const teamMap = new Map();
-    convWindow.forEach((c) => {
-      if (!c.employeeId) return;
-      const key = c.employeeId;
-      const entry = teamMap.get(key) || {
-        employeeId: c.employeeId,
-        employeeName: c.employeeName || 'غير معروف',
-        conversions: 0,
-        value: 0,
-        contacts: 0,
-        responses: 0,
-      };
-      entry.conversions += 1;
-      entry.value += Number(c.cartValue || 0);
-      teamMap.set(key, entry);
-    });
-
-    // add contact/response stats per employee
-    contactWindow.forEach((ct) => {
-      if (!ct.employeeId) return;
-      const key = ct.employeeId;
-      let entry = teamMap.get(key);
-      if (!entry) {
-        entry = {
-          employeeId: ct.employeeId,
-          employeeName: ct.employeeName || 'غير معروف',
-          conversions: 0,
-          value: 0,
-          contacts: 0,
-          responses: 0,
-        };
-        teamMap.set(key, entry);
-      }
-      entry.contacts += 1;
-      if ((ct.result || '').toString().toLowerCase() === 'answered') {
-        entry.responses += 1;
-      }
-    });
-
-    const team = Array.from(teamMap.values())
-      .map((e) => ({
-        ...e,
-        avgValue: e.conversions ? e.value / e.conversions : 0,
-        responseRate: e.contacts ? (e.responses / e.contacts) * 100 : 0,
-      }))
-      .sort((a, b) => b.value - a.value);
 
     // تتبع مصير الطلبات المحولة وجودتها (كم اتسلم، كم رجع، كم اتلغى)
+    // —— يُحل مبكرًا لأنه مصدر القيمة الموحد لكل أرقام الصفحة
     const orderNumbers = Array.from(new Set(convWindow.map((c) => c.orderNumber).filter(Boolean)));
     const orderIds = Array.from(new Set(convWindow.map((c) => c.orderId).filter(Boolean)));
 
@@ -2203,6 +2152,84 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       }
     }
 
+    // ⚖️ مقياس القيمة الموحد: إجمالي الطلب الحقيقي لو موجود، وإلا قيمة السلة المسجلة.
+    // (قبل كده كارت الاسترداد كان يحسب بـ cartValue بينما كارت المصير و«آخر التحويلات»
+    //  بيحسبوا بـ total الطلب — فنفس التحويلات كانت تظهر بقيمتين مختلفتين)
+    const resolvedValue = (c) => {
+      const matched = (c.orderNumber && orderMapByNumber.get(c.orderNumber)) ||
+                      (c.orderId && orderMapById.get(c.orderId)) ||
+                      null;
+      return matched && matched.total != null ? Number(matched.total) : Number(c.cartValue || 0);
+    };
+    const convertedValue = convWindow.reduce((s, c) => s + resolvedValue(c), 0);
+
+    // قاعدة القمع: سلات الفترة نفسها (المتبقية + اللي اتحولت واتحذفت) — مش كل تاريخ الشركة.
+    // المقام القديم (كل السلات التراكمية) كان بيبخس النسبة كل ما التاريخ يتراكم من غير مسح:
+    // مثال حقيقي (Swan): 12 ألف سلة متراكمة خلّت نسبة اليوم تظهر ~0.2% بدل ~7%.
+    const windowTotal = windowAgg._count._all || 0;
+    const recoveryFunnelBase = windowTotal + converted;
+
+    // trend by day (JS aggregation over the window rows)
+    const dayMap = new Map();
+    convWindow.forEach((c) => {
+      const day = c.convertedAt ? localDayKey(c.convertedAt) : 'unknown';
+      const entry = dayMap.get(day) || { date: day, conversions: 0, value: 0 };
+      entry.conversions += 1;
+      entry.value += resolvedValue(c);
+      dayMap.set(day, entry);
+    });
+    const trend = Array.from(dayMap.values()).sort((a, b) => (a.date < b.date ? -1 : 1));
+
+    // team performance by employee (skips natural conversions - no employee)
+    const teamMap = new Map();
+    convWindow.forEach((c) => {
+      if (!c.employeeId) return;
+      const key = c.employeeId;
+      const entry = teamMap.get(key) || {
+        employeeId: c.employeeId,
+        employeeName: c.employeeName || 'غير معروف',
+        conversions: 0,
+        value: 0,
+        contacts: 0,
+        responses: 0,
+      };
+      entry.conversions += 1;
+      entry.value += resolvedValue(c);
+      teamMap.set(key, entry);
+    });
+
+    // add contact/response stats per employee
+    contactWindow.forEach((ct) => {
+      if (!ct.employeeId) return;
+      const key = ct.employeeId;
+      let entry = teamMap.get(key);
+      if (!entry) {
+        entry = {
+          employeeId: ct.employeeId,
+          employeeName: ct.employeeName || 'غير معروف',
+          conversions: 0,
+          value: 0,
+          contacts: 0,
+          responses: 0,
+        };
+        teamMap.set(key, entry);
+      }
+      entry.contacts += 1;
+      if ((ct.result || '').toString().toLowerCase() === 'answered') {
+        entry.responses += 1;
+      }
+    });
+
+    const team = Array.from(teamMap.values())
+      .map((e) => ({
+        ...e,
+        avgValue: e.conversions ? e.value / e.conversions : 0,
+        responseRate: e.contacts ? (e.responses / e.contacts) * 100 : 0,
+      }))
+      .sort((a, b) => b.value - a.value);
+
+    // مصير الطلبات المحولة اتحدد فوق (orderMapById / orderMapByNumber) — هنا الحساب بس
+
     const duplicateSettings = await orderService.getDuplicateSettings(companyId);
     const treatDuplicateAsCancelled = duplicateSettings?.reportTreatment === 'cancelled';
     const DELIVERED_SET = new Set(['DELIVERED', 'PARTIALLY_DELIVERED', 'COMPLETED']);
@@ -2229,7 +2256,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
                       (c.orderId && orderMapById.get(c.orderId)) ||
                       null;
       const status = (matched?.status || 'PENDING').toUpperCase();
-      const val = matched && matched.total != null ? Number(matched.total) : Number(c.cartValue || 0);
+      const val = resolvedValue(c);
 
       const statEntry = statusMap.get(status) || { status, count: 0, value: 0 };
       statEntry.count += 1;
@@ -2277,6 +2304,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
         to: toDate ? toDate.toISOString() : null,
         pipeline: {
           total,
+          windowTotal,
           active: activeAgg._count._all || 0,
           lost: lostAgg._count._all || 0,
           totalValue: Number(totalAgg._sum.total || 0),
@@ -2288,6 +2316,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
           convertedValue,
           avgConvertedValue: converted ? convertedValue / converted : 0,
           recoveryRate: recoveryFunnelBase ? (converted / recoveryFunnelBase) * 100 : 0,
+          funnelBase: recoveryFunnelBase,
           byTeam: byTeamConverted,
           natural: naturalConverted,
         },
@@ -2309,7 +2338,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
             orderNumber: c.orderNumber || matched?.orderNumber || null,
             orderStatus: matched?.status || null,
             employeeName: c.employeeName,
-            value: matched && matched.total != null ? Number(matched.total) : Number(c.cartValue || 0),
+            value: resolvedValue(c),
             governorate: c.governorate,
             convertedAt: c.convertedAt,
           };
@@ -2635,6 +2664,9 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
 
     if (result?.success && result?.data) {
       // سجل أثر التحويل قبل حذف الـ GuestCart (بيتم الحذف جوه الـ internal API)
+      // محاولة + إعادة محاولة واحدة — لو فشلت الاتنين نرجّع تحذير صريح في الرد
+      // عشان التحويل مايختفيش من التقارير بصمت (الأوردر اتعمل لكن الـ log ضايع)
+      let conversionLogError = null;
       try {
         const employee = req.user || {};
         await getSharedPrismaClient().cartConversionLog.create({
@@ -2651,13 +2683,33 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
           },
         });
       } catch (logError) {
-        console.error('⚠️ [ORDERS] Failed to record cart conversion log:', logError.message);
+        console.warn('⚠️ [ORDERS] Conversion log failed, retrying once:', logError.message);
+        try {
+          const employee = req.user || {};
+          await getSharedPrismaClient().cartConversionLog.create({
+            data: {
+              cartId,
+              orderId: result.data?.id || null,
+              orderNumber: result.data?.orderNumber || null,
+              employeeId: employee.id || null,
+              employeeName: employee.name || employee.username || employee.email || null,
+              companyId,
+              cartValue: total,
+              governorate: governorate || null,
+              channel: 'admin-convert',
+            },
+          });
+        } catch (retryError) {
+          console.error('❌ [ORDERS] Failed to record cart conversion log after retry:', retryError.message);
+          conversionLogError = retryError.message;
+        }
       }
 
       return res.json({
         success: true,
         message: 'تم تحويل الطلب غير المكتمل إلى طلب حقيقي',
         data: result.data,
+        ...(conversionLogError ? { conversionLogFailed: true, conversionLogError } : {}),
       });
     }
 

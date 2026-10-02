@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getDirection } from "../../i18n";
 import { Link } from "react-router-dom";
@@ -26,6 +26,7 @@ interface ReportData {
   periodDays: number | null;
   pipeline: {
     total: number;
+    windowTotal?: number;
     active: number;
     lost: number;
     totalValue: number;
@@ -37,6 +38,7 @@ interface ReportData {
     convertedValue: number;
     avgConvertedValue: number;
     recoveryRate: number;
+    funnelBase?: number;
     byTeam: number;
     natural: number;
   };
@@ -110,8 +112,14 @@ const IncompleteReports: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  // إلغاء الطلب السابق عند تغيير الفترة — من غيره الرد الأبطأ كان يطغى على الأحدث
+  // (اختيار «365 يوم» ثم «اليوم» كان ممكن يعرض أرقام الـ365)
+  const abortRef = useRef<AbortController | null>(null);
 
   const fetchReports = useCallback(async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
       setLoading(true);
       setError(null);
@@ -135,24 +143,35 @@ const IncompleteReports: React.FC = () => {
       }
       const response = await apiClient.get<{ success: boolean; data?: ReportData }>(
         "/orders-new/incomplete/reports",
-        { params },
+        { params, signal: controller.signal },
       );
+      if (controller.signal.aborted) return;
       if (response.data?.success && response.data?.data) {
         setData(response.data.data);
       } else {
         setError(t("orders.incompleteReportsError"));
       }
     } catch (err) {
+      const canceled =
+        controller.signal.aborted ||
+        (err as { code?: string })?.code === "ERR_CANCELED" ||
+        (err as { name?: string })?.name === "CanceledError";
+      if (canceled) return;
       const apiError = err as { response?: { data?: { message?: string } }; message?: string };
       setError(apiError.response?.data?.message || apiError.message || t("orders.incompleteReportsError"));
     } finally {
-      setLoading(false);
+      if (abortRef.current === controller) {
+        setLoading(false);
+      }
     }
   }, [period, customFrom, customTo, t]);
 
   useEffect(() => {
     fetchReports();
   }, [fetchReports, refreshKey]);
+
+  // إلغاء أي طلب جاري عند الخروج من الصفحة
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "-";
@@ -196,6 +215,10 @@ const IncompleteReports: React.FC = () => {
         {
           label: t("orders.incompleteRecoveryRate"),
           value: `${data.recovery.recoveryRate.toFixed(1)}%`,
+          sub:
+            data.recovery.funnelBase != null
+              ? t("orders.incompleteRecoveryRateBase", { count: data.recovery.funnelBase })
+              : undefined,
           icon: ShoppingCartIcon,
           color: "text-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-900/30",
         },
@@ -332,7 +355,7 @@ const IncompleteReports: React.FC = () => {
         <div className="flex items-center justify-center min-h-[300px]">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
         </div>
-      ) : error ? (
+      ) : !data && error ? (
         <div className="rounded-xl border border-red-200 bg-white p-8 text-center shadow-sm dark:border-red-700/40 dark:bg-gray-800">
           <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
           <button
@@ -346,6 +369,20 @@ const IncompleteReports: React.FC = () => {
         </div>
       ) : data ? (
         <>
+          {/* فشل تحديث بعد تحميل سابق: نحافظ على البيانات القديمة مع تنبيه بدل مسح التقرير */}
+          {error && !loading && (
+            <div className="flex items-center justify-between flex-wrap gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-300">
+              <span>{t("orders.incompleteReportsStaleError")}</span>
+              <button
+                type="button"
+                onClick={() => setRefreshKey((prev) => prev + 1)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 dark:border-amber-600/60 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+              >
+                <ArrowPathIcon className="h-3.5 w-3.5" />
+                {t("orders.incompleteRetry")}
+              </button>
+            </div>
+          )}
           <section>
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
               {t("orders.incompleteRecoveryOverview")}

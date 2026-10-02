@@ -108,6 +108,8 @@ export interface IncompleteDetailsResponse {
 export interface IncompleteConvertResponse {
   success: boolean;
   message?: string;
+  /** الأوردر اتعمل لكن تسجيله في تقارير التحويل فشل (بعد إعادة المحاولة) */
+  conversionLogFailed?: boolean;
   data?: {
     id?: string;
     orderNumber?: string;
