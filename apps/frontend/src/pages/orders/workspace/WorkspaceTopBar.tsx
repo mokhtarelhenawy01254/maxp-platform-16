@@ -58,68 +58,55 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
 
   return (
     <header className="border-b border-border/40 bg-card/95 px-3 py-2 backdrop-blur-sm sm:px-4">
-      {/* Upper line: Perspective switcher + Search + Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2">
-          {/* Manager Perspective Switcher */}
-          {isManager && (
-            <div
-              className="flex items-center rounded-lg border border-border/40 bg-muted/30 p-0.5"
-              role="radiogroup"
-              aria-label={isArabic ? 'عدسة الدور' : 'Perspective Mode'}
-            >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {/* Start (Right in RTL): Status Filter Tabs */}
+        <div
+          className="flex items-center gap-1.5 overflow-x-auto no-scrollbar"
+          role="tablist"
+          aria-label={t('orders.workspaceFilters')}
+        >
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
               <button
+                key={tab.key}
                 type="button"
-                onClick={() => onPerspectiveChange('operator')}
-                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
-                  perspective === 'operator'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
+                onClick={() => onSelectTab(tab.key)}
+                role="tab"
+                aria-selected={isActive}
+                className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
                 }`}
               >
-                <UserIcon className="h-3.5 w-3.5" />
-                <span>{isArabic ? 'المشغل' : 'Operator'}</span>
+                <span>{tab.label}</span>
+                {typeof tab.count === 'number' && (
+                  <span
+                    className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono tabular-nums ${
+                      isActive
+                        ? 'bg-primary-foreground/20 text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                )}
               </button>
-              <button
-                type="button"
-                onClick={() => onPerspectiveChange('supervisor')}
-                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
-                  perspective === 'supervisor'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <ShieldCheckIcon className="h-3.5 w-3.5" />
-                <span>{isArabic ? 'المشرف' : 'Supervisor'}</span>
-              </button>
-            </div>
-          )}
-
-          {/* Auto-advance toggle */}
-          <button
-            type="button"
-            onClick={onToggleAutoAdvance}
-            className={`hidden items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors sm:inline-flex ${
-              autoAdvance
-                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                : 'border-border/40 text-muted-foreground hover:bg-muted/40'
-            }`}
-            title={isArabic ? 'التمرير التلقائي للطلب التالي فور إنهاء الإجراء' : 'Auto-advance to next order after action'}
-          >
-            <span className={`h-1.5 w-1.5 rounded-full ${autoAdvance ? 'bg-emerald-500' : 'bg-muted-foreground'}`} />
-            <span>{isArabic ? 'تمرير تلقائي' : 'Auto-Advance'}</span>
-          </button>
+            );
+          })}
         </div>
 
-        {/* Search Bar + Controls */}
-        <div className="flex flex-1 items-center justify-end gap-2 sm:max-w-md">
-          <div className="relative flex-1">
+        {/* End (Left in RTL): Search + Sort + Refresh + Controls */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Search Bar */}
+          <div className="relative w-36 sm:w-48 lg:w-56 transition-all">
             <MagnifyingGlassIcon className="absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={isArabic ? 'بحث بالاسم، الهاتف، رقم الطلب…' : 'Search name, phone, #order…'}
+              placeholder={isArabic ? 'بحث بالاسم، الهاتف…' : 'Search name, phone…'}
               className="h-8 w-full rounded-md border border-border/50 bg-background pe-7 ps-8 text-xs font-medium placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
             {searchQuery && (
@@ -156,57 +143,56 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
           >
             <ArrowPathIcon className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
-        </div>
-      </div>
 
-      {/* Lower line: Tab navigation chips */}
-      <div className="mt-2 flex items-center justify-between gap-2 overflow-x-auto border-t border-border/30 pt-2 no-scrollbar">
-        <div className="flex items-center gap-1.5" role="tablist" aria-label={t('orders.workspaceFilters')}>
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.key;
-            return (
+          {/* Auto-advance toggle */}
+          <button
+            type="button"
+            onClick={onToggleAutoAdvance}
+            className={`hidden items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors lg:inline-flex ${
+              autoAdvance
+                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                : 'border-border/40 text-muted-foreground hover:bg-muted/40'
+            }`}
+            title={isArabic ? 'التمرير التلقائي للطلب التالي فور إنهاء الإجراء' : 'Auto-advance to next order after action'}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${autoAdvance ? 'bg-emerald-500' : 'bg-muted-foreground'}`} />
+            <span>{isArabic ? 'تمرير تلقائي' : 'Auto-Advance'}</span>
+          </button>
+
+          {/* Manager Perspective Switcher */}
+          {isManager && (
+            <div
+              className="flex items-center rounded-lg border border-border/40 bg-muted/30 p-0.5"
+              role="radiogroup"
+              aria-label={isArabic ? 'عدسة الدور' : 'Perspective Mode'}
+            >
               <button
-                key={tab.key}
                 type="button"
-                onClick={() => onSelectTab(tab.key)}
-                role="tab"
-                aria-selected={isActive}
-                className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+                onClick={() => onPerspectiveChange('operator')}
+                className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold transition-all ${
+                  perspective === 'operator'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <span>{tab.label}</span>
-                {typeof tab.count === 'number' && (
-                  <span
-                    className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono tabular-nums ${
-                      isActive
-                        ? 'bg-primary-foreground/20 text-primary-foreground'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
-                )}
+                <UserIcon className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{isArabic ? 'المشغل' : 'Operator'}</span>
               </button>
-            );
-          })}
+              <button
+                type="button"
+                onClick={() => onPerspectiveChange('supervisor')}
+                className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold transition-all ${
+                  perspective === 'supervisor'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <ShieldCheckIcon className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{isArabic ? 'المشرف' : 'Supervisor'}</span>
+              </button>
+            </div>
+          )}
         </div>
-
-        {/* Mobile select fallback */}
-        <select
-          id="workspace-mobile-section"
-          value={activeTab}
-          onChange={(e) => onSelectTab(e.target.value as FilterTab)}
-          className="h-7 rounded border border-border bg-background px-2 text-xs font-semibold text-foreground sm:hidden"
-        >
-          {tabs.map((tab) => (
-            <option key={tab.key} value={tab.key}>
-              {typeof tab.count === 'number' ? `${tab.label} (${tab.count})` : tab.label}
-            </option>
-          ))}
-        </select>
       </div>
     </header>
   );

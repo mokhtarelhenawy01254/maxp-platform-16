@@ -203,7 +203,7 @@ export function useAgentWorkspace() {
     } = options || {};
 
     const activeTabForRequest = tab ?? activeTabRef.current;
-    const resolvedSort = targetSort ?? (activeTabForRequest === 'pending' ? 'oldest' : sortOption);
+    const resolvedSort = targetSort ?? sortOption;
     const resolvedAssignedTo = targetAssignedTo !== undefined ? targetAssignedTo : selectedAgentId;
 
     try {

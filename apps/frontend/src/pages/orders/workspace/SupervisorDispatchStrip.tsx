@@ -70,8 +70,11 @@ export const SupervisorDispatchStrip: React.FC<SupervisorDispatchStripProps> = (
         </button>
       </div>
 
+      {/* Vertical hairline divider */}
+      <div className="hidden sm:block h-4 w-px bg-border/40 shrink-0 mx-1" aria-hidden="true" />
+
       {/* Center & Right: Agent Workload Chips */}
-      <div className="flex flex-1 items-center justify-end gap-1 overflow-x-auto ps-2 no-scrollbar">
+      <div className="flex flex-1 items-center justify-start sm:justify-end gap-1 overflow-x-auto ps-1 no-scrollbar">
         {/* All Team chip */}
         <button
           type="button"

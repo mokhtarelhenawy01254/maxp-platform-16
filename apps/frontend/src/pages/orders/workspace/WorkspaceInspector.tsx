@@ -17,6 +17,8 @@ import { useCurrency } from '../../../hooks/useCurrency';
 import { OrderAction, WorkspaceOrder, AgentWorkload, WorkspaceOrderItem } from './types';
 import { WorkspaceItemsEditor } from './WorkspaceItemsEditor';
 import { OrderCallButton } from '../../../components/telephony/OrderCallButton';
+import { GovernorateAreaSearch } from '../../../components/ui/GovernorateAreaSearch';
+import { WorkspaceWhatsAppDrawer } from './WorkspaceWhatsAppDrawer';
 
 interface WorkspaceInspectorProps {
   order: WorkspaceOrder | null;
@@ -40,6 +42,7 @@ interface WorkspaceInspectorProps {
     customerData: {
       customerName?: string;
       customerPhone?: string;
+      secondaryPhone?: string;
       governorate?: string;
       city?: string;
       shippingAddress?: string;
@@ -118,9 +121,14 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
 
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [isSavingCustomer, setIsSavingCustomer] = useState(false);
+  const [isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen] = useState(false);
   const [customerName, setCustomerName] = useState(order?.customerName || '');
   const [customerPhone, setCustomerPhone] = useState(order?.customerPhone || '');
+  const [secondaryPhone, setSecondaryPhone] = useState(order?.secondaryPhone || '');
+  const [governorate, setGovernorate] = useState(order?.governorate || '');
+  const [city, setCity] = useState(order?.city || '');
   const [shippingAddress, setShippingAddress] = useState(parseCleanAddress(order?.shippingAddress));
+  const [notes, setNotes] = useState(order?.notes || '');
 
   // Reset local edit states when selected order changes
   React.useEffect(() => {
@@ -129,7 +137,11 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
     if (order) {
       setCustomerName(order.customerName || '');
       setCustomerPhone(order.customerPhone || '');
+      setSecondaryPhone(order.secondaryPhone || '');
+      setGovernorate(order.governorate || '');
+      setCity(order.city || '');
       setShippingAddress(parseCleanAddress(order.shippingAddress));
+      setNotes(order.notes || '');
     }
   }, [order?.id]);
 
@@ -165,7 +177,11 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
       await onSaveCustomer(order.id, {
         customerName,
         customerPhone,
+        secondaryPhone,
+        governorate,
+        city,
         shippingAddress,
+        notes,
       });
       setIsEditingCustomer(false);
     } finally {
@@ -232,16 +248,15 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
 
           {/* Quick Communication Buttons */}
           <div className="flex items-center gap-2">
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={() => setIsWhatsAppDrawerOpen(true)}
               className="inline-flex h-8 items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 text-xs font-bold text-emerald-600 transition-transform active:scale-[0.98] hover:bg-emerald-500/20 dark:text-emerald-400"
-              title={isArabic ? 'فتح واتساب برسالة تأكيد جاهزة' : 'Open WhatsApp with confirmation template'}
+              title={isArabic ? 'فتح واتساب المنصة (محادثة كاملة، قوالب، إرسال مباشر)' : 'Open Platform WhatsApp'}
             >
               <ChatBubbleOvalLeftEllipsisIcon className="h-4 w-4" />
               <span>{isArabic ? 'واتساب' : 'WhatsApp'}</span>
-            </a>
+            </button>
 
             <OrderCallButton
               orderId={order.id}
@@ -257,61 +272,111 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
           </div>
         </div>
 
-        {/* Inline Customer Edit Mode */}
+        {/* Inline Customer Edit Mode (Rich Address & Phone Editor matching Order Details) */}
         {isEditingCustomer ? (
-          <div className="mt-2 space-y-2 rounded-md border border-primary/30 bg-muted/20 p-2 text-xs">
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="mt-2 space-y-2.5 rounded-md border border-primary/30 bg-muted/20 p-2.5 text-xs">
+            {/* Row 1: Name & Phones */}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <div>
-                <label className="text-[10px] font-bold text-muted-foreground">
+                <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
                   {isArabic ? 'اسم العميل' : 'Customer Name'}
                 </label>
                 <input
                   type="text"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="mt-0.5 h-7 w-full rounded border border-border bg-background px-2 text-xs"
+                  className="h-8 w-full rounded border border-border bg-background px-2 text-xs font-medium text-foreground focus:border-primary focus:outline-none"
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold text-muted-foreground">
-                  {isArabic ? 'رقم الهاتف' : 'Phone'}
+                <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
+                  {isArabic ? 'رقم الهاتف الأساسي' : 'Primary Phone'}
                 </label>
                 <input
                   type="text"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="mt-0.5 h-7 w-full rounded border border-border bg-background px-2 text-xs"
+                  className="h-8 w-full rounded border border-border bg-background px-2 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
+                  {isArabic ? 'هاتف بديل (اختياري)' : 'Alt Phone (Optional)'}
+                </label>
+                <input
+                  type="text"
+                  value={secondaryPhone}
+                  onChange={(e) => setSecondaryPhone(e.target.value)}
+                  placeholder="01xxxxxxxxx"
+                  className="h-8 w-full rounded border border-border bg-background px-2 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
                   dir="ltr"
                 />
               </div>
             </div>
+
+            {/* Row 2: Governorate & Area Smart Search */}
             <div>
-              <label className="text-[10px] font-bold text-muted-foreground">
+              <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
+                {isArabic ? 'المحافظة والمنطقة / المدينة (خريطة الشحن)' : 'Governorate & City / Area'}
+              </label>
+              <GovernorateAreaSearch
+                value={{
+                  governorate: governorate || '',
+                  area: city || '',
+                }}
+                onChange={(next) => {
+                  setGovernorate(next.governorate);
+                  setCity(next.area);
+                }}
+                placeholder={isArabic ? 'ابحث عن المحافظة أو المنطقة…' : 'Search governorate / area…'}
+              />
+            </div>
+
+            {/* Row 3: Detailed Address */}
+            <div>
+              <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
                 {isArabic ? 'العنوان بالتفصيل' : 'Detailed Address'}
+              </label>
+              <textarea
+                value={shippingAddress}
+                onChange={(e) => setShippingAddress(e.target.value)}
+                rows={2}
+                placeholder={isArabic ? 'الشارع، رقم العقار، رقم الشقة، علامة مميزة…' : 'Street, building, apt, landmark…'}
+                className="w-full rounded border border-border bg-background p-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+              />
+            </div>
+
+            {/* Row 4: Notes */}
+            <div>
+              <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
+                {isArabic ? 'ملاحظات العميل أو الطلب' : 'Notes'}
               </label>
               <input
                 type="text"
-                value={shippingAddress}
-                onChange={(e) => setShippingAddress(e.target.value)}
-                className="mt-0.5 h-7 w-full rounded border border-border bg-background px-2 text-xs"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder={isArabic ? 'ملاحظات خاصة بالتوصيل أو الاستلام…' : 'Special delivery notes…'}
+                className="h-8 w-full rounded border border-border bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
               />
             </div>
-            <div className="flex justify-end gap-1.5 pt-1">
+
+            <div className="flex justify-end gap-1.5 pt-1 border-t border-border/30">
               <button
                 type="button"
                 onClick={() => setIsEditingCustomer(false)}
-                className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground"
+                className="rounded border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-muted/40"
               >
-                <XMarkIcon className="h-3.5 w-3.5" />
+                {isArabic ? 'إلغاء' : 'Cancel'}
               </button>
               <button
                 type="button"
                 onClick={handleSaveCustomerDetails}
                 disabled={isSavingCustomer}
-                className="inline-flex items-center gap-1 rounded bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-foreground"
+                className="inline-flex items-center gap-1 rounded bg-primary px-3.5 py-1 text-xs font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
                 <CheckIcon className="h-3.5 w-3.5" />
-                <span>{isSavingCustomer ? (isArabic ? 'حفظ…' : 'Saving…') : (isArabic ? 'حفظ' : 'Save')}</span>
+                <span>{isSavingCustomer ? (isArabic ? 'جاري الحفظ…' : 'Saving…') : (isArabic ? 'حفظ البيانات' : 'Save Details')}</span>
               </button>
             </div>
           </div>
@@ -578,6 +643,13 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
           </div>
         )}
       </section>
+
+      {/* Embedded Platform WhatsApp Drawer */}
+      <WorkspaceWhatsAppDrawer
+        isOpen={isWhatsAppDrawerOpen}
+        onClose={() => setIsWhatsAppDrawerOpen(false)}
+        order={order}
+      />
     </div>
   );
 };

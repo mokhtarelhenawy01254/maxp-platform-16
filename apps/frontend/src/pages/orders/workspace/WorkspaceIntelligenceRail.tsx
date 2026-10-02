@@ -81,19 +81,47 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
 
             <div className="mt-2.5 space-y-2">
               {order?.callLogs && order.callLogs.length > 0 ? (
-                order.callLogs.map((log) => (
-                  <div key={log.id} className="border-s-2 border-primary/40 ps-2.5 text-[11px]">
-                    <div className="flex items-center justify-between text-muted-foreground">
-                      <span className="font-semibold text-foreground">{log.userName || (isArabic ? 'موظف' : 'Agent')}</span>
-                      <span className="font-mono text-[10px] tabular-nums">
-                        {new Date(log.createdAt).toLocaleTimeString(isArabic ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                order.callLogs.map((log) => {
+                  const m = log.durationSeconds ? Math.floor(log.durationSeconds / 60) : 0;
+                  const s = log.durationSeconds ? log.durationSeconds % 60 : 0;
+                  const durationStr =
+                    log.durationSeconds && log.durationSeconds > 0
+                      ? m > 0
+                        ? isArabic
+                          ? `${m} د و ${s} ث`
+                          : `${m}m ${s}s`
+                        : isArabic
+                        ? `${s} ث`
+                        : `${s}s`
+                      : null;
+
+                  return (
+                    <div key={log.id} className="border-s-2 border-primary/40 ps-2.5 text-[11px]">
+                      <div className="flex items-center justify-between text-muted-foreground">
+                        <span className="font-semibold text-foreground">{log.userName || (isArabic ? 'موظف' : 'Agent')}</span>
+                        <div className="flex items-center gap-1.5 font-mono text-[10px] tabular-nums">
+                          {durationStr && (
+                            <span className="rounded bg-emerald-500/10 px-1 py-0.5 font-bold text-emerald-600 dark:text-emerald-400">
+                              {durationStr}
+                            </span>
+                          )}
+                          <span>
+                            {new Date(log.createdAt).toLocaleTimeString(isArabic ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-muted-foreground">
+                        <span className="font-semibold text-foreground">[{log.result}]</span>
+                        {log.notes ? <span>{log.notes}</span> : null}
+                      </p>
+                      {log.recordingUrl && (
+                        <div className="mt-1.5">
+                          <audio controls src={log.recordingUrl} className="h-6 w-full" preload="none" />
+                        </div>
+                      )}
                     </div>
-                    <p className="mt-0.5 text-muted-foreground">
-                      <span className="font-semibold text-foreground">[{log.result}]</span> {log.notes || ''}
-                    </p>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <p className="text-[11px] text-muted-foreground">
                   {isArabic ? 'لا توجد محاولات سابقة مسجلة لهذا الطلب' : 'No previous calls recorded for this order'}

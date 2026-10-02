@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   PhoneIcon,
@@ -40,6 +40,22 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
   const { t, i18n } = useTranslation();
   const { formatPrice } = useCurrency();
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Auto-load next page on scroll to bottom
+  useEffect(() => {
+    if (!sentinelRef.current || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && pagination.pages > page && !loadingMore) {
+          onLoadMore();
+        }
+      },
+      { rootMargin: '250px' }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [pagination.pages, page, loadingMore, onLoadMore]);
 
   const formatTimeAgo = (dateStr: string) => {
     const diffHours = (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60);
@@ -94,8 +110,23 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-card/50">
+      {/* Queue Counter Header */}
+      <div className="flex items-center justify-between border-b border-border/30 bg-muted/15 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground shrink-0">
+        <span className="font-mono tabular-nums">
+          {isArabic
+            ? `معروض ${orders.length} من ${pagination.total || orders.length} طلب`
+            : `Showing ${orders.length} of ${pagination.total || orders.length}`}
+        </span>
+        {loadingMore && (
+          <span className="flex items-center gap-1 text-primary">
+            <ArrowPathIcon className="h-3 w-3 animate-spin" />
+            <span className="text-[10px]">{isArabic ? 'تحميل المزيد…' : 'Loading…'}</span>
+          </span>
+        )}
+      </div>
+
       {/* Stream list */}
-      <div className="flex-1 divide-y divide-border/30 overflow-y-auto">
+      <div className="flex-1 divide-y divide-border/30 overflow-y-auto overscroll-contain h-full scrollbar-thin scrollbar-thumb-border/60 hover:scrollbar-thumb-border">
         {orders.map((order) => {
           const isSelected = order.id === selectedOrderId;
           const overdue = isOrderOverdue(order);
@@ -176,6 +207,9 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
             </article>
           );
         })}
+
+        {/* Sentinel for infinite scroll */}
+        <div ref={sentinelRef} className="h-4 w-full" aria-hidden="true" />
 
         {/* Load more trigger */}
         {pagination.pages > page && (

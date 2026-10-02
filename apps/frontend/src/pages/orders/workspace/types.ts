@@ -18,6 +18,8 @@ export interface CallLogEntry {
   notes?: string | null;
   createdAt: string;
   userName?: string | null;
+  durationSeconds?: number;
+  recordingUrl?: string | null;
 }
 
 export interface CustomerStats {

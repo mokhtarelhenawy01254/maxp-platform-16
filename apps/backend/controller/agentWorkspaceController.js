@@ -232,6 +232,8 @@ const formatWorkspaceOrderRecord = (order, isGuest, assignedAt, assignedTo = nul
         result: l.result || 'unreached',
         notes: l.notes || '',
         createdAt: l.createdAt,
+        durationSeconds: l.durationSeconds || 0,
+        recordingUrl: l.recordingUrl || null,
         userName: (l.user?.firstName || l.user?.lastName)
           ? `${l.user?.firstName || ''} ${l.user?.lastName || ''}`.trim()
           : 'موظف',
@@ -1099,7 +1101,7 @@ const updateOrderItems = async (req, res) => {
 const updateOrderCustomer = async (req, res) => {
   try {
     const { id } = req.params;
-    const { customerName, customerPhone, governorate, city, shippingAddress, notes } = req.body;
+    const { customerName, customerPhone, secondaryPhone, governorate, city, shippingAddress, notes } = req.body;
     const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
     const userId = req.user?.id;
     const isManager = isManagerUser(req.user);
@@ -1116,8 +1118,20 @@ const updateOrderCustomer = async (req, res) => {
       if (customerPhone !== undefined) updateData.customerPhone = customerPhone;
       if (governorate !== undefined) updateData.governorate = governorate;
       if (city !== undefined) updateData.city = city;
-      if (shippingAddress !== undefined) updateData.shippingAddress = shippingAddress;
       if (notes !== undefined) updateData.notes = notes;
+
+      let regularAddrObj = {};
+      try {
+        regularAddrObj = JSON.parse(regular.shippingAddress || '{}') || {};
+      } catch {
+        regularAddrObj = { address: regular.shippingAddress || '' };
+      }
+      if (shippingAddress !== undefined) regularAddrObj.address = shippingAddress;
+      if (governorate !== undefined) regularAddrObj.governorate = governorate;
+      if (city !== undefined) regularAddrObj.city = city;
+      if (secondaryPhone !== undefined) regularAddrObj.phone2 = secondaryPhone;
+
+      updateData.shippingAddress = JSON.stringify(regularAddrObj);
       updateData.updatedAt = new Date();
 
       await prisma.order.update({
@@ -1134,7 +1148,7 @@ const updateOrderCustomer = async (req, res) => {
           data: {
             guestName: customerName || twinGuest.guestName,
             guestPhone: customerPhone || twinGuest.guestPhone,
-            shippingAddress: shippingAddress || twinGuest.shippingAddress,
+            shippingAddress: updateData.shippingAddress || twinGuest.shippingAddress,
             notes: notes !== undefined ? notes : twinGuest.notes,
             updatedAt: new Date()
           }
@@ -1149,8 +1163,20 @@ const updateOrderCustomer = async (req, res) => {
       const updateData = {};
       if (customerName !== undefined) updateData.guestName = customerName;
       if (customerPhone !== undefined) updateData.guestPhone = customerPhone;
-      if (shippingAddress !== undefined) updateData.shippingAddress = shippingAddress;
       if (notes !== undefined) updateData.notes = notes;
+
+      let guestAddrObj = {};
+      try {
+        guestAddrObj = JSON.parse(guest.shippingAddress || '{}') || {};
+      } catch {
+        guestAddrObj = { address: guest.shippingAddress || '' };
+      }
+      if (shippingAddress !== undefined) guestAddrObj.address = shippingAddress;
+      if (governorate !== undefined) guestAddrObj.governorate = governorate;
+      if (city !== undefined) guestAddrObj.city = city;
+      if (secondaryPhone !== undefined) guestAddrObj.phone2 = secondaryPhone;
+
+      updateData.shippingAddress = JSON.stringify(guestAddrObj);
       updateData.updatedAt = new Date();
 
       await prisma.guestOrder.update({

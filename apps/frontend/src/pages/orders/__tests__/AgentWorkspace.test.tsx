@@ -1,22 +1,28 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
+import '@testing-library/jest-dom/vitest';
+import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { toast } from "sonner";
 import AgentWorkspace from "../AgentWorkspace";
 import { apiClient } from "../../../services/apiClient";
 
-jest.mock("react-i18next", () => ({
+afterEach(() => {
+  cleanup();
+});
+
+vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
     i18n: { language: "en" },
   }),
 }));
 
-jest.mock("../../../services/apiClient", () => ({
-  apiClient: { get: jest.fn(), post: jest.fn() },
+vi.mock("../../../services/apiClient", () => ({
+  apiClient: { get: vi.fn(), post: vi.fn(), put: vi.fn() },
 }));
 
-jest.mock("../../../hooks/useCurrency", () => ({
+vi.mock("../../../hooks/useCurrency", () => ({
   useCurrency: () => ({
     currency: "EGP",
     formatPrice: (amount: number) => `EGP ${amount}`,
@@ -27,18 +33,18 @@ jest.mock("../../../hooks/useCurrency", () => ({
 
 let mockCurrentUser = { id: "u1", role: "AGENT" };
 
-jest.mock("../../../hooks/useAuthSimple", () => ({
+vi.mock("../../../hooks/useAuthSimple", () => ({
   useAuth: () => ({ user: mockCurrentUser }),
   useOptionalAuth: () => ({ user: mockCurrentUser }),
 }));
 
-jest.mock("../../../components/orders/EnhancedOrderModal", () => () => null);
+vi.mock("../../../components/orders/EnhancedOrderModal", () => () => null);
 
-jest.mock("../OrderConfirmationQueue", () => () => null);
-jest.mock("../components/SimplifiedProductSelectionModal", () => () => null);
+vi.mock("../OrderConfirmationQueue", () => () => null);
+vi.mock("../components/SimplifiedProductSelectionModal", () => () => null);
 
-jest.mock("sonner", () => ({
-  toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
+vi.mock("sonner", () => ({
+  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
 type TestOrder = {
@@ -104,17 +110,21 @@ const mockOrdersResponse = ({
   },
 });
 
-let mockGet: jest.Mock;
-let mockPost: jest.Mock;
+let mockGet: any;
+let mockPost: any;
 
 beforeEach(() => {
-  mockGet = apiClient.get as jest.Mock;
-  mockPost = apiClient.post as jest.Mock;
+  vi.clearAllMocks();
+  mockGet = apiClient.get as any;
+  mockPost = apiClient.post as any;
   mockGet.mockReset();
   mockPost.mockReset();
   mockGet.mockImplementation((url: string) => {
     if (url.includes('/orders-new/incomplete')) {
       return Promise.resolve({ data: { success: true, data: [] } });
+    }
+    if (url.includes('/whatsapp/sessions')) {
+      return Promise.resolve({ data: { success: true, sessions: [] } });
     }
     return Promise.resolve(
       mockOrdersResponse({
@@ -127,6 +137,24 @@ beforeEach(() => {
   mockPost.mockResolvedValue({ data: { success: true, data: {} } });
 });
 
+const setMockOrdersData = (orders: TestOrder[], stats?: any, pagination?: any) => {
+  mockGet.mockImplementation((url: string) => {
+    if (url.includes('/orders-new/incomplete')) {
+      return Promise.resolve({ data: { success: true, data: [] } });
+    }
+    if (url.includes('/whatsapp/sessions')) {
+      return Promise.resolve({ data: { success: true, sessions: [] } });
+    }
+    return Promise.resolve(
+      mockOrdersResponse({
+        orders,
+        stats: stats || defaultStats(orders.length),
+        pagination: pagination || { total: orders.length, page: 1, limit: 50, pages: 1 },
+      }),
+    );
+  });
+};
+
 const renderWorkspace = () =>
   render(
     <MemoryRouter initialEntries={["/orders/workspace?tab=pending"]}>
@@ -136,76 +164,58 @@ const renderWorkspace = () =>
 
 describe("AgentWorkspace", () => {
   it("does not mark a recent pending order (no calls) as urgent", async () => {
-    mockGet.mockResolvedValue(
-      mockOrdersResponse({
-        orders: [
-          makeOrder({
-            id: "o1",
-            orderNumber: "ORD-1",
-            callAttempts: 0,
-            createdAt: hoursAgo(2),
-          }),
-        ],
-        stats: defaultStats(1),
-        pagination: { total: 1, page: 1, limit: 50, pages: 1 },
+    setMockOrdersData([
+      makeOrder({
+        id: "o1",
+        orderNumber: "ORD-1",
+        callAttempts: 0,
+        createdAt: hoursAgo(2),
       }),
-    );
+    ]);
 
     renderWorkspace();
 
-    await screen.findByText("#ORD-1");
+    await screen.findAllByText(/#?ORD-1/);
 
     expect(screen.queryByText("orders.urgent")).not.toBeInTheDocument();
   });
 
   it("marks an old pending order with no calls as urgent", async () => {
-    mockGet.mockResolvedValue(
-      mockOrdersResponse({
-        orders: [
-          makeOrder({
-            id: "o2",
-            orderNumber: "ORD-2",
-            callAttempts: 0,
-            createdAt: hoursAgo(30),
-          }),
-        ],
-        stats: defaultStats(1),
-        pagination: { total: 1, page: 1, limit: 50, pages: 1 },
+    setMockOrdersData([
+      makeOrder({
+        id: "o2",
+        orderNumber: "ORD-2",
+        callAttempts: 0,
+        createdAt: hoursAgo(30),
       }),
-    );
+    ]);
 
     renderWorkspace();
 
-    await screen.findByText("#ORD-2");
+    await screen.findAllByText(/#?ORD-2/);
 
-    expect(screen.getByText("orders.urgent")).toBeInTheDocument();
+    expect(screen.getAllByText("orders.urgent").length).toBeGreaterThanOrEqual(1);
   });
 
   it("marks a pending order whose last call was more than 12h ago as urgent", async () => {
-    mockGet.mockResolvedValue(
-      mockOrdersResponse({
-        orders: [
-          makeOrder({
-            id: "o3",
-            orderNumber: "ORD-3",
-            callAttempts: 1,
-            lastCallAt: hoursAgo(20),
-            createdAt: hoursAgo(72),
-          }),
-        ],
-        stats: defaultStats(1),
-        pagination: { total: 1, page: 1, limit: 50, pages: 1 },
+    setMockOrdersData([
+      makeOrder({
+        id: "o3",
+        orderNumber: "ORD-3",
+        callAttempts: 1,
+        lastCallAt: hoursAgo(20),
+        createdAt: hoursAgo(72),
       }),
-    );
+    ]);
 
     renderWorkspace();
 
-    await screen.findByText("#ORD-3");
+    await screen.findAllByText(/#?ORD-3/);
 
-    expect(screen.getByText("orders.urgent")).toBeInTheDocument();
+    expect(screen.getAllByText("orders.urgent").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("fetches pending orders with status PENDING and sort oldest", async () => {
+  it("fetches pending orders with status PENDING and sort recent", async () => {
     renderWorkspace();
 
     await waitFor(() => {
@@ -214,7 +224,7 @@ describe("AgentWorkspace", () => {
         expect.objectContaining({
           params: expect.objectContaining({
             status: "PENDING",
-            sort: "oldest",
+            sort: "recent",
           }),
         }),
       );
@@ -250,9 +260,9 @@ describe("AgentWorkspace", () => {
     const loadMoreButton = await screen.findByText("orders.workspaceLoadMore");
     fireEvent.click(loadMoreButton);
 
-    await screen.findByText("#ORD-2");
+    await screen.findAllByText(/#?ORD-2/);
 
-    expect(screen.getByText("#ORD-1")).toBeInTheDocument();
+    expect(screen.getAllByText(/#?ORD-1/).length).toBeGreaterThanOrEqual(1);
     expect(mockGet).toHaveBeenCalledWith(
       "/agent-workspace/my-orders",
       expect.objectContaining({
@@ -262,18 +272,12 @@ describe("AgentWorkspace", () => {
   });
 
   it("sends quick-action confirm and shows a success toast", async () => {
-    mockGet.mockResolvedValue(
-      mockOrdersResponse({
-        orders: [makeOrder({ id: "o1", orderNumber: "ORD-1" })],
-        stats: defaultStats(1),
-        pagination: { total: 1, page: 1, limit: 50, pages: 1 },
-      }),
-    );
+    setMockOrdersData([makeOrder({ id: "o1", orderNumber: "ORD-1" })]);
 
     renderWorkspace();
 
-    const confirmButton = await screen.findByText("orders.confirmOrder");
-    fireEvent.click(confirmButton);
+    const confirmButtons = await screen.findAllByText("orders.confirmOrder");
+    fireEvent.click(confirmButtons[0]);
 
     await waitFor(() => {
       expect(mockPost).toHaveBeenCalledWith(
@@ -289,13 +293,7 @@ describe("AgentWorkspace", () => {
   });
 
   it("shows an info toast when quick action returns a pending workflow", async () => {
-    mockGet.mockResolvedValue(
-      mockOrdersResponse({
-        orders: [makeOrder({ id: "o1", orderNumber: "ORD-1" })],
-        stats: defaultStats(1),
-        pagination: { total: 1, page: 1, limit: 50, pages: 1 },
-      }),
-    );
+    setMockOrdersData([makeOrder({ id: "o1", orderNumber: "ORD-1" })]);
     mockPost.mockResolvedValue({
       data: {
         success: true,
@@ -305,8 +303,8 @@ describe("AgentWorkspace", () => {
 
     renderWorkspace();
 
-    const confirmButton = await screen.findByText("orders.confirmOrder");
-    fireEvent.click(confirmButton);
+    const confirmButtons = await screen.findAllByText("orders.confirmOrder");
+    fireEvent.click(confirmButtons[0]);
 
     await waitFor(() => {
       expect(toast.info).toHaveBeenCalled();
@@ -316,20 +314,14 @@ describe("AgentWorkspace", () => {
   });
 
   it("opens a cancel-reason modal without window.prompt and submits cancel action", async () => {
-    const promptSpy = jest.spyOn(window, "prompt").mockReturnValue(null);
+    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue(null);
 
-    mockGet.mockResolvedValue(
-      mockOrdersResponse({
-        orders: [makeOrder({ id: "o1", orderNumber: "ORD-1" })],
-        stats: defaultStats(1),
-        pagination: { total: 1, page: 1, limit: 50, pages: 1 },
-      }),
-    );
+    setMockOrdersData([makeOrder({ id: "o1", orderNumber: "ORD-1" })]);
 
     renderWorkspace();
 
-    const cancelButton = await screen.findByText("orders.cancelOrder");
-    fireEvent.click(cancelButton);
+    const cancelButtons = await screen.findAllByText("orders.cancelOrder");
+    fireEvent.click(cancelButtons[0]);
 
     expect(screen.getByText("orders.cancelReasonTitle")).toBeInTheDocument();
     expect(promptSpy).not.toHaveBeenCalled();
@@ -352,40 +344,48 @@ describe("AgentWorkspace", () => {
   });
 
   it("removes order instantly from queue when quick-action confirm succeeds", async () => {
-    let callCount = 0;
+    let orderConfirmed = false;
+    mockPost.mockImplementation((url: string) => {
+      if (url.includes("/quick-action")) {
+        orderConfirmed = true;
+      }
+      return Promise.resolve({ data: { success: true, data: {} } });
+    });
     mockGet.mockImplementation((url: string) => {
       if (url.includes("/orders-new/incomplete")) {
         return Promise.resolve({ data: { success: true, data: [] } });
       }
-      callCount++;
-      if (callCount === 1) {
+      if (url.includes("/whatsapp/sessions")) {
+        return Promise.resolve({ data: { success: true, sessions: [] } });
+      }
+      if (orderConfirmed) {
         return Promise.resolve(
           mockOrdersResponse({
-            orders: [
-              makeOrder({ id: "o1", orderNumber: "ORD-1" }),
-              makeOrder({ id: "o2", orderNumber: "ORD-2" }),
-            ],
-            stats: defaultStats(2),
-            pagination: { total: 2, page: 1, limit: 50, pages: 1 },
+            orders: [makeOrder({ id: "o2", orderNumber: "ORD-2" })],
+            stats: defaultStats(1),
+            pagination: { total: 1, page: 1, limit: 50, pages: 1 },
           }),
         );
       }
       return Promise.resolve(
         mockOrdersResponse({
-          orders: [makeOrder({ id: "o2", orderNumber: "ORD-2" })],
-          stats: defaultStats(1),
-          pagination: { total: 1, page: 1, limit: 50, pages: 1 },
+          orders: [
+            makeOrder({ id: "o1", orderNumber: "ORD-1" }),
+            makeOrder({ id: "o2", orderNumber: "ORD-2" }),
+          ],
+          stats: defaultStats(2),
+          pagination: { total: 2, page: 1, limit: 50, pages: 1 },
         }),
       );
     });
 
     renderWorkspace();
 
-    await screen.findByText("#ORD-1");
-    expect(screen.getByText("#ORD-2")).toBeInTheDocument();
+    await screen.findAllByText(/#?ORD-1/);
+    expect(screen.getAllByText(/#?ORD-2/).length).toBeGreaterThanOrEqual(1);
 
-    const confirmButton = await screen.findByText("orders.confirmOrder");
-    fireEvent.click(confirmButton);
+    const confirmButtons = await screen.findAllByText("orders.confirmOrder");
+    fireEvent.click(confirmButtons[0]);
 
     await waitFor(() => {
       expect(mockPost).toHaveBeenCalledWith(
@@ -396,8 +396,8 @@ describe("AgentWorkspace", () => {
 
     // o1 should disappear and advance to o2
     await waitFor(() => {
-      expect(screen.queryByText("#ORD-1")).not.toBeInTheDocument();
-      expect(screen.getByText("#ORD-2")).toBeInTheDocument();
+      expect(screen.queryAllByText("#ORD-1").length).toBe(0);
+      expect(screen.getAllByText("#ORD-2").length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -405,6 +405,12 @@ describe("AgentWorkspace", () => {
     mockCurrentUser = { id: "m1", role: "MANAGER" };
 
     mockGet.mockImplementation((url: string) => {
+      if (url.includes("/orders-new/incomplete")) {
+        return Promise.resolve({ data: { success: true, data: [] } });
+      }
+      if (url.includes("/whatsapp/sessions")) {
+        return Promise.resolve({ data: { success: true, sessions: [] } });
+      }
       if (url === "/agent-workspace/team-workload") {
         return Promise.resolve({
           data: {
@@ -471,6 +477,9 @@ describe("AgentWorkspace", () => {
           },
         });
       }
+      if (url.includes("/whatsapp/sessions")) {
+        return Promise.resolve({ data: { success: true, sessions: [] } });
+      }
       return Promise.resolve(
         mockOrdersResponse({
           orders: [makeOrder({ id: "o1", orderNumber: "ORD-1", customerName: "محمود حسن" })],
@@ -492,35 +501,29 @@ describe("AgentWorkspace", () => {
     const nameElements = await screen.findAllByText("سارة أحمد");
     expect(nameElements.length).toBeGreaterThanOrEqual(1);
     expect(
-      screen.getByRole("button", { name: /اعتماد وتأكيد الطلب|Confirm Order|confirmOrder/i }),
-    ).toBeInTheDocument();
+      screen.getAllByRole("button", { name: /اعتماد وتأكيد الطلب|Confirm Order|confirmOrder/i }).length,
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it("renders live edit items button in inspector", async () => {
     mockCurrentUser = { id: "u1", role: "AGENT" };
-    mockGet.mockResolvedValue(
-      mockOrdersResponse({
-        orders: [
-          makeOrder({
-            id: "o1",
-            orderNumber: "ORD-1",
-            items: [{ productName: "قميص كلاسيك", quantity: 2, price: 150, total: 300 }],
-          }),
-        ],
-        stats: defaultStats(1),
-        pagination: { total: 1, page: 1, limit: 50, pages: 1 },
+    setMockOrdersData([
+      makeOrder({
+        id: "o1",
+        orderNumber: "ORD-1",
+        items: [{ productName: "قميص كلاسيك", quantity: 2, price: 150, total: 300 }],
       }),
-    );
+    ]);
 
     renderWorkspace();
 
-    await screen.findByText("#ORD-1");
+    await screen.findAllByText(/#?ORD-1/);
     // Verify edit items button is present
-    const editBtn = screen.getByRole("button", { name: /Edit Items|تعديل البنود/i });
-    expect(editBtn).toBeInTheDocument();
+    const editBtns = screen.getAllByRole("button", { name: /Edit Items|تعديل البنود/i });
+    expect(editBtns.length).toBeGreaterThanOrEqual(1);
 
     // Clicking edit button reveals live item editor
-    fireEvent.click(editBtn);
+    fireEvent.click(editBtns[0]);
     expect(screen.getByText(/Edit Order Items|تعديل بنود وعروض الطلب/i)).toBeInTheDocument();
   });
 });
