@@ -1,3 +1,5 @@
+export type FulfillmentMilestone = 'READY_TO_SHIP' | 'SHIPPED';
+
 export interface VintageBucket {
   key: string;
   label: string;
@@ -25,8 +27,13 @@ export interface TeamMemberVelocity {
 }
 
 export interface VelocityKpis {
+  milestone?: FulfillmentMilestone;
+  milestoneLabel?: string;
+  actionVerb?: string;
   totalShippedCount: number;
+  totalCount?: number;
   totalShippedRevenue: number;
+  totalRevenue?: number;
   avgLeadTimeHours: number;
   sameDayCount: number;
   sameDayRate: number;
@@ -35,6 +42,10 @@ export interface VelocityKpis {
   inflowCount: number;
   outflowCount: number;
   netBacklogDelta: number;
+  waitingCarrierCount?: number;
+  waitingCarrierRevenue?: number;
+  handoffDoneCount?: number;
+  handoffPendingCount?: number;
 }
 
 export interface FulfillmentVelocitySummaryData {
@@ -66,6 +77,8 @@ export interface ShippedOrderDetail {
   vintageBucket: string;
   leadTimeHours: number;
   isGuest: boolean;
+  milestone?: FulfillmentMilestone;
+  handoffStatus?: 'SHIPPED' | 'WAITING_PICKUP';
 }
 
 export interface DrillDownPagination {
@@ -74,3 +87,4 @@ export interface DrillDownPagination {
   limit: number;
   totalPages: number;
 }
+

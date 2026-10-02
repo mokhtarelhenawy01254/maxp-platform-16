@@ -1,6 +1,11 @@
 import { useState, useCallback, useEffect } from "react";
 import { apiClient } from "../../../../../services/apiClient";
-import type { FulfillmentVelocitySummaryData, ShippedOrderDetail, DrillDownPagination } from "../types";
+import type {
+  FulfillmentVelocitySummaryData,
+  ShippedOrderDetail,
+  DrillDownPagination,
+  FulfillmentMilestone,
+} from "../types";
 
 export interface UseFulfillmentVelocityReturn {
   data: FulfillmentVelocitySummaryData | null;
@@ -8,6 +13,8 @@ export interface UseFulfillmentVelocityReturn {
   error: string | null;
   targetDate: string;
   setTargetDate: (d: string) => void;
+  milestone: FulfillmentMilestone;
+  setMilestone: (m: FulfillmentMilestone) => void;
   refetch: () => Promise<void>;
   // Drill-down states
   drawerOpen: boolean;
@@ -28,6 +35,7 @@ export function useFulfillmentVelocityData(): UseFulfillmentVelocityReturn {
     return `${y}-${m}-${d}`;
   });
 
+  const [milestone, setMilestone] = useState<FulfillmentMilestone>("READY_TO_SHIP");
   const [data, setData] = useState<FulfillmentVelocitySummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +59,7 @@ export function useFulfillmentVelocityData(): UseFulfillmentVelocityReturn {
     try {
       const res = await apiClient.get<{ success: boolean; data: FulfillmentVelocitySummaryData }>(
         "/analytics/fulfillment-velocity",
-        { params: { date: targetDate } }
+        { params: { date: targetDate, milestone } }
       );
       if (res.data?.success) {
         setData(res.data.data);
@@ -63,7 +71,7 @@ export function useFulfillmentVelocityData(): UseFulfillmentVelocityReturn {
     } finally {
       setLoading(false);
     }
-  }, [targetDate]);
+  }, [targetDate, milestone]);
 
   useEffect(() => {
     void fetchSummary();
@@ -80,6 +88,7 @@ export function useFulfillmentVelocityData(): UseFulfillmentVelocityReturn {
       try {
         const queryParams: Record<string, any> = {
           date: targetDate,
+          milestone,
           page: targetPage,
           limit: 30,
         };
@@ -101,7 +110,7 @@ export function useFulfillmentVelocityData(): UseFulfillmentVelocityReturn {
         setDrawerLoading(false);
       }
     },
-    [targetDate]
+    [targetDate, milestone]
   );
 
   return {
@@ -110,6 +119,8 @@ export function useFulfillmentVelocityData(): UseFulfillmentVelocityReturn {
     error,
     targetDate,
     setTargetDate,
+    milestone,
+    setMilestone,
     refetch: fetchSummary,
     drawerOpen,
     setDrawerOpen,

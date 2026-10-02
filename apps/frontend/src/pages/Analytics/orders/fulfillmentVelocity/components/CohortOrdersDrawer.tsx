@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { X, Search, Download, ExternalLink, Clock, User, Phone, MapPin } from "lucide-react";
-import type { ShippedOrderDetail, DrillDownPagination } from "../types";
+import type { ShippedOrderDetail, DrillDownPagination, FulfillmentMilestone } from "../types";
 
 interface Props {
   isOpen: boolean;
@@ -9,6 +9,7 @@ interface Props {
   orders: ShippedOrderDetail[];
   loading: boolean;
   pagination: DrillDownPagination;
+  milestone?: FulfillmentMilestone;
   onPageChange: (newPage: number) => void;
 }
 
@@ -19,6 +20,7 @@ export const CohortOrdersDrawer: React.FC<Props> = ({
   orders,
   loading,
   pagination,
+  milestone,
   onPageChange,
 }) => {
   const [search, setSearch] = useState("");
@@ -92,7 +94,7 @@ export const CohortOrdersDrawer: React.FC<Props> = ({
               {title}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              إجمالي {pagination.total.toLocaleString("ar-EG")} طلب تم شحنهم في هذه الدفعة
+              إجمالي {pagination.total.toLocaleString("ar-EG")} طلب في هذه الدفعة
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -146,7 +148,7 @@ export const CohortOrdersDrawer: React.FC<Props> = ({
                   className="rounded-xl border border-slate-200/80 bg-white p-3.5 text-xs transition-shadow hover:shadow-xs dark:border-slate-800 dark:bg-slate-900"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span className="font-bold text-slate-900 dark:text-white">
                         {o.orderNumber}
                       </span>
@@ -158,6 +160,17 @@ export const CohortOrdersDrawer: React.FC<Props> = ({
                       <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
                         {o.status}
                       </span>
+                      {o.handoffStatus && (
+                        <span
+                          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                            o.handoffStatus === "SHIPPED"
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
+                              : "bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300"
+                          }`}
+                        >
+                          {o.handoffStatus === "SHIPPED" ? "استلمها الكابتن" : "بانتظار الكابتن بالمخزن"}
+                        </span>
+                      )}
                     </div>
                     <span className="font-bold text-slate-900 tabular-nums dark:text-white">
                       {o.total.toLocaleString("ar-EG")} ج.م
@@ -187,7 +200,9 @@ export const CohortOrdersDrawer: React.FC<Props> = ({
 
                   <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-2 text-[10px] text-slate-400 dark:border-slate-800/80">
                     <span>ورود الطلب: {o.createDayStr}</span>
-                    <span>تم الشحن بواسطة: {o.shippedBy}</span>
+                    <span>
+                      {milestone === "READY_TO_SHIP" ? "تجهيز بواسطة" : "تم الشحن بواسطة"}: {o.shippedBy}
+                    </span>
                   </div>
                 </div>
               ))}

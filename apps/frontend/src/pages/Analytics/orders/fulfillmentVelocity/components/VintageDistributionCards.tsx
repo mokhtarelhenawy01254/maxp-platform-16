@@ -1,18 +1,23 @@
 import React from "react";
 import { ChevronLeft } from "lucide-react";
-import type { VintageBucket } from "../types";
+import type { VintageBucket, FulfillmentMilestone } from "../types";
 
 interface Props {
   buckets: VintageBucket[];
+  milestone?: FulfillmentMilestone;
   onSelectBucket: (bucketKey: string, bucketLabel: string) => void;
 }
 
-export const VintageDistributionCards: React.FC<Props> = ({ buckets, onSelectBucket }) => {
+export const VintageDistributionCards: React.FC<Props> = ({ buckets, milestone, onSelectBucket }) => {
+  const isPrep = milestone === "READY_TO_SHIP";
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-          توزيع الطلبات المشحونة حسب عمر الطلب الأصلي (Order Vintage)
+          {isPrep
+            ? "توزيع الطلبات المجهزة يدوياً حسب عمر الطلب الأصلي (Order Vintage)"
+            : "توزيع الطلبات المشحونة حسب عمر الطلب الأصلي (Order Vintage)"}
         </h2>
         <span className="text-xs text-slate-500 dark:text-slate-400">
           اضغط على أي شريحة لاستعراض أوردراتها فوراً

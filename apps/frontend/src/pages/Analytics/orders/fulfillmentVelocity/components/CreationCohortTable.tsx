@@ -1,18 +1,23 @@
 import React from "react";
 import { Calendar, ArrowRight, ExternalLink } from "lucide-react";
-import type { CreationCohort } from "../types";
+import type { CreationCohort, FulfillmentMilestone } from "../types";
 
 interface Props {
   cohorts: CreationCohort[];
+  milestone?: FulfillmentMilestone;
   onSelectCohortDate: (date: string) => void;
 }
 
-export const CreationCohortTable: React.FC<Props> = ({ cohorts, onSelectCohortDate }) => {
+export const CreationCohortTable: React.FC<Props> = ({ cohorts, milestone, onSelectCohortDate }) => {
+  const isPrep = milestone === "READY_TO_SHIP";
+
   if (cohorts.length === 0) {
     return (
       <div className="rounded-xl border border-slate-200/80 bg-white p-8 text-center text-slate-500 dark:border-slate-800 dark:bg-slate-900">
         <Calendar className="mx-auto h-8 w-8 text-slate-400 opacity-60" />
-        <p className="mt-2 text-sm font-medium">لا توجد طلبات تم شحنها في هذا اليوم</p>
+        <p className="mt-2 text-sm font-medium">
+          {isPrep ? "لا توجد طلبات تم تجهيزها في هذا اليوم" : "لا توجد طلبات تم شحنها في هذا اليوم"}
+        </p>
       </div>
     );
   }
@@ -22,10 +27,14 @@ export const CreationCohortTable: React.FC<Props> = ({ cohorts, onSelectCohortDa
       <div className="flex flex-col gap-1 border-b border-slate-200/80 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
         <div>
           <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-            تفصيل الطلبات المشحونة حسب تاريخ الورود الدقيق (Cohort Vintage Table)
+            {isPrep
+              ? "تفصيل الطلبات المجهزة حسب تاريخ الورود الدقيق (Cohort Vintage Table)"
+              : "تفصيل الطلبات المشحونة حسب تاريخ الورود الدقيق (Cohort Vintage Table)"}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            توزيع كم أوردر خرج شحن من كل تاريخ ورود على حدة
+            {isPrep
+              ? "توزيع كم أوردر تم تغليفه وتجهيزه من كل تاريخ ورود على حدة"
+              : "توزيع كم أوردر خرج شحن من كل تاريخ ورود على حدة"}
           </p>
         </div>
         <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
@@ -39,10 +48,14 @@ export const CreationCohortTable: React.FC<Props> = ({ cohorts, onSelectCohortDa
             <tr className="border-b border-slate-100 bg-slate-50/70 text-slate-500 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-400">
               <th className="py-2.5 px-4 font-semibold">تاريخ ورود الطلب</th>
               <th className="py-2.5 px-3 font-semibold">عمر الطلب</th>
-              <th className="py-2.5 px-3 font-semibold text-center">الطلبات المشحونة</th>
+              <th className="py-2.5 px-3 font-semibold text-center">
+                {isPrep ? "الطلبات المجهزة" : "الطلبات المشحونة"}
+              </th>
               <th className="py-2.5 px-3 font-semibold">حصة الدفعة</th>
               <th className="py-2.5 px-3 font-semibold">إجمالي القيمة</th>
-              <th className="py-2.5 px-3 font-semibold">متوسط دورة التجهيز</th>
+              <th className="py-2.5 px-3 font-semibold">
+                {isPrep ? "متوسط سرعة التجهيز" : "متوسط دورة التجهيز"}
+              </th>
               <th className="py-2.5 px-4 font-semibold text-center">إجراء</th>
             </tr>
           </thead>

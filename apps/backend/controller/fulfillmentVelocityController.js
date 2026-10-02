@@ -44,8 +44,10 @@ const getFulfillmentVelocitySummary = async (req, res) => {
     }
 
     const prisma = getSharedPrismaClient();
-    const { date, startDate, endDate, tz } = req.query;
+    const { date, startDate, endDate, tz, milestone: rawMilestone } = req.query;
     const timezone = tz || req.user?.company?.timezone || DEFAULT_TIMEZONE;
+    const milestone = rawMilestone === 'SHIPPED' ? 'SHIPPED' : 'READY_TO_SHIP';
+    const targetStatuses = milestone === 'SHIPPED' ? ['SHIPPED'] : ['READY_TO_SHIP', 'READY', 'PACKAGED'];
 
     // Default to today if no date provided
     const targetStartDate = startDate || date || moment().tz(timezone).format('YYYY-MM-DD');
@@ -53,11 +55,11 @@ const getFulfillmentVelocitySummary = async (req, res) => {
 
     const shipDateFilter = buildDateRangeFilter(targetStartDate, targetEndDate, timezone);
 
-    // 1. Fetch all status changes to SHIPPED in this window
+    // 1. Fetch all status changes matching the milestone in this window
     const historyRows = await prisma.orderStatusHistory.findMany({
       where: {
         order: { companyId },
-        status: 'SHIPPED',
+        status: { in: targetStatuses },
         createdAt: shipDateFilter,
       },
       select: {
@@ -77,7 +79,7 @@ const getFulfillmentVelocitySummary = async (req, res) => {
     const guestHistoryRows = await prisma.orderStatusHistory.findMany({
       where: {
         guestOrder: { companyId },
-        status: 'SHIPPED',
+        status: { in: targetStatuses },
         createdAt: shipDateFilter,
       },
       select: {
@@ -95,7 +97,7 @@ const getFulfillmentVelocitySummary = async (req, res) => {
 
     const allHistories = [...historyRows, ...guestHistoryRows];
 
-    // Deduplicate by orderId or guestOrderId (keep earliest or latest transition in this window)
+    // Deduplicate by orderId or guestOrderId (keep latest transition in this window)
     const orderHistoryMap = new Map();
     for (const h of allHistories) {
       const key = h.orderId ? `reg_${h.orderId}` : `gst_${h.guestOrderId}`;
@@ -111,8 +113,8 @@ const getFulfillmentVelocitySummary = async (req, res) => {
       else if (h.guestOrderId) uniqueGuestOrderIds.push(h.guestOrderId);
     }
 
-    // 2. Fetch Order and GuestOrder details
-    const [regularOrders, guestOrders, inflowRegCount, inflowGstCount] = await Promise.all([
+    // 2. Fetch Order and GuestOrder details, plus current waiting carrier inventory
+    const [regularOrders, guestOrders, inflowRegCount, inflowGstCount, waitingRegular, waitingGuest] = await Promise.all([
       uniqueOrderIds.length > 0
         ? prisma.order.findMany({
             where: { id: { in: uniqueOrderIds }, companyId },
@@ -149,15 +151,68 @@ const getFulfillmentVelocitySummary = async (req, res) => {
       prisma.guestOrder.count({
         where: { companyId, createdAt: shipDateFilter },
       }),
+      // Active orders in warehouse waiting for carrier pickup
+      prisma.order.findMany({
+        where: {
+          companyId,
+          status: {
+            notIn: [
+              'SHIPPED',
+              'DELIVERED',
+              'CANCELLED',
+              'RETURNED',
+              'REFUNDED',
+              'TRASH',
+              'DUPLICATE_ORDER',
+              'TRASH_ORDER',
+            ],
+          },
+          OR: [
+            { status: { in: ['READY_TO_SHIP', 'READY'] } },
+            { metadata: { contains: '"preparationStatus":"READY_TO_SHIP"' } },
+            { metadata: { contains: '"preparationStatus":"PACKAGED"' } },
+          ],
+        },
+        select: { id: true, total: true },
+      }),
+      prisma.guestOrder.findMany({
+        where: {
+          companyId,
+          status: {
+            notIn: [
+              'SHIPPED',
+              'DELIVERED',
+              'CANCELLED',
+              'RETURNED',
+              'REFUNDED',
+              'TRASH',
+              'DUPLICATE_ORDER',
+            ],
+          },
+          OR: [
+            { status: { in: ['READY_TO_SHIP', 'READY'] } },
+            { metadata: { contains: '"preparationStatus":"READY_TO_SHIP"' } },
+            { metadata: { contains: '"preparationStatus":"PACKAGED"' } },
+          ],
+        },
+        select: { id: true, finalTotal: true },
+      }),
     ]);
+
+    const waitingCarrierCount = waitingRegular.length + waitingGuest.length;
+    const waitingCarrierRevenue =
+      waitingRegular.reduce((s, o) => s + Number(o.total || 0), 0) +
+      waitingGuest.reduce((s, g) => s + Number(g.finalTotal || 0), 0);
 
     const regularMap = new Map(regularOrders.map((o) => [o.id, o]));
     const guestMap = new Map(guestOrders.map((g) => [g.id, g]));
 
-    // 3. Process each shipped order
+    // 3. Process each order matching the milestone
     let totalShippedCount = 0;
     let totalShippedRevenue = 0;
     let totalLeadTimeHours = 0;
+    let handoffDoneCount = 0;
+    let handoffPendingCount = 0;
 
     const bucketsMap = {
       same_day: { count: 0, revenue: 0 },
@@ -179,18 +234,22 @@ const getFulfillmentVelocitySummary = async (req, res) => {
       const orderTotal = Number(order.total || order.finalTotal || 0);
       totalShippedRevenue += orderTotal;
 
-      const shippedAt = new Date(h.createdAt);
+      const isHandoffDone = ['SHIPPED', 'DELIVERED'].includes(order.status);
+      if (isHandoffDone) handoffDoneCount++;
+      else handoffPendingCount++;
+
+      const eventAt = new Date(h.createdAt);
       const createdAt = new Date(order.createdAt);
 
-      const leadHours = Math.max(0, (shippedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60));
+      const leadHours = Math.max(0, (eventAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60));
       totalLeadTimeHours += leadHours;
 
-      const shipDayStr = toDateStrInTz(shippedAt, timezone);
+      const eventDayStr = toDateStrInTz(eventAt, timezone);
       const createDayStr = toDateStrInTz(createdAt, timezone);
 
-      const shipMoment = moment.tz(shipDayStr, timezone);
+      const eventMoment = moment.tz(eventDayStr, timezone);
       const createMoment = moment.tz(createDayStr, timezone);
-      const diffDays = Math.max(0, shipMoment.diff(createMoment, 'days'));
+      const diffDays = Math.max(0, eventMoment.diff(createMoment, 'days'));
 
       const bucketKey = getVintageBucketKey(diffDays);
       bucketsMap[bucketKey].count++;
@@ -211,8 +270,8 @@ const getFulfillmentVelocitySummary = async (req, res) => {
       cohort.totalRevenue += orderTotal;
       cohort.totalLeadHours += leadHours;
 
-      // Group by team member
-      const actor = h.userName || h.changedBy || 'النظام';
+      // Group by team member who took this action
+      const actor = h.userName || h.changedBy || (milestone === 'READY_TO_SHIP' ? 'موظف التجهيز' : 'النظام');
       if (!teamMap.has(actor)) {
         teamMap.set(actor, { name: actor, totalShipped: 0, freshOrders: 0, agedOrders: 0 });
       }
@@ -267,8 +326,13 @@ const getFulfillmentVelocitySummary = async (req, res) => {
           isSingleDay: targetStartDate === targetEndDate,
         },
         kpis: {
+          milestone,
+          milestoneLabel: milestone === 'READY_TO_SHIP' ? 'جاهز للشحن (تجهيز المخزن)' : 'تم الشحن (استلام شركة الشحن)',
+          actionVerb: milestone === 'READY_TO_SHIP' ? 'تجهيز' : 'شحن',
           totalShippedCount,
+          totalCount: totalShippedCount,
           totalShippedRevenue: Math.round(totalShippedRevenue),
+          totalRevenue: Math.round(totalShippedRevenue),
           avgLeadTimeHours,
           sameDayCount: bucketsMap.same_day.count,
           sameDayRate: totalShippedCount > 0 ? Math.round((bucketsMap.same_day.count / totalShippedCount) * 100) : 0,
@@ -282,6 +346,10 @@ const getFulfillmentVelocitySummary = async (req, res) => {
           inflowCount: inflowTotalCount,
           outflowCount: totalShippedCount,
           netBacklogDelta,
+          waitingCarrierCount,
+          waitingCarrierRevenue: Math.round(waitingCarrierRevenue),
+          handoffDoneCount,
+          handoffPendingCount,
         },
         vintageBuckets,
         cohorts: cohortsList,
@@ -312,6 +380,7 @@ const getFulfillmentVelocityOrders = async (req, res) => {
       endDate,
       vintageBucket,
       creationDate,
+      milestone: rawMilestone,
       search = '',
       page = 1,
       limit = 30,
@@ -319,35 +388,39 @@ const getFulfillmentVelocityOrders = async (req, res) => {
     } = req.query;
 
     const timezone = tz || req.user?.company?.timezone || DEFAULT_TIMEZONE;
+    const milestone = rawMilestone === 'SHIPPED' ? 'SHIPPED' : 'READY_TO_SHIP';
+    const targetStatuses = milestone === 'SHIPPED' ? ['SHIPPED'] : ['READY_TO_SHIP', 'READY', 'PACKAGED'];
+
     const targetStartDate = startDate || date || moment().tz(timezone).format('YYYY-MM-DD');
     const targetEndDate = endDate || date || targetStartDate;
 
     const shipDateFilter = buildDateRangeFilter(targetStartDate, targetEndDate, timezone);
 
-    // 1. Fetch histories in this window
+    // 1. Fetch histories in this window matching target milestone
     const [historyRows, guestHistoryRows] = await Promise.all([
       prisma.orderStatusHistory.findMany({
-        where: { order: { companyId }, status: 'SHIPPED', createdAt: shipDateFilter },
-        select: { orderId: true, userName: true, changedBy: true, createdAt: true },
+        where: { order: { companyId }, status: { in: targetStatuses }, createdAt: shipDateFilter },
+        select: { orderId: true, userName: true, changedBy: true, createdAt: true, status: true },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.orderStatusHistory.findMany({
-        where: { guestOrder: { companyId }, status: 'SHIPPED', createdAt: shipDateFilter },
-        select: { guestOrderId: true, userName: true, changedBy: true, createdAt: true },
+        where: { guestOrder: { companyId }, status: { in: targetStatuses }, createdAt: shipDateFilter },
+        select: { guestOrderId: true, userName: true, changedBy: true, createdAt: true, status: true },
         orderBy: { createdAt: 'desc' },
       }),
     ]);
 
+    const defaultActor = milestone === 'READY_TO_SHIP' ? 'موظف التجهيز' : 'النظام';
     const orderShipMap = new Map();
     for (const h of historyRows) {
       if (h.orderId && !orderShipMap.has(h.orderId)) {
-        orderShipMap.set(h.orderId, { shippedAt: h.createdAt, shippedBy: h.userName || h.changedBy || 'النظام' });
+        orderShipMap.set(h.orderId, { shippedAt: h.createdAt, shippedBy: h.userName || h.changedBy || defaultActor });
       }
     }
     const guestShipMap = new Map();
     for (const g of guestHistoryRows) {
       if (g.guestOrderId && !guestShipMap.has(g.guestOrderId)) {
-        guestShipMap.set(g.guestOrderId, { shippedAt: g.createdAt, shippedBy: g.userName || g.changedBy || 'النظام' });
+        guestShipMap.set(g.guestOrderId, { shippedAt: g.createdAt, shippedBy: g.userName || g.changedBy || defaultActor });
       }
     }
 
@@ -400,6 +473,7 @@ const getFulfillmentVelocityOrders = async (req, res) => {
       const diffDays = Math.max(0, moment.tz(shipDayStr, timezone).diff(moment.tz(createDayStr, timezone), 'days'));
       const bucket = getVintageBucketKey(diffDays);
       const leadHours = Math.max(0, Math.round(((shippedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60)) * 10) / 10);
+      const isHandoffDone = ['SHIPPED', 'DELIVERED'].includes(o.status);
 
       allOrders.push({
         id: o.id,
@@ -418,6 +492,8 @@ const getFulfillmentVelocityOrders = async (req, res) => {
         vintageBucket: bucket,
         leadTimeHours: leadHours,
         isGuest: false,
+        milestone,
+        handoffStatus: isHandoffDone ? 'SHIPPED' : 'WAITING_PICKUP',
       });
     }
 
@@ -430,6 +506,7 @@ const getFulfillmentVelocityOrders = async (req, res) => {
       const diffDays = Math.max(0, moment.tz(shipDayStr, timezone).diff(moment.tz(createDayStr, timezone), 'days'));
       const bucket = getVintageBucketKey(diffDays);
       const leadHours = Math.max(0, Math.round(((shippedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60)) * 10) / 10);
+      const isHandoffDone = ['SHIPPED', 'DELIVERED'].includes(g.status);
 
       allOrders.push({
         id: g.id,
@@ -448,6 +525,8 @@ const getFulfillmentVelocityOrders = async (req, res) => {
         vintageBucket: bucket,
         leadTimeHours: leadHours,
         isGuest: true,
+        milestone,
+        handoffStatus: isHandoffDone ? 'SHIPPED' : 'WAITING_PICKUP',
       });
     }
 
