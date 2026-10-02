@@ -144,13 +144,34 @@ const getMyOrders = async (req, res) => {
         include: {
           order: {
             include: {
-              customer: true,
-              orderItems: { include: { product: true } }
+              customer: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  phone: true,
+                  deliveryRate: true,
+                  totalDelivered: true,
+                  totalOrdersCount: true,
+                  customerRating: true,
+                }
+              },
+              orderItems: { include: { product: true } },
+              callAttemptLogs: {
+                include: { user: { select: { firstName: true, lastName: true } } },
+                orderBy: { createdAt: 'desc' },
+                take: 10
+              }
             }
           },
           guestOrder: {
             include: {
-              orderNotes: true
+              orderNotes: true,
+              callAttemptLogs: {
+                include: { user: { select: { firstName: true, lastName: true } } },
+                orderBy: { createdAt: 'desc' },
+                take: 10
+              }
             }
           }
         },
@@ -200,6 +221,51 @@ const getMyOrders = async (req, res) => {
       const subtotal = parseFloat(order.subtotal || order.itemsTotal || itemsSubtotal || 0);
       const shipping = parseFloat(order.shippingCost || order.shipping || order.deliveryCost || 0);
 
+      const rawShippingAddress = isGuest
+        ? order.shippingAddress
+        : (order.shippingAddress || order.customerAddress || '');
+      const shippingAddressStr = typeof rawShippingAddress === 'string'
+        ? rawShippingAddress
+        : (typeof rawShippingAddress === 'object' && rawShippingAddress !== null
+            ? (rawShippingAddress.address || rawShippingAddress.street || '')
+            : '');
+
+      let attribution = null;
+      if (order.metadata) {
+        try {
+          const metaObj = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : order.metadata;
+          if (metaObj && typeof metaObj === 'object') {
+            attribution = {
+              source: metaObj.source || metaObj.platform || metaObj.utm_source || null,
+              campaignName: metaObj.campaignName || metaObj.utm_campaign || metaObj.campaign || null,
+              adSetId: metaObj.adSetId || metaObj.adsetId || null,
+              adId: metaObj.adId || metaObj.adid || null,
+            };
+          }
+        } catch {
+          // ignore metadata json parsing errors
+        }
+      }
+
+      const callLogs = Array.isArray(order.callAttemptLogs)
+        ? order.callAttemptLogs.map(l => ({
+            id: l.id,
+            result: l.result || 'unreached',
+            notes: l.notes || '',
+            createdAt: l.createdAt,
+            userName: (l.user?.firstName || l.user?.lastName)
+              ? `${l.user?.firstName || ''} ${l.user?.lastName || ''}`.trim()
+              : 'موظف',
+          }))
+        : [];
+
+      const customerStats = !isGuest && order.customer ? {
+        deliveryRate: typeof order.customer.deliveryRate === 'number' ? order.customer.deliveryRate : null,
+        totalDelivered: order.customer.totalDelivered || 0,
+        totalOrdersCount: order.customer.totalOrdersCount || 0,
+        customerRating: order.customer.customerRating || 'UNKNOWN',
+      } : null;
+
       return {
         id: order.id,
         orderNumber: order.orderNumber,
@@ -208,6 +274,7 @@ const getMyOrders = async (req, res) => {
         customerPhone: isGuest ? order.guestPhone : (order.customerPhone || order.customer?.phone || ''),
         governorate: order.governorate || order.shippingAddress?.governorate || '',
         city: order.city || order.shippingAddress?.city || '',
+        shippingAddress: shippingAddressStr,
         total: parseFloat(order.total || order.finalTotal || 0),
         subtotal,
         shipping,
@@ -217,7 +284,11 @@ const getMyOrders = async (req, res) => {
         callAttempts: order.callAttempts || 0,
         lastCallAt: isGuest ? order.lastCallAt : order.lastCallAttemptAt,
         followUpDate: order.followUpDate,
+        notes: order.notes || '',
         items,
+        callLogs,
+        customerStats,
+        attribution,
       };
     });
 

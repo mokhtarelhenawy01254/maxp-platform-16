@@ -4988,7 +4988,7 @@ const AppContent = () => {
                 <Route
                   path="/orders/workspace"
                   element={
-                    <Layout>
+                    <Layout fullWidth>
                       <AgentWorkspace />
                     </Layout>
                   }

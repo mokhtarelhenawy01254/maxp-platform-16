@@ -235,6 +235,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   const shouldRemovePadding =
     fullWidth ||
     location.pathname === "/orders" ||
+    location.pathname.startsWith("/orders/workspace") ||
     location.pathname.startsWith("/orders/analytics") ||
     location.pathname.startsWith("/profile") ||
     location.pathname.startsWith("/whatsapp") ||

@@ -1,0 +1,89 @@
+export type OrderType = 'GUEST' | 'REGULAR';
+
+export const WORKSPACE_TAB_KEYS = [
+  'all',
+  'pending',
+  'confirmed',
+  'cancelled',
+  'followup',
+  'confirmation',
+] as const;
+
+export type FilterTab = typeof WORKSPACE_TAB_KEYS[number];
+export type OrderAction = 'log-call' | 'confirm' | 'cancel' | 'details' | 'follow-up';
+export type PerspectiveMode = 'operator' | 'supervisor' | 'marketer';
+
+export interface CallLogEntry {
+  id: string;
+  result: string;
+  notes?: string | null;
+  createdAt: string;
+  userName?: string | null;
+}
+
+export interface CustomerStats {
+  deliveryRate: number | null;
+  totalDelivered: number;
+  totalOrdersCount: number;
+  customerRating: string;
+}
+
+export interface OrderAttribution {
+  source?: string | null;
+  campaignName?: string | null;
+  adSetId?: string | null;
+  adId?: string | null;
+}
+
+export interface WorkspaceOrderItem {
+  id?: string;
+  productName: string;
+  name?: string;
+  quantity: number;
+  price: number;
+  total: number;
+  productColor?: string;
+  productSize?: string;
+  productImage?: string;
+  sku?: string;
+}
+
+export interface WorkspaceOrder {
+  id: string;
+  orderNumber: string;
+  type?: OrderType;
+  customerName: string;
+  customerPhone: string;
+  governorate: string;
+  city: string;
+  shippingAddress?: string;
+  total: number;
+  subtotal: number;
+  shipping: number;
+  status: string;
+  callAttempts: number;
+  lastCallAt: string | null;
+  followUpDate: string | null;
+  createdAt: string;
+  assignedAt?: string | null;
+  notes?: string;
+  items: WorkspaceOrderItem[];
+  callLogs?: CallLogEntry[];
+  customerStats?: CustomerStats | null;
+  attribution?: OrderAttribution | null;
+}
+
+export interface WorkspaceStats {
+  total: number;
+  pending: number;
+  confirmed: number;
+  cancelled: number;
+  followup: number;
+}
+
+export interface WorkspacePagination {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
