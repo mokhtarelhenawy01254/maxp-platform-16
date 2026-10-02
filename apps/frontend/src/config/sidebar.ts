@@ -710,6 +710,7 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/profit', icon: DollarSign, label: t('sidebar.profitAnalytics') },
                 { to: '/analytics/orders/cod-performance', icon: Truck, label: t('sidebar.codPerformance') },
                 { to: '/analytics/orders/today-ops', icon: Sparkles, label: t('sidebar.todayOps') },
+                { to: '/analytics/orders/fulfillment-velocity', icon: Zap, label: isEn ? 'Fulfillment Velocity & Vintage' : t('sidebar.fulfillmentVelocity', 'سرعة الإنجاز وتوزيع أعمار الطلبات') },
                 { to: '/analytics/orders/cancellations', icon: XCircle, label: t('sidebar.cancellationAnalytics') },
                 { to: '/analytics/orders/delivery-rate', icon: Truck, label: t('sidebar.deliveryRate') },
                 { to: '/analytics/orders/fulfillment', icon: PackageCheck, label: t('sidebar.productFulfillment') },

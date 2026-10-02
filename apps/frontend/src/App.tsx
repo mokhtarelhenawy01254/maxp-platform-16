@@ -783,6 +783,9 @@ const TeamPerformanceAnalytics = React.lazy(
 const TodayOps = React.lazy(
   () => import("./pages/Analytics/orders/TodayOps"),
 );
+const FulfillmentVelocityPage = React.lazy(
+  () => import("./pages/Analytics/orders/fulfillmentVelocity/FulfillmentVelocityPage"),
+);
 const OrderStatusAnalytics = React.lazy(
   () => import("./pages/Analytics/orders/OrderStatusAnalytics"),
 );
@@ -5631,6 +5634,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <TodayOps />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/fulfillment-velocity"
+                  element={
+                    <Layout>
+                      <FulfillmentVelocityPage />
                     </Layout>
                   }
                 />

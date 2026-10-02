@@ -3,6 +3,7 @@ const router = express.Router();
 const analyticsController = require('../controller/analyticsController');
 const retentionAnalyticsController = require('../controller/retentionAnalyticsController');
 const productDeliveryReturnsController = require('../controller/productDeliveryReturnsController');
+const fulfillmentVelocityController = require('../controller/fulfillmentVelocityController');
 const { authenticateToken } = require('../utils/verifyToken');
 const { cacheMiddleware } = require('../middleware/performanceOptimization');
 const { checkAppAccess } = require('../middleware/checkAppAccess');
@@ -110,6 +111,10 @@ router.get('/status-summary/orders', authenticateToken, analyticsController.getS
 
 // تفاصيل القطع حسب الحالة (drill-down)
 router.get('/status-summary/items', authenticateToken, analyticsController.getStatusSummaryItems);
+
+// سرعة الإنجاز وتوزيع أعمار الطلبات المشحونة (Fulfillment Velocity & Vintage Cockpit)
+router.get('/fulfillment-velocity', authenticateToken, fulfillmentVelocityController.getFulfillmentVelocitySummary);
+router.get('/fulfillment-velocity/orders', authenticateToken, fulfillmentVelocityController.getFulfillmentVelocityOrders);
 
 // Retention Analytics — RPR / Cohort / RFM (Swan P0)
 router.get('/retention', authenticateToken, cacheMiddleware(60000), retentionAnalyticsController.getRetentionAnalytics);
