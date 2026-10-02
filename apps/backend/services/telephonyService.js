@@ -36,11 +36,12 @@ class TelephonyService {
   /**
    * تسجيل جهاز الموظف أو تحديث نبض الاتصال (Presence Heartbeat)
    */
-  async registerOrHeartbeatDevice({ companyId, userId, deviceId, deviceName, socketId, appVersion }) {
+  async registerOrHeartbeatDevice({ companyId, userId, deviceId, deviceName, socketId, appVersion, socketConnected }) {
     if (!companyId || !userId || !deviceId) {
       throw new Error('بيانات الجهاز غير مكتملة');
     }
     const prisma = getSharedPrismaClient();
+    const isOnline = socketConnected !== undefined ? Boolean(socketConnected) : true;
     return await prisma.employeeDevice.upsert({
       where: { deviceId },
       update: {
@@ -49,7 +50,7 @@ class TelephonyService {
         deviceName: deviceName || undefined,
         socketId: socketId || undefined,
         appVersion: appVersion || undefined,
-        isOnline: true,
+        isOnline,
         lastSeenAt: new Date(),
         updatedAt: new Date()
       },
@@ -60,7 +61,7 @@ class TelephonyService {
         deviceName: deviceName || 'Android Device',
         socketId: socketId || null,
         appVersion: appVersion || null,
-        isOnline: true,
+        isOnline,
         lastSeenAt: new Date()
       }
     });

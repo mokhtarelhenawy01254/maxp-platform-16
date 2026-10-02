@@ -147,11 +147,13 @@ class TelephonyClientService {
       const sendHeartbeat = async () => {
         try {
           const socket = socketService.getSocket();
+          const socketConnected = socketService.isConnected();
           await apiClient.post("/telephony/device/heartbeat", {
             deviceId: deviceInfo.deviceId,
             deviceName: deviceInfo.deviceName,
             socketId: socket?.id || null,
             appVersion: deviceInfo.osVersion,
+            socketConnected,
           });
         } catch {
           // ignore heartbeat errors
@@ -162,18 +164,28 @@ class TelephonyClientService {
       if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = setInterval(sendHeartbeat, 60000);
 
-      // الاستماع لأمر الاتصال القادم من الكمبيوتر عبر Socket.IO
-      socketService.on("telephony:dial", async (data: any) => {
-        try {
-          if (!data?.customerPhone) return;
-          await MaxPTelephony.dialCustomer({
-            phone: data.customerPhone,
-            sessionId: data.sessionId,
-            orderId: data.orderId,
-          });
-        } catch (error) {
-          console.error("Failed to execute native dial:", error);
-        }
+      // دالة لتسجيل مستمع أمر الاتصال على المقبس
+      const registerSocketDialListener = () => {
+        socketService.off("telephony:dial");
+        socketService.on("telephony:dial", async (data: any) => {
+          try {
+            if (!data?.customerPhone) return;
+            await MaxPTelephony.dialCustomer({
+              phone: data.customerPhone,
+              sessionId: data.sessionId,
+              orderId: data.orderId,
+            });
+          } catch (error) {
+            console.error("Failed to execute native dial:", error);
+          }
+        });
+      };
+
+      // تسجيل المستمع فورياً وعند أي إعادة اتصال بالمقبس
+      registerSocketDialListener();
+      socketService.on("connect", () => {
+        registerSocketDialListener();
+        sendHeartbeat(); // نبض فوري عند استعادة الاتصال
       });
 
       // الاستماع لانتهاء المكالمة من الـ Native CallStateReceiver
@@ -183,7 +195,7 @@ class TelephonyClientService {
             sessionId: eventData.sessionId,
             durationSeconds: eventData.durationSeconds,
             callStatus: eventData.durationSeconds > 0 ? "COMPLETED" : "NO_ANSWER",
-            callerPhone: eventData.phone,
+            callerPhone: undefined,
           });
         } catch (error) {
           console.error("Failed to sync call completion to server:", error);

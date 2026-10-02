@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Phone, PhoneCall, Smartphone, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { telephonyClientService, DevicePresenceResponse } from "../../services/telephonyService";
+import { telephonyClientService } from "../../services/telephonyService";
+import { useDevicePresence } from "../../hooks/useDevicePresence";
 import { socketService } from "../../services/socketService";
 import { QuickCallDispositionModal } from "./QuickCallDispositionModal";
 
@@ -28,26 +29,11 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
   onPostpone,
   onCancel,
 }) => {
-  const [presence, setPresence] = useState<DevicePresenceResponse>({
-    isOnline: false,
-    device: null,
-  });
+  const { presence } = useDevicePresence();
   const [isLoading, setIsLoading] = useState(false);
   const [isDialing, setIsDialing] = useState(false);
   const [showDisposition, setShowDisposition] = useState(false);
   const [lastDuration, setLastDuration] = useState(0);
-
-  // تحديث حالة اتصال هاتف الموظف دورياً
-  const checkPresence = useCallback(async () => {
-    const data = await telephonyClientService.getDevicePresence();
-    setPresence(data);
-  }, []);
-
-  useEffect(() => {
-    checkPresence();
-    const interval = setInterval(checkPresence, 30000); // كل 30 ثانية
-    return () => clearInterval(interval);
-  }, [checkPresence]);
 
   // الاستماع لحدث انتهاء المكالمة الخاصة بهذا الطلب عبر Socket.IO
   useEffect(() => {

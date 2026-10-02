@@ -33,7 +33,7 @@ router.post('/device/heartbeat', async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     const userId = req.user?.id;
-    const { deviceId, deviceName, socketId, appVersion } = req.body || {};
+    const { deviceId, deviceName, socketId, appVersion, socketConnected } = req.body || {};
 
     if (!deviceId) {
       return res.status(400).json({ success: false, message: 'معرف الجهاز (deviceId) مطلوب' });
@@ -45,7 +45,8 @@ router.post('/device/heartbeat', async (req, res) => {
       deviceId,
       deviceName,
       socketId,
-      appVersion
+      appVersion,
+      socketConnected
     });
 
     res.json({ success: true, data: device });

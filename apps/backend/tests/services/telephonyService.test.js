@@ -189,5 +189,63 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
         })
       );
     });
+
+    test('sets isOnline to false when socketConnected is false in heartbeat', async () => {
+      mockPrisma.employeeDevice.upsert.mockImplementation(({ update, create }) =>
+        Promise.resolve({ id: 'dev_1', ...update })
+      );
+
+      const device = await telephonyService.registerOrHeartbeatDevice({
+        companyId,
+        userId,
+        deviceId,
+        socketConnected: false
+      });
+
+      expect(device.isOnline).toBe(false);
+      expect(mockPrisma.employeeDevice.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { deviceId },
+          update: expect.objectContaining({
+            isOnline: false
+          })
+        })
+      );
+    });
+
+    test('completeCall leaves callerPhone null when callerPhone is not provided', async () => {
+      const sessionId = 'call_test_null_caller';
+
+      mockPrisma.callAttemptLog.findUnique.mockResolvedValue({
+        id: 'log_2',
+        sessionId,
+        orderId: 'ord_2',
+        companyId,
+        callerPhone: null
+      });
+      mockPrisma.callAttemptLog.update.mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'log_2', sessionId, ...data })
+      );
+      mockPrisma.order.update.mockResolvedValue({ id: 'ord_2' });
+
+      const updated = await telephonyService.completeCall({
+        companyId,
+        userId,
+        sessionId,
+        durationSeconds: 30,
+        callStatus: 'COMPLETED'
+        // callerPhone intentionally omitted
+      });
+
+      expect(updated.callerPhone).toBeNull();
+      expect(mockPrisma.callAttemptLog.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { sessionId },
+          data: expect.objectContaining({
+            callerPhone: null
+          })
+        })
+      );
+    });
   });
 });
