@@ -1996,7 +1996,8 @@ const updateUser = async (req, res) => {
         ...(email && { email: email.toLowerCase() }),
         ...(phone !== undefined && { phone }),
         ...(hashedPassword && { password: hashedPassword }), // ✅ Update password if provided
-        ...(isActive !== undefined && { isActive }), // ✅ Keep User.isActive in sync with UserCompany.isActive
+        // NOTE: Global User.isActive must NEVER be mutated from company-scoped controller.
+        // Tenant admins only toggle membership status on UserCompany (updated below).
         // ✅ Update employee fields
         ...(departmentId !== undefined && {
           departmentId: departmentId || null,

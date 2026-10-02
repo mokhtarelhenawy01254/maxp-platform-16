@@ -7,18 +7,9 @@ async function main() {
 
   console.log('🚀 [RECONCILIATION] Starting comprehensive HR September 2026 reconciliation...');
 
-  // 1. Deactivate demo account (Swan Company: swan@h2m.com, cmleybpg2002bjuo2m44y4kip)
-  console.log('\n--- 1. Locking Demo Account ---');
-  const demoUser = await prisma.user.findUnique({
-    where: { id: 'cmleybpg2002bjuo2m44y4kip' }
-  });
-  if (demoUser) {
-    await prisma.user.update({
-      where: { id: 'cmleybpg2002bjuo2m44y4kip' },
-      data: { isActive: false }
-    });
-    console.log('✅ Demo user cmleybpg2002bjuo2m44y4kip (swan@h2m.com) deactivated (isActive = false)');
-  }
+  // 1. Account check (swan@h2m.com is an active OWNER account across multiple companies; DO NOT deactivate)
+  console.log('\n--- 1. Account Check ---');
+  console.log('ℹ️ Preserved active status for swan@h2m.com (Owner account)');
 
   // 2. Deduplicate Shrouk Magdi records
   console.log('\n--- 2. Employee Records Deduplication ---');

@@ -16,12 +16,13 @@ const businessSpecialtyService = require('../services/businessSpecialtyService')
 const normalizeEmail = (value = '') => value.trim().toLowerCase();
 
 const getSessionExpiryConfig = (req) => {
+  const headers = req?.headers || {};
   const isMobileClient =
-    req.headers['x-platform'] === 'capacitor' ||
-    /Capacitor|Android.*wv|maxp-mobile/i.test(req.headers['user-agent'] || '');
+    headers['x-platform'] === 'capacitor' ||
+    /Capacitor|Android.*wv|maxp-mobile/i.test(headers['user-agent'] || '');
 
   const isDesktopClient =
-    req.headers['x-client'] === 'maxp-desktop-monitor';
+    headers['x-client'] === 'maxp-desktop-monitor';
 
   if (isDesktopClient) {
     return {
@@ -720,8 +721,10 @@ const login = async (req, res) => {
       });
     }, 3);
 
+    // 1. If user not found, perform dummy bcrypt compare to prevent timing enumeration
     if (!user) {
       console.log('[AUTH] User not found:', normalizedEmail);
+      await bcrypt.compare(password, '$2b$10$wT8m9Z1N/7ZfK5Z1V9oZe.O3.8z1k0r7N1hG.4iO8q9r5m1k2t4mK').catch(() => {});
       return res.status(401).json({
         success: false,
         message: invalidCredentialsMessage
@@ -737,7 +740,33 @@ const login = async (req, res) => {
       role: user.role
     });
 
-    // Check for company association (except for system roles)
+    // 2. 🔐 Verify password FIRST before exposing ANY account status details
+    // Prevents user enumeration and misleading "inactive" error on wrong password
+    console.log('[AUTH] Verifying password...');
+    const isPasswordValid = user.password
+      ? await bcrypt.compare(password, user.password)
+      : false;
+
+    if (!isPasswordValid) {
+      console.log('[AUTH] Invalid password for user:', normalizedEmail);
+      return res.status(401).json({
+        success: false,
+        message: invalidCredentialsMessage
+      });
+    }
+
+    console.log('[AUTH] Password verified successfully');
+
+    // 3. Check if user account is active (now that password has been authenticated)
+    if (!user.isActive) {
+      console.log('[AUTH] User account is inactive');
+      return res.status(401).json({
+        success: false,
+        message: inactiveUserMessage
+      });
+    }
+
+    // 4. Check for company association (except for system roles)
     const isSystemRole = ['SUPER_ADMIN', 'Project Manager', 'Team Lead', 'Developer', 'Tester'].includes(user.role);
     console.log('[AUTH-DEBUG] Checking company association:', {
       companyId: user.companyId,
@@ -756,16 +785,7 @@ const login = async (req, res) => {
       });
     }
 
-    // Check if user is active
-    if (!user.isActive) {
-      console.log('[AUTH] User account is inactive');
-      return res.status(401).json({
-        success: false,
-        message: inactiveUserMessage
-      });
-    }
-
-    // Check if user has a company (required for non-super-admin users)
+    // 5. Check if user has a company (required for non-super-admin users)
     if (!user.company) {
       console.log('[AUTH] User has no company associated');
       // Only allow login without company if user is SUPER_ADMIN
@@ -785,19 +805,6 @@ const login = async (req, res) => {
         });
       }
     }
-
-    // Verify password
-    console.log('[AUTH] Verifying password...');
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      console.log('[AUTH] Invalid password for user:', normalizedEmail);
-      return res.status(401).json({
-        success: false,
-        message: invalidCredentialsMessage
-      });
-    }
-
-    console.log('[AUTH] Password verified successfully');
 
     const sessionConfig = getSessionExpiryConfig(req);
 

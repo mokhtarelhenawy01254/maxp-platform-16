@@ -19,6 +19,9 @@ jest.mock("bcryptjs", () => ({
   hash: jest.fn(),
 }));
 
+process.env.JWT_SECRET = 'test-jwt-secret-12345678901234567890';
+process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-12345678901234567890';
+
 jest.mock("jsonwebtoken", () => ({
   sign: jest.fn().mockReturnValue("mock-jwt-token"),
 }));
