@@ -37,28 +37,30 @@ const DEFAULT_ANDROID_VERSION_CONFIG = {
   platform: 'android',
   appName: 'MaxP',
   appId: 'online.maxp.app',
-  latestVersion: '1.0.8',
-  latestVersionCode: 8,
-  minRequiredVersion: '1.0.7',
-  minRequiredVersionCode: 7,
+  latestVersion: '1.0.9',
+  latestVersionCode: 9,
+  minRequiredVersion: '1.0.8',
+  minRequiredVersionCode: 8,
   forceUpdate: false,
   downloadUrl: 'https://maxp.online/download/maxp.apk',
   directApkUrl: 'https://maxp.online/download/maxp.apk',
   storeUrl: 'https://maxp.online/download/maxp.apk',
-  releaseNotesAr: 'تحسينات شاملة في الأداء وسرعة الاستجابة، وإصلاح مشكلات المزامنة مع تحسين تجربة المستخدم على الهواتف الذكية.',
-  releaseNotesEn: 'Performance improvements, enhanced sync stability, and optimized mobile experience.',
-  releaseDate: '2026-10-01',
+  releaseNotesAr: 'إصدار رسمي يتضمن ميزة الاتصال الصادر بنقرة واحدة وربط المكالمات بالطلبات تلقائياً مع توثيق مدة المكالمة.',
+  releaseNotesEn: 'Outbound Click-to-Call telephony integration, official call duration sync, and order management.',
+  releaseDate: '2026-10-02',
   fileSizeBytes: 44040192,
   fileSizeFormatted: '42 MB',
   featuresAr: [
-    'تسريع فتح الصفحات والمزامنة الفورية',
-    'إصلاحات لاستقرار التنبيهات وإشعارات الدفع',
-    'تحسين تجربة التصفح والطباعة المحمولة'
+    'الاتصال الصادر السحابي بنقرة واحدة عبر هاتف الموظف',
+    'توثيق مدة المكالمة الرسمية تلقائياً وربطها بسجل الطلب',
+    'نافذة التوثيق السريع وتحديث حالات الطلبات بعد كل مكالمة',
+    'مزامنة فورية لحالة اتصال الهاتف بدون استهلاك للبطارية'
   ],
   featuresEn: [
-    'Faster load times and real-time synchronization',
-    'Push notifications and background sync stability fixes',
-    'Optimized mobile navigation and portable receipt printing'
+    'Outbound click-to-call via paired employee phone',
+    'Official call duration recording and order log linking',
+    'Quick disposition modal with one-click order transitions',
+    'Real-time socket-aware presence with zero battery drain'
   ]
 };
 

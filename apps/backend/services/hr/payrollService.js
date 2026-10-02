@@ -175,8 +175,40 @@ class PayrollService {
         regenerated: []
       };
 
-      // إذا كان forceRegenerate = true، نحذف كشوف الرواتب الموجودة أولاً
+      // إذا كان forceRegenerate = true، نسترجع أرصدة السلف من أي كشوف مدفوعة قبل حذفها ثم نحذف الكشوف لإعادة توليدها
       if (forceRegenerate) {
+        const paidPayrolls = await this.prisma.payroll.findMany({
+          where: { companyId, month, year, status: 'PAID' }
+        });
+        for (const paidPayroll of paidPayrolls) {
+          try {
+            const parsedDed = typeof paidPayroll.deductions === 'string'
+              ? JSON.parse(paidPayroll.deductions || '{}')
+              : (paidPayroll.deductions || {});
+            if (Array.isArray(parsedDed.advanceDetails)) {
+              for (const item of parsedDed.advanceDetails) {
+                if (!item.advanceId) continue;
+                const adv = await this.prisma.advanceRequest.findUnique({ where: { id: item.advanceId } });
+                if (adv) {
+                  const restoredBalance = Math.min(
+                    parseFloat(adv.amount) || 0,
+                    (parseFloat(adv.remainingBalance) || 0) + (parseFloat(item.amount) || 0)
+                  );
+                  await this.prisma.advanceRequest.update({
+                    where: { id: adv.id },
+                    data: {
+                      remainingBalance: restoredBalance,
+                      isPaidOff: false,
+                      status: 'APPROVED'
+                    }
+                  });
+                }
+              }
+            }
+          } catch (restoreErr) {
+            console.warn(`⚠️ [Payroll] Failed to restore advance balance for payroll ${paidPayroll.id}:`, restoreErr.message);
+          }
+        }
         const deletedCount = await this.prisma.payroll.deleteMany({
           where: { companyId, month, year }
         });
@@ -1755,11 +1787,13 @@ class PayrollService {
     if (hrEmpId) advanceConditions.push({ employeeRelId: hrEmpId });
     if (employee.id && employee.id !== employeeId) advanceConditions.push({ userId: employee.id });
 
-    // الفحص يشمل السلف النشطة المعتمدة في هذا الشهر أو التي لها رصيد متبقي
+    // الفحص يشمل السلف النشطة المعتمدة حتى نهاية شهر المسير أو المنصرفة خلال هذا الشهر
+    // مع منع سحب أي سلفة تاريخ إنشائها في شهر لاحق لشهر المسير
     const activeAdvances = await this.prisma.advanceRequest.findMany({
       where: {
         companyId,
         status: { in: ['APPROVED', 'COMPLETED'] },
+        createdAt: { lte: periodEndAdjusted },
         AND: [
           { OR: advanceConditions },
           {

@@ -16,6 +16,12 @@ on:
         required: false
         default: true
         type: boolean
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/frontend/android/**'
+      - '.github/workflows/build-android-apk.yml'
 
 permissions:
   contents: read
@@ -115,29 +121,36 @@ jobs:
 
           echo "📊 APK Metrics: $FILE_SIZE_BYTES bytes (~${FILE_SIZE_MB} MB) built on $RELEASE_DATE"
 
+          VERSION_CODE=$(grep -E "versionCode\s+[0-9]+" apps/frontend/android/app/build.gradle | head -n 1 | awk '{print $2}')
+          VERSION_NAME=$(grep -E 'versionName\s+"[^"]+"' apps/frontend/android/app/build.gradle | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/')
+          VERSION_CODE=${VERSION_CODE:-9}
+          VERSION_NAME=${VERSION_NAME:-"1.0.9"}
+
+          echo "📦 Parsed Android Version: $VERSION_NAME (build $VERSION_CODE)"
+
           cat <<EOF > latest-android.json
           {
             "platform": "android",
             "appName": "MaxP",
             "appId": "online.maxp.app",
-            "latestVersion": "1.0.8",
-            "latestVersionCode": 8,
-            "minRequiredVersion": "1.0.7",
-            "minRequiredVersionCode": 7,
+            "latestVersion": "$VERSION_NAME",
+            "latestVersionCode": $VERSION_CODE,
+            "minRequiredVersion": "1.0.8",
+            "minRequiredVersionCode": 8,
             "forceUpdate": false,
             "downloadUrl": "https://maxp.online/download/maxp.apk",
             "directApkUrl": "https://maxp.online/download/maxp.apk",
             "storeUrl": "https://maxp.online/download/maxp.apk",
-            "releaseNotesAr": "تحسينات شاملة في الأداء وسرعة الاستجابة، ودعم فتح المنصة الحية مباشرة مع الرجوع التلقائي للنسخة المدمجة في حال انقطاع الإنترنت.",
-            "releaseNotesEn": "Live platform streaming support with offline fallback, speed and sync improvements.",
+            "releaseNotesAr": "إصدار رسمي جديد يتضمن ميزة الاتصال الصادر بنقرة واحدة وربط المكالمات بالطلبات تلقائياً، مع تحسينات شاملة في سرعة الاستجابة والمزامنة.",
+            "releaseNotesEn": "Official update introducing Outbound Click-to-Call telephony integration, official call duration sync, and real-time connectivity fixes.",
             "releaseDate": "$RELEASE_DATE",
             "fileSizeBytes": $FILE_SIZE_BYTES,
             "fileSizeFormatted": "${FILE_SIZE_MB} MB",
             "featuresAr": [
-              "فتح الموقع الحي والتحديثات الفورية بدون إعادة تثبيت",
-              "رجوع تلقائي آمن للنسخة المخزنة في حالة عدم توفر إنترنت",
-              "تسريع فتح الصفحات والمزامنة الفورية",
-              "إصلاحات لاستقرار التنبيهات وإشعارات الدفع"
+              "الاتصال الصادر السحابي بنقرة واحدة عبر هاتف الموظف",
+              "توثيق مدة المكالمة الرسمية تلقائياً وربطها بسجل الطلب",
+              "نافذة التوثيق السريع وتحديث حالات الطلبات بعد كل مكالمة",
+              "مزامنة فورية لحالة اتصال الهاتف بدون استهلاك للبطارية"
             ]
           }
           EOF
