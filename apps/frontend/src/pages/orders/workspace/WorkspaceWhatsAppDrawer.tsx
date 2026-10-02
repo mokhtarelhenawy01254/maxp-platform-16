@@ -5,31 +5,26 @@ import {
   PaperAirplaneIcon,
   ArrowPathIcon,
   ChatBubbleOvalLeftEllipsisIcon,
-  CheckIcon,
-  CheckCircleIcon,
   ArrowTopRightOnSquareIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline';
 import { WhatsAppIcon } from '../../../components/icons/brands';
 import { apiClient } from '../../../services/apiClient';
 import { WorkspaceOrder } from './types';
-import { parseCleanAddress } from './WorkspaceInspector';
 import { toast } from 'sonner';
+import {
+  WorkspaceWhatsAppTemplates,
+  MetaTemplate,
+} from './WorkspaceWhatsAppTemplates';
+import {
+  WorkspaceWhatsAppMessages,
+  ChatMessage,
+} from './WorkspaceWhatsAppMessages';
 
 interface WorkspaceWhatsAppDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   order: WorkspaceOrder | null;
-}
-
-interface ChatMessage {
-  id: string;
-  fromMe: boolean;
-  content: string;
-  timestamp?: number | string;
-  createdAt?: string;
-  status?: string;
-  messageType?: string;
 }
 
 interface WhatsAppSession {
@@ -42,17 +37,6 @@ interface WhatsAppSession {
   isDefault?: boolean;
 }
 
-interface MetaTemplate {
-  id: string;
-  name: string;
-  status: string;
-  category?: string;
-  components?: Array<{
-    type: string;
-    text?: string;
-  }>;
-}
-
 export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = ({
   isOpen,
   onClose,
@@ -62,13 +46,9 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
 
   const [activeSession, setActiveSession] = useState<WhatsAppSession | null>(null);
-  const [loadingSession, setLoadingSession] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
-  const [conversationJid, setConversationJid] = useState<string | null>(null);
-
   const [templates, setTemplates] = useState<MetaTemplate[]>([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'chat' | 'templates'>('chat');
   const [messageText, setMessageText] = useState('');
@@ -87,7 +67,6 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
 
     let isMounted = true;
     const loadSession = async () => {
-      setLoadingSession(true);
       try {
         const res = await apiClient.get('/whatsapp/sessions');
         const list: WhatsAppSession[] = res.data?.sessions || [];
@@ -95,8 +74,6 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
         if (isMounted) setActiveSession(connected);
       } catch (err) {
         console.error('Failed to load WhatsApp sessions:', err);
-      } finally {
-        if (isMounted) setLoadingSession(false);
       }
     };
 
@@ -114,14 +91,12 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
     const loadConversation = async () => {
       setLoadingMessages(true);
       try {
-        // Search conversation by customer phone number
         const convRes = await apiClient.get('/whatsapp/conversations', {
           params: { search: cleanPhone, limit: 1 },
         });
         const conv = convRes.data?.conversations?.[0];
 
         if (conv?.jid) {
-          if (isMounted) setConversationJid(conv.jid);
           const msgRes = await apiClient.get(
             `/whatsapp/conversations/${encodeURIComponent(conv.jid)}/messages`,
             {
@@ -131,12 +106,8 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
           if (isMounted) {
             setMessages(msgRes.data?.messages || []);
           }
-        } else {
-          // No prior conversation exists yet
-          if (isMounted) {
-            setConversationJid(`${standardPhone}@s.whatsapp.net`);
-            setMessages([]);
-          }
+        } else if (isMounted) {
+          setMessages([]);
         }
       } catch (err) {
         console.error('Failed to load conversation messages:', err);
@@ -149,7 +120,7 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
     return () => {
       isMounted = false;
     };
-  }, [isOpen, cleanPhone, activeSession?.id, standardPhone]);
+  }, [isOpen, cleanPhone, activeSession?.id]);
 
   // 3. Fetch Approved Templates for Session
   useEffect(() => {
@@ -157,7 +128,6 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
 
     let isMounted = true;
     const loadTemplates = async () => {
-      setLoadingTemplates(true);
       try {
         const res = await apiClient.get('/whatsapp/templates', {
           params: { sessionId: activeSession.id },
@@ -170,9 +140,7 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
         const approved = list.filter((t) => t.status === 'APPROVED');
         if (isMounted) setTemplates(approved);
       } catch {
-        // Fallback gracefully to built-in templates
-      } finally {
-        if (isMounted) setLoadingTemplates(false);
+        // Fallback gracefully to quick operational templates
       }
     };
 
@@ -188,57 +156,6 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, activeTab]);
-
-  // Built-in Quick Operational Templates
-  const getQuickTemplates = () => {
-    if (!order) return [];
-    const itemsList =
-      order.items
-        ?.map((i) => `${i.productName || i.name} × ${i.quantity}`)
-        .join('، ') || '';
-    const cleanAddr =
-      parseCleanAddress(order.shippingAddress) ||
-      [order.governorate, order.city].filter(Boolean).join('، ');
-
-    return [
-      {
-        id: 'confirm_order',
-        title: isArabic ? 'تأكيد الطلب والشحن' : 'Confirm Order & Ship',
-        category: isArabic ? 'تأكيد' : 'Confirmation',
-        text: isArabic
-          ? `أهلاً بحضرتك أ/ ${order.customerName}، يسعدنا تأكيد طلبك رقم #${order.orderNumber} بإجمالي ${order.total} ج.م.\nتفاصيل الطلب: ${itemsList}\nعنوان التوصيل: ${cleanAddr}\nهل نعتمد الشحن اليوم؟`
-          : `Hello ${order.customerName}, We are confirming your order #${order.orderNumber} (Total: ${order.total} EGP).\nItems: ${itemsList}\nAddress: ${cleanAddr}\nShould we ship today?`,
-      },
-      {
-        id: 'address_verification',
-        title: isArabic ? 'تأكيد العنوان والتوصيل' : 'Address Verification',
-        category: isArabic ? 'بيانات' : 'Data',
-        text: isArabic
-          ? `أهلاً بحضرتك أ/ ${order.customerName}، بخصوص طلبك رقم #${order.orderNumber}:\nنرجو تأكيد العنوان بالتفصيل (المحافظة، المدينة، الشارع، رقم العقار والشقة) لضمان سرعة التسليم لمندوب الشحن.`
-          : `Hello ${order.customerName}, for order #${order.orderNumber}, please verify your detailed delivery address to avoid shipping delays.`,
-      },
-      {
-        id: 'no_answer',
-        title: isArabic ? 'محاولة اتصال لم يتم الرد' : 'Missed Call Follow-up',
-        category: isArabic ? 'متابعة' : 'Follow-up',
-        text: isArabic
-          ? `أهلاً بحضرتك أ/ ${order.customerName}، حاولنا الاتصال بك هاتفياً لتأكيد شحنتك رقم #${order.orderNumber} ولم نتمكن من الوصول إليك. يسعدنا تأكيد رغبتك بالاستلام أو تحديد موعد مناسب للتواصل.`
-          : `Hello ${order.customerName}, we called regarding your order #${order.orderNumber} but missed you. Please let us know a suitable time to reach you.`,
-      },
-      ...(order.isIncomplete
-        ? [
-            {
-              id: 'cart_recovery',
-              title: isArabic ? 'تذكير بالسلة المتروكة' : 'Cart Recovery',
-              category: isArabic ? 'سلة' : 'Cart',
-              text: isArabic
-                ? `أهلاً بك أ/ ${order.customerName}، لاحظنا اهتمامك بطلب ${itemsList} ولم يكتمل الطلب. هل واجهت أي صعوبة؟ يسعدنا مساعدتك وتأكيد الطلب لك فوراً!`
-                : `Hello ${order.customerName}, we noticed you left your cart. Can we help you complete your purchase?`,
-            },
-          ]
-        : []),
-    ];
-  };
 
   const handleSelectTemplate = (text: string) => {
     setMessageText(text);
@@ -261,7 +178,6 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
       if (response.data?.success) {
         toast.success(isArabic ? 'تم إرسال الرسالة عبر واتساب المنصة' : 'Message sent via Platform WhatsApp');
 
-        // Optimistically add sent message
         const optimisticMsg: ChatMessage = {
           id: `opt_${Date.now()}`,
           fromMe: true,
@@ -341,7 +257,6 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Native WhatsApp Web Escape Hatch */}
             <a
               href={externalWaUrl}
               target="_blank"
@@ -363,7 +278,7 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
           </div>
         </div>
 
-        {/* 2. Mode Selector Bar (Chat vs Templates) */}
+        {/* 2. Mode Selector Bar */}
         <div className="flex border-b border-border/30 bg-muted/10 px-4">
           <button
             type="button"
@@ -405,150 +320,23 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
         {/* 3. Main Content Area */}
         <div className="flex flex-1 flex-col overflow-hidden bg-muted/5">
           {activeTab === 'chat' ? (
-            /* Tab: Conversation Stream */
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {loadingMessages ? (
-                <div className="flex h-full items-center justify-center">
-                  <ArrowPathIcon className="h-6 w-6 animate-spin text-emerald-500" />
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center p-6 text-center text-muted-foreground">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 mb-2">
-                    <ChatBubbleOvalLeftEllipsisIcon className="h-6 w-6" />
-                  </div>
-                  <p className="text-xs font-semibold text-foreground">
-                    {isArabic ? 'لا توجد محادثة سابقة مع هذا العميل' : 'No prior messages found'}
-                  </p>
-                  <p className="mt-1 text-[11px] max-w-xs text-muted-foreground">
-                    {isArabic
-                      ? 'يمكنك إرسال قالب تأكيد فوري أو كتابة رسالة مباشرة للعميل أدناه.'
-                      : 'You can send a confirmation template or type a message below.'}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('templates')}
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-600 hover:bg-emerald-500/20"
-                  >
-                    <SparklesIcon className="h-3.5 w-3.5" />
-                    <span>{isArabic ? 'تصفح القوالب الجاهزة' : 'Browse Templates'}</span>
-                  </button>
-                </div>
-              ) : (
-                messages.map((msg) => {
-                  const isMine = msg.fromMe;
-                  const dateStr = msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-                  return (
-                    <div
-                      key={msg.id}
-                      className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
-                    >
-                      <div
-                        className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed shadow-xs ${
-                          isMine
-                            ? 'rounded-ee-xs bg-emerald-600 text-white dark:bg-emerald-700'
-                            : 'rounded-es-xs bg-card border border-border/50 text-foreground'
-                        }`}
-                      >
-                        <p className="whitespace-pre-wrap select-text">{msg.content}</p>
-                        <div
-                          className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${
-                            isMine ? 'text-emerald-100/80' : 'text-muted-foreground'
-                          }`}
-                        >
-                          <span dir="ltr">{dateStr}</span>
-                          {isMine && <CheckCircleIcon className="h-3 w-3 inline text-emerald-200" />}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+            <WorkspaceWhatsAppMessages
+              messages={messages}
+              loadingMessages={loadingMessages}
+              onSwitchToTemplates={() => setActiveTab('templates')}
+              messagesEndRef={messagesEndRef}
+            />
           ) : (
-            /* Tab: Template Selector */
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {/* Quick Instant Templates */}
-              <div>
-                <h4 className="text-xs font-black uppercase text-muted-foreground mb-2">
-                  {isArabic ? 'قوالب سريعة مجهزة لبيانات الطلب' : 'Quick Ready Templates'}
-                </h4>
-                <div className="space-y-2">
-                  {getQuickTemplates().map((tmpl) => (
-                    <div
-                      key={tmpl.id}
-                      className="group flex flex-col justify-between gap-2 rounded-lg border border-border/50 bg-card p-3 transition-colors hover:border-emerald-500/40 hover:bg-emerald-500/5"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-foreground">{tmpl.title}</span>
-                        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                          {tmpl.category}
-                        </span>
-                      </div>
-                      <p className="line-clamp-2 text-xs text-muted-foreground whitespace-pre-wrap">
-                        {tmpl.text}
-                      </p>
-                      <div className="flex justify-end pt-1">
-                        <button
-                          type="button"
-                          onClick={() => handleSelectTemplate(tmpl.text)}
-                          className="inline-flex items-center gap-1 rounded bg-emerald-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-emerald-700 active:scale-98 transition-transform"
-                        >
-                          <CheckIcon className="h-3.5 w-3.5" />
-                          <span>{isArabic ? 'استخدام في المحادثة' : 'Use in Chat'}</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Approved Meta Cloud Templates */}
-              {templates.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-black uppercase text-muted-foreground mb-2">
-                    {isArabic ? 'قوالب Meta Cloud المعتمدة للمتجر' : 'Approved Meta Cloud Templates'}
-                  </h4>
-                  <div className="space-y-2">
-                    {templates.map((metaTmpl) => {
-                      const bodyComp = metaTmpl.components?.find((c) => c.type === 'BODY');
-                      const bodyText = bodyComp?.text || metaTmpl.name;
-                      return (
-                        <div
-                          key={metaTmpl.id}
-                          className="flex flex-col justify-between gap-2 rounded-lg border border-border/50 bg-card p-3 hover:border-primary/40"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-mono text-xs font-bold text-foreground">
-                              {metaTmpl.name}
-                            </span>
-                            <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600">
-                              APPROVED
-                            </span>
-                          </div>
-                          <p className="line-clamp-2 text-xs text-muted-foreground">{bodyText}</p>
-                          <div className="flex justify-end pt-1">
-                            <button
-                              type="button"
-                              onClick={() => handleSelectTemplate(bodyText)}
-                              className="inline-flex items-center gap-1 rounded border border-border px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted"
-                            >
-                              <span>{isArabic ? 'تعبئة القالب' : 'Fill Template'}</span>
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
+            <WorkspaceWhatsAppTemplates
+              order={order}
+              templates={templates}
+              onSelectTemplate={handleSelectTemplate}
+            />
           )}
         </div>
 
         {/* 4. Composer Footer */}
         <div className="border-t border-border/40 bg-card p-3">
-          {/* Quick variable helper tags */}
           <div className="mb-2 flex items-center gap-1.5 overflow-x-auto text-[11px] no-scrollbar">
             <span className="text-muted-foreground font-semibold shrink-0">
               {isArabic ? 'إدراج سريع:' : 'Insert:'}
