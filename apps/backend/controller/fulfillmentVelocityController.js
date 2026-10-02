@@ -151,58 +151,47 @@ const getFulfillmentVelocitySummary = async (req, res) => {
       prisma.guestOrder.count({
         where: { companyId, createdAt: shipDateFilter },
       }),
-      // Active orders in warehouse waiting for carrier pickup
-      prisma.order.findMany({
-        where: {
-          companyId,
-          status: {
-            notIn: [
-              'SHIPPED',
-              'DELIVERED',
-              'CANCELLED',
-              'RETURNED',
-              'REFUNDED',
-              'TRASH',
-              'DUPLICATE_ORDER',
-              'TRASH_ORDER',
-            ],
-          },
-          OR: [
-            { status: { in: ['READY_TO_SHIP', 'READY'] } },
-            { metadata: { contains: '"preparationStatus":"READY_TO_SHIP"' } },
-            { metadata: { contains: '"preparationStatus":"PACKAGED"' } },
-          ],
-        },
-        select: { id: true, total: true },
-      }),
-      prisma.guestOrder.findMany({
-        where: {
-          companyId,
-          status: {
-            notIn: [
-              'SHIPPED',
-              'DELIVERED',
-              'CANCELLED',
-              'RETURNED',
-              'REFUNDED',
-              'TRASH',
-              'DUPLICATE_ORDER',
-            ],
-          },
-          OR: [
-            { status: { in: ['READY_TO_SHIP', 'READY'] } },
-            { metadata: { contains: '"preparationStatus":"READY_TO_SHIP"' } },
-            { metadata: { contains: '"preparationStatus":"PACKAGED"' } },
-          ],
-        },
-        select: { id: true, finalTotal: true },
-      }),
     ]);
 
-    const waitingCarrierCount = waitingRegular.length + waitingGuest.length;
-    const waitingCarrierRevenue =
-      waitingRegular.reduce((s, o) => s + Number(o.total || 0), 0) +
-      waitingGuest.reduce((s, g) => s + Number(g.finalTotal || 0), 0);
+    // Active orders in warehouse waiting for carrier pickup (Safe query with fallback)
+    let waitingCarrierCount = 0;
+    let waitingCarrierRevenue = 0;
+    try {
+      const [activeReg, activeGst] = await Promise.all([
+        prisma.order.findMany({
+          where: {
+            companyId,
+            status: { in: ['READY_TO_SHIP', 'READY', 'PACKAGED', 'PROCESSING'] },
+          },
+          select: { id: true, status: true, total: true, metadata: true },
+        }),
+        prisma.guestOrder.findMany({
+          where: {
+            companyId,
+            status: { in: ['READY_TO_SHIP', 'READY', 'PACKAGED', 'PROCESSING', 'processing'] },
+          },
+          select: { id: true, status: true, finalTotal: true, metadata: true },
+        }),
+      ]);
+
+      const isReadyOrder = (o) => {
+        const s = String(o.status || '').toUpperCase();
+        if (['READY_TO_SHIP', 'READY', 'PACKAGED'].includes(s)) return true;
+        if (typeof o.metadata === 'string' && (o.metadata.includes('READY_TO_SHIP') || o.metadata.includes('PACKAGED'))) {
+          return true;
+        }
+        return false;
+      };
+
+      const matchedReg = (activeReg || []).filter(isReadyOrder);
+      const matchedGst = (activeGst || []).filter(isReadyOrder);
+      waitingCarrierCount = matchedReg.length + matchedGst.length;
+      waitingCarrierRevenue =
+        matchedReg.reduce((s, o) => s + Number(o.total || 0), 0) +
+        matchedGst.reduce((s, g) => s + Number(g.finalTotal || 0), 0);
+    } catch (carrierErr) {
+      console.warn('⚠️ [FULFILLMENT-VELOCITY] waitingCarrier query fallback:', carrierErr.message);
+    }
 
     const regularMap = new Map(regularOrders.map((o) => [o.id, o]));
     const guestMap = new Map(guestOrders.map((g) => [g.id, g]));
@@ -358,7 +347,11 @@ const getFulfillmentVelocitySummary = async (req, res) => {
     });
   } catch (err) {
     console.error('❌ [FULFILLMENT-VELOCITY] Error:', err);
-    res.status(500).json({ success: false, message: 'فشل تحميل بيانات سرعة الإنجاز وأعمار الطلبات' });
+    res.status(500).json({
+      success: false,
+      message: 'فشل تحميل بيانات سرعة الإنجاز وأعمار الطلبات',
+      error: err?.message,
+    });
   }
 };
 
