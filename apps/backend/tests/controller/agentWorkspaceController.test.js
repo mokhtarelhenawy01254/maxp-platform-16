@@ -680,3 +680,80 @@ describe('agentWorkspaceController.scheduleFollowUp', () => {
     });
   });
 });
+
+describe('agentWorkspaceController manager fleet operations', () => {
+  const managerReq = {
+    user: {
+      id: 'manager-1',
+      role: 'MANAGER',
+      effectiveCompanyId: 'company-1'
+    }
+  };
+
+  test('allows manager to query unassigned orders', async () => {
+    const unassignedOrder = createOrder('unassigned-1', 'PENDING');
+    const prismaMock = {
+      order: {
+        findMany: jest.fn().mockResolvedValue([unassignedOrder]),
+        count: jest.fn().mockResolvedValue(1)
+      },
+      guestOrder: {
+        findMany: jest.fn().mockResolvedValue([]),
+        count: jest.fn().mockResolvedValue(0)
+      },
+      orderAssignment: {
+        count: jest.fn().mockResolvedValue(0)
+      }
+    };
+    getSharedPrismaClient.mockReturnValue(prismaMock);
+
+    const res = createResponse();
+    await agentWorkspaceController.getMyOrders({
+      ...managerReq,
+      query: { assignedTo: 'unassigned' }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.success).toBe(true);
+    expect(res.payload.data.length).toBe(1);
+    expect(res.payload.data[0].id).toBe('unassigned-1');
+  });
+
+  test('allows manager supervisor override to confirm an order without 403', async () => {
+    orderService.updateOrderStatus.mockResolvedValue({ status: 'CONFIRMED' });
+    const prismaMock = {
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'assign-agent-9',
+          orderId: 'order-1',
+          assignedTo: 'agent-9',
+          isActive: true
+        }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 })
+      },
+      order: {
+        update: jest.fn().mockResolvedValue({})
+      }
+    };
+    getSharedPrismaClient.mockReturnValue(prismaMock);
+
+    const res = createResponse();
+    await agentWorkspaceController.quickAction({
+      ...managerReq,
+      params: { id: 'order-1' },
+      body: { action: 'confirm', notes: 'تأكيد إشرافي' }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.success).toBe(true);
+    expect(prismaMock.orderAssignment.updateMany).toHaveBeenCalledWith({
+      where: {
+        companyId: 'company-1',
+        isActive: true,
+        OR: [{ orderId: 'order-1' }, { guestOrderId: 'order-1' }]
+      },
+      data: { isActive: false }
+    });
+  });
+});
+

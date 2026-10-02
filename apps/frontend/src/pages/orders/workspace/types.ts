@@ -1,17 +1,16 @@
 export type OrderType = 'GUEST' | 'REGULAR';
 
 export const WORKSPACE_TAB_KEYS = [
-  'all',
   'pending',
+  'followup',
   'confirmed',
   'cancelled',
-  'followup',
-  'confirmation',
+  'all',
 ] as const;
 
 export type FilterTab = typeof WORKSPACE_TAB_KEYS[number];
 export type OrderAction = 'log-call' | 'confirm' | 'cancel' | 'details' | 'follow-up';
-export type PerspectiveMode = 'operator' | 'supervisor' | 'marketer';
+export type PerspectiveMode = 'operator' | 'supervisor';
 
 export interface CallLogEntry {
   id: string;
@@ -66,6 +65,8 @@ export interface WorkspaceOrder {
   followUpDate: string | null;
   createdAt: string;
   assignedAt?: string | null;
+  assignedTo?: string | null;
+  assignedToName?: string | null;
   notes?: string;
   items: WorkspaceOrderItem[];
   callLogs?: CallLogEntry[];
@@ -86,4 +87,19 @@ export interface WorkspacePagination {
   page: number;
   limit: number;
   pages: number;
+}
+
+export interface AgentWorkload {
+  id: string;
+  name: string;
+  email?: string | null;
+  role?: string | null;
+  availability?: string;
+  pendingCount: number;
+  todayConfirmedCount: number;
+}
+
+export interface TeamWorkloadData {
+  unassignedCount: number;
+  agents: AgentWorkload[];
 }

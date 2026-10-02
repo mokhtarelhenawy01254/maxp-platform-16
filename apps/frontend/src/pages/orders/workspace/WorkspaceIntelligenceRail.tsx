@@ -8,7 +8,6 @@ import {
   SparklesIcon,
   ChartBarIcon,
   UserGroupIcon,
-  MegaphoneIcon,
 } from '@heroicons/react/24/outline';
 import { PerspectiveMode, WorkspaceOrder, WorkspaceStats } from './types';
 
@@ -33,7 +32,7 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
 
   return (
     <aside className="flex h-full flex-col overflow-y-auto border-s border-border/40 bg-card/60 p-3.5 text-xs">
-      {/* ─── Mode 1: Operator View ─────────────────────────────────────────── */}
+      {/* ─── Mode 1: Operator / Execution Intelligence ─────────────────────── */}
       {perspective === 'operator' && (
         <div className="space-y-3.5">
           {/* Customer Risk & Trust Dossier */}
@@ -103,22 +102,22 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
             </div>
           </div>
 
-          {/* In-Call Upsell Tip */}
-          <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
-            <div className="flex items-center gap-1.5 font-bold text-amber-700 dark:text-amber-300">
-              <SparklesIcon className="h-4 w-4" />
-              <span>{isArabic ? 'فرصة بيع إضافي (Upsell)' : 'Upsell Suggestion'}</span>
+          {/* Smart Upsell Script */}
+          <div className="rounded-md border border-border/40 bg-background/80 p-3">
+            <div className="flex items-center gap-1.5 font-bold text-foreground">
+              <SparklesIcon className="h-4 w-4 text-amber-500" />
+              <span>{isArabic ? 'اقتراح العرض الإضافي' : 'Confirmation Upsell'}</span>
             </div>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+            <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
               {isArabic
-                ? 'اقترح إضافة قطعة ثانية أو شحن مجاني عند زيادة قيمة الطلب لرفع متوسط الفاتورة.'
+                ? 'اقترح على العميل قطعة إضافية أو خصم باقة قبل اعتماد الشحن لرفع متوسط قيمة الطلب.'
                 : 'Suggest an additional item or bundle discount to increase average order value.'}
             </p>
           </div>
         </div>
       )}
 
-      {/* ─── Mode 2: Supervisor View ────────────────────────────────────────── */}
+      {/* ─── Mode 2: Supervisor Operational View ──────────────────────────── */}
       {perspective === 'supervisor' && (
         <div className="space-y-3.5">
           <div className="rounded-md border border-border/40 bg-background/80 p-3">
@@ -137,8 +136,12 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
                 <span className="font-mono font-bold tabular-nums text-foreground">{stats?.followup || 0}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
-                <span>{isArabic ? 'إجمالي المؤكد' : 'Confirmed Today'}</span>
+                <span>{isArabic ? 'إجمالي المؤكد' : 'Confirmed'}</span>
                 <span className="font-mono font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{stats?.confirmed || 0}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>{isArabic ? 'الملغية' : 'Cancelled'}</span>
+                <span className="font-mono font-bold tabular-nums text-rose-600 dark:text-rose-400">{stats?.cancelled || 0}</span>
               </div>
             </div>
           </div>
@@ -150,8 +153,8 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
             </div>
             <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
               {isArabic
-                ? 'توزيع الطلبات يتم آلياً وفقاً لقواعد الطاقة الاستيعابية والتناوب الدائري.'
-                : 'Orders are distributed automatically via workload cap and round-robin rules.'}
+                ? 'توزيع الطلبات يتم آلياً وفقاً لقواعد الطاقة الاستيعابية والتناوب الدائري بين أعضاء الفريق.'
+                : 'Orders are distributed automatically via workload cap and round-robin rules across team members.'}
             </p>
             <Link
               to="/settings/orders?tab=confirmation"
@@ -159,51 +162,6 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
             >
               {isArabic ? 'ضبط إعدادات التوزيع ←' : 'Configure Assignment Rules →'}
             </Link>
-          </div>
-        </div>
-      )}
-
-      {/* ─── Mode 3: Marketer Attribution View ──────────────────────────────── */}
-      {perspective === 'marketer' && (
-        <div className="space-y-3.5">
-          <div className="rounded-md border border-border/40 bg-background/80 p-3">
-            <div className="flex items-center gap-1.5 font-bold text-foreground">
-              <MegaphoneIcon className="h-4 w-4 text-primary" />
-              <span>{isArabic ? 'الإسناد الإعلاني (Attribution)' : 'Ad Attribution'}</span>
-            </div>
-
-            <div className="mt-2.5 space-y-2">
-              <div className="flex justify-between text-muted-foreground">
-                <span>{isArabic ? 'المصدر' : 'Source'}</span>
-                <span className="font-mono font-semibold text-foreground">
-                  {order?.attribution?.source || (isArabic ? 'مباشر / متجر' : 'Direct Store')}
-                </span>
-              </div>
-              {order?.attribution?.campaignName && (
-                <div className="flex justify-between text-muted-foreground">
-                  <span>{isArabic ? 'الحملة' : 'Campaign'}</span>
-                  <span className="truncate font-mono font-semibold text-foreground">
-                    {order.attribution.campaignName}
-                  </span>
-                </div>
-              )}
-              {order?.attribution?.adSetId && (
-                <div className="flex justify-between text-muted-foreground">
-                  <span>{isArabic ? 'المجموعة' : 'AdSet ID'}</span>
-                  <span className="font-mono text-muted-foreground" dir="ltr">
-                    {order.attribution.adSetId}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-md border border-border/40 bg-background/80 p-3">
-            <p className="text-[11px] leading-relaxed text-muted-foreground">
-              {isArabic
-                ? 'أسباب الإلغاء المسجلة تنعكس فوراً على تحليل جودة الحملات لتحسين الاستهداف وخفض التكلفة.'
-                : 'Recorded cancellation reasons feed directly into campaign quality analytics to reduce ad spend waste.'}
-            </p>
           </div>
         </div>
       )}

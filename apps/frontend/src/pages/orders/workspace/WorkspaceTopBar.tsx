@@ -6,7 +6,6 @@ import {
   XMarkIcon,
   UserIcon,
   ShieldCheckIcon,
-  ChartBarIcon,
 } from '@heroicons/react/24/outline';
 import { FilterTab, PerspectiveMode, WorkspaceStats } from './types';
 
@@ -24,6 +23,7 @@ interface WorkspaceTopBarProps {
   onToggleAutoAdvance: () => void;
   sortOption: 'recent' | 'oldest' | 'attempts';
   onSortChange: (sort: 'recent' | 'oldest' | 'attempts') => void;
+  isManager?: boolean;
 }
 
 export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
@@ -40,17 +40,17 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
   onToggleAutoAdvance,
   sortOption,
   onSortChange,
+  isManager = false,
 }) => {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
 
   const tabs: { key: FilterTab; label: string; count?: number }[] = [
-    { key: 'all', label: t('orders.workspaceAll'), count: stats?.total },
     { key: 'pending', label: t('orders.workspacePending'), count: stats?.pending },
+    { key: 'followup', label: t('orders.workspaceFollowUpLater'), count: stats?.followup },
     { key: 'confirmed', label: t('orders.workspaceConfirmed'), count: stats?.confirmed },
     { key: 'cancelled', label: t('orders.workspaceCancelled'), count: stats?.cancelled },
-    { key: 'followup', label: t('orders.workspaceFollowUpLater'), count: stats?.followup },
-    { key: 'confirmation', label: t('orders.workspaceConfirmationQueue') },
+    { key: 'all', label: t('orders.workspaceAll'), count: stats?.total },
   ];
 
   return (
@@ -58,49 +58,39 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
       {/* Upper line: Perspective switcher + Search + Controls */}
       <div className="flex flex-wrap items-center justify-between gap-2.5">
         <div className="flex items-center gap-2">
-          {/* Perspectives Switcher */}
-          <div
-            className="flex items-center rounded-lg border border-border/40 bg-muted/30 p-0.5"
-            role="radiogroup"
-            aria-label={isArabic ? 'عدسة الدور' : 'Perspective Mode'}
-          >
-            <button
-              type="button"
-              onClick={() => onPerspectiveChange('operator')}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
-                perspective === 'operator'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
+          {/* Manager Perspective Switcher */}
+          {isManager && (
+            <div
+              className="flex items-center rounded-lg border border-border/40 bg-muted/30 p-0.5"
+              role="radiogroup"
+              aria-label={isArabic ? 'عدسة الدور' : 'Perspective Mode'}
             >
-              <UserIcon className="h-3.5 w-3.5" />
-              <span>{isArabic ? 'المشغل' : 'Operator'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onPerspectiveChange('supervisor')}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
-                perspective === 'supervisor'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <ShieldCheckIcon className="h-3.5 w-3.5" />
-              <span>{isArabic ? 'المشرف' : 'Supervisor'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onPerspectiveChange('marketer')}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
-                perspective === 'marketer'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <ChartBarIcon className="h-3.5 w-3.5" />
-              <span>{isArabic ? 'الميديا باير' : 'Attribution'}</span>
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => onPerspectiveChange('operator')}
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
+                  perspective === 'operator'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <UserIcon className="h-3.5 w-3.5" />
+                <span>{isArabic ? 'المشغل' : 'Operator'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onPerspectiveChange('supervisor')}
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
+                  perspective === 'supervisor'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <ShieldCheckIcon className="h-3.5 w-3.5" />
+                <span>{isArabic ? 'المشرف' : 'Supervisor'}</span>
+              </button>
+            </div>
+          )}
 
           {/* Auto-advance toggle */}
           <button
@@ -118,7 +108,7 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
           </button>
         </div>
 
-        {/* Search Bar + Refresh */}
+        {/* Search Bar + Controls */}
         <div className="flex flex-1 items-center justify-end gap-2 sm:max-w-md">
           <div className="relative flex-1">
             <MagnifyingGlassIcon className="absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />

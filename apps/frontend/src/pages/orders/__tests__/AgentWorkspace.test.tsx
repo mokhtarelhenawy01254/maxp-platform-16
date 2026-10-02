@@ -25,6 +25,13 @@ jest.mock("../../../hooks/useCurrency", () => ({
   }),
 }));
 
+let mockCurrentUser = { id: "u1", role: "AGENT" };
+
+jest.mock("../../../hooks/useAuthSimple", () => ({
+  useAuth: () => ({ user: mockCurrentUser }),
+  useOptionalAuth: () => ({ user: mockCurrentUser }),
+}));
+
 jest.mock("../../../components/orders/EnhancedOrderModal", () => () => null);
 
 jest.mock("../OrderConfirmationQueue", () => () => null);
@@ -331,4 +338,86 @@ describe("AgentWorkspace", () => {
       );
     });
   });
+
+  it("removes order instantly from queue when quick-action confirm succeeds", async () => {
+    mockGet
+      .mockResolvedValueOnce(
+        mockOrdersResponse({
+          orders: [
+            makeOrder({ id: "o1", orderNumber: "ORD-1" }),
+            makeOrder({ id: "o2", orderNumber: "ORD-2" }),
+          ],
+          stats: defaultStats(2),
+          pagination: { total: 2, page: 1, limit: 50, pages: 1 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        mockOrdersResponse({
+          orders: [makeOrder({ id: "o2", orderNumber: "ORD-2" })],
+          stats: defaultStats(1),
+          pagination: { total: 1, page: 1, limit: 50, pages: 1 },
+        }),
+      );
+
+    renderWorkspace();
+
+    await screen.findByText("#ORD-1");
+    expect(screen.getByText("#ORD-2")).toBeInTheDocument();
+
+    const confirmButton = await screen.findByText("orders.confirmOrder");
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => {
+      expect(mockPost).toHaveBeenCalledWith(
+        "/agent-workspace/orders/o1/quick-action",
+        expect.objectContaining({ action: "confirm" }),
+      );
+    });
+
+    // o1 should disappear and advance to o2
+    await waitFor(() => {
+      expect(screen.queryByText("#ORD-1")).not.toBeInTheDocument();
+      expect(screen.getByText("#ORD-2")).toBeInTheDocument();
+    });
+  });
+
+  it("renders SupervisorDispatchStrip when user is a manager", async () => {
+    mockCurrentUser = { id: "m1", role: "MANAGER" };
+
+    mockGet.mockImplementation((url: string) => {
+      if (url === "/agent-workspace/team-workload") {
+        return Promise.resolve({
+          data: {
+            success: true,
+            data: {
+              unassignedCount: 15,
+              agents: [
+                {
+                  id: "ag-1",
+                  name: "Ahmed CS",
+                  pendingCount: 10,
+                  todayConfirmedCount: 20,
+                  availability: "online",
+                },
+              ],
+            },
+          },
+        });
+      }
+      return Promise.resolve(
+        mockOrdersResponse({
+          orders: [makeOrder({ id: "o1", orderNumber: "ORD-1" })],
+          stats: defaultStats(1),
+          pagination: { total: 1, page: 1, limit: 50, pages: 1 },
+        }),
+      );
+    });
+
+    renderWorkspace();
+
+    // Verify unassigned button and agent name are rendered
+    await screen.findByText("Ahmed CS");
+    expect(screen.getByText("(15)")).toBeInTheDocument();
+  });
 });
+

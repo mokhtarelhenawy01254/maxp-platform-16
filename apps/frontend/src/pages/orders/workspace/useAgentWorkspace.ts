@@ -2,11 +2,14 @@ import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { apiClient } from '../../../services/apiClient';
+import { useOptionalAuth } from '../../../hooks/useAuthSimple';
 import { toast } from 'sonner';
 import {
+  AgentWorkload,
   FilterTab,
   OrderAction,
   PerspectiveMode,
+  TeamWorkloadData,
   WORKSPACE_TAB_KEYS,
   WorkspaceOrder,
   WorkspacePagination,
@@ -57,7 +60,7 @@ function extractApiErrorMessage(error: unknown): string | null {
 function normalizeWorkspaceTab(value: string | null): FilterTab {
   return WORKSPACE_TAB_KEYS.includes(value as FilterTab)
     ? (value as FilterTab)
-    : 'all';
+    : 'pending';
 }
 
 function getHoursSince(dateStr: string | null): number {
@@ -79,6 +82,15 @@ export function isOrderOverdue(order: WorkspaceOrder): boolean {
 export function useAgentWorkspace() {
   const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const auth = useOptionalAuth();
+  const user = auth?.user;
+
+  const isArabic = i18n.language.toLowerCase().startsWith('ar');
+
+  const isManager = useMemo(() => {
+    const role = String(user?.role || '').toUpperCase();
+    return ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'TEAM_LEADER'].includes(role);
+  }, [user?.role]);
 
   const [orders, setOrders] = useState<WorkspaceOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,10 +102,21 @@ export function useAgentWorkspace() {
     normalizeWorkspaceTab(searchParams.get('tab')),
   );
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [perspective, setPerspective] = useState<PerspectiveMode>('operator');
+  const [perspective, setPerspective] = useState<PerspectiveMode>(() =>
+    isManager ? 'supervisor' : 'operator',
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState<'recent' | 'oldest' | 'attempts'>('recent');
   const [autoAdvance, setAutoAdvance] = useState(true);
+
+  // Supervisor Dispatch State
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [teamWorkload, setTeamWorkload] = useState<TeamWorkloadData>({
+    unassignedCount: 0,
+    agents: [],
+  });
+  const [loadingWorkload, setLoadingWorkload] = useState(false);
+  const [isDistributing, setIsDistributing] = useState(false);
 
   const [busyOrders, setBusyOrders] = useState<Record<string, OrderAction>>({});
   const [page, setPage] = useState(1);
@@ -118,8 +141,6 @@ export function useAgentWorkspace() {
   const skipNextTabFetchRef = useRef(false);
   const activeTabHydratedRef = useRef(false);
 
-  const isArabic = i18n.language.toLowerCase().startsWith('ar');
-
   const setOrderBusyState = (orderId: string, action: OrderAction | null) => {
     setBusyOrders((current) => {
       const next = { ...current };
@@ -132,23 +153,37 @@ export function useAgentWorkspace() {
     });
   };
 
-  const selectTab = useCallback((nextTab: FilterTab) => {
-    setActiveTab(nextTab);
-    const nextParams = new URLSearchParams(searchParams);
-    if (nextTab === 'all') {
-      nextParams.delete('tab');
-    } else {
-      nextParams.set('tab', nextTab);
+  const fetchTeamWorkload = useCallback(async () => {
+    if (!isManager) return;
+    try {
+      setLoadingWorkload(true);
+      const response = await apiClient.get('/agent-workspace/team-workload');
+      if (response.data?.success && response.data?.data) {
+        setTeamWorkload(response.data.data);
+      }
+    } catch (err) {
+      console.error('Failed to load team workload telemetry:', err);
+    } finally {
+      setLoadingWorkload(false);
     }
-    setSearchParams(nextParams, { replace: true });
+  }, [isManager]);
 
-    if (nextTab === 'confirmation') {
-      return;
-    }
+  const selectTab = useCallback(
+    (nextTab: FilterTab) => {
+      setActiveTab(nextTab);
+      const nextParams = new URLSearchParams(searchParams);
+      if (nextTab === 'pending') {
+        nextParams.delete('tab');
+      } else {
+        nextParams.set('tab', nextTab);
+      }
+      setSearchParams(nextParams, { replace: true });
 
-    skipNextTabFetchRef.current = true;
-    void fetchOrders({ silent: true, tab: nextTab });
-  }, [searchParams, setSearchParams]);
+      skipNextTabFetchRef.current = true;
+      void fetchOrders({ silent: true, tab: nextTab });
+    },
+    [searchParams, setSearchParams],
+  );
 
   const fetchOrders = async (options?: {
     silent?: boolean;
@@ -156,6 +191,7 @@ export function useAgentWorkspace() {
     append?: boolean;
     tab?: FilterTab;
     sort?: 'recent' | 'oldest' | 'attempts';
+    assignedTo?: string | null;
   }) => {
     const {
       silent = false,
@@ -163,10 +199,12 @@ export function useAgentWorkspace() {
       append = false,
       tab,
       sort: targetSort,
+      assignedTo: targetAssignedTo,
     } = options || {};
 
     const activeTabForRequest = tab ?? activeTabRef.current;
     const resolvedSort = targetSort ?? (activeTabForRequest === 'pending' ? 'oldest' : sortOption);
+    const resolvedAssignedTo = targetAssignedTo !== undefined ? targetAssignedTo : selectedAgentId;
 
     try {
       if (append) {
@@ -183,6 +221,10 @@ export function useAgentWorkspace() {
         withStats: 1,
         sort: resolvedSort,
       };
+
+      if (resolvedAssignedTo) {
+        params['assignedTo'] = resolvedAssignedTo;
+      }
 
       switch (activeTabForRequest) {
         case 'pending':
@@ -277,18 +319,62 @@ export function useAgentWorkspace() {
     }
   };
 
-  const advanceToNextOrder = useCallback((currentId: string) => {
-    if (!autoAdvance) return;
-    setOrders((current) => {
-      const idx = current.findIndex((o) => o.id === currentId);
-      if (idx !== -1 && idx + 1 < current.length) {
-        setSelectedOrderId(current[idx + 1].id);
-      } else if (current.length > 1) {
-        setSelectedOrderId(current[0].id);
+  const handleSelectAgent = useCallback(
+    (agentId: string | null) => {
+      setSelectedAgentId(agentId);
+      void fetchOrders({ silent: true, assignedTo: agentId });
+    },
+    [],
+  );
+
+  const handleAutoDistribute = async () => {
+    try {
+      setIsDistributing(true);
+      const res = await apiClient.post('/agent-workspace/auto-distribute', { limit: 50 });
+      if (res.data?.success) {
+        toast.success(
+          res.data.message || (isArabic ? 'تم توزيع الطلبات بنجاح' : 'Orders distributed successfully'),
+        );
+        await Promise.all([fetchTeamWorkload(), fetchOrders({ silent: true })]);
       }
-      return current;
-    });
-  }, [autoAdvance]);
+    } catch (err) {
+      toast.error(
+        extractApiErrorMessage(err) || (isArabic ? 'فشل التوزيع التلقائي' : 'Auto distribute failed'),
+      );
+    } finally {
+      setIsDistributing(false);
+    }
+  };
+
+  const handleAssignOrder = async (orderId: string, targetUserId: string) => {
+    try {
+      const res = await apiClient.post('/agent-workspace/assign', { orderId, targetUserId });
+      if (res.data?.success) {
+        toast.success(isArabic ? 'تم تعيين الطلب بنجاح' : 'Order assigned');
+        await Promise.all([fetchTeamWorkload(), fetchOrders({ silent: true })]);
+      }
+    } catch (err) {
+      toast.error(
+        extractApiErrorMessage(err) || (isArabic ? 'فشل تعيين الطلب' : 'Failed to assign order'),
+      );
+    }
+  };
+
+  const advanceToNextOrder = useCallback(
+    (currentId: string) => {
+      if (!autoAdvance) return;
+      setOrders((current) => {
+        const remaining = current.filter((o) => o.id !== currentId);
+        if (remaining.length > 0) {
+          setSelectedOrderId(remaining[0].id);
+        } else {
+          setSelectedOrderId(null);
+        }
+        return remaining;
+      });
+    },
+    [autoAdvance],
+  );
 
   const handleQuickAction = async (
     order: WorkspaceOrder,
@@ -330,8 +416,12 @@ export function useAgentWorkspace() {
           toast.success(messages[action] || t('orders.actionSuccess'));
         }
 
+        // Instant zero-delay disappearance from active stream
         advanceToNextOrder(order.id);
-        await fetchOrders({ silent: true });
+        await Promise.all([
+          fetchOrders({ silent: true }),
+          isManager ? fetchTeamWorkload() : Promise.resolve(),
+        ]);
       }
     } catch (error) {
       toast.error(extractApiErrorMessage(error) || t('orders.actionFailed'));
@@ -416,7 +506,7 @@ export function useAgentWorkspace() {
     }
   };
 
-  // Keyboard navigation
+  // Keyboard shortcuts (j/k, ArrowDown/ArrowUp)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (
@@ -458,14 +548,17 @@ export function useAgentWorkspace() {
 
   useEffect(() => {
     void fetchOrders();
+    if (isManager) void fetchTeamWorkload();
+
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible' && !isModalOpenRef.current) {
         void fetchOrders({ silent: true });
+        if (isManager) void fetchTeamWorkload();
       }
     }, 60000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isManager]);
 
   useEffect(() => {
     activeTabRef.current = activeTab;
@@ -487,8 +580,6 @@ export function useAgentWorkspace() {
       activeTabHydratedRef.current = true;
       return;
     }
-
-    if (activeTab === 'confirmation') return;
 
     if (skipNextTabFetchRef.current) {
       skipNextTabFetchRef.current = false;
@@ -523,6 +614,7 @@ export function useAgentWorkspace() {
   return {
     t,
     isArabic,
+    isManager,
     orders: filteredOrders,
     rawOrdersCount: orders.length,
     selectedOrderId: activeSelectedOrder?.id || null,
@@ -559,6 +651,14 @@ export function useAgentWorkspace() {
     handleQuickAction,
     handleLogCall,
     fetchOrders,
+    // Supervisor additions
+    teamWorkload,
+    loadingWorkload,
+    isDistributing,
+    selectedAgentId,
+    handleSelectAgent,
+    handleAutoDistribute,
+    handleAssignOrder,
     selectedOrderForModal,
     setSelectedOrderForModal,
     isModalOpen,

@@ -3,11 +3,14 @@ const orderService = require('../services/orderService');
 
 /**
  * Agent Workspace Controller
- * Handles orders assigned to specific agents
+ * Handles orders assigned to confirmation agents and supervisor fleet oversight
  */
 
-// Must only contain valid OrderStatus enum values (see prisma/schema/enums.prisma) — 'DELETED' and 'COMPLETED' are not part of the enum and would make Prisma reject the query.
+// Must only contain valid OrderStatus enum values (see prisma/schema/enums.prisma)
 const WORKSPACE_EXCLUDED_STATUSES = new Set(['TRASH']);
+
+const MANAGER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'TEAM_LEADER'];
+const isManagerUser = (user) => MANAGER_ROLES.includes(String(user?.role || '').toUpperCase());
 
 const ALLOWED_CALL_RESULTS = ['unreached', 'reached', 'busy', 'wrong_number', 'callback'];
 
@@ -22,8 +25,14 @@ const getCancellationReasonError = () => 'سبب إلغاء الطلب مطلو�
 
 const parseBooleanParam = (value) => value === true || value === 'true' || value === '1';
 
-const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUpOnly = false } = {}) => {
-  const where = { companyId, assignedTo: userId, isActive: true };
+const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUpOnly = false, assignedTo = '', isManager = false } = {}) => {
+  const where = { companyId, isActive: true };
+
+  if (isManager && assignedTo && assignedTo !== 'all' && assignedTo !== 'unassigned') {
+    where.assignedTo = assignedTo;
+  } else if (!isManager || assignedTo === 'me') {
+    where.assignedTo = userId;
+  }
 
   if (requestedStatus) {
     where.OR = [
@@ -45,8 +54,13 @@ const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUp
   return where;
 };
 
-const getWorkspaceStats = async (prisma, companyId, userId) => {
-  const base = { companyId, assignedTo: userId, isActive: true };
+const getWorkspaceStats = async (prisma, companyId, userId, { assignedTo = '', isManager = false } = {}) => {
+  const base = { companyId, isActive: true };
+  if (isManager && assignedTo && assignedTo !== 'all' && assignedTo !== 'unassigned') {
+    base.assignedTo = assignedTo;
+  } else if (!isManager || assignedTo === 'me') {
+    base.assignedTo = userId;
+  }
 
   const statusWhere = (status) => ({
     ...base,
@@ -83,21 +97,138 @@ const getWorkspaceStats = async (prisma, companyId, userId) => {
   return { total, pending, confirmed, cancelled, followup };
 };
 
-const assertWorkspaceOrderOwnership = async (prisma, companyId, userId, id) => {
+const assertWorkspaceOrderOwnership = async (prisma, companyId, userId, id, isManager = false) => {
   const assignment = await prisma.orderAssignment.findFirst({
     where: {
       companyId,
-      assignedTo: userId,
+      assignedTo: isManager ? undefined : userId,
       isActive: true,
       OR: [{ orderId: id }, { guestOrderId: id }]
     }
   });
-  if (!assignment) {
-    const err = new Error('لا تملك صلاحية التعامل مع هذا الطلب');
-    err.statusCode = 403;
-    throw err;
+
+  if (assignment) {
+    return { type: assignment.guestOrderId ? 'GUEST' : 'REGULAR', assignment };
   }
-  return { type: assignment.guestOrderId ? 'GUEST' : 'REGULAR', assignment };
+
+  if (isManager) {
+    const regular = await prisma.order.findFirst({ where: { id, companyId } });
+    if (regular) return { type: 'REGULAR', assignment: null };
+    const guest = await prisma.guestOrder.findFirst({ where: { id, companyId } });
+    if (guest) return { type: 'GUEST', assignment: null };
+  }
+
+  const err = new Error('لا تملك صلاحية التعامل مع هذا الطلب');
+  err.statusCode = 403;
+  throw err;
+};
+
+const formatWorkspaceOrderRecord = (order, isGuest, assignedAt, assignedTo = null, assignedToName = null) => {
+  if (!order) return null;
+
+  let items = [];
+  if (!isGuest && order.orderItems?.length > 0) {
+    items = order.orderItems.map((item) => ({
+      productName: item.productName || item.product?.name || 'منتج',
+      name: item.productName || item.product?.name || 'منتج',
+      quantity: item.quantity || 1,
+      price: parseFloat(item.price || 0),
+      total: parseFloat(item.total || (item.price * item.quantity) || 0),
+      productColor: item.productColor,
+      productSize: item.productSize,
+    }));
+  } else if (isGuest && order.items) {
+    try {
+      const parsed = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+      if (Array.isArray(parsed)) {
+        items = parsed.map((item) => ({
+          productName: item.productName || item.name || 'منتج',
+          name: item.productName || item.name || 'منتج',
+          quantity: item.quantity || 1,
+          price: parseFloat(item.price || item.unitPrice || 0),
+          total: parseFloat(item.total || (item.price * item.quantity) || 0),
+        }));
+      }
+    } catch {
+      items = [];
+    }
+  }
+
+  const itemsSubtotal = items.reduce((sum, item) => sum + (item.total || 0), 0);
+  const subtotal = parseFloat(order.subtotal || order.itemsTotal || itemsSubtotal || 0);
+  const shipping = parseFloat(order.shippingCost || order.shipping || order.deliveryCost || 0);
+
+  const rawShippingAddress = isGuest
+    ? order.shippingAddress
+    : (order.shippingAddress || order.customerAddress || '');
+  const shippingAddressStr = typeof rawShippingAddress === 'string'
+    ? rawShippingAddress
+    : (typeof rawShippingAddress === 'object' && rawShippingAddress !== null
+        ? (rawShippingAddress.address || rawShippingAddress.street || '')
+        : '');
+
+  let attribution = null;
+  if (order.metadata) {
+    try {
+      const metaObj = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : order.metadata;
+      if (metaObj && typeof metaObj === 'object') {
+        attribution = {
+          source: metaObj.source || metaObj.platform || metaObj.utm_source || null,
+          campaignName: metaObj.campaignName || metaObj.utm_campaign || metaObj.campaign || null,
+          adSetId: metaObj.adSetId || metaObj.adsetId || null,
+          adId: metaObj.adId || metaObj.adid || null,
+        };
+      }
+    } catch {
+      // ignore metadata json parsing errors
+    }
+  }
+
+  const callLogs = Array.isArray(order.callAttemptLogs)
+    ? order.callAttemptLogs.map((l) => ({
+        id: l.id,
+        result: l.result || 'unreached',
+        notes: l.notes || '',
+        createdAt: l.createdAt,
+        userName: (l.user?.firstName || l.user?.lastName)
+          ? `${l.user?.firstName || ''} ${l.user?.lastName || ''}`.trim()
+          : 'موظف',
+      }))
+    : [];
+
+  const customerStats = !isGuest && order.customer ? {
+    deliveryRate: typeof order.customer.deliveryRate === 'number' ? order.customer.deliveryRate : null,
+    totalDelivered: order.customer.totalDelivered || 0,
+    totalOrdersCount: order.customer.totalOrdersCount || 0,
+    customerRating: order.customer.customerRating || 'UNKNOWN',
+  } : null;
+
+  return {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    type: isGuest ? 'GUEST' : 'REGULAR',
+    customerName: isGuest ? order.guestName : (order.customerName || `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim()),
+    customerPhone: isGuest ? order.guestPhone : (order.customerPhone || order.customer?.phone || ''),
+    governorate: order.governorate || order.shippingAddress?.governorate || '',
+    city: order.city || order.shippingAddress?.city || '',
+    shippingAddress: shippingAddressStr,
+    total: parseFloat(order.total || order.finalTotal || 0),
+    subtotal,
+    shipping,
+    status: order.status,
+    createdAt: order.createdAt,
+    assignedAt: assignedAt || order.assignedAt || null,
+    assignedTo: assignedTo || order.assignedTo || null,
+    assignedToName: assignedToName || null,
+    callAttempts: order.callAttempts || 0,
+    lastCallAt: isGuest ? order.lastCallAt : order.lastCallAttemptAt,
+    followUpDate: order.followUpDate,
+    notes: order.notes || '',
+    items,
+    callLogs,
+    customerStats,
+    attribution,
+  };
 };
 
 const getMyOrders = async (req, res) => {
@@ -109,6 +240,7 @@ const getMyOrders = async (req, res) => {
       return res.status(403).json({ success: false, error: 'معرف الشركة أو المستخدم مطلوب' });
     }
 
+    const isManager = isManagerUser(req.user);
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const skip = (page - 1) * limit;
@@ -117,12 +249,95 @@ const getMyOrders = async (req, res) => {
     const withStats = parseBooleanParam(req.query.withStats);
     const sortParam = String(req.query.sort || '').toLowerCase();
     const sort = ['recent', 'oldest', 'attempts'].includes(sortParam) ? sortParam : 'recent';
+    let assignedTo = req.query.assignedTo ? String(req.query.assignedTo).trim() : '';
 
     const prisma = getSharedPrismaClient();
 
-    // Filtering happens server-side in the DB so pagination never depends on
-    // stale client-side slices of the full assignment list.
-    const where = buildWorkspaceWhere(companyId, userId, { requestedStatus, followUpOnly });
+    // If a manager does not specify assignedTo filter, check if they have personal calls.
+    // If they have 0 calls assigned to their name, default to 'all' so they never see an empty screen.
+    if (isManager && !assignedTo) {
+      const personalCount = await prisma.orderAssignment.count({
+        where: { companyId, assignedTo: userId, isActive: true }
+      });
+      if (personalCount === 0) {
+        assignedTo = 'all';
+      }
+    }
+
+    // Unassigned Pool View for Managers
+    if (isManager && assignedTo === 'unassigned') {
+      const regularWhere = {
+        companyId,
+        assignedTo: null,
+        confirmedAt: null,
+        status: requestedStatus ? requestedStatus : 'PENDING'
+      };
+      const guestWhere = {
+        companyId,
+        status: { in: requestedStatus ? [requestedStatus.toLowerCase(), requestedStatus.toUpperCase()] : ['pending', 'PENDING'] },
+        orderAssignments: { none: { isActive: true } }
+      };
+
+      const [regularOrders, guestOrders, totalRegular, totalGuest] = await Promise.all([
+        prisma.order.findMany({
+          where: regularWhere,
+          include: {
+            customer: {
+              select: {
+                id: true, firstName: true, lastName: true, phone: true,
+                deliveryRate: true, totalDelivered: true, totalOrdersCount: true, customerRating: true,
+              }
+            },
+            orderItems: { include: { product: true } },
+            callAttemptLogs: {
+              include: { user: { select: { firstName: true, lastName: true } } },
+              orderBy: { createdAt: 'desc' },
+              take: 10
+            }
+          },
+          orderBy: { createdAt: sort === 'oldest' ? 'asc' : 'desc' },
+          skip,
+          take: limit
+        }),
+        prisma.guestOrder.findMany({
+          where: guestWhere,
+          include: {
+            orderNotes: true,
+            callAttemptLogs: {
+              include: { user: { select: { firstName: true, lastName: true } } },
+              orderBy: { createdAt: 'desc' },
+              take: 10
+            }
+          },
+          orderBy: { createdAt: sort === 'oldest' ? 'asc' : 'desc' },
+          skip,
+          take: limit
+        }),
+        prisma.order.count({ where: regularWhere }),
+        prisma.guestOrder.count({ where: guestWhere })
+      ]);
+
+      const formattedOrders = [
+        ...regularOrders.map((o) => formatWorkspaceOrderRecord(o, false, null, null, null)),
+        ...guestOrders.map((g) => formatWorkspaceOrderRecord(g, true, null, null, null))
+      ].slice(0, limit);
+
+      const total = totalRegular + totalGuest;
+
+      let stats = null;
+      if (withStats) {
+        stats = await getWorkspaceStats(prisma, companyId, userId, { assignedTo, isManager });
+      }
+
+      return res.json({
+        success: true,
+        data: formattedOrders,
+        pagination: { total, page, limit, pages: Math.ceil(total / limit) },
+        stats
+      });
+    }
+
+    const where = buildWorkspaceWhere(companyId, userId, { requestedStatus, followUpOnly, assignedTo, isManager });
 
     let orderBy = [{ assignedAt: 'desc' }];
     if (sort === 'oldest') {
@@ -134,8 +349,6 @@ const getMyOrders = async (req, res) => {
         { order: { createdAt: 'asc' } },
         { guestOrder: { createdAt: 'asc' } }
       ];
-      // Fallback if Prisma rejects ordering by optional relations at runtime:
-      // orderBy = [{ assignedAt: 'asc' }];
     }
 
     const [assignments, total] = await Promise.all([
@@ -182,119 +395,28 @@ const getMyOrders = async (req, res) => {
       prisma.orderAssignment.count({ where })
     ]);
 
-    const formattedOrders = assignments.map(a => {
+    // Map assigned user names for managers
+    const assignedUserIds = Array.from(new Set(assignments.map((a) => a.assignedTo).filter(Boolean)));
+    const assignedUsers = (isManager && assignedUserIds.length)
+      ? await prisma.user.findMany({
+          where: { id: { in: assignedUserIds } },
+          select: { id: true, firstName: true, lastName: true, email: true }
+        })
+      : [];
+    const assignedUserMap = new Map(
+      assignedUsers.map((u) => [u.id, `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || u.id])
+    );
+
+    const formattedOrders = assignments.map((a) => {
       const order = a.order || a.guestOrder;
       const isGuest = !!a.guestOrder;
-
-      // Parse regular order items
-      let items = [];
-      if (!isGuest && order.orderItems?.length > 0) {
-        items = order.orderItems.map(item => ({
-          productName: item.productName || item.product?.name || 'منتج',
-          name: item.productName || item.product?.name || 'منتج',
-          quantity: item.quantity || 1,
-          price: parseFloat(item.price || 0),
-          total: parseFloat(item.total || (item.price * item.quantity) || 0),
-          productColor: item.productColor,
-          productSize: item.productSize,
-        }));
-      } else if (isGuest && order.items) {
-        // Guest orders store items as JSON string or array
-        try {
-          const parsed = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-          if (Array.isArray(parsed)) {
-            items = parsed.map(item => ({
-              productName: item.productName || item.name || 'منتج',
-              name: item.productName || item.name || 'منتج',
-              quantity: item.quantity || 1,
-              price: parseFloat(item.price || item.unitPrice || 0),
-              total: parseFloat(item.total || (item.price * item.quantity) || 0),
-            }));
-          }
-        } catch (e) {
-          items = [];
-        }
-      }
-
-      // Calculate subtotal from items if not directly available
-      const itemsSubtotal = items.reduce((sum, item) => sum + (item.total || 0), 0);
-      const subtotal = parseFloat(order.subtotal || order.itemsTotal || itemsSubtotal || 0);
-      const shipping = parseFloat(order.shippingCost || order.shipping || order.deliveryCost || 0);
-
-      const rawShippingAddress = isGuest
-        ? order.shippingAddress
-        : (order.shippingAddress || order.customerAddress || '');
-      const shippingAddressStr = typeof rawShippingAddress === 'string'
-        ? rawShippingAddress
-        : (typeof rawShippingAddress === 'object' && rawShippingAddress !== null
-            ? (rawShippingAddress.address || rawShippingAddress.street || '')
-            : '');
-
-      let attribution = null;
-      if (order.metadata) {
-        try {
-          const metaObj = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : order.metadata;
-          if (metaObj && typeof metaObj === 'object') {
-            attribution = {
-              source: metaObj.source || metaObj.platform || metaObj.utm_source || null,
-              campaignName: metaObj.campaignName || metaObj.utm_campaign || metaObj.campaign || null,
-              adSetId: metaObj.adSetId || metaObj.adsetId || null,
-              adId: metaObj.adId || metaObj.adid || null,
-            };
-          }
-        } catch {
-          // ignore metadata json parsing errors
-        }
-      }
-
-      const callLogs = Array.isArray(order.callAttemptLogs)
-        ? order.callAttemptLogs.map(l => ({
-            id: l.id,
-            result: l.result || 'unreached',
-            notes: l.notes || '',
-            createdAt: l.createdAt,
-            userName: (l.user?.firstName || l.user?.lastName)
-              ? `${l.user?.firstName || ''} ${l.user?.lastName || ''}`.trim()
-              : 'موظف',
-          }))
-        : [];
-
-      const customerStats = !isGuest && order.customer ? {
-        deliveryRate: typeof order.customer.deliveryRate === 'number' ? order.customer.deliveryRate : null,
-        totalDelivered: order.customer.totalDelivered || 0,
-        totalOrdersCount: order.customer.totalOrdersCount || 0,
-        customerRating: order.customer.customerRating || 'UNKNOWN',
-      } : null;
-
-      return {
-        id: order.id,
-        orderNumber: order.orderNumber,
-        type: isGuest ? 'GUEST' : 'REGULAR',
-        customerName: isGuest ? order.guestName : (order.customerName || `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim()),
-        customerPhone: isGuest ? order.guestPhone : (order.customerPhone || order.customer?.phone || ''),
-        governorate: order.governorate || order.shippingAddress?.governorate || '',
-        city: order.city || order.shippingAddress?.city || '',
-        shippingAddress: shippingAddressStr,
-        total: parseFloat(order.total || order.finalTotal || 0),
-        subtotal,
-        shipping,
-        status: order.status,
-        createdAt: order.createdAt,
-        assignedAt: a.assignedAt,
-        callAttempts: order.callAttempts || 0,
-        lastCallAt: isGuest ? order.lastCallAt : order.lastCallAttemptAt,
-        followUpDate: order.followUpDate,
-        notes: order.notes || '',
-        items,
-        callLogs,
-        customerStats,
-        attribution,
-      };
+      const assignedToName = assignedUserMap.get(a.assignedTo) || null;
+      return formatWorkspaceOrderRecord(order, isGuest, a.assignedAt, a.assignedTo, assignedToName);
     });
 
     let stats = null;
     if (withStats) {
-      stats = await getWorkspaceStats(prisma, companyId, userId);
+      stats = await getWorkspaceStats(prisma, companyId, userId, { assignedTo, isManager });
     }
 
     res.json({
@@ -311,23 +433,23 @@ const getMyOrders = async (req, res) => {
 
 const logCallAttempt = async (req, res) => {
   try {
-    const { id } = req.params; // Order ID or GuestOrder ID
-    const { result, notes } = req.body; // type is resolved from the ownership check
+    const { id } = req.params;
+    const { result, notes } = req.body;
     const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
     const userId = req.user?.id;
 
-    // Validate call result
     let callResult = result;
     if (!callResult) {
-      callResult = 'unreached'; // default for backward compatibility
+      callResult = 'unreached';
     } else if (!ALLOWED_CALL_RESULTS.includes(callResult)) {
       return res.status(400).json({ success: false, error: 'قيمة نتيجة مكالمة غير صالحة' });
     }
 
     const prisma = getSharedPrismaClient();
     const now = new Date();
+    const isManager = isManagerUser(req.user);
 
-    const { type } = await assertWorkspaceOrderOwnership(prisma, companyId, userId, id);
+    const { type } = await assertWorkspaceOrderOwnership(prisma, companyId, userId, id, isManager);
 
     if (type === 'GUEST') {
       await prisma.$transaction(async (tx) => {
@@ -383,7 +505,6 @@ const scheduleFollowUp = async (req, res) => {
     const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
     const userId = req.user?.id;
 
-    // Validate followUpDate
     if (!followUpDate) {
       return res.status(400).json({ success: false, error: 'يجب تحديد تاريخ المتابعة' });
     }
@@ -396,8 +517,9 @@ const scheduleFollowUp = async (req, res) => {
     }
 
     const prisma = getSharedPrismaClient();
+    const isManager = isManagerUser(req.user);
 
-    const { type } = await assertWorkspaceOrderOwnership(prisma, companyId, userId, id);
+    const { type } = await assertWorkspaceOrderOwnership(prisma, companyId, userId, id, isManager);
 
     if (type === 'GUEST') {
       await prisma.guestOrder.update({
@@ -424,7 +546,6 @@ const quickAction = async (req, res) => {
     let { status, action, notes } = req.body;
     const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
 
-    // Mapping action to status if status is missing (support frontend's action parameter)
     if (!status && action) {
       if (action === 'confirm') status = 'CONFIRMED';
       if (action === 'cancel') status = 'CANCELLED';
@@ -450,7 +571,44 @@ const quickAction = async (req, res) => {
       : (req.user?.email || 'System Agent');
 
     const prisma = getSharedPrismaClient();
-    const { type } = await assertWorkspaceOrderOwnership(prisma, companyId, userId, id);
+    const isManager = isManagerUser(req.user);
+    const { type } = await assertWorkspaceOrderOwnership(prisma, companyId, userId, id, isManager);
+
+    // Deactivate order assignment upon CONFIRMED or CANCELLED so it immediately leaves the active confirmation queue
+    if (normalizedStatus === 'CONFIRMED') {
+      if (typeof prisma.orderAssignment?.updateMany === 'function') {
+        await prisma.orderAssignment.updateMany({
+          where: {
+            companyId,
+            isActive: true,
+            OR: [{ orderId: id }, { guestOrderId: id }]
+          },
+          data: { isActive: false }
+        });
+      }
+
+      if (type === 'REGULAR' && typeof prisma.order?.update === 'function') {
+        await prisma.order.update({
+          where: { id },
+          data: {
+            confirmedAt: new Date(),
+            confirmedBy: userId,
+            confirmationNotes: actionNotes || 'اجراء سريع من لوحة الموظف'
+          }
+        });
+      }
+    } else if (normalizedStatus === 'CANCELLED') {
+      if (typeof prisma.orderAssignment?.updateMany === 'function') {
+        await prisma.orderAssignment.updateMany({
+          where: {
+            companyId,
+            isActive: true,
+            OR: [{ orderId: id }, { guestOrderId: id }]
+          },
+          data: { isActive: false }
+        });
+      }
+    }
 
     if (type === 'GUEST') {
       const updatedGuestOrder = await orderService.updateGuestOrderStatus(
@@ -499,9 +657,234 @@ const quickAction = async (req, res) => {
   }
 };
 
+const getTeamWorkload = async (req, res) => {
+  try {
+    const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, error: 'معرف الشركة مطلوب' });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    // 1. Count unassigned orders
+    const [unassignedRegular, unassignedGuest] = await Promise.all([
+      prisma.order.count({
+        where: {
+          companyId,
+          assignedTo: null,
+          confirmedAt: null,
+          status: 'PENDING'
+        }
+      }),
+      prisma.guestOrder.count({
+        where: {
+          companyId,
+          status: { in: ['pending', 'PENDING'] },
+          orderAssignments: { none: { isActive: true } }
+        }
+      })
+    ]);
+    const unassignedCount = unassignedRegular + unassignedGuest;
+
+    // 2. Get eligible agents
+    const orderConfirmationService = require('../services/orderConfirmationService');
+    const settings = orderConfirmationService.normalizeSettings(await orderConfirmationService.getSettings(companyId));
+    const eligibleUsers = await orderConfirmationService.getEligibleUsers(companyId, settings, { ignoreUserFilter: true });
+
+    // 3. Compute workload per agent
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const eligibleUserIds = eligibleUsers.map((u) => u.id);
+
+    const pendingAssignments = eligibleUserIds.length
+      ? await prisma.orderAssignment.groupBy({
+          by: ['assignedTo'],
+          where: {
+            companyId,
+            isActive: true,
+            assignedTo: { in: eligibleUserIds },
+            OR: [
+              { order: { status: 'PENDING' } },
+              { guestOrder: { status: { in: ['pending', 'PENDING'] } } }
+            ]
+          },
+          _count: { assignedTo: true }
+        })
+      : [];
+    const pendingMap = new Map(pendingAssignments.map((a) => [a.assignedTo, a._count.assignedTo]));
+
+    const confirmedRegularToday = eligibleUserIds.length
+      ? await prisma.order.groupBy({
+          by: ['confirmedBy'],
+          where: {
+            companyId,
+            confirmedBy: { in: eligibleUserIds },
+            confirmedAt: { gte: startOfToday }
+          },
+          _count: { confirmedBy: true }
+        })
+      : [];
+    const confirmedMap = new Map(confirmedRegularToday.map((c) => [c.confirmedBy, c._count.confirmedBy]));
+
+    const agents = eligibleUsers.map((user) => ({
+      id: user.id,
+      name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'موظف',
+      email: user.email,
+      role: user.role,
+      availability: user.availability || 'online',
+      pendingCount: pendingMap.get(user.id) || 0,
+      todayConfirmedCount: confirmedMap.get(user.id) || 0,
+    }));
+
+    agents.sort((a, b) => b.pendingCount - a.pendingCount);
+
+    res.json({
+      success: true,
+      data: {
+        unassignedCount,
+        agents
+      }
+    });
+  } catch (error) {
+    console.error('❌ [AGENT-WORKSPACE] Error in getTeamWorkload:', error);
+    res.status(500).json({ success: false, error: 'خطأ في جلب بيانات أحمال الفريق' });
+  }
+};
+
+const autoDistributeOrders = async (req, res) => {
+  try {
+    const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
+    const userId = req.user?.id;
+    if (!companyId) {
+      return res.status(403).json({ success: false, error: 'معرف الشركة مطلوب' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const orderConfirmationService = require('../services/orderConfirmationService');
+    const settings = orderConfirmationService.normalizeSettings(await orderConfirmationService.getSettings(companyId));
+
+    settings.distributionEnabled = true;
+
+    const limit = Math.min(100, Math.max(1, parseInt(req.body?.limit) || 50));
+
+    const [unassignedRegular, unassignedGuest] = await Promise.all([
+      prisma.order.findMany({
+        where: {
+          companyId,
+          assignedTo: null,
+          confirmedAt: null,
+          status: 'PENDING'
+        },
+        take: limit,
+        orderBy: { createdAt: 'asc' }
+      }),
+      prisma.guestOrder.findMany({
+        where: {
+          companyId,
+          status: { in: ['pending', 'PENDING'] },
+          orderAssignments: { none: { isActive: true } }
+        },
+        take: limit,
+        orderBy: { createdAt: 'asc' }
+      })
+    ]);
+
+    let assignedCount = 0;
+
+    for (const order of unassignedRegular) {
+      const assigned = await orderConfirmationService.autoAssign(companyId, order, settings, userId);
+      if (assigned) assignedCount++;
+    }
+
+    for (const guest of unassignedGuest) {
+      const assigned = await orderConfirmationService.autoAssignGuest(companyId, guest, settings, userId);
+      if (assigned) assignedCount++;
+    }
+
+    res.json({
+      success: true,
+      message: `تم توزيع ${assignedCount} طلب بنجاح على موظفي التأكيد`,
+      data: { assignedCount }
+    });
+  } catch (error) {
+    console.error('❌ [AGENT-WORKSPACE] Error in autoDistributeOrders:', error);
+    res.status(500).json({ success: false, error: 'خطأ في التوزيع التلقائي للطلبات' });
+  }
+};
+
+const assignOrder = async (req, res) => {
+  try {
+    const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
+    const assignedBy = req.user?.id;
+    const { orderId, targetUserId } = req.body;
+
+    if (!orderId || !targetUserId) {
+      return res.status(400).json({ success: false, error: 'معرف الطلب والموظف مطلوبان' });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    const regular = await prisma.order.findFirst({ where: { id: orderId, companyId } });
+    if (regular) {
+      await prisma.orderAssignment.updateMany({
+        where: { orderId: regular.id, isActive: true },
+        data: { isActive: false }
+      });
+      await prisma.orderAssignment.create({
+        data: {
+          companyId,
+          orderId: regular.id,
+          assignedTo: targetUserId,
+          assignedBy,
+          strategy: 'manual',
+          isActive: true
+        }
+      });
+      await prisma.order.update({
+        where: { id: regular.id },
+        data: {
+          assignedTo: targetUserId,
+          assignedBy,
+          assignedAt: new Date(),
+          assignmentStrategy: 'manual'
+        }
+      });
+      return res.json({ success: true, message: 'تم تعيين الطلب بنجاح' });
+    }
+
+    const guest = await prisma.guestOrder.findFirst({ where: { id: orderId, companyId } });
+    if (guest) {
+      await prisma.orderAssignment.updateMany({
+        where: { guestOrderId: guest.id, isActive: true },
+        data: { isActive: false }
+      });
+      await prisma.orderAssignment.create({
+        data: {
+          companyId,
+          guestOrderId: guest.id,
+          assignedTo: targetUserId,
+          assignedBy,
+          strategy: 'manual',
+          isActive: true
+        }
+      });
+      return res.json({ success: true, message: 'تم تعيين الطلب بنجاح' });
+    }
+
+    res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+  } catch (error) {
+    console.error('❌ [AGENT-WORKSPACE] Error in assignOrder:', error);
+    res.status(500).json({ success: false, error: 'خطأ في تعيين الطلب' });
+  }
+};
+
 module.exports = {
   getMyOrders,
   logCallAttempt,
   scheduleFollowUp,
-  quickAction
+  quickAction,
+  getTeamWorkload,
+  autoDistributeOrders,
+  assignOrder
 };

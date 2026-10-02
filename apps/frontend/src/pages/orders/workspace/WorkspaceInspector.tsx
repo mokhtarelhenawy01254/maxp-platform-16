@@ -11,7 +11,7 @@ import {
   ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/24/outline';
 import { useCurrency } from '../../../hooks/useCurrency';
-import { OrderAction, WorkspaceOrder } from './types';
+import { OrderAction, WorkspaceOrder, AgentWorkload } from './types';
 
 interface WorkspaceInspectorProps {
   order: WorkspaceOrder | null;
@@ -21,6 +21,9 @@ interface WorkspaceInspectorProps {
   onLogCall: (order: WorkspaceOrder, result: string) => void;
   onOpenFollowUp: (order: WorkspaceOrder) => void;
   onOpenDetailsModal: (order: WorkspaceOrder) => void;
+  isManager?: boolean;
+  agents?: AgentWorkload[];
+  onAssignOrder?: (orderId: string, targetUserId: string) => Promise<void>;
 }
 
 function buildWhatsAppUrl(order: WorkspaceOrder, isArabic: boolean): string {
@@ -50,6 +53,9 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
   onLogCall,
   onOpenFollowUp,
   onOpenDetailsModal,
+  isManager = false,
+  agents = [],
+  onAssignOrder,
 }) => {
   const { t, i18n } = useTranslation();
   const { formatPrice } = useCurrency();
@@ -129,6 +135,41 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
             {[order.governorate, order.city, order.shippingAddress].filter(Boolean).join(' • ') || '—'}
           </span>
         </div>
+
+        {/* Manager Fleet Assignment Control */}
+        {isManager && agents.length > 0 && onAssignOrder && (
+          <div className="mt-2.5 flex items-center justify-between gap-2 rounded-md border border-border/40 bg-muted/20 px-2.5 py-1.5 text-xs">
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <span className="font-semibold text-foreground">
+                {isArabic ? 'الموظف المسؤول:' : 'Assigned Agent:'}
+              </span>
+              <span className="font-medium text-primary">
+                {order.assignedToName || (isArabic ? 'غير موزع' : 'Unassigned')}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] text-muted-foreground">{isArabic ? 'تعيين:' : 'Assign:'}</span>
+              <select
+                value={order.assignedTo || ''}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    void onAssignOrder(order.id, e.target.value);
+                  }
+                }}
+                className="h-6 rounded border border-border/60 bg-background px-1.5 text-xs font-semibold text-foreground outline-none focus:border-primary"
+              >
+                <option value="" disabled>
+                  {isArabic ? 'اختر موظف…' : 'Select agent…'}
+                </option>
+                {agents.map((ag) => (
+                  <option key={ag.id} value={ag.id}>
+                    {ag.name} ({ag.pendingCount})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* 2. Order Items Table */}
