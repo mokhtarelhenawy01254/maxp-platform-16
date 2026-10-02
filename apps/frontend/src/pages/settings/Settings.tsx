@@ -13,6 +13,7 @@ import CustomDomainPage from "./CustomDomainPage";
 import SidebarSettings from "./SidebarSettings";
 import AuthorizedDevicesTab from "./AuthorizedDevicesTab";
 import OvertimeManagementTab from "./OvertimeManagementTab";
+import { AppVersionSettingsCard } from "../../components/settings/AppVersionSettingsCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -113,6 +114,10 @@ const Settings: React.FC = () => {
           content renders flat (depth-1 rule: no box-in-box under 768px). */}
       <div className="md:rounded-3xl md:border md:border-border md:bg-card">
         <ActiveComponent />
+      </div>
+
+      <div className="mt-8">
+        <AppVersionSettingsCard />
       </div>
     </div>
   );
