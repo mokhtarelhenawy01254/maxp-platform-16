@@ -5003,6 +5003,10 @@ const AppContent = () => {
                   element={<Navigate to="/orders/workspace?tab=confirmation" replace />}
                 />
                 <Route
+                  path="/orders/confirmation-queue"
+                  element={<Navigate to="/orders/workspace?tab=pending" replace />}
+                />
+                <Route
                   path="/orders/preparation"
                   element={
                     <Layout>

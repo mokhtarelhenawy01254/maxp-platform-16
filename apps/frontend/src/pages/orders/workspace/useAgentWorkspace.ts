@@ -720,6 +720,7 @@ export function useAgentWorkspace() {
     customerData: {
       customerName?: string;
       customerPhone?: string;
+      secondaryPhone?: string;
       governorate?: string;
       city?: string;
       shippingAddress?: string;

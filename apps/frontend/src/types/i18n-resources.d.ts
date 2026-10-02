@@ -14379,6 +14379,9 @@ declare module 'react-i18next' {
         incompleteNoConversions: string;
         incompleteDays: string;
         incompleteReportsError: string;
+        incompleteConvertLogFailed: string;
+        incompleteRecoveryRateBase: string;
+        incompleteReportsStaleError: string;
         incompleteRecoveryOverview: string;
         incompleteValue: string;
         incompleteDestinyTitle: string;

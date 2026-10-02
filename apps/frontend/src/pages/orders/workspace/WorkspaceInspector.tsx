@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  PhoneIcon,
   ChatBubbleOvalLeftEllipsisIcon,
   CheckCircleIcon,
   XCircleIcon,
@@ -17,6 +16,7 @@ import {
 import { useCurrency } from '../../../hooks/useCurrency';
 import { OrderAction, WorkspaceOrder, AgentWorkload, WorkspaceOrderItem } from './types';
 import { WorkspaceItemsEditor } from './WorkspaceItemsEditor';
+import { OrderCallButton } from '../../../components/telephony/OrderCallButton';
 
 interface WorkspaceInspectorProps {
   order: WorkspaceOrder | null;
@@ -149,7 +149,6 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
   const isCancelled = order.status === 'CANCELLED';
   const isBusy = Boolean(busyAction);
   const waUrl = buildWhatsAppUrl(order, isArabic);
-  const telUrl = order.customerPhone ? `tel:${order.customerPhone.replace(/\D/g, '')}` : '#';
 
   const dispositions = [
     { key: 'unreached', label: isArabic ? 'لم يرد' : 'Unreached', color: 'hover:bg-amber-500/10 hover:text-amber-600' },
@@ -244,14 +243,17 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
               <span>{isArabic ? 'واتساب' : 'WhatsApp'}</span>
             </a>
 
-            <a
-              href={telUrl}
-              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-blue-500/30 bg-blue-500/10 px-2.5 text-xs font-bold text-blue-600 transition-transform active:scale-[0.98] hover:bg-blue-500/20 dark:text-blue-400"
-              title={isArabic ? 'اتصال مباشر' : 'Direct Call'}
-            >
-              <PhoneIcon className="h-4 w-4" />
-              <span>{isArabic ? 'اتصال' : 'Call'}</span>
-            </a>
+            <OrderCallButton
+              orderId={order.id}
+              orderNumber={order.orderNumber}
+              customerName={order.customerName}
+              customerPhone={order.customerPhone}
+              compact={false}
+              onConfirm={() => onConfirm(order)}
+              onNoAnswer={() => onLogCall(order, 'no_answer')}
+              onPostpone={() => onOpenFollowUp(order)}
+              onCancel={() => onCancel(order)}
+            />
           </div>
         </div>
 
