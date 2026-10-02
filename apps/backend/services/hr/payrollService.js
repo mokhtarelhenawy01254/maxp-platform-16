@@ -1471,7 +1471,7 @@ class PayrollService {
           const dayAbsenceAmount = dailyRate * absenceMultiplier;
           totalAbsencePenalty += dayAbsenceAmount;
           absenceDetails.push(`${dateStr} (غياب كامل × ${absenceMultiplier} = ${dayAbsenceAmount.toFixed(2)})`);
-          addDailyPenalty(new Date(dateStr), dayAbsenceAmount, `غياب كامل (معامل ${absenceMultiplier}x)`, 'absence');
+          addDailyPenalty(dateStr, dayAbsenceAmount, `غياب كامل (معامل ${absenceMultiplier}x)`, 'absence');
         }
       }
     });
@@ -1485,7 +1485,7 @@ class PayrollService {
           const halfDayAbsenceAmount = (dailyRate * 0.5) * absenceMultiplier;
           totalAbsencePenalty += halfDayAbsenceAmount;
           absenceDetails.push(`${dateStr} (غياب نصف يوم × ${absenceMultiplier} = ${halfDayAbsenceAmount.toFixed(2)})`);
-          addDailyPenalty(new Date(dateStr), halfDayAbsenceAmount, `غياب نصف يوم (معامل ${absenceMultiplier}x)`, 'absence');
+          addDailyPenalty(dateStr, halfDayAbsenceAmount, `غياب نصف يوم (معامل ${absenceMultiplier}x)`, 'absence');
         }
       }
     });
@@ -1686,9 +1686,11 @@ class PayrollService {
     dailyPenaltyMap.forEach((dayData, dateStr) => {
       let attendanceDailyTotal = dayData.attendanceTotal || 0;
       const manualDailyTotal = dayData.manualTotal || 0;
+      const deductionTypes = dayData.types || [];
+      const hasAbsence = deductionTypes.includes('absence');
 
-      // سقف الخصم اليومي يطبق حصراً على خصومات الحضور والغياب (وليس الخصومات اليدوية أو التسويات)
-      const isCapped = dailyCapLimit > 0 && attendanceDailyTotal > dailyCapLimit;
+      // سقف الخصم اليومي يطبق حصراً على خصومات الحضور (التأخير والعجز)، ولا يقلص مضاعف الغياب المعتمد
+      const isCapped = !hasAbsence && dailyCapLimit > 0 && attendanceDailyTotal > dailyCapLimit;
 
       if (isCapped) {
         capAuditTrail.push(`${dateStr}: تم خفض خصم الحضور من ${attendanceDailyTotal.toFixed(2)} إلى ${dailyCapLimit.toFixed(2)} (سقف)`);
@@ -1696,7 +1698,6 @@ class PayrollService {
       }
 
       const dailyTotal = attendanceDailyTotal + manualDailyTotal;
-      const deductionTypes = dayData.types || [];
       const isManual = deductionTypes.some(t => t === 'manual');
       const typeLabel = isManual ? 'يدوي' : 'تلقائي';
 
@@ -1715,6 +1716,12 @@ class PayrollService {
       totalCappedManualPenalty += manualDailyTotal;
       totalCappedAttendancePenalty += attendanceDailyTotal;
     });
+
+    // ضمان أن إجمالي خصومات الحضور والغياب تشمل بالكامل قيمة الغياب والتأخير والعجز المحسوبة
+    const minAttendanceTotal = totalAbsencePenalty + totalLatePenalty + totalDeficitPenalty;
+    if (totalCappedAttendancePenalty < minAttendanceTotal) {
+      totalCappedAttendancePenalty = minAttendanceTotal;
+    }
 
     // تصنيف الخصومات وحفظها بوضوح
     if (totalCappedManualPenalty > 0) {
@@ -1743,28 +1750,49 @@ class PayrollService {
     }
 
     // 4. Advances Repayment (خصم السلف)
+    const hrEmpId = Array.isArray(employee.employees) ? employee.employees[0]?.id : employee.employees?.id;
+    const advanceConditions = [{ userId: employeeId }];
+    if (hrEmpId) advanceConditions.push({ employeeRelId: hrEmpId });
+    if (employee.id && employee.id !== employeeId) advanceConditions.push({ userId: employee.id });
+
+    // الفحص يشمل السلف النشطة المعتمدة في هذا الشهر أو التي لها رصيد متبقي
     const activeAdvances = await this.prisma.advanceRequest.findMany({
       where: {
-        userId: employeeId,
-        status: 'APPROVED',
-        isPaidOff: false,
-        remainingBalance: { gt: 0 }
+        companyId,
+        status: { in: ['APPROVED', 'COMPLETED'] },
+        AND: [
+          { OR: advanceConditions },
+          {
+            OR: [
+              { isPaidOff: false, remainingBalance: { gt: 0 } },
+              { createdAt: { gte: periodStartAdjusted, lte: periodEndAdjusted } }
+            ]
+          }
+        ]
       }
     });
 
     let totalAdvanceDeduction = 0;
     const advanceDetails = [];
+    const seenAdvanceIds = new Set();
 
     for (const advance of activeAdvances) {
+      if (seenAdvanceIds.has(advance.id)) continue;
+      seenAdvanceIds.add(advance.id);
+
+      const remBal = parseFloat(advance.remainingBalance) || 0;
+      const advAmt = parseFloat(advance.amount) || 0;
+      const effectiveAdvanceBalance = remBal > 0 ? remBal : advAmt;
+
       let deduction = 0;
       if (advance.repaymentType === 'INSTALLMENTS') {
         deduction = parseFloat(advance.installmentAmount) || 0;
       } else {
-        deduction = parseFloat(advance.remainingBalance);
+        deduction = effectiveAdvanceBalance;
       }
 
-      if (deduction > parseFloat(advance.remainingBalance)) {
-        deduction = parseFloat(advance.remainingBalance);
+      if (deduction > effectiveAdvanceBalance) {
+        deduction = effectiveAdvanceBalance;
       }
 
       // للشهر الحالي: نحسب السُلفة بنفس نسبة الأيام التي مرت
@@ -1777,13 +1805,13 @@ class PayrollService {
         totalAdvanceDeduction += deduction;
         advanceDetails.push({
           advanceId: advance.id,
-          amount: deduction
+          amount: Number(deduction.toFixed(2))
         });
       }
     }
 
     if (totalAdvanceDeduction > 0) {
-      deductions['سلف'] = totalAdvanceDeduction;
+      deductions['سلف'] = Number(totalAdvanceDeduction.toFixed(2));
       deductions.advanceDetails = advanceDetails;
     }
 
@@ -2537,42 +2565,39 @@ class PayrollService {
     }
 
     // حالة 2: معاينة جميع الموظفين في الشركة
-    const users = await this.prisma.user.findMany({
-      where: {
-        isActive: true,
-        OR: [
-          { companyId },
-          { userCompanies: { some: { companyId, isActive: true } } }
-        ]
-      },
-      include: {
-        employees: true
-      }
-    });
-
-    const standaloneEmployees = await this.prisma.employee.findMany({
+    // نجلب أولاً موظفي الشركة النشطين حصراً من جدول Employee
+    const activeEmployees = await this.prisma.employee.findMany({
       where: {
         companyId,
-        status: 'ACTIVE',
-        userId: null
+        status: 'ACTIVE'
+      },
+      include: {
+        user: {
+          include: { employees: true }
+        }
       }
     });
 
-    const allTargets = [
-      ...users.map(u => ({ id: u.id, user: u })),
-      ...standaloneEmployees.map(e => ({
-        id: e.id,
-        user: {
-          id: e.id,
-          companyId: e.companyId,
-          firstName: e.firstName,
-          lastName: e.lastName,
-          employeeNumber: e.employeeNumber,
-          baseSalary: e.baseSalary,
-          employees: [e]
-        }
-      }))
-    ];
+    const targetMap = new Map();
+    for (const emp of activeEmployees) {
+      const targetId = emp.userId || emp.id;
+      if (!targetMap.has(targetId)) {
+        targetMap.set(targetId, {
+          id: targetId,
+          user: emp.user || {
+            id: emp.userId || emp.id,
+            companyId: emp.companyId,
+            firstName: emp.firstName,
+            lastName: emp.lastName,
+            employeeNumber: emp.employeeNumber,
+            baseSalary: emp.baseSalary,
+            employees: [emp]
+          }
+        });
+      }
+    }
+
+    const allTargets = Array.from(targetMap.values());
 
     const previews = [];
     const totals = {
@@ -2582,6 +2607,7 @@ class PayrollService {
       totalDeductions: 0,
       totalAbsenceDeductions: 0,
       totalLatePenalties: 0,
+      totalAdvancesDeductions: 0,
       totalSocialInsurance: 0,
       totalTax: 0,
       totalBonuses: 0,
@@ -2606,6 +2632,7 @@ class PayrollService {
         totals.totalDeductions += item.totalDeductions;
         totals.totalAbsenceDeductions += item.absenceDeduction;
         totals.totalLatePenalties += item.latePenalty;
+        totals.totalAdvancesDeductions += (item.advancesDeduction || 0);
         totals.totalSocialInsurance += item.socialInsurance;
         totals.totalTax += item.tax;
         totals.totalBonuses += item.bonuses;
@@ -2659,6 +2686,7 @@ class PayrollService {
       overtimeAmount: Number((payrollData.overtimeAmount || 0).toFixed(2)),
       bonuses: Number((payrollData.bonuses || 0).toFixed(2)),
       totalDeductions: Number(payrollData.totalDeductions.toFixed(2)),
+      advancesDeduction: Number((payrollData.deductions?.['سلف'] || 0).toFixed(2)),
       socialInsurance: Number(payrollData.socialInsurance.toFixed(2)),
       tax: Number((payrollData.taxAmount || 0).toFixed(2)),
       grossSalary: Number(payrollData.grossSalary.toFixed(2)),

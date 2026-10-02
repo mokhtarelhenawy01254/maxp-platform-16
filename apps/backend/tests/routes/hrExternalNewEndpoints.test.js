@@ -1470,6 +1470,240 @@ describe('HR External API — New Endpoints & Timezone Fix Unit Tests', () => {
       );
     });
   });
+
+  describe('Item 13: Settings 500 Fix, Advances Deduction & Write Routes, and Net Salary Consistency', () => {
+    const payrollService = require('../../services/hr/payrollService');
+
+    it('1) GET /settings and PUT /settings return 200 without ReferenceError and persist absencePenaltyRate', async () => {
+      let storedSettings = {
+        id: 'set-h2m',
+        companyId: 'cmldvhqkx0000juj6sdbx2jw0',
+        workDays: '[0,1,2,3,4,6]',
+        absencePenaltyRate: 2.0,
+        paidPermissionMinutesPerMonth: 120,
+        lateThresholdMinutes: 10,
+        lateGracePeriod: 10,
+        gracePeriodMinutes: 60
+      };
+
+      const mockPrisma = {
+        company: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'cmldvhqkx0000juj6sdbx2jw0',
+            name: 'H2M',
+            timezone: 'Africa/Cairo'
+          })
+        },
+        $queryRawUnsafe: jest.fn().mockImplementation((sql) => {
+          if (String(sql).includes('information_schema.columns')) {
+            return Promise.resolve([]);
+          }
+          if (String(sql).includes('UPDATE "hr_settings"')) {
+            return Promise.resolve(1);
+          }
+          return Promise.resolve([]);
+        }),
+        hRSettings: {
+          findUnique: jest.fn().mockImplementation(() => Promise.resolve(storedSettings))
+        },
+        latenessRules: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          upsert: jest.fn().mockResolvedValue({})
+        },
+        shift: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'shift-1',
+            startTime: '10:00',
+            endTime: '18:00',
+            breakDuration: 0
+          }),
+          update: jest.fn().mockResolvedValue({})
+        }
+      };
+
+      mockReq.companyId = 'cmldvhqkx0000juj6sdbx2jw0';
+      mockReq._mockPrisma = mockPrisma;
+
+      await hrExternalController.getHRSettings(mockReq, mockRes);
+      expect(mockRes.status).not.toHaveBeenCalledWith(500);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: expect.objectContaining({
+            absencePenaltyRate: 2.0,
+            paidPermissionMinutesPerMonth: 120,
+            attendance: expect.objectContaining({
+              absencePenaltyRate: 2.0
+            }),
+            permissions: expect.objectContaining({
+              paidPermissionMinutesPerMonth: 120
+            })
+          })
+        })
+      );
+
+      mockRes.json.mockClear();
+      mockRes.status.mockClear();
+      mockReq.body = {
+        absencePenaltyRate: 2.0,
+        paidPermissionMinutesPerMonth: 120
+      };
+
+      await hrExternalController.updateHRSettings(mockReq, mockRes);
+      expect(mockRes.status).not.toHaveBeenCalledWith(500);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: expect.objectContaining({
+            absencePenaltyRate: 2.0,
+            attendance: expect.objectContaining({
+              absencePenaltyRate: 2.0
+            })
+          })
+        })
+      );
+    });
+
+    it('2) Deducts advances in the month they were disbursed and exposes advancesDeduction + exact netSalary = baseSalary - totalDeductions', async () => {
+      const mockAliUser = {
+        id: 'user-ali',
+        companyId: 'cmldvhqkx0000juj6sdbx2jw0',
+        firstName: 'علي',
+        lastName: 'وزيري',
+        employeeNumber: 'EMP00006',
+        baseSalary: 5000,
+        hireDate: new Date('2025-01-01'),
+        enableAutoDeduction: true,
+        employees: [
+          {
+            id: 'emp-ali',
+            userId: 'user-ali',
+            companyId: 'cmldvhqkx0000juj6sdbx2jw0',
+            firstName: 'علي',
+            lastName: 'وزيري',
+            employeeNumber: 'EMP00006',
+            baseSalary: 5000,
+            status: 'ACTIVE',
+            hireDate: new Date('2025-01-01')
+          }
+        ]
+      };
+
+      const mockH2MSettings = {
+        companyId: 'cmldvhqkx0000juj6sdbx2jw0',
+        workingDaysPerMonth: 26,
+        workingHoursPerDay: 8,
+        workDays: '[0,1,2,3,4,6]',
+        absencePenaltyRate: 2.0,
+        maxDailyDeductionDays: 1.0,
+        autoDeductionEnabled: true,
+        lateThresholdMinutes: 10,
+        lateGracePeriod: 10,
+        gracePeriodMinutes: 60,
+        paidPermissionMinutesPerMonth: 120,
+        socialInsuranceRate: 0,
+        taxRate: 0
+      };
+
+      // Ali's 2 advances in September: 1,000 + 1,515 = 2,515
+      const mockAliAdvances = [
+        {
+          id: 'adv-ali-1000',
+          companyId: 'cmldvhqkx0000juj6sdbx2jw0',
+          userId: 'user-ali',
+          amount: 1000,
+          remainingBalance: 0, // Even if prematurely marked 0 / COMPLETED before payroll run
+          repaymentType: 'ONE_TIME',
+          status: 'COMPLETED',
+          isPaidOff: true,
+          createdAt: new Date('2026-09-24T10:00:00.000Z')
+        },
+        {
+          id: 'adv-ali-1515',
+          companyId: 'cmldvhqkx0000juj6sdbx2jw0',
+          userId: 'user-ali',
+          amount: 1515,
+          remainingBalance: 1515,
+          repaymentType: 'ONE_TIME',
+          status: 'APPROVED',
+          isPaidOff: false,
+          createdAt: new Date('2026-09-25T10:00:00.000Z')
+        }
+      ];
+
+      // Present all days except 1 absent day (2026-09-01) -> 1 * 2.0 * (5000/26) = 384.62
+      const sepAttendance = [];
+      for (let d = 2; d <= 30; d++) {
+        const dt = new Date(Date.UTC(2026, 8, d));
+        if (dt.getUTCDay() === 5) continue; // Friday off
+        const ds = `2026-09-${String(d).padStart(2, '0')}`;
+        sepAttendance.push({
+          id: `att-${d}`,
+          userId: 'user-ali',
+          companyId: 'cmldvhqkx0000juj6sdbx2jw0',
+          date: new Date(`${ds}T00:00:00.000Z`),
+          checkIn: new Date(`${ds}T08:00:00.000Z`),
+          checkOut: new Date(`${ds}T16:00:00.000Z`),
+          status: 'PRESENT',
+          lateMinutes: 0,
+          earlyLeaveMinutes: 0,
+          workHours: 8
+        });
+      }
+
+      const rewardPayrollIntegrationService = require('../../services/hr/rewardPayrollIntegrationService');
+      const origRewardPrisma = rewardPayrollIntegrationService.prisma;
+      rewardPayrollIntegrationService.prisma = {
+        rewardRecord: { findMany: jest.fn().mockResolvedValue([]) }
+      };
+
+      const origPrisma = payrollService.prisma;
+      payrollService.prisma = {
+        user: {
+          findUnique: jest.fn().mockResolvedValue(mockAliUser),
+          findFirst: jest.fn().mockResolvedValue(mockAliUser)
+        },
+        employee: { findFirst: jest.fn().mockResolvedValue(mockAliUser.employees[0]) },
+        hRSettings: { findUnique: jest.fn().mockResolvedValue(mockH2MSettings) },
+        attendance: { findMany: jest.fn().mockResolvedValue(sepAttendance) },
+        leaveRequest: { findMany: jest.fn().mockResolvedValue([]) },
+        hrPermissionRequest: { findMany: jest.fn().mockResolvedValue([]) },
+        manualDeduction: { findMany: jest.fn().mockResolvedValue([]) },
+        advanceRequest: { findMany: jest.fn().mockResolvedValue(mockAliAdvances) },
+        latenessBalance: { findUnique: jest.fn().mockResolvedValue(null) },
+        rewardEligibilityAudit: { findMany: jest.fn().mockResolvedValue([]) }
+      };
+
+      try {
+        const previewRes = await payrollService.previewPayroll('cmldvhqkx0000juj6sdbx2jw0', {
+          month: 9,
+          year: 2026,
+          employeeId: 'user-ali'
+        });
+
+        const preview = previewRes.data;
+        expect(preview.baseSalary).toBe(5000);
+        // 1 absent day * 2.0 penalty rate * (5000 / 26) = 384.62 (NOT capped to 192.31!)
+        expect(preview.absenceDeduction).toBeCloseTo(384.62, 1);
+        // Advances = 1000 + 1515 = 2515
+        expect(preview.advancesDeduction).toBe(2515);
+        // Total deductions = absenceDeduction + latePenalty + deficit + advancesDeduction
+        expect(preview.totalDeductions).toBeCloseTo(preview.absenceDeduction + preview.advancesDeduction, 2);
+        // Strict invariant: netSalary = baseSalary - totalDeductions
+        expect(preview.netSalary).toBeCloseTo(preview.baseSalary - preview.totalDeductions, 2);
+      } finally {
+        payrollService.prisma = origPrisma;
+        rewardPayrollIntegrationService.prisma = origRewardPrisma;
+      }
+    });
+
+    it('3) External API exports createAdvance, updateAdvance, and cancelAdvance', () => {
+      expect(typeof hrExternalController.createAdvance).toBe('function');
+      expect(typeof hrExternalController.updateAdvance).toBe('function');
+      expect(typeof hrExternalController.cancelAdvance).toBe('function');
+    });
+  });
 });
+
 
 

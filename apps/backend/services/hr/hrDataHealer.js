@@ -261,7 +261,7 @@ async function healHrAttendanceAndDeductions() {
         await prisma.manualDeduction.update({
           where: { id: d.id },
           data: {
-            status: 'CANCELLED',
+            status: 'REJECTED',
             rejectedBy: 'HR_HEALER',
             rejectedAt: new Date(),
             rejectionReason: 'Auto-cancelled by HR-HEALER to prevent double deduction with lateness engine',
@@ -271,6 +271,7 @@ async function healHrAttendanceAndDeductions() {
         summary.staleLateDeductionsCancelledCount++;
         summary.staleLateDeductionsCancelledAmount += Number(d.amount);
       } catch (err) {
+        console.error(`❌ [HR-HEALER] Error cancelling pending auto deduction ${d.id}:`, err?.code, err?.message);
         summary.errors.push(`cancelPendingAuto-${d.id}: ${err?.message}`);
       }
     }
@@ -278,8 +279,104 @@ async function healHrAttendanceAndDeductions() {
       console.log(`✅ [HR-HEALER] Cancelled ${pendingAutoDeds.length} pending AUTO_DEDUCTION rows`);
     }
   } catch (err) {
-    console.error('❌ [HR-HEALER] Error cancelling pending auto deductions:', err?.message);
+    console.error('❌ [HR-HEALER] Error cancelling pending auto deductions:', err?.code, err?.message);
     summary.errors.push(`queryPendingAutoDeds: ${err?.message}`);
+  }
+
+  // 7. التأكد من وجود أعمدة hr_settings وتحديث إعدادات شركة H2M المستهدفة
+  try {
+    const h2mCompanyId = 'cmldvhqkx0000juj6sdbx2jw0';
+    if (typeof prisma.$executeRawUnsafe === 'function') {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "hr_settings" ADD COLUMN IF NOT EXISTS "absencePenaltyRate" DECIMAL(5,2) DEFAULT 1.0`).catch(() => {});
+      await prisma.$executeRawUnsafe(`ALTER TABLE "hr_settings" ADD COLUMN IF NOT EXISTS "paidPermissionMinutesPerMonth" INTEGER DEFAULT 0`).catch(() => {});
+      await prisma.$executeRawUnsafe(`ALTER TABLE "hr_settings" ADD COLUMN IF NOT EXISTS "permissionLeadDays" INTEGER DEFAULT 2`).catch(() => {});
+      await prisma.$executeRawUnsafe(`ALTER TABLE "hr_settings" ADD COLUMN IF NOT EXISTS "permissionWarningAfter" INTEGER DEFAULT 4`).catch(() => {});
+      await prisma.$executeRawUnsafe(`ALTER TABLE "hr_settings" ADD COLUMN IF NOT EXISTS "permissionExtraMode" VARCHAR(30) DEFAULT 'deduct'`).catch(() => {});
+    }
+
+    const h2mExists = await prisma.company.findUnique({
+      where: { id: h2mCompanyId },
+      select: { id: true }
+    });
+
+    if (h2mExists) {
+      const h2mSettings = await prisma.hRSettings.findUnique({
+        where: { companyId: h2mCompanyId }
+      });
+      if (h2mSettings) {
+        await prisma.hRSettings.update({
+          where: { companyId: h2mCompanyId },
+          data: {
+            absencePenaltyRate: 2.0,
+            paidPermissionMinutesPerMonth: 120,
+            permissionLeadDays: 2,
+            permissionWarningAfter: 4,
+            permissionExtraMode: 'deduct'
+          }
+        });
+        console.log(`✅ [HR-HEALER] Reconciled H2M settings: absencePenaltyRate=2.0, paidPermissionMinutesPerMonth=120`);
+      }
+    }
+  } catch (err) {
+    console.error('❌ [HR-HEALER] Error reconciling H2M settings:', err?.code, err?.message);
+    summary.errors.push(`h2mSettings: ${err?.message}`);
+  }
+
+  // 8. تسوية سلف شركة H2M لشهر سبتمبر 2026 (تصحيح تاريخ سلفة علي 1515، وإعادة فتح سلفة شروق 1500 وعلي 1000)
+  try {
+    const h2mCompanyId = 'cmldvhqkx0000juj6sdbx2jw0';
+    // أ) سلفة علي 1515 جم: تصحيح التاريخ لشهر سبتمبر 2026
+    const aliAdvance1515 = await prisma.advanceRequest.findFirst({
+      where: {
+        id: 'cmupk8ps20098juxge34voswz',
+        companyId: h2mCompanyId
+      }
+    });
+    if (aliAdvance1515) {
+      await prisma.advanceRequest.update({
+        where: { id: aliAdvance1515.id },
+        data: {
+          createdAt: new Date('2026-09-25T10:00:00.000Z'),
+          status: 'APPROVED',
+          isPaidOff: false,
+          remainingBalance: Number(aliAdvance1515.amount)
+        }
+      });
+      console.log(`✅ [HR-HEALER] Reconciled Ali advance cmupk8ps20098juxge34voswz to September 25, 2026`);
+    }
+
+    // ب) سلفة شروق 1,500 وسلفة علي 1,000 المغلقتين قبل كشف الرواتب
+    const prematureAdvances = await prisma.advanceRequest.findMany({
+      where: {
+        companyId: h2mCompanyId,
+        status: 'COMPLETED',
+        isPaidOff: true,
+        createdAt: {
+          gte: new Date('2026-09-01T00:00:00.000Z'),
+          lte: new Date('2026-09-30T23:59:59.999Z')
+        }
+      }
+    });
+
+    for (const adv of prematureAdvances) {
+      try {
+        await prisma.advanceRequest.update({
+          where: { id: adv.id },
+          data: {
+            status: 'APPROVED',
+            isPaidOff: false,
+            remainingBalance: Number(adv.amount)
+          }
+        });
+        console.log(`✅ [HR-HEALER] Reopened prematurely completed advance ${adv.id} (${adv.amount} EGP) for September payroll deduction`);
+      } catch (rowErr) {
+        console.error(`❌ [HR-HEALER] Error reopening advance ${adv.id}:`, rowErr?.code, rowErr?.message);
+        summary.errors.push(`reopenAdvance-${adv.id}: ${rowErr?.message}`);
+      }
+    }
+  } catch (err) {
+    console.error('❌ [HR-HEALER] Error reconciling H2M advances:', err?.code, err?.message);
+    summary.errors.push(`h2mAdvances: ${err?.message}`);
   }
 
   console.log('🩺 [HR-HEALER] Reconciliation complete:', {

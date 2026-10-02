@@ -112,6 +112,11 @@ router.get('/payroll/runs/:id/items', requireExternalHrScope('hr:payroll:read'),
 
 // 💳 Advances (Financial Loans)
 router.get('/advances', requireExternalHrScope('hr:advances:read'), hrExternalController.listAdvances);
+router.post('/advances', requireExternalHrScope('hr:advances:write'), hrExternalController.createAdvance);
+router.put('/advances/:id', requireExternalHrScope('hr:advances:write'), hrExternalController.updateAdvance);
+router.patch('/advances/:id', requireExternalHrScope('hr:advances:write'), hrExternalController.updateAdvance);
+router.delete('/advances/:id', requireExternalHrScope('hr:advances:write'), hrExternalController.cancelAdvance);
+router.post('/advances/:id/cancel', requireExternalHrScope('hr:advances:write'), hrExternalController.cancelAdvance);
 
 // 🔻 Deductions & Penalties
 router.get('/deductions', requireExternalHrScope('hr:deductions:read'), hrExternalController.listDeductions);

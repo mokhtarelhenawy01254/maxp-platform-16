@@ -381,7 +381,17 @@ function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo', latene
     lateThresholdMinutes: effectiveDailyLateThreshold,
     lateGracePeriod: effectiveLateGracePeriod,
     lateThreshold: effectiveDailyLateThreshold,
-    payrollDay: settings?.payrollDay ?? 25
+    payrollDay: settings?.payrollDay ?? 25,
+    paidPermissionMinutesPerMonth: (settings?.paidPermissionMinutesPerMonth !== undefined && settings?.paidPermissionMinutesPerMonth !== null)
+      ? Number(settings.paidPermissionMinutesPerMonth)
+      : 0,
+    permissionLeadDays: (settings?.permissionLeadDays !== undefined && settings?.permissionLeadDays !== null)
+      ? Number(settings.permissionLeadDays)
+      : 2,
+    permissionWarningAfter: (settings?.permissionWarningAfter !== undefined && settings?.permissionWarningAfter !== null)
+      ? Number(settings.permissionWarningAfter)
+      : 4,
+    permissionExtraMode: settings?.permissionExtraMode || 'deduct'
   };
 }
 
@@ -2496,6 +2506,302 @@ const listAdvances = async (req, res) => {
 };
 
 /**
+ * 17b. إنشاء سلفة مالية جديدة
+ * POST /advances
+ */
+const createAdvance = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const {
+      employeeNumber,
+      employeeId,
+      employeeCode,
+      amount,
+      reason = 'سلفة مالية',
+      repaymentType = 'ONE_TIME',
+      installmentsCount = 1,
+      status = 'APPROVED',
+      date,
+      createdAt,
+      isPaidOff = false,
+      remainingBalance
+    } = req.body || {};
+
+    const code = String(employeeCode || employeeNumber || employeeId || '').trim();
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'employeeCode, employeeNumber, or employeeId is required'
+        }
+      });
+    }
+
+    const numericAmount = Number(amount);
+    if (!amount || isNaN(numericAmount) || numericAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'amount must be a positive number'
+        }
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const [emp, user] = await Promise.all([
+      prisma.employee.findFirst({
+        where: {
+          companyId,
+          OR: [{ employeeNumber: code }, { id: code }, { userId: code }]
+        },
+        select: { id: true, userId: true, employeeNumber: true, firstName: true, lastName: true, baseSalary: true }
+      }),
+      prisma.user.findFirst({
+        where: {
+          OR: [{ employeeNumber: code }, { id: code }]
+        },
+        select: { id: true, employeeNumber: true, firstName: true, lastName: true, baseSalary: true }
+      })
+    ]);
+
+    if (!emp && !user) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'EMPLOYEE_NOT_FOUND',
+          message: `Employee not found with identifier: ${code}`
+        }
+      });
+    }
+
+    const resolvedUserId = emp?.userId || user?.id || null;
+    const resolvedEmployeeRelId = emp?.id || null;
+    const baseSalary = Number(emp?.baseSalary || user?.baseSalary || 0);
+    const normalizedRepaymentType = String(repaymentType || 'ONE_TIME').trim().toUpperCase();
+    const count = normalizedRepaymentType === 'INSTALLMENTS' ? Math.max(1, parseInt(installmentsCount, 10) || 1) : 1;
+    const monthlyAmount = Number((numericAmount / count).toFixed(2));
+    const normalizedStatus = String(status || 'APPROVED').trim().toUpperCase();
+    const paidOffFlag = Boolean(isPaidOff);
+    const remBal = remainingBalance !== undefined && remainingBalance !== null
+      ? Number(remainingBalance)
+      : (paidOffFlag ? 0 : numericAmount);
+
+    const recordCreatedAt = (date || createdAt) ? new Date(date || createdAt) : new Date();
+
+    const advance = await prisma.advanceRequest.create({
+      data: {
+        companyId,
+        userId: resolvedUserId,
+        employeeRelId: resolvedEmployeeRelId,
+        amount: numericAmount,
+        reason: String(reason || 'سلفة مالية').trim(),
+        repaymentType: normalizedRepaymentType,
+        installmentsCount: count,
+        monthlyAmount,
+        installmentAmount: monthlyAmount,
+        employeeSalary: baseSalary,
+        maxAllowedAmount: baseSalary > 0 ? baseSalary : numericAmount,
+        remainingBalance: remBal,
+        isPaidOff: paidOffFlag,
+        status: normalizedStatus,
+        approvedBy: normalizedStatus === 'APPROVED' ? (req.externalApiCredential?.id || req.hrCredential?.id || 'EXTERNAL_API') : null,
+        approvedAt: normalizedStatus === 'APPROVED' ? new Date() : null,
+        createdAt: isNaN(recordCreatedAt.getTime()) ? new Date() : recordCreatedAt
+      }
+    });
+
+    await logExternalApiAction({
+      req,
+      action: 'CREATE_ADVANCE',
+      description: `Created advance of ${numericAmount} for employee ${code}`,
+      resourceType: 'AdvanceRequest',
+      resourceId: advance.id,
+      targetName: advance.reason,
+      details: { amount: numericAmount, status: normalizedStatus, employeeCode: code }
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Advance created successfully',
+      data: advance
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.createAdvance] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 17c. تعديل سلفة مالية (التاريخ، الحالة، المبلغ، الرصيد المتبقي، حالة السداد)
+ * PUT /advances/:id | PATCH /advances/:id
+ */
+const updateAdvance = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { id } = req.params;
+    const body = req.body || {};
+
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.advanceRequest.findFirst({
+      where: { id, companyId }
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'ADVANCE_NOT_FOUND',
+          message: `Advance not found with id: ${id}`
+        }
+      });
+    }
+
+    const updateData = {};
+    if (body.amount !== undefined) {
+      const amt = Number(body.amount);
+      if (isNaN(amt) || amt <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'amount must be a positive number' }
+        });
+      }
+      updateData.amount = amt;
+      const count = body.installmentsCount !== undefined
+        ? Math.max(1, parseInt(body.installmentsCount, 10) || 1)
+        : (existing.installmentsCount || 1);
+      updateData.monthlyAmount = Number((amt / count).toFixed(2));
+      updateData.installmentAmount = updateData.monthlyAmount;
+    }
+
+    if (body.reason !== undefined) updateData.reason = String(body.reason).trim();
+    if (body.repaymentType !== undefined) updateData.repaymentType = String(body.repaymentType).trim().toUpperCase();
+    if (body.installmentsCount !== undefined) {
+      updateData.installmentsCount = Math.max(1, parseInt(body.installmentsCount, 10) || 1);
+    }
+    if (body.status !== undefined) updateData.status = String(body.status).trim().toUpperCase();
+    if (body.isPaidOff !== undefined) updateData.isPaidOff = Boolean(body.isPaidOff);
+    if (body.remainingBalance !== undefined) updateData.remainingBalance = Number(body.remainingBalance);
+    if (body.rejectedReason !== undefined) updateData.rejectedReason = body.rejectedReason ? String(body.rejectedReason) : null;
+
+    if (body.date !== undefined || body.createdAt !== undefined) {
+      const parsedDate = new Date(body.date || body.createdAt);
+      if (isNaN(parsedDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Invalid date / createdAt format' }
+        });
+      }
+      updateData.createdAt = parsedDate;
+    }
+
+    // If reopening an advance from COMPLETED to APPROVED and remainingBalance wasn't explicitly sent as 0
+    if (updateData.status === 'APPROVED' && updateData.isPaidOff === false && body.remainingBalance === undefined) {
+      updateData.remainingBalance = updateData.amount ?? Number(existing.amount);
+    }
+
+    const updated = await prisma.advanceRequest.update({
+      where: { id },
+      data: updateData
+    });
+
+    await logExternalApiAction({
+      req,
+      action: 'UPDATE_ADVANCE',
+      description: `Updated advance ${id}`,
+      resourceType: 'AdvanceRequest',
+      resourceId: id,
+      targetName: updated.reason,
+      details: updateData
+    });
+
+    return res.json({
+      success: true,
+      message: 'Advance updated successfully',
+      data: updated
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.updateAdvance] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 17d. إلغاء أو حذف سلفة مالية
+ * DELETE /advances/:id | POST /advances/:id/cancel
+ */
+const cancelAdvance = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { id } = req.params;
+    const { reason = 'Cancelled via External API', hardDelete = false } = req.body || {};
+
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.advanceRequest.findFirst({
+      where: { id, companyId }
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'ADVANCE_NOT_FOUND',
+          message: `Advance not found with id: ${id}`
+        }
+      });
+    }
+
+    if (hardDelete === true || req.query?.hardDelete === 'true') {
+      await prisma.advanceRequest.delete({ where: { id } });
+      await logExternalApiAction({
+        req,
+        action: 'DELETE_ADVANCE',
+        description: `Deleted advance ${id}`,
+        resourceType: 'AdvanceRequest',
+        resourceId: id,
+        targetName: existing.reason,
+        details: { amount: Number(existing.amount), reason }
+      });
+      return res.json({
+        success: true,
+        message: 'Advance deleted permanently',
+        data: { id, deleted: true }
+      });
+    }
+
+    const updated = await prisma.advanceRequest.update({
+      where: { id },
+      data: {
+        status: 'REJECTED',
+        isPaidOff: false,
+        remainingBalance: 0,
+        rejectedReason: String(reason)
+      }
+    });
+
+    await logExternalApiAction({
+      req,
+      action: 'CANCEL_ADVANCE',
+      description: `Cancelled advance ${id}: ${reason}`,
+      resourceType: 'AdvanceRequest',
+      resourceId: id,
+      targetName: existing.reason,
+      details: { amount: Number(existing.amount), reason }
+    });
+
+    return res.json({
+      success: true,
+      message: 'Advance cancelled successfully',
+      data: updated
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.cancelAdvance] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
  * 18. قائمة الخصومات والجزاءات (Deductions)
  * GET /deductions
  */
@@ -2995,7 +3301,7 @@ const listResignations = async (req, res) => {
 const getHRSettings = async (req, res) => {
   try {
     const { companyId } = req;
-    const prisma = getSharedPrismaClient();
+    const prisma = req._mockPrisma || getSharedPrismaClient();
 
     const [company, runtimeColumns, latenessRules, primaryShift] = await Promise.all([
       prisma.company.findUnique({
@@ -3044,7 +3350,7 @@ const getHRSettings = async (req, res) => {
 const updateHRSettings = async (req, res) => {
   try {
     const { companyId } = req;
-    const prisma = getSharedPrismaClient();
+    const prisma = req._mockPrisma || getSharedPrismaClient();
 
     const [company, runtimeColumns, latenessRules, primaryShift] = await Promise.all([
       prisma.company.findUnique({
@@ -3287,9 +3593,13 @@ const updateHRSettings = async (req, res) => {
       earlyCheckoutThresholdMinutes: Number(mergedAttendance.earlyCheckoutThresholdMinutes || 0),
       deductionCalculationMethod: String(mergedAttendance.deductionCalculationMethod || 'minute'),
       workingDaysPerMonth: Number(mergedAttendance.workingDaysPerMonth || 22),
-      absencePenaltyRate: (mergedAttendance.absencePenaltyRate !== undefined && mergedAttendance.absencePenaltyRate !== null && !isNaN(Number(mergedAttendance.absencePenaltyRate)))
-        ? Number(mergedAttendance.absencePenaltyRate)
-        : 1.0,
+      absencePenaltyRate: (
+        body.deductions?.absencePenaltyRate !== undefined && body.deductions?.absencePenaltyRate !== null
+          ? Number(body.deductions.absencePenaltyRate)
+          : (mergedAttendance.absencePenaltyRate !== undefined && mergedAttendance.absencePenaltyRate !== null && !isNaN(Number(mergedAttendance.absencePenaltyRate))
+              ? Number(mergedAttendance.absencePenaltyRate)
+              : 1.0)
+      ),
       delayPenaltyTiers: Array.isArray(mergedAttendance.delayPenaltyTiers)
         ? JSON.stringify(mergedAttendance.delayPenaltyTiers)
         : mergedAttendance.delayPenaltyTiers,
@@ -3309,17 +3619,18 @@ const updateHRSettings = async (req, res) => {
       aiNotificationTone: String(mergedNotifications.aiNotificationTone || 'PROFESSIONAL')
     };
 
-    if (body.permissions?.paidPermissionMinutesPerMonth !== undefined || body.paidPermissionMinutesPerMonth !== undefined) {
-      dbUpdateData.paidPermissionMinutesPerMonth = Number(body.permissions?.paidPermissionMinutesPerMonth ?? body.paidPermissionMinutesPerMonth);
+    const permSec = body.permissions || body.leavesAndPermissions || {};
+    if (permSec.paidPermissionMinutesPerMonth !== undefined || body.paidPermissionMinutesPerMonth !== undefined) {
+      dbUpdateData.paidPermissionMinutesPerMonth = Number(permSec.paidPermissionMinutesPerMonth ?? body.paidPermissionMinutesPerMonth);
     }
-    if (body.permissions?.permissionLeadDays !== undefined || body.permissionLeadDays !== undefined) {
-      dbUpdateData.permissionLeadDays = Number(body.permissions?.permissionLeadDays ?? body.permissionLeadDays);
+    if (permSec.permissionLeadDays !== undefined || body.permissionLeadDays !== undefined) {
+      dbUpdateData.permissionLeadDays = Number(permSec.permissionLeadDays ?? body.permissionLeadDays);
     }
-    if (body.permissions?.permissionWarningAfter !== undefined || body.permissionWarningAfter !== undefined) {
-      dbUpdateData.permissionWarningAfter = Number(body.permissions?.permissionWarningAfter ?? body.permissionWarningAfter);
+    if (permSec.permissionWarningAfter !== undefined || body.permissionWarningAfter !== undefined) {
+      dbUpdateData.permissionWarningAfter = Number(permSec.permissionWarningAfter ?? body.permissionWarningAfter);
     }
-    if (body.permissions?.permissionExtraMode !== undefined || body.permissionExtraMode !== undefined) {
-      dbUpdateData.permissionExtraMode = String(body.permissions?.permissionExtraMode ?? body.permissionExtraMode);
+    if (permSec.permissionExtraMode !== undefined || body.permissionExtraMode !== undefined) {
+      dbUpdateData.permissionExtraMode = String(permSec.permissionExtraMode ?? body.permissionExtraMode);
     }
 
     if (body.notifications?.aiNotificationTypes) {
@@ -7356,5 +7667,9 @@ module.exports = {
   listPermissions,
   createPermission,
   approvePermission,
-  rejectPermission
+  rejectPermission,
+  // Advances Write Endpoints
+  createAdvance,
+  updateAdvance,
+  cancelAdvance
 };
