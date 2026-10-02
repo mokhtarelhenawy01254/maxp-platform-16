@@ -290,7 +290,8 @@ describe('agentWorkspaceController.getMyOrders', () => {
       pending: 1,
       confirmed: 1,
       cancelled: 1,
-      followup: 0
+      followup: 0,
+      incomplete: 0
     });
     // 1 pagination total + 5 stats counts
     expect(count).toHaveBeenCalledTimes(6);

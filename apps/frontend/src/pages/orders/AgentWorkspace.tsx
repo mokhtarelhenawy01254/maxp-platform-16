@@ -60,6 +60,9 @@ export const AgentWorkspace: React.FC = () => {
     handleSelectAgent,
     handleAutoDistribute,
     handleAssignOrder,
+    handleConvertIncomplete,
+    handleUpdateOrderItems,
+    handleUpdateCustomer,
   } = useAgentWorkspace();
 
   const [activeModalOrder, setActiveModalOrder] = useState<any>(null);
@@ -172,6 +175,9 @@ export const AgentWorkspace: React.FC = () => {
             isManager={isManager}
             agents={teamWorkload.agents}
             onAssignOrder={handleAssignOrder}
+            onConvertIncomplete={handleConvertIncomplete}
+            onSaveItems={handleUpdateOrderItems}
+            onSaveCustomer={handleUpdateCustomer}
           />
         </div>
 

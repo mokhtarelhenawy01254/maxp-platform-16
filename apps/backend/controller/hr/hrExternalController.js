@@ -292,13 +292,13 @@ function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo', latene
     permissions: {
       paidPermissionMinutesPerMonth: (settings?.paidPermissionMinutesPerMonth !== undefined && settings?.paidPermissionMinutesPerMonth !== null)
         ? Number(settings.paidPermissionMinutesPerMonth)
-        : (companyId === 'h2m-1' ? 120 : 0),
+        : 0,
       permissionLeadDays: (settings?.permissionLeadDays !== undefined && settings?.permissionLeadDays !== null)
         ? Number(settings.permissionLeadDays)
-        : (companyId === 'h2m-1' ? 2 : 2),
+        : 2,
       permissionWarningAfter: (settings?.permissionWarningAfter !== undefined && settings?.permissionWarningAfter !== null)
         ? Number(settings.permissionWarningAfter)
-        : (companyId === 'h2m-1' ? 4 : 4),
+        : 4,
       permissionExtraMode: settings?.permissionExtraMode || 'deduct'
     },
     geofence: {
@@ -3287,10 +3287,9 @@ const updateHRSettings = async (req, res) => {
       earlyCheckoutThresholdMinutes: Number(mergedAttendance.earlyCheckoutThresholdMinutes || 0),
       deductionCalculationMethod: String(mergedAttendance.deductionCalculationMethod || 'minute'),
       workingDaysPerMonth: Number(mergedAttendance.workingDaysPerMonth || 22),
-      workingHoursPerDay: Number(mergedAttendance.workingHoursPerDay || 8),
-      requireDeductionReview: Boolean(mergedAttendance.requireDeductionReview),
-      absencePenaltyRate: Number(mergedAttendance.absencePenaltyRate || 1.0),
-      deductAbsenceInCurrentMonth: Boolean(mergedAttendance.deductAbsenceInCurrentMonth),
+      absencePenaltyRate: (mergedAttendance.absencePenaltyRate !== undefined && mergedAttendance.absencePenaltyRate !== null && !isNaN(Number(mergedAttendance.absencePenaltyRate)))
+        ? Number(mergedAttendance.absencePenaltyRate)
+        : 1.0,
       delayPenaltyTiers: Array.isArray(mergedAttendance.delayPenaltyTiers)
         ? JSON.stringify(mergedAttendance.delayPenaltyTiers)
         : mergedAttendance.delayPenaltyTiers,

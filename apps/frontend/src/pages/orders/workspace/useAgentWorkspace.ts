@@ -215,6 +215,111 @@ export function useAgentWorkspace() {
         setLoading(true);
       }
 
+      if (activeTabForRequest === 'incomplete') {
+        const incParams: Record<string, string | number> = {
+          page: targetPage,
+          limit: 50,
+          hasPhone: 'true',
+        };
+        const incRes = await apiClient.get('/orders-new/incomplete', { params: incParams });
+        const incPayload = incRes.data as any;
+        if (!incPayload?.success) {
+          throw new Error(incPayload?.message || (isArabic ? 'فشل جلب السلات المتروكة' : 'Failed to load abandoned carts'));
+        }
+
+        const rawCarts: any[] = Array.isArray(incPayload?.data) ? incPayload.data : [];
+        const nextOrders: WorkspaceOrder[] = rawCarts.map((cart: any) => {
+          const rawItems = Array.isArray(cart.items) ? cart.items : [];
+          return {
+            id: cart.cartId,
+            cartId: cart.cartId,
+            orderNumber: `CART-${String(cart.cartId).slice(-6).toUpperCase()}`,
+            type: 'GUEST',
+            isIncomplete: true,
+            abandonReason: cart.abandonReason || (isArabic ? 'سلة متروكة في صفحة الشراء' : 'Abandoned checkout'),
+            customerName: cart.checkoutData?.guestName || cart.checkoutData?.name || (isArabic ? 'عميل محتمل' : 'Lead'),
+            customerPhone: cart.checkoutData?.customerPhone || cart.checkoutData?.phone || '',
+            governorate: cart.checkoutData?.governorate || '',
+            city: cart.checkoutData?.city || '',
+            shippingAddress: cart.checkoutData?.address || cart.checkoutData?.shippingAddress || '',
+            total: Number(cart.total || 0),
+            subtotal: Number(cart.total || 0),
+            shipping: Number(cart.checkoutData?.shippingCost || 0),
+            discount: Number(cart.checkoutData?.discountAmount || 0),
+            status: 'INCOMPLETE',
+            callAttempts: 0,
+            lastCallAt: null,
+            followUpDate: null,
+            createdAt: cart.checkoutStartedAt || cart.updatedAt || new Date().toISOString(),
+            notes: cart.checkoutData?.notes || '',
+            items: rawItems.map((it: any) => ({
+              productName: it.productName || it.name || (isArabic ? 'منتج' : 'Product'),
+              quantity: Number(it.quantity) || 1,
+              price: Number(it.price) || 0,
+              total: (Number(it.price) || 0) * (Number(it.quantity) || 1),
+              productColor: it.color || it.productColor,
+              productSize: it.size || it.productSize,
+              productImage: it.image || it.productImage,
+            })),
+            attribution: cart.attribution || null,
+          };
+        });
+
+        const paginationData: any = incPayload?.pagination;
+        const nextTotal = Number(paginationData?.total) || nextOrders.length;
+        const nextPages = Number(paginationData?.pages) || 1;
+        const nextPage = Number(paginationData?.page) || targetPage;
+
+        if (append) {
+          setOrders((prev) => {
+            const byId = new Map(prev.map((o) => [o.id, o]));
+            nextOrders.forEach((o) => byId.set(o.id, o));
+            return Array.from(byId.values());
+          });
+        } else {
+          setOrders(nextOrders);
+          if (nextOrders.length > 0) {
+            setSelectedOrderId((prev) => {
+              if (prev && nextOrders.some((o) => o.id === prev)) {
+                return prev;
+              }
+              return nextOrders[0].id;
+            });
+          } else {
+            setSelectedOrderId(null);
+          }
+        }
+
+        setPage(append ? nextPage : 1);
+        setPagination({
+          total: nextTotal,
+          page: nextPage,
+          limit: Number(paginationData?.limit) || 50,
+          pages: nextPages,
+        });
+
+        // Also refresh summary stats so badge is up-to-date
+        try {
+          const statsRes = await apiClient.get('/agent-workspace/my-orders', { params: { limit: 1, withStats: 1 } });
+          const statsPayload = statsRes?.data?.stats;
+          if (statsPayload) {
+            setStats({
+              total: Number(statsPayload.total) || 0,
+              pending: Number(statsPayload.pending) || 0,
+              confirmed: Number(statsPayload.confirmed) || 0,
+              cancelled: Number(statsPayload.cancelled) || 0,
+              followup: Number(statsPayload.followup) || 0,
+              incomplete: Number(statsPayload.incomplete) || nextTotal,
+            });
+          }
+        } catch (_err) {
+          // ignore
+        }
+
+        setFetchError(null);
+        return;
+      }
+
       const params: Record<string, string | number> = {
         page: targetPage,
         limit: 50,
@@ -299,6 +404,7 @@ export function useAgentWorkspace() {
           confirmed: Number(payload.stats.confirmed) || 0,
           cancelled: Number(payload.stats.cancelled) || 0,
           followup: Number(payload.stats.followup) || 0,
+          incomplete: Number(payload.stats.incomplete) || 0,
         });
       } else {
         setStats(null);
@@ -546,6 +652,98 @@ export function useAgentWorkspace() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedOrderId, cancellingOrder, followUpOrder, isModalOpen]);
 
+  const handleConvertIncomplete = async (cartId: string) => {
+    try {
+      setOrderBusyState(cartId, 'confirm');
+      const response = await apiClient.post(`/orders-new/incomplete/${cartId}/convert`);
+      if (response.data?.success) {
+        toast.success(
+          isArabic
+            ? '⚡ تم استرجاع وتحويل السلة بنجاح إلى طلب مؤكد!'
+            : 'Cart recovered and converted to order!',
+        );
+        advanceToNextOrder(cartId);
+        await Promise.all([
+          fetchOrders({ silent: true }),
+          isManager ? fetchTeamWorkload() : Promise.resolve(),
+        ]);
+      }
+    } catch (err) {
+      toast.error(
+        extractApiErrorMessage(err) || (isArabic ? 'فشل تحويل السلة المتروكة' : 'Failed to convert cart'),
+      );
+    } finally {
+      setOrderBusyState(cartId, null);
+    }
+  };
+
+  const handleUpdateOrderItems = async (
+    orderId: string,
+    newItems: WorkspaceOrderItem[],
+    financials: { shipping?: number; discount?: number; notes?: string },
+  ) => {
+    try {
+      const response = await apiClient.put(`/agent-workspace/orders/${orderId}/items`, {
+        items: newItems,
+        shipping: financials.shipping,
+        discount: financials.discount,
+        notes: financials.notes,
+      });
+
+      if (response.data?.success) {
+        toast.success(isArabic ? 'تم تحديث منتجات الطلب بنجاح' : 'Order items updated');
+        const updatedTotals = response.data?.data;
+        setOrders((prev) =>
+          prev.map((o) => {
+            if (o.id !== orderId) return o;
+            return {
+              ...o,
+              items: newItems,
+              subtotal: updatedTotals?.subtotal ?? o.subtotal,
+              shipping: updatedTotals?.shipping ?? o.shipping,
+              discount: updatedTotals?.discount ?? o.discount,
+              total: updatedTotals?.total ?? o.total,
+            };
+          }),
+        );
+      }
+    } catch (err) {
+      toast.error(extractApiErrorMessage(err) || (isArabic ? 'فشل تحديث منتجات الطلب' : 'Failed to update items'));
+      throw err;
+    }
+  };
+
+  const handleUpdateCustomer = async (
+    orderId: string,
+    customerData: {
+      customerName?: string;
+      customerPhone?: string;
+      governorate?: string;
+      city?: string;
+      shippingAddress?: string;
+      notes?: string;
+    },
+  ) => {
+    try {
+      const response = await apiClient.put(`/agent-workspace/orders/${orderId}/customer`, customerData);
+      if (response.data?.success) {
+        toast.success(isArabic ? 'تم حفظ بيانات العميل والعنوان' : 'Customer info updated');
+        setOrders((prev) =>
+          prev.map((o) => {
+            if (o.id !== orderId) return o;
+            return {
+              ...o,
+              ...customerData,
+            };
+          }),
+        );
+      }
+    } catch (err) {
+      toast.error(extractApiErrorMessage(err) || (isArabic ? 'فشل تحديث بيانات العميل' : 'Failed to update customer'));
+      throw err;
+    }
+  };
+
   useEffect(() => {
     void fetchOrders();
     if (isManager) void fetchTeamWorkload();
@@ -659,6 +857,9 @@ export function useAgentWorkspace() {
     handleSelectAgent,
     handleAutoDistribute,
     handleAssignOrder,
+    handleConvertIncomplete,
+    handleUpdateOrderItems,
+    handleUpdateCustomer,
     selectedOrderForModal,
     setSelectedOrderForModal,
     isModalOpen,

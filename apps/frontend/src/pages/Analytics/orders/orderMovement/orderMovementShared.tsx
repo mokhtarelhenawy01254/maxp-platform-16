@@ -9,6 +9,7 @@ export interface MovementFilterProps {
   startDate: string;
   endDate: string;
   mode: MovementMode;
+  onSwitchToVelocity?: () => void;
 }
 
 export interface MovementHistoryEntry {

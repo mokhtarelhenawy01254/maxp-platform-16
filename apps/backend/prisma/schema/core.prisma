@@ -382,6 +382,7 @@ model Company {
     orderStatusAutoChangeRules        OrderStatusAutoChangeRule[]
    articles                         Article[]
     devices                          UserDevice[]
+    employeeDevices                  EmployeeDevice[]
     overtimeSessions                 OvertimeSession[]
     shiftHandovers                   ShiftHandover[]
 
@@ -500,6 +501,7 @@ model User {
   moderatorNotifications                            ModeratorNotification[]
   moderatorDashboardCaches                          ModeratorDashboardCache[]
   devices                                           UserDevice[]
+  employeeDevices                                   EmployeeDevice[]
   overtimeSessions                                  OvertimeSession[]
   shiftHandovers                                    ShiftHandover[]
 

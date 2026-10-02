@@ -120,19 +120,34 @@ model ReturnActivityLog {
 }
 
 model CallAttemptLog {
-  id        String   @id @default(cuid())
-  orderId      String?
-  guestOrderId String?
-  userId       String
-  result       String?
-  notes        String?
-  createdAt    DateTime    @default(now())
-  order        Order?      @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  guestOrder   GuestOrder? @relation(fields: [guestOrderId], references: [id], onDelete: Cascade)
-  user         User        @relation(fields: [userId], references: [id])
+  id              String      @id @default(cuid())
+  sessionId       String?     @unique
+  orderId         String?
+  guestOrderId    String?
+  userId          String
+  companyId       String?
+  direction       String      @default("OUTBOUND")
+  callStatus      String      @default("COMPLETED")
+  durationSeconds Int         @default(0)
+  callerPhone     String?
+  customerPhone   String?
+  recordingUrl    String?
+  fileSizeBytes   Int?
+  audioFormat     String?     @default("opus")
+  result          String?
+  notes           String?
+  startedAt       DateTime?
+  endedAt         DateTime?
+  createdAt       DateTime    @default(now())
+  order           Order?      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  guestOrder      GuestOrder? @relation(fields: [guestOrderId], references: [id], onDelete: Cascade)
+  user            User        @relation(fields: [userId], references: [id])
 
   @@index([orderId])
   @@index([guestOrderId])
   @@index([userId])
+  @@index([companyId])
+  @@index([customerPhone])
+  @@index([createdAt])
   @@map("call_attempt_logs")
 }

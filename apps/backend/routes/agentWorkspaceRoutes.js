@@ -57,4 +57,18 @@ router.post('/auto-distribute', createEndpointRateLimiter('AGENT_ACTIONS'), agen
  */
 router.post('/assign', createEndpointRateLimiter('AGENT_ACTIONS'), agentWorkspaceController.assignOrder);
 
+/**
+ * @route PUT /api/v1/agent-workspace/orders/:id/items
+ * @desc Update order items, quantities, upsells and financial totals
+ * @access Private
+ */
+router.put('/orders/:id/items', createEndpointRateLimiter('AGENT_ACTIONS'), agentWorkspaceController.updateOrderItems);
+
+/**
+ * @route PUT /api/v1/agent-workspace/orders/:id/customer
+ * @desc Update order customer contact and shipping address details
+ * @access Private
+ */
+router.put('/orders/:id/customer', createEndpointRateLimiter('AGENT_ACTIONS'), agentWorkspaceController.updateOrderCustomer);
+
 module.exports = router;

@@ -47,6 +47,7 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
 
   const tabs: { key: FilterTab; label: string; count?: number }[] = [
     { key: 'pending', label: t('orders.workspacePending'), count: stats?.pending },
+    { key: 'incomplete', label: isArabic ? 'سلات متروكة' : 'Abandoned Carts', count: stats?.incomplete },
     { key: 'followup', label: t('orders.workspaceFollowUpLater'), count: stats?.followup },
     { key: 'confirmed', label: t('orders.workspaceConfirmed'), count: stats?.confirmed },
     { key: 'cancelled', label: t('orders.workspaceCancelled'), count: stats?.cancelled },

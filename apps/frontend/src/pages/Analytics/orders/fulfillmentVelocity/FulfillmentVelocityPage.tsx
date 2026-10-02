@@ -15,7 +15,11 @@ const daysAgo = (n: number) => {
   return `${y}-${m}-${day}`;
 };
 
-export const FulfillmentVelocityPage: React.FC = () => {
+interface FulfillmentVelocityPageProps {
+  embedded?: boolean;
+}
+
+export const FulfillmentVelocityPage: React.FC<FulfillmentVelocityPageProps> = ({ embedded = false }) => {
   const {
     data,
     loading,
@@ -61,7 +65,7 @@ export const FulfillmentVelocityPage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-5 p-4 sm:p-6 max-w-7xl mx-auto">
+    <div className={`space-y-5 ${embedded ? "p-0" : "p-4 sm:p-6 max-w-7xl mx-auto"}`}>
       {/* Top Header & Date Control Bar */}
       <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between">
         <div>

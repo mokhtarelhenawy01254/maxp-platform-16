@@ -35,6 +35,7 @@ jest.mock("../../../hooks/useAuthSimple", () => ({
 jest.mock("../../../components/orders/EnhancedOrderModal", () => () => null);
 
 jest.mock("../OrderConfirmationQueue", () => () => null);
+jest.mock("../components/SimplifiedProductSelectionModal", () => () => null);
 
 jest.mock("sonner", () => ({
   toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
@@ -418,6 +419,86 @@ describe("AgentWorkspace", () => {
     // Verify unassigned button and agent name are rendered
     await screen.findByText("Ahmed CS");
     expect(screen.getByText("(15)")).toBeInTheDocument();
+  });
+
+  it("fetches abandoned carts and renders recover CTA when incomplete tab is active", async () => {
+    mockCurrentUser = { id: "u1", role: "AGENT" };
+    mockGet.mockImplementation((url: string) => {
+      if (url === "/orders-new/incomplete") {
+        return Promise.resolve({
+          data: {
+            success: true,
+            data: [
+              {
+                cartId: "cart-999",
+                total: 250,
+                abandonReason: "توقف عند صفحة الشحن",
+                checkoutStartedAt: new Date().toISOString(),
+                checkoutData: {
+                  guestName: "سارة أحمد",
+                  customerPhone: "01099887766",
+                  governorate: "القاهرة",
+                },
+                items: [
+                  {
+                    name: "فستان سهرة",
+                    quantity: 1,
+                    price: 250,
+                  },
+                ],
+              },
+            ],
+            pagination: { total: 1, page: 1, limit: 50, pages: 1 },
+          },
+        });
+      }
+      return Promise.resolve(
+        mockOrdersResponse({
+          orders: [],
+          stats: { ...defaultStats(0), incomplete: 1 },
+          pagination: { total: 0, page: 1, limit: 50, pages: 1 },
+        }),
+      );
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/orders/workspace?tab=incomplete"]}>
+        <AgentWorkspace />
+      </MemoryRouter>,
+    );
+
+    // Verify incomplete cart is loaded and shows recovery CTA
+    const nameElements = await screen.findAllByText("سارة أحمد");
+    expect(nameElements.length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole("button", { name: /Convert to Confirmed Order|استرجاع واعتماد/i })).toBeInTheDocument();
+  });
+
+  it("renders live edit items button in inspector", async () => {
+    mockCurrentUser = { id: "u1", role: "AGENT" };
+    mockGet.mockResolvedValue(
+      mockOrdersResponse({
+        orders: [
+          makeOrder({
+            id: "o1",
+            orderNumber: "ORD-1",
+            items: [{ productName: "قميص كلاسيك", quantity: 2, price: 150, total: 300 }],
+          }),
+        ],
+        stats: defaultStats(1),
+        pagination: { total: 1, page: 1, limit: 50, pages: 1 },
+      }),
+    );
+
+    renderWorkspace();
+
+    await screen.findByText("#ORD-1");
+    // Verify edit items button is present
+    const editBtn = screen.getByRole("button", { name: /Edit Items|تعديل البنود/i });
+    expect(editBtn).toBeInTheDocument();
+
+    // Clicking edit button reveals live item editor
+    fireEvent.click(editBtn);
+    expect(screen.getByText(/Edit Order Items|تعديل بنود وعروض الطلب/i)).toBeInTheDocument();
   });
 });
 

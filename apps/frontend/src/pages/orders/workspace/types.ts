@@ -2,6 +2,7 @@ export type OrderType = 'GUEST' | 'REGULAR';
 
 export const WORKSPACE_TAB_KEYS = [
   'pending',
+  'incomplete',
   'followup',
   'confirmed',
   'cancelled',
@@ -36,15 +37,17 @@ export interface OrderAttribution {
 
 export interface WorkspaceOrderItem {
   id?: string;
+  productId?: string | null;
+  variantId?: string | null;
   productName: string;
   name?: string;
   quantity: number;
   price: number;
   total: number;
-  productColor?: string;
-  productSize?: string;
-  productImage?: string;
-  sku?: string;
+  productColor?: string | null;
+  productSize?: string | null;
+  productImage?: string | null;
+  sku?: string | null;
 }
 
 export interface WorkspaceOrder {
@@ -59,6 +62,7 @@ export interface WorkspaceOrder {
   total: number;
   subtotal: number;
   shipping: number;
+  discount?: number;
   status: string;
   callAttempts: number;
   lastCallAt: string | null;
@@ -72,6 +76,9 @@ export interface WorkspaceOrder {
   callLogs?: CallLogEntry[];
   customerStats?: CustomerStats | null;
   attribution?: OrderAttribution | null;
+  isIncomplete?: boolean;
+  abandonReason?: string;
+  cartId?: string;
 }
 
 export interface WorkspaceStats {
@@ -80,6 +87,7 @@ export interface WorkspaceStats {
   confirmed: number;
   cancelled: number;
   followup: number;
+  incomplete?: number;
 }
 
 export interface WorkspacePagination {

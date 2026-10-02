@@ -68,3 +68,26 @@ model ShiftHandover {
   @@index([userId, shiftDate])
   @@map("hr_shift_handovers")
 }
+
+model EmployeeDevice {
+  id          String    @id @default(cuid())
+  companyId   String
+  userId      String
+  deviceId    String    @unique
+  deviceName  String?
+  socketId    String?
+  fcmToken    String?
+  isOnline    Boolean   @default(false)
+  lastSeenAt  DateTime?
+  appVersion  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, userId])
+  @@index([deviceId])
+  @@index([isOnline])
+  @@map("employee_devices")
+}

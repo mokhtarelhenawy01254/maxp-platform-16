@@ -128,11 +128,15 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
                   >
                     #{order.orderNumber}
                   </span>
-                  {order.type === 'GUEST' && (
+                  {order.isIncomplete ? (
+                    <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                      {isArabic ? 'سلة متروكة' : 'Abandoned Cart'}
+                    </span>
+                  ) : order.type === 'GUEST' ? (
                     <span className="rounded bg-muted px-1 py-0.2 text-[10px] font-semibold text-muted-foreground">
                       {t('orders.guest')}
                     </span>
-                  )}
+                  ) : null}
                   {overdue && (
                     <span className="inline-flex items-center gap-1 rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-bold text-destructive">
                       <ExclamationTriangleIcon className="h-3 w-3" />

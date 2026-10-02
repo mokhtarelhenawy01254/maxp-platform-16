@@ -94,7 +94,21 @@ const getWorkspaceStats = async (prisma, companyId, userId, { assignedTo = '', i
     prisma.orderAssignment.count({ where: followupWhere })
   ]);
 
-  return { total, pending, confirmed, cancelled, followup };
+  let incomplete = 0;
+  if (prisma.guestCart && typeof prisma.guestCart.count === 'function') {
+    try {
+      incomplete = await prisma.guestCart.count({
+        where: {
+          companyId,
+          checkoutStartedAt: { not: null },
+        }
+      });
+    } catch (_e) {
+      incomplete = 0;
+    }
+  }
+
+  return { total, pending, confirmed, cancelled, followup, incomplete };
 };
 
 const assertWorkspaceOrderOwnership = async (prisma, companyId, userId, id, isManager = false) => {
@@ -879,6 +893,250 @@ const assignOrder = async (req, res) => {
   }
 };
 
+const updateOrderItems = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { items, shipping, discount, notes } = req.body;
+    const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
+    const userId = req.user?.id;
+    const isManager = isManagerUser(req.user);
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'يجب توفير منتج واحد على الأقل' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const { type } = await assertWorkspaceOrderOwnership(prisma, companyId, userId, id, isManager);
+
+    const parsedShipping = Math.max(0, parseFloat(shipping) || 0);
+    const parsedDiscount = Math.max(0, parseFloat(discount) || 0);
+    const calculatedSubtotal = items.reduce((sum, it) => {
+      const q = Math.max(1, parseInt(it.quantity, 10) || 1);
+      const p = Math.max(0, parseFloat(it.price) || 0);
+      return sum + (p * q);
+    }, 0);
+    const calculatedTotal = Math.max(0, calculatedSubtotal + parsedShipping - parsedDiscount);
+
+    if (type === 'REGULAR') {
+      const regularOrder = await prisma.order.findFirst({ where: { id, companyId } });
+      if (!regularOrder) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+
+      await prisma.$transaction(async (tx) => {
+        await tx.orderItem.deleteMany({ where: { orderId: regularOrder.id } });
+
+        for (const item of items) {
+          let validProductId = null;
+          let validVariantId = null;
+
+          if (item.productId) {
+            try {
+              const prod = await tx.product.findUnique({
+                where: { id: item.productId },
+                select: { id: true, companyId: true }
+              });
+              if (prod && prod.companyId === companyId) {
+                validProductId = prod.id;
+              } else {
+                const varAsProd = await tx.productVariant.findUnique({
+                  where: { id: item.productId },
+                  include: { product: true }
+                });
+                if (varAsProd && varAsProd.product?.companyId === companyId) {
+                  validProductId = varAsProd.productId;
+                  validVariantId = varAsProd.id;
+                }
+              }
+            } catch (_err) {
+              // ignore lookup errors
+            }
+          }
+
+          const candidateVariantId = item.variantId || item.metadata?.variantId;
+          if (candidateVariantId && !validVariantId) {
+            try {
+              const v = await tx.productVariant.findUnique({ where: { id: candidateVariantId } });
+              if (v) {
+                validVariantId = v.id;
+                if (!validProductId && v.productId) validProductId = v.productId;
+              }
+            } catch (_err) {
+              // ignore lookup errors
+            }
+          }
+
+          const itemQty = Math.max(1, parseInt(item.quantity, 10) || 1);
+          const itemPrice = Math.max(0, parseFloat(item.price) || 0);
+          const itemTotal = itemQty * itemPrice;
+
+          await tx.orderItem.create({
+            data: {
+              orderId: regularOrder.id,
+              productId: validProductId,
+              variantId: validVariantId,
+              quantity: itemQty,
+              price: itemPrice,
+              total: itemTotal,
+              productName: item.productName || item.name || null,
+              productColor: item.productColor || item.color || null,
+              productSize: item.productSize != null ? String(item.productSize) : (item.size != null ? String(item.size) : null),
+              productImage: item.productImage || item.image || null,
+              productSku: item.productSku || item.sku || null,
+              metadata: typeof item.metadata === 'object' ? JSON.stringify(item.metadata) : (item.metadata || null)
+            }
+          });
+        }
+
+        const orderUpdateData = {
+          subtotal: calculatedSubtotal,
+          shipping: parsedShipping,
+          discount: parsedDiscount,
+          total: calculatedTotal,
+          updatedAt: new Date()
+        };
+        if (notes !== undefined) orderUpdateData.notes = notes;
+
+        await tx.order.update({
+          where: { id: regularOrder.id },
+          data: orderUpdateData
+        });
+
+        const twinGuest = await tx.guestOrder.findFirst({
+          where: { orderNumber: regularOrder.orderNumber, companyId }
+        });
+        if (twinGuest) {
+          const guestUpdateData = {
+            items: JSON.stringify(items),
+            total: calculatedSubtotal,
+            shippingCost: parsedShipping,
+            discountAmount: parsedDiscount,
+            finalTotal: calculatedTotal,
+            updatedAt: new Date()
+          };
+          if (notes !== undefined) guestUpdateData.notes = notes;
+
+          await tx.guestOrder.update({
+            where: { id: twinGuest.id },
+            data: guestUpdateData
+          });
+        }
+      });
+
+      return res.json({
+        success: true,
+        message: 'تم تحديث منتجات الطلب بنجاح',
+        data: {
+          subtotal: calculatedSubtotal,
+          shipping: parsedShipping,
+          discount: parsedDiscount,
+          total: calculatedTotal
+        }
+      });
+    } else {
+      const guestOrder = await prisma.guestOrder.findFirst({ where: { id, companyId } });
+      if (!guestOrder) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+
+      const guestUpdateData = {
+        items: JSON.stringify(items),
+        total: calculatedSubtotal,
+        shippingCost: parsedShipping,
+        discountAmount: parsedDiscount,
+        finalTotal: calculatedTotal,
+        updatedAt: new Date()
+      };
+      if (notes !== undefined) guestUpdateData.notes = notes;
+
+      await prisma.guestOrder.update({
+        where: { id: guestOrder.id },
+        data: guestUpdateData
+      });
+
+      return res.json({
+        success: true,
+        message: 'تم تحديث منتجات الطلب بنجاح',
+        data: {
+          subtotal: calculatedSubtotal,
+          shipping: parsedShipping,
+          discount: parsedDiscount,
+          total: calculatedTotal
+        }
+      });
+    }
+  } catch (error) {
+    console.error('❌ [AGENT-WORKSPACE] Error in updateOrderItems:', error);
+    res.status(error.statusCode || 500).json({ success: false, error: error.message || 'خطأ في تحديث منتجات الطلب' });
+  }
+};
+
+const updateOrderCustomer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { customerName, customerPhone, governorate, city, shippingAddress, notes } = req.body;
+    const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
+    const userId = req.user?.id;
+    const isManager = isManagerUser(req.user);
+
+    const prisma = getSharedPrismaClient();
+    const { type } = await assertWorkspaceOrderOwnership(prisma, companyId, userId, id, isManager);
+
+    if (type === 'REGULAR') {
+      const regular = await prisma.order.findFirst({ where: { id, companyId } });
+      if (!regular) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+
+      const updateData = {};
+      if (customerName !== undefined) updateData.customerName = customerName;
+      if (customerPhone !== undefined) updateData.customerPhone = customerPhone;
+      if (governorate !== undefined) updateData.governorate = governorate;
+      if (city !== undefined) updateData.city = city;
+      if (shippingAddress !== undefined) updateData.shippingAddress = shippingAddress;
+      if (notes !== undefined) updateData.notes = notes;
+      updateData.updatedAt = new Date();
+
+      await prisma.order.update({
+        where: { id: regular.id },
+        data: updateData
+      });
+
+      const twinGuest = await prisma.guestOrder.findFirst({
+        where: { orderNumber: regular.orderNumber, companyId }
+      });
+      if (twinGuest) {
+        await prisma.guestOrder.update({
+          where: { id: twinGuest.id },
+          data: {
+            guestName: customerName || twinGuest.guestName,
+            guestPhone: customerPhone || twinGuest.guestPhone,
+            shippingAddress: shippingAddress || twinGuest.shippingAddress,
+            notes: notes !== undefined ? notes : twinGuest.notes,
+            updatedAt: new Date()
+          }
+        });
+      }
+
+      return res.json({ success: true, message: 'تم تحديث بيانات العميل بنجاح' });
+    } else {
+      const guest = await prisma.guestOrder.findFirst({ where: { id, companyId } });
+      if (!guest) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+
+      const updateData = {};
+      if (customerName !== undefined) updateData.guestName = customerName;
+      if (customerPhone !== undefined) updateData.guestPhone = customerPhone;
+      if (shippingAddress !== undefined) updateData.shippingAddress = shippingAddress;
+      if (notes !== undefined) updateData.notes = notes;
+      updateData.updatedAt = new Date();
+
+      await prisma.guestOrder.update({
+        where: { id: guest.id },
+        data: updateData
+      });
+
+      return res.json({ success: true, message: 'تم تحديث بيانات العميل بنجاح' });
+    }
+  } catch (error) {
+    console.error('❌ [AGENT-WORKSPACE] Error in updateOrderCustomer:', error);
+    res.status(error.statusCode || 500).json({ success: false, error: error.message || 'خطأ في تحديث بيانات العميل' });
+  }
+};
+
 module.exports = {
   getMyOrders,
   logCallAttempt,
@@ -886,5 +1144,7 @@ module.exports = {
   quickAction,
   getTeamWorkload,
   autoDistributeOrders,
-  assignOrder
+  assignOrder,
+  updateOrderItems,
+  updateOrderCustomer
 };
