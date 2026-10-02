@@ -51,7 +51,7 @@ interface WorkspaceInspectorProps {
   ) => Promise<void>;
 }
 
-function parseCleanAddress(raw?: string): string {
+export function parseCleanAddress(raw?: string): string {
   if (!raw) return '';
   const trimmed = raw.trim();
   if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
