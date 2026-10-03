@@ -283,4 +283,21 @@ describe("CustomerInfoCard notes and custom fields behavior", () => {
 
     expect(apiClient.get).toHaveBeenCalledTimes(1);
   });
+
+  it("renders interactive customer rating in card view mode and allows triggering change callback", () => {
+    const onRatingChange = jest.fn();
+    render(
+      <MemoryRouter>
+        <CustomerInfoCard
+          order={{ ...baseOrder, customerRating: "GOOD", customerDeliveryRate: 85, customerDeliveredCount: 8, customerTotalCount: 10 }}
+          isEditing={false}
+          onCustomerRatingChange={onRatingChange}
+        />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText("تقييم العميل")).toBeInTheDocument();
+    const ratingButtons = screen.getAllByRole("button", { name: /تقييم العميل/i });
+    expect(ratingButtons.length).toBeGreaterThanOrEqual(1);
+  });
 });

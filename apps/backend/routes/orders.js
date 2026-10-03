@@ -8420,7 +8420,7 @@ const handleCustomerRatingUpdate = async (req, res) => {
     const merchant = isMerchantUser(req.user)
       ? await requireMerchantAccountForUser(req.user)
       : null;
-    const companyId = merchant?.companyId || req.user?.companyId;
+    const companyId = req.companyId || merchant?.companyId || req.user?.companyId;
 
     if (!companyId) {
       return res.status(403).json({ success: false, message: 'غير مصرح - معرف الشركة مطلوب' });
@@ -8547,7 +8547,7 @@ const handleCustomerRatingRecalculate = async (req, res) => {
     const merchant = isMerchantUser(req.user)
       ? await requireMerchantAccountForUser(req.user)
       : null;
-    const companyId = merchant?.companyId || req.user?.companyId;
+    const companyId = req.companyId || merchant?.companyId || req.user?.companyId;
 
     if (!companyId) {
       return res.status(403).json({ success: false, message: 'غير مصرح - معرف الشركة مطلوب' });

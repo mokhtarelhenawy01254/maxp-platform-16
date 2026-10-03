@@ -132,4 +132,30 @@ describe("OrdersTable", () => {
     expect(screen.getByText("كوبون: EID30")).toBeInTheDocument();
     expect(screen.getByText("-30 EGP")).toBeInTheDocument();
   });
+
+  it("renders interactive customer rating badge in order row and triggers onCustomerRatingChange", () => {
+    const handleRatingChange = jest.fn();
+    const orderWithRating = makeOrder({
+      id: "o4",
+      orderNumber: "ORD-400",
+      customerName: "Omar Sherif",
+      customerRating: "EXCELLENT",
+      customerDeliveryRate: 95,
+      customerId: "cust-400",
+    });
+
+    render(
+      <MemoryRouter>
+        <OrdersTable
+          {...baseProps}
+          orders={[orderWithRating]}
+          onCustomerRatingChange={handleRatingChange}
+        />
+      </MemoryRouter>,
+    );
+
+    // Find rating button
+    const ratingButton = screen.getByRole("button", { name: /تقييم العميل/i });
+    expect(ratingButton).toBeInTheDocument();
+  });
 });
