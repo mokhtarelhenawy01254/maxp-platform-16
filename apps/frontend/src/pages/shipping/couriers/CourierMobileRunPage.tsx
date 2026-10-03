@@ -30,6 +30,7 @@ const CourierMobileRunPage: React.FC = () => {
   const [actionType, setActionType] = useState<'DELIVERED' | 'DELAYED' | 'RETURNED' | null>(null);
   const [collectedAmount, setCollectedAmount] = useState<number>(0);
   const [deliveryNotes, setDeliveryNotes] = useState<string>('');
+  const [fieldPin, setFieldPin] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [viewingWaybillShipment, setViewingWaybillShipment] = useState<DeliveryRunItem | null>(null);
 
@@ -77,12 +78,18 @@ const CourierMobileRunPage: React.FC = () => {
       return;
     }
 
+    if (run.pinRequired && !/^\d{4,6}$/.test(fieldPin.trim())) {
+      toast.error('أدخل رمز PIN الخاص بك (4 إلى 6 أرقام) لتأكيد العملية');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await courierService.updateShipmentStatus(run.id, selectedShipment.id, {
         status: actionType,
         collectedAmount: actionType === 'DELIVERED' ? collectedAmount : 0,
-        deliveryNotes: deliveryNotes?.trim() || undefined
+        deliveryNotes: deliveryNotes?.trim() || undefined,
+        pin: run.pinRequired ? fieldPin.trim() : undefined
       }, token);
 
       toast.success(
@@ -339,6 +346,24 @@ const CourierMobileRunPage: React.FC = () => {
               <div>الطلب: <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedShipment.order?.orderNumber}</span></div>
               <div>العميل: <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedShipment.order?.customerName}</span></div>
             </div>
+
+            {run.pinRequired && (
+              <div>
+                <label className="block text-xs font-medium mb-1">رمز PIN الخاص بك *</label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={fieldPin}
+                  onChange={(e) => setFieldPin(e.target.value.replace(/\D/g, ''))}
+                  placeholder="••••"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base font-bold tracking-[0.5em] text-center tabular-nums focus:outline-none"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  حماية المأمورية: العمليات بتتسجل باسمك بعد التحقق من الرمز.
+                </p>
+              </div>
+            )}
 
             {actionType === 'DELIVERED' && (
               <div>

@@ -1,5 +1,6 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { getJwtSecret } = require('../utils/jwtSecret');
 const { buildInstalledMarketplaceAppSettings } = require('../utils/marketplaceAppSettings');
 
@@ -547,6 +548,11 @@ async function getDeliveryRunById(companyId, runId) {
 
   if (!run) return null;
 
+  const { pinHash: _courierPinHash, ...courierSafe } = run.courier || {};
+
+  // Field PIN gating: exposed as a flag so the mobile page asks for the PIN upfront
+  const pinRequired = run.courierId ? await isCourierPinRequired(companyId, run.courierId) : false;
+
   let mobileToken = null;
   try {
     mobileToken = jwt.sign(
@@ -568,10 +574,11 @@ async function getDeliveryRunById(companyId, runId) {
   return {
     ...run,
     mobileToken,
+    pinRequired,
     totalCODExpected: normalizeAmount(run.totalCODExpected),
     totalCODCollected: normalizeAmount(run.totalCODCollected),
     courier: {
-      ...run.courier,
+      ...courierSafe,
       commissionAmount: normalizeAmount(run.courier?.commissionAmount)
     },
     shipments: (run.shipments || []).map((s) => ({
@@ -596,7 +603,7 @@ async function getDeliveryRunById(companyId, runId) {
  * - runId and courierId (when the caller is a field courier) are enforced as ownership filters
  * - shipments of SETTLED/CANCELLED runs are locked
  */
-async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status, collectedAmount, deliveryNotes, userId, courierId }) {
+async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status, collectedAmount, deliveryNotes, userId, courierId, pin }) {
   const prisma = getSharedPrismaClient();
 
   const normalizedStatus = String(status || '').toUpperCase();
@@ -611,7 +618,11 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
       ...(runId ? { deliveryRunId: runId } : {}),
       ...(courierId ? { courierId } : {})
     },
-    include: { order: true, deliveryRun: true }
+    include: {
+      order: true,
+      deliveryRun: true,
+      courier: { select: { id: true, pinHash: true } }
+    }
   });
 
   if (!shipment) {
@@ -623,6 +634,19 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
     LOCKED_RUN_STATUSES.includes(shipment.deliveryRun?.status || '')
   ) {
     throw serviceError('لا يمكن تعديل شحنة بعد تسويتها ماليًا أو إلغاء مأموريتها', 409);
+  }
+
+  // 🔐 Field PIN: when the fleet setting requires it and the courier has a PIN set,
+  // every field status update must carry the matching PIN — a leaked run link alone
+  // can no longer flip deliveries.
+  if (shipment.courierId && shipment.courier?.pinHash) {
+    const pinRequired = await isCourierPinRequired(companyId, shipment.courierId);
+    if (pinRequired) {
+      const provided = String(pin || '').trim();
+      if (!provided || !bcrypt.compareSync(provided, shipment.courier.pinHash)) {
+        throw serviceError('رمز PIN مطلوب وغير صحيح', 403);
+      }
+    }
   }
 
   const updateData = {
@@ -1041,16 +1065,281 @@ async function getCourierDashboardSummary(companyId) {
   };
 }
 
+/**
+ * Set or clear a courier's field PIN (4-6 digits, stored as bcrypt hash).
+ * Managers set it; couriers cannot see or retrieve it.
+ */
+async function setCourierPin(companyId, courierId, pin) {
+  const prisma = getSharedPrismaClient();
+
+  const courier = await prisma.courier.findFirst({ where: { id: courierId, companyId } });
+  if (!courier) {
+    throw serviceError('المندوب غير موجود', 404);
+  }
+
+  let pinHash = null;
+  if (pin !== null && pin !== undefined && pin !== '') {
+    const normalized = String(pin).trim();
+    if (!/^\d{4,6}$/.test(normalized)) {
+      throw serviceError('رمز PIN يجب أن يكون من 4 إلى 6 أرقام', 400);
+    }
+    pinHash = bcrypt.hashSync(normalized, 10);
+  }
+
+  await prisma.courier.update({
+    where: { id: courierId },
+    data: { pinHash }
+  });
+
+  return { courierId, pinSet: Boolean(pinHash) };
+}
+
+/**
+ * Does this courier need a PIN for field updates? (fleet setting + courier has a PIN set)
+ */
+async function isCourierPinRequired(companyId, courierId) {
+  try {
+    const prisma = getSharedPrismaClient();
+    const [courier, fleetApp] = await Promise.all([
+      prisma.courier.findFirst({ where: { id: courierId, companyId }, select: { pinHash: true } }),
+      prisma.companyApp.findFirst({
+        where: { companyId, app: { slug: 'internal-courier-fleet' } },
+        select: { settings: true }
+      })
+    ]);
+    const installed = buildInstalledMarketplaceAppSettings('internal-courier-fleet', fleetApp?.settings || {}, {});
+    return Boolean(installed?.fieldWorkflow?.requireCourierPin) && Boolean(courier?.pinHash);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * List courier commission ledger: per-courier DUE/PAID totals + paginated entries
+ */
+async function listCourierCommissions(companyId, { courierId, status, page = 1, limit = 20 } = {}) {
+  const prisma = getSharedPrismaClient();
+
+  const safePage = Math.max(1, parseInt(page, 10) || 1);
+  const safeLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+
+  const entryWhere = { companyId };
+  if (courierId) entryWhere.courierId = courierId;
+  if (status && status !== 'ALL') entryWhere.status = status;
+
+  const [groups, total, entries] = await Promise.all([
+    prisma.courierCommission.groupBy({
+      by: ['courierId', 'status'],
+      where: { companyId, ...(courierId ? { courierId } : {}) },
+      _sum: { amount: true },
+      _count: { _all: true }
+    }),
+    prisma.courierCommission.count({ where: entryWhere }),
+    prisma.courierCommission.findMany({
+      where: entryWhere,
+      orderBy: { createdAt: 'desc' },
+      skip: (safePage - 1) * safeLimit,
+      take: safeLimit,
+      include: {
+        courier: { select: { id: true, name: true, phone: true } }
+      }
+    })
+  ]);
+
+  const courierIds = [...new Set(groups.map((g) => g.courierId))];
+  const couriers = courierIds.length
+    ? await prisma.courier.findMany({
+        where: { companyId, id: { in: courierIds } },
+        select: { id: true, name: true, phone: true }
+      })
+    : [];
+  const courierById = new Map(couriers.map((c) => [c.id, c]));
+
+  const summaryMap = new Map();
+  for (const g of groups) {
+    const row =
+      summaryMap.get(g.courierId) ||
+      { courierId: g.courierId, name: courierById.get(g.courierId)?.name || 'مندوب', phone: courierById.get(g.courierId)?.phone || null, dueAmount: 0, dueCount: 0, paidAmount: 0, paidCount: 0 };
+    const amount = normalizeAmount(g._sum.amount);
+    if (g.status === 'DUE') {
+      row.dueAmount += amount;
+      row.dueCount += g._count._all;
+    } else if (g.status === 'PAID') {
+      row.paidAmount += amount;
+      row.paidCount += g._count._all;
+    }
+    summaryMap.set(g.courierId, row);
+  }
+
+  return {
+    summary: [...summaryMap.values()].sort((a, b) => b.dueAmount - a.dueAmount),
+    data: entries.map((e) => ({ ...e, amount: normalizeAmount(e.amount) })),
+    pagination: { total, page: safePage, limit: safeLimit, pages: Math.ceil(total / safeLimit) || 1 }
+  };
+}
+
+/**
+ * Pay out a courier's DUE commissions. When a treasury account is supplied the payout
+ * is booked as a WITHDRAWAL from that account; otherwise it is marked paid off-books.
+ */
+async function payCourierCommissions(companyId, courierId, { treasuryAccountId, userId, notes } = {}) {
+  const prisma = getSharedPrismaClient();
+
+  return prisma.$transaction(async (tx) => {
+    const courier = await tx.courier.findFirst({ where: { id: courierId, companyId } });
+    if (!courier) {
+      throw serviceError('المندوب غير موجود', 404);
+    }
+
+    const dueEntries = await tx.courierCommission.findMany({
+      where: { companyId, courierId, status: 'DUE' }
+    });
+    if (dueEntries.length === 0) {
+      throw serviceError('لا توجد مستحقات غير مدفوعة لهذا المندوب', 400);
+    }
+
+    const total = Math.round(dueEntries.reduce((sum, e) => sum + normalizeAmount(e.amount), 0) * 100) / 100;
+
+    let treasuryTransaction = null;
+    if (treasuryAccountId) {
+      const account = await tx.treasuryAccount.findFirst({
+        where: { id: treasuryAccountId, companyId }
+      });
+      if (!account) {
+        throw serviceError('حساب الخزينة المحدد غير موجود أو غير تابع للشركة', 400);
+      }
+
+      const previousBalance = normalizeAmount(account.balance);
+      const newBalance = previousBalance - total;
+      await tx.treasuryAccount.update({
+        where: { id: treasuryAccountId },
+        data: { balance: newBalance }
+      });
+      treasuryTransaction = await tx.treasuryTransaction.create({
+        data: {
+          companyId,
+          treasuryAccountId,
+          amount: total,
+          type: 'WITHDRAWAL',
+          runningBalance: newBalance,
+          referenceType: 'COURIER_COMMISSION_PAYOUT',
+          referenceId: courierId,
+          description: `صرف مستحقات عمولات المندوب ${courier.name}${notes ? ` - ${notes}` : ''}`,
+          createdById: userId || null,
+          date: new Date()
+        }
+      });
+    }
+
+    const paid = await tx.courierCommission.updateMany({
+      where: { companyId, courierId, status: 'DUE' },
+      data: {
+        status: 'PAID',
+        paidAt: new Date(),
+        paidBy: userId || null,
+        ...(treasuryTransaction ? { notes: `صرفت عبر الخزينة (${treasuryTransaction.id})` } : {})
+      }
+    });
+
+    return {
+      courierId,
+      courierName: courier.name,
+      paidCount: paid.count,
+      total,
+      treasuryTransaction
+    };
+  });
+}
+
+/**
+ * Time-ranged courier performance report. Movement window is shipment.updatedAt
+ * (the last field transition), and collected cash is summed from collectedAmount.
+ */
+async function getCouriersPerformance(companyId, { from, to } = {}) {
+  const prisma = getSharedPrismaClient();
+
+  const range = {};
+  if (from) range.gte = new Date(from);
+  if (to) range.lte = new Date(to);
+  const hasRange = Boolean(from || to);
+  const updatedWhere = hasRange ? { updatedAt: range } : {};
+
+  const baseWhere = { companyId, courierId: { not: null }, ...updatedWhere };
+
+  const [deliveredGroups, returnedGroups, openGroups, couriers] = await Promise.all([
+    prisma.shipment.groupBy({
+      by: ['courierId'],
+      where: { ...baseWhere, status: { in: DELIVERED_STATUSES } },
+      _count: { _all: true },
+      _sum: { collectedAmount: true }
+    }),
+    prisma.shipment.groupBy({
+      by: ['courierId'],
+      where: { ...baseWhere, status: { in: ['RETURNED', 'FAILED', 'CANCELLED'] } },
+      _count: { _all: true }
+    }),
+    prisma.shipment.groupBy({
+      by: ['courierId'],
+      where: { ...baseWhere, status: { in: ['OUT_FOR_DELIVERY', 'IN_TRANSIT', 'PENDING', 'DELAYED'] } },
+      _count: { _all: true }
+    }),
+    prisma.courier.findMany({
+      where: { companyId },
+      select: { id: true, name: true, phone: true, isActive: true }
+    })
+  ]);
+
+  const deliveredByCourier = new Map(deliveredGroups.map((g) => [g.courierId, g]));
+  const returnedByCourier = new Map(returnedGroups.map((g) => [g.courierId, g]));
+  const openByCourier = new Map(openGroups.map((g) => [g.courierId, g]));
+
+  const rows = couriers.map((c) => {
+    const delivered = deliveredByCourier.get(c.id)?._count._all || 0;
+    const returned = returnedByCourier.get(c.id)?._count._all || 0;
+    const open = openByCourier.get(c.id)?._count._all || 0;
+    const collectedCash = normalizeAmount(deliveredByCourier.get(c.id)?._sum.collectedAmount);
+    const finished = delivered + returned;
+    return {
+      courierId: c.id,
+      name: c.name,
+      phone: c.phone,
+      isActive: c.isActive,
+      deliveredCount: delivered,
+      returnedCount: returned,
+      openCount: open,
+      collectedCash,
+      successRate: finished > 0 ? Math.round((delivered / finished) * 100) : null
+    };
+  });
+
+  rows.sort((a, b) => b.deliveredCount - a.deliveredCount);
+
+  return {
+    range: { from: from || null, to: to || null },
+    totals: {
+      delivered: rows.reduce((s, r) => s + r.deliveredCount, 0),
+      returned: rows.reduce((s, r) => s + r.returnedCount, 0),
+      collectedCash: Math.round(rows.reduce((s, r) => s + r.collectedCash, 0) * 100) / 100
+    },
+    rows
+  };
+}
+
 module.exports = {
   listCouriers,
   getCourierById,
   createCourier,
   updateCourier,
   deleteCourier,
+  setCourierPin,
+  isCourierPinRequired,
   createDeliveryRun,
   listDeliveryRuns,
   getDeliveryRunById,
   updateDeliveryRunShipment,
   settleDeliveryRun,
-  getCourierDashboardSummary
+  getCourierDashboardSummary,
+  listCourierCommissions,
+  payCourierCommissions,
+  getCouriersPerformance
 };

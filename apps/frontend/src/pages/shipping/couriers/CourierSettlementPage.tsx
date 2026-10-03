@@ -206,6 +206,18 @@ const CourierSettlementPage: React.FC = () => {
             حسابات الخزينة
           </Link>
           <Link
+            to="/shipping/courier-dues"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          >
+            مستحقات المناديب
+          </Link>
+          <Link
+            to="/shipping/courier-performance"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          >
+            تقرير الأداء
+          </Link>
+          <Link
             to="/shipping/delivery-runs"
             className="px-3.5 py-2 text-xs sm:text-sm font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
           >

@@ -252,6 +252,7 @@ async function updateShipmentStatus(req, res) {
       status,
       collectedAmount,
       deliveryNotes,
+      pin: req.body?.pin,
       userId: req.user?.id,
       // Field couriers may only update shipments assigned to them
       courierId: req.user?.role === 'COURIER' ? req.user?.courierId : undefined
@@ -323,6 +324,96 @@ async function getRunShareLink(req, res) {
   }
 }
 
+/**
+ * PUT /api/v1/couriers/:id/pin
+ * Set or clear a courier's field PIN (managers only)
+ */
+async function setCourierPin(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const result = await courierService.setCourierPin(companyId, req.params.id, req.body?.pin);
+    res.json({ success: true, data: result, message: result.pinSet ? 'تم تعيين رمز PIN للمندوب' : 'تم إلغاء رمز PIN' });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in setCourierPin:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر تعيين رمز PIN' });
+  }
+}
+
+/**
+ * GET /api/v1/couriers/commissions
+ * Courier commission ledger: per-courier DUE/PAID totals + entries
+ */
+async function listCommissions(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const { courierId, status, page, limit } = req.query;
+    const result = await courierService.listCourierCommissions(companyId, {
+      courierId,
+      status,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 20
+    });
+
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in listCommissions:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر تحميل مستحقات المناديب' });
+  }
+}
+
+/**
+ * POST /api/v1/couriers/commissions/:courierId/pay
+ * Pay out a courier's DUE commissions (optionally through a treasury account)
+ */
+async function payCommissions(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const { treasuryAccountId, notes } = req.body || {};
+    const result = await courierService.payCourierCommissions(companyId, req.params.courierId, {
+      treasuryAccountId,
+      notes,
+      userId: req.user?.id
+    });
+
+    res.json({ success: true, data: result, message: `تم صرف مستحقات ${result.courierName} بنجاح` });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in payCommissions:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر صرف المستحقات' });
+  }
+}
+
+/**
+ * GET /api/v1/couriers/performance
+ * Time-ranged courier performance report
+ */
+async function getPerformance(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const { from, to } = req.query;
+    const result = await courierService.getCouriersPerformance(companyId, { from, to });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in getPerformance:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر تحميل تقرير الأداء' });
+  }
+}
+
 module.exports = {
   getSummary,
   listCouriers,
@@ -330,10 +421,14 @@ module.exports = {
   createCourier,
   updateCourier,
   deleteCourier,
+  setCourierPin,
   createRun,
   listRuns,
   getRun,
   getRunShareLink,
   updateShipmentStatus,
-  settleRun
+  settleRun,
+  listCommissions,
+  payCommissions,
+  getPerformance
 };

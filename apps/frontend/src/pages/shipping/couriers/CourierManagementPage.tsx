@@ -14,7 +14,8 @@ import {
   XCircleIcon,
   BanknotesIcon,
   CubeIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
+  KeyIcon
 } from '@heroicons/react/24/outline';
 import courierService, { Courier, CourierDashboardSummary, CourierInput } from '../../../services/courierService';
 import { useCurrency } from '../../../hooks/useCurrency';
@@ -347,8 +348,30 @@ const CourierManagementPage: React.FC = () => {
                         {c.successRate}%
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-left">
+                      <td className="py-3.5 px-4 text-left">
                       <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={async () => {
+                            const pin = window.prompt(
+                              `تعيين رمز PIN ميداني للمندوب ${c.name} (من 4 إلى 6 أرقام).\nاتركه فاضي وألغِ لإلغاء الرمز الحالي.`
+                            );
+                            if (pin === null) return;
+                            if (pin.trim() !== '' && !/^\d{4,6}$/.test(pin.trim())) {
+                              toast.error('رمز PIN يجب أن يكون من 4 إلى 6 أرقام');
+                              return;
+                            }
+                            try {
+                              const res = await courierService.setCourierPin(c.id, pin.trim() || null);
+                              if (res.success) toast.success(res.message || 'تم التحديث');
+                            } catch (err: any) {
+                              toast.error(err?.message || 'تعذر تعيين رمز PIN');
+                            }
+                          }}
+                          title="تعيين/إلغاء رمز PIN الميداني"
+                          className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                        >
+                          <KeyIcon className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => handleOpenEdit(c)}
                           title="تعديل بيانات المندوب"

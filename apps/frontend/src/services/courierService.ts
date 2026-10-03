@@ -90,6 +90,8 @@ export interface DeliveryRun {
   treasuryAccountId?: string | null;
   treasuryTransactionId?: string | null;
   mobileToken?: string | null;
+  /** Fleet setting requires a field PIN and this courier has one — mobile page must collect it */
+  pinRequired?: boolean;
   createdAt: string;
   courier?: {
     id: string;
@@ -111,6 +113,43 @@ export interface CourierDashboardSummary {
   totalCashAwaitingRemittance: number;
 }
 
+export interface CourierCommissionEntry {
+  id: string;
+  courierId: string;
+  deliveryRunId?: string | null;
+  shipmentId?: string | null;
+  orderId?: string | null;
+  commissionType: string;
+  amount: number;
+  status: 'DUE' | 'PAID';
+  paidAt?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  courier?: { id: string; name: string; phone: string };
+}
+
+export interface CourierCommissionSummaryRow {
+  courierId: string;
+  name: string;
+  phone: string | null;
+  dueAmount: number;
+  dueCount: number;
+  paidAmount: number;
+  paidCount: number;
+}
+
+export interface CourierPerformanceRow {
+  courierId: string;
+  name: string;
+  phone: string;
+  isActive: boolean;
+  deliveredCount: number;
+  returnedCount: number;
+  openCount: number;
+  collectedCash: number;
+  successRate: number | null;
+}
+
 const courierService = {
   getSummary: (): Promise<{ success: boolean; data: CourierDashboardSummary }> =>
     api.get<{ success: boolean; data: CourierDashboardSummary }>('/couriers/dashboard-summary').then((r) => r.data),
@@ -130,6 +169,34 @@ const courierService = {
   deleteCourier: (id: string): Promise<{ success: boolean; message: string }> =>
     api.delete<{ success: boolean; message: string }>(`/couriers/${id}`).then((r) => r.data),
 
+  setCourierPin: (id: string, pin: string | null): Promise<{ success: boolean; message: string; data?: { pinSet: boolean } }> =>
+    api.put(`/couriers/${id}/pin`, { pin }).then((r) => r.data),
+
+  getCommissions: (params?: { courierId?: string; status?: string; page?: number; limit?: number }): Promise<{
+    success: boolean;
+    summary: CourierCommissionSummaryRow[];
+    data: CourierCommissionEntry[];
+    pagination: { total: number; page: number; limit: number; pages: number };
+  }> =>
+    api.get('/couriers/commissions', { params }).then((r) => r.data),
+
+  payCommissions: (courierId: string, payload?: { treasuryAccountId?: string; notes?: string }): Promise<{
+    success: boolean;
+    message: string;
+    data: { courierId: string; courierName: string; paidCount: number; total: number };
+  }> =>
+    api.post(`/couriers/commissions/${courierId}/pay`, payload || {}).then((r) => r.data),
+
+  getPerformance: (params?: { from?: string; to?: string }): Promise<{
+    success: boolean;
+    data: {
+      range: { from: string | null; to: string | null };
+      totals: { delivered: number; returned: number; collectedCash: number };
+      rows: CourierPerformanceRow[];
+    };
+  }> =>
+    api.get('/couriers/performance', { params }).then((r) => r.data),
+
   getDeliveryRuns: (params?: { courierId?: string; status?: string; dateFrom?: string; dateTo?: string; search?: string; page?: number; limit?: number }): Promise<{ success: boolean; data: DeliveryRun[]; pagination: { total: number; page: number; limit: number; pages: number } }> =>
     api.get('/couriers/runs', { params }).then((r) => r.data),
 
@@ -148,7 +215,7 @@ const courierService = {
   createDeliveryRun: (payload: { courierId: string; shipmentIds?: string[]; orderIds?: string[]; notes?: string }): Promise<{ success: boolean; data: DeliveryRun }> =>
     api.post<{ success: boolean; data: DeliveryRun }>('/couriers/runs', payload).then((r) => r.data),
 
-  updateShipmentStatus: (runId: string, shipmentId: string, payload: { status: string; collectedAmount?: number; deliveryNotes?: string }, token?: string): Promise<{ success: boolean; data: any }> => {
+  updateShipmentStatus: (runId: string, shipmentId: string, payload: { status: string; collectedAmount?: number; deliveryNotes?: string; pin?: string }, token?: string): Promise<{ success: boolean; data: any }> => {
     const requestConfig: any = {};
     if (token) {
       requestConfig.headers = { Authorization: `Bearer ${token}` };

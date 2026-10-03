@@ -11,11 +11,35 @@ const COURIER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'OPER
 router.use(verifyToken.authenticateToken);
 router.use(checkAppAccess('internal-courier-fleet'));
 
+// ⚠️ Static paths MUST be declared before parameterized routes (/ Commissions, / Runs, /: Id)
+// — GET /:id used to shadow GET /runs, capturing the run list as courier id="runs".
+
 // Dashboard telemetry summary
 router.get(
   '/dashboard-summary',
   verifyToken.requireRole(MANAGE_ROLES),
   courierController.getSummary
+);
+
+// Commission ledger: per-courier DUE/PAID totals + entries
+router.get(
+  '/commissions',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.listCommissions
+);
+
+// Pay out a courier's DUE commissions
+router.post(
+  '/commissions/:courierId/pay',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.payCommissions
+);
+
+// Time-ranged courier performance report
+router.get(
+  '/performance',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.getPerformance
 );
 
 // Couriers CRUD
@@ -25,16 +49,23 @@ router.get(
   courierController.listCouriers
 );
 
-router.get(
-  '/:id',
-  verifyToken.requireRole(COURIER_ROLES),
-  courierController.getCourier
-);
-
 router.post(
   '/',
   verifyToken.requireRole(MANAGE_ROLES),
   courierController.createCourier
+);
+
+// Set or clear a courier's field PIN
+router.put(
+  '/:id/pin',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.setCourierPin
+);
+
+router.get(
+  '/:id',
+  verifyToken.requireRole(COURIER_ROLES),
+  courierController.getCourier
 );
 
 router.put(

@@ -438,6 +438,12 @@ const CourierSettlementPage = React.lazy(
 const CourierMobileRunPage = React.lazy(
   () => import("./pages/shipping/couriers/CourierMobileRunPage"),
 );
+const CourierDuesPage = React.lazy(
+  () => import("./pages/shipping/couriers/CourierDuesPage"),
+);
+const CourierPerformancePage = React.lazy(
+  () => import("./pages/shipping/couriers/CourierPerformancePage"),
+);
 const BulkStatusUpdate = React.lazy(
   () => import("./pages/orders/BulkStatusUpdatePage"),
 );
@@ -6939,6 +6945,26 @@ const AppContent = () => {
                     <Layout>
                       <AppAccessRoute requiredAppSlugs={['internal-courier-fleet']}>
                         <CourierSettlementPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping/courier-dues"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet']}>
+                        <CourierDuesPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping/courier-performance"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet']}>
+                        <CourierPerformancePage />
                       </AppAccessRoute>
                     </Layout>
                   }

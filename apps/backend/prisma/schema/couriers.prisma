@@ -13,6 +13,9 @@ model Courier {
   status           String        @default("AVAILABLE") /// AVAILABLE, ON_DUTY, OFF_DUTY
   notes            String?
   userId           String?
+  /// bcrypt hash of the courier's field PIN (4-6 digits) — required on field
+  /// status updates when fleet setting fieldWorkflow.requireCourierPin is on
+  pinHash          String?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
