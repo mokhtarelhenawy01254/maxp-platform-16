@@ -21,4 +21,14 @@ router.post('/trash/restore', verifyToken.requireRole(['OWNER', 'COMPANY_ADMIN',
 // Bulk Search Route
 router.post('/bulk-search', bulkSearchController.bulkSearchOrders);
 
+// Customer Rating Routes
+const ordersHandler = require('./orders');
+if (ordersHandler.handleCustomerRatingUpdate) {
+  router.put('/:id/customer-rating', ordersHandler.handleCustomerRatingUpdate);
+  router.post('/:id/customer-rating', ordersHandler.handleCustomerRatingUpdate);
+}
+if (ordersHandler.handleCustomerRatingRecalculate) {
+  router.post('/:id/recalculate-rating', ordersHandler.handleCustomerRatingRecalculate);
+}
+
 module.exports = router;

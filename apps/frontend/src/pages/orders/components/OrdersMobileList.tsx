@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeftIcon } from "@heroicons/react/24/outline";
+import { ChevronLeftIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import { OrdersSkeleton } from "./OrdersSkeleton";
 import { OrdersEmptyState } from "./OrdersEmptyState";
 import { CustomerRatingBadge } from "../../../components/orders/CustomerRatingBadge";
@@ -183,6 +183,19 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                         >
                           #{compactOrderNumber}
                         </span>
+                        {(order.status === "DUPLICATE_ORDER" || Boolean(order.metadata?.duplicate)) && (
+                          <span
+                            className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-300/80 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/60 shrink-0"
+                            title={
+                              order.metadata?.duplicate?.duplicateOfOrderNumber
+                                ? `طلب مكرر من #${order.metadata.duplicate.duplicateOfOrderNumber}`
+                                : "طلب مكرر"
+                            }
+                          >
+                            <DocumentDuplicateIcon className="w-2.5 h-2.5 text-amber-700 dark:text-amber-400" />
+                            <span>مكرر</span>
+                          </span>
+                        )}
                         {!order.isViewed && (
                           <span
                             className="inline-block h-2 w-2 rounded-full bg-red-500 ring-2 ring-red-200 dark:ring-red-900/50 shrink-0"
@@ -197,10 +210,17 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                         </span>
                         <CustomerRatingBadge
                           rating={order.customerRating || order.customer?.customerRating}
+                          orderNumber={order.orderNumber}
+                          customerId={order.customerId || order.customer?.id}
                           deliveryRate={(order as any).deliveryRate ?? order.customer?.deliveryRate}
                           totalDelivered={(order as any).totalDelivered ?? order.customer?.totalDelivered}
                           totalAttempts={(order as any).totalOrdersCount ?? order.customer?.totalOrdersCount}
-                          variant="dot"
+                          interactive={true}
+                          onRatingChange={(newRating) =>
+                            onCustomerRatingChange?.(order.orderNumber, newRating)
+                          }
+                          variant="badge"
+                          size="xs"
                         />
                       </div>
                     </div>
@@ -269,6 +289,19 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                           >
                             #{compactOrderNumber}
                           </span>
+                          {(order.status === "DUPLICATE_ORDER" || Boolean(order.metadata?.duplicate)) && (
+                            <span
+                              className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-300/80 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/60 shrink-0"
+                              title={
+                                order.metadata?.duplicate?.duplicateOfOrderNumber
+                                  ? `طلب مكرر من #${order.metadata.duplicate.duplicateOfOrderNumber}`
+                                  : "طلب مكرر"
+                              }
+                            >
+                              <DocumentDuplicateIcon className="w-2.5 h-2.5 text-amber-700 dark:text-amber-400" />
+                              <span>مكرر</span>
+                            </span>
+                          )}
                           {!order.isViewed && (
                             <span
                               className="inline-block h-2 w-2 rounded-full bg-red-500 ring-2 ring-red-200 dark:ring-red-900/50 shrink-0"

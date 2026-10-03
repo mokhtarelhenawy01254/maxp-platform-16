@@ -1146,12 +1146,13 @@ class OrderService {
       }
     }
 
-    // استبعاد الحالات المنتهية (تم التسليم، مرتجع، ملغي، إلخ) نهائياً من الفحص
+    // استبعاد الحالات المنتهية (تم التسليم، مرتجع، ملغي، فشل الدفع، إلخ) نهائياً من الفحص
     const terminalStatuses = [
-      'DELIVERED', 'delivered', 'remitted',
+      'DELIVERED', 'delivered', 'remitted', 'COMPLETED', 'completed',
       'RETURNED', 'returned_to_company', 'returned_missing', 'returned_destroyed',
-      'PARTIALLY_RETURNED', 'REFUNDED', 'PARTIALLY_REFUNDED',
-      'CANCELLED', 'cancelled', 'LOST', 'FAILED', 'TRASH', 'DRAFT', 'DUPLICATE_ORDER'
+      'PARTIALLY_RETURNED', 'REFUNDED', 'PARTIALLY_REFUNDED', 'REFUNDED_PARTIALLY',
+      'CANCELLED', 'cancelled', 'LOST', 'FAILED', 'FAILED_PAYMENT', 'PAYMENT_FAILED',
+      'TRASH', 'DRAFT', 'DUPLICATE_ORDER'
     ];
     for (const term of terminalStatuses) {
       resolved.delete(term);
@@ -1324,9 +1325,11 @@ class OrderService {
     const orderOr = [];
     if (uniquePhones.length > 0) {
       orderOr.push({ customerPhone: { in: uniquePhones, mode: 'insensitive' } });
+      orderOr.push({ customer: { phone: { in: uniquePhones } } });
     }
     if (email) {
       orderOr.push({ customerEmail: { equals: email, mode: 'insensitive' } });
+      orderOr.push({ customer: { email: { equals: email, mode: 'insensitive' } } });
     }
 
     if (orderOr.length > 0) {

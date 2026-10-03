@@ -391,6 +391,7 @@
 .app-shell-content:has(.turbo-tickets-root),
 .app-shell-content:has(.eo-builder-page),
 .app-shell-content:has(.orders-page-root),
+.app-shell-content:has(.order-settings-root),
 .app-shell-content:has([data-orders-page]) {
   overflow: hidden !important;
   padding: 0 !important;
@@ -403,8 +404,10 @@
 .app-shell-content > .motion-safe\:animate-fade-in:has(.turbo-tickets-root),
 .app-shell-content > .motion-safe\:animate-fade-in:has(.eo-builder-page),
 .app-shell-content > .motion-safe\:animate-fade-in:has(.orders-page-root),
+.app-shell-content > .motion-safe\:animate-fade-in:has(.order-settings-root),
 .app-shell-content > .motion-safe\:animate-fade-in:has([data-orders-page]),
 .app-shell-content > .orders-page-root,
+.app-shell-content > .order-settings-root,
 .app-shell-content > [data-orders-page] {
   height: 100% !important;
   min-height: 0 !important;

@@ -8348,7 +8348,7 @@ router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
 // ⭐ تحديث تقييم العميل المرتبط بالطلب (سواء كان طلب مسجل أو طلب ضيف)
 const handleCustomerRatingUpdate = async (req, res) => {
   try {
-    const { orderNumber } = req.params;
+    const orderNumber = req.params.orderNumber || req.params.id;
     const { rating } = req.body;
     const merchant = isMerchantUser(req.user)
       ? await requireMerchantAccountForUser(req.user)
@@ -8446,6 +8446,18 @@ const handleCustomerRatingUpdate = async (req, res) => {
       }
     }
 
+    try {
+      if (socketService?.getIO()) {
+        socketService.getIO().to(`company_${companyId}`).emit('order:updated', {
+          orderNumber,
+          customerId: customer.id,
+          customerRating: customer.customerRating
+        });
+      }
+    } catch (socketError) {
+      console.warn('⚠️ [ORDER-CUSTOMER-RATING] Socket emit failed:', socketError.message);
+    }
+
     return res.json({
       success: true,
       data: {
@@ -8464,7 +8476,7 @@ const handleCustomerRatingUpdate = async (req, res) => {
 // ⭐ إعادة احتساب تقييم العميل المرتبط بالطلب آلياً
 const handleCustomerRatingRecalculate = async (req, res) => {
   try {
-    const { orderNumber } = req.params;
+    const orderNumber = req.params.orderNumber || req.params.id;
     const merchant = isMerchantUser(req.user)
       ? await requireMerchantAccountForUser(req.user)
       : null;
@@ -8513,6 +8525,21 @@ const handleCustomerRatingRecalculate = async (req, res) => {
     const { calculateCustomerScore } = require('../services/customerRatingService');
     const result = await calculateCustomerScore(customerId, companyId, prisma);
 
+    try {
+      if (socketService?.getIO()) {
+        socketService.getIO().to(`company_${companyId}`).emit('order:updated', {
+          orderNumber,
+          customerId,
+          customerRating: result.rating,
+          deliveryRate: result.deliveryRate,
+          totalDelivered: result.totalDelivered,
+          totalAttempts: result.totalAttempts
+        });
+      }
+    } catch (socketError) {
+      console.warn('⚠️ [ORDER-CUSTOMER-RATING-RECALC] Socket emit failed:', socketError.message);
+    }
+
     return res.json({
       success: true,
       data: {
@@ -8534,6 +8561,8 @@ const handleCustomerRatingRecalculate = async (req, res) => {
 router.put('/simple/:orderNumber/customer-rating', verifyToken.authenticateToken, handleCustomerRatingUpdate);
 router.post('/simple/:orderNumber/customer-rating', verifyToken.authenticateToken, handleCustomerRatingUpdate);
 router.post('/simple/:orderNumber/recalculate-rating', verifyToken.authenticateToken, handleCustomerRatingRecalculate);
+router.handleCustomerRatingUpdate = handleCustomerRatingUpdate;
+router.handleCustomerRatingRecalculate = handleCustomerRatingRecalculate;
 
 // Update Order Items
 router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (req, res) => {

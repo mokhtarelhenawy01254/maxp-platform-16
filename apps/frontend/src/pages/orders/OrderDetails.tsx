@@ -135,6 +135,7 @@ const OrderDetails: React.FC = () => {
     deletingNote,
     saveChanges,
     fetchOrderDetails,
+    setOrder,
   } = useOrderDetails(orderNumber);
 
   const {
@@ -1135,6 +1136,20 @@ const OrderDetails: React.FC = () => {
             setSelectedGovernmentId={setSelectedGovernmentId}
             handleGovernmentChange={handleGovernmentChange}
             invoiceSettings={invoiceSettings}
+            onOrderUpdated={fetchOrderDetails}
+            onCustomerRatingChange={(newRating) => {
+              setOrder((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      customerRating: newRating,
+                      customer: prev.customer
+                        ? { ...prev.customer, customerRating: newRating }
+                        : prev.customer,
+                    }
+                  : prev
+              );
+            }}
           />
 
           <div id="customer-order-history-card">

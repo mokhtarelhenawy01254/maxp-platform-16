@@ -260,7 +260,7 @@ const DuplicateOrderSettings: React.FC = () => {
               })}
             </div>
             <div className="p-2.5 rounded-lg bg-muted/40 border border-border/40 text-[11px] text-muted-foreground leading-relaxed">
-              💡 الحالات المنتهية (تم التسليم · مرتجع · مرتجع جزئي · مسترد · ملغي · مفقود) تُعتبر منتهية، وإذا طلب العميل مجددًا يُسجّل كطلب جديد عادي دون تصنيفه مكررًا.
+              الحالات المنتهية (تم التسليم · مرتجع · مرتجع جزئي · مسترد · ملغي · مفقود · فشل الدفع) تُعتبر منتهية، وإذا طلب العميل مجددًا يُسجّل كطلب جديد عادي دون تصنيفه مكررًا.
             </div>
           </div>
         </div>
@@ -293,24 +293,43 @@ const DuplicateOrderSettings: React.FC = () => {
             <p className="text-[11px] text-muted-foreground">
               {settings.windowEnabled
                 ? "يتم البحث عن المكرر فقط خلال الفترة المحددة أدناه."
-                : "النافذة مغلقة: يتم فحص أي طلب سابق نشط للعميل بغض النظر عن تاريخ إنشائه."}
+                : "النافذة مغلقة (افتراضي): يتم فحص أي طلب سابق نشط للعميل بلا مدة زمنية محددة."}
             </p>
             {settings.windowEnabled && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                {TIME_WINDOW_PRESETS.map((preset) => (
-                  <button
-                    key={preset.minutes}
-                    type="button"
-                    onClick={() => setSettings((s) => ({ ...s, windowMinutes: preset.minutes }))}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border tabular-nums transition-colors ${
-                      settings.windowMinutes === preset.minutes
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border/60 bg-muted/30 text-foreground hover:bg-muted/60"
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
+              <div className="space-y-2.5 pt-1">
+                <div className="flex flex-wrap gap-2">
+                  {TIME_WINDOW_PRESETS.map((preset) => (
+                    <button
+                      key={preset.minutes}
+                      type="button"
+                      onClick={() => setSettings((s) => ({ ...s, windowMinutes: preset.minutes }))}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border tabular-nums transition-colors active:scale-[0.98] ${
+                        settings.windowMinutes === preset.minutes
+                          ? "border-primary bg-primary text-primary-foreground font-semibold"
+                          : "border-border/60 bg-muted/30 text-foreground hover:bg-muted/60"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 pt-1 border-t border-border/30">
+                  <label className="text-[11px] text-muted-foreground whitespace-nowrap">المدة المخصصة:</label>
+                  <input
+                    type="number"
+                    min={5}
+                    max={10080}
+                    value={settings.windowMinutes}
+                    onChange={(e) =>
+                      setSettings((s) => ({
+                        ...s,
+                        windowMinutes: Math.max(5, Math.min(10080, parseInt(e.target.value, 10) || 60)),
+                      }))
+                    }
+                    className="w-24 px-2.5 py-1 text-xs border border-border/60 rounded-lg bg-background text-foreground font-mono tabular-nums focus:ring-2 focus:ring-primary focus:border-primary"
+                  />
+                  <span className="text-[11px] text-muted-foreground">دقيقة (بين 5 و 10080)</span>
+                </div>
               </div>
             )}
           </div>
@@ -320,9 +339,9 @@ const DuplicateOrderSettings: React.FC = () => {
             <label className="block text-xs font-semibold text-foreground">التصرف عند اكتشاف مكرر</label>
             <div className="space-y-2">
               {[
-                { id: "record_visible", title: "يسجّل ويبان للفريق (افتراضي)", desc: "يُنشأ الطلب بحالة «طلب مكرر» ويظهر في قائمة الطلبات اليومية بعلامة واضحة" },
-                { id: "record_hidden", title: "يسجّل ومخفي", desc: "يُنشأ الطلب بحالة «طلب مكرر» ويُخفى من القائمة الافتراضية (يظهر فقط عند الفلترة)" },
-                { id: "block", title: "مايتسجلش خالص", desc: "يتم حظر الطلب المكرر تمامًا ولا يُحفظ في قاعدة البيانات" },
+                { id: "record_visible", title: "يسجّل ويبان للفريق (افتراضي)", desc: "يُنشأ الطلب بحالة «طلب مكرر» ويظهر في قائمة الطلبات مع شارة تمييز واضحة للفريق" },
+                { id: "record_hidden", title: "يسجّل ومخفي", desc: "يُنشأ الطلب بحالة «طلب مكرر» ويُخفى من القائمة الافتراضية للطلبات (يمكن الوصول إليه عبر فلتر الحالة)" },
+                { id: "block", title: "مايتسجلش خالص", desc: "يتم حظر تسجيل الطلب تمامًا ولا يُحفظ في قاعدة البيانات" },
               ].map((act) => (
                 <label
                   key={act.id}

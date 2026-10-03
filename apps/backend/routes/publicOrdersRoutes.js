@@ -1759,7 +1759,7 @@ router.post('/', async (req, res) => {
         total: finalTotal,
         items: cartItems || [],
         settings: duplicateSettings,
-        includeGuest: true
+        includeGuest: duplicateSettings.includeStoreOrders
       });
     }
 

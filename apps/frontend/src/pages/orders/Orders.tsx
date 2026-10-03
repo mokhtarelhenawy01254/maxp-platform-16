@@ -643,6 +643,7 @@ const transformOrder = (order: RawOrder): Order => {
 const ORDER_TABLE_COLUMNS = [
   "orderNumber",
   "customer",
+  "customerRating",
   "amount",
   "status",
   "payment",

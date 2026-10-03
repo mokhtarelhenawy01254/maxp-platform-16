@@ -8,6 +8,7 @@ import { CheckCircleIcon, ArrowPathIcon, MagnifyingGlassIcon } from "@heroicons/
 const COLUMN_OPTIONS = [
   { id: "orderNumber", label: "رقم الطلب", required: true },
   { id: "customer", label: "العميل", required: false },
+  { id: "customerRating", label: "تقييم العميل", required: false },
   { id: "amount", label: "المبلغ", required: false },
   { id: "status", label: "الحالة", required: false },
   { id: "payment", label: "الدفع", required: false },

@@ -5,6 +5,7 @@ import {
   EyeIcon,
   ShoppingBagIcon,
   ChatBubbleLeftRightIcon,
+  DocumentDuplicateIcon,
 } from "@heroicons/react/24/outline";
 import { summarizeOrderDocumentItems } from "../../../utils/orderDocumentQuantityOffers";
 import { OrdersSkeleton } from "./OrdersSkeleton";
@@ -165,6 +166,11 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                   {t("orders.customer")}
                 </th>
               )}
+              {columns.includes("customerRating") && (
+                <th className={`${headerPadding} text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
+                  تقييم العميل
+                </th>
+              )}
               {columns.includes("amount") && (
                 <th className={`${headerPadding} whitespace-nowrap text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
                   {t("orders.amount")}
@@ -278,6 +284,24 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                                 {t("orders.guest")}
                               </span>
                             )}
+                            {(order.status === "DUPLICATE_ORDER" || Boolean(order.metadata?.duplicate)) && (
+                              <span
+                                className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-300/80 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/60"
+                                title={
+                                  order.metadata?.duplicate?.duplicateOfOrderNumber
+                                    ? `طلب مكرر من #${order.metadata.duplicate.duplicateOfOrderNumber}`
+                                    : "طلب مكرر"
+                                }
+                              >
+                                <DocumentDuplicateIcon className="w-3 h-3 text-amber-700 dark:text-amber-400" />
+                                <span>مكرر</span>
+                                {order.metadata?.duplicate?.duplicateOfOrderNumber && (
+                                  <span className="font-mono text-[10px] opacity-80" dir="ltr">
+                                    (#{order.metadata.duplicate.duplicateOfOrderNumber})
+                                  </span>
+                                )}
+                              </span>
+                            )}
                             {!order.isViewed && (
                               <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 border border-red-200/80 dark:bg-red-950/60 dark:text-red-300 dark:border-red-900/50">
                                 {t("orders.newLabel")}
@@ -307,13 +331,22 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                             <span className="truncate max-w-[190px] text-sm font-medium text-slate-900 dark:text-slate-100">
                               {getCustomerDisplayName(order)}
                             </span>
-                            <CustomerRatingBadge
-                              rating={order.customerRating || order.customer?.customerRating}
-                              deliveryRate={(order as any).deliveryRate ?? order.customer?.deliveryRate}
-                              totalDelivered={(order as any).totalDelivered ?? order.customer?.totalDelivered}
-                              totalAttempts={(order as any).totalOrdersCount ?? order.customer?.totalOrdersCount}
-                              variant="dot"
-                            />
+                            {!columns.includes("customerRating") && (
+                              <CustomerRatingBadge
+                                rating={order.customerRating || order.customer?.customerRating}
+                                orderNumber={order.orderNumber}
+                                customerId={order.customerId || order.customer?.id}
+                                deliveryRate={(order as any).deliveryRate ?? order.customer?.deliveryRate}
+                                totalDelivered={(order as any).totalDelivered ?? order.customer?.totalDelivered}
+                                totalAttempts={(order as any).totalOrdersCount ?? order.customer?.totalOrdersCount}
+                                interactive={true}
+                                onRatingChange={(newRating) =>
+                                  onCustomerRatingChange?.(order.orderNumber, newRating)
+                                }
+                                variant="badge"
+                                size="xs"
+                              />
+                            )}
                           </div>
                           {order.customerPhone && (
                             <span
@@ -324,6 +357,24 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                             </span>
                           )}
                         </div>
+                      </td>
+                    )}
+                    {columns.includes("customerRating") && (
+                      <td className={cellPadding} onClick={(e) => e.stopPropagation()}>
+                        <CustomerRatingBadge
+                          rating={order.customerRating || order.customer?.customerRating}
+                          orderNumber={order.orderNumber}
+                          customerId={order.customerId || order.customer?.id}
+                          deliveryRate={(order as any).deliveryRate ?? order.customer?.deliveryRate}
+                          totalDelivered={(order as any).totalDelivered ?? order.customer?.totalDelivered}
+                          totalAttempts={(order as any).totalOrdersCount ?? order.customer?.totalOrdersCount}
+                          interactive={true}
+                          onRatingChange={(newRating) =>
+                            onCustomerRatingChange?.(order.orderNumber, newRating)
+                          }
+                          variant="badge"
+                          size="sm"
+                        />
                       </td>
                     )}
                     {columns.includes("amount") && (
