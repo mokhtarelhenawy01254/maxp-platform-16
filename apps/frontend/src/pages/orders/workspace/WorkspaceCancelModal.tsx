@@ -62,10 +62,10 @@ export const WorkspaceCancelModal: React.FC<WorkspaceCancelModalProps> = ({
     >
       <div
         ref={panelRef}
-        className="w-full max-w-md rounded-xl border border-border/50 bg-card p-5 shadow-2xl"
+        className="w-full max-w-md rounded-xl border border-border/50 bg-card p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3">
+        <div className="mb-3 text-balance">
           <h2 className="text-base font-black text-foreground">
             {t('orders.cancelReasonTitle')}
           </h2>
@@ -76,7 +76,7 @@ export const WorkspaceCancelModal: React.FC<WorkspaceCancelModalProps> = ({
 
         {/* Standard Reason Chips */}
         {standardReasons.length > 0 && (
-          <div className="mb-3">
+          <div className="mb-3 text-balance">
             <span className="mb-1.5 block text-[11px] font-semibold text-muted-foreground">
               {isArabic ? 'أسباب معيارية سريعة:' : 'Quick standard reasons:'}
             </span>

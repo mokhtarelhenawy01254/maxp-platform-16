@@ -9,6 +9,7 @@ export interface MetaTemplate {
   name: string;
   status: string;
   category?: string;
+  language?: string;
   components?: Array<{
     type: string;
     text?: string;
@@ -18,7 +19,8 @@ export interface MetaTemplate {
 interface WorkspaceWhatsAppTemplatesProps {
   order: WorkspaceOrder;
   templates: MetaTemplate[];
-  onSelectTemplate: (text: string) => void;
+  /** نص فقط = قالب سريع يُعبأ في المحادثة؛ metaTemplate موجودة = قالب ميتا يُرسل عبر send-template بمتغيراته */
+  onSelectTemplate: (text: string, metaTemplate?: MetaTemplate) => void;
 }
 
 export const WorkspaceWhatsAppTemplates: React.FC<WorkspaceWhatsAppTemplatesProps> = ({
@@ -119,13 +121,21 @@ export const WorkspaceWhatsAppTemplates: React.FC<WorkspaceWhatsAppTemplatesProp
       {/* Approved Meta Cloud Templates */}
       {templates.length > 0 && (
         <div>
-          <h4 className="text-xs font-black uppercase text-muted-foreground mb-2">
-            {isArabic ? 'قوالب Meta Cloud المعتمدة للمتجر' : 'Approved Meta Cloud Templates'}
-          </h4>
+          <div className="mb-2 flex items-center gap-1.5">
+            <h4 className="text-xs font-black uppercase text-muted-foreground">
+              {isArabic ? 'قوالب Meta Cloud المعتمدة للمتجر' : 'Approved Meta Cloud Templates'}
+            </h4>
+          </div>
+          <p className="mb-2 text-[11px] leading-relaxed text-muted-foreground text-pretty">
+            {isArabic
+              ? 'القوالب الوحيدة القابلة للإرسال بعد انغلاق نافذة الـ 24 ساعة مع العميل — تُرسل رسميًا عبر Meta بمتغيراتها.'
+              : 'The only messages sendable after the 24h window closes — delivered officially via Meta with their variables.'}
+          </p>
           <div className="space-y-2">
             {templates.map((metaTmpl) => {
               const bodyComp = metaTmpl.components?.find((c) => c.type === 'BODY');
               const bodyText = bodyComp?.text || metaTmpl.name;
+              const varCount = (bodyText.match(/\{\{\s*\d+\s*\}\}/g) || []).length;
               return (
                 <div
                   key={metaTmpl.id}
@@ -135,18 +145,25 @@ export const WorkspaceWhatsAppTemplates: React.FC<WorkspaceWhatsAppTemplatesProp
                     <span className="font-mono text-xs font-bold text-foreground">
                       {metaTmpl.name}
                     </span>
-                    <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600">
-                      APPROVED
+                    <span className="flex items-center gap-1">
+                      {varCount > 0 && (
+                        <span className="rounded bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+                          {varCount} {isArabic ? 'متغير' : 'vars'}
+                        </span>
+                      )}
+                      <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600">
+                        APPROVED
+                      </span>
                     </span>
                   </div>
-                  <p className="line-clamp-2 text-xs text-muted-foreground">{bodyText}</p>
+                  <p className="line-clamp-2 text-xs text-muted-foreground text-pretty">{bodyText}</p>
                   <div className="flex justify-end pt-1">
                     <button
                       type="button"
-                      onClick={() => onSelectTemplate(bodyText)}
+                      onClick={() => onSelectTemplate(bodyText, metaTmpl)}
                       className="inline-flex items-center gap-1 rounded border border-border px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted"
                     >
-                      <span>{isArabic ? 'تعبئة القالب' : 'Fill Template'}</span>
+                      <span>{isArabic ? 'إرسال كقالب معتمد' : 'Send as Template'}</span>
                     </button>
                   </div>
                 </div>

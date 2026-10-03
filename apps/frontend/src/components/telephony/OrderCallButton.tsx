@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Phone, PhoneCall, Smartphone, Loader2 } from "lucide-react";
+import {
+  PhoneIcon,
+  PhoneArrowUpRightIcon,
+  DevicePhoneMobileIcon,
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { telephonyClientService } from "../../services/telephonyService";
 import { useDevicePresence } from "../../hooks/useDevicePresence";
@@ -119,7 +124,7 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
           presence.isOnline ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
         }`}
       />
-      <Smartphone className="w-3 h-3 shrink-0" />
+      <DevicePhoneMobileIcon className="w-3 h-3 shrink-0" />
       <span className="truncate max-w-[120px]">
         {presence.isOnline ? presence.device?.deviceName || "متصل" : "غير متصل"}
       </span>
@@ -156,11 +161,11 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
         }`}
       >
         {isLoading ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
         ) : isDialing ? (
-          <PhoneCall className="w-3.5 h-3.5 animate-bounce" />
+          <PhoneArrowUpRightIcon className="w-3.5 h-3.5 animate-bounce" />
         ) : (
-          <Phone className="w-3.5 h-3.5" />
+          <PhoneIcon className="w-3.5 h-3.5" />
         )}
         <span>
           {isLoading
@@ -184,7 +189,7 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
           title={`اتصال بالرقم البديل (${secondaryPhone})`}
           className="inline-flex h-8 items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2 text-xs font-bold text-primary transition-transform active:scale-[0.98] hover:bg-primary/20 disabled:opacity-50"
         >
-          <Phone className="w-3 h-3" />
+          <PhoneIcon className="w-3 h-3" />
           <span>بديل</span>
         </button>
       )}

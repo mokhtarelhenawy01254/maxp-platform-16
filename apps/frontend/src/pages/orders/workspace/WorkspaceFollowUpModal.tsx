@@ -42,7 +42,7 @@ export const WorkspaceFollowUpModal: React.FC<WorkspaceFollowUpModalProps> = ({
     >
       <div
         ref={panelRef}
-        className="w-full max-w-md rounded-xl border border-border/50 bg-card p-5 shadow-2xl"
+        className="w-full max-w-md rounded-xl border border-border/50 bg-card p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3">

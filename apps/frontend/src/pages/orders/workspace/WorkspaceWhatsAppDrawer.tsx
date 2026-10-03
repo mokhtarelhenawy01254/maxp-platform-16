@@ -55,6 +55,9 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
   const [activeTab, setActiveTab] = useState<'chat' | 'templates'>('chat');
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  // قالب ميتا نشط: يبدّل الـ composer لوضع المتغيرات والإرسال الرسمي عبر send-template
+  const [activeTemplate, setActiveTemplate] = useState<MetaTemplate | null>(null);
+  const [templateVars, setTemplateVars] = useState<Record<number, string>>({});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -162,9 +165,90 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
     }
   }, [messages, activeTab]);
 
-  const handleSelectTemplate = (text: string) => {
+  const handleSelectTemplate = (text: string, metaTemplate?: MetaTemplate) => {
+    if (metaTemplate) {
+      // قالب ميتا معتمد: وضع الإرسال الرسمي — النسخ الخام لمربع المحادثة كان
+      // يفشل دائمًا خارج نافذة الـ 24 ساعة (409) لأن القالب لا يمر عبر Meta
+      setActiveTemplate(metaTemplate);
+      setTemplateVars({});
+      setActiveTab('chat');
+      return;
+    }
     setMessageText(text);
     setActiveTab('chat');
+  };
+
+  /** متغيرات {{1}}..{{N}} بترتيبها من نص القالب */
+  const templateVarIndexes = React.useMemo(() => {
+    if (!activeTemplate) return [];
+    const body = activeTemplate.components?.find((c) => c.type === 'BODY')?.text || '';
+    const found = new Set<number>();
+    for (const m of body.matchAll(/\{\{\s*(\d+)\s*\}\}/g)) {
+      found.add(Number(m[1]));
+    }
+    return Array.from(found).sort((a, b) => a - b);
+  }, [activeTemplate]);
+
+  const filledTemplateBody = React.useMemo(() => {
+    if (!activeTemplate) return '';
+    const body = activeTemplate.components?.find((c) => c.type === 'BODY')?.text || activeTemplate.name;
+    return body.replace(/\{\{\s*(\d+)\s*\}\}/g, (_, n) => templateVars[Number(n)]?.trim() || `{{${n}}}`);
+  }, [activeTemplate, templateVars]);
+
+  const handleCancelTemplate = () => {
+    setActiveTemplate(null);
+    setTemplateVars({});
+  };
+
+  const handleSendTemplate = async () => {
+    if (!activeTemplate || !order) return;
+    const missing = templateVarIndexes.filter((n) => !(templateVars[n] || '').trim());
+    if (missing.length > 0) {
+      toast.error(isArabic ? `املأ المتغيرات: {{${missing.join('}}, {{')}}}` : `Fill variables: {{${missing.join('}}, {{')}}}`);
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const response = await apiClient.post('/whatsapp/messages/send-template', {
+        sessionId: activeSession?.id,
+        to: standardPhone,
+        templateId: activeTemplate.name,
+        parameters: {
+          name: activeTemplate.name,
+          language: activeTemplate.language || 'ar',
+          components: [
+            {
+              type: 'BODY',
+              parameters: templateVarIndexes.map((n) => ({ type: 'text', text: templateVars[n].trim() })),
+            },
+          ],
+        },
+        templateBody: filledTemplateBody,
+      });
+
+      if (response.data?.success) {
+        toast.success(isArabic ? 'تم إرسال القالب المعتمد عبر Meta' : 'Template sent via Meta');
+        const optimisticMsg: ChatMessage = {
+          id: `opt_${Date.now()}`,
+          fromMe: true,
+          content: `${activeTemplate.name}\n${filledTemplateBody}`,
+          createdAt: new Date().toISOString(),
+          status: 'SENT',
+        };
+        setMessages((prev) => [...prev, optimisticMsg]);
+        handleCancelTemplate();
+      } else {
+        toast.error(response.data?.error || (isArabic ? 'تعذر إرسال القالب' : 'Failed to send template'));
+      }
+    } catch (err: any) {
+      toast.error(
+        err.response?.data?.error ||
+          (isArabic ? 'فشل إرسال القالب عبر Meta. تأكد من وجود صلاحية قوالب واتساب.' : 'Template send failed.'),
+      );
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -226,7 +310,7 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in"
       onClick={onClose}
     >
       <div
@@ -234,7 +318,7 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
         role="dialog"
         aria-modal="true"
         aria-label={isArabic ? 'محادثة واتساب مع العميل' : 'Customer WhatsApp conversation'}
-        className="flex h-full w-full max-w-xl flex-col bg-card shadow-2xl border-s border-border/50 text-foreground"
+        className="flex h-full w-full max-w-xl flex-col bg-card shadow-xl border-s border-border/50 text-foreground"
         onClick={(e) => e.stopPropagation()}
         dir={isArabic ? 'rtl' : 'ltr'}
       >
@@ -345,68 +429,133 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
           )}
         </div>
 
-        {/* 4. Composer Footer */}
+        {/* 4. Composer Footer — وضعان: قالب ميتا معتمد (متغيرات + إرسال رسمي) أو محادثة حرة */}
         <div className="border-t border-border/40 bg-card p-3">
-          <div className="mb-2 flex items-center gap-1.5 overflow-x-auto text-[11px] no-scrollbar">
-            <span className="text-muted-foreground font-semibold shrink-0">
-              {isArabic ? 'إدراج سريع:' : 'Insert:'}
-            </span>
-            <button
-              type="button"
-              onClick={() => setMessageText((p) => `${p} ${order.customerName || ''}`)}
-              className="rounded bg-muted/60 px-1.5 py-0.5 text-foreground hover:bg-muted shrink-0"
-            >
-              + {isArabic ? 'اسم العميل' : 'Name'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMessageText((p) => `${p} #${order.orderNumber}`)}
-              className="rounded bg-muted/60 px-1.5 py-0.5 text-foreground hover:bg-muted shrink-0"
-            >
-              + {isArabic ? 'رقم الطلب' : '#Order'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMessageText((p) => `${p} ${order.total} ج.م`)}
-              className="rounded bg-muted/60 px-1.5 py-0.5 text-foreground hover:bg-muted shrink-0"
-            >
-              + {isArabic ? 'الإجمالي' : 'Total'}
-            </button>
-          </div>
+          {activeTemplate ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1.5">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <SparklesIcon className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  <span className="truncate font-mono text-[11px] font-bold text-foreground">
+                    {activeTemplate.name}
+                  </span>
+                  <span className="shrink-0 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600">
+                    {isArabic ? 'قالب معتمد' : 'APPROVED'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCancelTemplate}
+                  aria-label={isArabic ? 'إلغاء القالب' : 'Cancel template'}
+                  className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              </div>
 
-          <div className="flex items-end gap-2">
-            <textarea
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              placeholder={
-                isArabic
-                  ? 'اكتب رسالة للعميل أو اختر قالباً…'
-                  : 'Type a message or pick a template…'
-              }
-              rows={2}
-              className="flex-1 resize-none rounded-lg border border-border/60 bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  void handleSendMessage();
-                }
-              }}
-            />
+              {templateVarIndexes.length > 0 ? (
+                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                  {templateVarIndexes.map((n) => (
+                    <label key={n} className="flex items-center gap-1.5 text-[11px]">
+                      <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono font-bold text-muted-foreground tabular-nums">
+                        {`{{${n}}}`}
+                      </span>
+                      <input
+                        type="text"
+                        value={templateVars[n] || ''}
+                        onChange={(e) => setTemplateVars((p) => ({ ...p, [n]: e.target.value }))}
+                        placeholder={isArabic ? 'قيمة المتغير…' : 'Value…'}
+                        className="h-7 min-w-0 flex-1 rounded border border-border/60 bg-background px-2 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </label>
+                  ))}
+                </div>
+              ) : null}
 
-            <button
-              type="button"
-              onClick={handleSendMessage}
-              disabled={isSending || !messageText.trim()}
-              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 text-xs font-bold text-white shadow-sm transition-transform active:scale-[0.98] hover:bg-emerald-700 disabled:opacity-50"
-            >
-              {isSending ? (
-                <ArrowPathIcon className="h-4 w-4 animate-spin" />
-              ) : (
-                <PaperAirplaneIcon className="h-4 w-4 rtl:rotate-180" />
-              )}
-              <span>{isArabic ? 'إرسال' : 'Send'}</span>
-            </button>
-          </div>
+              <p className="max-h-16 overflow-y-auto rounded bg-muted/30 p-2 text-[11px] leading-relaxed text-muted-foreground whitespace-pre-wrap text-pretty">
+                {filledTemplateBody}
+              </p>
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleSendTemplate}
+                  disabled={isSending || templateVarIndexes.some((n) => !(templateVars[n] || '').trim())}
+                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 text-xs font-bold text-white transition-transform active:scale-[0.98] hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {isSending ? (
+                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <PaperAirplaneIcon className="h-4 w-4 rtl:rotate-180" />
+                  )}
+                  <span>{isArabic ? 'إرسال القالب عبر Meta' : 'Send via Meta'}</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mb-2 flex items-center gap-1.5 overflow-x-auto text-[11px] no-scrollbar">
+                <span className="text-muted-foreground font-semibold shrink-0">
+                  {isArabic ? 'إدراج سريع:' : 'Insert:'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setMessageText((p) => `${p} ${order.customerName || ''}`)}
+                  className="rounded bg-muted/60 px-1.5 py-0.5 text-foreground hover:bg-muted shrink-0"
+                >
+                  + {isArabic ? 'اسم العميل' : 'Name'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMessageText((p) => `${p} #${order.orderNumber}`)}
+                  className="rounded bg-muted/60 px-1.5 py-0.5 text-foreground hover:bg-muted shrink-0"
+                >
+                  + {isArabic ? 'رقم الطلب' : '#Order'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMessageText((p) => `${p} ${order.total} ج.م`)}
+                  className="rounded bg-muted/60 px-1.5 py-0.5 text-foreground hover:bg-muted shrink-0"
+                >
+                  + {isArabic ? 'الإجمالي' : 'Total'}
+                </button>
+              </div>
+
+              <div className="flex items-end gap-2">
+                <textarea
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  placeholder={
+                    isArabic
+                      ? 'اكتب رسالة للعميل أو اختر قالباً…'
+                      : 'Type a message or pick a template…'
+                  }
+                  rows={2}
+                  className="flex-1 resize-none rounded-lg border border-border/60 bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      void handleSendMessage();
+                    }
+                  }}
+                />
+
+                <button
+                  type="button"
+                  onClick={handleSendMessage}
+                  disabled={isSending || !messageText.trim()}
+                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 text-xs font-bold text-white shadow-sm transition-transform active:scale-[0.98] hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {isSending ? (
+                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <PaperAirplaneIcon className="h-4 w-4 rtl:rotate-180" />
+                  )}
+                  <span>{isArabic ? 'إرسال' : 'Send'}</span>
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

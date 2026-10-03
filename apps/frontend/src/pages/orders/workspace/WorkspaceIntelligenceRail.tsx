@@ -79,7 +79,7 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
               <SparklesIcon className="h-4 w-4 text-amber-500" />
               <span>{isArabic ? 'اقتراح العرض الإضافي' : 'Confirmation Upsell'}</span>
             </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+            <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground text-pretty">
               {isArabic
                 ? 'اقترح على العميل قطعة إضافية أو خصم باقة قبل اعتماد الشحن لرفع متوسط قيمة الطلب.'
                 : 'Suggest an additional item or bundle discount to increase average order value.'}
@@ -122,7 +122,7 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
               <UserGroupIcon className="h-4 w-4 text-primary" />
               <span>{isArabic ? 'إدارة توزيع الفريق' : 'Team Distribution'}</span>
             </div>
-            <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+            <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground text-pretty">
               {isArabic
                 ? 'توزيع الطلبات يتم آلياً وفقاً لقواعد الطاقة الاستيعابية والتناوب الدائري بين أعضاء الفريق.'
                 : 'Orders are distributed automatically via workload cap and round-robin rules across team members.'}

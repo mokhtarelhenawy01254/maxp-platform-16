@@ -108,7 +108,7 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
             <CheckCircleIcon className="h-6 w-6 text-emerald-500" />
           )}
         </div>
-        <p className="mt-3 text-sm font-semibold text-foreground">
+        <p className="mt-3 text-sm font-semibold text-foreground text-balance">
           {fetchError
             ? fetchError
             : activeTab === 'all'
