@@ -1,6 +1,11 @@
 const courierService = require('../../services/courierService');
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 
+jest.mock('../../services/courierNotificationService', () => ({
+  notifyRunDispatched: jest.fn(),
+  notifyFieldUpdate: jest.fn(),
+}));
+
 jest.mock('../../services/sharedDatabase', () => {
   const mPrisma = {
     deliveryRun: {
@@ -8,6 +13,8 @@ jest.mock('../../services/sharedDatabase', () => {
       update: jest.fn(),
       updateMany: jest.fn(),
       count: jest.fn(),
+      create: jest.fn(),
+      findMany: jest.fn(),
     },
     treasuryAccount: {
       findFirst: jest.fn(),
@@ -17,16 +24,35 @@ jest.mock('../../services/sharedDatabase', () => {
       create: jest.fn(),
     },
     shipment: {
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
       updateMany: jest.fn(),
+      count: jest.fn(),
+      groupBy: jest.fn(),
+      aggregate: jest.fn(),
     },
     courier: {
       findFirst: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
       deleteMany: jest.fn(),
+      count: jest.fn(),
     },
     companyApp: {
       findFirst: jest.fn(),
+    },
+    order: {
+      updateMany: jest.fn(),
+    },
+    courierCommission: {
+      findMany: jest.fn(),
+      groupBy: jest.fn(),
+      count: jest.fn(),
+      updateMany: jest.fn(),
+      createMany: jest.fn(),
     },
     $transaction: jest.fn((callback) => callback(mPrisma)),
   };
@@ -164,6 +190,87 @@ describe('Courier Service Module Unit Tests', () => {
       });
 
       expect(result.run.status).toBe('SETTLED');
+    });
+  });
+
+  describe('createDeliveryRun dispatch flow', () => {
+    const companyId = 'comp-dispatch';
+
+    it('5. creates a run, generates per-parcel OTPs, and fires the dispatch notification with them', async () => {
+      const { notifyRunDispatched } = require('../../services/courierNotificationService');
+
+      prisma.courier.findFirst.mockResolvedValueOnce({
+        id: 'courier-9',
+        companyId,
+        name: 'كابتن تجريبي',
+        commissionType: 'FIXED_PER_ORDER',
+        commissionAmount: 35
+      });
+      prisma.shipment.findMany.mockResolvedValueOnce([
+        {
+          id: 'ship-9',
+          orderId: 'order-9',
+          settlementStatus: 'PENDING',
+          status: 'READY_FOR_SHIPPING',
+          order: {
+            id: 'order-9',
+            total: 750,
+            status: 'READY_TO_SHIP',
+            orderNumber: 'ORD-DISP-1',
+            customerName: 'عميل التجربة',
+            customerPhone: '01234567890'
+          }
+        }
+      ]);
+      prisma.companyApp.findFirst.mockResolvedValueOnce(undefined);
+      prisma.deliveryRun.count.mockResolvedValueOnce(0);
+      prisma.deliveryRun.create.mockResolvedValueOnce({
+        id: 'run-9',
+        companyId,
+        runNumber: 'RUN-20261003-001',
+        status: 'DISPATCHED'
+      });
+      prisma.shipment.updateMany.mockResolvedValueOnce({ count: 1 });
+      prisma.shipment.update.mockResolvedValueOnce({});
+      prisma.order.updateMany.mockResolvedValueOnce({ count: 1 });
+      prisma.courier.update.mockResolvedValueOnce({});
+
+      const run = await courierService.createDeliveryRun(companyId, {
+        courierId: 'courier-9',
+        shipmentIds: ['ship-9'],
+        notes: 'مأمورية تجريبية'
+      });
+
+      expect(run.runNumber).toBe('RUN-20261003-001');
+
+      // OTP was generated and hashed onto the parcel (customer has a phone)
+      expect(prisma.shipment.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'ship-9' },
+          data: expect.objectContaining({
+            otpHash: expect.any(String),
+            otpExpiresAt: expect.any(Date)
+          })
+        })
+      );
+
+      // The dispatch notification fired AFTER the transaction with the OTP map —
+      // this catches the out-of-scope otpByShipment ReferenceError caught live on prod
+      expect(notifyRunDispatched).toHaveBeenCalledTimes(1);
+      const arg = notifyRunDispatched.mock.calls[0][1];
+      expect(arg.shipments[0].id).toBe('ship-9');
+      expect(arg.otpByShipment.get('ship-9')).toMatch(/^\d{4}$/);
+    });
+
+    it('6. refuses to dispatch parcels that are already settled or delivered', async () => {
+      prisma.courier.findFirst.mockResolvedValueOnce({ id: 'courier-9', companyId, name: 'كابتن' });
+      prisma.shipment.findMany.mockResolvedValueOnce([
+        { id: 'ship-settled', settlementStatus: 'SETTLED', status: 'DELIVERED', order: { id: 'o1', total: 100 } }
+      ]);
+
+      await expect(
+        courierService.createDeliveryRun(companyId, { courierId: 'courier-9', shipmentIds: ['ship-settled'] })
+      ).rejects.toThrow('لا يمكن إسناد شحنات مسوّاة ماليًا أو منتهية لرحلة جديدة');
     });
   });
 });

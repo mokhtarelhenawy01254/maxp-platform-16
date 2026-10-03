@@ -387,6 +387,10 @@ async function createDeliveryRun(companyId, { courierId, shipmentIds, orderIds, 
 
   const runNumber = await generateRunNumber(prisma, companyId);
 
+  // 🔑 OTP delivery proof: populated inside the transaction below, read by the
+  // post-commit dispatch notification. Declared here so it outlives the tx callback.
+  const otpByShipment = new Map();
+
   // Execute in interactive transaction for atomic integrity
   const deliveryRun = await prisma.$transaction(async (tx) => {
     const deliveryRun = await tx.deliveryRun.create({
@@ -416,7 +420,6 @@ async function createDeliveryRun(companyId, { courierId, shipmentIds, orderIds, 
 
     // 🔑 OTP delivery proof: a 4-digit code texted to the customer on dispatch;
     // marking the parcel DELIVERED requires this code when the setting is on.
-    const otpByShipment = new Map();
     for (const s of shipments) {
       if (!s.order?.customerPhone) continue;
       const otp = String(crypto.randomInt(1000, 10000));
