@@ -63,7 +63,7 @@ function getMonthPeriodRange(period: string): { start: string; end: string } {
   };
 }
 
-type SortKey = "quantitySold" | "orderCount" | "averagePrice" | "unitsPerOrder" | "revenue" | "productName";
+type SortKey = "quantitySold" | "orderCount" | "averagePrice" | "unitsPerOrder" | "revenue" | "productName" | "topVariation";
 type SortDir = "asc" | "desc";
 
 interface SalesProduct {
@@ -76,6 +76,9 @@ interface SalesProduct {
   revenue: number;
   averagePrice: number;
   unitsPerOrder: number;
+  topVariation?: string | null;
+  topColor?: string | null;
+  topSize?: string | null;
 }
 
 interface SalesSummary {
@@ -187,12 +190,26 @@ const ProductsAnalytics: React.FC = () => {
         )
       : products;
     const sorted = [...list].sort((a, b) => {
-      const aVal = sortKey === "productName" ? a.productName : a[sortKey];
-      const bVal = sortKey === "productName" ? b.productName : b[sortKey];
+      const aVal =
+        sortKey === "productName"
+          ? a.productName
+          : sortKey === "topVariation"
+          ? (a.topVariation || "")
+          : a[sortKey];
+      const bVal =
+        sortKey === "productName"
+          ? b.productName
+          : sortKey === "topVariation"
+          ? (b.topVariation || "")
+          : b[sortKey];
       if (typeof aVal === "string") {
-        return sortDir === "asc" ? aVal.localeCompare(bVal as string, "ar") : (bVal as string).localeCompare(aVal, "ar");
+        return sortDir === "asc"
+          ? aVal.localeCompare(bVal as string, "ar")
+          : (bVal as string).localeCompare(aVal as string, "ar");
       }
-      return sortDir === "asc" ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+      return sortDir === "asc"
+        ? (aVal as number) - (bVal as number)
+        : (bVal as number) - (aVal as number);
     });
     return sorted;
   }, [products, search, sortKey, sortDir]);
@@ -247,6 +264,7 @@ const ProductsAnalytics: React.FC = () => {
       filteredProducts.map((p) => ({
         [t("productAnalytics.product")]: p.productName,
         [t("productAnalytics.sku")]: p.productSku || "",
+        [t("productAnalytics.topVariation")]: p.topVariation || "-",
         [t("productAnalytics.quantitySold")]: p.quantitySold,
         [t("productAnalytics.orderCount")]: p.orderCount,
         [t("productAnalytics.averagePrice")]: p.averagePrice,
@@ -420,11 +438,15 @@ const ProductsAnalytics: React.FC = () => {
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
                   <SortHeader column="productName" label={t("productAnalytics.product")} />
+                  <SortHeader column="topVariation" label={t("productAnalytics.topVariation")} />
                   <SortHeader column="quantitySold" label={t("productAnalytics.quantitySold")} />
                   <SortHeader column="orderCount" label={t("productAnalytics.orderCount")} />
                   <SortHeader column="averagePrice" label={t("productAnalytics.averagePrice")} />
                   <SortHeader column="unitsPerOrder" label={t("productAnalytics.unitsPerOrder")} />
                   <SortHeader column="revenue" label={t("productAnalytics.revenue")} />
+                  <th className="py-3 px-3 text-center text-sm font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    {t("productAnalytics.variationDetails")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -441,11 +463,29 @@ const ProductsAnalytics: React.FC = () => {
                         </div>
                       </Link>
                     </td>
+                    <td className="py-3 px-3 text-sm text-gray-700 dark:text-gray-300">
+                      {p.topVariation ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                          {p.topVariation}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-xs">-</span>
+                      )}
+                    </td>
                     <td className="py-3 px-3 text-sm font-semibold text-gray-900 dark:text-white">{p.quantitySold.toLocaleString()}</td>
                     <td className="py-3 px-3 text-sm text-gray-700 dark:text-gray-300">{p.orderCount.toLocaleString()}</td>
                     <td className="py-3 px-3 text-sm text-gray-700 dark:text-gray-300">{formatPrice(p.averagePrice)}</td>
                     <td className="py-3 px-3 text-sm text-gray-700 dark:text-gray-300">{p.unitsPerOrder.toFixed(1)}</td>
                     <td className="py-3 px-3 text-sm text-emerald-600 dark:text-emerald-400 font-medium whitespace-nowrap">{formatPrice(p.revenue)}</td>
+                    <td className="py-3 px-3 text-sm text-center">
+                      <Link
+                        to={`/analytics/orders/variations?productId=${p.productId}&period=${period}${isCustom && startDate ? `&startDate=${startDate}` : ""}${isCustom && endDate ? `&endDate=${endDate}` : ""}`}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline whitespace-nowrap"
+                        title={t("productAnalytics.variationDetails")}
+                      >
+                        {t("productAnalytics.variationDetails")}
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>

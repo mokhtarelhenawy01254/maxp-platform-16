@@ -423,6 +423,8 @@ class AnalyticsService {
         select: {
           orderId: true,
           productId: true,
+          productColor: true,
+          productSize: true,
           quantity: true,
           price: true,
           total: true
@@ -441,7 +443,10 @@ class AnalyticsService {
         {
           quantitySold: 0,
           revenue: 0,
-          orderIds: new Set()
+          orderIds: new Set(),
+          colorCounts: new Map(),
+          sizeCounts: new Map(),
+          variationCounts: new Map()
         };
 
       const quantity = parseNumericValue(item.quantity) || 1;
@@ -452,6 +457,22 @@ class AnalyticsService {
       existing.revenue += lineRevenue > 0 ? lineRevenue : unitPrice * quantity;
       if (item.orderId) {
         existing.orderIds.add(item.orderId);
+      }
+
+      const color = String(item.productColor || '').trim();
+      const size = String(item.productSize || '').trim();
+      if (color) {
+        existing.colorCounts.set(color, (existing.colorCounts.get(color) || 0) + quantity);
+      }
+      if (size) {
+        existing.sizeCounts.set(size, (existing.sizeCounts.get(size) || 0) + quantity);
+      }
+      const variationParts = [];
+      if (color) variationParts.push(color);
+      if (size) variationParts.push(size);
+      if (variationParts.length > 0) {
+        const variationName = variationParts.join(' - ');
+        existing.variationCounts.set(variationName, (existing.variationCounts.get(variationName) || 0) + quantity);
       }
 
       metrics.set(item.productId, existing);
@@ -473,7 +494,10 @@ class AnalyticsService {
           {
             quantitySold: 0,
             revenue: 0,
-            orderIds: new Set()
+            orderIds: new Set(),
+            colorCounts: new Map(),
+            sizeCounts: new Map(),
+            variationCounts: new Map()
           };
 
         const quantity = parseNumericValue(item?.quantity) || 1;
@@ -484,6 +508,22 @@ class AnalyticsService {
         existing.revenue += lineRevenue > 0 ? lineRevenue : unitPrice * quantity;
         if (guestOrderId) {
           existing.orderIds.add(guestOrderId);
+        }
+
+        const color = String(item?.productColor || item?.color || item?.selectedColor || '').trim();
+        const size = String(item?.productSize || item?.size || item?.selectedSize || '').trim();
+        if (color) {
+          existing.colorCounts.set(color, (existing.colorCounts.get(color) || 0) + quantity);
+        }
+        if (size) {
+          existing.sizeCounts.set(size, (existing.sizeCounts.get(size) || 0) + quantity);
+        }
+        const variationParts = [];
+        if (color) variationParts.push(color);
+        if (size) variationParts.push(size);
+        if (variationParts.length > 0) {
+          const variationName = variationParts.join(' - ');
+          existing.variationCounts.set(variationName, (existing.variationCounts.get(variationName) || 0) + quantity);
         }
 
         metrics.set(productId, existing);
@@ -518,6 +558,33 @@ class AnalyticsService {
         const metric = metrics.get(productId);
         const orderCount = metric.orderIds.size;
 
+        let topColor = null;
+        let maxColorQty = 0;
+        for (const [c, qty] of metric.colorCounts.entries()) {
+          if (qty > maxColorQty) {
+            maxColorQty = qty;
+            topColor = c;
+          }
+        }
+
+        let topSize = null;
+        let maxSizeQty = 0;
+        for (const [s, qty] of metric.sizeCounts.entries()) {
+          if (qty > maxSizeQty) {
+            maxSizeQty = qty;
+            topSize = s;
+          }
+        }
+
+        let topVariation = null;
+        let maxVariationQty = 0;
+        for (const [v, qty] of metric.variationCounts.entries()) {
+          if (qty > maxVariationQty) {
+            maxVariationQty = qty;
+            topVariation = v;
+          }
+        }
+
         return {
           productId,
           productName: product?.name || 'منتج غير معروف',
@@ -527,7 +594,10 @@ class AnalyticsService {
           orderCount,
           revenue: parseFloat(metric.revenue.toFixed(2)),
           averagePrice: metric.quantitySold > 0 ? parseFloat((metric.revenue / metric.quantitySold).toFixed(2)) : 0,
-          unitsPerOrder: orderCount > 0 ? parseFloat((metric.quantitySold / orderCount).toFixed(2)) : 0
+          unitsPerOrder: orderCount > 0 ? parseFloat((metric.quantitySold / orderCount).toFixed(2)) : 0,
+          topColor,
+          topSize,
+          topVariation
         };
       })
       .sort((a, b) => b.quantitySold - a.quantitySold);
@@ -555,6 +625,250 @@ class AnalyticsService {
         totalOrders: totalOrderIds.size,
         averageOrderValue: totalOrderIds.size > 0 ? parseFloat((totalRevenue / totalOrderIds.size).toFixed(2)) : 0
       }
+    };
+  }
+
+  async getVariationsAnalytics(companyId, startDate, endDate, productId = null) {
+    if (!companyId) {
+      throw new Error('companyId is required');
+    }
+
+    const normalizedProductId = productId ? normalizeOrderIdentity(productId) : null;
+
+    const [orderItems, { supplementalGuestOrders }] = await Promise.all([
+      getSharedPrismaClient().orderItem.findMany({
+        where: {
+          ...(normalizedProductId ? { productId: normalizedProductId } : {}),
+          order: {
+            is: {
+              companyId,
+              createdAt: { gte: startDate, lte: endDate },
+              status: { not: 'TRASH' }
+            }
+          }
+        },
+        select: {
+          orderId: true,
+          productId: true,
+          productName: true,
+          productColor: true,
+          productSize: true,
+          quantity: true,
+          price: true,
+          total: true,
+          product: {
+            select: { id: true, name: true }
+          }
+        }
+      }),
+      this.getAnalyticsOrderSnapshots(companyId, startDate, endDate)
+    ]);
+
+    const sizesMap = new Map();
+    const colorsMap = new Map();
+    const variationsMap = new Map();
+    const allOrderIds = new Set();
+    const missingProductIds = new Set();
+
+    for (const item of orderItems) {
+      const color = String(item.productColor || '').trim();
+      const size = String(item.productSize || '').trim();
+
+      if (!color && !size) continue;
+
+      const quantity = parseNumericValue(item.quantity) || 1;
+      const lineRevenue = parseNumericValue(item.total);
+      const unitPrice = parseNumericValue(item.price);
+      const itemRevenue = lineRevenue > 0 ? lineRevenue : unitPrice * quantity;
+      const orderId = item.orderId;
+      if (orderId) allOrderIds.add(orderId);
+
+      if (color) {
+        const existingColor = colorsMap.get(color) || { name: color, sales: 0, revenue: 0 };
+        existingColor.sales += quantity;
+        existingColor.revenue += itemRevenue;
+        colorsMap.set(color, existingColor);
+      }
+
+      if (size) {
+        const existingSize = sizesMap.get(size) || { name: size, sales: 0, revenue: 0 };
+        existingSize.sales += quantity;
+        existingSize.revenue += itemRevenue;
+        sizesMap.set(size, existingSize);
+      }
+
+      const variationParts = [];
+      if (color) variationParts.push(color);
+      if (size) variationParts.push(size);
+      const variationName = variationParts.join(' - ');
+      const pId = item.productId || 'unknown';
+      const pName = item.product?.name || item.productName || '';
+      if (!pName && item.productId) missingProductIds.add(item.productId);
+
+      const comboKey = `${pId}:::${variationName}`;
+      const existingCombo = variationsMap.get(comboKey) || {
+        name: variationName,
+        product: pName,
+        productId: pId,
+        color,
+        size,
+        sales: 0,
+        quantity: 0,
+        revenue: 0,
+        orderIds: new Set()
+      };
+      existingCombo.sales += quantity;
+      existingCombo.quantity += quantity;
+      existingCombo.revenue += itemRevenue;
+      if (orderId) existingCombo.orderIds.add(orderId);
+      variationsMap.set(comboKey, existingCombo);
+    }
+
+    for (const guestOrder of supplementalGuestOrders) {
+      if (isInvalidAnalyticsOrderStatus(guestOrder?.status)) {
+        continue;
+      }
+      const guestOrderId = buildGuestAnalyticsOrderId(guestOrder);
+      const items = parseGuestOrderItems(guestOrder.items);
+
+      for (const item of items) {
+        const itemProductId = normalizeOrderIdentity(item?.productId);
+        if (normalizedProductId && itemProductId !== normalizedProductId) {
+          continue;
+        }
+
+        const color = String(item?.productColor || item?.color || item?.selectedColor || '').trim();
+        const size = String(item?.productSize || item?.size || item?.selectedSize || '').trim();
+
+        if (!color && !size) continue;
+
+        const quantity = parseNumericValue(item?.quantity) || 1;
+        const lineRevenue = parseNumericValue(item?.total);
+        const unitPrice = parseNumericValue(item?.price ?? item?.basePrice);
+        const itemRevenue = lineRevenue > 0 ? lineRevenue : unitPrice * quantity;
+
+        if (guestOrderId) allOrderIds.add(guestOrderId);
+
+        if (color) {
+          const existingColor = colorsMap.get(color) || { name: color, sales: 0, revenue: 0 };
+          existingColor.sales += quantity;
+          existingColor.revenue += itemRevenue;
+          colorsMap.set(color, existingColor);
+        }
+
+        if (size) {
+          const existingSize = sizesMap.get(size) || { name: size, sales: 0, revenue: 0 };
+          existingSize.sales += quantity;
+          existingSize.revenue += itemRevenue;
+          sizesMap.set(size, existingSize);
+        }
+
+        const variationParts = [];
+        if (color) variationParts.push(color);
+        if (size) variationParts.push(size);
+        const variationName = variationParts.join(' - ');
+        const pId = itemProductId || 'unknown';
+        const pName = String(item?.productName || item?.name || item?.title || '').trim();
+        if (!pName && itemProductId) missingProductIds.add(itemProductId);
+
+        const comboKey = `${pId}:::${variationName}`;
+        const existingCombo = variationsMap.get(comboKey) || {
+          name: variationName,
+          product: pName,
+          productId: pId,
+          color,
+          size,
+          sales: 0,
+          quantity: 0,
+          revenue: 0,
+          orderIds: new Set()
+        };
+        existingCombo.sales += quantity;
+        existingCombo.quantity += quantity;
+        existingCombo.revenue += itemRevenue;
+        if (guestOrderId) existingCombo.orderIds.add(guestOrderId);
+        variationsMap.set(comboKey, existingCombo);
+      }
+    }
+
+    if (missingProductIds.size > 0) {
+      const missingProds = await getSharedPrismaClient().product.findMany({
+        where: {
+          companyId,
+          id: { in: [...missingProductIds] }
+        },
+        select: { id: true, name: true }
+      });
+      const nameMap = new Map(missingProds.map((p) => [p.id, p.name]));
+      for (const combo of variationsMap.values()) {
+        if (!combo.product && nameMap.has(combo.productId)) {
+          combo.product = nameMap.get(combo.productId);
+        }
+        if (!combo.product) {
+          combo.product = 'منتج غير معروف';
+        }
+      }
+    }
+
+    let filteredProduct = null;
+    if (normalizedProductId) {
+      const prod = await getSharedPrismaClient().product.findFirst({
+        where: { id: normalizedProductId, companyId },
+        select: { id: true, name: true }
+      });
+      if (prod) {
+        filteredProduct = { id: prod.id, name: prod.name };
+      }
+    }
+
+    const sizes = [...sizesMap.values()]
+      .map((s) => ({
+        name: s.name,
+        sales: s.sales,
+        quantity: s.sales,
+        revenue: parseFloat(s.revenue.toFixed(2))
+      }))
+      .sort((a, b) => (b.sales !== a.sales ? b.sales - a.sales : b.revenue - a.revenue));
+
+    const colors = [...colorsMap.values()]
+      .map((c) => ({
+        name: c.name,
+        sales: c.sales,
+        quantity: c.sales,
+        revenue: parseFloat(c.revenue.toFixed(2))
+      }))
+      .sort((a, b) => (b.sales !== a.sales ? b.sales - a.sales : b.revenue - a.revenue));
+
+    const topVariations = [...variationsMap.values()]
+      .map((v) => ({
+        name: v.name,
+        product: v.product || 'منتج غير معروف',
+        productId: v.productId,
+        color: v.color,
+        size: v.size,
+        sales: v.sales,
+        quantity: v.sales,
+        revenue: parseFloat(v.revenue.toFixed(2)),
+        orders: v.orderIds.size
+      }))
+      .sort((a, b) => (b.sales !== a.sales ? b.sales - a.sales : b.revenue - a.revenue));
+
+    const totalVariations = topVariations.length;
+    const totalSales = topVariations.reduce((sum, v) => sum + v.sales, 0);
+    const totalRevenue = parseFloat(topVariations.reduce((sum, v) => sum + v.revenue, 0).toFixed(2));
+    const totalOrders = allOrderIds.size;
+
+    return {
+      sizes,
+      colors,
+      topVariations,
+      variations: topVariations,
+      totalVariations,
+      totalSales,
+      totalQuantity: totalSales,
+      totalRevenue,
+      totalOrders,
+      filteredProduct
     };
   }
 

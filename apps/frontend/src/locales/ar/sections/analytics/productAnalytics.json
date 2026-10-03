@@ -48,5 +48,7 @@
   "highStock": "متوفر",
   "lowStock": "محدود",
   "outOfStock": "نفذ",
-  "variants": "متغيرات"
+  "variants": "متغيرات",
+  "topVariation": "أعلى متغير",
+  "variationDetails": "تفاصيل المتغيرات"
 }

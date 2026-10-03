@@ -3724,6 +3724,8 @@ declare module 'react-i18next' {
         lowStock: string;
         outOfStock: string;
         variants: string;
+        topVariation: string;
+        variationDetails: string;
       };
       productAvailability: {
         title: string;
@@ -7841,7 +7843,24 @@ declare module 'react-i18next' {
         sales: string;
         variation: string;
         product: string;
+        color: string;
+        size: string;
+        revenue: string;
+        orders: string;
+        totalVariations: string;
+        totalSales: string;
+        totalRevenue: string;
+        totalOrders: string;
+        csvExport: string;
+        searchPlaceholder: string;
         noData: string;
+        noVariationsFound: string;
+        filterByProduct: string;
+        clearFilter: string;
+        backToProducts: string;
+        showMore: string;
+        showingCount: string;
+        variationDetails: string;
       };
       Appointments: {
         msg_0e7d: string;

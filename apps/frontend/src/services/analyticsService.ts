@@ -650,11 +650,16 @@ class AnalyticsService {
     }
   }
 
-  async getVariationsAnalytics(startDate?: string, endDate?: string) {
+  async getVariationsAnalytics(
+    startDate?: string,
+    endDate?: string,
+    productId?: string,
+  ) {
     try {
       const params: AnalyticsQueryParams = {};
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
+      if (productId) params.productId = productId;
       const response = await apiClient.get("/analytics/variations", {
         params,
       });

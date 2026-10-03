@@ -13,5 +13,22 @@
   "sales": "Sales",
   "variation": "Variation",
   "product": "Product",
-  "noData": "No data available"
+  "color": "Color",
+  "size": "Size",
+  "revenue": "Revenue",
+  "orders": "Orders",
+  "totalVariations": "Total Variations",
+  "totalSales": "Total Sales",
+  "totalRevenue": "Total Revenue",
+  "totalOrders": "Total Orders",
+  "csvExport": "Export CSV",
+  "searchPlaceholder": "Search variations and products...",
+  "noData": "No data available",
+  "noVariationsFound": "No matching variations found",
+  "filterByProduct": "Filter by product",
+  "clearFilter": "Clear filter",
+  "backToProducts": "Back to Products Analytics",
+  "showMore": "Show more",
+  "showingCount": "Showing {{count}} of {{total}}",
+  "variationDetails": "Variation Details"
 }

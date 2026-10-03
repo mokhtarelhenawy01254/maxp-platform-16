@@ -48,5 +48,7 @@
   "highStock": "In Stock",
   "lowStock": "Low Stock",
   "outOfStock": "Out of Stock",
-  "variants": "Variants"
+  "variants": "Variants",
+  "topVariation": "Top Variation",
+  "variationDetails": "Variation Details"
 }

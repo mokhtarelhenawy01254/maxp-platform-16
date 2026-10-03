@@ -13,5 +13,22 @@
   "sales": "المبيعات",
   "variation": "المتغير",
   "product": "المنتج",
-  "noData": "لا توجد بيانات متاحة"
+  "color": "اللون",
+  "size": "المقاس",
+  "revenue": "الإيرادات",
+  "orders": "الطلبات",
+  "totalVariations": "إجمالي المتغيرات",
+  "totalSales": "إجمالي المبيعات",
+  "totalRevenue": "إجمالي الإيرادات",
+  "totalOrders": "إجمالي الطلبات",
+  "csvExport": "تصدير CSV",
+  "searchPlaceholder": "البحث في المتغيرات والمنتجات...",
+  "noData": "لا توجد بيانات متاحة",
+  "noVariationsFound": "لا توجد متغيرات مطابقة",
+  "filterByProduct": "تصفية حسب المنتج",
+  "clearFilter": "إلغاء التصفية",
+  "backToProducts": "العودة لتحليلات المنتجات",
+  "showMore": "عرض المزيد",
+  "showingCount": "عرض {{count}} من إجمالي {{total}}",
+  "variationDetails": "تفاصيل المتغيرات"
 }

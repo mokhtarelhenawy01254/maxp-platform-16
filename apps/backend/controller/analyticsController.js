@@ -1214,72 +1214,20 @@ const getVariationsAnalytics = async (req, res) => {
       return res.status(403).json({ success: false, message: 'غير مصرح - معرف الشركة مطلوب' });
     }
 
-    const { startDate, endDate } = req.query;
-    const prisma = getSharedPrismaClient();
+    const { startDate, endDate, period, productId } = req.query;
+    const { start, end } = parseAnalyticsDateRange({ startDate, endDate, period: period || '30' });
 
-    const whereClause = {
-      order: {
-        is: {
-          companyId: String(companyId),
-          ...(startDate && endDate ? {
-            createdAt: {
-              gte: new Date(startDate),
-              lte: new Date(endDate)
-            }
-          } : {})
-        }
-      }
-    };
-
-    const orderItems = await prisma.orderItem.findMany({
-      where: whereClause,
-      include: {
-        product: {
-          select: { name: true }
-        }
-      }
-    });
-
-    const variationsMap = {};
-    orderItems.forEach(item => {
-      // Build variation string from color and size
-      const variationParts = [];
-      if (item.productColor) variationParts.push(item.productColor);
-      if (item.productSize) variationParts.push(item.productSize);
-
-      if (variationParts.length > 0) {
-        const variation = variationParts.join(' - ');
-        const key = `${item.product?.name || item.productName} - ${variation}`;
-
-        if (!variationsMap[key]) {
-          variationsMap[key] = {
-            productName: item.product?.name || item.productName,
-            variation: variation,
-            color: item.productColor || '',
-            size: item.productSize || '',
-            quantity: 0,
-            revenue: 0,
-            orders: 0
-          };
-        }
-        variationsMap[key].quantity += item.quantity;
-        variationsMap[key].revenue += parseFloat(item.price) * item.quantity;
-        variationsMap[key].orders += 1;
-      }
-    });
-
-    const variations = Object.values(variationsMap)
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 20);
+    const data = await analyticsService.getVariationsAnalytics(
+      companyId,
+      start,
+      end,
+      productId ? String(productId) : null
+    );
 
     res.json({
       success: true,
-      data: {
-        variations,
-        totalVariations: variations.length,
-        totalRevenue: variations.reduce((sum, v) => sum + v.revenue, 0),
-        totalQuantity: variations.reduce((sum, v) => sum + v.quantity, 0)
-      }
+      data,
+      period: { start, end }
     });
   } catch (error) {
     console.error('Error in getVariationsAnalytics:', error);
