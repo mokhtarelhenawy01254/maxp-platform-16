@@ -135,7 +135,6 @@ const OrderDetails: React.FC = () => {
     deletingNote,
     saveChanges,
     fetchOrderDetails,
-    setOrder,
   } = useOrderDetails(orderNumber);
 
   const {

@@ -45,6 +45,10 @@ jest.mock("../../../services/customerBlocklistService", () => ({
   },
 }));
 
+jest.mock("../../../components/telephony/OrderCallButton", () => ({
+  OrderCallButton: () => null,
+}));
+
 const baseOrder: OrderDetailsType = {
   id: "ORD-100",
   orderNumber: "ORD-100",
