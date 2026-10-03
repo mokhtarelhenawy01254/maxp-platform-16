@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import i18n from "../../i18n";
 import { tToast } from "../../utils/i18n-toast";
@@ -17,6 +17,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { TaskFilters } from "./components/TaskFilters";
 import { CreateTaskModal } from "./components/CreateTaskModal";
+import { CreateGoalModal } from "./components/CreateGoalModal";
+import { GoalProgressStrip } from "./components/GoalProgressStrip";
 import { TaskTable } from "./components/TaskTable";
 import { ProjectsTab } from "./components/ProjectsTab";
 import { CategoriesTab } from "./components/CategoriesTab";
@@ -152,6 +154,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
+  const [showCreateGoalModal, setShowCreateGoalModal] = useState(false);
   const [filters, setFilters] = useState<TaskFiltersState>({
     projectId: "",
     categoryId: "",
@@ -703,7 +706,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
 
       if (!token) return;
 
-      const response = await fetch(buildApiUrl("tasks/goals?includeDaily=false"), {
+      const response = await fetch(buildApiUrl("tasks/goals"), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -1342,6 +1345,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
             setShowFilterSidebar={setShowFilterSidebar}
             setShowCreateTaskModal={setShowCreateTaskModal}
             setShowCreateProjectModal={setShowCreateProjectModal}
+            setShowCreateGoalModal={setShowCreateGoalModal}
             exportToCSV={exportToCSV}
             scrollToBulkActions={scrollToBulkActions}
             showOverdueIndicators={workspaceSettings.highlightOverdue}
@@ -1438,6 +1442,11 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
               </div>
             </div>
           ) : null}
+
+          <GoalProgressStrip
+            goals={goals}
+            onOpenCreateGoal={() => setShowCreateGoalModal(true)}
+          />
 
           <TaskTable
             canApprove={isApprover}
@@ -1574,6 +1583,15 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
           category={editingCategory}
           setEditingCategory={setEditingCategory}
           updateCategory={updateCategory}
+        />
+
+        {/* Create Goal Modal */}
+        <CreateGoalModal
+          isOpen={showCreateGoalModal}
+          onClose={() => setShowCreateGoalModal(false)}
+          onGoalCreated={fetchGoals}
+          users={users}
+          projects={projects}
         />
 
         {/* Create Task Modal */}

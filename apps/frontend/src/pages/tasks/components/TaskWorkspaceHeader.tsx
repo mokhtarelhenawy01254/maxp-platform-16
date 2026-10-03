@@ -8,6 +8,7 @@ import {
   PlusIcon,
   QueueListIcon,
 } from "@heroicons/react/24/outline";
+import { Target } from "lucide-react";
 
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
@@ -30,6 +31,7 @@ type TaskWorkspaceHeaderProps = {
   setShowFilterSidebar: (show: boolean) => void;
   setShowCreateTaskModal: (show: boolean) => void;
   setShowCreateProjectModal: (show: boolean) => void;
+  setShowCreateGoalModal?: (show: boolean) => void;
   exportToCSV: () => void;
   scrollToBulkActions: () => void;
   showOverdueIndicators: boolean;
@@ -53,6 +55,7 @@ export const TaskWorkspaceHeader: React.FC<TaskWorkspaceHeaderProps> = ({
   setShowFilterSidebar,
   setShowCreateTaskModal,
   setShowCreateProjectModal,
+  setShowCreateGoalModal,
   exportToCSV,
   scrollToBulkActions,
   showOverdueIndicators,
@@ -143,6 +146,18 @@ export const TaskWorkspaceHeader: React.FC<TaskWorkspaceHeaderProps> = ({
             >
               <FolderPlusIcon className="size-4" />
               مشروع جديد
+            </Button>
+          ) : null}
+          {setShowCreateGoalModal ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 rounded-xl border-sky-500/30 bg-sky-500/5 px-3 text-xs font-medium text-sky-700 shadow-sm transition-all hover:bg-sky-500/10 hover:border-sky-500/40 dark:text-sky-300"
+              data-testid="tasks-open-create-goal-modal"
+              onClick={() => setShowCreateGoalModal(true)}
+            >
+              <Target className="size-4 text-sky-500" />
+              أنشئ هدف
             </Button>
           ) : null}
           <Button

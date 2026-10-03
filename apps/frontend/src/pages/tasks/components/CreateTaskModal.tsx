@@ -70,7 +70,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
   const hasTemplates = templates.length > 0;
   const availableGoals = goals.filter(
-    (goal) => !newTask.projectId || goal.project?.id === newTask.projectId,
+    (goal) =>
+      !newTask.projectId ||
+      (!goal.projectId && !goal.project?.id) ||
+      goal.projectId === newTask.projectId ||
+      goal.project?.id === newTask.projectId,
   );
 
   return (

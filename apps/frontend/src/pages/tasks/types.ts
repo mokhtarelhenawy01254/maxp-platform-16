@@ -43,6 +43,7 @@ export interface Task {
   goalId: string | null;
   goalTitle: string | null;
   goalType: string | null;
+  goalProgress?: number | null;
   title: string;
   description: string;
   status: TaskStatus;
@@ -141,7 +142,17 @@ export interface GoalOption {
   id: string;
   title: string;
   goalType: string;
+  status?: string;
+  priority?: string;
+  progress?: number;
+  target?: number;
+  targetValue?: number;
+  currentValue?: number;
+  unit?: string;
+  metricKey?: string | null;
+  dueDate?: string | null;
   project?: { id: string; name: string } | null;
+  projectId?: string | null;
 }
 
 export interface ProjectDraft {

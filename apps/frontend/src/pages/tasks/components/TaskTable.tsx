@@ -19,6 +19,7 @@ import {
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
+import { Target } from "lucide-react";
 import type { Task, TaskSortBy } from "../types";
 
 export interface TaskTableProps {
@@ -477,6 +478,17 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                     {task.assignedToName || "غير محدد"}
                   </span>
                 </div>
+                {task.goalTitle ? (
+                  <div className="col-span-2 flex items-center gap-1.5 text-sky-600 dark:text-sky-400">
+                    <Target className="size-3.5 shrink-0" />
+                    <span className="truncate font-medium">الهدف: {task.goalTitle}</span>
+                    {task.goalProgress !== null && task.goalProgress !== undefined ? (
+                      <span className="font-mono text-[10px] tabular-nums opacity-80">
+                        ({Math.round(task.goalProgress)}%)
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
                 <div className="flex items-center gap-2">
                   <CalendarIcon className="size-4 shrink-0" />
                   <span
@@ -736,6 +748,20 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                             <UserIcon className="size-4" />
                             {task.assignedToName || "غير محدد"}
                           </span>
+                          {task.goalTitle ? (
+                            <span
+                              className="flex items-center gap-1 text-sky-600 dark:text-sky-400"
+                              title={`مرتبطة بهدف: ${task.goalTitle}`}
+                            >
+                              <Target className="size-3.5 shrink-0" />
+                              <span className="max-w-[150px] truncate">{task.goalTitle}</span>
+                              {task.goalProgress !== null && task.goalProgress !== undefined ? (
+                                <span className="font-mono text-[10px] tabular-nums opacity-80">
+                                  ({Math.round(task.goalProgress)}%)
+                                </span>
+                              ) : null}
+                            </span>
+                          ) : null}
                           {task.createdByName ? (
                             <span>بواسطة: {task.createdByName}</span>
                           ) : null}

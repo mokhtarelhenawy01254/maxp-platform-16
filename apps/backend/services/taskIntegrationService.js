@@ -1,6 +1,12 @@
 const crypto = require('crypto');
 
-const TASK_API_SCOPES = ['tasks:read', 'tasks:write', 'tasks:update'];
+const TASK_API_SCOPES = [
+  'tasks:read',
+  'tasks:write',
+  'tasks:update',
+  'goals:read',
+  'goals:write'
+];
 const TASK_API_DEFAULT_SCOPES = ['tasks:read', 'tasks:write'];
 const AGENT_INBOX_API_SCOPES = [
   'facebook-inbox:read',
@@ -293,9 +299,21 @@ const extractKeyPrefix = (rawKey) => {
 const hashTaskApiKey = (rawKey) => crypto.createHash('sha256').update(String(rawKey || '')).digest('hex');
 
 const credentialHasScope = (credential, requiredScope) => {
+  if (Array.isArray(requiredScope)) {
+    return requiredScope.some((scope) => credentialHasScope(credential, scope));
+  }
+
   const scopes = normalizeScopes(credential?.scopes || []);
   if (scopes.includes('*')) return true;
   if (scopes.includes(requiredScope)) return true;
+
+  // tasks:read / tasks:write cover goals:read / goals:write for backwards compatibility
+  if (requiredScope === 'goals:read' && (scopes.includes('tasks:read') || scopes.includes('tasks:write') || scopes.includes('tasks:*'))) {
+    return true;
+  }
+  if (requiredScope === 'goals:write' && (scopes.includes('tasks:write') || scopes.includes('tasks:*'))) {
+    return true;
+  }
 
   if (requiredScope.startsWith('admin:')) {
     if (scopes.includes('admin:*')) return true;

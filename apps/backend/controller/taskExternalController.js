@@ -3,6 +3,7 @@ const sharedDatabase = require('../services/sharedDatabase');
 const getSharedPrismaClient = () => sharedDatabase.getSharedPrismaClient();
 const taskNotificationService = require('../services/taskNotificationService');
 const taskWebhookService = require('../services/taskWebhookService');
+const businessGoalService = require('../services/businessGoalService');
 const queueTaskWebhook = (...args) => taskWebhookService.queueTaskWebhook(...args);
 
 const MAX_PAGE_SIZE = 100;
@@ -103,6 +104,10 @@ const formatTask = (task) => ({
   type: task.type,
   projectId: task.projectId,
   projectName: task.project?.name || null,
+  goalId: task.goalId || task.goal?.id || null,
+  goalTitle: task.goal?.title || null,
+  goalType: task.goal?.goalType || null,
+  goalProgress: task.goal?.progress !== undefined && task.goal?.progress !== null ? Number(task.goal.progress) : null,
   assignedTo: task.assignedTo,
   assignedToName: task.assignee
     ? `${task.assignee.firstName} ${task.assignee.lastName}`.trim()
@@ -208,6 +213,9 @@ const taskExternalController = {
             project: {
               select: { id: true, name: true }
             },
+            goal: {
+              select: { id: true, title: true, goalType: true, progress: true }
+            },
             assignee: {
               select: { id: true, firstName: true, lastName: true }
             },
@@ -255,6 +263,9 @@ const taskExternalController = {
         include: {
           project: {
             select: { id: true, name: true }
+          },
+          goal: {
+            select: { id: true, title: true, goalType: true, progress: true }
           },
           assignee: {
             select: { id: true, firstName: true, lastName: true }
@@ -371,6 +382,7 @@ const taskExternalController = {
       const { companyId, integrationName, actingUserId } = getIntegrationContext(req);
       const {
         projectId,
+        goalId,
         title,
         description,
         priority,
@@ -414,6 +426,20 @@ const taskExternalController = {
         }
       }
 
+      if (goalId) {
+        const goal = await prisma.goal.findFirst({
+          where: { id: goalId, companyId },
+          select: { id: true }
+        });
+
+        if (!goal) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid goalId for this company'
+          });
+        }
+      }
+
       const actorUserId = actingUserId;
 
       const finalAssignedTo = assignedTo || actorUserId;
@@ -430,6 +456,7 @@ const taskExternalController = {
           id: uuidv4(),
           companyId,
           projectId: projectId || null,
+          goalId: goalId || null,
           title: String(title).trim(),
           description: String(description).trim(),
           status: 'PENDING',
@@ -450,6 +477,9 @@ const taskExternalController = {
         include: {
           project: {
             select: { id: true, name: true }
+          },
+          goal: {
+            select: { id: true, title: true, goalType: true, progress: true }
           },
           assignee: {
             select: { id: true, firstName: true, lastName: true }
@@ -603,6 +633,9 @@ const taskExternalController = {
         include: {
           project: {
             select: { id: true, name: true }
+          },
+          goal: {
+            select: { id: true, title: true, goalType: true, progress: true }
           },
           assignee: {
             select: { id: true, firstName: true, lastName: true }

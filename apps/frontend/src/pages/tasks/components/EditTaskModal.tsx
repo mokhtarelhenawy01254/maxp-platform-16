@@ -40,7 +40,11 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   if (!show || !task) return null;
 
   const availableGoals = goals.filter(
-    (goal) => !task.projectId || goal.project?.id === task.projectId,
+    (goal) =>
+      !task.projectId ||
+      (!goal.projectId && !goal.project?.id) ||
+      goal.projectId === task.projectId ||
+      goal.project?.id === task.projectId,
   );
 
   return (
