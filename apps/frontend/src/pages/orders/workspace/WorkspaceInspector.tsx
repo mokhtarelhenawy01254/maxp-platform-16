@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ChatBubbleOvalLeftEllipsisIcon,
@@ -74,6 +74,12 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
 
   const [isEditingItems, setIsEditingItems] = useState(false);
   const [isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen] = useState(false);
+
+  // درج الواتساب مربوط بعميل بعينه — يُغلق عند تبديل الطلب (خصوصًا عبر j/k)
+  // وإلا ظل مفتوحًا على العميل الجديد مع سلاسل جلب كاملة لبيانات لا تعنيه
+  useEffect(() => {
+    setIsWhatsAppDrawerOpen(false);
+  }, [order?.id]);
 
   if (!order) {
     return (

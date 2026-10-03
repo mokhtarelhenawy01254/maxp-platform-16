@@ -857,6 +857,39 @@ describe('agentWorkspaceController manager fleet operations', () => {
       data: { isActive: false }
     });
   });
+
+  test('stats for the unassigned filter reflect the unassigned pool, not the whole team', async () => {
+    const prismaMock = {
+      order: {
+        findMany: jest.fn().mockResolvedValue([createOrder('u1', 'PENDING')]),
+        count: jest.fn().mockResolvedValue(2)
+      },
+      guestOrder: {
+        findMany: jest.fn().mockResolvedValue([]),
+        count: jest.fn().mockResolvedValue(1)
+      },
+      guestCart: { count: jest.fn().mockResolvedValue(7) },
+      orderAssignment: { count: jest.fn().mockResolvedValue(0) }
+    };
+    getSharedPrismaClient.mockReturnValue(prismaMock);
+
+    const res = createResponse();
+    await agentWorkspaceController.getMyOrders({
+      ...managerReq,
+      query: { assignedTo: 'unassigned', withStats: 'true' }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.stats).toEqual({
+      total: 3,
+      pending: 3,
+      confirmed: 0,
+      cancelled: 0,
+      followup: 0,
+      incomplete: 7
+    });
+    expect(prismaMock.orderAssignment.count).not.toHaveBeenCalled();
+  });
 });
 
 describe('agentWorkspaceController.requireManager', () => {

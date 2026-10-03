@@ -10,6 +10,7 @@ import {
   UserGroupIcon,
 } from '@heroicons/react/24/outline';
 import { PerspectiveMode, WorkspaceOrder, WorkspaceStats } from './types';
+import { callResultLabel, callResultToneClass, formatCallDuration, formatCallTimestamp } from './callLogFormat';
 
 interface WorkspaceIntelligenceRailProps {
   order: WorkspaceOrder | null;
@@ -82,18 +83,7 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
             <div className="mt-2.5 space-y-2">
               {order?.callLogs && order.callLogs.length > 0 ? (
                 order.callLogs.map((log) => {
-                  const m = log.durationSeconds ? Math.floor(log.durationSeconds / 60) : 0;
-                  const s = log.durationSeconds ? log.durationSeconds % 60 : 0;
-                  const durationStr =
-                    log.durationSeconds && log.durationSeconds > 0
-                      ? m > 0
-                        ? isArabic
-                          ? `${m} د و ${s} ث`
-                          : `${m}m ${s}s`
-                        : isArabic
-                        ? `${s} ث`
-                        : `${s}s`
-                      : null;
+                  const durationStr = formatCallDuration(log.durationSeconds, isArabic);
 
                   return (
                     <div key={log.id} className="border-s-2 border-primary/40 ps-2.5 text-[11px]">
@@ -105,13 +95,15 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
                               {durationStr}
                             </span>
                           )}
-                          <span>
-                            {new Date(log.createdAt).toLocaleTimeString(isArabic ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
+                          <span>{formatCallTimestamp(log.createdAt, isArabic)}</span>
                         </div>
                       </div>
                       <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-muted-foreground">
-                        <span className="font-semibold text-foreground">[{log.result}]</span>
+                        <span
+                          className={`rounded px-1 py-0.5 text-[10px] font-bold ${callResultToneClass(log.result)}`}
+                        >
+                          {callResultLabel(log.result, isArabic)}
+                        </span>
                         {log.notes ? <span>{log.notes}</span> : null}
                       </p>
                       {log.recordingUrl && (

@@ -41,6 +41,28 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
   const { formatPrice } = useCurrency();
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const rowRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const suppressFocusRef = useRef(false);
+  const prevSelectedRef = useRef<string | null>(null);
+
+  // j/k والأسهم يغيّران التحديد داخل الهوك — النقل الفعلي للتركيز هنا حتى يعلن
+  // قارئ الشاشة عن الصف الجديد (focus + aria-label) ويتمرر إليه بصريًا.
+  // نقرة الفأرة تُلغي النقل كي لا يسرق التركيز من حيث كان المستخدم.
+  useEffect(() => {
+    const prev = prevSelectedRef.current;
+    prevSelectedRef.current = selectedOrderId;
+    if (!selectedOrderId || prev === selectedOrderId) return;
+    if (suppressFocusRef.current) {
+      suppressFocusRef.current = false;
+      return;
+    }
+    const el = rowRefs.current.get(selectedOrderId);
+    if (el) {
+      el.focus({ preventScroll: true });
+      // jsdom لا ينفذ scrollIntoView — الاستدعاء الاختياري يحمي بيئة الاختبار
+      el.scrollIntoView?.({ block: 'nearest' });
+    }
+  }, [selectedOrderId]);
 
   // Auto-load next page on scroll to bottom
   useEffect(() => {
@@ -131,12 +153,31 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
           const isSelected = order.id === selectedOrderId;
           const overdue = isOrderOverdue(order);
           const location = [order.governorate, order.city].filter(Boolean).join('، ') || '—';
+          const followUpDue = order.followUpDate ? new Date(order.followUpDate).getTime() <= Date.now() : false;
 
           return (
             <article
               key={order.id || order.cartId || order.orderNumber}
-              onClick={() => onSelectOrder(order.id)}
-              className={`group relative cursor-pointer p-3 transition-colors ${
+              ref={(el) => {
+                if (el) rowRefs.current.set(order.id, el);
+                else rowRefs.current.delete(order.id);
+              }}
+              tabIndex={0}
+              role="button"
+              aria-current={isSelected ? 'true' : undefined}
+              aria-label={`${isArabic ? 'طلب' : 'Order'} #${order.orderNumber} — ${order.customerName || ''} ${formatPrice(order.total)}`}
+              onClick={() => {
+                suppressFocusRef.current = true;
+                onSelectOrder(order.id);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  suppressFocusRef.current = true;
+                  onSelectOrder(order.id);
+                }
+              }}
+              className={`group relative cursor-pointer p-3 outline-none transition-colors focus-visible:bg-accent/40 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${
                 isSelected
                   ? 'bg-accent/40 text-accent-foreground'
                   : 'hover:bg-muted/40'
@@ -190,18 +231,36 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
                 </span>
               </div>
 
-              {/* Sub-row: Location & Call attempts badge */}
+              {/* Sub-row: Location & Follow-up & Call attempts badge */}
               <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
                 <span className="truncate">{location}</span>
-                <span
-                  className={`inline-flex shrink-0 items-center gap-1 font-mono font-bold tabular-nums ${
-                    order.callAttempts >= 3
-                      ? 'text-amber-500 dark:text-amber-400'
-                      : 'text-muted-foreground'
-                  }`}
-                >
-                  <PhoneIcon className="h-3 w-3" />
-                  {order.callAttempts} / 5
+                <span className="flex shrink-0 items-center gap-1.5">
+                  {order.followUpDate && (
+                    <span
+                      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
+                        followUpDue
+                          ? 'bg-destructive/15 text-destructive'
+                          : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                      }`}
+                    >
+                      {followUpDue
+                        ? (isArabic ? 'مستحق الآن' : 'Due now')
+                        : new Date(order.followUpDate).toLocaleDateString(isArabic ? 'ar-EG' : 'en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                    </span>
+                  )}
+                  <span
+                    className={`inline-flex items-center gap-1 font-mono font-bold tabular-nums ${
+                      order.callAttempts >= 3
+                        ? 'text-amber-500 dark:text-amber-400'
+                        : 'text-muted-foreground'
+                    }`}
+                  >
+                    <PhoneIcon className="h-3 w-3" />
+                    {order.callAttempts} / 5
+                  </span>
                 </span>
               </div>
             </article>

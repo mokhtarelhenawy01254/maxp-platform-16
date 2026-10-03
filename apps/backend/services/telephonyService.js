@@ -4,6 +4,13 @@ const socketService = require('./socketService');
 // نفس القائمة المسموحة في agentWorkspaceController — نتائج موثقة فقط تُقبل من العميل
 const ALLOWED_CALL_RESULTS = ['unreached', 'reached', 'busy', 'wrong_number', 'callback'];
 
+// أخطاء تحمل كود HTTP صحيح بدل ضغط كل شيء في 400 (المسارات تستخدم error.statusCode || 400)
+const telephonyError = (message, statusCode = 400) => {
+  const err = new Error(message);
+  err.statusCode = statusCode;
+  return err;
+};
+
 /**
  * دالة تنظيف والتحقق من رقم الهاتف بصيغة E.164 المصرية
  * تمنع الـ Toll Fraud والاتصال بأرقام غير مصرح بها
@@ -121,7 +128,7 @@ class TelephonyService {
       }
     });
     if (recentAttempt) {
-      throw new Error('يرجى الانتظار 20 ثانية بين محاولات الاتصال');
+      throw telephonyError('يرجى الانتظار 20 ثانية بين محاولات الاتصال', 429);
     }
 
     // 2. البحث عن الطلب (سواء كان طلباً مسجلاً، طلب زائر GuestOrder، أو سلة متروكة GuestCart)
@@ -177,7 +184,7 @@ class TelephonyService {
     }
 
     if (!order) {
-      throw new Error('الطلب غير موجود أو غير تابع لشركتك');
+      throw telephonyError('الطلب غير موجود أو غير تابع لشركتك', 404);
     }
 
     const candidatePhone = targetPhone || (isGuest || isCart ? order.guestPhone : order.customerPhone);
@@ -269,17 +276,17 @@ class TelephonyService {
       where: { sessionId }
     });
     if (!callLog) {
-      throw new Error('جلسة المكالمة غير موجودة');
+      throw telephonyError('جلسة المكالمة غير موجودة', 404);
     }
     // الملكية: من بدأ الجلسة هو من ينهيها، والشركة لا تُتجاوز في أي اتجاه
     if (userId && callLog.userId && callLog.userId !== userId) {
-      throw new Error('غير مصرح بتعديل جلسة مكالمة موظف آخر');
+      throw telephonyError('غير مصرح بتعديل جلسة مكالمة موظف آخر', 403);
     }
     if (companyId && callLog.companyId && String(callLog.companyId) !== String(companyId)) {
-      throw new Error('غير مصرح بتعديل هذه الجلسة');
+      throw telephonyError('غير مصرح بتعديل هذه الجلسة', 403);
     }
     if (result && !ALLOWED_CALL_RESULTS.includes(result)) {
-      throw new Error('قيمة نتيجة مكالمة غير صالحة');
+      throw telephonyError('قيمة نتيجة مكالمة غير صالحة', 400);
     }
 
     const duration = Math.max(0, parseInt(durationSeconds, 10) || 0);

@@ -1,5 +1,6 @@
 import React from "react";
 import { CheckCircle2, PhoneOff, Clock, XCircle, PhoneCall } from "lucide-react";
+import { useModalA11y } from "../../hooks/useModalA11y";
 
 interface QuickCallDispositionModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export const QuickCallDispositionModal: React.FC<QuickCallDispositionModalProps>
   onPostpone,
   onCancel,
 }) => {
+  const panelRef = useModalA11y(isOpen, onClose);
   if (!isOpen) return null;
 
   const minutes = Math.floor(durationSeconds / 60);
@@ -35,7 +37,13 @@ export const QuickCallDispositionModal: React.FC<QuickCallDispositionModalProps>
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="w-full max-w-md p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5 text-start">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="توثيق نتيجة المكالمة"
+        className="w-full max-w-md p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5 text-start"
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2.5">
@@ -52,7 +60,9 @@ export const QuickCallDispositionModal: React.FC<QuickCallDispositionModalProps>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="إغلاق نافذة توثيق المكالمة"
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm p-1 rounded-lg"
           >
             ✕

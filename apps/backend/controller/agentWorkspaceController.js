@@ -97,6 +97,28 @@ const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUp
 
 const getWorkspaceStats = async (prisma, companyId, userId, { assignedTo = '', isManager = false } = {}) => {
   const base = { companyId, isActive: true };
+
+  // عدادات شاشة «غير الموزع» تعكس نفس بركة الطلبات المعروضة (pending بلا إسناد نشط)
+  // بدل عدّ الطلبات لكل الفريق — كانت العدادات العلوية لا تطابق محتوى الشاشة
+  if (isManager && assignedTo === 'unassigned') {
+    const [unassignedRegular, unassignedGuest] = await Promise.all([
+      prisma.order.count({ where: { companyId, assignedTo: null, confirmedAt: null, status: 'PENDING' } }),
+      prisma.guestOrder.count({
+        where: { companyId, status: { in: ['pending', 'PENDING'] }, orderAssignments: { none: { isActive: true } } }
+      })
+    ]);
+    let incomplete = 0;
+    if (prisma.guestCart && typeof prisma.guestCart.count === 'function') {
+      try {
+        incomplete = await prisma.guestCart.count({ where: { companyId, checkoutStartedAt: { not: null } } });
+      } catch (_e) {
+        // تجاهل غياب جدول guestCart في بيئات الاختبار
+      }
+    }
+    const poolTotal = unassignedRegular + unassignedGuest;
+    return { total: poolTotal, pending: poolTotal, confirmed: 0, cancelled: 0, followup: 0, incomplete };
+  }
+
   if (isManager && assignedTo && assignedTo !== 'all' && assignedTo !== 'unassigned') {
     base.assignedTo = assignedTo;
   } else if (!isManager || assignedTo === 'me') {

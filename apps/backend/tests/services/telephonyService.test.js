@@ -275,7 +275,7 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
           sessionId: 'call_other_agent',
           durationSeconds: 10
         })
-      ).rejects.toThrow('غير مصرح بتعديل جلسة مكالمة موظف آخر');
+      ).rejects.toMatchObject({ message: 'غير مصرح بتعديل جلسة مكالمة موظف آخر', statusCode: 403 });
       expect(mockPrisma.callAttemptLog.update).not.toHaveBeenCalled();
     });
 
@@ -296,7 +296,7 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
           sessionId: 'call_foreign_company',
           durationSeconds: 10
         })
-      ).rejects.toThrow('غير مصرح بتعديل هذه الجلسة');
+      ).rejects.toMatchObject({ message: 'غير مصرح بتعديل هذه الجلسة', statusCode: 403 });
       expect(mockPrisma.callAttemptLog.update).not.toHaveBeenCalled();
     });
 
@@ -318,7 +318,7 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
           durationSeconds: 10,
           result: 'bogus'
         })
-      ).rejects.toThrow('قيمة نتيجة مكالمة غير صالحة');
+      ).rejects.toMatchObject({ message: 'قيمة نتيجة مكالمة غير صالحة', statusCode: 400 });
       expect(mockPrisma.callAttemptLog.update).not.toHaveBeenCalled();
     });
 

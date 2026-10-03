@@ -1,6 +1,13 @@
 import React from 'react';
 import { ClockIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import { WorkspaceOrder } from './types';
+import {
+  callResultLabel,
+  callResultToneClass,
+  formatCallDuration,
+  formatCallTimestamp,
+  totalCallAttempts,
+} from './callLogFormat';
 
 interface WorkspaceCallHistoryProps {
   order: WorkspaceOrder;
@@ -12,7 +19,7 @@ export const WorkspaceCallHistory: React.FC<WorkspaceCallHistoryProps> = ({
   isArabic,
 }) => {
   const callLogs = order.callLogs || [];
-  const totalCalls = callLogs.length || order.callAttempts || 0;
+  const totalCalls = totalCallAttempts(order, callLogs);
 
   return (
     <section className="border-b border-border/30 py-3">
@@ -29,10 +36,7 @@ export const WorkspaceCallHistory: React.FC<WorkspaceCallHistoryProps> = ({
         {order.lastCallAt && (
           <span className="text-[10px] text-muted-foreground font-mono">
             {isArabic ? 'آخر اتصال:' : 'Last call:'}{' '}
-            {new Date(order.lastCallAt).toLocaleTimeString(isArabic ? 'ar-EG' : 'en-US', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
+            {formatCallTimestamp(order.lastCallAt, isArabic)}
           </span>
         )}
       </div>
@@ -40,18 +44,7 @@ export const WorkspaceCallHistory: React.FC<WorkspaceCallHistoryProps> = ({
       {callLogs.length > 0 ? (
         <div className="space-y-2 mt-2">
           {callLogs.map((log) => {
-            const m = log.durationSeconds ? Math.floor(log.durationSeconds / 60) : 0;
-            const s = log.durationSeconds ? log.durationSeconds % 60 : 0;
-            const durationStr =
-              log.durationSeconds && log.durationSeconds > 0
-                ? m > 0
-                  ? isArabic
-                    ? `${m} د و ${s} ث`
-                    : `${m}m ${s}s`
-                  : isArabic
-                  ? `${s} ث`
-                  : `${s}s`
-                : null;
+            const durationStr = formatCallDuration(log.durationSeconds, isArabic);
 
             return (
               <div
@@ -71,23 +64,18 @@ export const WorkspaceCallHistory: React.FC<WorkspaceCallHistoryProps> = ({
                   <div className="flex items-center gap-2 font-mono text-[11px] tabular-nums text-muted-foreground">
                     {durationStr && (
                       <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 font-bold text-emerald-600 dark:text-emerald-400">
-                        ⏱️ {durationStr}
+                        {durationStr}
                       </span>
                     )}
-                    <span>
-                      {new Date(log.createdAt).toLocaleString(isArabic ? 'ar-EG' : 'en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
+                    <span>{formatCallTimestamp(log.createdAt, isArabic)}</span>
                   </div>
                 </div>
 
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                  <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-foreground">
-                    {log.result}
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${callResultToneClass(log.result)}`}
+                  >
+                    {callResultLabel(log.result, isArabic)}
                   </span>
                   {log.notes && (
                     <span className="text-[11px] text-muted-foreground">{log.notes}</span>
@@ -102,6 +90,13 @@ export const WorkspaceCallHistory: React.FC<WorkspaceCallHistoryProps> = ({
               </div>
             );
           })}
+          {totalCalls > callLogs.length && (
+            <p className="text-[11px] text-muted-foreground">
+              {isArabic
+                ? `يُعرض أحدث ${callLogs.length} محاولة من إجمالي ${totalCalls}`
+                : `Showing latest ${callLogs.length} of ${totalCalls} attempts`}
+            </p>
+          )}
         </div>
       ) : (
         <div className="rounded-md border border-dashed border-border/60 bg-muted/10 p-3 text-center text-xs text-muted-foreground">

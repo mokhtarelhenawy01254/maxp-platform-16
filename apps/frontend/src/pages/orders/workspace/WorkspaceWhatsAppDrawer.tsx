@@ -20,6 +20,7 @@ import {
   WorkspaceWhatsAppMessages,
   ChatMessage,
 } from './WorkspaceWhatsAppMessages';
+import { useModalA11y } from '../../../hooks/useModalA11y';
 
 interface WorkspaceWhatsAppDrawerProps {
   isOpen: boolean;
@@ -44,6 +45,7 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
 }) => {
   const { i18n } = useTranslation();
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
+  const panelRef = useModalA11y(isOpen, onClose);
 
   const [activeSession, setActiveSession] = useState<WhatsAppSession | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -83,13 +85,14 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
     };
   }, [isOpen]);
 
-  // 2. Fetch Conversation Messages for Customer Phone
+  // 2. Fetch Conversation Messages for Customer Phone (وبoll خفيف طول الفتح:
+  //    ردود العميل كانت لا تظهر أبدًا حتى إغلاق الدرج وفتحه من جديد)
   useEffect(() => {
     if (!isOpen || !cleanPhone || !activeSession?.id) return;
 
     let isMounted = true;
-    const loadConversation = async () => {
-      setLoadingMessages(true);
+    const loadConversation = async (silent = false) => {
+      if (!silent) setLoadingMessages(true);
       try {
         const convRes = await apiClient.get('/whatsapp/conversations', {
           params: { search: cleanPhone, limit: 1 },
@@ -112,13 +115,15 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
       } catch (err) {
         console.error('Failed to load conversation messages:', err);
       } finally {
-        if (isMounted) setLoadingMessages(false);
+        if (isMounted && !silent) setLoadingMessages(false);
       }
     };
 
     void loadConversation();
+    const pollId = setInterval(() => void loadConversation(true), 12000);
     return () => {
       isMounted = false;
+      clearInterval(pollId);
     };
   }, [isOpen, cleanPhone, activeSession?.id]);
 
@@ -225,6 +230,10 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
       onClick={onClose}
     >
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={isArabic ? 'محادثة واتساب مع العميل' : 'Customer WhatsApp conversation'}
         className="flex h-full w-full max-w-xl flex-col bg-card shadow-2xl border-s border-border/50 text-foreground"
         onClick={(e) => e.stopPropagation()}
         dir={isArabic ? 'rtl' : 'ltr'}
@@ -271,6 +280,7 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
             <button
               type="button"
               onClick={onClose}
+              aria-label={isArabic ? 'إغلاق محادثة واتساب' : 'Close WhatsApp conversation'}
               className="rounded-md p-1.5 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
             >
               <XMarkIcon className="h-5 w-5" />

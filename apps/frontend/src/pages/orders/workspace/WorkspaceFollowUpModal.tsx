@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useModalA11y } from '../../../hooks/useModalA11y';
 import { WorkspaceOrder } from './types';
 
 interface WorkspaceFollowUpModalProps {
@@ -21,6 +22,7 @@ export const WorkspaceFollowUpModal: React.FC<WorkspaceFollowUpModalProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
+  const panelRef = useModalA11y(Boolean(order), onClose);
 
   if (!order) return null;
 
@@ -39,6 +41,7 @@ export const WorkspaceFollowUpModal: React.FC<WorkspaceFollowUpModalProps> = ({
       onClick={onClose}
     >
       <div
+        ref={panelRef}
         className="w-full max-w-md rounded-xl border border-border/50 bg-card p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >

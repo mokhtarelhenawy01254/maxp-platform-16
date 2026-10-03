@@ -77,7 +77,9 @@ export const WorkspaceCustomerEditor: React.FC<WorkspaceCustomerEditorProps> = (
       await onSaveCustomer(order.id, {
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
-        secondaryPhone: secondaryPhone.trim() || undefined,
+        // سلسلة فارغة صريحة كي يحذف الخادم phone2 من العنوان — undefined كان يتجاهَل
+        // فيبقى الرقم القديم مخزنًا ويظهر من جديد بعد الحفظ
+        secondaryPhone: secondaryPhone.trim(),
         governorate: governorate.trim(),
         city: city.trim(),
         shippingAddress: shippingAddress.trim(),

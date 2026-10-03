@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cancellationService, CancellationReason } from '../../../services/cancellationService';
+import { useModalA11y } from '../../../hooks/useModalA11y';
 import { WorkspaceOrder } from './types';
 
 interface WorkspaceCancelModalProps {
@@ -22,6 +23,7 @@ export const WorkspaceCancelModal: React.FC<WorkspaceCancelModalProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
+  const panelRef = useModalA11y(Boolean(order), onClose);
   const [standardReasons, setStandardReasons] = useState<CancellationReason[]>([]);
   const [loadingReasons, setLoadingReasons] = useState(false);
 
@@ -59,6 +61,7 @@ export const WorkspaceCancelModal: React.FC<WorkspaceCancelModalProps> = ({
       onClick={onClose}
     >
       <div
+        ref={panelRef}
         className="w-full max-w-md rounded-xl border border-border/50 bg-card p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >

@@ -226,6 +226,8 @@ export function useAgentWorkspace() {
     sort?: 'recent' | 'oldest' | 'attempts';
     assignedTo?: string | null;
     search?: string;
+    /** poll خفيف: استبعاد الإحصائيات الثقيلة (6 عدّادات) مع الإبقاء على العدادات المعروضة */
+    withStats?: boolean;
   }) => {
     const {
       silent = false,
@@ -262,9 +264,12 @@ export function useAgentWorkspace() {
       const params: Record<string, string | number> = {
         page: targetPage,
         limit: 50,
-        withStats: 1,
         sort: resolvedSort,
       };
+
+      if (options?.withStats !== false) {
+        params['withStats'] = 1;
+      }
 
       if (resolvedAssignedTo) {
         params['assignedTo'] = resolvedAssignedTo;
@@ -455,9 +460,8 @@ export function useAgentWorkspace() {
           followup: Number(payload.stats.followup) || 0,
           incomplete: Number(payload.stats.incomplete) || 0,
         });
-      } else {
-        setStats(null);
       }
+      // عند الاستبعاد المتعمد للإحصائيات (poll خفيف) نُبقي العدادات السابقة كما هي
 
       setFetchError(null);
     } catch (error: any) {
@@ -494,6 +498,8 @@ export function useAgentWorkspace() {
           res.data.message || (isArabic ? 'تم توزيع الطلبات بنجاح' : 'Orders distributed successfully'),
         );
         await Promise.all([fetchTeamWorkload(), fetchOrders({ silent: true })]);
+      } else {
+        toast.error(extractApiErrorMessage(res.data) || (isArabic ? 'فشل التوزيع التلقائي' : 'Auto distribute failed'));
       }
     } catch (err) {
       toast.error(
@@ -510,6 +516,8 @@ export function useAgentWorkspace() {
       if (res.data?.success) {
         toast.success(isArabic ? 'تم تعيين الطلب بنجاح' : 'Order assigned');
         await Promise.all([fetchTeamWorkload(), fetchOrders({ silent: true })]);
+      } else {
+        toast.error(extractApiErrorMessage(res.data) || (isArabic ? 'فشل تعيين الطلب' : 'Failed to assign order'));
       }
     } catch (err) {
       toast.error(
@@ -577,21 +585,25 @@ export function useAgentWorkspace() {
         const workflowPending =
           (response.data as any)?.data?.workflowStatus === 'pending';
         if (workflowPending) {
+          // الطلب لم يتغير فعليًا — بلا تقديم للطلب التالي وإلا عاد مع الجلب وومض أمام الموظف
           toast.info(t('orders.workspacePendingApproval'));
+          await fetchOrders({ silent: true });
         } else {
           const messages: Record<string, string> = {
             confirm: t('orders.orderConfirmed'),
             cancel: t('orders.orderCancelled'),
           };
           toast.success(messages[action] || t('orders.actionSuccess'));
-        }
 
-        // Instant zero-delay disappearance from active stream
-        advanceToNextOrder(order.id);
-        await Promise.all([
-          fetchOrders({ silent: true }),
-          isManager ? fetchTeamWorkload() : Promise.resolve(),
-        ]);
+          // Instant zero-delay disappearance from active stream
+          advanceToNextOrder(order.id);
+          await Promise.all([
+            fetchOrders({ silent: true }),
+            isManager ? fetchTeamWorkload() : Promise.resolve(),
+          ]);
+        }
+      } else {
+        toast.error(extractApiErrorMessage(response.data) || t('orders.actionFailed'));
       }
     } catch (error) {
       toast.error(extractApiErrorMessage(error) || t('orders.actionFailed'));
@@ -620,6 +632,8 @@ export function useAgentWorkspace() {
         toast.success(t('orders.callLogged'));
         advanceToNextOrder(order.id);
         await fetchOrders({ silent: true });
+      } else {
+        toast.error(extractApiErrorMessage(response.data) || t('orders.logCallFailed'));
       }
     } catch (error) {
       toast.error(extractApiErrorMessage(error) || t('orders.logCallFailed'));
@@ -668,6 +682,8 @@ export function useAgentWorkspace() {
         setFollowUpDateValue('');
         advanceToNextOrder(followUpOrder.id);
         await fetchOrders({ silent: true });
+      } else {
+        toast.error(extractApiErrorMessage(response.data) || t('orders.actionFailed'));
       }
     } catch (error) {
       toast.error(extractApiErrorMessage(error) || t('orders.actionFailed'));
@@ -731,6 +747,10 @@ export function useAgentWorkspace() {
           fetchOrders({ silent: true }),
           isManager ? fetchTeamWorkload() : Promise.resolve(),
         ]);
+      } else {
+        toast.error(
+          extractApiErrorMessage(response.data) || (isArabic ? 'فشل تحويل السلة المتروكة' : 'Failed to convert cart'),
+        );
       }
     } catch (err) {
       toast.error(
@@ -770,6 +790,9 @@ export function useAgentWorkspace() {
             };
           }),
         );
+      } else {
+        // الـ catch أسفل الدالة يعرض الخطأ ويعيد الرمي كي يُبقي المحرر حالته
+        throw new Error(extractApiErrorMessage(response.data) || (isArabic ? 'فشل تحديث منتجات الطلب' : 'Failed to update items'));
       }
     } catch (err) {
       toast.error(extractApiErrorMessage(err) || (isArabic ? 'فشل تحديث منتجات الطلب' : 'Failed to update items'));
@@ -802,6 +825,8 @@ export function useAgentWorkspace() {
             };
           }),
         );
+      } else {
+        throw new Error(extractApiErrorMessage(response.data) || (isArabic ? 'فشل تحديث بيانات العميل' : 'Failed to update customer'));
       }
     } catch (err) {
       toast.error(extractApiErrorMessage(err) || (isArabic ? 'فشل تحديث بيانات العميل' : 'Failed to update customer'));
@@ -813,9 +838,12 @@ export function useAgentWorkspace() {
     void fetchOrders();
     if (isManager) void fetchTeamWorkload();
 
+    let pollTick = 0;
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible' && !isModalOpenRef.current) {
-        void fetchOrders({ silent: true });
+        pollTick += 1;
+        // Poll خفيف: حمولة my-orders فقط — عدّادات الإحصائيات الستة كل 5 دورات (5 دقائق)
+        void fetchOrders({ silent: true, withStats: pollTick % 5 === 0 });
         if (isManager) void fetchTeamWorkload();
       }
     }, 60000);
@@ -866,7 +894,16 @@ export function useAgentWorkspace() {
 
   // البحث خادمي الآن (my-orders و incomplete كلاهما يستقبل search) — لا فلترة محلية فوق
   // النتائج حتى لا تُخفى مطابقات في العنوان أو الملاحظات لا يغطيها الفلتر المحلي.
-  const filteredOrders = orders;
+  // تاب المتابعات يرتتب بالميعاد: الأبقر استحقاقًا أولًا بدل ترتيب assignedAt الخادمي
+  const sortedOrders = useMemo(() => {
+    if (activeTab !== 'followup') return orders;
+    return [...orders].sort((a, b) => {
+      const av = a.followUpDate ? new Date(a.followUpDate).getTime() : Number.POSITIVE_INFINITY;
+      const bv = b.followUpDate ? new Date(b.followUpDate).getTime() : Number.POSITIVE_INFINITY;
+      return av - bv;
+    });
+  }, [orders, activeTab]);
+  const filteredOrders = sortedOrders;
 
   const activeSelectedOrder = useMemo(() => {
     if (!selectedOrderId) {
