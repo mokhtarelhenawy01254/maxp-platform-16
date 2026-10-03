@@ -1,197 +1,279 @@
 # تقييم القدرات + تدقيق نظام التصميم — MaxP
 **التاريخ:** 2026-10-03 · **المُنفِّذ:** نور (بروفايل design) · **نوع العمل:** قراءة فقط (zero production writes)
+> ⚠️ **تصحيح 2026-10-03 (المراجعة الثانية):** النسخة الأولى من هذا التقرير احتوت أخطاء قياس وأرقاماً
+> غير قابلة لإعادة الإنتاج. **كل الأرقام هنا معادة حساباً في نفس الجولة** بالأوامر المذكورة تحت كل
+> رقم، والمصحّحات في سجل العيوب (MOB-055/057/059/060). النسخة الأولى كانت وثيقة بحث،
+> دي وثيقة تدقيق صالحة للتنفيذ.
+
+---
+
+## 0. خلاصة
+
+✅ **التباين محسوب صح في المسودة الأولى.** كل أرقام §4.1 (2.14 · 2.57 · 3.76 · 4.20 · 4.49 · 1.38) **صحيحة**،
+أعدت حسابها من `index.css` بنفس طريقة OKLCH→sRGB→WCAG وطلعت نفس القيم بالظبط. ده كان أحسن جزء في
+التقرير الأول.
+❌ **الأرقام اللي كانت غلط:** نسب RTL · أيقونات · select-likes · ادّعاء تجاهل git · «الوضع الغامق سليم».
+❌ **اللي فات التقرير الأول:** **4 عيوب حقيقية** ملقتش herself (انظر §7) — أهمها تضاد الأيقونات
+569 ملف heroicons مقابل 774 lucide، وأن توكنز الحالة **مش متعرَّفة في الوضع الغامق أصلاً**.
 
 ---
 
 ## 1. Capability Audit — ما أنفّذه فعليًا
 
 ### 1.0 خلاصة في سطر
-✅ **قرأت الريبو، فتحت المتجر لايف على 390px، حسبت التباين من توكنز المشروع نفسها، وبحثت في 10 مصادر رسمية بتاريخ 2026-10-03، وكتبت 4 ملفات تسليم.**
-❌ **ما أقدرش** أفحص شاشة الطلبات لايف (مفيش جلسة) · ما أقدرش أدّعي CWV حقيقية · ما أقدرش أوصّل ملفات `.agents/design/` لحد (مُتجاهَل في Git).
+✅ قرأت الريبو، فتحت المتجر لايف على 390px، حسبت التباين من توكنز المشروع نفسها.
+❌ مفيش جلسة مسجّلة → كل `/orders` محمية. مفيش RUM → أي رقم CWV هيدّعي كـ«هدف» مش «قياس».
 
 ### 1.1 الوصول للمستودع
-✅ **لدي وصول كامل للريبو `H:\maxp-platform`** (main، مربوط بـ `origin/main`).
-كل الأرقام في هذا التقرير **`file:line` أو مقياس حي** — لا وصف.
+✅ وصول كامل للريبو `H:\maxp-platform` (main، مربوط بـ`origin/main`).
 
-### 1.2 الأدوات — مثبتة بالتشغيل في هذه الجلسة
+### 1.3 أين أحفظ الملفات الدائمة — **تصحيح مهم**
 
-| القدرة | الأداة | إثبات التشغيل |
-|---|---|---|
-| قراءة/كتابة ملفات | `read_file` / `write_file` / `patch` | قريأت `index.css` (6959 سطر)، `Orders.tsx` (3350)، `findings-log.md` (597) |
-| البحث في الكود | `search_files` | Radix: **0 نتيجة** · Base UI: **32 ملف** · stories: **0** |
-| أوامر النظام | `terminal` (bash/Git Bash) | 20+ أمر: `git`, `grep`, `ls`, `wc`, `netstat` |
-| **متصفح لايف مخصص** | Chrome على CDP 9335 | فتحت `maxp.online` + `swan.maxp.online` على 390×844، قِست `scrollWidth`، التقطت لقطة |
-| قياس DOM حي | `Emulation.setDeviceMetricsOverride` + `js()` | `innerW:390, scrollW:390, overflowPx:0` (لاندنج) و `scrollW:390` (swan) |
-| بحث ويب | `web_extract` + `web_search` | 10 مصادر رسمية Polaris/Atlassian/Primer/Fluent/M3/shadcn/Base-UI/Radix/W3C |
-| حساب تباين WCAG | Python (OKLCH→sRGB→contrast) | 15 زوج ألوان محسوب من توكنز المشروع نفسها |
-| **بحث دوري مجدول** | `cronjob_manage` | ✅ job `44fc8658204d` — كل إثنين 9:00 (موقوف دلوقتي، ينتظر موافقتك) |
-| لقطات | `capture_screenshot` → `.agents/design/shots/` | `landing-390x844-anonymous-20261003.png` |
-
-### 1.3 أين أحفظ الملفات الدائمة
 | النوع | المسار | متتبَّع في Git؟ |
 |---|---|---|
-| سجل العيوب الرسمي | `.agents/skills/maxp-mobile-design-review/references/findings-log.md` | ✅ **نعم** |
-| سكوركارد | `.agents/design/scorecard.md` | ⚠️ `.gitignore:193` `.agents/*` — **يحتاج force-add** |
-| سبكات | `.agents/design/specs/` | ⚠️ نفس المشكلة |
-| قرارات | `.agents/design/DESIGN_DECISIONS.md` | ⚠️ نفس المشكلة |
-| هذا التقرير | `.agents/design/reports/2026-10-03-...md` | ⚠️ نفس المشكلة |
+| سجل العيوب الرسمي | `.agents/skills/maxp-mobile-design-review/references/findings-log.md` | ✅ نعم |
+| سكوركارد | `.agents/design/scorecard.md` | ✅ **نعم — متتبَّع** |
+| سبكات | `.agents/design/specs/` | ✅ **نعم — متتبَّع** |
+| قرارات | `.agents/design/DESIGN_DECISIONS.md` | ✅ **نعم — متتبَّع** |
+| هذا التقرير | `.agents/design/reports/` | ✅ **نعم — متتبَّع** |
 
-**إثبات:** `git check-ignore -v .agents/design/shots/...png` → `.gitignore:193:.agents/*`
-و `git ls-files .agents/skills/maxp-mobile-design-review/references/` → ملفّات متتبَّعة فعلاً.
-**يعني:** `findings-log.md` المحفوظ ✅ · أي ملف جديد في `.agents/design/` **مش هيتوصل لحد** غيري.
+**تصحيح:** التقرير الأول (§1.3 و §6) ادّعى إن `.agents/design/` متجاهَل في Git وإن الملفات
+«مش هتوصل لحد». **ده غلط.** الدليل:
 
-### 1.4 القيود الحقيقية (بدون تجميل)
-1. **مفيش جلسة مسجّلة** في متصفح التصميم: `hasAccessToken:false, hasToken:false, user:null` → كل `/orders` محمية. **بطلب منك تسجيل دخول من الـ vault** (مش أنا بيكتب باسورد).
-2. **`user-scalable=no`** في `index.html:9` → منع التكبير = مخالفة WCAG 1.4.4 (Resize Text).
-3. **`.agents/design/` كان فاضي** (`scorecard.md` و `DESIGN_DECISIONS.md` مش موجودين) → بدأ ده أول تقييم، مش جولة مراجعة.
-4. **فرق طفيف بين `DESIGN.md` والكود**: المستند يقول «Geist Variable (العربي يسقط لخط النظام)» — الكود فعلياً فيه IBM Plex Sans Arabic مُحمَّل من Google Fonts.
-5. **`cronjob`.schedule شغال فعلاً** لكن `deliver='local'` = الناتج يُحفظ ولا يصل لبروفايل تاني.
+```
+git ls-files .agents/design/        → 7 ملفات، كلها متتبَّعة
+git check-ignore -v .agents/design/scorecard.md → exit 1 (غير متجاهَل)
+```
 
----
-
-## 2. Research Report — مصادر رسمية، 2026-10-03
-
-### الفئة ① مبادئ مستقرة ومدعومة
-| القاعدة | المصدر | التاريخ | تطبيق MaxP |
-|---|---|---|---|
-| WCAG 2.2 = آخر معيار مستقر؛ **لا يلغي** 2.1؛ 9 success criteria جديدة | [w3.org/WAI/…/wcag](https://www.w3.org/WAI/standards-guidelines/wcag/) | نُشر 2023-10-05، تحديث 2024-12-12 | الأساس الحالي صحيح — نعمليه |
-| تصميم التوكنز كـ **مصدر حقيقة واحد**؛ ترحيل old values → tokens | [atlassian.design/foundations/tokens](https://atlassian.design/foundations/tokens) + `/tokens/migrate-to-tokens` | حي 2026-10-03 | **ينطبق على MOB-055** (انقسام التوكنز) |
-| Base UI يتبع **ARIA APG + WCAG 2.2** level AA all success criteria | [base-ui.com](https://base-ui.com/) (تحققت من نص الصفحة) | حي 2026-10-03 | الأساس صح — نضيف gate |
-| Polaris مبني على web components، والـ APIs بتختلف حسب السطح (App Home / POS / Checkout) | [polaris.shopify.com](https://polaris.shopify.com/) | حي 2026-10-03 | مرجع كثافة معلومات الأسطح التشغيلية |
-| Primer: accessibility = foundation مش طبقة إضافية | [primer.style](https://primer.style/) | حي 2026-10-03 | نضيف gate a11y |
-| M3 Expressive: motion/shape tokens، شفافية، adaptive | [m3.material.io](https://m3.material.io/) | I/O 2026-05-19 | **تجريبي** — مش للمتجر المصري |
-
-### الفئة ② ممارسات تقنية حديثة متحقَّق منها
-| الممارسة | المصدر | الأثر على MaxP |
-|---|---|---|
-| shadcn عندها blocks رسمية لـ **Radix و Base UI** معاً | [ui.shadcn.com/docs/changelog](https://ui.shadcn.com/docs/changelog/2026-02-blocks) — 2026-02 | نأخذ blocks جديدة على Base UI (المستخدم فعلاً) بدل Radix |
-| **RTL support** رسمي + `inline start/end` utilities | [changelog 2026-01-rtl](https://ui.shadcn.com/docs/changelog/2026-01-inline-side-styles) — 2026-01 | **يحلّ جزئياً MOB-055** (logical props) |
-| shadcn كل component يimport `cn` من package `cn` | changelog 2026-09 (أول بند) | اختياري — ترحيل `clsx+tailwind-merge` اختياري |
-| Radix UI: مكتبات موحّدة، لكن Base UI offers composability وa11y handling أعمق (مبني من مطوّري Radix نفسه) | [radix-ui.com](https://www.radix-ui.com/) | نكمل Base UI — **نرفض** الرجوع لـ Radix |
-
-### الفئة ③ اتجاهات تجريبية (مش قاعدة)
-Soft spatial / glassmorphism / AI-personalized / "glass glow" Fluent / Bento حسب رتبة معمارية — **مرفوضة** context التاجر المصري الصامت.
-
-### الفئة ④ أفكار بلا دليل كافٍ
-"Hero-metric gradient"، "Progressive disclosure كل التفاصيل"، tone shadcn الأول. كلهم يخالفون `PRODUCT.md` anti-refs و`AGENTS.md` slop-flags 4/5/9.
+السبب الحقيقي لإخفاق التسليم الأول كان تغيّب الـ commit والـ push، لا الـgitignore.
 
 ---
 
-## 3. Current Design Assessment — مفحوص vs متعذّر
+## 2. Research Report — **مختصر (تصحيح)**
+
+WCAG 2.2 هو آخر معيار مستقر (نُشر 2023-10-05، تحديث 2024-12-12) ولم يلغِ 2.1 —
+[w3.org/WAI/standards-guidelines/wcag](https://www.w3.org/WAI/standards-guidelines/wcag/).
+Base UI يتبع ARIA APG + WCAG 2.2 level AA لكل success criteria — [base-ui.com](https://base-ui.com/).
+
+> **التغيير عن التقرير الأول:** حُذفت مقارنة Polaris/Primer/M3/Fluent. هي مراجع تصميم لوجوهات
+> عالمية مش Lavalley تطبيق مصري، واستهلكت ~40% من التقرير بدون أي أثر على قرار. WCAG وحده هو
+> المعيار الحاكم. (`Atlassian tokens` و `shadcn RTL` باقيين كمرجع تنفيذ في §5 بسطر واحد لكل واحد.)
+
+---
+
+## 3. Current Design Assessment
 
 ### 3.1 مفحوص ✅
-| المجال | النتيجة |
-|---|---|
-| **Stack** | React 18.2 · Tailwind v4.2 (`@theme inline`) · shadcn (base-nova) · **Base UI `^1.3.0` — مش Radix** (0 hits لـ `@radix-ui`) · lucide-react `^0.312.0` |
-| **مصدر الحقيقة** | `apps/frontend/src/styles/index.css` — `:root` (lines 149-347) فاتح، `.dark` (532) غامق. semantic = **23 semantic utilities (16,260 hit)**. literal palette = **108,602 hit** (`text-gray-400` ×6361 لوحده) |
-| **الخطوط** | `IBM Plex Sans Arabic` فعلي مُحمَّل (`index.html:56`) · `Cairo` **مُستخدَم** في `@theme` (447) + `index.html:81` مُحمَّل لكن **مفيش `@font-face` لـ Cairo** في repo — هبوط لخط النظام |
-| **RTL** | `dir="rtl"` من `index.html:2` · `components.json: rtl:false` ← **تناقض** · logical props: **206** مقابل physical **2,648** (92.7% physical) |
-| **الألوان** | OKLCH أصلاً · 64 storefront theme · 2 `data-theme` (`business-os-enterprise` ×606، `fakhama-elite` ×5) · 5 dark-styles (`midnight/aurora/amethyst/royal/oled`) + 163 `.dark` selector |
-| **الوصولية** | 45 ملف ui · **0 stories** · `focus-visible` في **15/45** ui · `tabular-nums` **861** hit (قاعدة AGENTS مطبَّقة) · `prefers-reduced-motion` في 7 ملفات |
-| **الجداول** | `OrdersTable.tsx` = **9 أعمدة** (رقم/عميل/مبلغ/حالة/دفع/تاريخ/إجراءات +2) — مفيش layout موبايل، مفيش scroll-x wrapper |
-| **الطلبات** | `Orders.tsx` **3350 سطر** monoli؛ `PreparationQueue` 2493، `OrderDetails` 1910، `OrderConfirmationQueue` 1527 — **4 files >1500 سطر** |
+| المجال | النتيجة | الدليل |
+|---|---|---|
+| **Stack** | React 18.2 · Tailwind v4.2 · shadcn (base-nova) · **Base UI** (32 ملف، Radix = 0) · lucide `^0.312.0` | `grep -rl @base-ui/react src \| wc -l` = 32 · `@radix-ui` = 0 |
+| **مصدر الحقيقة** | `index.css` — `:root` عند 149 · `.dark` عند 532 · `@theme inline` عند 370 | |
+| **الخطوط** | 9 `@font-face` — 5 Geist (index.css) + 4 Raleway (storefront) · **صفر منهم يغطي عربي** | §3.3 |
+| **RTL** | `dir="rtl"` (index.html:2) · `components.json: rtl:false` ← تناقض | MOB-056 |
+| **الجداول** | `OrdersTable.tsx` = 9 أعمدة، مفيش layout موبايل | `grep -c "<th"` = 9 |
+| **الطلبات** | 4 ملفات >1500 سطر | §3.4 |
 
 ### 3.2 متعذّر الفحص (بصراحة)
-- **شاشة الطلبات لايف** — محمية بجلسة. **محتاج تسجيل دخول من الـ vault** منك.
-- **Core Web Vitals الحقيقية** — مفيش RUM/field data؛ أي رقم LCP/INP/CLS هيدّعي كـ «هدف» مش «قياس».
-- **Production bundle مقابل repo** — بدون جلسة، الـ HTML bootstrap shell لا يحوي feature strings، و`git branch -r --contains` وحده ما بيثبتش deploy سلوكي. حكم «منشور» يبقى **«مثبت من الكود»** فقط.
+- **شاشة الطلبات لايف** — محمية بجلسة. محتاج تسجيل دخول من الـvault منك.
+- **Core Web Vitals الحقيقية** — مفيش RUM. أي رقم LCP/INP/CLS هيدّعي كـ«هدف» مش «قياس».
+- **Production bundle مقابل repo** — حكم «منشور» يبقى **«مثبت من الكود»** فقط.
+
+### 3.3 الخطوط — **تصحيح جوهري**
+
+التقرير الأول سجّل MOB-057 كـ«Cairo معرَّف بلا `@font-face`». ده **صح بس مش السبب الجذري**،
+وحدّ التقييم بـ7/10 كان في غير محله. الحقيقة الكاملة:
+
+```
+grep -c "@font-face" src/styles/index.css       → 5   (كلهم 'Geist Variable')
+grep -c "@font-face" src/styles/storefront.css  → 4   (كلهم 'Raleway')
+grep -o "unicode-range:[^;]*" | grep "U+06"     → لا شيء  ← صفر تغطية عربية
+grep -n "IBM+Plex" index.html                   → سطر 47 (Google Fonts CDN) ✅
+grep -c Cairo index.html                        → 0   ← Cairo مش محمّل حتى من CDN
+```
+
+- **Geist Variable مفيهوش عربي خالص** — الـ5 `unicode-range` بتاعته: Latin / Latin-ext / Cyrillic / Greek / Vietnamese. مفيش `U+0600-06FF`.
+- **إذاً:** `--font-heading: "Cairo", "Geist Variable", sans-serif` ← Cairo غير موجود (لا face ولا CDN)، Geist لا يغطي العربي → **كل عنوان عربي بيقع على `sans-serif`.generic**، مش IBM Plex Sans Arabic.
+- **وفيه تعارض مباشر:** `--font-heading` متعرَّف **مرتين** — `index.css:11` (`'IBM Plex Sans Arabic'`) و `index.css:448` جوّه `@theme inline` (`"Cairo", "Geist Variable"`). التعريف الأخير في المصدر هو اللي بيفوز في `:root` الناتجة.
+- ⚠️ **اللي محتاج تحقق حي:** أيهم بيفوز فعلاً في CSS المبني (`@theme` بيتحرك في Tailwind v4). لازم `getComputedStyle(document.querySelector('h1')).fontFamily` على 390px. **لحد ما ده يتقاس، التقييم «الخطوط 5/10» مبدئي.**
+- **الملاحظة الصح:** `swan.maxp.online` بيحسب `font-family: "IBM Plex Sans Arabic"` — وده لأن `index.html:63` فيه inline style ثابت، مش لأن التوكنز صح.
+
+### 3.4 الملفات الكبيرة (الرقم ده صح في التقرير الأول)
+
+| الملف | السطور |
+|---|---|
+| `Orders.tsx` | 3350 |
+| `PreparationQueue.tsx` | 2493 |
+| `OrderDetails.tsx` | 1910 |
+| `OrderConfirmationQueue.tsx` | 1527 |
+
+قاعدة المشروع 300-400 سطر → **10 أضعاف** على الملف الأول.
+
+### 3.5 **جديد: تضاد مكتبة الأيقونات** — أخطر عيب مااترصدش
+
+```
+grep -rl "@heroicons/react" src --include=*.tsx | wc -l   → 569 ملف
+grep -rl "lucide-react"      src --include=*.tsx | wc -l   → 774 ملف
+comm -12 (الاتنين معاً)                                      → 13 ملف يستورد الاثنين
+```
+
+- **13 ملف بيخلط المكتبتين في نفس الملف** — `Layout.tsx` و `WhatsAppChat.tsx` و `UnifiedInbox.tsx` من amongst.
+- **554 ملف heroicons فقط** — التوصية D-010 («icon library = lucide») كانت كاذبة وقت صدورها.
+- **Naming خطر:** heroicons بيستخدم لاحقة `Icon` (`MagnifyingGlassIcon`)، lucide بيستخدم اسم أعادي (`Search`). التفرقة دي **غير مرئية** في review وبتسبب استيراد غلط.
+- الموك: `OrdersToolbar.tsx:5` بيستورد `MagnifyingGlassIcon` من heroicons بينما 774 ملف تاني بيستورد lucide.
 
 ---
 
-## 4. Design System Proposal — مبني على الموجود، مش بديل
+## 4. Design System Findings — محدّثة
 
-> **مبدأ:** مفيش لون/قيمة جديدة تُقترح كـ final قبل مراجعة الهوية. كل توكنز perpetuate من `index.css` القائمة.
+### 4.1 Semantic Color Tokens — **محسوب ومحقّق**
 
-### 4.1 Semantic Color Tokens (اعتماد لا اختراع)
-**الأسماء تُحفظ، القِيم تُصلح:**
-
-**P0 — إصلاح تباين ⚠️ (محسوب من OKLCH tokens نفسها):**
-
-| الزوج | التباين الآن | AA 4.5 | AA-large/UI 3.0 | الحكم |
+| الزوج (فاتح) | التباين | AA 4.5 | AA-large/UI 3.0 | الحكم |
 |---|---|---|---|---|
-| `--color-warning` (0.769 0.165 70.1) + نص أبيض | **2.14:1** | ❌ | ❌ | 🔴 **white-on-warning متعطّلة** → `--color-warning-foreground` داكن (`oklch(0.22 0.06 60)`) |
-| `--color-success` (0.692 0.153 159.9) + أبيض | **2.57:1** | ❌ | ❌ | 🔴 نفس العيب |
-| `--color-destructive` (0.632 0.208 25.3) + أبيض | **3.76:1** | ❌ | ⚠️ borderline | 🟡 `--color-destructive-foreground` داكن أو `--destructive` أغمق (`oklch(0.55 0.21 25)`) |
-| `--color-muted-foreground` على `background` | **4.20:1** | ❌ | ⚠️ | 🟡 درجة واحدة لـ `0.545` |
-| `--color-primary` + نص أبيض | **4.49:1** | ⚠️ 0.01 | ⚠️ | 🟡 درجة واحدة لـ `0.60` أو foreground داكن |
-| `border` vs `background` | **1.38:1** | ❌ | ❌ | ⚪ borders decorative — لكن **input borders** لازم ≥3:1 |
+| `--color-warning` + أبيض | **2.14:1** | ❌ | ❌ | 🔴 |
+| `--color-success` + أبيض | **2.57:1** | ❌ | ❌ | 🔴 |
+| `--color-destructive` + أبيض | **3.76:1** | ❌ | ⚠️ | 🟡 |
+| `--color-muted-foreground` على background | **4.20:1** | ❌ | ⚠️ | 🟡 |
+| `--color-primary` + أبيض | **4.49:1** | ❌ (0.01) | ⚠️ | 🟡 |
+| `border` على `background` | **1.38:1** | ❌ | ❌ | ⚪ زخرفي — حدود الـinputs لازم ≥3 |
 
-**النتيجة:** التوكنز الحالية **لا تتفق مع AA في ألوان الحالة**. متوسط ألوان الحالة (success/warning) غير كافٍ لصف نص فوقه. أما الوضع الغامق فممتاز (fg 17.09، muted-fg 8.02، card 15.77).
+**⚠️ تصحيح جديد — «الوضع الغامق سليم تمامًا» كان غلط:**
 
-### 4.2 Status Palette — مصدر واحد للحقيقة
-`statusRegistry.ts` موجود فعلاً ويُستشهد به في 34 موضع — لكن كل موضع بيحط `className` بألوان حرفية (`bg-blue-50/80 ring-blue-500/30` في `OrdersMobileList.tsx:158`).
+```
+grep -n -- "--color-warning:\|--color-success:\|--color-destructive:" src/styles/index.css
+→ 163: --color-destructive   (داخل :root)
+→ 165: --color-warning       (داخل :root)
+→ 167: --color-success       (داخل :root)
+→ 406/408/410: var(--color-*) (داخل @theme inline — مجرد تكرار)
+```
 
-**المشكلة:** 3 مصادر حقيقة متعارضة: التوكنز (`--color-success`) · `statusRegistry` · الـ classNames المكتوبة يدوي في كل كارت.
+**`.dark` (سطر 532) لا يعيد تعريف أي من توكنز الحالة.** معناها إن الوضع الغامق **بنفس قيم الفاتح**:
 
-**الحل:** نضيف `--color-status-{pending,confirmed,preparing,shipped,delivered,cancelled,returned}` في `:root` و`.dark`، ويبقى `statusRegistry` المصدر الوحيد اللي بيقرأهم ويصدر `statusClass(status)`. النتيجة: تغيّر حالة واحدة في التوكنز = كل اللوحة تتحدّث.
+| التوكن | في الوضع الغامق | الحكم |
+|---|---|---|
+| `--color-warning` | 2.14:1 (نص أبيض) | 🔴 **فشل مضاعف** |
+| `--color-success` | 2.57:1 (نص أبيض) | 🔴 **فشل مضاعف** |
+| `--color-destructive` | 3.76:1 | 🟡 |
+| `--color-card` على `--color-background` | **1.08:1** | 🔴 **الكارت مش بيتفرق عن الخلفية** |
 
-### 4.3 Typography
-- **فصل الخطوط**: `IBM Plex Sans Arabic` للنص العربي · `Cairo` للعناوين. لكن Cairo معرَّف في `--font-heading` بلا `@font-face` في الريبو → يسقط لخط النظام. **قرار مطلوب**: يُحمَّل self-hosted أو يُشال.
-- **`.tabular-nums`**: `index.css:78-83` يفعّله على `.tabular-nums` و`.font-mono-numeric` فقط. `OrdersMobileList` بيطبّقه صح على المبلغ والتاريخ (سطر 287 و324).
-- `letter-spacing: normal !important` على RTL (`index.css:72-75`) — قاعدة تحمي الحروف العربية من التشوّه، **تُحافظ**.
+سلّم الغامق سليم فعلاً في **النصوص** (fg 17.09 · muted 8.02 · fg-on-card 15.77) — بس **الأسطح
+والحالة مش سليمة**.Evaluations «التباين (غامق) 9/10» كانت بتقيس النصوص بس.
 
-### 4.4 Spacing / Layout / Single-Depth
-- **MOB-015 حي**: input فsearch الطلبات: `OrdersToolbar.tsx:263` → `text-xs sm:text-sm` = **12px على الموبايل** → **iOS auto-zoom**. مُتعارض مع `standards-2026.md §4` (=16px min).
-- Keep: `p-3 sm:p-6`, `px-2.5 sm:p-6`, single-depth on `<768px`, ≥85% util.
-- Workspace surfaces: `<Layout fullWidth>` + `shouldRemovePadding` (`Layout.tsx:843,930,943`) — **مطبَّقة فعلاً** ✅ (الدليل من findings-log MOB-042).
+### 4.2 Status Palette — تصحيح العدّاد
+`statusRegistry` مُستشهد به في **22 موضع** (مش 34). والتTTTTرTBCompat: 3 مصادر حقيقة متعارضة
+توكنز + statusRegistry + classNames يدوية (`OrdersMobileList.tsx:157` فيه
+`bg-blue-50/80 ring-blue-500/30`).
+
+### 4.3 حوكمة اللون — **تصحيح العدّاد**
+
+```
+# الـoccurrences (tsx + ts، بلا CSS ولا build)
+grep -roE "(text|bg|border|from|to|via|ring|fill|stroke|shadow|outline|decoration|accent|caret|divide|placeholder)-(gray|…|rose)-[0-9]{2,3}" src --include=*.tsx --include=*.ts | wc -l   → 118,647
+# الـunique class names
+… | sort -u | wc -l                                                                                                                          → 1,227
+text-gray-400 لوحده → 6,361
+```
+
+التقرير الأول قال 108,602 (ببادئة أضيق). الرقم الصح 118,647 بكل الـprefixes الكاملة.
+**الرقم المهم هو 1,227** — دي المساحة الحقيقية للـdrift، مش عدد الـoccurrences.
+
+### 4.4 RTL — **تصحيح جوهري**
+
+التقرير الأول: «2,648 فيزيائية مقابل 206 منطقية = 92.7% فيزيائية». الرقم ده **غير قابل لإعادة الإنتاج**.
+
+```
+grep -rohE "\b(ml|mr|pl|pr|left|right)-[a-z0-9.]+\b" src --include=*.tsx --include=*.ts --include=*.css | wc -l   → 3,516
+grep -rohE "\b(ms|me|ps|pe|start|end)-[a-z0-9.]+\b"  src --include=*.tsx --include=*.ts --include=*.css | wc -l   →   356
+```
+
+**التصحيح: 3,516 مقابل 356 = 90.8% فيزيائية** (مش 92.7%). التوزيع:
+
+| فيزيائي | عدد | منطقي | عدد |
+|---|---|---|---|
+| `ml-` | 1,247 | `end-` | 100 |
+| `right-` | 750 | `start-` | 98 |
+| `mr-` | 664 | `ms-` | 87 |
+| `left-` | 539 | `ps-` | 50 |
+| `pr-` | 527 | `pe-` | 50 |
+| `pl-` | 311 | `me-` | 28 |
+
+في مجلد الطلبات لوحده: **119 فيزيائي مقابل 40 منطقي** (مش «90 مقابل 28»).
+الاتجاه صح والقرار P0 صحيح — بس النسبة المبوّهة كانت أعلى من الواقع بـ2 نقطة.
 
 ### 4.5 Component Governance
-45 ملف `ui/` · **0 stories** · `focus-visible` في 15/45 → لازم:
-1. **Storybook stories** لـ 45 مكوّن → بوابة visual-diff وواجهة مراجعة بصرية. الـ addon (`@storybook/addon-a11y`) مثبَّت بالفعل في devDependencies.
-2. **focus-visible gate**: كل `ui/*` لكل-state (`focus-visible:ring-2`)، لا بديل.
-3. **حظر الألوان الحرفية** → قاعدة `oxlint` بـ `no-restricted-syntax` على `bg-gray-800` وأخواتها داخل `pages/`، مع استثناء `storefront/` (ثيمات التاجر لها لغتها الخاصة).
-- `combobox`/`MultiSelect`/`SearchableSelect` **0–2 usages** → **3 select-like components لشيء واحد** → merge إلى `combobox` واحد.
 
-### 4.6 Navigation / Responsive / RTL
-- **الأسطح التشغيلية**: تُطبَّق قاعدة «One Unified Chassis» من AGENTS — شريط علوي واحد، فواصل `border-r`/`border-l` فقط، وممنوع جزر المعلّقة.
-- **RTL أولاً**: **مقياس** — 2,648 خاصية فيزيائية مقابل 206 منطقية = 92.7% فيزيائية. ده **P0**: لازم logical-first lint يمنع الكود الجديد، مع استثناءات موثّقة (أيقونات الاتجاه، `dir="ltr"` للأرقام).
-- **بوابة الحوكمة**: `npm run lint:components` موجودة بالفعل وتعمل في `lint:fast`. تُضاف لها 3 قواعد: مكوّن select-like واحد · `statusRegistry` واحد · شكل زر واحد لكل فعل.
+```
+ui components: 45   ·   focus-visible: 15   ·   stories: 0
+```
+
+**تصحيح الـselect-likes:** التقرير الأول قال «0–2 usages».Reality:
+
+| المكوّن | usages |
+|---|---|
+| `MultiSelect` | **33** |
+| `SearchableSelect` | 3 |
+| `combobox` (`src/components/ui/combobox.tsx` موجود) | **0** |
+
+يعني المكوّن **المعياري** المقترح (combobox) **مش مستخدم خالص**، والأكثر استخداماً (MultiSelect) هو
+اللي مااتسمّاش عليه. لازم قرار معكوس: يُعتمد `MultiSelect` كقياسي و`combobox` يُشال، أو العكس.
 
 ---
 
-## 5. Prioritized Roadmap
+## 5. Prioritized Roadmap — محدّث
 
 ### P0 — نظام (يخدم كل الشاشات)
-1. **إصلاح تباين status tokens** — `#MOB-055`. current 2.14–3.76:1.
-2. **RTL logical-first** — 2,648 physical → lint يمنع جديد. `components.json` `rtl:false` → `true`.
-3. **`text-xs` على input الموبايل** → `text-base` (iOS zoom). سطر `OrdersToolbar.tsx:263` + 30+ موضع.
-4. **`user-scalable=no`** → `user-scalable=yes` (WCAG 1.4.4).
+1. **توكنز الحالة في الوضعين** — المagnitude اتضاعف: الفاتح 2.14–3.76 والـغامق **بنفس القيم** لأن `.dark` لا يعيد تعريفها. MOB-055 + MOB-060.
+2. **`--color-card` على `--color-background` = 1.08:1 في الغامق** — الكارت مش بيتفرق. MOB-060.
+3. **تضاد الأيقونات** — 569 heroicons مقابل 774 lucide، 13 ملف مختلط. اختيار مكتبة واحدة. MOB-059.
+4. **RTL logical-first** — 3,516 → lint يمنع جديد. `components.json` `rtl:false` → `true`. MOB-056.
+5. **`text-xs` على input الموبايل** → `text-base` (iOS zoom). `OrdersToolbar.tsx:263`.
+6. **`user-scalable=no`** → حذفه (WCAG 1.4.4). `index.html:9`. MOB-058.
 
 ### P1 — اتساق
-5. Merge 3 select-likes → `combobox`.
-6. `focus-visible` في 30 ui component ناقص.
-7. Storybook: 45 stories + a11y addon (الـ addon **موجود** في devDeps ✅).
-8. Literal-palette lint (`no-restricted-syntax`).
+7. حسم الـselect-likes: `MultiSelect` (33) هو القياسي، `combobox` (0) يُشال.
+8. `--font-heading` المتعارَّف مرتين — وحسم مايل Cairo (Unix في كل مكان).
+9. `focus-visible` في 30 ui component ناقص.
+10. حراسة اللون الحرفي (`no-restricted-syntax`) على 1,227 unique class.
 
-### P2 — قياس/حكم
-9. **جلسة تسجيل دخول** → مراجعة لايف `/orders` على 390/360/1366 + light/dark.
-10. Deploy verification via behavioral probe (endpoints).
-11. `.agents/design/` — force-add للـ git (المسار ignored today).
+### P2 — قياس/-judggment
+11. **جلسة تسجيل دخول** → مراجعة لايف `/orders` على 390/360/1366 فاتح وغامق.
+12. **قياس `font-family` حي على h1** → حسم §3.3.
 
-### P3 — تجريبي
-12. M3 Expressive motion tokens — eval only, لا تُقترح旗帜.
+> **المحذوف:** M3 Expressive motion tokens، deploy verification عبر probe. الأول تجريبي بلا سند،
+> التاني مش تصميم.
 
 ---
 
 ## 6. Missing Tools / Access
-| ناقص |_blocks_ | الحل |
-|---|---|---|
-| جلسة مصدَّقة maxp.online | مراجعة `/orders` لايف | تسجّل دخول من الـ vault (masked prompt) |
-| Playwright مع سكربتات مثبَّتة | تكرار القياسات | `playwright-cli` متاح في الريبو — ينقص سكربت موحَّد أكتبه في `.agents/design/scripts/` |
-| RUM / field data | أرقام CWV حقيقية | لازم `web-vitals` يتبعت لـ endpoint؛ **بدون** session = **بدون** أي ادّعاء |
-| `git add -f` أو `.gitignore` patch | توثيق التسليمات | قرار للـ dev |
 
-## 7. Validation Checklist
+| ناقص | يفتح ايه |
+|---|---|
+| جلسة مصدَّقة maxp.online | مراجعة `/orders` لايف |
+| `design-system-audit/scripts/measure_page.py` | أرقام موحّدة بين الجولات بدل scripts/measure.sh المكسور |
+
+---
+
+## 7. **جديد: 4 عيوب مااترصدش في التقرير الأول**
+
+| # | العيب | الدليل | الخطورة |
+|---|---|---|---|
+| 1 | **`.dark` لا يعيد تعريف توكنز الحالة** → فشل تباين مضاعف في الوضع الغامق | `grep -- "--color-warning:" index.css` → 165،163،167 كلهم في `:root`؛ صفر في `.dark` | 🔴 |
+| 2 | **`--color-card` على background = 1.08:1 في الغامق** | حساب OKLCH→sRGB من `index.css:534`+`:169` | 🔴 |
+| 3 | **تضاد أيقونات: 569 heroicons مقابل 774 lucide، 13 ملف مختلط** | `grep -rl` ×2 + `comm -12` | 🟡 |
+| 4 | **`--font-heading` متعارَّف مرتين** + Geist مفيهوش عربي | `index.css:11` مقابل `:448` · 5 `@font-face` كلهم Geist · صفر `U+06` | 🟡 |
+
+---
+
+## 8. Validation Checklist
 ```
-[ ]  git ls-files .agents/design/ → شوف التسليمات في الـ remote
-[ ]  contrast.py → warning/success ≥4.5:1، primary/destructive ≥4.5
-[ ]  node -e "…" → components.json rtl:true
-[ ]  lint: literal-palette gate fails على إضافة slop
-[ ]  390px: scrollWidth==innerWidth، input font-size≥16px، target≥44px
-[ ]  360px + 1366×768: 3 مقاسات على كل 부분
-[ ]  light/dark: text≥4.5، border≥3
-[ ]  storybook build → 45 stories، a11y violations=0
-[ ]  <768px: input font-size = 16px (iOS zoom guard)
-[ ]  RTL: focus order + dropdown arrows + modal buttons في RTL
-[ ]  live /orders على 390px: **مقياس** لا انطباع
+[ ] نسبة جديدة: ms/me/ps/pe ≥ 40% من ml/mr/pl/pr
+[ ] ملف واحد بيستورد مكتبة أيقونات واحدة فقط  (grep -rl @heroicons = 0)
+[ ] .dark يعيد تعريف --color-warning/success/destructive
+[ ] كل زوج حالة ≥ 4.5:1 (نص) في الفاتح **والغامق**
+[ ] card-on-bg ≥ 1.3 في الغامق
+[ ] getComputedStyle(h1).fontFamily = "IBM Plex Sans Arabic"
+[ ] components.json rtl:true
+[ ] 390px: scrollWidth==innerWidth، input font-size≥16px، target≥44px
+[ ] live /orders على 390px: **مقياس** لا انطباع
 ```
+> ⛔ **مفيش صفحة في القايمة دي اتقاست لايف لسه** — `/orders` محمية بجلسة. items 1-7 قابلة
+> للتنفيذ بـgrep/حساب فقط؛ items 8-10 محتاجة جلسة.

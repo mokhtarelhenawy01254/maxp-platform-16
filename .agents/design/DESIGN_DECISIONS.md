@@ -2,6 +2,7 @@
 
 > كل سلوك تصميمي **مختار عمداً** بيتسجل هنا — وبيتشال من أي تقرير عيوب.
 > البند اللي مش موجود هنا = عيب مفتوح في `findings-log.md`.
+> ⚠️ أي بند اتصحّح بيتعلّم عليه **R.** ورقم subscّل.
 
 ---
 
@@ -32,21 +33,28 @@
 ## D-005 · 2026-09-13 · معاينة لاندنج المنتج بملء العرض بلا إطار هاتف وهمي
 
 **القرار:** إلغاء bezel الـ 36px على الموبايل.
-**السبب:** إطار داخل شاشة =_context ضائع 10% من عرض الإنتاج على جهاز حقيقي.
+**السبب:** إطار داخل شاشة = context ضائع 10% من عرض الإنتاج على جهاز حقيقي.
 **الحالة:** ✅ مطبَّق (MOB-047)
 
 ## D-006 · 2026-10-03 · Base UI بدل Radix — اختيار معماري
 
 **القرار:** المشروع على **Base UI `^1.3.0`** (32 ملف) و **مش Radix** (0 استيراد).
-**السبب:** Base UI مبني من مطوّري Radix، يتبع ARIA APG + WCAG 2.2 على مستوى كل success criteria، وكلاهما MIT تجارياً. shadcn عندها blocks للاثنين رسمياً من 2026-02.
-**المرجع:** `apps/frontend/package.json:34` · [base-ui.com](https://base-ui.com/) · [shadcn changelog 2026-02](https://ui.shadcn.com/docs/changelog/2026-02-blocks)
+**السبب:** Base UI مبني من مطوّري Radix، يتبع ARIA APG + WCAG 2.2 على مستوى كل success criteria، وكلاهما MIT تجارياً.
+**المرجع:** `apps/frontend/package.json:34` · [base-ui.com](https://base-ui.com/)
 **ملاحظة:** الدليل الآلي `npm run lint:components` موجود لكنه **لا يمنع** ازدواج select-likes.
 
-## D-007 · 2026-10-03 · IBM Plex Sans Arabic هو خط العربي الفعلي
+## D-007 · 2026-10-03 · ⚠️ **مصحَّح — IBM Plex Sans Arabic هو خط العربي الفعلي**
 
 **القرار:** اعتماد `IBM Plex Sans Arabic` كخط عربي أساسي (body + UI).
-**السبب:** مُحمَّل فعلياً من `index.html:56`، وفيهEvidence حي: `swan.maxp.online` بيحسب `font-family: "IBM Plex Sans Arabic"` على 390px.
-**الملاحظة المهمة:** التوكن `--font-heading: "Cairo"` معرَّف في `index.css:447` لكن **مفيش `@font-face` لـ Cairo في الريبو** — فبيسقط لخط النظام. ده **عيب مذكور** مش قرار: MOB-057.
+**السبب:** مُحمَّل من Google Fonts في `index.html:47`، ومُطبَّق في inline style عند `index.html:63,82`، وفيه دليل حي: `swan.maxp.online` بيحسبه على 390px.
+**المرجع:** `index.css:10-11` (`--font-sans` / `--font-heading`) · `index.html:47,63,82`
+
+> 🔴 **R.1 تصحيح 2026-10-03 — النسخة الأولى من هذا البند كان كاذباً مرتين:**
+> 1. قال «Cairo مُحمَّل من `index.html:56`» — **غلط**: `grep -c Cairo index.html` = **0**. Cairo مش محمّل لا من CDN ولا من `@font-face`.
+> 2. قال «`--font-heading` معرَّف في `index.css:447`» — **ناقص**: هو متعارَّف **مرتين**، `:11` (`'IBM Plex Sans Arabic'`) و `:448` جوّه `@theme inline` (`"Cairo", "Geist Variable"`). **التعريف الثاني هو الأقوى في المصدر.**
+>
+> **النتيجة الحقيقية:** 9 `@font-face` في المشروع كلهم Geist (5) و Raleway (4)، و**صفر منهم يغطي `U+0600-06FF`**. أي نص عربي يعتمد `--font-heading` بيسقط على خط النظام — مش IBM Plex.
+> **تحتاج قياس حي:** `getComputedStyle(h1).fontFamily` على 390px لتحديد أي تعريف بيفوز فعلاً.
 
 ## D-008 · 2026-10-03 · الصفحة العامة للّاندنج خارجة عن نظام اللوحة
 
@@ -56,15 +64,30 @@
 
 ## D-009 · 2026-10-03 · مستوى الأكسنت المقبول في اللوحة
 
-**القرار:** اللوحة تتبع استراتيجية **Restrained** (أكسنت ≤10%). Gradient وglassmorphism ممنوعين كمjaxrent افتراضي.
+**القرار:** اللوحة تتبع استراتيجية **Restrained** (أكسنت ≤10%). Gradient وglassmorphism ممنوعين كوضع افتراضي.
 **السبب:** `.agents/context/DESIGN.md` + قاعدة Anti-AI-Slop.
-**المخالفة المرصودة:** `--journey-accent: oklch(0.55 0.24 290)` (index.css:331) بنفسجي + `--journey-header-gradient` بنفسجي متدرّج — **عيب** لا قرار. MOB-058.
+**المخالفة المرصودة:** `--journey-accent: oklch(0.55 0.24 290)` (`index.css:331`) بنفسجي + `--journey-header-gradient` بنفسجي متدرّج — **عيب** لا قرار. MOB-058.
 
-## D-010 · 2026-10-03 · ستايل shadcn `base-nova` + baseColor `neutral`
+## D-010 · 2026-10-03 · ⚠️ **مصحَّح — shadcn style + baseColor**
 
-**القرار:** shadcn style = `base-nova`، base color = `neutral`، icon library = `lucide`.
-**السبب:** معرَّف في `apps/frontend/components.json:3,9,13` ويشتغل مع Clerked على `@base-ui/react`.
-**مشكلة مرصودة:** `components.json:14 → rtl: false` بينما كل التطبيق `dir="rtl"`. **عيب**: MOB-056.
+**القرار (السليم):** shadcn style = `base-nova`، base color = `neutral`. مُعرَّف في `apps/frontend/components.json:3,9` ويشتغل مع Clerked على `@base-ui/react`.
+**السبب:** مُثبَت في ملف الإعدادات الفعلي.
+
+> 🔴 **R.2 تصحيح 2026-10-03 — الجزء الخاص بالأيقونات كان كاذباً:**
+> البند قال «icon library = `lucide`». **الحقيقة:** المشروع بيستورد **مكتبتين**:
+> - `@heroicons/react` → **569 ملف**
+> - `lucide-react` → **774 ملف**
+> - **13 ملف** بيستورد الاثنين معاً — `Layout.tsx` و`WhatsAppChat.tsx` و`UnifiedInbox.tsx` amongst أمثلة أخرى
+>
+> فـ D-010 **ما فيهش قرار** — فيه واقع. اختيار المكتبة قرار **مطلوب** ومتسجَّل ⛔ كـ MOB-059.
+>
+> **تنبيه مهم:** heroicons بيلحق `Icon` بالاسم (`MagnifyingGlassIcon`)، lucide لا (`Search`) — التفرقة غير مرئية في review وبتسبب import غلط (`OrdersToolbar.tsx:5`).
+
+## D-011 · 2026-10-03 · معيار `MultiSelect` كاختيار مؤجَّل 🆕
+
+> ⛔ **ليس قراراً — بند مفتوح.** الرفع كان اجتهاداً: `MultiSelect` 33 استخدام · `SearchableSelect` 3 ·
+> `combobox` 0 (الملف `src/components/ui/combobox.tsx` موجود ومستخدمش خالص).
+> **محتاج قرار من مختار:** أيهم يبقى المكوّن القياسي. MOB-061.
 
 ---
 
@@ -72,6 +95,8 @@
 
 | # | السؤال | ليه مش قرار بعد |
 |---|---|---|
-| 1 | قيمة `warning/success` في الوضع الفاتح | الأسطح في §4.1 من التقرير: 2.14 و2.57 — ده اختيار هوية |
-| 2 | توحيد `combobox` / `MultiSelect` / `SearchableSelect` | محتاج اختيار المكوّن المعياري |
-| 3 | `.agents/design/` في الجيت | قرار مستودع مش تصميم |
+| 1 | قيمة `warning/success` في الوضع الفاتح | 2.14 و2.57 — اختيار هوية |
+| 2 | 🆕 قيم `warning/success` **في الوضع الغامق** | `.dark` ما فيهاش تعريف أصلاً — ناقص تماماً |
+| 3 | توحيد الـselect-likes | `MultiSelect` هو المنتشر، `combobox` هو القياسي نظرياً — محتاج اختيار |
+| 4 | Cairo: نحمّله self-hosted ولا نشيله من `--font-heading`؟ | التعريفين المتعارفين محتاجين حسم الأول |
+| 5 | 🆕 مكتبة الأيقونات: lucide ولّا heroicons؟ | 569 ملف heroicons = diff ترحيل كبير |

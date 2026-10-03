@@ -136,7 +136,8 @@
 - **الإصلاح المقترح:** إضافة `useEffect` يسمتEscape key ويقفل الـ drawer — أو استخدام Dialog component بسلوك modal كامل.
 - **الحالة:** 🟡 مفتوح (تحت المراجعة — قد يكون مقصود للـ drawer، بس يستحق تأكيد)
 
-### MOB-020 ✅ OrderStatusManager: header buttons + tabs + status cards مكسور على الموبايل
+### MOB-062 ✅ OrderStatusManager: header buttons + tabs + status cards مكسور على الموبايل
+> **تصحيح 2026-10-03:** هذا البند كان مكتوب `MOB-020` بالخطأ — تصادم مع بند «OrderStatusManager». مرقَّم له `MOB-062` لأن التوثيق الخارجي (`backend/docs/storefront/conversion-tools-pages-2026-08-31.md:131`) بيشاور على MOB-020 الأصلي.
 - **الجزء:** اللوحة — `/settings/orders?tab=status` (OrderStatusManager.tsx)
 - **العيب:** 3 مشاكل متتالية:
   1. **Header (line 362)**: `flex items-center justify-between` — العنوان + 2 buttons على نفس الصف، بيتزاحموا على 390px. النتيجة: العنوان بيلف على 3 أسطر والـ buttons بتتخفى/تتقص على حافة الشاشة.
@@ -318,8 +319,9 @@
 | `--color-primary` + أبيض | **4.49:1** | ❌ (0.01 ناقص) | 🟡 |
 | `--color-border` على `--color-background` | **1.38:1** | ❌ | ⚪ زخرفي — لكن حدود الـ inputs لازم ≥3:1 |
 
-- **الدليل:** حساب برمجي من `index.css:150-178` (انظر التقرير `.agents/design/reports/2026-10-03-capability-and-design-system-audit.md` §4.1). الوضع **الغامق سليم تمامًا** (foreground 17.09 · muted-foreground 8.02 · card 15.77).
-- **الإصلاح المقترح (قرار مطلوب قبل التنفيذ):** المحدد في التقرير §4.1 — إمّا نُغمّق قيمة اللون نفسه (`success` → `oklch(0.58 0.15 159.9)`) أو نغيّر `*-foreground` من أبيض إلى داكن. **ده اختيار هوية لوني — محتاج موافقة المختار** (سيؤثّر على كل بادج الحالة في اللوحة).
+- **الدليل:** حساب برمجي من `index.css:150-178` (انظر التقرير `.agents/design/reports/2026-10-03-capability-and-design-system-audit.md` §4.1). النصوص في الوضع **الغامق** سليمة فعلاً (foreground 17.09 · muted-foreground 8.02 · fg-on-card 15.77).
+- 🔴 **تصحيح 2026-10-03:** البند كان يقول «الوضع **الغامق سليم تمامًا**». **غلط** — انظر **MOB-060**: `.dark` لا يعيد تعريف أي توكن حالة، فالوضع الغامق بنفس القيم الفاشلة (2.14 / 2.57). نص الوضع الغامق سليم، **توكنز الحالة لا**.
+- **الإصلاح المقترح (قرار مطلوب قبل التنفيذ):** المحدد في التقرير §4.1 والسبكة `.agents/design/specs/P0-contrast-status-tokens.md` §3 — إمّا نُغمّق قيمة اللون نفسه (`success` → `oklch(0.545 0.145 159.9)`) أو نغيّر `*-foreground` من أبيض إلى داكن، **+ خيار C إجباري: تعريفات غامقة في `.dark`** (لأن تعديل الفاتح وحده يخلق فشل جديد على خلفية غامقة). **ده اختيار هوية لوني — محتاج موافقة المختار**.
 - **الحالة:** 🔴 مفتوح — محتاج قرار
 
 ### MOB-056 🟡 `components.json` فيه `rtl: false` والتطبيق كله RTL
@@ -329,13 +331,18 @@
 - **الإصلاح المقترح:** `"rtl": true` — أو على الأقل توثيق دعم RTL كقاعدة في `DESIGN.md` مع logical properties.
 - **الحالة:** 🟡 مفتوح
 
-### MOB-057 🟡 خط Cairo معرَّف في التوكنز لكن مفيش `@font-face` ليه — يسقط لخط النظام
-- **الجزء:** نظام الخطوط — `apps/frontend/src/styles/index.css:447` (`--font-heading`) و `:181-182`
-- **العيب:** `--font-heading: "Cairo", "Geist Variable", sans-serif` و `--theme-font-heading: "Cairo", …` — لكن `index.css` فيه **5 `@font-face` كلها Geist**، ومفيش ولا واحد لـ Cairo. النتيجة: العناوين ترث `Geist Variable` (أو خط النظام) بدل Cairo.
-- **الدليل:** `grep -c "@font-face" index.css` → 5، كلهم Geist. `find` → مفيش ملف Cairo في `public/assets/files/`.
-- **الإصلاح المقترح:** إمّا (أ) self-host Cairo في `public/assets/files/` مع `@font-face` مثل Geist، أو (ب) شيل Cairo من التوكنز واعتمد IBM Plex Sans Arabic للعناوين. **قرار هوية — محتاج موافقة.**
-- **ملاحظة:** الدليل الحي المؤكد: `swan.maxp.online` بيحسب `font-family: "IBM Plex Sans Arabic"` فعلياً (قياس 390px، 2026-10-03).
-- **الحالة:** 🟡 مفتوح
+### MOB-057 🟡 خط Cairo معرَّف في التوكنز لكن مفيش `@font-face` ليه — ويسقط العربي لخط النظام
+- **الجزء:** نظام الخطوط — `apps/frontend/src/styles/index.css:448` (`--font-heading`) · `:181-182` · `:11`
+- **العيب:**
+  1. `--font-heading: "Cairo", "Geist Variable", sans-serif` — و **Cairo مش محمّل خالص**: `grep -c Cairo index.html` = **0** (مش من Google Fonts ولا من `@font-face`).
+  2. `Geist Variable` — الـ5 `@font-face` بتاعته unicode-ranges: Latin / Latin-ext / Cyrillic / Greek / Vietnamese. **مفيش `U+0600-06FF`.** فمفيش خط عربي واحد معرَّف بـ`@font-face` في المشروع كله (5 Geist في `index.css` + 4 Raleway في `storefront.css`).
+  3. **تعارض مباشر:** `--font-heading` متعرَّف **مرتين** — `index.css:11` (`'IBM Plex Sans Arabic', 'Plus Jakarta Sans'`) و `index.css:448` جوّه `@theme inline` (`"Cairo", "Geist Variable"`). التعريف الثاني الأقوى في ترتيب المصدر.
+- **النتيجة:** أي نص عربي يعتمد `--font-heading` بيشتغل على **خط النظام** (generic sans-serif) — مش IBM Plex Sans Arabic.
+- **الدليل:** `grep -c "@font-face" src/styles/index.css` → 5 · `src/styles/storefront.css` → 4 · `grep -o "unicode-range:[^;]*" | grep "U+06"` → **لا شيء** · `grep -c Cairo index.html` → 0.
+- ⚠️ **يحتاج قياس حي:** `getComputedStyle(document.querySelector('h1')).fontFamily` على 390px لتحديد أي تعريف بيفوز فعلاً في CSS المبني.
+- **ملاحظة صحّة:** `swan.maxp.online` بيحسب `font-family: "IBM Plex Sans Arabic"` — لأن `index.html:63` فيه inline style ثابت، **مش** لأن التوكنز صح.
+- **الإصلاح المقترح:** (أ) احذف `"Cairo"` من التوكنز واعتمد IBM Plex Sans Arabic للعناوين (صفر تحميل جديد)، أو (ب) self-host Cairo في `public/assets/files/` مع `@font-face` عربي. **قرار هوية — محتاج موافقة.**
+- **الحالة:** 🟡 مفتوح — مُصحَّح 2026-10-03 (النسخة الأولى بابت «`@font-face` 5» بدون اكتشاف التعارض)
 
 ### MOB-058 🟡 `user-scalable=no` يمنع تكبير الصفحة — مخالفة WCAG 1.4.4
 - **الجزء:** كل الواجهات — `apps/frontend/index.html:9`
@@ -644,3 +651,53 @@
   4. **هيدر متجاوب وحذف الهوامش الميتة:** تقليص هوامش الصفحة العامة إلى `py-3.5 sm:py-6 px-3 sm:px-6` وضبط مقاس العنوان لـ `text-lg sm:text-2xl`.
 - **الحالة:** ✅ متصلح ومتحقق 2026-09-23
 
+### MOB-059 🟡 مكتبتا أيقونات متضادتان في نفس المشروع — 569 heroicons مقابل 774 lucide
+- **الجزء:** نظام التصميم كله — `apps/frontend/package.json:58,88`
+- **العيب:** المشروع بيستورد **مكتبتين** للأيقونات مع بعض:
+  - `@heroicons/react` (`:58`) → **569 ملف** بيستورده
+  - `lucide-react` (`:88`) → **774 ملف** بيستورده
+  - **13 ملف** بيستورد الاثنين معاً في نفس الملف — `Layout.tsx` · `WhatsAppChat.tsx` · `UnifiedInbox.tsx` amongst أمثلة أخرى
+  
+  المؤثرات البصرية غير متسقة: heroicons outline/solid بأوزان مختلفة، lucide stroke-based بنمط مختلف — نفس الواجهة فيها أسلوبان.
+- **الدليل:**
+  ```
+  grep -rl "@heroicons/react" src --include=*.tsx | wc -l   → 569
+  grep -rl "lucide-react"      src --include=*.tsx | wc -l   → 774
+  comm -12 <(heroicons) <(lucide)                            → 13
+  ```
+- **خطر المراجعة:** heroicons بيلحق `Icon` بالاسم (`MagnifyingGlassIcon`)، lucide لا (`Search`). التفرقة دي **غير مرئية** في review وبتسبب import غلط — مثال: `OrdersToolbar.tsx:5`.
+- **الإصلاح المقترح:** اختيار مكتبة واحدة وترحيل التانية. الترحيل large (569 ملف لو اخترنا lucide) — يُقسَّم على دفعات ولا يتم على دفع وحدها.
+- **الحالة:** 🟡 مفتوح — **قرار مطلوب من مختار** (أيهم؟) — وقد بُني عليه قرار D-10 خاطئ في `DESIGN_DECISIONS.md`
+
+### MOB-060 🔴 `.dark` لا يعيد تعريف توكنز الحالة — فشل تباين مضاعف في الوضع الغامق
+- **الجزء:** نظام التصميم — `apps/frontend/src/styles/index.css` (`:root` عند 149 · `.dark` عند 532)
+- **العيب:** توكنز الحالة **معرَّفة في `:root` فقط** (`:163` destructive · `:165` warning · `:167` success · `:167` success). الـ`.dark` block **ما فيهوش ولا تعريف واحد** لأي منهم. أسطر `406/408/410` مجرد `var(--color-*)` تكرار في `@theme inline` مش تعريف جديد.
+- **النتيجة:** الوضع الغامق بيستخدم **قيم الفاتح الفاشلة بالظبط**:
+  | التوكن | في الغامق | الحكم |
+  |---|---|---|
+  | `--color-warning` + أبيض | **2.14:1** | 🔴 فشل مضاعف |
+  | `--color-success` + أبيض | **2.57:1** | 🔴 فشل مضاعف |
+  | `--color-destructive` + أبيض | **3.76:1** | 🟡 |
+  | `--color-card` على `--color-background` | **1.08:1** | 🔴 الكارت مش بيتفرق عن الخلفية |
+- **الملاحظة:** سلّم **نصوص** الوضع الغامق سليم فعلاً (`--color-foreground` 17.09 · `--color-muted-foreground` 8.02 · fg-on-card 15.77). **اللي فاشل هو أسطح الحالة وحواف الكارت.** التقييم القديم «التباين الغامق 9/10» كان بيقيس النصوص بس.
+- **الدليل:** `grep -n -- "--color-warning:\|--color-success:\|--color-destructive:" src/styles/index.css` → كل التطابقات داخل `:root`، صفر داخل `.dark` · حساب OKLCH→sRGB→WCAG على قيم `.dark` (`:534` foreground، `:169` card).
+- **الإصلاح المقترح:** شوف السبكة `.agents/design/specs/P0-contrast-status-tokens.md` §3 — **الخيار C إجباري مع A أو B**: إضافة تعريفات داكنة مناسبة في `.dark`. تعديل الفاتح وحده بيفشل على خلفية غامقة.
+- **الحالة:** 🔴 مفتوح — مرتبط بـ MOB-055 (القرار اللوني مشترك)
+
+### MOB-061 🟡 المكوّن القياسي للقوائم «combobox» غير مستخدم خالص — المنتشر غيره
+- **ال부분:** نظام التصميم — `apps/frontend/src/components/ui/`
+- **العيب:** **3 مكوّنات** بقوائم من نفس النوع شاطر في واحد:
+  | المكوّن | الاستخدامات |
+  |---|---|
+  | `MultiSelect` | **33** |
+  | `SearchableSelect` | 3 |
+  | `combobox` (الملف موجود) | **0** |
+  
+  يعني المعيار المقترح في التقرير الأول (`combobox`) **مش مستخدم خالص**، واللي شاطر فعلاً هو `MultiSelect` — تسمية بلا قرار.
+- **الدليل:** `grep -rn "<MultiSelect\|from.*MultiSelect" src --include=*.tsx | wc -l` → 33 · `<SearchableSelect>` → 3 · `<combobox` → 0.
+- **الإصلاح المقترح:** اختيار المكوّن القياسي (ترشيح: `MultiSelect` لانتشاره)، استبدال التانية واحدة واحدة، ثم حذف الباقي. **قرار مطلوب** — المكوّن المختار يبقى معيار توليد الكود في `AGENTS.md`.
+- **الحالة:** 🟡 مفتوح — **قرار مطلوب من مختار**
+
+---
+
+*العدد الكلي: 61 بند. محتاجة قرار من مختار: MOB-055 · MOB-057 · MOB-059 · MOB-060 · MOB-061.
