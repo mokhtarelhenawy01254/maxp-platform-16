@@ -15139,7 +15139,10 @@
       "onHold": "On Hold",
       "refunded": "Refunded",
       "partiallyRefunded": "Partially Refunded"
-    }
+    },
+    "noOrderSelected": "No order selected",
+    "selectOrderFromList": "Pick an order from the list to view its details and act on it",
+    "orderItems": "Order items"
   },
   "orderSettings": {
     "title": "Order Settings",

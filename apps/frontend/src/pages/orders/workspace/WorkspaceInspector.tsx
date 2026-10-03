@@ -97,6 +97,8 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
 
   const isConfirmed = order.status === 'CONFIRMED';
   const isCancelled = order.status === 'CANCELLED';
+  // طلب ملغي = قراءة فقط: لا متابعة ولا توثيق اتصال على حالة ميتة
+  const isReadOnly = isCancelled;
   const isBusy = Boolean(busyAction);
 
   const dispositions = [
@@ -134,31 +136,35 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
             </div>
           </div>
 
-          {/* Quick Communication Buttons */}
+          {/* Quick Communication Buttons — تُخفى على الطلب الملغي (قراءة فقط) */}
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsWhatsAppDrawerOpen(true)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 text-xs font-bold text-emerald-600 transition-transform active:scale-[0.98] hover:bg-emerald-500/20 dark:text-emerald-400"
-              title={isArabic ? 'فتح واتساب المنصة (محادثة كاملة، قوالب، إرسال مباشر)' : 'Open Platform WhatsApp'}
-            >
-              <ChatBubbleOvalLeftEllipsisIcon className="h-4 w-4" />
-              <span>{isArabic ? 'واتساب' : 'WhatsApp'}</span>
-            </button>
+            {!isReadOnly && (
+              <button
+                type="button"
+                onClick={() => setIsWhatsAppDrawerOpen(true)}
+                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 text-xs font-bold text-emerald-600 transition-transform active:scale-[0.98] hover:bg-emerald-500/20 dark:text-emerald-400"
+                title={isArabic ? 'فتح واتساب المنصة (محادثة كاملة، قوالب، إرسال مباشر)' : 'Open Platform WhatsApp'}
+              >
+                <ChatBubbleOvalLeftEllipsisIcon className="h-4 w-4" />
+                <span>{isArabic ? 'واتساب' : 'WhatsApp'}</span>
+              </button>
+            )}
 
-            <OrderCallButton
-              orderId={order.id}
-              orderNumber={order.orderNumber}
-              customerName={order.customerName}
-              customerPhone={order.customerPhone}
-              secondaryPhone={order.secondaryPhone}
-              compact={false}
-              onConfirm={() => onConfirm(order)}
-              onNoAnswer={() => onLogCall(order, 'unreached')}
-              onPostpone={() => onOpenFollowUp(order)}
-              onCancel={() => onCancel(order)}
-              onCallFinished={onRefreshOrder}
-            />
+            {!isReadOnly && (
+              <OrderCallButton
+                orderId={order.id}
+                orderNumber={order.orderNumber}
+                customerName={order.customerName}
+                customerPhone={order.customerPhone}
+                secondaryPhone={order.secondaryPhone}
+                compact={false}
+                onConfirm={() => onConfirm(order)}
+                onNoAnswer={() => onLogCall(order, 'unreached')}
+                onPostpone={() => onOpenFollowUp(order)}
+                onCancel={() => onCancel(order)}
+                onCallFinished={onRefreshOrder}
+              />
+            )}
           </div>
         </div>
 
@@ -274,25 +280,27 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
         )}
       </section>
 
-      {/* 3. Instant Call Dispositions (1-Click outcomes) */}
-      <section className="border-b border-border/30 pb-3">
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-          {isArabic ? 'تسجيل نتيجة الاتصال بنقرة واحدة' : 'Instant Call Outcome'}
-        </p>
-        <div className="flex flex-wrap gap-1.5">
-          {dispositions.map((disp) => (
-            <button
-              key={disp.key}
-              type="button"
-              disabled={isBusy}
-              onClick={() => onLogCall(order, disp.key)}
-              className={`rounded-md border border-border/40 bg-background px-2.5 py-1 text-xs font-semibold text-foreground transition-all active:scale-[0.98] disabled:opacity-50 ${disp.color}`}
-            >
-              {disp.label}
-            </button>
-          ))}
-        </div>
-      </section>
+      {/* 3. Instant Call Dispositions (1-Click outcomes) — تُخفى على الملغي */}
+      {!isReadOnly && (
+        <section className="border-b border-border/30 pb-3">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            {isArabic ? 'تسجيل نتيجة الاتصال بنقرة واحدة' : 'Instant Call Outcome'}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {dispositions.map((disp) => (
+              <button
+                key={disp.key}
+                type="button"
+                disabled={isBusy}
+                onClick={() => onLogCall(order, disp.key)}
+                className={`rounded-md border border-border/40 bg-background px-2.5 py-1 text-xs font-semibold text-foreground transition-all active:scale-[0.98] disabled:opacity-50 ${disp.color}`}
+              >
+                {disp.label}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 3.5 Dedicated Call History and Timeline */}
       <WorkspaceCallHistory order={order} isArabic={isArabic} />
@@ -329,7 +337,7 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
             <button
               type="button"
               onClick={() => onOpenFollowUp(order)}
-              disabled={isBusy}
+              disabled={isReadOnly || isBusy}
               className="flex min-h-[38px] items-center justify-center gap-1.5 rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs font-bold text-blue-600 transition-all active:scale-[0.98] hover:bg-blue-500/20 disabled:opacity-50 dark:text-blue-400"
             >
               <CalendarIcon className="h-4 w-4" />
@@ -367,7 +375,7 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
             <button
               type="button"
               onClick={() => onOpenFollowUp(order)}
-              disabled={isBusy}
+              disabled={isReadOnly || isBusy}
               className="flex min-h-[38px] items-center justify-center gap-1.5 rounded-md border border-border/60 bg-background px-3 py-1.5 text-xs font-bold text-foreground transition-all active:scale-[0.98] hover:bg-muted/40 disabled:opacity-50"
             >
               <CalendarIcon className="h-4 w-4" />

@@ -15140,7 +15140,10 @@
       "onHold": "معلق",
       "refunded": "مسترد",
       "partiallyRefunded": "مسترد جزئياً"
-    }
+    },
+    "noOrderSelected": "لا يوجد طلب محدد",
+    "selectOrderFromList": "اختر طلبًا من القائمة لعرض تفاصيله والتعامل معه",
+    "orderItems": "عناصر الطلب"
   },
   "orderSettings": {
     "title": "إعدادات الطلبات",

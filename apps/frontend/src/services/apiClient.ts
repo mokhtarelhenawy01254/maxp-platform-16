@@ -559,6 +559,12 @@ class ApiClient {
   }
 
   private handleError(error: AxiosError<ApiError>): void {
+    // طلبات أُلغيت عمدًا (AbortController عند تبديل تاب/بحث) ليست أخطاء —
+    // اعتراضها هنا كان يطلع توست «canceled» يلزق في واجهة الموظف
+    if (error.code === "ERR_CANCELED" || error.name === "CanceledError") {
+      return;
+    }
+
     const status = error.response?.status;
     const errorData = error.response?.data;
     const originalRequest = error.config as ApiRequestConfig;
