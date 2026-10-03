@@ -1137,8 +1137,8 @@ class OrderWorkflowService {
             try {
                 const countRows = await this.prisma.$queryRawUnsafe(`
                     SELECT COUNT(*)::int as count FROM "OrderStatusHistory" osh
-                    LEFT JOIN "Order" o ON osh."orderId" = o.id
-                    LEFT JOIN "GuestOrder" go ON osh."guestOrderId" = go.id
+                    LEFT JOIN "orders" o ON osh."orderId" = o.id
+                    LEFT JOIN "guest_orders" go ON osh."guestOrderId" = go.id
                     WHERE (o."companyId" = $1 OR go."companyId" = $1)
                     AND osh."oldStatus" IS NOT NULL
                     AND UPPER(osh.status) = UPPER(osh."oldStatus")
@@ -1148,8 +1148,8 @@ class OrderWorkflowService {
 
                 const todayCountRows = await this.prisma.$queryRawUnsafe(`
                     SELECT COUNT(*)::int as count FROM "OrderStatusHistory" osh
-                    LEFT JOIN "Order" o ON osh."orderId" = o.id
-                    LEFT JOIN "GuestOrder" go ON osh."guestOrderId" = go.id
+                    LEFT JOIN "orders" o ON osh."orderId" = o.id
+                    LEFT JOIN "guest_orders" go ON osh."guestOrderId" = go.id
                     WHERE (o."companyId" = $1 OR go."companyId" = $1)
                     AND osh."oldStatus" IS NOT NULL
                     AND UPPER(osh.status) = UPPER(osh."oldStatus")
@@ -1160,8 +1160,8 @@ class OrderWorkflowService {
 
                 const idRows = await this.prisma.$queryRawUnsafe(`
                     SELECT osh.id FROM "OrderStatusHistory" osh
-                    LEFT JOIN "Order" o ON osh."orderId" = o.id
-                    LEFT JOIN "GuestOrder" go ON osh."guestOrderId" = go.id
+                    LEFT JOIN "orders" o ON osh."orderId" = o.id
+                    LEFT JOIN "guest_orders" go ON osh."guestOrderId" = go.id
                     WHERE (o."companyId" = $1 OR go."companyId" = $1)
                     AND osh."oldStatus" IS NOT NULL
                     AND UPPER(osh.status) = UPPER(osh."oldStatus")
