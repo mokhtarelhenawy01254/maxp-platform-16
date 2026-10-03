@@ -42,6 +42,12 @@
                 <action android:name="android.intent.action.PHONE_STATE" />
             </intent-filter>
         </receiver>
+
+        <!-- خدمة أمامية تبقي السوكت والنبض حيين في الخلفية (استقبال أوامر الاتصال) -->
+        <service
+            android:name="online.maxp.app.telephony.TelephonyForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
     </application>
 
     <!-- Permissions -->
@@ -54,6 +60,10 @@
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- targetSdk 34+ يشترطها لنوع connectedDevice -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <!-- شرط تشغيل خدمة connectedDevice على API 34+ (صلاحية عادية تُمنح بالتثبيت) -->
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 </manifest>

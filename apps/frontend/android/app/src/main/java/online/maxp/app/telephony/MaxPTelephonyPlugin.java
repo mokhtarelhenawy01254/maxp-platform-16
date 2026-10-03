@@ -65,6 +65,68 @@ public class MaxPTelephonyPlugin extends Plugin {
         call.resolve(ret);
     }
 
+    /**
+     * تشغيل الخدمة الأمامية: تُبقي عملية التطبيق (والسوكت والنبض) حية في الخلفية
+     * بإشعار دائم — بدونها أندرويد يقتل السوكت بعد إغلاق الشاشة ولا يصل أمر الاتصال.
+     */
+    @PluginMethod
+    public void startTelephonyService(PluginCall call) {
+        try {
+            TelephonyForegroundService.start(getContext());
+            JSObject ret = new JSObject();
+            ret.put("running", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("تعذر تشغيل خدمة الاتصال: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void stopTelephonyService(PluginCall call) {
+        try {
+            TelephonyForegroundService.stop(getContext());
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("تعذر إيقاف خدمة الاتصال: " + e.getMessage());
+        }
+    }
+
+    /** هل التطبيق معفى من تحسين البطارية؟ (إلزامي عمليًا على أجهزة هواوي/شاومي) */
+    @PluginMethod
+    public void isBatteryExempted(PluginCall call) {
+        try {
+            android.os.PowerManager pm = (android.os.PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
+            boolean exempted = pm != null && pm.isIgnoringBatteryOptimizations(getContext().getPackageName());
+            JSObject ret = new JSObject();
+            ret.put("exempted", exempted);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("تعذر فحص إعفاء البطارية: " + e.getMessage());
+        }
+    }
+
+    /** فتح نظام طلب الإعفاء من تحسين البطارية (ضغطة واحدة من الموظف) */
+    @PluginMethod
+    public void requestBatteryExemption(PluginCall call) {
+        try {
+            Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            intent.setData(Uri.parse("package:" + getContext().getPackageName()));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            call.resolve();
+        } catch (Exception e) {
+            // بعض الأجهزة لا تدعم الـ intent المباشر — نسقط لصفحة إعدادات البطارية العامة
+            try {
+                Intent fallback = new Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(fallback);
+                call.resolve();
+            } catch (Exception e2) {
+                call.reject("تعذر فتح إعدادات البطارية: " + e2.getMessage());
+            }
+        }
+    }
+
     @PluginMethod
     public void dialCustomer(PluginCall call) {
         String phone = call.getString("phone");

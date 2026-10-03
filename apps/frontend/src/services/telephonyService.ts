@@ -57,6 +57,10 @@ interface MaxPTelephonyNativePlugin {
     sessionId: string;
     orderId: string;
   }): Promise<{ success: boolean; sessionId: string }>;
+  startTelephonyService(): Promise<{ running: boolean }>;
+  stopTelephonyService(): Promise<void>;
+  isBatteryExempted(): Promise<{ exempted: boolean }>;
+  requestBatteryExemption(): Promise<void>;
   addListener(
     eventName: "callEnded",
     listenerFunc: (data: {
@@ -161,6 +165,29 @@ class TelephonyClientService {
     try {
       this.isAgentInitialized = true;
       const deviceInfo = await MaxPTelephony.getDeviceInfo();
+
+      // الخدمة الأمامية: تُبقي عملية التطبيق (والسوكت والنبض) حية في الخلفية
+      // بإشعار دائم — بدونها أندرويد يقتل الاتصال بعد إغلاق الشاشة ولا يصل أمر الاتصال
+      try {
+        await MaxPTelephony.startTelephonyService();
+      } catch (svcErr) {
+        console.warn("Foreground telephony service failed to start:", svcErr);
+      }
+
+      // إعفاء تحسين البطارية: يُطلب مرة واحدة فقط — أجهزة هواوي/شاومي/أوبو
+      // تقتل التطبيقات الخلفية مهما كانت الخدمة بدون هذه الموافقة اليدوية
+      const EXEMPTION_KEY = "maxp_battery_exemption_requested";
+      try {
+        if (!localStorage.getItem(EXEMPTION_KEY)) {
+          const { exempted } = await MaxPTelephony.isBatteryExempted();
+          if (!exempted) {
+            await MaxPTelephony.requestBatteryExemption();
+          }
+          localStorage.setItem(EXEMPTION_KEY, "1");
+        }
+      } catch (batteryErr) {
+        console.warn("Battery exemption request failed:", batteryErr);
+      }
 
       const sendHeartbeat = async () => {
         try {
