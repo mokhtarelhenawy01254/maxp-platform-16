@@ -112,7 +112,7 @@ export const WorkspaceCustomerEditor: React.FC<WorkspaceCustomerEditorProps> = (
       <div className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-xs text-muted-foreground" dir="ltr">
         <span>{customerPhone || (isArabic ? 'بدون هاتف' : 'No phone')}</span>
         {secondaryPhone && secondaryPhone !== customerPhone && (
-          <span className="inline-flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.2 text-[11px] font-semibold text-foreground">
+          <span className="inline-flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.5 text-[11px] font-semibold text-foreground">
             <span className="text-[10px] text-muted-foreground">{isArabic ? 'بديل:' : 'Alt:'}</span>
             <span>{secondaryPhone}</span>
           </span>

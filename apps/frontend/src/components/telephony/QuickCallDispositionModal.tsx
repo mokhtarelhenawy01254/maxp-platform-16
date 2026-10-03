@@ -42,19 +42,19 @@ export const QuickCallDispositionModal: React.FC<QuickCallDispositionModalProps>
         role="dialog"
         aria-modal="true"
         aria-label="توثيق نتيجة المكالمة"
-        className="w-full max-w-md p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5 text-start"
+        className="w-full max-w-md p-6 bg-card rounded-xl shadow-2xl border border-border/50 space-y-5 text-start"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div className="flex items-center justify-between border-b border-border/40 pb-3">
           <div className="flex items-center gap-2.5">
-            <span className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+            <span className="p-2 rounded-xl bg-primary/10 text-primary">
               <PhoneCall className="w-5 h-5" />
             </span>
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              <h3 className="text-base font-bold text-foreground">
                 توثيق نتيجة المكالمة
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 طلب #{orderNumber} {customerName ? `• ${customerName}` : ""}
               </p>
             </div>
@@ -63,25 +63,25 @@ export const QuickCallDispositionModal: React.FC<QuickCallDispositionModalProps>
             type="button"
             onClick={onClose}
             aria-label="إغلاق نافذة توثيق المكالمة"
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm p-1 rounded-lg"
+            className="text-muted-foreground hover:text-foreground text-sm p-1 rounded-lg"
           >
             ✕
           </button>
         </div>
 
         {/* Telemetry: Official Duration */}
-        <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60">
-          <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+        <div className="flex items-center justify-between p-3.5 rounded-xl bg-muted/40 border border-border/40">
+          <span className="text-xs font-medium text-muted-foreground">
             مدة المكالمة الرسمية (TelephonyManager):
           </span>
-          <span className="text-sm font-bold tabular-nums text-slate-900 dark:text-slate-100">
+          <span className="text-sm font-bold tabular-nums text-foreground">
             {formattedDuration}
           </span>
         </div>
 
         {/* Action Buttons using standard order workflow */}
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+          <p className="text-xs font-semibold text-muted-foreground mb-1">
             اختر نتيجة المكالمة لتحديث حالة الطلب:
           </p>
 
@@ -91,13 +91,13 @@ export const QuickCallDispositionModal: React.FC<QuickCallDispositionModalProps>
               onConfirm();
               onClose();
             }}
-            className="w-full flex items-center justify-between p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-semibold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/50 active:scale-[0.98] transition-all"
+            className="w-full flex items-center justify-between p-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 active:scale-[0.98] transition-all"
           >
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <CheckCircle2 className="w-4 h-4" />
               <span>تم التأكيد وتحديد موعد التوصيل</span>
             </div>
-            <span className="text-xs text-emerald-600 dark:text-emerald-400">تحديث إلى مؤكد</span>
+            <span className="text-xs opacity-80">تحديث إلى مؤكد</span>
           </button>
 
           <button
@@ -106,13 +106,13 @@ export const QuickCallDispositionModal: React.FC<QuickCallDispositionModalProps>
               onNoAnswer();
               onClose();
             }}
-            className="w-full flex items-center justify-between p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 font-semibold text-sm hover:bg-amber-100 dark:hover:bg-amber-900/50 active:scale-[0.98] transition-all"
+            className="w-full flex items-center justify-between p-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-semibold text-sm hover:bg-amber-500/20 active:scale-[0.98] transition-all"
           >
             <div className="flex items-center gap-2">
-              <PhoneOff className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <PhoneOff className="w-4 h-4" />
               <span>العميل لم يرد / مغلق</span>
             </div>
-            <span className="text-xs text-amber-600 dark:text-amber-400">تسجيل محاولة</span>
+            <span className="text-xs opacity-80">تسجيل محاولة</span>
           </button>
 
           <button
@@ -121,13 +121,13 @@ export const QuickCallDispositionModal: React.FC<QuickCallDispositionModalProps>
               onPostpone();
               onClose();
             }}
-            className="w-full flex items-center justify-between p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 font-semibold text-sm hover:bg-blue-100 dark:hover:bg-blue-900/50 active:scale-[0.98] transition-all"
+            className="w-full flex items-center justify-between p-3 rounded-xl border border-border/60 bg-background text-foreground font-semibold text-sm hover:bg-muted/40 active:scale-[0.98] transition-all"
           >
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <Clock className="w-4 h-4 text-muted-foreground" />
               <span>طلب تأجيل الشحن لموعد آخر</span>
             </div>
-            <span className="text-xs text-blue-600 dark:text-blue-400">تأجيل</span>
+            <span className="text-xs text-muted-foreground">تأجيل</span>
           </button>
 
           <button
@@ -136,13 +136,13 @@ export const QuickCallDispositionModal: React.FC<QuickCallDispositionModalProps>
               onCancel();
               onClose();
             }}
-            className="w-full flex items-center justify-between p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 font-semibold text-sm hover:bg-rose-100 dark:hover:bg-rose-900/50 active:scale-[0.98] transition-all"
+            className="w-full flex items-center justify-between p-3 rounded-xl bg-destructive/10 text-destructive border border-destructive/30 font-semibold text-sm hover:bg-destructive/20 active:scale-[0.98] transition-all"
           >
             <div className="flex items-center gap-2">
-              <XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+              <XCircle className="w-4 h-4" />
               <span>طلب العميل إلغاء الطلب</span>
             </div>
-            <span className="text-xs text-rose-600 dark:text-rose-400">إلغاء</span>
+            <span className="text-xs opacity-80">إلغاء</span>
           </button>
         </div>
       </div>

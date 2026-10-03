@@ -123,7 +123,7 @@ export const AgentWorkspace: React.FC = () => {
       <main className="flex min-h-0 flex-1 overflow-hidden">
         {/* Stream Pane (Queue) */}
         <div
-          className={`h-full w-full border-e border-border/40 overflow-hidden md:w-[300px] lg:w-[340px] xl:w-[380px] shrink-0 ${
+          className={`h-full w-full border-e border-border/40 overflow-hidden md:w-[280px] lg:w-[320px] xl:w-[380px] shrink-0 ${
             mobileView === 'inspector' ? 'hidden md:block' : 'block'
           }`}
         >
@@ -182,8 +182,9 @@ export const AgentWorkspace: React.FC = () => {
           />
         </div>
 
-        {/* Right Intelligence Rail */}
-        <div className="hidden h-full w-[260px] lg:w-[280px] xl:w-[320px] shrink-0 overflow-hidden md:block">
+        {/* Right Intelligence Rail — من lg فقط: عند md كان يأكل 260px من مركز
+            التنفيذ فيتبقى له ~205px وتتكسر شبكة الأزرار */}
+        <div className="hidden h-full w-[280px] xl:w-[320px] shrink-0 overflow-hidden lg:block">
           <WorkspaceIntelligenceRail
             order={selectedOrder}
             perspective={perspective}

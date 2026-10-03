@@ -302,7 +302,7 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
             <ChatBubbleOvalLeftEllipsisIcon className="h-4 w-4" />
             <span>{isArabic ? 'المحادثة الحية' : 'Live Chat'}</span>
             {messages.length > 0 && (
-              <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.2 font-mono text-[10px] text-emerald-600">
+              <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[10px] text-emerald-600">
                 {messages.length}
               </span>
             )}
@@ -320,7 +320,7 @@ export const WorkspaceWhatsAppDrawer: React.FC<WorkspaceWhatsAppDrawerProps> = (
             <SparklesIcon className="h-4 w-4" />
             <span>{isArabic ? 'قوالب التأكيد والرسائل' : 'Templates'}</span>
             {templates.length > 0 && (
-              <span className="rounded-full bg-primary/10 px-1.5 py-0.2 font-mono text-[10px] text-primary">
+              <span className="rounded-full bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] text-primary">
                 {templates.length}
               </span>
             )}

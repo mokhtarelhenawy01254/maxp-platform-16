@@ -83,7 +83,7 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
                 <span>{tab.label}</span>
                 {typeof tab.count === 'number' && (
                   <span
-                    className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono tabular-nums ${
+                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-mono tabular-nums ${
                       isActive
                         ? 'bg-primary-foreground/20 text-primary-foreground'
                         : 'bg-muted text-muted-foreground'

@@ -334,6 +334,33 @@ describe('agentWorkspaceController.getMyOrders', () => {
     expect(byId.get('disc').discount).toBe(25);
     expect(byId.get('gdisc').discount).toBe(15);
   });
+
+  test('incomplete counter matches the visible queue: phone-bearing, non-dismissed carts only', async () => {
+    const prismaMock = {
+      orderAssignment: {
+        findMany: jest.fn().mockResolvedValue([]),
+        count: jest.fn().mockResolvedValue(0)
+      },
+      guestCart: {
+        count: jest.fn().mockResolvedValue(4)
+      },
+      cartContactLog: {
+        findMany: jest.fn().mockResolvedValue([{ cartId: 'cart-x' }, { cartId: 'cart-y' }])
+      }
+    };
+    getSharedPrismaClient.mockReturnValue(prismaMock);
+
+    const res = createResponse();
+    await agentWorkspaceController.getMyOrders({ ...baseReq, query: { withStats: 'true' } }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.stats.incomplete).toBe(4);
+    // عدّاد السلات استبعد المستبعدة يدويًا (method=dismissed)
+    const countWhere = prismaMock.guestCart.count.mock.calls[0][0].where;
+    expect(countWhere.checkoutStartedAt).toEqual({ not: null });
+    expect(countWhere.cartId).toEqual({ notIn: ['cart-x', 'cart-y'] });
+    expect(countWhere.AND).toBeDefined();
+  });
 });
 
 describe('agentWorkspaceController.quickAction', () => {

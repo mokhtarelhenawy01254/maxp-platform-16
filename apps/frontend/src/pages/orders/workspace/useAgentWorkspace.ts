@@ -4,6 +4,10 @@ import { useSearchParams } from 'react-router-dom';
 import { apiClient } from '../../../services/apiClient';
 import { useOptionalAuth } from '../../../hooks/useAuthSimple';
 import { toast } from 'sonner';
+import { extractApiErrorMessage } from './apiError';
+import { mapIncompleteCart } from './incompleteCartMapper';
+import { buildQueueParams } from './workspaceQueueParams';
+import { useWorkspaceShortcuts } from './useWorkspaceShortcuts';
 import {
   AgentWorkload,
   FilterTab,
@@ -16,47 +20,6 @@ import {
   WorkspacePagination,
   WorkspaceStats,
 } from './types';
-
-interface ApiErrorShape {
-  response?: {
-    data?: {
-      message?: string;
-      error?: string | { message?: string };
-    };
-  };
-  message?: string;
-}
-
-function extractApiErrorMessage(error: unknown): string | null {
-  const apiError = error as ApiErrorShape;
-  const responseError = apiError.response?.data?.error;
-
-  if (typeof responseError === 'string' && responseError.trim()) {
-    return responseError;
-  }
-
-  if (
-    typeof responseError === 'object' &&
-    responseError !== null &&
-    typeof responseError.message === 'string' &&
-    responseError.message.trim()
-  ) {
-    return responseError.message;
-  }
-
-  if (
-    typeof apiError.response?.data?.message === 'string' &&
-    apiError.response.data.message.trim()
-  ) {
-    return apiError.response.data.message;
-  }
-
-  if (typeof apiError.message === 'string' && apiError.message.trim()) {
-    return apiError.message;
-  }
-
-  return null;
-}
 
 function normalizeWorkspaceTab(value: string | null): FilterTab {
   return WORKSPACE_TAB_KEYS.includes(value as FilterTab)
@@ -261,44 +224,14 @@ export function useAgentWorkspace() {
         setLoading(true);
       }
 
-      const params: Record<string, string | number> = {
-        page: targetPage,
-        limit: 50,
+      const { params, fetchIncomplete } = buildQueueParams({
+        activeTab: activeTabForRequest,
         sort: resolvedSort,
-      };
-
-      if (options?.withStats !== false) {
-        params['withStats'] = 1;
-      }
-
-      if (resolvedAssignedTo) {
-        params['assignedTo'] = resolvedAssignedTo;
-      }
-
-      if (resolvedSearch && resolvedSearch.trim()) {
-        params['search'] = resolvedSearch.trim();
-      }
-
-      switch (activeTabForRequest) {
-        case 'pending':
-          params['status'] = 'PENDING';
-          break;
-        case 'confirmed':
-          params['status'] = 'CONFIRMED';
-          break;
-        case 'cancelled':
-          params['status'] = 'CANCELLED';
-          break;
-        case 'followup':
-          params['followUpOnly'] = 'true';
-          break;
-        case 'all':
-        default:
-          break;
-      }
-
-      const fetchIncomplete =
-        (activeTabForRequest === 'pending' || activeTabForRequest === 'all') && targetPage === 1;
+        assignedTo: resolvedAssignedTo,
+        search: resolvedSearch,
+        page: targetPage,
+        withStats: options?.withStats !== false,
+      });
 
       const [response, incRes] = await Promise.all([
         apiClient.get('/agent-workspace/my-orders', { params, signal }),
@@ -332,78 +265,9 @@ export function useAgentWorkspace() {
 
       // Merge incomplete carts into pending and all queues
       if (incRes?.data?.data && Array.isArray(incRes.data.data)) {
-        const rawCarts: any[] = incRes.data.data;
-        const incompleteOrders: WorkspaceOrder[] = rawCarts
+        const incompleteOrders: WorkspaceOrder[] = (incRes.data.data as any[])
           .filter((cart: any) => cart && (cart.cartId || cart.id))
-          .map((cart: any) => {
-            const cartId = String(cart.cartId || cart.id);
-            const rawItems = Array.isArray(cart.items) ? cart.items : [];
-
-            let cleanAbandonReason = isArabic ? 'سلة متروكة في صفحة الشراء' : 'Abandoned checkout';
-            if (typeof cart.abandonReason === 'string') {
-              cleanAbandonReason = cart.abandonReason;
-            } else if (cart.abandonReason && typeof cart.abandonReason === 'object') {
-              const code = cart.abandonReason.code;
-              if (code === 'partial_shipping') {
-                cleanAbandonReason = isArabic ? 'توقف عند بيانات الشحن (العنوان)' : 'Stopped at shipping address';
-              } else if (code === 'partial_payment') {
-                cleanAbandonReason = isArabic ? 'توقف عند طريقة الدفع' : 'Stopped at payment method';
-              } else if (code) {
-                cleanAbandonReason = `${isArabic ? 'سلة متروكة:' : 'Abandoned:'} ${code}`;
-              }
-            }
-
-            const custName =
-              cart.checkoutData?.customerName ||
-              cart.checkoutData?.guestName ||
-              cart.checkoutData?.name ||
-              (isArabic ? 'عميل محتمل' : 'Lead');
-
-            const custPhone =
-              cart.checkoutData?.customerPhone ||
-              cart.checkoutData?.phone ||
-              '';
-
-            const secPhone =
-              cart.checkoutData?.phone2 ||
-              cart.checkoutData?.alternatePhone ||
-              null;
-
-            return {
-              id: cartId,
-              cartId,
-              orderNumber: `CART-${cartId.slice(-6).toUpperCase()}`,
-              type: 'GUEST',
-              isIncomplete: true,
-              abandonReason: cleanAbandonReason,
-              customerName: custName,
-              customerPhone: custPhone,
-              secondaryPhone: secPhone,
-              governorate: cart.checkoutData?.governorate || '',
-              city: cart.checkoutData?.city || '',
-              shippingAddress: cart.checkoutData?.address || cart.checkoutData?.shippingAddress || '',
-              total: Number(cart.total || 0),
-              subtotal: Number(cart.total || 0),
-              shipping: Number(cart.checkoutData?.shippingCost || 0),
-              discount: Number(cart.checkoutData?.discountAmount || 0),
-              status: 'INCOMPLETE',
-              callAttempts: 0,
-              lastCallAt: null,
-              followUpDate: null,
-              createdAt: cart.checkoutStartedAt || cart.updatedAt || new Date().toISOString(),
-              notes: cart.checkoutData?.notes || '',
-              items: rawItems.map((it: any) => ({
-                productName: it.productName || it.name || (isArabic ? 'منتج' : 'Product'),
-                quantity: Number(it.quantity) || 1,
-                price: Number(it.price || it.basePrice || 0),
-                total: (Number(it.price || it.basePrice || 0)) * (Number(it.quantity) || 1),
-                productColor: it.color || it.productColor || it.attributes?.Color || it.attributes?.color || null,
-                productSize: it.size || it.productSize || it.attributes?.Size || it.attributes?.size || null,
-                productImage: it.image || it.productImage || it.attributes?.image || null,
-              })),
-              attribution: cart.attribution || null,
-            };
-          });
+          .map((cart: any) => mapIncompleteCart(cart, isArabic));
 
         if (incompleteOrders.length > 0) {
           const existingIds = new Set(nextOrders.map((o) => o.id));
@@ -553,8 +417,38 @@ export function useAgentWorkspace() {
         return;
       }
       if (action === 'cancel') {
-        advanceToNextOrder(order.id);
-        toast.info(isArabic ? 'تم استبعاد السلة المتروكة' : 'Incomplete cart dismissed');
+        // استبعاد حقيقي: السبب الإلزامي من المودال يُسجل في cartContactLog
+        // والسلة تُستبعد من القائمة على الخادم — لم تعد تعود مع الـ poll
+        const reason = (explicitNotes ?? '').trim();
+        if (!reason) {
+          toast.error(t('orders.cancellationReasonRequired'));
+          return;
+        }
+
+        setOrderBusyState(order.id, 'cancel');
+        try {
+          const response = await apiClient.post(
+            `/orders-new/incomplete/${order.cartId || order.id}/dismiss`,
+            { reason },
+          );
+          if (response.data?.success) {
+            toast.success(isArabic ? 'تم استبعاد السلة المتروكة' : 'Incomplete cart dismissed');
+            advanceToNextOrder(order.id);
+            await fetchOrders({ silent: true });
+          } else {
+            toast.error(
+              extractApiErrorMessage(response.data) ||
+                (isArabic ? 'فشل استبعاد السلة المتروكة' : 'Failed to dismiss cart'),
+            );
+          }
+        } catch (error) {
+          toast.error(
+            extractApiErrorMessage(error) ||
+              (isArabic ? 'فشل استبعاد السلة المتروكة' : 'Failed to dismiss cart'),
+          );
+        } finally {
+          setOrderBusyState(order.id, null);
+        }
         return;
       }
     }
@@ -692,45 +586,13 @@ export function useAgentWorkspace() {
     }
   };
 
-  // Keyboard shortcuts (j/k, ArrowDown/ArrowUp)
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.target instanceof HTMLInputElement ||
-        event.target instanceof HTMLTextAreaElement ||
-        cancellingOrder ||
-        followUpOrder ||
-        isModalOpen
-      ) {
-        return;
-      }
-
-      if (event.key === 'ArrowDown' || event.key === 'j') {
-        event.preventDefault();
-        setOrders((current) => {
-          if (current.length === 0) return current;
-          const idx = current.findIndex((o) => o.id === selectedOrderId);
-          if (idx !== -1 && idx + 1 < current.length) {
-            setSelectedOrderId(current[idx + 1].id);
-          }
-          return current;
-        });
-      } else if (event.key === 'ArrowUp' || event.key === 'k') {
-        event.preventDefault();
-        setOrders((current) => {
-          if (current.length === 0) return current;
-          const idx = current.findIndex((o) => o.id === selectedOrderId);
-          if (idx > 0) {
-            setSelectedOrderId(current[idx - 1].id);
-          }
-          return current;
-        });
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedOrderId, cancellingOrder, followUpOrder, isModalOpen]);
+  // Keyboard shortcuts (j/k, ArrowDown/ArrowUp) — مع التركيز الفعلي في WorkspaceOrderQueue
+  useWorkspaceShortcuts({
+    orders,
+    selectedOrderId,
+    onSelect: setSelectedOrderId,
+    blocked: Boolean(cancellingOrder || followUpOrder || isModalOpen),
+  });
 
   const handleConvertIncomplete = async (cartId: string) => {
     try {

@@ -320,7 +320,7 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
                     ? 'جارٍ الاعتماد…'
                     : 'Confirming…'
                   : isArabic
-                  ? '⚡ اعتماد وتأكيد الطلب'
+                  ? 'اعتماد وتأكيد الطلب'
                   : 'Confirm Order'}
               </span>
             </button>
@@ -351,7 +351,7 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
               type="button"
               onClick={() => onConfirm(order)}
               disabled={isConfirmed || isCancelled || isBusy}
-              className="flex min-h-[38px] items-center justify-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white transition-all active:scale-[0.98] hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex min-h-[38px] items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-all active:scale-[0.98] hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <CheckCircleIcon className="h-4 w-4" />
               <span>
@@ -367,7 +367,7 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
               type="button"
               onClick={() => onOpenFollowUp(order)}
               disabled={isBusy}
-              className="flex min-h-[38px] items-center justify-center gap-1.5 rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs font-bold text-blue-600 transition-all active:scale-[0.98] hover:bg-blue-500/20 disabled:opacity-50 dark:text-blue-400"
+              className="flex min-h-[38px] items-center justify-center gap-1.5 rounded-md border border-border/60 bg-background px-3 py-1.5 text-xs font-bold text-foreground transition-all active:scale-[0.98] hover:bg-muted/40 disabled:opacity-50"
             >
               <CalendarIcon className="h-4 w-4" />
               <span>{t('orders.scheduleFollowUp')}</span>

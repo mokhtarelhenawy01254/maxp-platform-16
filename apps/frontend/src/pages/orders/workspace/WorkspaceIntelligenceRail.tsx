@@ -4,13 +4,11 @@ import { Link } from 'react-router-dom';
 import {
   ShieldCheckIcon,
   ExclamationTriangleIcon,
-  ClockIcon,
   SparklesIcon,
   ChartBarIcon,
   UserGroupIcon,
 } from '@heroicons/react/24/outline';
 import { PerspectiveMode, WorkspaceOrder, WorkspaceStats } from './types';
-import { callResultLabel, callResultToneClass, formatCallDuration, formatCallTimestamp } from './callLogFormat';
 
 interface WorkspaceIntelligenceRailProps {
   order: WorkspaceOrder | null;
@@ -34,10 +32,11 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
   return (
     <aside className="flex h-full flex-col overflow-y-auto border-s border-border/40 bg-card/60 p-3.5 text-xs">
       {/* ─── Mode 1: Operator / Execution Intelligence ─────────────────────── */}
+      {/* سطح واحد بفواصل شعرية — لا بوكسات داخلية (قاعدة Ergonomic Workspace Design) */}
       {perspective === 'operator' && (
-        <div className="space-y-3.5">
+        <div className="divide-y divide-border/30">
           {/* Customer Risk & Trust Dossier */}
-          <div className="rounded-md border border-border/40 bg-background/80 p-3">
+          <section className="pb-3.5">
             <div className="flex items-center gap-1.5 font-bold text-foreground">
               <ShieldCheckIcon className="h-4 w-4 text-primary" />
               <span>{isArabic ? 'سجل ثقة العميل' : 'Customer Trust Dossier'}</span>
@@ -71,59 +70,11 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
                 </div>
               )}
             </div>
-          </div>
+          </section>
 
-          {/* Call Attempts History Timeline */}
-          <div className="rounded-md border border-border/40 bg-background/80 p-3">
-            <div className="flex items-center gap-1.5 font-bold text-foreground">
-              <ClockIcon className="h-4 w-4 text-primary" />
-              <span>{isArabic ? 'سجل المحاولات السابقة' : 'Call History'}</span>
-            </div>
-
-            <div className="mt-2.5 space-y-2">
-              {order?.callLogs && order.callLogs.length > 0 ? (
-                order.callLogs.map((log) => {
-                  const durationStr = formatCallDuration(log.durationSeconds, isArabic);
-
-                  return (
-                    <div key={log.id} className="border-s-2 border-primary/40 ps-2.5 text-[11px]">
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <span className="font-semibold text-foreground">{log.userName || (isArabic ? 'موظف' : 'Agent')}</span>
-                        <div className="flex items-center gap-1.5 font-mono text-[10px] tabular-nums">
-                          {durationStr && (
-                            <span className="rounded bg-emerald-500/10 px-1 py-0.5 font-bold text-emerald-600 dark:text-emerald-400">
-                              {durationStr}
-                            </span>
-                          )}
-                          <span>{formatCallTimestamp(log.createdAt, isArabic)}</span>
-                        </div>
-                      </div>
-                      <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-muted-foreground">
-                        <span
-                          className={`rounded px-1 py-0.5 text-[10px] font-bold ${callResultToneClass(log.result)}`}
-                        >
-                          {callResultLabel(log.result, isArabic)}
-                        </span>
-                        {log.notes ? <span>{log.notes}</span> : null}
-                      </p>
-                      {log.recordingUrl && (
-                        <div className="mt-1.5">
-                          <audio controls src={log.recordingUrl} className="h-6 w-full" preload="none" />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-[11px] text-muted-foreground">
-                  {isArabic ? 'لا توجد محاولات سابقة مسجلة لهذا الطلب' : 'No previous calls recorded for this order'}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Smart Upsell Script */}
-          <div className="rounded-md border border-border/40 bg-background/80 p-3">
+          {/* Smart Upsell Script — سجل المكالمات يُعرض مرة واحدة في الـ Inspector
+              (كان مرسومًا على لوحين متجاورين بأسلوبين مختلفين) */}
+          <section className="py-3.5">
             <div className="flex items-center gap-1.5 font-bold text-foreground">
               <SparklesIcon className="h-4 w-4 text-amber-500" />
               <span>{isArabic ? 'اقتراح العرض الإضافي' : 'Confirmation Upsell'}</span>
@@ -133,14 +84,14 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
                 ? 'اقترح على العميل قطعة إضافية أو خصم باقة قبل اعتماد الشحن لرفع متوسط قيمة الطلب.'
                 : 'Suggest an additional item or bundle discount to increase average order value.'}
             </p>
-          </div>
+          </section>
         </div>
       )}
 
       {/* ─── Mode 2: Supervisor Operational View ──────────────────────────── */}
       {perspective === 'supervisor' && (
-        <div className="space-y-3.5">
-          <div className="rounded-md border border-border/40 bg-background/80 p-3">
+        <div className="divide-y divide-border/30">
+          <section className="pb-3.5">
             <div className="flex items-center gap-1.5 font-bold text-foreground">
               <ChartBarIcon className="h-4 w-4 text-primary" />
               <span>{isArabic ? 'تيليمتري الطابور الحي' : 'Live Queue Telemetry'}</span>
@@ -164,9 +115,9 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
                 <span className="font-mono font-bold tabular-nums text-rose-600 dark:text-rose-400">{stats?.cancelled || 0}</span>
               </div>
             </div>
-          </div>
+          </section>
 
-          <div className="rounded-md border border-border/40 bg-background/80 p-3">
+          <section className="py-3.5">
             <div className="flex items-center gap-1.5 font-bold text-foreground">
               <UserGroupIcon className="h-4 w-4 text-primary" />
               <span>{isArabic ? 'إدارة توزيع الفريق' : 'Team Distribution'}</span>
@@ -182,7 +133,7 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
             >
               {isArabic ? 'ضبط إعدادات التوزيع ←' : 'Configure Assignment Rules →'}
             </Link>
-          </div>
+          </section>
         </div>
       )}
     </aside>

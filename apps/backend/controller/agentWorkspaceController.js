@@ -95,26 +95,59 @@ const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUp
   return where;
 };
 
+// مطابقة عداد السلات مع قائمة /orders-new/incomplete?hasPhone=true:
+// سلة بدأ checkout فيها ومعها رقم هاتف فعلي في checkoutData، مع استبعاد
+// السلات المستبعدة يدويًا (cartContactLog method=dismissed) — بدل عدّاد يعدّ
+// سلالًا بلا هاتف لا تظهر في القائمة أصلًا
+const countWorkspaceIncompleteCarts = async (prisma, companyId) => {
+  if (!prisma.guestCart || typeof prisma.guestCart.count !== 'function') {
+    return 0;
+  }
+  try {
+    const PHONE_KEYS = ['guestPhone', 'customerPhone', 'phoneNumber', 'mobileNumber', 'phone', 'mobile'];
+    const phoneKeyClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}"` } })) };
+    const emptyPhoneClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}":""` } })) };
+
+    let dismissedCartIds = [];
+    if (prisma.cartContactLog && typeof prisma.cartContactLog.findMany === 'function') {
+      try {
+        const dismissLogs = await prisma.cartContactLog.findMany({
+          where: { companyId, method: 'dismissed' },
+          select: { cartId: true },
+          distinct: ['cartId']
+        });
+        dismissedCartIds = dismissLogs.map((l) => l.cartId);
+      } catch (_dismissError) {
+        // غياب الجدول في بيئات قديمة لا يوقف العدّ
+      }
+    }
+
+    return await prisma.guestCart.count({
+      where: {
+        companyId,
+        checkoutStartedAt: { not: null },
+        AND: [phoneKeyClause, { NOT: emptyPhoneClause }],
+        ...(dismissedCartIds.length ? { cartId: { notIn: dismissedCartIds } } : {})
+      }
+    });
+  } catch (_e) {
+    return 0;
+  }
+};
+
 const getWorkspaceStats = async (prisma, companyId, userId, { assignedTo = '', isManager = false } = {}) => {
   const base = { companyId, isActive: true };
 
   // عدادات شاشة «غير الموزع» تعكس نفس بركة الطلبات المعروضة (pending بلا إسناد نشط)
   // بدل عدّ الطلبات لكل الفريق — كانت العدادات العلوية لا تطابق محتوى الشاشة
   if (isManager && assignedTo === 'unassigned') {
-    const [unassignedRegular, unassignedGuest] = await Promise.all([
+    const [unassignedRegular, unassignedGuest, incomplete] = await Promise.all([
       prisma.order.count({ where: { companyId, assignedTo: null, confirmedAt: null, status: 'PENDING' } }),
       prisma.guestOrder.count({
         where: { companyId, status: { in: ['pending', 'PENDING'] }, orderAssignments: { none: { isActive: true } } }
-      })
+      }),
+      countWorkspaceIncompleteCarts(prisma, companyId)
     ]);
-    let incomplete = 0;
-    if (prisma.guestCart && typeof prisma.guestCart.count === 'function') {
-      try {
-        incomplete = await prisma.guestCart.count({ where: { companyId, checkoutStartedAt: { not: null } } });
-      } catch (_e) {
-        // تجاهل غياب جدول guestCart في بيئات الاختبار
-      }
-    }
     const poolTotal = unassignedRegular + unassignedGuest;
     return { total: poolTotal, pending: poolTotal, confirmed: 0, cancelled: 0, followup: 0, incomplete };
   }
@@ -157,19 +190,7 @@ const getWorkspaceStats = async (prisma, companyId, userId, { assignedTo = '', i
     prisma.orderAssignment.count({ where: followupWhere })
   ]);
 
-  let incomplete = 0;
-  if (prisma.guestCart && typeof prisma.guestCart.count === 'function') {
-    try {
-      incomplete = await prisma.guestCart.count({
-        where: {
-          companyId,
-          checkoutStartedAt: { not: null },
-        }
-      });
-    } catch (_e) {
-      incomplete = 0;
-    }
-  }
+  const incomplete = await countWorkspaceIncompleteCarts(prisma, companyId);
 
   return { total, pending, confirmed, cancelled, followup, incomplete };
 };

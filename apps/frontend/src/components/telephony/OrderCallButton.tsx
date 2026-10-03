@@ -149,10 +149,10 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
           isDialing
             ? "bg-amber-600 text-white animate-pulse"
             : cooldown > 0
-            ? "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700"
+            ? "bg-muted text-muted-foreground cursor-not-allowed border border-border"
             : presence.isOnline
-            ? "bg-indigo-600 hover:bg-indigo-700 text-white"
-            : "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed"
+            ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+            : "bg-muted text-muted-foreground cursor-not-allowed"
         }`}
       >
         {isLoading ? (
@@ -182,7 +182,7 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
           onClick={() => handleStartCall(secondaryPhone || undefined)}
           disabled={isLoading || isDialing || cooldown > 0}
           title={`اتصال بالرقم البديل (${secondaryPhone})`}
-          className="inline-flex h-8 items-center gap-1 rounded-md border border-indigo-500/30 bg-indigo-500/10 px-2 text-xs font-bold text-indigo-600 transition-transform active:scale-[0.98] hover:bg-indigo-500/20 disabled:opacity-50 dark:text-indigo-400"
+          className="inline-flex h-8 items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2 text-xs font-bold text-primary transition-transform active:scale-[0.98] hover:bg-primary/20 disabled:opacity-50"
         >
           <Phone className="w-3 h-3" />
           <span>بديل</span>

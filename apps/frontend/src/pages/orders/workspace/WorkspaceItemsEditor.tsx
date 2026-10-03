@@ -147,10 +147,10 @@ export const WorkspaceItemsEditor: React.FC<WorkspaceItemsEditorProps> = ({
               </p>
               <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 {item.productColor && (
-                  <span className="rounded bg-muted px-1 py-0.2">{item.productColor}</span>
+                  <span className="rounded bg-muted px-1 py-0.5">{item.productColor}</span>
                 )}
                 {item.productSize && (
-                  <span className="rounded bg-muted px-1 py-0.2">{item.productSize}</span>
+                  <span className="rounded bg-muted px-1 py-0.5">{item.productSize}</span>
                 )}
                 <span className="font-mono tabular-nums text-foreground/80">
                   {formatPrice(item.price)}

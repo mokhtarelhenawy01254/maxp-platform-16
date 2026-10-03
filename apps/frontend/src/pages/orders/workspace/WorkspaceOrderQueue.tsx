@@ -205,7 +205,7 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
                       {isArabic ? 'سلة متروكة' : 'Abandoned Cart'}
                     </span>
                   ) : order.type === 'GUEST' ? (
-                    <span className="rounded bg-muted px-1 py-0.2 text-[10px] font-semibold text-muted-foreground">
+                    <span className="rounded bg-muted px-1 py-0.5 text-[10px] font-semibold text-muted-foreground">
                       {t('orders.guest')}
                     </span>
                   ) : null}

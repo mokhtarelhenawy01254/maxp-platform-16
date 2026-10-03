@@ -1767,6 +1767,22 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
       filterClauses.push({ OR: [{ NOT: phoneKeyClause }, emptyPhoneClause] });
     }
 
+    // السلات المستبعدة يدويًا من الورك-سبيس (سجل استبعاد في cartContactLog)
+    // لا تعود للطابور مع التحديث الدوري
+    try {
+      const dismissLogs = await getSharedPrismaClient().cartContactLog.findMany({
+        where: { companyId, method: 'dismissed' },
+        select: { cartId: true },
+        distinct: ['cartId']
+      });
+      const dismissedCartIds = dismissLogs.map((l) => l.cartId);
+      if (dismissedCartIds.length) {
+        filterClauses.push({ cartId: { notIn: dismissedCartIds } });
+      }
+    } catch (_dismissError) {
+      // غياب الجدول في بيئات قديمة لا يوقف القائمة
+    }
+
     // last activity = most recent of checkoutUpdatedAt / checkoutStartedAt / updatedAt
     // (matches the per-row isLost computation in the data mapping below)
     const activeClause = {
@@ -2771,6 +2787,57 @@ router.post('/incomplete/:cartId/contact', verifyToken.authenticateToken, async 
   } catch (error) {
     console.error('❌ Error logging incomplete cart contact:', error.message);
     return res.status(500).json({ success: false, message: 'خطأ في تسجيل محاولة التواصل' });
+  }
+});
+
+// استبعاد سلة متروكة من طابور الورك-سبيس — السبب إلزامي ويُحفظ في السجل
+router.post('/incomplete/:cartId/dismiss', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'غير مصرح - يجب تسجيل الدخول' });
+    }
+
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const cartId = (req.params.cartId || '').toString().trim();
+    if (!cartId) {
+      return res.status(400).json({ success: false, message: 'معرف السلة مطلوب' });
+    }
+
+    const reason = (req.body?.reason || '').toString().trim().slice(0, 500);
+    if (!reason) {
+      return res.status(400).json({ success: false, message: 'سبب الاستبعاد مطلوب' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const cart = await prisma.guestCart.findFirst({ where: { cartId, companyId }, select: { id: true } });
+    if (!cart) {
+      return res.status(404).json({ success: false, message: 'السلة غير موجودة' });
+    }
+
+    const log = await prisma.cartContactLog.create({
+      data: {
+        cartId,
+        companyId,
+        employeeId: req.user.id || null,
+        employeeName: req.user.name || req.user.username || req.user.email || null,
+        method: 'dismissed',
+        result: 'dismissed',
+        note: reason,
+      },
+      select: { id: true, cartId: true, createdAt: true }
+    });
+
+    return res.json({ success: true, message: 'تم استبعاد السلة المتروكة', data: log });
+  } catch (error) {
+    console.error('❌ Error dismissing incomplete cart:', error.message);
+    return res.status(500).json({ success: false, message: 'خطأ في استبعاد السلة' });
   }
 });
 
