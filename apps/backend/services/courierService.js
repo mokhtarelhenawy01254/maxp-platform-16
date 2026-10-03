@@ -598,6 +598,10 @@ async function getDeliveryRunById(companyId, runId) {
     mobileToken = jwt.sign(
       {
         role: 'COURIER',
+        // verifyToken requires a subject (id/userId) BEFORE dispatching to the COURIER
+        // branch — without it every mobile link 401s with INVALID_TOKEN_PAYLOAD
+        id: run.courierId,
+        userId: run.courierId,
         courierId: run.courierId,
         runId: run.id,
         companyId: run.companyId
