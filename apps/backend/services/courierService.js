@@ -4,6 +4,18 @@ const { getJwtSecret } = require('../utils/jwtSecret');
 
 const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'REMITTED'];
 
+// Field-facing statuses a courier may set — anything else is rejected instead of stored verbatim
+const ALLOWED_FIELD_STATUSES = ['DELIVERED', 'PARTIALLY_DELIVERED', 'COMPLETED', 'REMITTED', 'RETURNED', 'FAILED', 'DELAYED'];
+
+// Run states whose shipments are financially or operationally closed
+const LOCKED_RUN_STATUSES = ['SETTLED', 'CANCELLED'];
+
+const serviceError = (message, statusCode) => {
+  const err = new Error(message);
+  if (statusCode) err.statusCode = statusCode;
+  return err;
+};
+
 const normalizeAmount = (value) => {
   const num = Number(value);
   return Number.isFinite(num) ? num : 0;
@@ -12,10 +24,12 @@ const normalizeAmount = (value) => {
 /**
  * List couriers with live performance metrics and pending custody
  */
-async function listCouriers(companyId, { search, status, isActive } = {}) {
+async function listCouriers(companyId, { search, status, isActive, restrictToCourierId } = {}) {
   const prisma = getSharedPrismaClient();
 
   const where = { companyId };
+  // Field couriers may only ever see their own record
+  if (restrictToCourierId) where.id = restrictToCourierId;
   if (typeof isActive === 'boolean') {
     where.isActive = isActive;
   }
@@ -330,6 +344,22 @@ async function createDeliveryRun(companyId, { courierId, shipmentIds, orderIds, 
     include: { order: { select: { id: true, total: true, status: true } } }
   });
 
+  // A shipment whose cash was already collected and remitted must never enter a new run —
+  // otherwise it would be collected a second time. Delivered/cancelled shipments are closed too.
+  const unassignable = shipments.filter(
+    (s) =>
+      s.settlementStatus === 'SETTLED' ||
+      DELIVERED_STATUSES.includes(s.status) ||
+      s.status === 'CANCELLED'
+  );
+  if (unassignable.length > 0) {
+    const samples = unassignable
+      .slice(0, 5)
+      .map((s) => s.order?.orderNumber || s.id)
+      .join('، ');
+    throw serviceError(`لا يمكن إسناد شحنات مسوّاة ماليًا أو منتهية لرحلة جديدة: ${samples}`, 400);
+  }
+
   const totalCODExpected = shipments.reduce(
     (sum, s) => sum + normalizeAmount(s.order?.total),
     0
@@ -550,22 +580,39 @@ async function getDeliveryRunById(companyId, runId) {
 
 /**
  * Field Update: Courier records delivery attempt (Full delivery, partial, delay, or return)
+ * - runId and courierId (when the caller is a field courier) are enforced as ownership filters
+ * - shipments of SETTLED/CANCELLED runs are locked
  */
-async function updateDeliveryRunShipment(companyId, { shipmentId, status, collectedAmount, deliveryNotes, userId }) {
+async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status, collectedAmount, deliveryNotes, userId, courierId }) {
   const prisma = getSharedPrismaClient();
 
+  const normalizedStatus = String(status || '').toUpperCase();
+  if (!ALLOWED_FIELD_STATUSES.includes(normalizedStatus)) {
+    throw serviceError(`حالة تسليم غير معروفة: ${normalizedStatus || '(فارغة)'}`, 400);
+  }
+
   const shipment = await prisma.shipment.findFirst({
-    where: { id: shipmentId, companyId },
+    where: {
+      id: shipmentId,
+      companyId,
+      ...(runId ? { deliveryRunId: runId } : {}),
+      ...(courierId ? { courierId } : {})
+    },
     include: { order: true, deliveryRun: true }
   });
 
   if (!shipment) {
-    throw new Error('الشحنة غير موجودة');
+    throw serviceError('الشحنة غير موجودة أو لا تتبع هذه المأمورية', 404);
   }
 
-  const normalizedStatus = String(status || '').toUpperCase();
+  if (
+    shipment.settlementStatus === 'SETTLED' ||
+    LOCKED_RUN_STATUSES.includes(shipment.deliveryRun?.status || '')
+  ) {
+    throw serviceError('لا يمكن تعديل شحنة بعد تسويتها ماليًا أو إلغاء مأموريتها', 409);
+  }
+
   const updateData = {
-    status: normalizedStatus,
     deliveryNotes: deliveryNotes?.trim() || shipment.deliveryNotes
   };
 
@@ -573,12 +620,18 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, status, collec
 
   if (isDelivered) {
     updateData.status = 'DELIVERED';
-    updateData.collectedAmount = collectedAmount !== undefined ? normalizeAmount(collectedAmount) : normalizeAmount(shipment.order?.total);
+    const orderTotal = normalizeAmount(shipment.order?.total);
+    let cash = collectedAmount !== undefined ? normalizeAmount(collectedAmount) : orderTotal;
+    // Collected cash can neither be negative nor exceed the order total
+    cash = Math.max(0, orderTotal > 0 ? Math.min(cash, orderTotal) : cash);
+    updateData.collectedAmount = cash;
     updateData.collectedAt = new Date();
   } else if (normalizedStatus === 'RETURNED' || normalizedStatus === 'FAILED') {
     updateData.status = 'RETURNED';
-    updateData.collectedAmount = 0;
-  } else if (normalizedStatus === 'DELAYED') {
+    const priorCollected = normalizeAmount(shipment.collectedAmount);
+    // Never silently erase cash already collected — it stays on the shipment for reconciliation
+    updateData.collectedAmount = priorCollected > 0 ? priorCollected : 0;
+  } else {
     updateData.status = 'DELAYED';
   }
 
@@ -608,10 +661,20 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, status, collec
           ...(customStatusCode ? { customStatusCode } : {})
         }
       });
+
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: shipment.orderId,
+          status: orderStatus,
+          oldStatus: shipment.order?.status || null,
+          changedBy: userId || null,
+          reason: `تحديث ميداني للشحنة عبر أسطول المناديب: ${updateData.status}`
+        }
+      });
     }
 
     // If all shipments in delivery run are resolved, check if run can be marked COMPLETED
-    if (shipment.deliveryRunId) {
+    if (shipment.deliveryRunId && !LOCKED_RUN_STATUSES.includes(shipment.deliveryRun?.status || '')) {
       const remainingPending = await tx.shipment.count({
         where: {
           deliveryRunId: shipment.deliveryRunId,
@@ -652,12 +715,30 @@ async function settleDeliveryRun(companyId, runId, { treasuryAccountId, actualCa
   }
 
   if (run.status === 'SETTLED') {
-    throw new Error('تمت تسوية هذه الوردية وتوريدها بالفعل سابقاً');
+    throw serviceError('تمت تسوية هذه الوردية وتوريدها بالفعل سابقاً', 409);
   }
 
   const cashAmount = normalizeAmount(actualCashReceived);
 
   return prisma.$transaction(async (tx) => {
+    // Claim the run atomically BEFORE any money moves — two concurrent settles can never
+    // both pass: only the first updateMany matching status != SETTLED flips the row.
+    const claimed = await tx.deliveryRun.updateMany({
+      where: { id: run.id, companyId, status: { notIn: ['SETTLED'] } },
+      data: {
+        status: 'SETTLED',
+        settledAt: new Date(),
+        settledBy: userId || null,
+        totalCODCollected: cashAmount,
+        notes: notes?.trim() || run.notes,
+        treasuryAccountId: treasuryAccountId || null
+      }
+    });
+
+    if (claimed.count === 0) {
+      throw serviceError('تمت تسوية هذه الوردية وتوريدها بالفعل سابقاً', 409);
+    }
+
     let treasuryTransaction = null;
 
     // 1. If Treasury Account is provided and cash is received, deposit into TreasuryAccount
@@ -697,9 +778,8 @@ async function settleDeliveryRun(companyId, runId, { treasuryAccountId, actualCa
     }
 
     // 2. Mark all delivered shipments in this run as SETTLED
-    const deliveredShipmentIds = run.shipments
-      .filter((s) => DELIVERED_STATUSES.includes(s.status))
-      .map((s) => s.id);
+    const deliveredShipments = run.shipments.filter((s) => DELIVERED_STATUSES.includes(s.status));
+    const deliveredShipmentIds = deliveredShipments.map((s) => s.id);
 
     if (deliveredShipmentIds.length > 0) {
       await tx.shipment.updateMany({
@@ -711,29 +791,38 @@ async function settleDeliveryRun(companyId, runId, { treasuryAccountId, actualCa
         }
       });
 
-      // Update corresponding orders paymentStatus to PAID
-      const deliveredOrderIds = run.shipments
-        .filter((s) => DELIVERED_STATUSES.includes(s.status) && s.orderId)
+      // Order payment status must reflect what was actually collected, not blindly mark PAID:
+      // full collection → COMPLETED, partial collection → PARTIALLY_PAID, nothing → untouched.
+      const fullyCollectedOrderIds = deliveredShipments
+        .filter((s) => s.orderId && normalizeAmount(s.collectedAmount) >= normalizeAmount(s.order?.total))
+        .map((s) => s.orderId);
+      const partiallyCollectedOrderIds = deliveredShipments
+        .filter((s) => {
+          if (!s.orderId) return false;
+          const collected = normalizeAmount(s.collectedAmount);
+          return collected > 0 && collected < normalizeAmount(s.order?.total);
+        })
         .map((s) => s.orderId);
 
-      if (deliveredOrderIds.length > 0) {
+      if (fullyCollectedOrderIds.length > 0) {
         await tx.order.updateMany({
-          where: { id: { in: deliveredOrderIds } },
+          where: { id: { in: fullyCollectedOrderIds } },
           data: { paymentStatus: 'COMPLETED' }
+        });
+      }
+
+      if (partiallyCollectedOrderIds.length > 0) {
+        await tx.order.updateMany({
+          where: { id: { in: partiallyCollectedOrderIds } },
+          data: { paymentStatus: 'PARTIALLY_PAID' }
         });
       }
     }
 
-    // 3. Mark delivery run as SETTLED
+    // 3. Attach the treasury transaction reference (run row already claimed as SETTLED above)
     const settledRun = await tx.deliveryRun.update({
       where: { id: run.id },
       data: {
-        status: 'SETTLED',
-        settledAt: new Date(),
-        settledBy: userId || null,
-        totalCODCollected: cashAmount,
-        notes: notes?.trim() || run.notes,
-        treasuryAccountId: treasuryAccountId || null,
         treasuryTransactionId: treasuryTransaction ? treasuryTransaction.id : null
       }
     });

@@ -399,6 +399,7 @@ const qpExpressRoutes = require("./routes/qpExpressRoutes");
 const shippingCompaniesRoutes = require("./routes/shippingCompaniesRoutes");
 const shipmentsRoutes = require("./routes/shipmentsRoutes");
 const shippingSettlementRoutes = require("./routes/shippingSettlementRoutes");
+const courierRoutes = require("./routes/courierRoutes");
 const bulkStatusUpdateRoutes = require("./routes/bulkStatusUpdateRoutes");
 const easyWarehouseRoutes = require("./routes/easyWarehouseRoutes");
 const turboWebhookRoutes = require("./routes/turboWebhook");
@@ -1172,6 +1173,7 @@ app.use("/api/system-incidents", require("./routes/systemIncidentRoutes"));
 app.use("/api/v1/shipping-companies", shippingCompaniesRoutes);
 app.use("/api/v1/shipments", shipmentsRoutes);
 app.use("/api/v1/shipping-settlement", shippingSettlementRoutes);
+app.use("/api/v1/couriers", courierRoutes);
 app.use("/api/v1/orders/bulk-status", bulkStatusUpdateRoutes);
 app.use("/api/v1/easy-warehouse", easyWarehouseRoutes);
 

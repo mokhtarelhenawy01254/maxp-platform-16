@@ -8,6 +8,19 @@ const BostaService = require('../services/bostaService');
 const QpExpressService = require('../services/qpExpressService');
 const { STATUS_FILTER_ALIASES } = require('../utils/turbo/constants');
 
+// 🛡️ Courier mobile share-link tokens are scoped to the internal fleet module (/api/v1/couriers).
+// They must never reach external-carrier operations: creating, cancelling, or syncing shipments
+// with real carriers (Turbo/Bosta/QP Express), or browsing the company-wide shipment list.
+const blockCourierMobileToken = (req, res, next) => {
+  if (req.user?.role === 'COURIER') {
+    return res.status(403).json({
+      success: false,
+      error: 'رمز المندوب الميداني غير مخول للعمليات على شحنات شركات الشحن'
+    });
+  }
+  next();
+};
+
 // Ensure recent Turbo orders are reflected in prisma.shipment
 async function syncTurboOrdersToShipments(prisma, companyId) {
   try {
@@ -80,7 +93,7 @@ async function syncTurboOrdersToShipments(prisma, companyId) {
 }
 
 // GET /api/v1/shipments - List all shipments with multi-carrier filters & pagination
-router.get('/', verifyToken.authenticateToken, async (req, res) => {
+router.get('/', verifyToken.authenticateToken, blockCourierMobileToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const companyId = req.user?.companyId;
@@ -455,7 +468,7 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
 });
 
 // POST /api/v1/shipments/create - Create shipment for an order with selected carrier
-router.post('/create', verifyToken.authenticateToken, async (req, res) => {
+router.post('/create', verifyToken.authenticateToken, blockCourierMobileToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const { companyId } = req.user;
@@ -543,7 +556,7 @@ router.post('/create', verifyToken.authenticateToken, async (req, res) => {
 });
 
 // POST /api/v1/shipments/:id/sync - Sync shipment status with carrier
-router.post('/:id/sync', verifyToken.authenticateToken, async (req, res) => {
+router.post('/:id/sync', verifyToken.authenticateToken, blockCourierMobileToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const { id } = req.params;
@@ -642,7 +655,7 @@ router.post('/:id/sync', verifyToken.authenticateToken, async (req, res) => {
 });
 
 // POST /api/v1/shipments/:id/cancel - Cancel shipment with carrier
-router.post('/:id/cancel', verifyToken.authenticateToken, async (req, res) => {
+router.post('/:id/cancel', verifyToken.authenticateToken, blockCourierMobileToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const { id } = req.params;
@@ -690,7 +703,7 @@ router.post('/:id/cancel', verifyToken.authenticateToken, async (req, res) => {
 });
 
 // GET /api/v1/shipments/:id/messages - Get shipment chat/messages
-router.get('/:id/messages', verifyToken.authenticateToken, async (req, res) => {
+router.get('/:id/messages', verifyToken.authenticateToken, blockCourierMobileToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const { id } = req.params;
@@ -728,7 +741,7 @@ router.get('/:id/messages', verifyToken.authenticateToken, async (req, res) => {
 });
 
 // POST /api/v1/shipments/:id/messages - Send shipment message to courier
-router.post('/:id/messages', verifyToken.authenticateToken, async (req, res) => {
+router.post('/:id/messages', verifyToken.authenticateToken, blockCourierMobileToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const { id } = req.params;
@@ -771,7 +784,7 @@ router.post('/:id/messages', verifyToken.authenticateToken, async (req, res) => 
 });
 
 // POST /api/v1/shipments/:id/resend - Request resending from Turbo API
-router.post('/:id/resend', verifyToken.authenticateToken, async (req, res) => {
+router.post('/:id/resend', verifyToken.authenticateToken, blockCourierMobileToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const { id } = req.params;
@@ -814,7 +827,7 @@ router.post('/:id/resend', verifyToken.authenticateToken, async (req, res) => {
 });
 
 // POST /api/v1/shipments/:id/cancel-request - Request shipment cancellation via Turbo API
-router.post('/:id/cancel-request', verifyToken.authenticateToken, async (req, res) => {
+router.post('/:id/cancel-request', verifyToken.authenticateToken, blockCourierMobileToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const { id } = req.params;
@@ -857,7 +870,7 @@ router.post('/:id/cancel-request', verifyToken.authenticateToken, async (req, re
 });
 
 // POST /api/v1/shipments/sync-carrier - Live sync all active shipments directly with carrier (Turbo)
-router.post('/sync-carrier', verifyToken.authenticateToken, async (req, res) => {
+router.post('/sync-carrier', verifyToken.authenticateToken, blockCourierMobileToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const companyId = req.user?.companyId;

@@ -6,6 +6,7 @@ jest.mock('../../services/sharedDatabase', () => {
     deliveryRun: {
       findFirst: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       count: jest.fn(),
     },
     treasuryAccount: {
@@ -95,6 +96,8 @@ describe('Courier Service Module Unit Tests', () => {
       };
 
       prisma.deliveryRun.findFirst.mockResolvedValueOnce(mockRun);
+      // Atomic settle claim: the run is still DISPATCHED, so exactly one claim wins
+      prisma.deliveryRun.updateMany.mockResolvedValueOnce({ count: 1 });
       prisma.treasuryAccount.findFirst.mockResolvedValueOnce({
         id: 'acc-treasury-cairo',
         companyId,

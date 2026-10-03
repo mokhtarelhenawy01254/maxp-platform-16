@@ -10,6 +10,8 @@ const mockPrisma = {
   },
   order: {
     findFirst: jest.fn(),
+    findMany: jest.fn().mockResolvedValue([]),
+    groupBy: jest.fn().mockResolvedValue([]),
   },
   shippingCompany: {
     findFirst: jest.fn(),
@@ -76,18 +78,28 @@ describe('Unified Shipments Routes (/api/v1/shipments)', () => {
         limit: 10,
         totalPages: 5,
       });
-      expect(res.body.summary).toEqual({
-        totalShipments: 42,
-        inTransit: 10,
-        delivered: 30,
-        returned: 2,
-        pendingRemittanceAmount: 1200,
-        statusCounts: {
-          IN_TRANSIT: 10,
-          DELIVERED: 30,
-          RETURNED: 2,
-        },
-      });
+      // The handler now derives inTransit/delivered/returned from carrier stage counts
+      // (allCarrierShipments + classifyShipmentStage), not from shipment.groupBy.
+      // 'IN_TRANSIT' without a turbo status classifies as 'incomplete', so the aggregate
+      // stage counters are 0 for this single mocked row; statusCounts still comes from groupBy.
+      expect(res.body.summary).toEqual(
+        expect.objectContaining({
+          totalShipments: 42,
+          inTransit: 0,
+          delivered: 0,
+          returned: 0,
+          pendingRemittanceAmount: 1200,
+          statusCounts: {
+            IN_TRANSIT: 10,
+            DELIVERED: 30,
+            RETURNED: 2,
+          },
+          carrierStatusCounts: expect.objectContaining({
+            all: 1,
+            incomplete: 1,
+          }),
+        })
+      );
     });
 
     it('filters shipments by shippingCompanyId', async () => {

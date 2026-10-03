@@ -35,7 +35,9 @@ async function listCouriers(req, res) {
     const couriers = await courierService.listCouriers(companyId, {
       search,
       status,
-      isActive: isActive !== undefined ? isActive === 'true' : undefined
+      isActive: isActive !== undefined ? isActive === 'true' : undefined,
+      // A field courier may only ever see their own record
+      restrictToCourierId: req.user?.role === 'COURIER' ? req.user?.courierId : undefined
     });
 
     res.json({ success: true, data: couriers });
@@ -168,7 +170,7 @@ async function createRun(req, res) {
     res.status(201).json({ success: true, data: run });
   } catch (error) {
     console.error('❌ [COURIER-CTRL] Error in createRun:', error);
-    res.status(500).json({ success: false, message: error.message || 'تعذر إنشاء مأمورية التوصيل' });
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر إنشاء مأمورية التوصيل' });
   }
 }
 
@@ -184,7 +186,8 @@ async function listRuns(req, res) {
 
     const { courierId, status, dateFrom, dateTo, search, page, limit } = req.query;
     const result = await courierService.listDeliveryRuns(companyId, {
-      courierId,
+      // A courier token is scoped to its own runs regardless of query params
+      courierId: req.user?.role === 'COURIER' ? req.user?.courierId : courierId,
       status,
       dateFrom,
       dateTo,
@@ -215,6 +218,11 @@ async function getRun(req, res) {
       return res.status(404).json({ success: false, message: 'مأمورية التوصيل غير موجودة' });
     }
 
+    // Field couriers may only open their own runs
+    if (req.user?.role === 'COURIER' && run.courierId !== req.user?.courierId) {
+      return res.status(403).json({ success: false, message: 'لا يمكن عرض مأمورية تابعة لمندوب آخر' });
+    }
+
     res.json({ success: true, data: run });
   } catch (error) {
     console.error('❌ [COURIER-CTRL] Error in getRun:', error);
@@ -240,16 +248,19 @@ async function updateShipmentStatus(req, res) {
 
     const updatedShipment = await courierService.updateDeliveryRunShipment(companyId, {
       shipmentId: req.params.shipmentId,
+      runId: req.params.runId,
       status,
       collectedAmount,
       deliveryNotes,
-      userId: req.user?.id
+      userId: req.user?.id,
+      // Field couriers may only update shipments assigned to them
+      courierId: req.user?.role === 'COURIER' ? req.user?.courierId : undefined
     });
 
     res.json({ success: true, data: updatedShipment });
   } catch (error) {
     console.error('❌ [COURIER-CTRL] Error in updateShipmentStatus:', error);
-    res.status(500).json({ success: false, message: error.message || 'تعذر تحديث حالة الشحنة' });
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر تحديث حالة الشحنة' });
   }
 }
 
@@ -276,7 +287,7 @@ async function settleRun(req, res) {
     res.json({ success: true, data: result, message: 'تمت تسوية الوردية وتوريد النقدية بنجاح' });
   } catch (error) {
     console.error('❌ [COURIER-CTRL] Error in settleRun:', error);
-    res.status(500).json({ success: false, message: error.message || 'تعذر إتمام التسوية والتوريد' });
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر إتمام التسوية والتوريد' });
   }
 }
 

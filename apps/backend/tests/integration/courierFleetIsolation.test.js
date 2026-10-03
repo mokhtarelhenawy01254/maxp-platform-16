@@ -151,7 +151,7 @@ describe('Internal Courier Fleet Isolation & App Access Tests', () => {
     });
 
     it('allows COURIER role to read assigned run and update delivery status', async () => {
-      mockUser = { id: 'courier-1', companyId: 'comp-isolated-a', role: 'COURIER' };
+      mockUser = { id: 'courier-1', courierId: 'courier-1', companyId: 'comp-isolated-a', role: 'COURIER' };
 
       mockPrisma.deliveryRun.findFirst.mockResolvedValueOnce({
         id: 'run-1',
@@ -178,7 +178,7 @@ describe('Internal Courier Fleet Isolation & App Access Tests', () => {
     });
 
     it('forbids COURIER role from creating runs or settling runs (Managers only)', async () => {
-      mockUser = { id: 'courier-1', companyId: 'comp-isolated-a', role: 'COURIER' };
+      mockUser = { id: 'courier-1', courierId: 'courier-1', companyId: 'comp-isolated-a', role: 'COURIER' };
 
       const resCreate = await request(app)
         .post('/api/v1/couriers/runs')
