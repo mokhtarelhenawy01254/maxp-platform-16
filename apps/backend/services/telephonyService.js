@@ -1,6 +1,9 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const socketService = require('./socketService');
 
+// نفس القائمة المسموحة في agentWorkspaceController — نتائج موثقة فقط تُقبل من العميل
+const ALLOWED_CALL_RESULTS = ['unreached', 'reached', 'busy', 'wrong_number', 'callback'];
+
 /**
  * دالة تنظيف والتحقق من رقم الهاتف بصيغة E.164 المصرية
  * تمنع الـ Toll Fraud والاتصال بأرقام غير مصرح بها
@@ -268,8 +271,15 @@ class TelephonyService {
     if (!callLog) {
       throw new Error('جلسة المكالمة غير موجودة');
     }
-    if (callLog.companyId && callLog.companyId !== companyId) {
+    // الملكية: من بدأ الجلسة هو من ينهيها، والشركة لا تُتجاوز في أي اتجاه
+    if (userId && callLog.userId && callLog.userId !== userId) {
+      throw new Error('غير مصرح بتعديل جلسة مكالمة موظف آخر');
+    }
+    if (companyId && callLog.companyId && String(callLog.companyId) !== String(companyId)) {
       throw new Error('غير مصرح بتعديل هذه الجلسة');
+    }
+    if (result && !ALLOWED_CALL_RESULTS.includes(result)) {
+      throw new Error('قيمة نتيجة مكالمة غير صالحة');
     }
 
     const duration = Math.max(0, parseInt(durationSeconds, 10) || 0);

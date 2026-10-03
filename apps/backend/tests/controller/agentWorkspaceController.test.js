@@ -317,6 +317,23 @@ describe('agentWorkspaceController.getMyOrders', () => {
     expect(findManyArg.where.AND).toBeDefined();
     expect(findManyArg.where.AND.length).toBe(2);
   });
+
+  test('exposes the order discount so the items editor does not wipe it', async () => {
+    mockOrderAssignment({
+      assignments: [
+        createAssignment({ order: createOrder('disc', 'PENDING', { discount: 25, subtotal: 100, total: 95 }) }),
+        createAssignment({ guestOrder: createGuestOrder('gdisc', 'PENDING', { discountAmount: 15, total: 85, finalTotal: 85 }) })
+      ]
+    });
+
+    const res = createResponse();
+    await agentWorkspaceController.getMyOrders({ ...baseReq, query: {} }, res);
+
+    expect(res.statusCode).toBe(200);
+    const byId = new Map(res.payload.data.map((o) => [o.id, o]));
+    expect(byId.get('disc').discount).toBe(25);
+    expect(byId.get('gdisc').discount).toBe(15);
+  });
 });
 
 describe('agentWorkspaceController.quickAction', () => {
@@ -561,6 +578,69 @@ describe('agentWorkspaceController.logCallAttempt', () => {
     expect(mockTx.order.update).not.toHaveBeenCalled();
     expect(mockTx.callAttemptLog.create).not.toHaveBeenCalled();
   });
+
+  test('schedules a default 24h follow-up when the result is callback and none exists', async () => {
+    const tx = {
+      order: {
+        update: jest.fn().mockResolvedValue({}),
+        findUnique: jest.fn().mockResolvedValue({ followUpDate: null })
+      },
+      guestOrder: { update: jest.fn().mockResolvedValue({}) },
+      callAttemptLog: { create: jest.fn().mockResolvedValue({}) }
+    };
+    getSharedPrismaClient.mockReturnValue({
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ guestOrderId: null, orderId: 'order-1' })
+      },
+      $transaction: jest.fn((cb) => cb(tx))
+    });
+
+    const res = createResponse();
+    await agentWorkspaceController.logCallAttempt({
+      ...baseReq,
+      body: { result: 'callback', notes: 'سأعود للعميل' }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.success).toBe(true);
+    expect(tx.order.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'order-1', companyId: 'company-1' },
+        data: expect.objectContaining({
+          callAttempts: { increment: 1 },
+          followUpDate: expect.any(Date)
+        })
+      })
+    );
+  });
+
+  test('keeps an existing future follow-up when the result is callback', async () => {
+    const futureDate = new Date(Date.now() + 3 * 86400000);
+    const tx = {
+      order: {
+        update: jest.fn().mockResolvedValue({}),
+        findUnique: jest.fn().mockResolvedValue({ followUpDate: futureDate })
+      },
+      guestOrder: { update: jest.fn().mockResolvedValue({}) },
+      callAttemptLog: { create: jest.fn().mockResolvedValue({}) }
+    };
+    getSharedPrismaClient.mockReturnValue({
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ guestOrderId: null, orderId: 'order-1' })
+      },
+      $transaction: jest.fn((cb) => cb(tx))
+    });
+
+    const res = createResponse();
+    await agentWorkspaceController.logCallAttempt({
+      ...baseReq,
+      body: { result: 'callback', notes: 'test' }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    const updateArg = tx.order.update.mock.calls[0][0];
+    expect(updateArg.data.followUpDate).toBeUndefined();
+  });
 });
 
 describe('agentWorkspaceController.scheduleFollowUp', () => {
@@ -776,6 +856,92 @@ describe('agentWorkspaceController manager fleet operations', () => {
       },
       data: { isActive: false }
     });
+  });
+});
+
+describe('agentWorkspaceController.requireManager', () => {
+  test('blocks non-manager users with 403 before the handler runs', async () => {
+    const res = createResponse();
+    const next = jest.fn();
+
+    await agentWorkspaceController.requireManager(
+      { user: { id: 'u1', role: 'AGENT', effectiveCompanyId: 'company-1' } },
+      res,
+      next
+    );
+
+    expect(res.statusCode).toBe(403);
+    expect(res.payload.success).toBe(false);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  test('lets managers and team leaders through to the handler', async () => {
+    const next = jest.fn();
+
+    await agentWorkspaceController.requireManager(
+      { user: { id: 'm1', role: 'TEAM_LEADER', effectiveCompanyId: 'company-1' } },
+      createResponse(),
+      next
+    );
+
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('agentWorkspaceController.assignOrder', () => {
+  const managerReq = {
+    user: { id: 'manager-1', role: 'MANAGER', effectiveCompanyId: 'company-1' }
+  };
+
+  test('rejects assigning to a user who is not an active member of the company', async () => {
+    const prismaMock = {
+      userCompany: { findFirst: jest.fn().mockResolvedValue(null) },
+      order: { findFirst: jest.fn() }
+    };
+    getSharedPrismaClient.mockReturnValue(prismaMock);
+
+    const res = createResponse();
+    await agentWorkspaceController.assignOrder({
+      ...managerReq,
+      body: { orderId: 'order-1', targetUserId: 'outsider-1' }
+    }, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.payload.success).toBe(false);
+    expect(prismaMock.order.findFirst).not.toHaveBeenCalled();
+  });
+
+  test('assigns a regular order to an active member of the same company', async () => {
+    const prismaMock = {
+      userCompany: { findFirst: jest.fn().mockResolvedValue({ id: 'uc-1' }) },
+      order: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'order-1', companyId: 'company-1' }),
+        update: jest.fn().mockResolvedValue({})
+      },
+      orderAssignment: {
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        create: jest.fn().mockResolvedValue({})
+      },
+      guestOrder: { findFirst: jest.fn() }
+    };
+    getSharedPrismaClient.mockReturnValue(prismaMock);
+
+    const res = createResponse();
+    await agentWorkspaceController.assignOrder({
+      ...managerReq,
+      body: { orderId: 'order-1', targetUserId: 'agent-2' }
+    }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.success).toBe(true);
+    expect(prismaMock.orderAssignment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ companyId: 'company-1', orderId: 'order-1', assignedTo: 'agent-2' })
+      })
+    );
+    expect(prismaMock.order.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'order-1' }, data: expect.objectContaining({ assignedTo: 'agent-2' }) })
+    );
   });
 });
 

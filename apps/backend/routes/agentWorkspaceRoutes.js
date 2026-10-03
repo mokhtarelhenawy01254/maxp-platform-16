@@ -41,21 +41,21 @@ router.post('/orders/:id/quick-action', createEndpointRateLimiter('AGENT_ACTIONS
  * @desc Get confirmation team capacity and unassigned pool telemetry for managers
  * @access Private (Managerial)
  */
-router.get('/team-workload', agentWorkspaceController.getTeamWorkload);
+router.get('/team-workload', agentWorkspaceController.requireManager, agentWorkspaceController.getTeamWorkload);
 
 /**
  * @route POST /api/v1/agent-workspace/auto-distribute
  * @desc Auto distribute unassigned orders across active agents
  * @access Private (Managerial)
  */
-router.post('/auto-distribute', createEndpointRateLimiter('AGENT_ACTIONS'), agentWorkspaceController.autoDistributeOrders);
+router.post('/auto-distribute', createEndpointRateLimiter('AGENT_ACTIONS'), agentWorkspaceController.requireManager, agentWorkspaceController.autoDistributeOrders);
 
 /**
  * @route POST /api/v1/agent-workspace/assign
  * @desc Assign or reassign an order to an agent
  * @access Private (Managerial)
  */
-router.post('/assign', createEndpointRateLimiter('AGENT_ACTIONS'), agentWorkspaceController.assignOrder);
+router.post('/assign', createEndpointRateLimiter('AGENT_ACTIONS'), agentWorkspaceController.requireManager, agentWorkspaceController.assignOrder);
 
 /**
  * @route PUT /api/v1/agent-workspace/orders/:id/items

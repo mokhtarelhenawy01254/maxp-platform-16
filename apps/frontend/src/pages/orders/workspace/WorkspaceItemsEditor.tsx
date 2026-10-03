@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   PlusIcon,
@@ -37,19 +37,29 @@ export const WorkspaceItemsEditor: React.FC<WorkspaceItemsEditorProps> = ({
   const { formatPrice } = useCurrency();
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
 
-  const [items, setItems] = useState<WorkspaceOrderItem[]>(() =>
-    (order.items || []).map((it, idx) => ({
+  const toEditableItems = (source: WorkspaceOrderItem[] | undefined): WorkspaceOrderItem[] =>
+    (source || []).map((it, idx) => ({
       ...it,
       id: it.id || `item-${idx}-${Date.now()}`,
       quantity: Number(it.quantity) || 1,
       price: Number(it.price) || 0,
       total: Number(it.total) || (Number(it.price) || 0) * (Number(it.quantity) || 1),
-    }))
-  );
+    }));
+
+  const [items, setItems] = useState<WorkspaceOrderItem[]>(() => toEditableItems(order.items));
 
   const [shipping, setShipping] = useState<number>(Number(order.shipping) || 0);
   const [discount, setDiscount] = useState<number>(Number(order.discount) || 0);
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+
+  // إعادة التهيئة عند تبديل الطلب — بدونها يستمر المحرر ببنود الطلب السابق
+  // ويحفظها فوق الطلب الجديد عندما يستبدل الـ poll الطلب المفتوح
+  useEffect(() => {
+    setItems(toEditableItems(order.items));
+    setShipping(Number(order.shipping) || 0);
+    setDiscount(Number(order.discount) || 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order.id]);
 
   const subtotal = items.reduce(
     (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),

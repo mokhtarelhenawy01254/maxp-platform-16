@@ -30,7 +30,7 @@ export const AgentWorkspace: React.FC = () => {
     perspective,
     setPerspective,
     searchQuery,
-    setSearchQuery,
+    handleSearchChange,
     sortOption,
     setSortOption,
     autoAdvance,
@@ -91,7 +91,7 @@ export const AgentWorkspace: React.FC = () => {
         onSelectTab={selectTab}
         stats={stats}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
         perspective={perspective}
         onPerspectiveChange={setPerspective}
         refreshing={refreshing}

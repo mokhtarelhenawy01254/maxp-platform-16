@@ -14,6 +14,16 @@ const isManagerUser = (user) => MANAGER_ROLES.includes(String(user?.role || '').
 
 const ALLOWED_CALL_RESULTS = ['unreached', 'reached', 'busy', 'wrong_number', 'callback'];
 
+// «إعادة اتصال» = التزام متابعة: نجدول افتراضيًا بعد 24 ساعة إن لم يكن هناك موعد مستقبلي
+const DEFAULT_CALLBACK_FOLLOW_UP_MS = 24 * 60 * 60 * 1000;
+
+const requireManager = (req, res, next) => {
+  if (!isManagerUser(req.user)) {
+    return res.status(403).json({ success: false, error: 'هذه العملية متاحة للمدير أو قائد الفريق فقط' });
+  }
+  return next();
+};
+
 const normalizeWorkspaceStatus = (value) => String(value || '').trim().toUpperCase();
 const normalizeActionNote = (value) => String(value || '').trim();
 const normalizeQuickActionStatus = (value) => {
@@ -291,6 +301,8 @@ const formatWorkspaceOrderRecord = (order, isGuest, assignedAt, assignedTo = nul
     total: parseFloat(order.total || order.finalTotal || 0),
     subtotal,
     shipping,
+    // الخصم الحقيقي حتى لا يمحو محرر العناصر خصم الطلب عند الحفظ (regular: discount، guest: discountAmount)
+    discount: parseFloat((isGuest ? order.discountAmount : order.discount) || 0),
     status: order.status,
     createdAt: order.createdAt,
     assignedAt: assignedAt || order.assignedAt || null,
@@ -557,13 +569,24 @@ const logCallAttempt = async (req, res) => {
 
     const { type } = await assertWorkspaceOrderOwnership(prisma, companyId, userId, id, isManager);
 
+    // نتيجة «إعادة اتصال» بدون موعد متابعة مستقبلي = جدولة تلقائية بعد 24 ساعة
+    // حتى لا يسقط الطلب من تاب المتابعات (الذي يشترط followUpDate)
+    let scheduleDefaultFollowUp = callResult === 'callback';
+
     if (type === 'GUEST') {
       await prisma.$transaction(async (tx) => {
+        if (scheduleDefaultFollowUp) {
+          const existing = await tx.guestOrder.findUnique({ where: { id }, select: { followUpDate: true } });
+          if (existing?.followUpDate && new Date(existing.followUpDate).getTime() > now.getTime()) {
+            scheduleDefaultFollowUp = false;
+          }
+        }
         await tx.guestOrder.update({
           where: { id, companyId },
           data: {
             callAttempts: { increment: 1 },
-            lastCallAt: now
+            lastCallAt: now,
+            ...(scheduleDefaultFollowUp ? { followUpDate: new Date(now.getTime() + DEFAULT_CALLBACK_FOLLOW_UP_MS) } : {})
           }
         });
         await tx.callAttemptLog.create({
@@ -578,11 +601,18 @@ const logCallAttempt = async (req, res) => {
       });
     } else {
       await prisma.$transaction(async (tx) => {
+        if (scheduleDefaultFollowUp) {
+          const existing = await tx.order.findUnique({ where: { id }, select: { followUpDate: true } });
+          if (existing?.followUpDate && new Date(existing.followUpDate).getTime() > now.getTime()) {
+            scheduleDefaultFollowUp = false;
+          }
+        }
         await tx.order.update({
           where: { id, companyId },
           data: {
             callAttempts: { increment: 1 },
-            lastCallAttemptAt: now
+            lastCallAttemptAt: now,
+            ...(scheduleDefaultFollowUp ? { followUpDate: new Date(now.getTime() + DEFAULT_CALLBACK_FOLLOW_UP_MS) } : {})
           }
         });
         await tx.callAttemptLog.create({
@@ -597,7 +627,12 @@ const logCallAttempt = async (req, res) => {
       });
     }
 
-    res.json({ success: true, message: 'تم تسجيل محاولة الاتصال بنجاح' });
+    res.json({
+      success: true,
+      message: scheduleDefaultFollowUp
+        ? 'تم تسجيل محاولة الاتصال وجدولة متابعة تلقائية بعد 24 ساعة'
+        : 'تم تسجيل محاولة الاتصال بنجاح'
+    });
   } catch (error) {
     console.error('❌ [AGENT-WORKSPACE] Error in logCallAttempt:', error);
     res.status(error.statusCode || 500).json({ success: false, error: error.message || 'خطأ في تسجيل المكالمة' });
@@ -931,6 +966,15 @@ const assignOrder = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
 
+    // حماية حدود المستأجرين: لا إسناد إلا لموظف نشط داخل نفس الشركة
+    const targetMember = await prisma.userCompany.findFirst({
+      where: { userId: targetUserId, companyId, isActive: true },
+      select: { id: true }
+    });
+    if (!targetMember) {
+      return res.status(400).json({ success: false, error: 'الموظف المستهدف غير موجود أو غير نشط في هذه الشركة' });
+    }
+
     const regular = await prisma.order.findFirst({ where: { id: orderId, companyId } });
     if (regular) {
       await prisma.orderAssignment.updateMany({
@@ -1262,5 +1306,6 @@ module.exports = {
   autoDistributeOrders,
   assignOrder,
   updateOrderItems,
-  updateOrderCustomer
+  updateOrderCustomer,
+  requireManager
 };

@@ -12,6 +12,7 @@ import {
   TeamWorkloadData,
   WORKSPACE_TAB_KEYS,
   WorkspaceOrder,
+  WorkspaceOrderItem,
   WorkspacePagination,
   WorkspaceStats,
 } from './types';
@@ -143,6 +144,12 @@ export function useAgentWorkspace() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
+  // أحدث قيم الفلاتر للقراءة داخل fetchOrders — يكسر الـ stale closure الذي
+  // كان يُطفئ فلاتر المستخدم (فرز/وكيل/بحث) في الـ interval ومعالجات useCallback([]) القديمة
+  const sortOptionRef = useRef(sortOption);
+  const selectedAgentIdRef = useRef(selectedAgentId);
+  const searchQueryRef = useRef(searchQuery);
+
   const setOrderBusyState = (orderId: string, action: OrderAction | null) => {
     setBusyOrders((current) => {
       const next = { ...current };
@@ -231,9 +238,9 @@ export function useAgentWorkspace() {
     } = options || {};
 
     const activeTabForRequest = tab ?? activeTabRef.current;
-    const resolvedSort = targetSort ?? sortOption;
-    const resolvedAssignedTo = targetAssignedTo !== undefined ? targetAssignedTo : selectedAgentId;
-    const resolvedSearch = targetSearch !== undefined ? targetSearch : searchQuery;
+    const resolvedSort = targetSort ?? sortOptionRef.current;
+    const resolvedAssignedTo = targetAssignedTo !== undefined ? targetAssignedTo : selectedAgentIdRef.current;
+    const resolvedSearch = targetSearch !== undefined ? targetSearch : searchQueryRef.current;
 
     if (!append) {
       if (abortControllerRef.current) {
@@ -825,6 +832,18 @@ export function useAgentWorkspace() {
   }, [isModalOpen]);
 
   useEffect(() => {
+    sortOptionRef.current = sortOption;
+  }, [sortOption]);
+
+  useEffect(() => {
+    selectedAgentIdRef.current = selectedAgentId;
+  }, [selectedAgentId]);
+
+  useEffect(() => {
+    searchQueryRef.current = searchQuery;
+  }, [searchQuery]);
+
+  useEffect(() => {
     const nextTab = normalizeWorkspaceTab(searchParams.get('tab'));
     if (nextTab !== activeTab) {
       setActiveTab(nextTab);
@@ -845,20 +864,9 @@ export function useAgentWorkspace() {
     void fetchOrders({ silent: true });
   }, [activeTab]);
 
-  // Client filtered orders based on search query
-  const filteredOrders = useMemo(() => {
-    if (!searchQuery.trim()) return orders;
-    const query = searchQuery.trim().toLowerCase();
-    return orders.filter((o) => {
-      return (
-        o.orderNumber?.toLowerCase().includes(query) ||
-        o.customerName?.toLowerCase().includes(query) ||
-        o.customerPhone?.toLowerCase().includes(query) ||
-        o.governorate?.toLowerCase().includes(query) ||
-        o.city?.toLowerCase().includes(query)
-      );
-    });
-  }, [orders, searchQuery]);
+  // البحث خادمي الآن (my-orders و incomplete كلاهما يستقبل search) — لا فلترة محلية فوق
+  // النتائج حتى لا تُخفى مطابقات في العنوان أو الملاحظات لا يغطيها الفلتر المحلي.
+  const filteredOrders = orders;
 
   const activeSelectedOrder = useMemo(() => {
     if (!selectedOrderId) {
@@ -886,6 +894,7 @@ export function useAgentWorkspace() {
     setPerspective,
     searchQuery,
     setSearchQuery,
+    handleSearchChange,
     sortOption,
     setSortOption,
     autoAdvance,

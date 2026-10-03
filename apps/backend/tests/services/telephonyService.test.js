@@ -258,6 +258,70 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
       );
     });
 
+    test('rejects completing a session owned by another employee', async () => {
+      mockPrisma.callAttemptLog.findUnique.mockResolvedValue({
+        id: 'log_3',
+        sessionId: 'call_other_agent',
+        orderId: 'ord_3',
+        companyId,
+        userId: 'another_agent',
+        callerPhone: null
+      });
+
+      await expect(
+        telephonyService.completeCall({
+          companyId,
+          userId,
+          sessionId: 'call_other_agent',
+          durationSeconds: 10
+        })
+      ).rejects.toThrow('غير مصرح بتعديل جلسة مكالمة موظف آخر');
+      expect(mockPrisma.callAttemptLog.update).not.toHaveBeenCalled();
+    });
+
+    test('rejects completing a session that belongs to another company', async () => {
+      mockPrisma.callAttemptLog.findUnique.mockResolvedValue({
+        id: 'log_4',
+        sessionId: 'call_foreign_company',
+        orderId: 'ord_4',
+        companyId: 'other_company',
+        userId,
+        callerPhone: null
+      });
+
+      await expect(
+        telephonyService.completeCall({
+          companyId,
+          userId,
+          sessionId: 'call_foreign_company',
+          durationSeconds: 10
+        })
+      ).rejects.toThrow('غير مصرح بتعديل هذه الجلسة');
+      expect(mockPrisma.callAttemptLog.update).not.toHaveBeenCalled();
+    });
+
+    test('rejects an invalid call result value on completion', async () => {
+      mockPrisma.callAttemptLog.findUnique.mockResolvedValue({
+        id: 'log_5',
+        sessionId: 'call_bogus_result',
+        orderId: 'ord_5',
+        companyId,
+        userId,
+        callerPhone: null
+      });
+
+      await expect(
+        telephonyService.completeCall({
+          companyId,
+          userId,
+          sessionId: 'call_bogus_result',
+          durationSeconds: 10,
+          result: 'bogus'
+        })
+      ).rejects.toThrow('قيمة نتيجة مكالمة غير صالحة');
+      expect(mockPrisma.callAttemptLog.update).not.toHaveBeenCalled();
+    });
+
     test('initiates and completes call for guest orders updating guestOrder table', async () => {
       const sessionId = 'call_guest_session_999';
       mockPrisma.callAttemptLog.findFirst.mockResolvedValue(null);

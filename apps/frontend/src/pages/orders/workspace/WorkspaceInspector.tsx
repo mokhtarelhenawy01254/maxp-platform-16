@@ -148,7 +148,7 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
               secondaryPhone={order.secondaryPhone}
               compact={false}
               onConfirm={() => onConfirm(order)}
-              onNoAnswer={() => onLogCall(order, 'no_answer')}
+              onNoAnswer={() => onLogCall(order, 'unreached')}
               onPostpone={() => onOpenFollowUp(order)}
               onCancel={() => onCancel(order)}
               onCallFinished={onRefreshOrder}
