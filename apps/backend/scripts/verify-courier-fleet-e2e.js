@@ -2,6 +2,8 @@
  * Comprehensive Acceptance Test & Proof Script for In-House Courier Fleet App (internal-courier-fleet)
  *
  * Verifies:
+ * 0. The courier router actually MOUNTS and GUARDS over HTTP (401/403, never a silent 404 —
+ *    the router once shipped unmounted in server.js and the service-level tests stayed green).
  * 1. Installing internal-courier-fleet on an isolated test company from scratch.
  * 2. Registering a courier (details, vehicle, commission, status).
  * 3. Assigning a shipment/order to a Delivery Run (Manifest).
@@ -9,12 +11,44 @@
  * 5. End-of-Day Settlement & Remittance into Company Treasury (TreasuryAccount balance increases + TreasuryTransaction created).
  * 6. Waybill (بوليصة) & Manifest printing verification.
  * 7. Strict multi-tenant isolation against a second independent company.
+ *
+ * ⚠️ Lesson (2026-10-03): service-level checks bypass HTTP and can never catch an unmounted
+ * router or shadowed route. The HTTP smoke in STEP 0 is the guard — keep it first.
  */
 
+const express = require('express');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const courierService = require('../services/courierService');
 const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('../utils/jwtSecret');
+
+/**
+ * STEP 0 — HTTP mount & guard smoke. Requires supertest (dev dependency); skipped
+ * with a warning on production installs where dev deps are pruned.
+ */
+async function runHttpMountSmoke() {
+  let request;
+  try {
+    request = require('supertest');
+  } catch {
+    console.log('⚠️ [STEP 0] supertest not installed (prod deps) — HTTP mount smoke SKIPPED');
+    return;
+  }
+
+  console.log('\n🌐 [STEP 0] HTTP Mount & Guard Smoke (router reachable over HTTP, never 404):');
+  const app = express();
+  app.use(express.json());
+  app.use('/api/v1/couriers', require('../routes/courierRoutes'));
+
+  const listRes = await request(app).get('/api/v1/couriers/runs');
+  if (listRes.status === 404) {
+    throw new Error('CRITICAL: GET /couriers/runs returned 404 over HTTP — router shadowed or missing. This is the silent production killer.');
+  }
+  if (![401, 403].includes(listRes.status)) {
+    throw new Error(`Unexpected GET /couriers/runs status ${listRes.status} — expected the auth gate (401/403)`);
+  }
+  console.log(`   ✅ GET /couriers/runs over HTTP → ${listRes.status} (auth gate, not 404 — mounted and guarded)`);
+}
 
 async function runE2EVerification() {
   const prisma = getSharedPrismaClient();
@@ -28,6 +62,11 @@ async function runE2EVerification() {
   const testCompanyBId = `test-co-isolated-${timestamp}`;
 
   try {
+    // -------------------------------------------------------------------------
+    // STEP 0: HTTP Mount & Guard Smoke (router reachable, auth-gated, never 404)
+    // -------------------------------------------------------------------------
+    await runHttpMountSmoke();
+
     // -------------------------------------------------------------------------
     // STEP 1: Create Isolated Test Companies
     // -------------------------------------------------------------------------

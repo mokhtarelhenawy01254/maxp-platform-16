@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   BarChart3,
   BadgePercent,
+  BellRing,
   CheckCircle2,
   Clock3,
   ExternalLink,
@@ -2999,6 +3000,7 @@ export default function AppSettings() {
     const courierRemittance = (normalizedSettings["remittance"] as JsonRecord | undefined) || {};
     const courierWorkflow = (normalizedSettings["fieldWorkflow"] as JsonRecord | undefined) || {};
     const courierCommission = (normalizedSettings["commission"] as JsonRecord | undefined) || {};
+    const courierNotifications = (normalizedSettings["notifications"] as JsonRecord | undefined) || {};
 
     return (
       <div className="space-y-6 text-right" dir="rtl">
@@ -3245,6 +3247,21 @@ export default function AppSettings() {
             <label className="flex items-start gap-3 p-3.5 rounded-xl border border-border/40 bg-muted/20 hover:bg-muted/40 cursor-pointer transition">
               <input
                 type="checkbox"
+                checked={Boolean(courierWorkflow["requireDeliveryOtp"] ?? false)}
+                onChange={(e) => updateAtPath("fieldWorkflow.requireDeliveryOtp", e.target.checked)}
+                className="mt-0.5 rounded border-border text-primary focus:ring-primary"
+              />
+              <div>
+                <span className="text-xs font-medium text-foreground block">إثبات التسليم بكود OTP من العميل</span>
+                <span className="text-[11px] text-muted-foreground block mt-0.5">
+                  كود من 4 أرقام يوصله العميل في رسالة خروج الطلب للتوصيل — المندوب لا يستطيع تسجيل التسليم بدون إدخاله.
+                </span>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 p-3.5 rounded-xl border border-border/40 bg-muted/20 hover:bg-muted/40 cursor-pointer transition">
+              <input
+                type="checkbox"
                 checked={Boolean(courierWorkflow["autoUpdateOrderStatusOnDelivery"] ?? true)}
                 onChange={(e) => updateAtPath("fieldWorkflow.autoUpdateOrderStatusOnDelivery", e.target.checked)}
                 className="mt-0.5 rounded border-border text-primary focus:ring-primary"
@@ -3283,6 +3300,68 @@ export default function AppSettings() {
                 <span className="text-xs font-medium text-foreground block">إلزام صورة إثبات عند تعذر التسليم</span>
                 <span className="text-[11px] text-muted-foreground block mt-0.5">
                   مطالبة المندوب بالتقاط صورة للمكان أو إشعار الرفض عند تأجيل أو إلغاء الشحنة.
+                </span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {/* Section 3.5: Customer WhatsApp Notifications */}
+        <div className="rounded-2xl border border-border/60 bg-card p-5 sm:p-6 shadow-xs space-y-5">
+          <div className="flex items-center gap-2.5 pb-3 border-b border-border/40">
+            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <BellRing className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">إشعارات العملاء على واتساب</h3>
+              <p className="text-xs text-muted-foreground">
+                رسائل تلقائية للعميل من مسار أسطول المناديب — بتعمل طبقة إضافية فوق إعدادات الإشعارات العامة للشركة
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label className="flex items-start gap-3 p-3.5 rounded-xl border border-border/40 bg-muted/20 hover:bg-muted/40 cursor-pointer transition">
+              <input
+                type="checkbox"
+                checked={Boolean(courierNotifications["notifyCustomerOnDispatch"] ?? true)}
+                onChange={(e) => updateAtPath("notifications.notifyCustomerOnDispatch", e.target.checked)}
+                className="mt-0.5 rounded border-border text-primary focus:ring-primary"
+              />
+              <div>
+                <span className="text-xs font-medium text-foreground block">إشعار خروج الطلب للتوصيل</span>
+                <span className="text-[11px] text-muted-foreground block mt-0.5">
+                  اسم الكابتن ورقم هاتفه والمبلغ المطلوب — وكود الاستلام لو إثبات OTP مفعّل.
+                </span>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 p-3.5 rounded-xl border border-border/40 bg-muted/20 hover:bg-muted/40 cursor-pointer transition">
+              <input
+                type="checkbox"
+                checked={Boolean(courierNotifications["notifyCustomerOnDelivery"] ?? true)}
+                onChange={(e) => updateAtPath("notifications.notifyCustomerOnDelivery", e.target.checked)}
+                className="mt-0.5 rounded border-border text-primary focus:ring-primary"
+              />
+              <div>
+                <span className="text-xs font-medium text-foreground block">إشعار نجاح التسليم</span>
+                <span className="text-[11px] text-muted-foreground block mt-0.5">
+                  تأكيد وصول الطلب للعميل مع المبلغ المحصّل فعليًا.
+                </span>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 p-3.5 rounded-xl border border-border/40 bg-muted/20 hover:bg-muted/40 cursor-pointer transition">
+              <input
+                type="checkbox"
+                checked={Boolean(courierNotifications["notifyCustomerOnReturn"] ?? true)}
+                onChange={(e) => updateAtPath("notifications.notifyCustomerOnReturn", e.target.checked)}
+                className="mt-0.5 rounded border-border text-primary focus:ring-primary"
+              />
+              <div>
+                <span className="text-xs font-medium text-foreground block">إشعار تعذر التسليم</span>
+                <span className="text-[11px] text-muted-foreground block mt-0.5">
+                  إبلاغ العميل بفشل محاولة التسليم وسببه والوعد بإعادة الترتيب.
                 </span>
               </div>
             </label>
