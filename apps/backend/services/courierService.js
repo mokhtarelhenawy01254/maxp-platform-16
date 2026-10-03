@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { getJwtSecret } = require('../utils/jwtSecret');
 const { buildInstalledMarketplaceAppSettings } = require('../utils/marketplaceAppSettings');
+const { notifyRunDispatched, notifyFieldUpdate } = require('./courierNotificationService');
 
 const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'REMITTED'];
 
@@ -348,7 +349,18 @@ async function createDeliveryRun(companyId, { courierId, shipmentIds, orderIds, 
 
   const shipments = await prisma.shipment.findMany({
     where: { companyId, id: { in: targetShipmentIds } },
-    include: { order: { select: { id: true, total: true, status: true } } }
+    include: {
+      order: {
+        select: {
+          id: true,
+          total: true,
+          status: true,
+          orderNumber: true,
+          customerName: true,
+          customerPhone: true
+        }
+      }
+    }
   });
 
   // A shipment whose cash was already collected and remitted must never enter a new run —
@@ -375,7 +387,7 @@ async function createDeliveryRun(companyId, { courierId, shipmentIds, orderIds, 
   const runNumber = await generateRunNumber(prisma, companyId);
 
   // Execute in interactive transaction for atomic integrity
-  return prisma.$transaction(async (tx) => {
+  const deliveryRun = await prisma.$transaction(async (tx) => {
     const deliveryRun = await tx.deliveryRun.create({
       data: {
         companyId,
@@ -418,6 +430,12 @@ async function createDeliveryRun(companyId, { courierId, shipmentIds, orderIds, 
 
     return deliveryRun;
   });
+
+  // 📣 Customer WhatsApp notifications after the dispatch commits — fire-and-forget,
+  // gated by fleet settings + the company's WhatsApp notification settings.
+  notifyRunDispatched(companyId, { run: deliveryRun, shipments, courier });
+
+  return deliveryRun;
 }
 
 /**
@@ -621,7 +639,7 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
     include: {
       order: true,
       deliveryRun: true,
-      courier: { select: { id: true, pinHash: true } }
+      courier: { select: { id: true, pinHash: true, name: true, phone: true } }
     }
   });
 
@@ -729,6 +747,17 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
 
     return updatedShipment;
   });
+
+  // 📣 Customer WhatsApp notification for delivery/return — post-commit, fire-and-forget
+  notifyFieldUpdate(companyId, {
+    status: updateData.status,
+    order: shipment.order,
+    courier: shipment.courier,
+    collectedAmount: updateData.collectedAmount,
+    reason: deliveryNotes?.trim() || ''
+  });
+
+  return updatedShipment;
 }
 
 /**

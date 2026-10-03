@@ -11,8 +11,11 @@ const COURIER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'OPER
 router.use(verifyToken.authenticateToken);
 router.use(checkAppAccess('internal-courier-fleet'));
 
-// ⚠️ Static paths MUST be declared before parameterized routes (/ Commissions, / Runs, /: Id)
-// — GET /:id used to shadow GET /runs, capturing the run list as courier id="runs".
+// ⚠️ Ordering contract for this router: ALL static paths (dashboard-summary, commissions,
+// performance, runs…) MUST be declared before the parameterized /:id routes.
+// GET /:id used to shadow GET /runs — the run list was captured as getCourier("runs")
+// and 404ed with "المندوب غير موجود". A regression test in courierFleetIsolation.test.js
+// pins this contract; do not reorder without running it.
 
 // Dashboard telemetry summary
 router.get(
@@ -40,44 +43,6 @@ router.get(
   '/performance',
   verifyToken.requireRole(MANAGE_ROLES),
   courierController.getPerformance
-);
-
-// Couriers CRUD
-router.get(
-  '/',
-  verifyToken.requireRole(COURIER_ROLES),
-  courierController.listCouriers
-);
-
-router.post(
-  '/',
-  verifyToken.requireRole(MANAGE_ROLES),
-  courierController.createCourier
-);
-
-// Set or clear a courier's field PIN
-router.put(
-  '/:id/pin',
-  verifyToken.requireRole(MANAGE_ROLES),
-  courierController.setCourierPin
-);
-
-router.get(
-  '/:id',
-  verifyToken.requireRole(COURIER_ROLES),
-  courierController.getCourier
-);
-
-router.put(
-  '/:id',
-  verifyToken.requireRole(MANAGE_ROLES),
-  courierController.updateCourier
-);
-
-router.delete(
-  '/:id',
-  verifyToken.requireRole(MANAGE_ROLES),
-  courierController.deleteCourier
 );
 
 // Delivery Runs (Manifests)
@@ -117,6 +82,44 @@ router.post(
   '/runs/:id/settle',
   verifyToken.requireRole(MANAGE_ROLES),
   courierController.settleRun
+);
+
+// Couriers CRUD — root first, then the two-segment /:id/pin, and the one-segment
+// /:id routes LAST so they can never shadow any static path above.
+router.get(
+  '/',
+  verifyToken.requireRole(COURIER_ROLES),
+  courierController.listCouriers
+);
+
+router.post(
+  '/',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.createCourier
+);
+
+router.put(
+  '/:id/pin',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.setCourierPin
+);
+
+router.get(
+  '/:id',
+  verifyToken.requireRole(COURIER_ROLES),
+  courierController.getCourier
+);
+
+router.put(
+  '/:id',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.updateCourier
+);
+
+router.delete(
+  '/:id',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.deleteCourier
 );
 
 module.exports = router;

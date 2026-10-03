@@ -214,6 +214,11 @@ const DEFAULT_MARKETPLACE_APP_SETTINGS = {
       defaultType: 'PER_ORDER',
       defaultValue: 30,
     },
+    notifications: {
+      notifyCustomerOnDispatch: true,
+      notifyCustomerOnDelivery: true,
+      notifyCustomerOnReturn: true,
+    },
   },
 };
 

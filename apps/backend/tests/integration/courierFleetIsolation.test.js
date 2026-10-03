@@ -192,6 +192,33 @@ describe('Internal Courier Fleet Isolation & App Access Tests', () => {
 
       expect(resSettle.status).toBe(403);
     });
+
+    it('routes GET /runs to the run list, not the courier /:id shadow (route-order regression)', async () => {
+      // GET /:id used to be declared before GET /runs — the run list was captured as
+      // getCourier("runs") and 404ed with "المندوب غير موجود". Static paths must win.
+      mockPrisma.deliveryRun.count.mockResolvedValueOnce(1);
+      mockPrisma.deliveryRun.findMany.mockResolvedValueOnce([
+        {
+          id: 'run-9',
+          companyId: 'comp-isolated-a',
+          courierId: 'courier-1',
+          runNumber: 'RUN-20261003-001',
+          status: 'DISPATCHED',
+          totalCODExpected: 100,
+          totalCODCollected: 0,
+          courier: { id: 'courier-1', name: 'كابتن', phone: '010' },
+          shipments: []
+        }
+      ]);
+
+      const res = await request(app).get('/api/v1/couriers/runs');
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data[0].runNumber).toBe('RUN-20261003-001');
+      expect(res.body.pagination).toBeDefined();
+    });
   });
 
   describe('3. Mobile Link Generation Endpoint (/runs/:id/share-link)', () => {
