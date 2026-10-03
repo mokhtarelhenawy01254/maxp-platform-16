@@ -253,6 +253,7 @@ async function updateShipmentStatus(req, res) {
       collectedAmount,
       deliveryNotes,
       pin: req.body?.pin,
+      otp: req.body?.otp,
       userId: req.user?.id,
       // Field couriers may only update shipments assigned to them
       courierId: req.user?.role === 'COURIER' ? req.user?.courierId : undefined
@@ -414,6 +415,35 @@ async function getPerformance(req, res) {
   }
 }
 
+/**
+ * POST /api/v1/couriers/shipments/reassign
+ * Move internal-courier shipments to another active courier (managers only)
+ */
+async function reassignShipments(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const { shipmentIds, toCourierId } = req.body || {};
+    const result = await courierService.reassignShipments(companyId, {
+      shipmentIds,
+      toCourierId,
+      userId: req.user?.id
+    });
+
+    res.json({
+      success: true,
+      data: result,
+      message: `تم إعادة إسناد ${result.moved} طرد إلى ${result.toCourier.name}`
+    });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in reassignShipments:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر إعادة الإسناد' });
+  }
+}
+
 module.exports = {
   getSummary,
   listCouriers,
@@ -430,5 +460,6 @@ module.exports = {
   settleRun,
   listCommissions,
   payCommissions,
-  getPerformance
+  getPerformance,
+  reassignShipments
 };

@@ -31,6 +31,7 @@ const CourierMobileRunPage: React.FC = () => {
   const [collectedAmount, setCollectedAmount] = useState<number>(0);
   const [deliveryNotes, setDeliveryNotes] = useState<string>('');
   const [fieldPin, setFieldPin] = useState<string>('');
+  const [deliveryOtp, setDeliveryOtp] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [viewingWaybillShipment, setViewingWaybillShipment] = useState<DeliveryRunItem | null>(null);
 
@@ -68,6 +69,7 @@ const CourierMobileRunPage: React.FC = () => {
     setActionType(type);
     setCollectedAmount(Number(shipment.order?.total || 0));
     setDeliveryNotes('');
+    setDeliveryOtp('');
   };
 
   const handleConfirmAction = async () => {
@@ -83,13 +85,19 @@ const CourierMobileRunPage: React.FC = () => {
       return;
     }
 
+    if (actionType === 'DELIVERED' && run.otpRequired && !/^\d{4}$/.test(deliveryOtp.trim())) {
+      toast.error('أدخل كود الاستلام المكوّن من 4 أرقام الذي استلمه العميل');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await courierService.updateShipmentStatus(run.id, selectedShipment.id, {
         status: actionType,
         collectedAmount: actionType === 'DELIVERED' ? collectedAmount : 0,
         deliveryNotes: deliveryNotes?.trim() || undefined,
-        pin: run.pinRequired ? fieldPin.trim() : undefined
+        pin: run.pinRequired ? fieldPin.trim() : undefined,
+        otp: actionType === 'DELIVERED' && run.otpRequired ? deliveryOtp.trim() : undefined
       }, token);
 
       toast.success(
@@ -102,6 +110,7 @@ const CourierMobileRunPage: React.FC = () => {
 
       setSelectedShipment(null);
       setActionType(null);
+      setDeliveryOtp('');
       fetchRun();
     } catch (err: any) {
       toast.error(err?.message || 'تعذر تحديث حالة الشحنة');
@@ -378,6 +387,24 @@ const CourierMobileRunPage: React.FC = () => {
                 />
                 <p className="text-[11px] text-slate-400 mt-1">
                   عدّل المبلغ في حالة وجود خصم خاص أو تسليم جزئي لبعض القطع.
+                </p>
+              </div>
+            )}
+
+            {actionType === 'DELIVERED' && run.otpRequired && (
+              <div>
+                <label className="block text-xs font-medium mb-1">كود الاستلام من العميل *</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={deliveryOtp}
+                  onChange={(e) => setDeliveryOtp(e.target.value.replace(/\D/g, ''))}
+                  placeholder="••••"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base font-bold tracking-[0.5em] text-center tabular-nums focus:outline-none"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  الكود وصل العميل في رسالة خروج الطلب للتوصيل — إثبات الاستلام منه مباشرة.
                 </p>
               </div>
             )}

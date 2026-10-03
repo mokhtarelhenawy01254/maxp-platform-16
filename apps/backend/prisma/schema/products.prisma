@@ -750,6 +750,10 @@ model Shipment {
   collectedAmount        Decimal?         @db.Decimal(10, 2)
   collectedAt            DateTime?
   deliveryNotes          String?
+  /// Fleet OTP delivery proof: bcrypt hash of the 4-digit code texted to the customer
+  /// on dispatch — required on field DELIVERED when fieldWorkflow.requireDeliveryOtp is on
+  otpHash                String?
+  otpExpiresAt           DateTime?
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
   company                Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)

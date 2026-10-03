@@ -92,6 +92,8 @@ export interface DeliveryRun {
   mobileToken?: string | null;
   /** Fleet setting requires a field PIN and this courier has one — mobile page must collect it */
   pinRequired?: boolean;
+  /** Fleet setting requires the customer's OTP code to mark parcels DELIVERED */
+  otpRequired?: boolean;
   createdAt: string;
   courier?: {
     id: string;
@@ -197,6 +199,13 @@ const courierService = {
   }> =>
     api.get('/couriers/performance', { params }).then((r) => r.data),
 
+  reassignShipments: (shipmentIds: string[], toCourierId: string): Promise<{
+    success: boolean;
+    message: string;
+    data: { moved: number; toCourier: { id: string; name: string } };
+  }> =>
+    api.post('/couriers/shipments/reassign', { shipmentIds, toCourierId }).then((r) => r.data),
+
   getDeliveryRuns: (params?: { courierId?: string; status?: string; dateFrom?: string; dateTo?: string; search?: string; page?: number; limit?: number }): Promise<{ success: boolean; data: DeliveryRun[]; pagination: { total: number; page: number; limit: number; pages: number } }> =>
     api.get('/couriers/runs', { params }).then((r) => r.data),
 
@@ -215,7 +224,7 @@ const courierService = {
   createDeliveryRun: (payload: { courierId: string; shipmentIds?: string[]; orderIds?: string[]; notes?: string }): Promise<{ success: boolean; data: DeliveryRun }> =>
     api.post<{ success: boolean; data: DeliveryRun }>('/couriers/runs', payload).then((r) => r.data),
 
-  updateShipmentStatus: (runId: string, shipmentId: string, payload: { status: string; collectedAmount?: number; deliveryNotes?: string; pin?: string }, token?: string): Promise<{ success: boolean; data: any }> => {
+  updateShipmentStatus: (runId: string, shipmentId: string, payload: { status: string; collectedAmount?: number; deliveryNotes?: string; pin?: string; otp?: string }, token?: string): Promise<{ success: boolean; data: any }> => {
     const requestConfig: any = {};
     if (token) {
       requestConfig.headers = { Authorization: `Bearer ${token}` };

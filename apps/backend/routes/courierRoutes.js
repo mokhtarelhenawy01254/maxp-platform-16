@@ -45,6 +45,13 @@ router.get(
   courierController.getPerformance
 );
 
+// Reassign internal-courier shipments to another courier
+router.post(
+  '/shipments/reassign',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.reassignShipments
+);
+
 // Delivery Runs (Manifests)
 router.post(
   '/runs',

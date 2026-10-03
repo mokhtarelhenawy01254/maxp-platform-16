@@ -14,7 +14,7 @@ const NOTIFICATION_TEMPLATES = {
 👨‍✈️ الكابتن: {courierName}
 📞 للتواصل: {courierPhone}
 💰 المبلغ المطلوب عند الاستلام: {amount}
-
+{otpLine}
 يُرجى تجهيز المبلغ نقدًا. شكرًا لك!`,
 
   [COURIER_NOTIFICATION_EVENTS.DELIVERED]: `تم تسليم طلبك ✅
@@ -50,7 +50,7 @@ function formatAmount(value) {
  * Gated by the fleet app settings (notifications.*) on top of the company-wide
  * WhatsApp notification settings the platform already enforces.
  */
-async function sendCourierNotification({ companyId, eventType, order, courier, amount, reason, storeName }) {
+async function sendCourierNotification({ companyId, eventType, order, courier, amount, reason, storeName, otpLine }) {
   try {
     if (!order?.customerPhone) return { success: false, reason: 'no_phone' };
 
@@ -81,7 +81,8 @@ async function sendCourierNotification({ companyId, eventType, order, courier, a
       courierPhone: courier?.phone || '',
       amount: formatAmount(amount),
       reason: reason || '',
-      storeName: storeName || ''
+      storeName: storeName || '',
+      otpLine: otpLine || ''
     };
     const content = replaceVariables(template, vars);
 
@@ -106,16 +107,21 @@ async function sendCourierNotification({ companyId, eventType, order, courier, a
 /**
  * Fire-and-forget dispatch notifications for every shipment entering a new run.
  * Called AFTER the dispatch transaction commits — never blocks or fails the dispatch.
+ * otpByShipment: Map shipmentId → plain OTP included in the customer message when present.
  */
-function notifyRunDispatched(companyId, { run, shipments, courier }) {
+function notifyRunDispatched(companyId, { run, shipments, courier, otpByShipment }) {
   for (const s of shipments || []) {
     if (!s.order) continue;
+    const otp = otpByShipment?.get?.(s.id);
     sendCourierNotification({
       companyId,
       eventType: COURIER_NOTIFICATION_EVENTS.OUT_FOR_DELIVERY,
       order: s.order,
       courier,
-      amount: s.order?.total
+      amount: s.order?.total,
+      otpLine: otp
+        ? `🔑 كود الاستلام: ${otp} — اعرضه للكابتن عند استلام الطلب`
+        : ''
     }).catch((e) => console.error('[CourierNotification] dispatch notify failed:', e.message));
   }
 }

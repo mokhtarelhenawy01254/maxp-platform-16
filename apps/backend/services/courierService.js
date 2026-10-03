@@ -1,6 +1,7 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const { getJwtSecret } = require('../utils/jwtSecret');
 const { buildInstalledMarketplaceAppSettings } = require('../utils/marketplaceAppSettings');
 const { notifyRunDispatched, notifyFieldUpdate } = require('./courierNotificationService');
@@ -413,6 +414,22 @@ async function createDeliveryRun(companyId, { courierId, shipmentIds, orderIds, 
       }
     });
 
+    // 🔑 OTP delivery proof: a 4-digit code texted to the customer on dispatch;
+    // marking the parcel DELIVERED requires this code when the setting is on.
+    const otpByShipment = new Map();
+    for (const s of shipments) {
+      if (!s.order?.customerPhone) continue;
+      const otp = String(crypto.randomInt(1000, 10000));
+      otpByShipment.set(s.id, otp);
+      await tx.shipment.update({
+        where: { id: s.id },
+        data: {
+          otpHash: bcrypt.hashSync(otp, 10),
+          otpExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        }
+      });
+    }
+
     // Update orders status if applicable
     const relatedOrderIds = shipments.map((s) => s.orderId).filter(Boolean);
     if (relatedOrderIds.length > 0) {
@@ -433,7 +450,7 @@ async function createDeliveryRun(companyId, { courierId, shipmentIds, orderIds, 
 
   // 📣 Customer WhatsApp notifications after the dispatch commits — fire-and-forget,
   // gated by fleet settings + the company's WhatsApp notification settings.
-  notifyRunDispatched(companyId, { run: deliveryRun, shipments, courier });
+  notifyRunDispatched(companyId, { run: deliveryRun, shipments, courier, otpByShipment });
 
   return deliveryRun;
 }
@@ -570,6 +587,8 @@ async function getDeliveryRunById(companyId, runId) {
 
   // Field PIN gating: exposed as a flag so the mobile page asks for the PIN upfront
   const pinRequired = run.courierId ? await isCourierPinRequired(companyId, run.courierId) : false;
+  // OTP delivery proof gating: exposed so the mobile page collects the customer's code
+  const otpRequired = await isDeliveryOtpRequired(companyId);
 
   let mobileToken = null;
   try {
@@ -593,6 +612,7 @@ async function getDeliveryRunById(companyId, runId) {
     ...run,
     mobileToken,
     pinRequired,
+    otpRequired,
     totalCODExpected: normalizeAmount(run.totalCODExpected),
     totalCODCollected: normalizeAmount(run.totalCODCollected),
     courier: {
@@ -621,7 +641,7 @@ async function getDeliveryRunById(companyId, runId) {
  * - runId and courierId (when the caller is a field courier) are enforced as ownership filters
  * - shipments of SETTLED/CANCELLED runs are locked
  */
-async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status, collectedAmount, deliveryNotes, userId, courierId, pin }) {
+async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status, collectedAmount, deliveryNotes, userId, courierId, pin, otp }) {
   const prisma = getSharedPrismaClient();
 
   const normalizedStatus = String(status || '').toUpperCase();
@@ -672,6 +692,22 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
   };
 
   const isDelivered = DELIVERED_STATUSES.includes(normalizedStatus) || normalizedStatus === 'PARTIALLY_DELIVERED';
+
+  // 🔑 OTP delivery proof: when the fleet setting requires it and this parcel was
+  // dispatched with a code, only the customer's code can mark it DELIVERED.
+  if (isDelivered && shipment.otpHash) {
+    const otpRequired = await isDeliveryOtpRequired(companyId);
+    if (otpRequired) {
+      const providedOtp = String(otp || '').trim();
+      const otpExpired = shipment.otpExpiresAt && new Date(shipment.otpExpiresAt) < new Date();
+      if (otpExpired) {
+        throw serviceError('انتهت صلاحية كود الاستلام — أعد إسناد الطرد لتوليد كود جديد', 409);
+      }
+      if (!providedOtp || !bcrypt.compareSync(providedOtp, shipment.otpHash)) {
+        throw serviceError('كود الاستلام مطلوب وغير صحيح — اطلبه من العميل', 403);
+      }
+    }
+  }
 
   if (isDelivered) {
     updateData.status = 'DELIVERED';
@@ -1144,6 +1180,23 @@ async function isCourierPinRequired(companyId, courierId) {
 }
 
 /**
+ * Is OTP delivery proof enabled for this company? (fleet setting fieldWorkflow.requireDeliveryOtp)
+ */
+async function isDeliveryOtpRequired(companyId) {
+  try {
+    const prisma = getSharedPrismaClient();
+    const fleetApp = await prisma.companyApp.findFirst({
+      where: { companyId, app: { slug: 'internal-courier-fleet' } },
+      select: { settings: true }
+    });
+    const installed = buildInstalledMarketplaceAppSettings('internal-courier-fleet', fleetApp?.settings || {}, {});
+    return Boolean(installed?.fieldWorkflow?.requireDeliveryOtp);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * List courier commission ledger: per-courier DUE/PAID totals + paginated entries
  */
 async function listCourierCommissions(companyId, { courierId, status, page = 1, limit = 20 } = {}) {
@@ -1354,6 +1407,72 @@ async function getCouriersPerformance(companyId, { from, to } = {}) {
   };
 }
 
+/**
+ * Reassign internal-courier shipments to another courier. Settled parcels and parcels
+ * inside settled/cancelled runs are rejected; the parcels detach from their manifest
+ * (the target courier's next run picks them up) and manifest counters are refreshed.
+ * The customer's delivery OTP travels with the parcel — the code belongs to the order.
+ */
+async function reassignShipments(companyId, { shipmentIds, toCourierId, userId }) {
+  const prisma = getSharedPrismaClient();
+
+  if (!Array.isArray(shipmentIds) || shipmentIds.length === 0) {
+    throw serviceError('حدد طرودًا لإعادة الإسناد', 400);
+  }
+
+  const target = await prisma.courier.findFirst({
+    where: { id: toCourierId, companyId, isActive: true }
+  });
+  if (!target) {
+    throw serviceError('المندوب الجديد غير موجود أو غير نشط', 404);
+  }
+
+  const shipments = await prisma.shipment.findMany({
+    where: { companyId, id: { in: shipmentIds }, carrierType: 'INTERNAL_COURIER' },
+    include: { deliveryRun: { select: { id: true, status: true } } }
+  });
+  if (shipments.length === 0) {
+    throw serviceError('لا توجد طرود داخلية مطابقة لإعادة الإسناد', 404);
+  }
+
+  const blocked = shipments.filter(
+    (s) =>
+      s.settlementStatus === 'SETTLED' ||
+      ['SETTLED', 'CANCELLED'].includes(s.deliveryRun?.status || '')
+  );
+  if (blocked.length > 0) {
+    throw serviceError('لا يمكن إعادة إسناد طرود مسوّاة ماليًا أو داخل ورديات مقفولة', 409);
+  }
+
+  const sourceRunIds = [...new Set(shipments.map((s) => s.deliveryRunId).filter(Boolean))];
+
+  await prisma.$transaction(async (tx) => {
+    await tx.shipment.updateMany({
+      where: { companyId, id: { in: shipments.map((s) => s.id) } },
+      data: { courierId: toCourierId, deliveryRunId: null }
+    });
+
+    // Refresh stored manifest counters of the source runs
+    for (const runId of sourceRunIds) {
+      const remaining = await tx.shipment.count({ where: { deliveryRunId: runId } });
+      await tx.deliveryRun.update({
+        where: { id: runId },
+        data: { totalShipments: remaining }
+      });
+    }
+
+    await tx.courier.update({
+      where: { id: toCourierId },
+      data: { status: 'ON_DUTY' }
+    });
+  });
+
+  return {
+    moved: shipments.length,
+    toCourier: { id: target.id, name: target.name }
+  };
+}
+
 module.exports = {
   listCouriers,
   getCourierById,
@@ -1370,5 +1489,6 @@ module.exports = {
   getCourierDashboardSummary,
   listCourierCommissions,
   payCourierCommissions,
-  getCouriersPerformance
+  getCouriersPerformance,
+  reassignShipments
 };

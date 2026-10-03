@@ -206,6 +206,7 @@ const DEFAULT_MARKETPLACE_APP_SETTINGS = {
     },
     fieldWorkflow: {
       requireCourierPin: false,
+      requireDeliveryOtp: false,
       autoUpdateOrderStatusOnDelivery: true,
       allowPartialDelivery: true,
       requirePhotoProofOnReturn: false,
