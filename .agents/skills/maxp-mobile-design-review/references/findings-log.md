@@ -32,6 +32,7 @@
 | CRM | — | ⏳ |
 | التحليلات | — | ⏳ |
 | الإشعارات | — | ⏳ |
+| **نظام التصميم (tokens/حوكمة)** | — | 🔴 MOB-055 (تباين) · 🟡 MOB-056/057/058 |
 
 ---
 
@@ -295,6 +296,54 @@
 - عناوين كروت الشوب بتتقطع بـ «…» (نمط مقبول — بس اتأكد إن title attribute موجود).
 - الشوب: فراغ أبيض كبير بين صف الفلاتر والمنتجات — يحتاج فحص عنصر فاضي.
 - اسم منتج بروابط تركية «Şık Sole» — مرتبط بـ MOB-006.
+
+---
+
+## 🧬 تدقيق نظام التصميم (Design System Audit) — جولة 2026-10-03
+
+> **نوع الجولة:** تدقيق نظام (مش مراجعة شاشة) — فحص الـ tokens والمكوّنات والحوكمة على مستوى الريبو.
+> **طريقة:** `file:line` + حساب تباين برمجي من قيم OKLCH نفسها + قياس حي على 390×844.
+> **مفيش تعديل كود ولا توكنز في هذه الجولة.**
+
+### MOB-055 🔴 توكنز ألوان الحالة فاشلة في WCAG AA — أبيض على warning/success = 2.14 و2.57
+- **الجزء:** نظام التصميم كله — `apps/frontend/src/styles/index.css:150-178` (`:root`)
+- **العيب:** التوكنز الدلالية **موجودة وتعمل**، لكن قيم ألوان الحالة لا تحقّق AA للنص فوقها. الحساب من قيم OKLCH نفسها (تحويل OKLCH→sRGB→WCAG contrast):
+
+| الزوج | التباين | AA (4.5) | الحكم |
+|---|---|---|---|
+| `--color-warning` `oklch(0.769 0.165 70.1)` + أبيض | **2.14:1** | ❌ | 🔴 نص الحالة غير مقروء |
+| `--color-success` `oklch(0.692 0.153 159.9)` + أبيض | **2.57:1** | ❌ | 🔴 نفس العيب |
+| `--color-destructive` + أبيض | **3.76:1** | ❌ | 🟡 large-text فقط |
+| `--color-muted-foreground` على `--color-background` | **4.20:1** | ❌ | 🟡 قريب، درجة واحدة تكفي |
+| `--color-primary` + أبيض | **4.49:1** | ❌ (0.01 ناقص) | 🟡 |
+| `--color-border` على `--color-background` | **1.38:1** | ❌ | ⚪ زخرفي — لكن حدود الـ inputs لازم ≥3:1 |
+
+- **الدليل:** حساب برمجي من `index.css:150-178` (انظر التقرير `.agents/design/reports/2026-10-03-capability-and-design-system-audit.md` §4.1). الوضع **الغامق سليم تمامًا** (foreground 17.09 · muted-foreground 8.02 · card 15.77).
+- **الإصلاح المقترح (قرار مطلوب قبل التنفيذ):** المحدد في التقرير §4.1 — إمّا نُغمّق قيمة اللون نفسه (`success` → `oklch(0.58 0.15 159.9)`) أو نغيّر `*-foreground` من أبيض إلى داكن. **ده اختيار هوية لوني — محتاج موافقة المختار** (سيؤثّر على كل بادج الحالة في اللوحة).
+- **الحالة:** 🔴 مفتوح — محتاج قرار
+
+### MOB-056 🟡 `components.json` فيه `rtl: false` والتطبيق كله RTL
+- **الجزء:** نظام التصميم — `apps/frontend/components.json:14`
+- **العيب:** الملف بيقول `"rtl": false` بينما `index.html:2` فيه `dir="rtl"` والتطبيق كله عربي. أي مكوّن جديد يتولّد من shadcn CLI هيتولّد بافتراض LTR على مشروع RTL.
+- **الدليل:** `components.json:14` مقابل `index.html:2`.
+- **الإصلاح المقترح:** `"rtl": true` — أو على الأقل توثيق دعم RTL كقاعدة في `DESIGN.md` مع logical properties.
+- **الحالة:** 🟡 مفتوح
+
+### MOB-057 🟡 خط Cairo معرَّف في التوكنز لكن مفيش `@font-face` ليه — يسقط لخط النظام
+- **الجزء:** نظام الخطوط — `apps/frontend/src/styles/index.css:447` (`--font-heading`) و `:181-182`
+- **العيب:** `--font-heading: "Cairo", "Geist Variable", sans-serif` و `--theme-font-heading: "Cairo", …` — لكن `index.css` فيه **5 `@font-face` كلها Geist**، ومفيش ولا واحد لـ Cairo. النتيجة: العناوين ترث `Geist Variable` (أو خط النظام) بدل Cairo.
+- **الدليل:** `grep -c "@font-face" index.css` → 5، كلهم Geist. `find` → مفيش ملف Cairo في `public/assets/files/`.
+- **الإصلاح المقترح:** إمّا (أ) self-host Cairo في `public/assets/files/` مع `@font-face` مثل Geist، أو (ب) شيل Cairo من التوكنز واعتمد IBM Plex Sans Arabic للعناوين. **قرار هوية — محتاج موافقة.**
+- **ملاحظة:** الدليل الحي المؤكد: `swan.maxp.online` بيحسب `font-family: "IBM Plex Sans Arabic"` فعلياً (قياس 390px، 2026-10-03).
+- **الحالة:** 🟡 مفتوح
+
+### MOB-058 🟡 `user-scalable=no` يمنع تكبير الصفحة — مخالفة WCAG 1.4.4
+- **الجزء:** كل الواجهات — `apps/frontend/index.html:9`
+- **العيب:** `<meta name="viewport" content="… maximum-scale=1.0, user-scalable=no …">` — التاجر، وخاصة المسنّ، بيحتاج يكبّر النصوص لضعف بصر. ده مخالفة مباشرة لـ WCAG 2.1/2.2 SC 1.4.4 (Resize Text). (WCAG 2.2 لم تلغِ هذا المعيار — راجع [w3.org/WAI/…/wcag](https://www.w3.org/WAI/standards-guidelines/wcag/)).
+- **الدليل:** `index.html:9`.
+- **الإصلاح المقترح:** شيل `maximum-scale=1.0, user-scalable=no` من الـ meta (الـ `viewport-fit=cover` يفضل للـ safe-area). تحقق: زوّم 200% على 390px → النص يظل مقروء ولا يقطع.
+- **الحالة:** 🟡 مفتوح
+
 
 ---
 
