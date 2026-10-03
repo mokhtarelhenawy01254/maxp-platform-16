@@ -67,36 +67,50 @@ const parseDateRange = ({ startDate, endDate, period = '30' }) => {
 
 const categorizeReturnReason = (reasonText) => {
   if (!reasonText) return 'OTHER';
-  const t = String(reasonText).toLowerCase();
+  const t = String(reasonText).toLowerCase().trim();
 
+  // 1. جودة ومواصفات ومقاسات وتالف واستبدال
   if (
     t.includes('مقاس') || t.includes('كبير') || t.includes('صغير') ||
     t.includes('خامة') || t.includes('جودة') || t.includes('عيب') ||
     t.includes('تالف') || t.includes('مختلف') || t.includes('لون') ||
     t.includes('مواصفات') || t.includes('غير مطابق') || t.includes('صورة') ||
-    t.includes('موديل') || t.includes('size') || t.includes('quality') ||
-    t.includes('defect') || t.includes('color') || t.includes('wrong')
+    t.includes('موديل') || t.includes('استبدال') || t.includes('بدل') ||
+    t.includes('replacement') || t.includes('size') || t.includes('quality') ||
+    t.includes('defect') || t.includes('color') || t.includes('wrong') ||
+    t.includes('معاينة')
   ) {
     return 'QUALITY_CATALOG';
   }
 
+  // 2. شحن ومندوبين وتوصيل وتأخير ونطاق جغرافي
   if (
     t.includes('شحن') || t.includes('مندوب') || t.includes('تأخر') ||
     t.includes('تأخير') || t.includes('وقت') || t.includes('توصيل') ||
     t.includes('عنوان') || t.includes('ميعاد') || t.includes('سفر') ||
-    t.includes('كابتن') || t.includes('delivery') || t.includes('shipping') ||
+    t.includes('كابتن') || t.includes('تغطية') || t.includes('نطاق') ||
+    t.includes('فرع') || t.includes('محطة') || t.includes('تأجيل') ||
+    t.includes('delivery') || t.includes('shipping') ||
     t.includes('late') || t.includes('delay') || t.includes('courier')
   ) {
     return 'LOGISTICS';
   }
 
+  // 3. خدمة عملاء ومبيعات ورفض استلام وتواصل وإلغاء
   if (
+    t.includes('مرسل اليه') || t.includes('مرسل إليه') || t.includes('المرسل اليه') ||
+    t.includes('راسل') || t.includes('الراسل') || t.includes('خدمة العملاء') ||
     t.includes('فلوس') || t.includes('مبلغ') || t.includes('ألغى') ||
-    t.includes('الغاء') || t.includes('كنسل') || t.includes('مش جاهز') ||
-    t.includes('طلب مكرر') || t.includes('مش عايز') || t.includes('سعر') ||
+    t.includes('الغاء') || t.includes('إلغاء') || t.includes('كنسل') ||
+    t.includes('مش جاهز') || t.includes('طلب مكرر') || t.includes('طرد مكرر') ||
+    t.includes('مكرر') || t.includes('مش عايز') || t.includes('سعر') ||
     t.includes('غير جاد') || t.includes('مغلق') || t.includes('لم يرد') ||
-    t.includes('ما بيردش') || t.includes('cancel') || t.includes('price') ||
-    t.includes('duplicate') || t.includes('unreachable')
+    t.includes('لا يرد') || t.includes('ما بيردش') || t.includes('مايردش') ||
+    t.includes('ميردش') || t.includes('ماردش') || t.includes('غير متاح') ||
+    t.includes('غير موجود بالخدمة') || t.includes('لم يطلب') ||
+    t.includes('رفض الاستلام') || t.includes('رفض') || t.includes('جزئي') ||
+    t.includes('جزئى') || t.includes('cancel') || t.includes('price') ||
+    t.includes('duplicate') || t.includes('unreachable') || t.includes('customer')
   ) {
     return 'CUSTOMER_SALES';
   }
@@ -122,6 +136,11 @@ const isReturnedOrder = (status, customCode) => {
     c.includes('RETURN') ||
     s.includes('RETURN')
   );
+};
+
+const isPaymentCollected = (order) => {
+  const p = String(order?.paymentStatus || '').toUpperCase().trim();
+  return p === 'COMPLETED' || p === 'PAID';
 };
 
 const extractOrderReturnReason = (order) => {
@@ -249,9 +268,15 @@ const getProductDeliveryReturnsReport = async (req, res) => {
       const isInTransit = !isDelivered && !isReturned && (
         ['SHIPPED', 'OUT_FOR_DELIVERY', 'READY_TO_SHIP', 'PROCESSING'].includes(order.status) ||
         String(order.customStatusCode || '').toUpperCase().includes('TRANSIT') ||
-        String(order.customStatusCode || '').toUpperCase().includes('SHIP')
+        String(order.customStatusCode || '').toUpperCase().includes('SHIP') ||
+        String(order.customStatusCode || '').toUpperCase().includes('CAPTAIN')
       );
-      const isCancelledPreDispatch = !isDelivered && !isReturned && !isInTransit && order.status === 'CANCELLED';
+      const isCancelled = !isDelivered && !isReturned && !isInTransit && (
+        ['CANCELLED', 'DUPLICATE_ORDER', 'TRASH'].includes(order.status) ||
+        String(order.customStatusCode || '').toUpperCase().includes('CANCEL')
+      );
+      const isPending = !isDelivered && !isReturned && !isInTransit && !isCancelled;
+      const isPaid = isPaymentCollected(order);
 
       const items = order.orderItems || [];
       const totalOrderItemsCount = items.reduce((acc, it) => acc + (it.quantity || 1), 0) || 1;
@@ -282,11 +307,16 @@ const getProductDeliveryReturnsReport = async (req, res) => {
             returnedOrders: new Set(),
             inTransitOrders: new Set(),
             cancelledOrders: new Set(),
+            pendingOrders: new Set(),
+            duplicateOrders: new Set(),
+            totalQuantity: 0,
             shippedQuantity: 0,
             deliveredQuantity: 0,
             returnedQuantity: 0,
             inTransitQuantity: 0,
             cancelledQuantity: 0,
+            pendingQuantity: 0,
+            duplicateQuantity: 0,
             expectedRevenue: 0,
             collectedRevenue: 0,
             lostRevenue: 0,
@@ -302,13 +332,16 @@ const getProductDeliveryReturnsReport = async (req, res) => {
         const proportionalShipping = (orderShippingVal * qty) / totalOrderItemsCount;
 
         pData.totalOrders.add(order.id);
+        pData.totalQuantity += qty;
 
         if (isDelivered) {
           pData.deliveredOrders.add(order.id);
           pData.shippedQuantity += qty;
           pData.deliveredQuantity += qty;
           pData.expectedRevenue += itemRevenue;
-          pData.collectedRevenue += itemRevenue;
+          if (isPaid) {
+            pData.collectedRevenue += itemRevenue;
+          }
         } else if (isReturned) {
           pData.returnedOrders.add(order.id);
           pData.shippedQuantity += qty;
@@ -326,7 +359,7 @@ const getProductDeliveryReturnsReport = async (req, res) => {
               lostValue: 0
             };
           }
-          pData.returnReasonsMap[rReason].count += 1;
+          pData.returnReasonsMap[rReason].count += qty;
           pData.returnReasonsMap[rReason].lostValue += itemRevenue;
         } else if (isInTransit) {
           pData.inTransitOrders.add(order.id);
@@ -334,28 +367,57 @@ const getProductDeliveryReturnsReport = async (req, res) => {
           pData.inTransitQuantity += qty;
           pData.expectedRevenue += itemRevenue;
           pData.inTransitRevenue += itemRevenue;
-        } else if (isCancelledPreDispatch) {
+        } else if (isCancelled) {
           pData.cancelledOrders.add(order.id);
           pData.cancelledQuantity += qty;
+          if (order.status === 'DUPLICATE_ORDER') {
+            pData.duplicateOrders.add(order.id);
+            pData.duplicateQuantity += qty;
+          }
+        } else if (isPending) {
+          pData.pendingOrders.add(order.id);
+          pData.pendingQuantity += qty;
         }
       });
     });
 
     const productsList = Object.values(productMap).map((row) => {
-      const closedCount = row.deliveredQuantity + row.returnedQuantity;
-      const deliveryRate = pct(row.deliveredQuantity, closedCount > 0 ? closedCount : row.shippedQuantity);
-      const shippedDeliveryRate = pct(row.deliveredQuantity, row.shippedQuantity);
-      const returnRate = pct(row.returnedQuantity, row.shippedQuantity);
-      const inTransitRate = pct(row.inTransitQuantity, row.shippedQuantity);
+      const shippedQty = row.shippedQuantity;
+      let deliveryRate = 0;
+      let returnRate = 0;
+      let inTransitRate = 0;
+
+      if (shippedQty > 0) {
+        deliveryRate = pct(row.deliveredQuantity, shippedQty);
+        returnRate = pct(row.returnedQuantity, shippedQty);
+        inTransitRate = pct(row.inTransitQuantity, shippedQty);
+        const sumRates = round2(deliveryRate + returnRate + inTransitRate);
+        if (sumRates !== 100 && (row.deliveredQuantity + row.returnedQuantity + row.inTransitQuantity === shippedQty)) {
+          inTransitRate = round2(100 - deliveryRate - returnRate);
+        }
+      }
+
+      const shippedDeliveryRate = deliveryRate;
       const collectionRate = pct(row.collectedRevenue, row.expectedRevenue);
 
-      const returnReasons = Object.values(row.returnReasonsMap)
-        .map((r) => ({
+      const totalReasonsCount = Object.values(row.returnReasonsMap).reduce((s, r) => s + r.count, 0) || row.returnedQuantity || 1;
+      const sortedRawReasons = Object.values(row.returnReasonsMap).sort((a, b) => b.count - a.count);
+
+      let accumulatedPct = 0;
+      const returnReasons = sortedRawReasons.map((r, idx) => {
+        let p = pct(r.count, totalReasonsCount);
+        if (idx === sortedRawReasons.length - 1) {
+          p = round2(Math.max(0, Math.min(p, 100 - accumulatedPct)));
+        } else if (accumulatedPct + p > 100) {
+          p = round2(Math.max(0, 100 - accumulatedPct));
+        }
+        accumulatedPct = round2(accumulatedPct + p);
+        return {
           ...r,
-          percentage: pct(r.count, row.returnedOrders.size || 1),
+          percentage: p,
           lostValue: round2(r.lostValue)
-        }))
-        .sort((a, b) => b.count - a.count);
+        };
+      });
 
       const catCounts = {
         QUALITY_CATALOG: 0,
@@ -371,22 +433,25 @@ const getProductDeliveryReturnsReport = async (req, res) => {
       let operationalRecommendation = 'أداء المنتج مستقر والمؤشرات في النطاق الآمن.';
 
       if (row.returnedQuantity > 0) {
-        if (catCounts.QUALITY_CATALOG >= catCounts.LOGISTICS && catCounts.QUALITY_CATALOG >= catCounts.CUSTOMER_SALES && catCounts.QUALITY_CATALOG > 0) {
+        if (catCounts.QUALITY_CATALOG >= catCounts.LOGISTICS && catCounts.QUALITY_CATALOG >= catCounts.CUSTOMER_SALES && catCounts.QUALITY_CATALOG >= catCounts.OTHER && catCounts.QUALITY_CATALOG > 0) {
           primaryBottleneck = 'QUALITY_CATALOG';
           operationalRecommendation = 'معظم المرتجعات ناتجة عن المقاسات أو خامة المنتج ومطابقته للصور. يُنصح بمراجعة جدول المقاسات وتأكيد المقاس مع العميل قبل الشحن وفحص جودة الدفعة.';
-        } else if (catCounts.LOGISTICS >= catCounts.QUALITY_CATALOG && catCounts.LOGISTICS >= catCounts.CUSTOMER_SALES && catCounts.LOGISTICS > 0) {
+        } else if (catCounts.LOGISTICS >= catCounts.QUALITY_CATALOG && catCounts.LOGISTICS >= catCounts.CUSTOMER_SALES && catCounts.LOGISTICS >= catCounts.OTHER && catCounts.LOGISTICS > 0) {
           primaryBottleneck = 'LOGISTICS';
           operationalRecommendation = 'السبب الأساسي هو تأخر شركة الشحن أو عدم التزام المندوب. يُوصى بتوجيه هذا المنتج لشركة شحن بديلة ومتابعة مسار الشحنات المتأخرة فوراً.';
-        } else if (catCounts.CUSTOMER_SALES > 0) {
+        } else if (catCounts.CUSTOMER_SALES >= catCounts.OTHER && catCounts.CUSTOMER_SALES > 0) {
           primaryBottleneck = 'CUSTOMER_SALES';
           operationalRecommendation = 'المرتجعات مرتبطة بعدم جاهزية المبلغ أو تردد العميل. يُنصح بتفعيل التأكيد الهاتفي الصارم وطلب دفعة مسبقة (COD Deposit) في المحافظات عالية الخطورة.';
+        } else if (catCounts.OTHER > 0) {
+          primaryBottleneck = 'OTHER';
+          operationalRecommendation = 'توجد نسبة مرتجعات غير مصنفة بدقة من شركة الشحن. يُنصح بمراجعة مندوب الشحن وتحديث أسباب الإرجاع.';
         }
       }
 
       let healthStatus = 'HEALTHY';
-      if ((deliveryRate < 65 && closedCount >= 3) || (returnRate > 25 && row.shippedQuantity >= 4)) {
+      if ((deliveryRate < 65 && row.shippedQuantity >= 3) || (returnRate > 25 && row.shippedQuantity >= 4)) {
         healthStatus = 'CRITICAL';
-      } else if ((deliveryRate < 75 && closedCount >= 3) || (returnRate > 15 && row.shippedQuantity >= 3)) {
+      } else if ((deliveryRate < 75 && row.shippedQuantity >= 3) || (returnRate > 15 && row.shippedQuantity >= 3)) {
         healthStatus = 'WARNING';
       }
 
@@ -402,11 +467,16 @@ const getProductDeliveryReturnsReport = async (req, res) => {
         returnedOrders: row.returnedOrders.size,
         inTransitOrders: row.inTransitOrders.size,
         cancelledOrders: row.cancelledOrders.size,
+        pendingOrders: row.pendingOrders.size,
+        duplicateOrders: row.duplicateOrders.size,
+        totalQuantity: row.totalQuantity,
         shippedQuantity: row.shippedQuantity,
         deliveredQuantity: row.deliveredQuantity,
         returnedQuantity: row.returnedQuantity,
         inTransitQuantity: row.inTransitQuantity,
         cancelledQuantity: row.cancelledQuantity,
+        pendingQuantity: row.pendingQuantity,
+        duplicateQuantity: row.duplicateQuantity,
         deliveryRate,
         shippedDeliveryRate,
         returnRate,
@@ -458,14 +528,22 @@ const getProductDeliveryReturnsReport = async (req, res) => {
     const totalDeliveredQty = productsList.reduce((sum, p) => sum + p.deliveredQuantity, 0);
     const totalReturnedQty = productsList.reduce((sum, p) => sum + p.returnedQuantity, 0);
     const totalInTransitQty = productsList.reduce((sum, p) => sum + p.inTransitQuantity, 0);
+    const totalCancelledQty = productsList.reduce((sum, p) => sum + p.cancelledQuantity, 0);
+    const totalPendingQty = productsList.reduce((sum, p) => sum + p.pendingQuantity, 0);
     const totalExpectedRevenue = productsList.reduce((sum, p) => sum + p.expectedRevenue, 0);
     const totalCollectedRevenue = productsList.reduce((sum, p) => sum + p.collectedRevenue, 0);
     const totalLostRevenue = productsList.reduce((sum, p) => sum + p.lostRevenue, 0);
     const totalLostShipping = productsList.reduce((sum, p) => sum + p.lostShippingCost, 0);
 
-    const closedQty = totalDeliveredQty + totalReturnedQty;
-    const overallDeliveryRate = pct(totalDeliveredQty, closedQty > 0 ? closedQty : totalShippedQty);
+    const overallDeliveryRate = pct(totalDeliveredQty, totalShippedQty);
     const overallReturnRate = pct(totalReturnedQty, totalShippedQty);
+    let overallInTransitRate = pct(totalInTransitQty, totalShippedQty);
+    if (totalShippedQty > 0) {
+      const sumRates = round2(overallDeliveryRate + overallReturnRate + overallInTransitRate);
+      if (sumRates !== 100 && (totalDeliveredQty + totalReturnedQty + totalInTransitQty === totalShippedQty)) {
+        overallInTransitRate = round2(100 - overallDeliveryRate - overallReturnRate);
+      }
+    }
     const overallCollectionRate = pct(totalCollectedRevenue, totalExpectedRevenue);
 
     const criticalCount = productsList.filter((p) => p.healthStatus === 'CRITICAL').length;
@@ -481,8 +559,11 @@ const getProductDeliveryReturnsReport = async (req, res) => {
           totalDeliveredQuantity: totalDeliveredQty,
           totalReturnedQuantity: totalReturnedQty,
           totalInTransitQuantity: totalInTransitQty,
+          totalCancelledQuantity: totalCancelledQty,
+          totalPendingQuantity: totalPendingQty,
           overallDeliveryRate,
           overallReturnRate,
+          overallInTransitRate,
           overallCollectionRate,
           totalExpectedRevenue: round2(totalExpectedRevenue),
           totalCollectedRevenue: round2(totalCollectedRevenue),
