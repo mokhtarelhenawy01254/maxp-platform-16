@@ -12,6 +12,7 @@ const mockPrisma = {
   },
   employeeDevice: {
     findFirst: jest.fn(),
+    findUnique: jest.fn(),
     upsert: jest.fn()
   },
   guestOrder: {
@@ -201,6 +202,7 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
     });
 
     test('sets isOnline to false when socketConnected is false in heartbeat', async () => {
+      mockPrisma.employeeDevice.findUnique.mockResolvedValue(null);
       mockPrisma.employeeDevice.upsert.mockImplementation(({ update, create }) =>
         Promise.resolve({ id: 'dev_1', ...update })
       );
@@ -221,6 +223,41 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
           })
         })
       );
+    });
+
+    test('rejects heartbeat claiming a device registered to another employee', async () => {
+      mockPrisma.employeeDevice.findUnique.mockResolvedValue({
+        id: 'dev_hijack',
+        deviceId,
+        companyId: 'other_company',
+        userId: 'other_user'
+      });
+
+      await expect(
+        telephonyService.registerOrHeartbeatDevice({ companyId, userId, deviceId })
+      ).rejects.toMatchObject({ statusCode: 403 });
+      expect(mockPrisma.employeeDevice.upsert).not.toHaveBeenCalled();
+    });
+
+    test('allows the same employee to re-heartbeat their own device', async () => {
+      mockPrisma.employeeDevice.findUnique.mockResolvedValue({
+        id: 'dev_own',
+        deviceId,
+        companyId,
+        userId
+      });
+      mockPrisma.employeeDevice.upsert.mockImplementation(({ update }) =>
+        Promise.resolve({ id: 'dev_own', ...update })
+      );
+
+      const device = await telephonyService.registerOrHeartbeatDevice({
+        companyId,
+        userId,
+        deviceId,
+        socketConnected: true
+      });
+      expect(device.isOnline).toBe(true);
+      expect(mockPrisma.employeeDevice.upsert).toHaveBeenCalled();
     });
 
     test('completeCall leaves callerPhone null when callerPhone is not provided', async () => {

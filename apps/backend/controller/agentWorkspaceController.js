@@ -17,6 +17,21 @@ const ALLOWED_CALL_RESULTS = ['unreached', 'reached', 'busy', 'wrong_number', 'c
 // «إعادة اتصال» = التزام متابعة: نجدول افتراضيًا بعد 24 ساعة إن لم يكن هناك موعد مستقبلي
 const DEFAULT_CALLBACK_FOLLOW_UP_MS = 24 * 60 * 60 * 1000;
 
+// إخراج الطلب من طابور التأكيد النشط بعد تأكيده أو إلغائه
+const deactivateWorkspaceAssignment = (prisma, companyId, orderId) => {
+  if (typeof prisma.orderAssignment?.updateMany !== 'function') {
+    return Promise.resolve();
+  }
+  return prisma.orderAssignment.updateMany({
+    where: {
+      companyId,
+      isActive: true,
+      OR: [{ orderId }, { guestOrderId: orderId }]
+    },
+    data: { isActive: false }
+  });
+};
+
 const requireManager = (req, res, next) => {
   if (!isManagerUser(req.user)) {
     return res.status(403).json({ success: false, error: 'هذه العملية متاحة للمدير أو قائد الفريق فقط' });
@@ -635,6 +650,9 @@ const logCallAttempt = async (req, res) => {
         await tx.callAttemptLog.create({
           data: {
             guestOrderId: id,
+            // بدونها تسقط المحاولات اليدوية من فلترة الشركات في سجل التليفوني
+            // وحارس الـ 20 ثانية — جدول واحد لازم يُكتب بنمط واحد
+            companyId,
             userId,
             result: callResult,
             notes,
@@ -661,6 +679,7 @@ const logCallAttempt = async (req, res) => {
         await tx.callAttemptLog.create({
           data: {
             orderId: id,
+            companyId,
             userId,
             result: callResult,
             notes,
@@ -758,42 +777,6 @@ const quickAction = async (req, res) => {
     const isManager = isManagerUser(req.user);
     const { type } = await assertWorkspaceOrderOwnership(prisma, companyId, userId, id, isManager);
 
-    // Deactivate order assignment upon CONFIRMED or CANCELLED so it immediately leaves the active confirmation queue
-    if (normalizedStatus === 'CONFIRMED') {
-      if (typeof prisma.orderAssignment?.updateMany === 'function') {
-        await prisma.orderAssignment.updateMany({
-          where: {
-            companyId,
-            isActive: true,
-            OR: [{ orderId: id }, { guestOrderId: id }]
-          },
-          data: { isActive: false }
-        });
-      }
-
-      if (type === 'REGULAR' && typeof prisma.order?.update === 'function') {
-        await prisma.order.update({
-          where: { id },
-          data: {
-            confirmedAt: new Date(),
-            confirmedBy: userId,
-            confirmationNotes: actionNotes || 'اجراء سريع من لوحة الموظف'
-          }
-        });
-      }
-    } else if (normalizedStatus === 'CANCELLED') {
-      if (typeof prisma.orderAssignment?.updateMany === 'function') {
-        await prisma.orderAssignment.updateMany({
-          where: {
-            companyId,
-            isActive: true,
-            OR: [{ orderId: id }, { guestOrderId: id }]
-          },
-          data: { isActive: false }
-        });
-      }
-    }
-
     if (type === 'GUEST') {
       const updatedGuestOrder = await orderService.updateGuestOrderStatus(
         id,
@@ -803,6 +786,12 @@ const quickAction = async (req, res) => {
         userId,
         userName
       );
+
+      // إلغاء الإسناد بعد نجاح الحالة لا قبلها — فشل الحالة كان يفعّل الإسناد
+      // فيفقد الموظف ملكية الطلب (403) ويستحيل عليه إعادة المحاولة
+      if (normalizedStatus === 'CONFIRMED' || normalizedStatus === 'CANCELLED') {
+        await deactivateWorkspaceAssignment(prisma, companyId, id);
+      }
 
       return res.json({
         success: true,
@@ -831,6 +820,23 @@ const quickAction = async (req, res) => {
             requestId: updatedOrder.workflowRequestId
           }
         });
+      }
+
+      if (normalizedStatus === 'CONFIRMED') {
+        await deactivateWorkspaceAssignment(prisma, companyId, id);
+
+        if (type === 'REGULAR' && typeof prisma.order?.update === 'function') {
+          await prisma.order.update({
+            where: { id },
+            data: {
+              confirmedAt: new Date(),
+              confirmedBy: userId,
+              confirmationNotes: actionNotes || 'اجراء سريع من لوحة الموظف'
+            }
+          });
+        }
+      } else if (normalizedStatus === 'CANCELLED') {
+        await deactivateWorkspaceAssignment(prisma, companyId, id);
       }
     }
 
@@ -1020,47 +1026,52 @@ const assignOrder = async (req, res) => {
 
     const regular = await prisma.order.findFirst({ where: { id: orderId, companyId } });
     if (regular) {
-      await prisma.orderAssignment.updateMany({
-        where: { orderId: regular.id, isActive: true },
-        data: { isActive: false }
-      });
-      await prisma.orderAssignment.create({
-        data: {
-          companyId,
-          orderId: regular.id,
-          assignedTo: targetUserId,
-          assignedBy,
-          strategy: 'manual',
-          isActive: true
-        }
-      });
-      await prisma.order.update({
-        where: { id: regular.id },
-        data: {
-          assignedTo: targetUserId,
-          assignedBy,
-          assignedAt: new Date(),
-          assignmentStrategy: 'manual'
-        }
+      // ذرية: لا إسناد جديد قبل إلغاء القديم ولا طلب بلا إسناد بينهما
+      await prisma.$transaction(async (tx) => {
+        await tx.orderAssignment.updateMany({
+          where: { orderId: regular.id, isActive: true },
+          data: { isActive: false }
+        });
+        await tx.orderAssignment.create({
+          data: {
+            companyId,
+            orderId: regular.id,
+            assignedTo: targetUserId,
+            assignedBy,
+            strategy: 'manual',
+            isActive: true
+          }
+        });
+        await tx.order.update({
+          where: { id: regular.id },
+          data: {
+            assignedTo: targetUserId,
+            assignedBy,
+            assignedAt: new Date(),
+            assignmentStrategy: 'manual'
+          }
+        });
       });
       return res.json({ success: true, message: 'تم تعيين الطلب بنجاح' });
     }
 
     const guest = await prisma.guestOrder.findFirst({ where: { id: orderId, companyId } });
     if (guest) {
-      await prisma.orderAssignment.updateMany({
-        where: { guestOrderId: guest.id, isActive: true },
-        data: { isActive: false }
-      });
-      await prisma.orderAssignment.create({
-        data: {
-          companyId,
-          guestOrderId: guest.id,
-          assignedTo: targetUserId,
-          assignedBy,
-          strategy: 'manual',
-          isActive: true
-        }
+      await prisma.$transaction(async (tx) => {
+        await tx.orderAssignment.updateMany({
+          where: { guestOrderId: guest.id, isActive: true },
+          data: { isActive: false }
+        });
+        await tx.orderAssignment.create({
+          data: {
+            companyId,
+            guestOrderId: guest.id,
+            assignedTo: targetUserId,
+            assignedBy,
+            strategy: 'manual',
+            isActive: true
+          }
+        });
       });
       return res.json({ success: true, message: 'تم تعيين الطلب بنجاح' });
     }
@@ -1133,8 +1144,13 @@ const updateOrderItems = async (req, res) => {
           const candidateVariantId = item.variantId || item.metadata?.variantId;
           if (candidateVariantId && !validVariantId) {
             try {
-              const v = await tx.productVariant.findUnique({ where: { id: candidateVariantId } });
-              if (v) {
+              // عزل المستأجرين: لا ربط متغير إلا لمنتج تابع لنفس الشركة
+              // (مسار productId فوقه يتحقق — هذا كان الناقص)
+              const v = await tx.productVariant.findUnique({
+                where: { id: candidateVariantId },
+                include: { product: { select: { companyId: true } } }
+              });
+              if (v && v.product?.companyId === companyId) {
                 validVariantId = v.id;
                 if (!validProductId && v.productId) validProductId = v.productId;
               }
@@ -1282,26 +1298,28 @@ const updateOrderCustomer = async (req, res) => {
       updateData.shippingAddress = JSON.stringify(regularAddrObj);
       updateData.updatedAt = new Date();
 
-      await prisma.order.update({
-        where: { id: regular.id },
-        data: updateData
-      });
-
+      // الطلب وتوأمه الضيف ذرية — لا انقسام بيانات عميل بينهما عند فشل النصف
       const twinGuest = await prisma.guestOrder.findFirst({
         where: { orderNumber: regular.orderNumber, companyId }
       });
-      if (twinGuest) {
-        await prisma.guestOrder.update({
-          where: { id: twinGuest.id },
-          data: {
-            guestName: customerName || twinGuest.guestName,
-            guestPhone: customerPhone || twinGuest.guestPhone,
-            shippingAddress: updateData.shippingAddress || twinGuest.shippingAddress,
-            notes: notes !== undefined ? notes : twinGuest.notes,
-            updatedAt: new Date()
-          }
+      await prisma.$transaction(async (tx) => {
+        await tx.order.update({
+          where: { id: regular.id },
+          data: updateData
         });
-      }
+        if (twinGuest) {
+          await tx.guestOrder.update({
+            where: { id: twinGuest.id },
+            data: {
+              guestName: customerName || twinGuest.guestName,
+              guestPhone: customerPhone || twinGuest.guestPhone,
+              shippingAddress: updateData.shippingAddress || twinGuest.shippingAddress,
+              notes: notes !== undefined ? notes : twinGuest.notes,
+              updatedAt: new Date()
+            }
+          });
+        }
+      });
 
       return res.json({ success: true, message: 'تم تحديث بيانات العميل بنجاح' });
     } else {

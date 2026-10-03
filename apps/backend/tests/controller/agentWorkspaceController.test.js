@@ -500,6 +500,30 @@ describe('agentWorkspaceController.quickAction', () => {
       requestId: 'req-123'
     });
   });
+
+  test('keeps the assignment active when the status update fails so the agent can retry', async () => {
+    orderService.updateOrderStatus.mockRejectedValue(new Error('حالة غير صالحة'));
+    const prismaMock = {
+      orderAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ guestOrderId: null, orderId: 'order-1' }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 })
+      },
+      order: { update: jest.fn().mockResolvedValue({}) }
+    };
+    getSharedPrismaClient.mockReturnValue(prismaMock);
+
+    const res = createResponse();
+    await agentWorkspaceController.quickAction({
+      ...baseReq,
+      body: { action: 'confirm', notes: 'تأكيد' }
+    }, res);
+
+    expect(res.statusCode).toBe(500);
+    // الإصلاح الجوهري: إبطال الإسناد بعد نجاح الحالة لا قبلها — فشل الحالة
+    // لم يعد يسرق ملكية الطلب من الموظف ويحجب إعادة المحاولة بـ 403
+    expect(prismaMock.orderAssignment.updateMany).not.toHaveBeenCalled();
+    expect(prismaMock.order.update).not.toHaveBeenCalled();
+  });
 });
 
 describe('agentWorkspaceController.logCallAttempt', () => {
@@ -544,6 +568,7 @@ describe('agentWorkspaceController.logCallAttempt', () => {
     expect(mockTx.callAttemptLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         orderId: 'order-1',
+        companyId: 'company-1',
         userId: 'user-1',
         result: 'reached',
         notes: 'رد العميل'
@@ -971,7 +996,7 @@ describe('agentWorkspaceController.assignOrder', () => {
     expect(prismaMock.order.findFirst).not.toHaveBeenCalled();
   });
 
-  test('assigns a regular order to an active member of the same company', async () => {
+  test('assigns a regular order to an active member of the same company inside a transaction', async () => {
     const prismaMock = {
       userCompany: { findFirst: jest.fn().mockResolvedValue({ id: 'uc-1' }) },
       order: {
@@ -982,8 +1007,10 @@ describe('agentWorkspaceController.assignOrder', () => {
         updateMany: jest.fn().mockResolvedValue({ count: 0 }),
         create: jest.fn().mockResolvedValue({})
       },
-      guestOrder: { findFirst: jest.fn() }
+      guestOrder: { findFirst: jest.fn() },
+      $transaction: null
     };
+    prismaMock.$transaction = jest.fn((cb) => cb(prismaMock));
     getSharedPrismaClient.mockReturnValue(prismaMock);
 
     const res = createResponse();
@@ -1002,6 +1029,10 @@ describe('agentWorkspaceController.assignOrder', () => {
     expect(prismaMock.order.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'order-1' }, data: expect.objectContaining({ assignedTo: 'agent-2' }) })
     );
+    // الإسناد القديم أُلغي قبل إنشاء الجديد داخل نفس المعاملة
+    const calls = prismaMock.orderAssignment.updateMany.mock.invocationCallOrder[0];
+    const createCall = prismaMock.orderAssignment.create.mock.invocationCallOrder[0];
+    expect(calls).toBeLessThan(createCall);
   });
 });
 

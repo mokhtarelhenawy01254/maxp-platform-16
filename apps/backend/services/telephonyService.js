@@ -51,6 +51,14 @@ class TelephonyService {
       throw new Error('بيانات الجهاز غير مكتملة');
     }
     const prisma = getSharedPrismaClient();
+
+    // حماية من خطف الأجهزة: deviceId فريد عالميًا — أي موظف يعرف معرّف جهاز
+    // زميله (في أي شركة) كان يستطيع الاستحواذ على سجلّه عبر upsert
+    const existing = await prisma.employeeDevice.findUnique({ where: { deviceId } });
+    if (existing && (existing.userId !== userId || String(existing.companyId) !== String(companyId))) {
+      throw telephonyError('هذا الجهاز مسجل لموظف آخر', 403);
+    }
+
     const isOnline = socketConnected !== undefined ? Boolean(socketConnected) : true;
     return await prisma.employeeDevice.upsert({
       where: { deviceId },
