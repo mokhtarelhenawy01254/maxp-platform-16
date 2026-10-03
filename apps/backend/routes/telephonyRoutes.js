@@ -62,7 +62,7 @@ router.post('/initiate', async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     const userId = req.user?.id;
-    const { orderId } = req.body || {};
+    const { orderId, targetPhone } = req.body || {};
 
     if (!orderId) {
       return res.status(400).json({ success: false, message: 'رقم أو معرف الطلب مطلوب' });
@@ -71,11 +71,13 @@ router.post('/initiate', async (req, res) => {
     const result = await telephonyService.initiateCall({
       companyId,
       userId,
-      orderId
+      orderId,
+      targetPhone
     });
 
     res.json({ success: true, data: result });
   } catch (error) {
+    console.error(`[Telephony] initiate failed for company=${req.user?.companyId} user=${req.user?.id} order=${req.body?.orderId}:`, error.message);
     res.status(400).json({ success: false, message: error.message });
   }
 });

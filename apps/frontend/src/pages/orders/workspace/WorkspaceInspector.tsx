@@ -5,21 +5,19 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   CalendarIcon,
-  MapPinIcon,
   ShoppingBagIcon,
   ArrowTopRightOnSquareIcon,
   PencilSquareIcon,
   BoltIcon,
   CheckIcon,
-  XMarkIcon,
-  ClockIcon,
-  PhoneIcon,
 } from '@heroicons/react/24/outline';
 import { useCurrency } from '../../../hooks/useCurrency';
 import { OrderAction, WorkspaceOrder, AgentWorkload, WorkspaceOrderItem } from './types';
 import { WorkspaceItemsEditor } from './WorkspaceItemsEditor';
+import { WorkspaceCustomerEditor, parseCleanAddress } from './WorkspaceCustomerEditor';
+export { parseCleanAddress };
+import { WorkspaceCallHistory } from './WorkspaceCallHistory';
 import { OrderCallButton } from '../../../components/telephony/OrderCallButton';
-import { GovernorateAreaSearch } from '../../../components/ui/GovernorateAreaSearch';
 import { WorkspaceWhatsAppDrawer } from './WorkspaceWhatsAppDrawer';
 
 interface WorkspaceInspectorProps {
@@ -30,6 +28,7 @@ interface WorkspaceInspectorProps {
   onLogCall: (order: WorkspaceOrder, result: string) => void;
   onOpenFollowUp: (order: WorkspaceOrder) => void;
   onOpenDetailsModal: (order: WorkspaceOrder) => void;
+  onRefreshOrder?: () => void;
   isManager?: boolean;
   agents?: AgentWorkload[];
   onAssignOrder?: (orderId: string, targetUserId: string) => Promise<void>;
@@ -53,52 +52,6 @@ interface WorkspaceInspectorProps {
   ) => Promise<void>;
 }
 
-export function parseCleanAddress(raw?: string): string {
-  if (!raw) return '';
-  const trimmed = raw.trim();
-  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (parsed && typeof parsed === 'object') {
-        return parsed.address || parsed.addressLine1 || parsed.street || '';
-      }
-    } catch {
-      return raw;
-    }
-  }
-  return raw;
-}
-
-function buildWhatsAppUrl(order: WorkspaceOrder, isArabic: boolean): string {
-  const cleanPhone = (order.customerPhone || '').replace(/[^0-9]/g, '');
-  if (!cleanPhone) return '#';
-
-  const phone = cleanPhone.startsWith('0') ? `2${cleanPhone}` : cleanPhone;
-
-  const itemsList =
-    order.items
-      ?.map((i) => {
-        const variant = [i.productColor, i.productSize].filter(Boolean).join(' - ');
-        return `• ${i.productName || i.name} ${variant ? `(${variant})` : ''} × ${i.quantity}`;
-      })
-      .join('\n') || '';
-
-  const cleanAddr = parseCleanAddress(order.shippingAddress) || [order.governorate, order.city].filter(Boolean).join('، ');
-
-  if (order.isIncomplete) {
-    const message = isArabic
-      ? `أهلاً بحضرتك أ/ ${order.customerName}،\nلاحظنا اهتمامك بطلب:\n${itemsList}\nولم يتم استكمال الطلب حتى الآن. هل واجهت أي صعوبة في الدفع أو العنوان؟ يسعدنا مساعدتك وتأكيد الطلب لك فوراً!`
-      : `Hello ${order.customerName},\nWe noticed you left your cart with:\n${itemsList}\nNeed any help completing your order? We are here to assist!`;
-    return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-  }
-
-  const message = isArabic
-    ? `أهلاً بحضرتك أ/ ${order.customerName}،\nبخصوص طلبك رقم #${order.orderNumber}:\n${itemsList}\nالإجمالي: ${order.total} ج.م\nالعنوان: ${cleanAddr}\nهل نعتمد الشحن اليوم؟`
-    : `Hello ${order.customerName},\nRegarding your order #${order.orderNumber}:\n${itemsList}\nTotal: ${order.total}\nAddress: ${cleanAddr}\nWould you like to confirm for shipment?`;
-
-  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-}
-
 export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
   order,
   busyAction,
@@ -107,6 +60,7 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
   onLogCall,
   onOpenFollowUp,
   onOpenDetailsModal,
+  onRefreshOrder,
   isManager = false,
   agents = [],
   onAssignOrder,
@@ -119,41 +73,17 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
 
   const [isEditingItems, setIsEditingItems] = useState(false);
-  const [isSavingItems, setIsSavingItems] = useState(false);
-
-  const [isEditingCustomer, setIsEditingCustomer] = useState(false);
-  const [isSavingCustomer, setIsSavingCustomer] = useState(false);
   const [isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen] = useState(false);
-  const [customerName, setCustomerName] = useState(order?.customerName || '');
-  const [customerPhone, setCustomerPhone] = useState(order?.customerPhone || '');
-  const [secondaryPhone, setSecondaryPhone] = useState(order?.secondaryPhone || '');
-  const [governorate, setGovernorate] = useState(order?.governorate || '');
-  const [city, setCity] = useState(order?.city || '');
-  const [shippingAddress, setShippingAddress] = useState(parseCleanAddress(order?.shippingAddress));
-  const [notes, setNotes] = useState(order?.notes || '');
-
-  // Reset local edit states when selected order changes
-  React.useEffect(() => {
-    setIsEditingItems(false);
-    setIsEditingCustomer(false);
-    if (order) {
-      setCustomerName(order.customerName || '');
-      setCustomerPhone(order.customerPhone || '');
-      setSecondaryPhone(order.secondaryPhone || '');
-      setGovernorate(order.governorate || '');
-      setCity(order.city || '');
-      setShippingAddress(parseCleanAddress(order.shippingAddress));
-      setNotes(order.notes || '');
-    }
-  }, [order?.id]);
 
   if (!order) {
     return (
-      <div className="flex h-full items-center justify-center p-8 text-center text-muted-foreground">
-        <p className="text-sm font-medium">
-          {isArabic
-            ? 'اختر طلباً من الطابور لبدء المراجعة والتنفيذ'
-            : 'Select an order from the queue to inspect'}
+      <div className="flex h-full flex-col items-center justify-center p-8 text-center text-muted-foreground">
+        <ShoppingBagIcon className="h-12 w-12 stroke-[1.5] text-muted-foreground/40" />
+        <p className="mt-3 text-sm font-semibold text-foreground">
+          {t('orders.noOrderSelected')}
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {t('orders.selectOrderFromList')}
         </p>
       </div>
     );
@@ -162,7 +92,6 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
   const isConfirmed = order.status === 'CONFIRMED';
   const isCancelled = order.status === 'CANCELLED';
   const isBusy = Boolean(busyAction);
-  const waUrl = buildWhatsAppUrl(order, isArabic);
 
   const dispositions = [
     { key: 'unreached', label: isArabic ? 'لم يرد' : 'Unreached', color: 'hover:bg-amber-500/10 hover:text-amber-600' },
@@ -172,79 +101,30 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
     { key: 'reached', label: isArabic ? 'تم الرد' : 'Answered', color: 'hover:bg-emerald-500/10 hover:text-emerald-600' },
   ];
 
-  const handleSaveCustomerDetails = async () => {
-    if (!onSaveCustomer) return;
-    try {
-      setIsSavingCustomer(true);
-      await onSaveCustomer(order.id, {
-        customerName,
-        customerPhone,
-        secondaryPhone,
-        governorate,
-        city,
-        shippingAddress,
-        notes,
-      });
-      setIsEditingCustomer(false);
-    } finally {
-      setIsSavingCustomer(false);
-    }
-  };
-
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-card px-4 py-3 sm:px-6">
-      {/* Abandoned Cart Recovery Banner */}
-      {order.isIncomplete && (
-        <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs">
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-amber-600 dark:text-amber-400">
-              🛒 {isArabic ? 'سلة متروكة غير مكتملة' : 'Abandoned Cart Lead'}
-            </span>
-            <span className="font-mono text-[11px] text-muted-foreground" dir="ltr">
-              ID: {order.cartId || order.id}
-            </span>
-          </div>
-          {order.abandonReason && (
-            <p className="mt-1 text-muted-foreground">
-              {isArabic ? 'سبب التوقف:' : 'Abandon reason:'}{' '}
-              {typeof order.abandonReason === 'string'
-                ? order.abandonReason
-                : (order.abandonReason as any)?.code || JSON.stringify(order.abandonReason)}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* 1. Customer Context & Direct Comms */}
+    <div className="flex h-full flex-col overflow-y-auto bg-card p-4 text-xs space-y-4">
+      {/* 1. Customer & Header Controls */}
       <section className="border-b border-border/30 pb-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-black text-foreground">
-                {order.customerName || '—'}
-              </h2>
               <span className="font-mono text-xs font-bold text-muted-foreground" dir="ltr">
                 № {order.orderNumber}
               </span>
-              {onSaveCustomer && !isEditingCustomer && (
-                <button
-                  type="button"
-                  onClick={() => setIsEditingCustomer(true)}
-                  className="rounded p-0.5 text-muted-foreground hover:text-primary"
-                  title={isArabic ? 'تعديل بيانات العميل' : 'Edit Customer'}
-                >
-                  <PencilSquareIcon className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-            <div className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-xs text-muted-foreground" dir="ltr">
-              <span>{order.customerPhone || t('orders.noPhone')}</span>
-              {order.secondaryPhone && order.secondaryPhone !== order.customerPhone && (
-                <span className="inline-flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.2 text-[11px] font-semibold text-foreground">
-                  <span className="text-[10px] text-muted-foreground">{isArabic ? 'بديل:' : 'Alt:'}</span>
-                  <span>{order.secondaryPhone}</span>
+              {order.isIncomplete && (
+                <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                  {isArabic ? 'سلة متروكة' : 'Abandoned Cart'}
                 </span>
               )}
+              <button
+                type="button"
+                onClick={() => onOpenDetailsModal(order)}
+                className="inline-flex items-center gap-1 rounded border border-border/60 bg-muted/30 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                title={isArabic ? 'عرض كل تفاصيل الطلب في نافذة منبثقة' : 'View full order modal'}
+              >
+                <span>{isArabic ? 'كامل التفاصيل' : 'Full Details'}</span>
+                <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+              </button>
             </div>
           </div>
 
@@ -265,259 +145,116 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
               orderNumber={order.orderNumber}
               customerName={order.customerName}
               customerPhone={order.customerPhone}
+              secondaryPhone={order.secondaryPhone}
               compact={false}
               onConfirm={() => onConfirm(order)}
               onNoAnswer={() => onLogCall(order, 'no_answer')}
               onPostpone={() => onOpenFollowUp(order)}
               onCancel={() => onCancel(order)}
+              onCallFinished={onRefreshOrder}
             />
           </div>
         </div>
 
-        {/* Inline Customer Edit Mode (Rich Address & Phone Editor matching Order Details) */}
-        {isEditingCustomer ? (
-          <div className="mt-2 space-y-2.5 rounded-md border border-primary/30 bg-muted/20 p-2.5 text-xs">
-            {/* Row 1: Name & Phones */}
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <div>
-                <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
-                  {isArabic ? 'اسم العميل' : 'Customer Name'}
-                </label>
-                <input
-                  type="text"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  className="h-8 w-full rounded border border-border bg-background px-2 text-xs font-medium text-foreground focus:border-primary focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
-                  {isArabic ? 'رقم الهاتف الأساسي' : 'Primary Phone'}
-                </label>
-                <input
-                  type="text"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="h-8 w-full rounded border border-border bg-background px-2 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
-                  dir="ltr"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
-                  {isArabic ? 'هاتف بديل (اختياري)' : 'Alt Phone (Optional)'}
-                </label>
-                <input
-                  type="text"
-                  value={secondaryPhone}
-                  onChange={(e) => setSecondaryPhone(e.target.value)}
-                  placeholder="01xxxxxxxxx"
-                  className="h-8 w-full rounded border border-border bg-background px-2 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
-                  dir="ltr"
-                />
-              </div>
-            </div>
-
-            {/* Row 2: Governorate & Area Smart Search */}
-            <div>
-              <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
-                {isArabic ? 'المحافظة والمنطقة / المدينة (خريطة الشحن)' : 'Governorate & City / Area'}
-              </label>
-              <GovernorateAreaSearch
-                value={{
-                  governorate: governorate || '',
-                  area: city || '',
-                }}
-                onChange={(next) => {
-                  setGovernorate(next.governorate);
-                  setCity(next.area);
-                }}
-                placeholder={isArabic ? 'ابحث عن المحافظة أو المنطقة…' : 'Search governorate / area…'}
-              />
-            </div>
-
-            {/* Row 3: Detailed Address */}
-            <div>
-              <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
-                {isArabic ? 'العنوان بالتفصيل' : 'Detailed Address'}
-              </label>
-              <textarea
-                value={shippingAddress}
-                onChange={(e) => setShippingAddress(e.target.value)}
-                rows={2}
-                placeholder={isArabic ? 'الشارع، رقم العقار، رقم الشقة، علامة مميزة…' : 'Street, building, apt, landmark…'}
-                className="w-full rounded border border-border bg-background p-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-              />
-            </div>
-
-            {/* Row 4: Notes */}
-            <div>
-              <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
-                {isArabic ? 'ملاحظات العميل أو الطلب' : 'Notes'}
-              </label>
-              <input
-                type="text"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder={isArabic ? 'ملاحظات خاصة بالتوصيل أو الاستلام…' : 'Special delivery notes…'}
-                className="h-8 w-full rounded border border-border bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-              />
-            </div>
-
-            <div className="flex justify-end gap-1.5 pt-1 border-t border-border/30">
-              <button
-                type="button"
-                onClick={() => setIsEditingCustomer(false)}
-                className="rounded border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-muted/40"
-              >
-                {isArabic ? 'إلغاء' : 'Cancel'}
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveCustomerDetails}
-                disabled={isSavingCustomer}
-                className="inline-flex items-center gap-1 rounded bg-primary px-3.5 py-1 text-xs font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-              >
-                <CheckIcon className="h-3.5 w-3.5" />
-                <span>{isSavingCustomer ? (isArabic ? 'جاري الحفظ…' : 'Saving…') : (isArabic ? 'حفظ البيانات' : 'Save Details')}</span>
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
-            <MapPinIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-            <span className="leading-snug">
-              {[order.governorate, order.city, parseCleanAddress(order.shippingAddress)].filter(Boolean).join(' • ') || '—'}
-            </span>
-          </div>
-        )}
-
-        {/* Manager Fleet Assignment Control */}
-        {isManager && agents.length > 0 && onAssignOrder && (
-          <div className="mt-2.5 flex items-center justify-between gap-2 rounded-md border border-border/40 bg-muted/20 px-2.5 py-1.5 text-xs">
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <span className="font-semibold text-foreground">
-                {isArabic ? 'الموظف المسؤول:' : 'Assigned Agent:'}
-              </span>
-              <span className="font-medium text-primary">
-                {order.assignedToName || (isArabic ? 'غير موزع' : 'Unassigned')}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-[11px] text-muted-foreground">{isArabic ? 'تعيين:' : 'Assign:'}</span>
-              <select
-                value={order.assignedTo || ''}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    void onAssignOrder(order.id, e.target.value);
-                  }
-                }}
-                className="h-6 rounded border border-border/60 bg-background px-1.5 text-xs font-semibold text-foreground outline-none focus:border-primary"
-              >
-                <option value="" disabled>
-                  {isArabic ? 'اختر موظف…' : 'Select agent…'}
-                </option>
-                {agents.map((ag) => (
-                  <option key={ag.id} value={ag.id}>
-                    {ag.name} ({ag.pendingCount})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        )}
+        {/* Modular Customer & Address Editor */}
+        <div className="mt-2.5">
+          <WorkspaceCustomerEditor
+            order={order}
+            isArabic={isArabic}
+            isManager={isManager}
+            agents={agents}
+            onAssignOrder={onAssignOrder}
+            onSaveCustomer={onSaveCustomer}
+          />
+        </div>
       </section>
 
-      {/* 2. Order Items Section (Live Editor or Static List) */}
-      <section className="flex-1 border-b border-border/30 py-3">
+      {/* 2. Order Items Section (Live Editor or Static Display) */}
+      <section className="border-b border-border/30 pb-3">
         <div className="mb-2 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
-            <ShoppingBagIcon className="h-4 w-4" />
-            <span>
-              {isArabic ? 'بنود الطلب' : 'Order Items'} ({order.items?.length || 0})
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            {!isEditingItems && onSaveItems && (
-              <button
-                type="button"
-                onClick={() => setIsEditingItems(true)}
-                className="inline-flex items-center gap-1 rounded border border-border/60 bg-background px-2 py-0.5 text-[11px] font-bold text-foreground hover:bg-muted/40"
-              >
-                <PencilSquareIcon className="h-3.5 w-3.5 text-primary" />
-                <span>{isArabic ? 'تعديل البنود وعروض Upsell' : 'Edit Items & Upsell'}</span>
-              </button>
-            )}
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            {t('orders.orderItems')} ({order.items.length})
+          </p>
+          {onSaveItems && (
             <button
               type="button"
-              onClick={() => onOpenDetailsModal(order)}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+              onClick={() => setIsEditingItems(!isEditingItems)}
+              className="inline-flex items-center gap-1 rounded border border-border/60 bg-muted/40 px-2 py-0.5 text-[10px] font-bold text-muted-foreground hover:bg-muted/80 hover:text-foreground"
             >
-              <span>{t('orders.viewDetails')}</span>
-              <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+              {isEditingItems ? (
+                <>
+                  <CheckIcon className="h-3 w-3" />
+                  <span>{isArabic ? 'إنهاء التعديل' : 'Done'}</span>
+                </>
+              ) : (
+                <>
+                  <PencilSquareIcon className="h-3 w-3" />
+                  <span>{isArabic ? 'تعديل المنتجات والأسعار' : 'Edit Items'}</span>
+                </>
+              )}
             </button>
-          </div>
+          )}
         </div>
 
         {isEditingItems && onSaveItems ? (
           <WorkspaceItemsEditor
             order={order}
-            onSave={async (orderId, newItems, financials) => {
-              try {
-                setIsSavingItems(true);
-                await onSaveItems(orderId, newItems, financials);
-                setIsEditingItems(false);
-              } finally {
-                setIsSavingItems(false);
-              }
+            onSave={async (orderId, items, financials) => {
+              await onSaveItems(orderId, items, financials);
+              setIsEditingItems(false);
             }}
             onCancel={() => setIsEditingItems(false)}
-            isSaving={isSavingItems}
+            isSaving={busyAction === 'details'}
           />
         ) : (
           <>
             <div className="space-y-1.5">
-              {order.items && order.items.length > 0 ? (
-                order.items.map((item, idx) => (
-                  <div
-                    key={item.id || idx}
-                    className="flex items-center justify-between rounded-md border border-border/30 bg-muted/20 px-2.5 py-1.5 text-xs"
-                  >
-                    <div className="min-w-0 pr-2">
-                      <p className="truncate font-bold text-foreground">
-                        {item.productName || item.name}
-                      </p>
-                      <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                        {item.productColor && <span>{item.productColor}</span>}
-                        {item.productSize && <span>{item.productSize}</span>}
-                        <span className="font-mono tabular-nums">× {item.quantity}</span>
-                      </div>
-                    </div>
-                    <div className="shrink-0 text-end font-mono font-bold tabular-nums text-foreground">
-                      {formatPrice(item.total || item.price * item.quantity)}
+              {order.items.map((it, idx) => (
+                <div
+                  key={it.id || idx}
+                  className="flex items-center justify-between rounded-md border border-border/30 bg-muted/10 p-2"
+                >
+                  <div className="flex items-center gap-2">
+                    {it.productImage && (
+                      <img
+                        src={it.productImage}
+                        alt=""
+                        className="h-8 w-8 rounded object-cover border border-border/40"
+                      />
+                    )}
+                    <div>
+                      <p className="font-semibold text-foreground">{it.productName}</p>
+                      {(it.productColor || it.productSize) && (
+                        <p className="text-[10px] text-muted-foreground">
+                          {[it.productColor, it.productSize].filter(Boolean).join(' • ')}
+                        </p>
+                      )}
                     </div>
                   </div>
-                ))
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  {isArabic ? 'لا توجد منتجات مسجلة' : 'No items listed'}
-                </p>
-              )}
+                  <div className="text-end">
+                    <p className="font-mono tabular-nums text-foreground">
+                      {it.quantity} × {formatPrice(it.price)}
+                    </p>
+                    <p className="font-mono text-[11px] font-bold tabular-nums text-primary">
+                      {formatPrice(it.total)}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {/* Financial Breakdown */}
-            <div className="mt-3 rounded-md bg-muted/30 p-2 text-xs">
-              <div className="flex justify-between py-0.5 text-muted-foreground">
+            {/* Financial Summary */}
+            <div className="mt-3 space-y-1 border-t border-border/30 pt-2 text-[11px] text-muted-foreground">
+              <div className="flex justify-between">
                 <span>{isArabic ? 'المجموع الفرعي' : 'Subtotal'}</span>
                 <span className="font-mono tabular-nums">{formatPrice(order.subtotal || order.total)}</span>
               </div>
-              {order.shipping > 0 && (
-                <div className="flex justify-between py-0.5 text-muted-foreground">
-                  <span>{isArabic ? 'مصاريف الشحن' : 'Shipping'}</span>
-                  <span className="font-mono tabular-nums">{formatPrice(order.shipping)}</span>
-                </div>
-              )}
-              {Boolean(order.discount && order.discount > 0) && (
-                <div className="flex justify-between py-0.5 text-emerald-600 dark:text-emerald-400">
+              <div className="flex justify-between">
+                <span>{isArabic ? 'الشحن' : 'Shipping'}</span>
+                <span className="font-mono tabular-nums">{formatPrice(order.shipping || 0)}</span>
+              </div>
+              {(order.discount || 0) > 0 && (
+                <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
                   <span>{isArabic ? 'الخصم' : 'Discount'}</span>
                   <span className="font-mono tabular-nums">-{formatPrice(order.discount || 0)}</span>
                 </div>
@@ -532,7 +269,7 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
       </section>
 
       {/* 3. Instant Call Dispositions (1-Click outcomes) */}
-      <section className="border-b border-border/30 py-3">
+      <section className="border-b border-border/30 pb-3">
         <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
           {isArabic ? 'تسجيل نتيجة الاتصال بنقرة واحدة' : 'Instant Call Outcome'}
         </p>
@@ -551,110 +288,13 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
         </div>
       </section>
 
-      {/* 3.5 Call Attempts & History */}
-      <section className="border-b border-border/30 py-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5 font-bold text-foreground">
-            <ClockIcon className="h-4 w-4 text-primary" />
-            <span className="text-xs">{isArabic ? 'سجل المكالمات والمحاولات السابقة' : 'Call History & Attempts'}</span>
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-bold text-primary tabular-nums">
-              {order.callLogs?.length || order.callAttempts || 0}
-            </span>
-          </div>
-          {order.lastCallAt && (
-            <span className="text-[10px] text-muted-foreground font-mono">
-              {isArabic ? 'آخر اتصال:' : 'Last call:'}{' '}
-              {new Date(order.lastCallAt).toLocaleTimeString(isArabic ? 'ar-EG' : 'en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </span>
-          )}
-        </div>
-
-        {order.callLogs && order.callLogs.length > 0 ? (
-          <div className="space-y-2 mt-2">
-            {order.callLogs.map((log) => {
-              const m = log.durationSeconds ? Math.floor(log.durationSeconds / 60) : 0;
-              const s = log.durationSeconds ? log.durationSeconds % 60 : 0;
-              const durationStr =
-                log.durationSeconds && log.durationSeconds > 0
-                  ? m > 0
-                    ? isArabic
-                      ? `${m} د و ${s} ث`
-                      : `${m}m ${s}s`
-                    : isArabic
-                    ? `${s} ث`
-                    : `${s}s`
-                  : null;
-
-              return (
-                <div
-                  key={log.id}
-                  className="rounded-lg border border-border/50 bg-background/60 p-2.5 text-xs transition-colors hover:bg-muted/20"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <PhoneIcon className="h-3 w-3" />
-                      </span>
-                      <span className="font-bold text-foreground">
-                        {log.userName || (isArabic ? 'موظف' : 'Agent')}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 font-mono text-[11px] tabular-nums text-muted-foreground">
-                      {durationStr && (
-                        <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 font-bold text-emerald-600 dark:text-emerald-400">
-                          ⏱️ {durationStr}
-                        </span>
-                      )}
-                      <span>
-                        {new Date(log.createdAt).toLocaleString(isArabic ? 'ar-EG' : 'en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-foreground">
-                      {log.result}
-                    </span>
-                    {log.notes && (
-                      <span className="text-[11px] text-muted-foreground">{log.notes}</span>
-                    )}
-                  </div>
-
-                  {log.recordingUrl && (
-                    <div className="mt-2">
-                      <audio controls src={log.recordingUrl} className="h-7 w-full max-w-sm" preload="none" />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="rounded-md border border-dashed border-border/60 bg-muted/10 p-3 text-center text-xs text-muted-foreground">
-            <p>{isArabic ? 'لا توجد مكالمات مسجلة لهذا الطلب حتى الآن' : 'No calls recorded for this order yet'}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground/80">
-              {isArabic
-                ? 'اضغط على زر "اتصال" بالأعلى لبدء الاتصال بالعميل عبر هاتفك الأندرويد'
-                : 'Click "Call" above to start calling via your connected phone'}
-            </p>
-          </div>
-        )}
-      </section>
+      {/* 3.5 Dedicated Call History and Timeline */}
+      <WorkspaceCallHistory order={order} isArabic={isArabic} />
 
       {/* 4. Action Command Bar */}
-      <section className="pt-3">
+      <section className="pt-1">
         {order.isIncomplete ? (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            {/* Confirm / Convert Button */}
             <button
               type="button"
               onClick={() => {
@@ -679,7 +319,6 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
               </span>
             </button>
 
-            {/* Follow-up Button */}
             <button
               type="button"
               onClick={() => onOpenFollowUp(order)}
@@ -690,7 +329,6 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
               <span>{t('orders.scheduleFollowUp')}</span>
             </button>
 
-            {/* Cancel Button */}
             <button
               type="button"
               onClick={() => onCancel(order)}
@@ -703,7 +341,6 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            {/* Confirm Button */}
             <button
               type="button"
               onClick={() => onConfirm(order)}
@@ -720,7 +357,6 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
               </span>
             </button>
 
-            {/* Follow-up Button */}
             <button
               type="button"
               onClick={() => onOpenFollowUp(order)}
@@ -731,7 +367,6 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
               <span>{t('orders.scheduleFollowUp')}</span>
             </button>
 
-            {/* Cancel Button */}
             <button
               type="button"
               onClick={() => onCancel(order)}
@@ -754,3 +389,4 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
     </div>
   );
 };
+export default WorkspaceInspector;

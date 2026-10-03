@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Phone, PhoneCall, Smartphone, AlertCircle, Loader2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Phone, PhoneCall, Smartphone, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { telephonyClientService } from "../../services/telephonyService";
 import { useDevicePresence } from "../../hooks/useDevicePresence";
@@ -11,11 +11,13 @@ interface OrderCallButtonProps {
   orderNumber: string;
   customerName?: string;
   customerPhone?: string;
+  secondaryPhone?: string | null;
   compact?: boolean;
   onConfirm?: () => void;
   onNoAnswer?: () => void;
   onPostpone?: () => void;
   onCancel?: () => void;
+  onCallFinished?: () => void;
 }
 
 export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
@@ -23,17 +25,29 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
   orderNumber,
   customerName,
   customerPhone,
+  secondaryPhone,
   compact = false,
   onConfirm,
   onNoAnswer,
   onPostpone,
   onCancel,
+  onCallFinished,
 }) => {
   const { presence } = useDevicePresence();
   const [isLoading, setIsLoading] = useState(false);
   const [isDialing, setIsDialing] = useState(false);
   const [showDisposition, setShowDisposition] = useState(false);
   const [lastDuration, setLastDuration] = useState(0);
+  const [cooldown, setCooldown] = useState(0);
+
+  // 20-second cooldown timer between call attempts
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const interval = setInterval(() => {
+      setCooldown((prev) => (prev > 1 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldown]);
 
   // الاستماع لحدث انتهاء المكالمة الخاصة بهذا الطلب عبر Socket.IO
   useEffect(() => {
@@ -42,6 +56,7 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
         setIsDialing(false);
         setLastDuration(data?.durationSeconds || 0);
         setShowDisposition(true);
+        onCallFinished?.();
       }
     };
 
@@ -49,11 +64,17 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
     return () => {
       socketService.off("telephony:call_ended", handleCallEnded);
     };
-  }, [orderId]);
+  }, [orderId, onCallFinished]);
 
-  const handleStartCall = async () => {
-    if (!customerPhone) {
+  const handleStartCall = async (targetPhone?: string) => {
+    const phoneToCall = targetPhone || customerPhone;
+    if (!phoneToCall) {
       toast.error("لا يوجد رقم هاتف مسجل لهذا الطلب");
+      return;
+    }
+
+    if (cooldown > 0) {
+      toast.error(`يرجى الانتظار ${cooldown} ثانية قبل الاتصال مرة أخرى`);
       return;
     }
 
@@ -67,8 +88,9 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
 
     try {
       setIsLoading(true);
-      const res = await telephonyClientService.initiateCall(orderId);
+      const res = await telephonyClientService.initiateCall(orderId, phoneToCall);
       setIsDialing(true);
+      setCooldown(20);
       toast.success(
         `جاري الرنين على ${res.customerPhone} عبر هاتف ${res.deviceName || "الموظف"}...`
       );
@@ -104,22 +126,30 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
     </div>
   );
 
+  const hasDistinctSecondary =
+    Boolean(secondaryPhone && secondaryPhone !== customerPhone && secondaryPhone.trim().length >= 8);
+
   return (
-    <div className="inline-flex items-center gap-2">
+    <div className="inline-flex items-center gap-1.5 flex-wrap">
       {!compact && deviceBadge}
 
+      {/* Primary Phone Call Button */}
       <button
         type="button"
-        onClick={handleStartCall}
-        disabled={isLoading || isDialing || !customerPhone}
+        onClick={() => handleStartCall()}
+        disabled={isLoading || isDialing || cooldown > 0 || !customerPhone}
         title={
           !presence.isOnline
             ? "يرجى فتح تطبيق MaxP على هاتفك للاتصال"
-            : `اتصال بالعميل (${customerPhone})`
+            : cooldown > 0
+            ? `انتظر ${cooldown} ثانية بين المكالمات`
+            : `اتصال بالرقم الأساسي (${customerPhone})`
         }
         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-2xs active:scale-[0.97] ${
           isDialing
             ? "bg-amber-600 text-white animate-pulse"
+            : cooldown > 0
+            ? "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700"
             : presence.isOnline
             ? "bg-indigo-600 hover:bg-indigo-700 text-white"
             : "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed"
@@ -137,11 +167,27 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
             ? "جاري الربط..."
             : isDialing
             ? "مكالمة جارية..."
+            : cooldown > 0
+            ? `انتظر (${cooldown}ث)`
             : compact
             ? "اتصال"
             : "اتصال هاتفي"}
         </span>
       </button>
+
+      {/* Optional Alternate/Secondary Phone Call Button */}
+      {hasDistinctSecondary && (
+        <button
+          type="button"
+          onClick={() => handleStartCall(secondaryPhone || undefined)}
+          disabled={isLoading || isDialing || cooldown > 0}
+          title={`اتصال بالرقم البديل (${secondaryPhone})`}
+          className="inline-flex h-8 items-center gap-1 rounded-md border border-indigo-500/30 bg-indigo-500/10 px-2 text-xs font-bold text-indigo-600 transition-transform active:scale-[0.98] hover:bg-indigo-500/20 disabled:opacity-50 dark:text-indigo-400"
+        >
+          <Phone className="w-3 h-3" />
+          <span>بديل</span>
+        </button>
+      )}
 
       {/* نافذة توثيق النتيجة السريعة فور انتهاء المكالمة */}
       <QuickCallDispositionModal
@@ -149,12 +195,28 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
         orderNumber={orderNumber}
         customerName={customerName}
         durationSeconds={lastDuration}
-        onClose={() => setShowDisposition(false)}
-        onConfirm={() => onConfirm?.()}
-        onNoAnswer={() => onNoAnswer?.()}
-        onPostpone={() => onPostpone?.()}
-        onCancel={() => onCancel?.()}
+        onClose={() => {
+          setShowDisposition(false);
+          onCallFinished?.();
+        }}
+        onConfirm={() => {
+          onConfirm?.();
+          onCallFinished?.();
+        }}
+        onNoAnswer={() => {
+          onNoAnswer?.();
+          onCallFinished?.();
+        }}
+        onPostpone={() => {
+          onPostpone?.();
+          onCallFinished?.();
+        }}
+        onCancel={() => {
+          onCancel?.();
+          onCallFinished?.();
+        }}
       />
     </div>
   );
 };
+export default OrderCallButton;

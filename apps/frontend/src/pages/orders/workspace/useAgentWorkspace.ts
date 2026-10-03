@@ -140,6 +140,8 @@ export function useAgentWorkspace() {
   const isModalOpenRef = useRef(isModalOpen);
   const skipNextTabFetchRef = useRef(false);
   const activeTabHydratedRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const setOrderBusyState = (orderId: string, action: OrderAction | null) => {
     setBusyOrders((current) => {
@@ -170,7 +172,14 @@ export function useAgentWorkspace() {
 
   const selectTab = useCallback(
     (nextTab: FilterTab) => {
+      if (nextTab === activeTabRef.current) {
+        void fetchOrders({ silent: false, tab: nextTab, page: 1 });
+        return;
+      }
+
       setActiveTab(nextTab);
+      activeTabRef.current = nextTab;
+
       const nextParams = new URLSearchParams(searchParams);
       if (nextTab === 'pending') {
         nextParams.delete('tab');
@@ -180,10 +189,27 @@ export function useAgentWorkspace() {
       setSearchParams(nextParams, { replace: true });
 
       skipNextTabFetchRef.current = true;
-      void fetchOrders({ silent: true, tab: nextTab });
+      void fetchOrders({ silent: false, tab: nextTab, page: 1 });
     },
     [searchParams, setSearchParams],
   );
+
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchQuery(query);
+
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    if (!query.trim()) {
+      void fetchOrders({ silent: true, search: '', page: 1 });
+      return;
+    }
+
+    searchDebounceRef.current = setTimeout(() => {
+      void fetchOrders({ silent: true, search: query, page: 1 });
+    }, 350);
+  }, []);
 
   const fetchOrders = async (options?: {
     silent?: boolean;
@@ -192,6 +218,7 @@ export function useAgentWorkspace() {
     tab?: FilterTab;
     sort?: 'recent' | 'oldest' | 'attempts';
     assignedTo?: string | null;
+    search?: string;
   }) => {
     const {
       silent = false,
@@ -200,11 +227,21 @@ export function useAgentWorkspace() {
       tab,
       sort: targetSort,
       assignedTo: targetAssignedTo,
+      search: targetSearch,
     } = options || {};
 
     const activeTabForRequest = tab ?? activeTabRef.current;
     const resolvedSort = targetSort ?? sortOption;
     const resolvedAssignedTo = targetAssignedTo !== undefined ? targetAssignedTo : selectedAgentId;
+    const resolvedSearch = targetSearch !== undefined ? targetSearch : searchQuery;
+
+    if (!append) {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+    }
+    const signal = abortControllerRef.current?.signal;
 
     try {
       if (append) {
@@ -226,6 +263,10 @@ export function useAgentWorkspace() {
         params['assignedTo'] = resolvedAssignedTo;
       }
 
+      if (resolvedSearch && resolvedSearch.trim()) {
+        params['search'] = resolvedSearch.trim();
+      }
+
       switch (activeTabForRequest) {
         case 'pending':
           params['status'] = 'PENDING';
@@ -244,8 +285,26 @@ export function useAgentWorkspace() {
           break;
       }
 
-      const response = await apiClient.get('/agent-workspace/my-orders', { params });
-      const payload = response.data as any;
+      const fetchIncomplete =
+        (activeTabForRequest === 'pending' || activeTabForRequest === 'all') && targetPage === 1;
+
+      const [response, incRes] = await Promise.all([
+        apiClient.get('/agent-workspace/my-orders', { params, signal }),
+        fetchIncomplete
+          ? apiClient
+              .get('/orders-new/incomplete', {
+                params: {
+                  limit: 50,
+                  hasPhone: 'true',
+                  search: resolvedSearch ? resolvedSearch.trim() : undefined,
+                },
+                signal,
+              })
+              .catch(() => null)
+          : Promise.resolve(null),
+      ]);
+
+      const payload = response?.data as any;
 
       if (!payload?.success) {
         throw new Error(
@@ -259,98 +318,91 @@ export function useAgentWorkspace() {
         ? payload.data
         : [];
 
-      // Seamless integration: Merge incomplete carts into pending and all queues just like new incoming orders
-      if ((activeTabForRequest === 'pending' || activeTabForRequest === 'all') && targetPage === 1) {
-        try {
-          const incRes = await apiClient.get('/orders-new/incomplete', {
-            params: { limit: 50, hasPhone: 'true' },
-          });
-          const rawCarts: any[] = Array.isArray(incRes.data?.data) ? incRes.data.data : [];
-          const incompleteOrders: WorkspaceOrder[] = rawCarts
-            .filter((cart: any) => cart && (cart.cartId || cart.id))
-            .map((cart: any) => {
-              const cartId = String(cart.cartId || cart.id);
-              const rawItems = Array.isArray(cart.items) ? cart.items : [];
+      // Merge incomplete carts into pending and all queues
+      if (incRes?.data?.data && Array.isArray(incRes.data.data)) {
+        const rawCarts: any[] = incRes.data.data;
+        const incompleteOrders: WorkspaceOrder[] = rawCarts
+          .filter((cart: any) => cart && (cart.cartId || cart.id))
+          .map((cart: any) => {
+            const cartId = String(cart.cartId || cart.id);
+            const rawItems = Array.isArray(cart.items) ? cart.items : [];
 
-              let cleanAbandonReason = isArabic ? 'سلة متروكة في صفحة الشراء' : 'Abandoned checkout';
-              if (typeof cart.abandonReason === 'string') {
-                cleanAbandonReason = cart.abandonReason;
-              } else if (cart.abandonReason && typeof cart.abandonReason === 'object') {
-                const code = cart.abandonReason.code;
-                if (code === 'partial_shipping') {
-                  cleanAbandonReason = isArabic ? 'توقف عند بيانات الشحن (العنوان)' : 'Stopped at shipping address';
-                } else if (code === 'partial_payment') {
-                  cleanAbandonReason = isArabic ? 'توقف عند طريقة الدفع' : 'Stopped at payment method';
-                } else if (code) {
-                  cleanAbandonReason = `${isArabic ? 'سلة متروكة:' : 'Abandoned:'} ${code}`;
-                }
+            let cleanAbandonReason = isArabic ? 'سلة متروكة في صفحة الشراء' : 'Abandoned checkout';
+            if (typeof cart.abandonReason === 'string') {
+              cleanAbandonReason = cart.abandonReason;
+            } else if (cart.abandonReason && typeof cart.abandonReason === 'object') {
+              const code = cart.abandonReason.code;
+              if (code === 'partial_shipping') {
+                cleanAbandonReason = isArabic ? 'توقف عند بيانات الشحن (العنوان)' : 'Stopped at shipping address';
+              } else if (code === 'partial_payment') {
+                cleanAbandonReason = isArabic ? 'توقف عند طريقة الدفع' : 'Stopped at payment method';
+              } else if (code) {
+                cleanAbandonReason = `${isArabic ? 'سلة متروكة:' : 'Abandoned:'} ${code}`;
               }
-
-              const custName =
-                cart.checkoutData?.customerName ||
-                cart.checkoutData?.guestName ||
-                cart.checkoutData?.name ||
-                (isArabic ? 'عميل محتمل' : 'Lead');
-
-              const custPhone =
-                cart.checkoutData?.customerPhone ||
-                cart.checkoutData?.phone ||
-                '';
-
-              const secPhone =
-                cart.checkoutData?.phone2 ||
-                cart.checkoutData?.alternatePhone ||
-                null;
-
-              return {
-                id: cartId,
-                cartId,
-                orderNumber: `CART-${cartId.slice(-6).toUpperCase()}`,
-                type: 'GUEST',
-                isIncomplete: true,
-                abandonReason: cleanAbandonReason,
-                customerName: custName,
-                customerPhone: custPhone,
-                secondaryPhone: secPhone,
-                governorate: cart.checkoutData?.governorate || '',
-                city: cart.checkoutData?.city || '',
-                shippingAddress: cart.checkoutData?.address || cart.checkoutData?.shippingAddress || '',
-                total: Number(cart.total || 0),
-                subtotal: Number(cart.total || 0),
-                shipping: Number(cart.checkoutData?.shippingCost || 0),
-                discount: Number(cart.checkoutData?.discountAmount || 0),
-                status: 'INCOMPLETE',
-                callAttempts: 0,
-                lastCallAt: null,
-                followUpDate: null,
-                createdAt: cart.checkoutStartedAt || cart.updatedAt || new Date().toISOString(),
-                notes: cart.checkoutData?.notes || '',
-                items: rawItems.map((it: any) => ({
-                  productName: it.productName || it.name || (isArabic ? 'منتج' : 'Product'),
-                  quantity: Number(it.quantity) || 1,
-                  price: Number(it.price || it.basePrice || 0),
-                  total: (Number(it.price || it.basePrice || 0)) * (Number(it.quantity) || 1),
-                  productColor: it.color || it.productColor || it.attributes?.Color || it.attributes?.color || null,
-                  productSize: it.size || it.productSize || it.attributes?.Size || it.attributes?.size || null,
-                  productImage: it.image || it.productImage || it.attributes?.image || null,
-                })),
-                attribution: cart.attribution || null,
-              };
-            });
-
-          if (incompleteOrders.length > 0) {
-            const existingIds = new Set(nextOrders.map((o) => o.id));
-            const distinctIncomplete = incompleteOrders.filter((inc) => !existingIds.has(inc.id));
-            nextOrders = [...nextOrders, ...distinctIncomplete];
-
-            if (resolvedSort === 'oldest') {
-              nextOrders.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-            } else {
-              nextOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             }
+
+            const custName =
+              cart.checkoutData?.customerName ||
+              cart.checkoutData?.guestName ||
+              cart.checkoutData?.name ||
+              (isArabic ? 'عميل محتمل' : 'Lead');
+
+            const custPhone =
+              cart.checkoutData?.customerPhone ||
+              cart.checkoutData?.phone ||
+              '';
+
+            const secPhone =
+              cart.checkoutData?.phone2 ||
+              cart.checkoutData?.alternatePhone ||
+              null;
+
+            return {
+              id: cartId,
+              cartId,
+              orderNumber: `CART-${cartId.slice(-6).toUpperCase()}`,
+              type: 'GUEST',
+              isIncomplete: true,
+              abandonReason: cleanAbandonReason,
+              customerName: custName,
+              customerPhone: custPhone,
+              secondaryPhone: secPhone,
+              governorate: cart.checkoutData?.governorate || '',
+              city: cart.checkoutData?.city || '',
+              shippingAddress: cart.checkoutData?.address || cart.checkoutData?.shippingAddress || '',
+              total: Number(cart.total || 0),
+              subtotal: Number(cart.total || 0),
+              shipping: Number(cart.checkoutData?.shippingCost || 0),
+              discount: Number(cart.checkoutData?.discountAmount || 0),
+              status: 'INCOMPLETE',
+              callAttempts: 0,
+              lastCallAt: null,
+              followUpDate: null,
+              createdAt: cart.checkoutStartedAt || cart.updatedAt || new Date().toISOString(),
+              notes: cart.checkoutData?.notes || '',
+              items: rawItems.map((it: any) => ({
+                productName: it.productName || it.name || (isArabic ? 'منتج' : 'Product'),
+                quantity: Number(it.quantity) || 1,
+                price: Number(it.price || it.basePrice || 0),
+                total: (Number(it.price || it.basePrice || 0)) * (Number(it.quantity) || 1),
+                productColor: it.color || it.productColor || it.attributes?.Color || it.attributes?.color || null,
+                productSize: it.size || it.productSize || it.attributes?.Size || it.attributes?.size || null,
+                productImage: it.image || it.productImage || it.attributes?.image || null,
+              })),
+              attribution: cart.attribution || null,
+            };
+          });
+
+        if (incompleteOrders.length > 0) {
+          const existingIds = new Set(nextOrders.map((o) => o.id));
+          const distinctIncomplete = incompleteOrders.filter((inc) => !existingIds.has(inc.id));
+          nextOrders = [...nextOrders, ...distinctIncomplete];
+
+          if (resolvedSort === 'oldest') {
+            nextOrders.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          } else {
+            nextOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
           }
-        } catch (_incErr) {
-          // Graceful fallback
         }
       }
 
@@ -401,7 +453,10 @@ export function useAgentWorkspace() {
       }
 
       setFetchError(null);
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || error?.message === 'canceled') {
+        return;
+      }
       console.error('Failed to fetch orders:', error);
       const message = extractApiErrorMessage(error) || t('orders.loadingFailed');
       if (!silent) {

@@ -25,7 +25,7 @@ const getCancellationReasonError = () => 'سبب إلغاء الطلب مطلو�
 
 const parseBooleanParam = (value) => value === true || value === 'true' || value === '1';
 
-const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUpOnly = false, assignedTo = '', isManager = false } = {}) => {
+const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUpOnly = false, assignedTo = '', isManager = false, search = '' } = {}) => {
   const where = { companyId, isActive: true };
 
   if (isManager && assignedTo && assignedTo !== 'all' && assignedTo !== 'unassigned') {
@@ -34,21 +34,52 @@ const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUp
     where.assignedTo = userId;
   }
 
+  let statusCondition;
   if (requestedStatus) {
-    where.OR = [
-      { order: { status: requestedStatus } },
-      { guestOrder: { status: requestedStatus } }
-    ];
+    statusCondition = {
+      OR: [
+        { order: { status: requestedStatus } },
+        { guestOrder: { status: requestedStatus } }
+      ]
+    };
   } else if (followUpOnly) {
-    where.OR = [
-      { order: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } },
-      { guestOrder: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } }
-    ];
+    statusCondition = {
+      OR: [
+        { order: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } },
+        { guestOrder: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } }
+      ]
+    };
   } else {
-    where.OR = [
-      { order: { status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES] } } },
-      { guestOrder: { status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES] } } }
-    ];
+    statusCondition = {
+      OR: [
+        { order: { status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES] } } },
+        { guestOrder: { status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES] } } }
+      ]
+    };
+  }
+
+  const cleanSearch = String(search || '').trim().replace(/^[#№]/, '').trim();
+  if (cleanSearch) {
+    const cleanDigits = cleanSearch.replace(/\D/g, '');
+    const searchCondition = {
+      OR: [
+        { order: { orderNumber: { contains: cleanSearch, mode: 'insensitive' } } },
+        { order: { customer: { firstName: { contains: cleanSearch, mode: 'insensitive' } } } },
+        { order: { customer: { lastName: { contains: cleanSearch, mode: 'insensitive' } } } },
+        { order: { customer: { phone: { contains: cleanDigits || cleanSearch, mode: 'insensitive' } } } },
+        { order: { shippingAddress: { contains: cleanSearch, mode: 'insensitive' } } },
+        { order: { notes: { contains: cleanSearch, mode: 'insensitive' } } },
+        { guestOrder: { orderNumber: { contains: cleanSearch, mode: 'insensitive' } } },
+        { guestOrder: { guestName: { contains: cleanSearch, mode: 'insensitive' } } },
+        { guestOrder: { guestPhone: { contains: cleanDigits || cleanSearch, mode: 'insensitive' } } },
+        { guestOrder: { shippingAddress: { contains: cleanSearch, mode: 'insensitive' } } },
+        { guestOrder: { notes: { contains: cleanSearch, mode: 'insensitive' } } }
+      ]
+    };
+
+    where.AND = [statusCondition, searchCondition];
+  } else {
+    where.OR = statusCondition.OR;
   }
 
   return where;
@@ -66,7 +97,7 @@ const getWorkspaceStats = async (prisma, companyId, userId, { assignedTo = '', i
     ...base,
     OR: [
       { order: { status } },
-      { guestOrder: { status } }
+      { guestOrder: { status: { in: [status.toUpperCase(), status.toLowerCase()] } } }
     ]
   });
 
@@ -74,7 +105,7 @@ const getWorkspaceStats = async (prisma, companyId, userId, { assignedTo = '', i
     ...base,
     OR: [
       { order: { status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES] } } },
-      { guestOrder: { status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES] } } }
+      { guestOrder: { status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES, ...Array.from(WORKSPACE_EXCLUDED_STATUSES).map((s) => s.toLowerCase())] } } }
     ]
   };
 
@@ -82,7 +113,7 @@ const getWorkspaceStats = async (prisma, companyId, userId, { assignedTo = '', i
     ...base,
     OR: [
       { order: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } },
-      { guestOrder: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } }
+      { guestOrder: { followUpDate: { not: null }, status: { notIn: ['cancelled', 'CANCELLED'] } } }
     ]
   };
 
@@ -295,6 +326,7 @@ const getMyOrders = async (req, res) => {
     const sortParam = String(req.query.sort || '').toLowerCase();
     const sort = ['recent', 'oldest', 'attempts'].includes(sortParam) ? sortParam : 'recent';
     let assignedTo = req.query.assignedTo ? String(req.query.assignedTo).trim() : '';
+    const search = String(req.query.search || req.query.q || '').trim();
 
     const prisma = getSharedPrismaClient();
 
@@ -311,6 +343,9 @@ const getMyOrders = async (req, res) => {
 
     // Unassigned Pool View for Managers
     if (isManager && assignedTo === 'unassigned') {
+      const cleanSearch = String(search || '').trim().replace(/^[#№]/, '').trim();
+      const cleanDigits = cleanSearch.replace(/\D/g, '');
+
       const regularWhere = {
         companyId,
         assignedTo: null,
@@ -322,6 +357,32 @@ const getMyOrders = async (req, res) => {
         status: { in: requestedStatus ? [requestedStatus.toLowerCase(), requestedStatus.toUpperCase()] : ['pending', 'PENDING'] },
         orderAssignments: { none: { isActive: true } }
       };
+
+      if (cleanSearch) {
+        regularWhere.AND = [
+          {
+            OR: [
+              { orderNumber: { contains: cleanSearch, mode: 'insensitive' } },
+              { customer: { firstName: { contains: cleanSearch, mode: 'insensitive' } } },
+              { customer: { lastName: { contains: cleanSearch, mode: 'insensitive' } } },
+              { customer: { phone: { contains: cleanDigits || cleanSearch, mode: 'insensitive' } } },
+              { shippingAddress: { contains: cleanSearch, mode: 'insensitive' } },
+              { notes: { contains: cleanSearch, mode: 'insensitive' } }
+            ]
+          }
+        ];
+        guestWhere.AND = [
+          {
+            OR: [
+              { orderNumber: { contains: cleanSearch, mode: 'insensitive' } },
+              { guestName: { contains: cleanSearch, mode: 'insensitive' } },
+              { guestPhone: { contains: cleanDigits || cleanSearch, mode: 'insensitive' } },
+              { shippingAddress: { contains: cleanSearch, mode: 'insensitive' } },
+              { notes: { contains: cleanSearch, mode: 'insensitive' } }
+            ]
+          }
+        ];
+      }
 
       const [regularOrders, guestOrders, totalRegular, totalGuest] = await Promise.all([
         prisma.order.findMany({
@@ -382,7 +443,7 @@ const getMyOrders = async (req, res) => {
       });
     }
 
-    const where = buildWorkspaceWhere(companyId, userId, { requestedStatus, followUpOnly, assignedTo, isManager });
+    const where = buildWorkspaceWhere(companyId, userId, { requestedStatus, followUpOnly, assignedTo, isManager, search });
 
     let orderBy = [{ assignedAt: 'desc' }];
     if (sort === 'oldest') {

@@ -94,12 +94,21 @@ class TelephonyClientService {
   /**
    * طلب بدء مكالمة من الكمبيوتر (Outbound Click-to-Call)
    */
-  async initiateCall(orderId: string): Promise<InitiateCallResponse> {
-    const response = await apiClient.post<any>("/telephony/initiate", { orderId });
-    if (!response.data?.success) {
-      throw new Error(response.data?.message || "فشل بدء المكالمة");
+  async initiateCall(orderId: string, targetPhone?: string): Promise<InitiateCallResponse> {
+    try {
+      const response = await apiClient.post<any>("/telephony/initiate", { orderId, targetPhone });
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || "فشل بدء المكالمة");
+      }
+      return response.data.data;
+    } catch (error: any) {
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "فشل بدء المكالمة";
+      throw new Error(msg);
     }
-    return response.data.data;
   }
 
   /**
@@ -113,8 +122,17 @@ class TelephonyClientService {
     result?: string;
     notes?: string;
   }) {
-    const response = await apiClient.post<any>("/telephony/complete", payload);
-    return response.data?.data;
+    try {
+      const response = await apiClient.post<any>("/telephony/complete", payload);
+      return response.data?.data;
+    } catch (error: any) {
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "فشل توثيق المكالمة";
+      throw new Error(msg);
+    }
   }
 
   /**

@@ -178,6 +178,7 @@ export const AgentWorkspace: React.FC = () => {
             onConvertIncomplete={handleConvertIncomplete}
             onSaveItems={handleUpdateOrderItems}
             onSaveCustomer={handleUpdateCustomer}
+            onRefreshOrder={() => void fetchOrders({ silent: true })}
           />
         </div>
 

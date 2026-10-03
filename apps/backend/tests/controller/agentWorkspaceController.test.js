@@ -81,7 +81,9 @@ const createAssignment = ({ order = null, guestOrder = null, companyId = 'compan
 // (base fields + OR on order/guestOrder relations or their foreign keys).
 const matchOrderCondition = (order, cond) => {
   if (cond.status) {
-    if (cond.status.notIn) {
+    if (cond.status.in) {
+      if (!cond.status.in.includes(order.status)) return false;
+    } else if (cond.status.notIn) {
       if (cond.status.notIn.includes(order.status)) return false;
     } else if (cond.status.not) {
       if (order.status === cond.status.not) return false;
@@ -116,6 +118,9 @@ const matchesWorkspaceWhere = (assignment, where = {}) => {
     return false;
   };
 
+  if (where.AND) {
+    return where.AND.every((subWhere) => matchesWorkspaceWhere(assignment, subWhere));
+  }
   if (where.OR) {
     return where.OR.some(matchCondition);
   }
@@ -295,6 +300,22 @@ describe('agentWorkspaceController.getMyOrders', () => {
     });
     // 1 pagination total + 5 stats counts
     expect(count).toHaveBeenCalledTimes(6);
+  });
+
+  it('applies search condition to query when search parameter is provided', async () => {
+    const { findMany } = mockOrderAssignment({ assignments: [] });
+    const req = {
+      ...baseReq,
+      query: { search: '01012345678' }
+    };
+    const res = createResponse();
+
+    await agentWorkspaceController.getMyOrders(req, res);
+
+    expect(res.statusCode).toBe(200);
+    const findManyArg = findMany.mock.calls[0][0];
+    expect(findManyArg.where.AND).toBeDefined();
+    expect(findManyArg.where.AND.length).toBe(2);
   });
 });
 

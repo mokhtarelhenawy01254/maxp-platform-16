@@ -13,6 +13,16 @@ const mockPrisma = {
   employeeDevice: {
     findFirst: jest.fn(),
     upsert: jest.fn()
+  },
+  guestOrder: {
+    findFirst: jest.fn(),
+    update: jest.fn()
+  },
+  guestCart: {
+    findFirst: jest.fn()
+  },
+  cartContactLog: {
+    create: jest.fn()
   }
 };
 
@@ -243,6 +253,144 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
           where: { sessionId },
           data: expect.objectContaining({
             callerPhone: null
+          })
+        })
+      );
+    });
+
+    test('initiates and completes call for guest orders updating guestOrder table', async () => {
+      const sessionId = 'call_guest_session_999';
+      mockPrisma.callAttemptLog.findFirst.mockResolvedValue(null);
+      mockPrisma.order.findFirst.mockResolvedValue(null); // not regular order
+      mockPrisma.guestOrder.findFirst.mockResolvedValue({
+        id: 'guest_101',
+        orderNumber: 'GUEST-101',
+        guestName: 'سارة عميل زائر',
+        guestPhone: '01123456789',
+        companyId
+      });
+      mockPrisma.employeeDevice.findFirst.mockResolvedValue({
+        id: 'dev_1',
+        deviceId,
+        deviceName: 'Pixel 8',
+        lastSeenAt: new Date(),
+        isOnline: true
+      });
+      mockPrisma.callAttemptLog.create.mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'log_guest_1', ...data })
+      );
+
+      const initiated = await telephonyService.initiateCall({
+        companyId,
+        userId,
+        orderId: 'guest_101'
+      });
+
+      expect(initiated.success).toBe(true);
+      expect(initiated.customerPhone).toBe('+201123456789');
+      expect(mockPrisma.callAttemptLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            guestOrderId: 'guest_101',
+            callStatus: 'INITIATED'
+          })
+        })
+      );
+
+      mockPrisma.callAttemptLog.findUnique.mockResolvedValue({
+        id: 'log_guest_1',
+        sessionId,
+        guestOrderId: 'guest_101',
+        companyId
+      });
+      mockPrisma.callAttemptLog.update.mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'log_guest_1', sessionId, ...data })
+      );
+      mockPrisma.guestOrder.update.mockResolvedValue({ id: 'guest_101' });
+
+      await telephonyService.completeCall({
+        companyId,
+        userId,
+        sessionId,
+        durationSeconds: 45
+      });
+
+      expect(mockPrisma.guestOrder.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'guest_101' },
+          data: expect.objectContaining({
+            callAttempts: { increment: 1 }
+          })
+        })
+      );
+    });
+
+    test('initiates and completes call for abandoned guest cart recovery', async () => {
+      const sessionId = 'call_cart_session_111';
+      mockPrisma.callAttemptLog.findFirst.mockResolvedValue(null);
+      mockPrisma.order.findFirst.mockResolvedValue(null);
+      mockPrisma.guestOrder.findFirst.mockResolvedValue(null);
+      mockPrisma.guestCart.findFirst.mockResolvedValue({
+        id: 'cuid_cart_123',
+        cartId: 'CART-ABC123',
+        checkoutData: JSON.stringify({
+          customerName: 'محمد أحمد',
+          customerPhone: '01099887766'
+        }),
+        companyId
+      });
+      mockPrisma.employeeDevice.findFirst.mockResolvedValue({
+        id: 'dev_1',
+        deviceId,
+        deviceName: 'Pixel 8',
+        lastSeenAt: new Date(),
+        isOnline: true
+      });
+      mockPrisma.callAttemptLog.create.mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'log_cart_1', ...data })
+      );
+
+      const initiated = await telephonyService.initiateCall({
+        companyId,
+        userId,
+        orderId: 'CART-ABC123'
+      });
+
+      expect(initiated.success).toBe(true);
+      expect(initiated.customerPhone).toBe('+201099887766');
+      expect(mockPrisma.callAttemptLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            notes: 'CART:CART-ABC123',
+            callStatus: 'INITIATED'
+          })
+        })
+      );
+
+      mockPrisma.callAttemptLog.findUnique.mockResolvedValue({
+        id: 'log_cart_1',
+        sessionId,
+        notes: 'CART:CART-ABC123',
+        companyId
+      });
+      mockPrisma.callAttemptLog.update.mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'log_cart_1', sessionId, result: 'reached', ...data })
+      );
+
+      await telephonyService.completeCall({
+        companyId,
+        userId,
+        sessionId,
+        durationSeconds: 60,
+        result: 'reached'
+      });
+
+      expect(mockPrisma.cartContactLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            cartId: 'CART-ABC123',
+            method: 'call',
+            result: 'reached'
           })
         })
       );
