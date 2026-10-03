@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   PhoneIcon,
   PhoneArrowUpRightIcon,
@@ -7,7 +7,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { telephonyClientService } from "../../services/telephonyService";
-import { useDevicePresence } from "../../hooks/useDevicePresence";
+import { useDevicePresence, refreshDevicePresence } from "../../hooks/useDevicePresence";
 import { socketService } from "../../services/socketService";
 import { QuickCallDispositionModal } from "./QuickCallDispositionModal";
 
@@ -44,6 +44,7 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
   const [showDisposition, setShowDisposition] = useState(false);
   const [lastDuration, setLastDuration] = useState(0);
   const [cooldown, setCooldown] = useState(0);
+  const dialWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 20-second cooldown timer between call attempts
   useEffect(() => {
@@ -54,10 +55,34 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
     return () => clearInterval(interval);
   }, [cooldown]);
 
+  const clearDialWatchdog = () => {
+    if (dialWatchdogRef.current) {
+      clearTimeout(dialWatchdogRef.current);
+      dialWatchdogRef.current = null;
+    }
+  };
+
+  // حارس الرنين: لو الهاتف لم يرسل "انتهت المكالمة" خلال 30 ثانية فالأمر لم
+  // يصله أصلًا (تطبيق مقفول/سوكت ميت) — فشل صادق فورًا بدل زر معلق للأبد
+  const armDialWatchdog = () => {
+    clearDialWatchdog();
+    dialWatchdogRef.current = setTimeout(() => {
+      setIsDialing(false);
+      toast.error(
+        "لم يستجب هاتفك للأمر — تأكد أن تطبيق MaxP مفتوح على الهاتف والشاشة مضاءة ثم أعد المحاولة.",
+        { duration: 5000 },
+      );
+      void refreshDevicePresence();
+    }, 30000);
+  };
+
+  useEffect(() => () => clearDialWatchdog(), []);
+
   // الاستماع لحدث انتهاء المكالمة الخاصة بهذا الطلب عبر Socket.IO
   useEffect(() => {
     const handleCallEnded = (data: any) => {
       if (data?.orderId === orderId) {
+        clearDialWatchdog();
         setIsDialing(false);
         setLastDuration(data?.durationSeconds || 0);
         setShowDisposition(true);
@@ -95,12 +120,14 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
       setIsLoading(true);
       const res = await telephonyClientService.initiateCall(orderId, phoneToCall);
       setIsDialing(true);
+      armDialWatchdog();
       setCooldown(20);
       toast.success(
         `جاري الرنين على ${res.customerPhone} عبر هاتف ${res.deviceName || "الموظف"}...`
       );
     } catch (error: any) {
       toast.error(error.message || "فشل إطلاق الاتصال");
+      void refreshDevicePresence();
     } finally {
       setIsLoading(false);
     }

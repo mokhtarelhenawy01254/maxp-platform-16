@@ -13,7 +13,8 @@ const mockPrisma = {
   employeeDevice: {
     findFirst: jest.fn(),
     findUnique: jest.fn(),
-    upsert: jest.fn()
+    upsert: jest.fn(),
+    update: jest.fn()
   },
   guestOrder: {
     findFirst: jest.fn(),
@@ -35,10 +36,13 @@ jest.mock('../../services/socketService', () => ({
   io: {
     to: jest.fn().mockReturnThis(),
     emit: jest.fn()
-  }
+  },
+  sockets: { sockets: new Map() },
+  isSocketConnected: jest.fn()
 }));
 
 const telephonyService = require('../../services/telephonyService');
+const socketService = require('../../services/socketService');
 
 describe('TelephonyService - Production Grade Unit Tests', () => {
   const companyId = 'test_comp_telephony_1';
@@ -47,6 +51,65 @@ describe('TelephonyService - Production Grade Unit Tests', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // الافتراضي: سوكت حي — اختبارات الزومبي تقلبه صراحة إلى false
+    socketService.isSocketConnected.mockReturnValue(true);
+  });
+
+  describe('Presence Honesty (zombie device guard)', () => {
+    const zombieDevice = {
+      id: 'dev_zombie',
+      deviceId,
+      deviceName: 'Dead Phone',
+      socketId: 'sock_dead_1',
+      isOnline: true,
+      lastSeenAt: new Date(), // ظهور طازج: التطبيق أُغلق للتو والعلم لم يُظبط
+      appVersion: '1.0'
+    };
+
+    test('reports offline and self-heals the stale flag when the device socket is dead', async () => {
+      mockPrisma.employeeDevice.findFirst.mockResolvedValue(zombieDevice);
+      mockPrisma.employeeDevice.update.mockResolvedValue({});
+      socketService.isSocketConnected.mockReturnValue(false);
+
+      const presence = await telephonyService.getDevicePresence(companyId, userId);
+
+      expect(presence.isOnline).toBe(false);
+      expect(presence.device).toBeNull();
+      expect(mockPrisma.employeeDevice.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'dev_zombie' }, data: { isOnline: false } })
+      );
+    });
+
+    test('reports online when the device socket is verified alive', async () => {
+      mockPrisma.employeeDevice.findFirst.mockResolvedValue(zombieDevice);
+      socketService.isSocketConnected.mockReturnValue(true);
+
+      const presence = await telephonyService.getDevicePresence(companyId, userId);
+
+      expect(presence.isOnline).toBe(true);
+      expect(presence.device?.deviceId).toBe(deviceId);
+      expect(mockPrisma.employeeDevice.update).not.toHaveBeenCalled();
+    });
+
+    test('initiateCall refuses to open a session for a zombie device (no dead-air call)', async () => {
+      mockPrisma.callAttemptLog.findFirst.mockResolvedValue(null);
+      mockPrisma.order.findFirst.mockResolvedValue({
+        id: 'ord_1',
+        orderNumber: '1001',
+        customerName: 'أحمد',
+        customerPhone: '01012345678',
+        companyId
+      });
+      mockPrisma.employeeDevice.findFirst.mockResolvedValue(zombieDevice);
+      mockPrisma.employeeDevice.update.mockResolvedValue({});
+      socketService.isSocketConnected.mockReturnValue(false);
+
+      await expect(
+        telephonyService.initiateCall({ companyId, userId, orderId: 'ord_1' })
+      ).rejects.toThrow('لا يوجد هاتف أندرويد متصل حالياً');
+      // لا جلسة تُفتح أصلًا — فلا عدّاد محاولات يُستهلك ولا زر يعلق
+      expect(mockPrisma.callAttemptLog.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('Outbound Phone Normalization (E.164 & Egyptian Formats)', () => {

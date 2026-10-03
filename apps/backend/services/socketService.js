@@ -832,6 +832,21 @@ class SocketService {
     return this.connectedUsers.has(userId);
   }
 
+  /**
+   * التحقق من أن سوكت بعينه ما زال حيًا على هذا الخادم.
+   * هو الفيصل لهواتف الموظفين: هوية الهاتف = الـ socketId المخزن في employeeDevice
+   * (سوكت المتصفح نفس المستخدم متصل أيضًا — فحص userId وحده لا يثبت أن *الهاتف* حي).
+   * ملاحظة: يفحص سوكتات هذا الـ instance — كافٍ لنشر الـ backend بعينة واحدة.
+   */
+  isSocketConnected(socketId) {
+    if (!socketId || !this.io) return false;
+    try {
+      return this.io.sockets.sockets.get(socketId) != null;
+    } catch {
+      return false;
+    }
+  }
+
   // Get users online in a specific company
   getCompanyUsers(companyId) {
     const companySocketIds = this.companyRooms.get(companyId) || new Set();

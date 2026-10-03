@@ -102,6 +102,25 @@ class TelephonyService {
       orderBy: { lastSeenAt: 'desc' }
     });
 
+    // الفيصل الحقيقي: السوكت الحي — التطبيق مقفول لا يرسل disconnect للعلم
+    // المخزن، فالعلم يظل true حتى 3 دقائق (نافذة الزومبي): الجلسة كانت تُفتح
+    // ويُبث أمر الاتصال لسوكت ميت فلا يرن الهاتف ويعلق الزر "مكالمة جارية".
+    if (device) {
+      const socketAlive = socketService.isSocketConnected(device.socketId);
+      if (!socketAlive) {
+        // شفاء ذاتي: ظبط العلم فورًا حتى لا تكرر الشبكة كلها نفس الوهم
+        try {
+          await prisma.employeeDevice.update({
+            where: { id: device.id },
+            data: { isOnline: false }
+          });
+        } catch (_healError) {
+          // الشفاء أفضل-جهد فقط
+        }
+        return { isOnline: false, device: null };
+      }
+    }
+
     return {
       isOnline: !!device,
       device: device
