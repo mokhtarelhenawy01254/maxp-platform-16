@@ -57,6 +57,9 @@ export const JoinEmployee: React.FC = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  const [hasExistingAccount, setHasExistingAccount] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
   // Form fields
   const [formData, setFormData] = useState({
     email: "",
@@ -71,6 +74,20 @@ export const JoinEmployee: React.FC = () => {
     address: "",
     city: "",
   });
+
+  // Check if user is currently logged in
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem("user");
+      const hasToken = tokenManager.hasAccessToken();
+      if (storedUser && hasToken) {
+        const parsed = JSON.parse(storedUser);
+        setCurrentUser(parsed);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
 
   useEffect(() => {
     if (!token) {
@@ -89,8 +106,8 @@ export const JoinEmployee: React.FC = () => {
           setInvitation(inv);
           setFormData((prev) => ({
             ...prev,
-            email: inv.prefilledEmail || "",
-            phone: inv.prefilledPhone || "",
+            email: inv.prefilledEmail || prev.email || "",
+            phone: inv.prefilledPhone || prev.phone || "",
           }));
         } else {
           setError(response.data?.message || "فشل التحقق من صلاحية رابط الدعوة");
@@ -115,6 +132,42 @@ export const JoinEmployee: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Express 1-click Join for currently authenticated user
+  const handleExpressJoin = async () => {
+    setError("");
+    try {
+      setSubmitting(true);
+      const response = await apiClient.post(
+        `/hr/employee-invitations/accept/${token}`,
+        {
+          email: currentUser?.email || formData.email,
+          firstName: currentUser?.firstName,
+          lastName: currentUser?.lastName,
+          phone: currentUser?.phone || formData.phone,
+        }
+      );
+
+      if (response.data?.success) {
+        setSuccess(true);
+        const { token: accessToken, refreshToken, user } = response.data.data;
+        if (accessToken) tokenManager.setAccessToken(accessToken);
+        if (refreshToken) tokenManager.setRefreshToken(refreshToken);
+        if (user) localStorage.setItem("user", JSON.stringify(user));
+
+        toast.success("تم ربط حسابك بالشركة بنجاح!");
+        setTimeout(() => {
+          navigate("/conversations");
+        }, 1800);
+      } else {
+        setError(response.data?.message || "فشل قبول الدعوة");
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || "حدث خطأ أثناء إتمام الانضمام");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -123,26 +176,32 @@ export const JoinEmployee: React.FC = () => {
       setError("يرجى إدخال بريد إلكتروني صحيح");
       return;
     }
-    if (!formData.password || formData.password.length < 6) {
-      setError("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
-      return;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setError("كلمتا المرور غير متطابقتين");
-      return;
-    }
-    if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      setError("يرجى إدخال الاسم الأول واسم العائلة");
-      return;
+
+    if (!hasExistingAccount) {
+      if (!formData.password || formData.password.length < 6) {
+        setError("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError("كلمتا المرور غير متطابقتين");
+        return;
+      }
+      if (!formData.firstName.trim() || !formData.lastName.trim()) {
+        setError("يرجى إدخال الاسم الأول واسم العائلة");
+        return;
+      }
+    } else {
+      if (!formData.password) {
+        setError("يرجى إدخال كلمة مرور حسابك الحالي في MaxP لتأكيد هويتك");
+        return;
+      }
     }
 
     try {
       setSubmitting(true);
-      const payload = {
+      const payload: any = {
         email: formData.email.trim(),
         password: formData.password,
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
         phone: formData.phone.trim() || undefined,
         nationalId: formData.nationalId.trim() || undefined,
         dateOfBirth: formData.dateOfBirth || undefined,
@@ -150,6 +209,14 @@ export const JoinEmployee: React.FC = () => {
         address: formData.address.trim() || undefined,
         city: formData.city.trim() || undefined,
       };
+
+      if (!hasExistingAccount) {
+        payload.firstName = formData.firstName.trim();
+        payload.lastName = formData.lastName.trim();
+      } else {
+        if (formData.firstName.trim()) payload.firstName = formData.firstName.trim();
+        if (formData.lastName.trim()) payload.lastName = formData.lastName.trim();
+      }
 
       const response = await apiClient.post(
         `/hr/employee-invitations/accept/${token}`,
@@ -169,7 +236,11 @@ export const JoinEmployee: React.FC = () => {
           localStorage.setItem("user", JSON.stringify(user));
         }
 
-        toast.success("تم تسجيل بياناتك وحسابك بنجاح!");
+        toast.success(
+          hasExistingAccount
+            ? "تم التحقق من حسابك وربطك بفريق العمل بنجاح!"
+            : "تم تسجيل بياناتك وحسابك بنجاح!"
+        );
         setTimeout(() => {
           navigate("/conversations");
         }, 1800);
@@ -177,6 +248,9 @@ export const JoinEmployee: React.FC = () => {
         setError(response.data?.message || "فشل إتمام التسجيل");
       }
     } catch (err: any) {
+      if (err.response?.data?.code === "PASSWORD_REQUIRED_FOR_EXISTING_USER") {
+        setHasExistingAccount(true);
+      }
       setError(err.response?.data?.message || "حدث خطأ أثناء إتمام التسجيل");
     } finally {
       setSubmitting(false);
@@ -293,6 +367,58 @@ export const JoinEmployee: React.FC = () => {
         </div>
       )}
 
+      {/* Express 1-Click Join Banner for Already Logged-in Users */}
+      {currentUser && (
+        <div className="mb-5 p-4 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/70 dark:bg-blue-950/30">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold text-blue-900 dark:text-blue-200">
+                أنت مسجل دخول حالياً بحساب: {currentUser.firstName || currentUser.name || currentUser.email} ({currentUser.email})
+              </p>
+              <p className="text-[11px] text-blue-700 dark:text-blue-400 mt-0.5">
+                يمكنك قبول الدعوة والانضمام فوراً بهذا الحساب دون إعادة إدخال بياناتك أو كلمات المرور.
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={handleExpressJoin}
+              className="business-primary-button whitespace-nowrap text-xs px-3.5 py-2 shrink-0 shadow-sm"
+            >
+              {submitting ? "جاري الانضمام..." : "الانضمام بهذا الحساب مباشرة"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Toggle between New User and Existing Account */}
+      {!currentUser && (
+        <div className="flex items-center gap-2 p-1 bg-zinc-100 dark:bg-zinc-800/80 rounded-lg text-xs mb-4">
+          <button
+            type="button"
+            onClick={() => setHasExistingAccount(false)}
+            className={`flex-1 py-1.5 px-3 rounded-md font-medium transition-all ${
+              !hasExistingAccount
+                ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs"
+                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+            }`}
+          >
+            إنشاء حساب جديد
+          </button>
+          <button
+            type="button"
+            onClick={() => setHasExistingAccount(true)}
+            className={`flex-1 py-1.5 px-3 rounded-md font-medium transition-all ${
+              hasExistingAccount
+                ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs"
+                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+            }`}
+          >
+            لدي حساب مسجل مسبقاً في MaxP
+          </button>
+        </div>
+      )}
+
       {error && (
         <AuthNotice variant="error" title="تنبيه">
           {error}
@@ -304,7 +430,7 @@ export const JoinEmployee: React.FC = () => {
         <div className="space-y-3 pb-3 border-b border-zinc-100 dark:border-zinc-900">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
             <LockClosedIcon className="h-4 w-4 text-blue-500" />
-            بيانات الحساب والدخول
+            {hasExistingAccount ? "تأكيد ملكية حسابك في MaxP" : "بيانات الحساب والدخول"}
           </div>
 
           <div className="business-auth-field">
@@ -330,39 +456,57 @@ export const JoinEmployee: React.FC = () => {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {hasExistingAccount ? (
             <div className="business-auth-field">
-              <label className="business-auth-label">كلمة المرور *</label>
+              <label className="business-auth-label">كلمة المرور الحالية لحسابك *</label>
               <input
                 type="password"
                 name="password"
                 required
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="6 أحرف على الأقل"
+                placeholder="أدخل كلمة مرور حسابك لتأكيد الهوية"
                 className="business-auth-input"
               />
+              <p className="text-[11px] text-zinc-500 mt-1">
+                سيتم الاحتفاظ بكلمة مرورك الحالية وحسابك الأصلي وربطه بشركة {invitation?.companyName || "العمل"}.
+              </p>
             </div>
-            <div className="business-auth-field">
-              <label className="business-auth-label">تأكيد كلمة المرور *</label>
-              <input
-                type="password"
-                name="confirmPassword"
-                required
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="أعد إدخال كلمة المرور"
-                className="business-auth-input"
-              />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="business-auth-field">
+                <label className="business-auth-label">كلمة المرور *</label>
+                <input
+                  type="password"
+                  name="password"
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="6 أحرف على الأقل"
+                  className="business-auth-input"
+                />
+              </div>
+              <div className="business-auth-field">
+                <label className="business-auth-label">تأكيد كلمة المرور *</label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  required
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="أعد إدخال كلمة المرور"
+                  className="business-auth-input"
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Section 2: Personal & HR Details */}
         <div className="space-y-3">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
             <UserIcon className="h-4 w-4 text-blue-500" />
-            البيانات الشخصية
+            {hasExistingAccount ? "بيانات العمل التكميلية (اختياري)" : "البيانات الشخصية"}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -473,7 +617,11 @@ export const JoinEmployee: React.FC = () => {
           disabled={submitting}
           className="business-primary-button w-full mt-2 font-semibold active:scale-[0.98] transition-all"
         >
-          {submitting ? "جاري إنشاء الحساب وملف العمل..." : "إتمام التسجيل والانضمام لفريق العمل"}
+          {submitting
+            ? "جاري المعالجة والربط..."
+            : hasExistingAccount
+            ? "تأكيد الحساب والانضمام لفريق العمل"
+            : "إتمام التسجيل والانضمام لفريق العمل"}
         </button>
       </form>
     </AuthSurface>

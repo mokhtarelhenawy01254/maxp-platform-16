@@ -565,33 +565,54 @@ const acceptEmployeeInvitation = async (req, res) => {
       }
     }
 
-    // إنشاء ملف الموظف في hr_employees
-    const employee = await prisma.employee.create({
-      data: {
+    // البحث عما إذا كان لديه سجل موظف سابق في الشركة لتفادي أخطاء التكرار
+    let employee = await prisma.employee.findFirst({
+      where: {
         companyId: invitation.companyId,
-        userId: user.id,
-        employeeNumber,
-        firstName: cleanFirstName,
-        lastName: cleanLastName,
-        email: normalizedEmail,
-        phone: phone ? phone.trim() : (invitation.phone || null),
-        mobile: mobile ? mobile.trim() : null,
-        nationalId: nationalId ? nationalId.trim() : null,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        gender: gender && ['MALE', 'FEMALE'].includes(gender) ? gender : null,
-        address: address ? address.trim() : null,
-        city: city ? city.trim() : null,
-        country: country || 'Egypt',
-        departmentId: invitation.departmentId || null,
-        positionId: invitation.positionId || null,
-        contractType: invitation.contractType || 'FULL_TIME',
-        hireDate: new Date(),
-        status: 'ACTIVE',
-        emergencyContact: emergencyContact ? emergencyContact.trim() : null,
-        baseSalary: parsedMetadata.baseSalary ? parseFloat(parsedMetadata.baseSalary) : null,
-        notes: parsedMetadata.notes || null
+        OR: [
+          { userId: user.id },
+          { email: normalizedEmail }
+        ]
       }
     });
+
+    const employeeData = {
+      userId: user.id,
+      firstName: cleanFirstName,
+      lastName: cleanLastName,
+      email: normalizedEmail,
+      phone: phone ? phone.trim() : (invitation.phone || user.phone || null),
+      mobile: mobile ? mobile.trim() : null,
+      nationalId: nationalId ? nationalId.trim() : undefined,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+      gender: gender && ['MALE', 'FEMALE'].includes(gender) ? gender : undefined,
+      address: address ? address.trim() : undefined,
+      city: city ? city.trim() : undefined,
+      country: country || 'Egypt',
+      departmentId: invitation.departmentId || null,
+      positionId: invitation.positionId || null,
+      contractType: invitation.contractType || 'FULL_TIME',
+      hireDate: new Date(),
+      status: 'ACTIVE',
+      emergencyContact: emergencyContact ? emergencyContact.trim() : undefined,
+      baseSalary: parsedMetadata.baseSalary ? parseFloat(parsedMetadata.baseSalary) : undefined,
+      notes: parsedMetadata.notes || undefined
+    };
+
+    if (employee) {
+      employee = await prisma.employee.update({
+        where: { id: employee.id },
+        data: employeeData
+      });
+    } else {
+      employee = await prisma.employee.create({
+        data: {
+          ...employeeData,
+          companyId: invitation.companyId,
+          employeeNumber
+        }
+      });
+    }
 
     // تحديث حالة الدعوة إلى مقبولة
     await prisma.employeeInvitation.update({

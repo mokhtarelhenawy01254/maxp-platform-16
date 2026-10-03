@@ -61,8 +61,10 @@ const keyPairFull = generateTaskApiKey('tsk');
 const keyPairNoUpdate = generateTaskApiKey('tsk');
 const keyPairReadOnly = generateTaskApiKey('tsk');
 const keyPairAssigneeOnly = generateTaskApiKey('tsk');
+const keyPairGoalsOnly = generateTaskApiKey('tsk');
 
 let taskStore = [];
+let goalStore = [];
 let activities = [];
 let sentNotifications = [];
 let queuedWebhooks = [];
@@ -122,9 +124,109 @@ const mockPrisma = {
           isActive: true
         };
       }
+      if (where.keyPrefix === keyPairGoalsOnly.keyPrefix) {
+        return {
+          id: 'cred-goals',
+          companyId: companyId1,
+          userId: adminUser.id,
+          defaultActingUserId: adminUser.id,
+          name: 'goals-scoped-key',
+          keyHash: hashTaskApiKey(keyPairGoalsOnly.rawKey),
+          scopes: JSON.stringify(['goals:read', 'goals:write']),
+          expiresAt: null,
+          isActive: true
+        };
+      }
       return null;
     },
     update: async () => null
+  },
+  $transaction: async (fn) => fn(mockPrisma),
+  company: {
+    findUnique: async () => ({ id: companyId1, timezone: 'Africa/Cairo' })
+  },
+  hRSettings: {
+    findUnique: async () => ({ workDays: '0,1,2,3,4' })
+  },
+  goal: {
+    findFirst: async ({ where }) => {
+      const g = goalStore.find((item) => {
+        if (where.id && item.id !== where.id) return false;
+        if (where.companyId && item.companyId !== where.companyId) return false;
+        return true;
+      });
+      if (!g) return null;
+      const linkedTasks = taskStore.filter((t) => t.goalId === g.id);
+      return {
+        ...g,
+        childGoals: g.childGoals || [],
+        tasks: linkedTasks.map((t) => ({
+          id: t.id,
+          title: t.title,
+          status: t.status,
+          priority: t.priority,
+          measurementType: t.measurementType || 'TIME',
+          metricUnit: t.metricUnit || null,
+          metricTargetValue: t.metricTargetValue || null,
+          metricCurrentValue: t.metricCurrentValue || 0,
+          progress: t.progress || 0
+        })),
+        project: null,
+        department: null,
+        parentGoal: null,
+        attendance: null
+      };
+    },
+    findMany: async ({ where }) => {
+      return goalStore.filter((g) => {
+        if (where.companyId && g.companyId !== where.companyId) return false;
+        if (where.userId && g.userId !== where.userId) return false;
+        if (where.goalType && g.goalType !== where.goalType) return false;
+        if (where.status && g.status !== where.status) return false;
+        return true;
+      }).map((g) => ({
+        ...g,
+        childGoals: g.childGoals || [],
+        tasks: taskStore.filter((t) => t.goalId === g.id).map((t) => ({
+          id: t.id,
+          title: t.title,
+          status: t.status,
+          priority: t.priority,
+          measurementType: t.measurementType || 'TIME',
+          metricUnit: t.metricUnit || null,
+          metricTargetValue: t.metricTargetValue || null,
+          metricCurrentValue: t.metricCurrentValue || 0,
+          progress: t.progress || 0
+        })),
+        project: null,
+        department: null,
+        parentGoal: null,
+        attendance: null
+      }));
+    },
+    create: async ({ data }) => {
+      const g = {
+        id: `goal-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        childGoals: [],
+        tasks: [],
+        project: null,
+        department: null,
+        parentGoal: null,
+        attendance: null
+      };
+      goalStore.push(g);
+      return g;
+    },
+    update: async ({ where, data }) => {
+      const idx = goalStore.findIndex((g) => g.id === where.id);
+      if (idx === -1) throw new Error('Goal not found');
+      goalStore[idx] = { ...goalStore[idx], ...data, updatedAt: new Date() };
+      return goalStore[idx];
+    },
+    deleteMany: async () => ({ count: 0 })
   },
   user: {
     findFirst: async ({ where }) => {
@@ -143,29 +245,51 @@ const mockPrisma = {
   },
   task: {
     findFirst: async ({ where }) => {
-      return taskStore.find((t) => {
-        if (where.id && t.id !== where.id) return false;
-        if (where.companyId && t.companyId !== where.companyId) return false;
+      const t = taskStore.find((item) => {
+        if (where.id && item.id !== where.id) return false;
+        if (where.companyId && item.companyId !== where.companyId) return false;
         return true;
-      }) || null;
+      });
+      if (!t) return null;
+      const linkedGoal = t.goalId ? goalStore.find((g) => g.id === t.goalId) : null;
+      return {
+        ...t,
+        goal: linkedGoal ? { id: linkedGoal.id, title: linkedGoal.title, goalType: linkedGoal.goalType, progress: linkedGoal.progress } : null
+      };
     },
     findUnique: async ({ where }) => {
-      return taskStore.find((t) => t.id === where.id) || null;
+      const t = taskStore.find((item) => item.id === where.id) || null;
+      if (!t) return null;
+      const linkedGoal = t.goalId ? goalStore.find((g) => g.id === t.goalId) : null;
+      return {
+        ...t,
+        goal: linkedGoal ? { id: linkedGoal.id, title: linkedGoal.title, goalType: linkedGoal.goalType, progress: linkedGoal.progress } : null
+      };
     },
     findMany: async ({ where }) => {
-      return taskStore.filter((t) => t.companyId === where.companyId);
+      return taskStore
+        .filter((t) => t.companyId === where.companyId)
+        .map((t) => {
+          const linkedGoal = t.goalId ? goalStore.find((g) => g.id === t.goalId) : null;
+          return {
+            ...t,
+            goal: linkedGoal ? { id: linkedGoal.id, title: linkedGoal.title, goalType: linkedGoal.goalType, progress: linkedGoal.progress } : null
+          };
+        });
     },
     count: async ({ where }) => {
       return taskStore.filter((t) => t.companyId === where.companyId).length;
     },
     create: async ({ data }) => {
+      const linkedGoal = data.goalId ? goalStore.find((g) => g.id === data.goalId) : null;
       const task = {
         ...data,
         createdAt: new Date(),
         updatedAt: new Date(),
         assignee: data.assignedTo === activeAssignee.id ? activeAssignee : adminUser,
         creator: adminUser,
-        project: null
+        project: null,
+        goal: linkedGoal ? { id: linkedGoal.id, title: linkedGoal.title, goalType: linkedGoal.goalType, progress: linkedGoal.progress } : null
       };
       taskStore.push(task);
       return task;
@@ -184,12 +308,24 @@ const mockPrisma = {
         : t.assignedTo === activeAssignee.id
           ? activeAssignee
           : adminUser;
+      const linkedGoal = t.goalId ? goalStore.find((g) => g.id === t.goalId) : null;
       return {
         ...t,
         assignee: assigneeObj,
         creator: adminUser,
-        project: null
+        project: null,
+        goal: linkedGoal ? { id: linkedGoal.id, title: linkedGoal.title, goalType: linkedGoal.goalType, progress: linkedGoal.progress } : null
       };
+    },
+    updateMany: async ({ where, data }) => {
+      let count = 0;
+      taskStore.forEach((t, idx) => {
+        if (where.companyId && t.companyId !== where.companyId) return;
+        if (where.goalId && t.goalId !== where.goalId) return;
+        taskStore[idx] = { ...t, ...data, updatedAt: new Date() };
+        count++;
+      });
+      return { count };
     }
   },
   taskActivity: {
@@ -283,6 +419,7 @@ const resetTestState = () => {
       project: null
     }
   ];
+  goalStore = [];
   activities = [];
   sentNotifications = [];
   queuedWebhooks = [];
@@ -480,3 +617,274 @@ test('10) Rejects request with no updatable fields with 400', async () => {
   assert.strictEqual(response.statusCode, 400);
   assert.strictEqual(response.body.success, false);
 });
+
+test('11) Acceptance Criterion: POST /goals creates goal and returns 201 with id', async () => {
+  resetTestState();
+
+  const response = await request(app)
+    .post('/api/v1/external/tasks/goals')
+    .set('x-api-key', keyPairFull.rawKey)
+    .send({
+      title: 'Target 50 Confirmed Orders',
+      targetValue: 50,
+      unit: 'orders',
+      goalType: 'EMPLOYEE',
+      employeeId: activeAssignee.id
+    });
+
+  assert.strictEqual(response.statusCode, 201);
+  assert.strictEqual(response.body.success, true);
+  assert.ok(response.body.id || response.body.data?.id);
+  const createdGoal = response.body.data || response.body.goal;
+  assert.strictEqual(createdGoal.title, 'Target 50 Confirmed Orders');
+  assert.strictEqual(createdGoal.targetValue, 50);
+  assert.strictEqual(createdGoal.unit, 'orders');
+  assert.strictEqual(createdGoal.goalType, 'EMPLOYEE');
+});
+
+test('12) Acceptance Criterion: GET /goals lists goals and supports filtering', async () => {
+  resetTestState();
+
+  const createRes1 = await request(app)
+    .post('/api/v1/external/tasks/goals')
+    .set('x-api-key', keyPairFull.rawKey)
+    .send({
+      title: 'Employee Goal 1',
+      targetValue: 20,
+      unit: 'calls',
+      goalType: 'EMPLOYEE',
+      employeeId: activeAssignee.id
+    });
+  assert.strictEqual(createRes1.statusCode, 201);
+
+  const createRes2 = await request(app)
+    .post('/api/v1/external/tasks/goals')
+    .set('x-api-key', keyPairFull.rawKey)
+    .send({
+      title: 'Company Goal 2',
+      targetValue: 100000,
+      unit: 'EGP',
+      goalType: 'COMPANY'
+    });
+  assert.strictEqual(createRes2.statusCode, 201);
+
+  // List all goals
+  const listAllRes = await request(app)
+    .get('/api/v1/external/tasks/goals')
+    .set('x-api-key', keyPairFull.rawKey);
+
+  assert.strictEqual(listAllRes.statusCode, 200);
+  assert.strictEqual(listAllRes.body.success, true);
+  assert.strictEqual(listAllRes.body.data.length, 2);
+
+  // Filter by employeeId
+  const listFilteredRes = await request(app)
+    .get(`/api/v1/external/tasks/goals?employeeId=${activeAssignee.id}`)
+    .set('x-api-key', keyPairFull.rawKey);
+
+  assert.strictEqual(listFilteredRes.statusCode, 200);
+  assert.strictEqual(listFilteredRes.body.data.length, 1);
+  assert.strictEqual(listFilteredRes.body.data[0].title, 'Employee Goal 1');
+});
+
+test('13) Acceptance Criterion: GET /goals/:id returns single goal, 404 for non-existent', async () => {
+  resetTestState();
+
+  const createRes = await request(app)
+    .post('/api/v1/external/tasks/goals')
+    .set('x-api-key', keyPairFull.rawKey)
+    .send({
+      title: 'Single Test Goal',
+      targetValue: 10,
+      unit: 'items',
+      goalType: 'COMPANY'
+    });
+  assert.strictEqual(createRes.statusCode, 201);
+  const goalId = createRes.body.id || createRes.body.data.id;
+
+  const getRes = await request(app)
+    .get(`/api/v1/external/tasks/goals/${goalId}`)
+    .set('x-api-key', keyPairFull.rawKey);
+
+  assert.strictEqual(getRes.statusCode, 200);
+  assert.strictEqual(getRes.body.success, true);
+  assert.strictEqual(getRes.body.data.id, goalId);
+  assert.strictEqual(getRes.body.data.title, 'Single Test Goal');
+
+  const notFoundRes = await request(app)
+    .get('/api/v1/external/tasks/goals/non-existent-id')
+    .set('x-api-key', keyPairFull.rawKey);
+
+  assert.strictEqual(notFoundRes.statusCode, 404);
+  assert.strictEqual(notFoundRes.body.success, false);
+});
+
+test('14) Acceptance Criterion: PATCH /goals/:id/progress updates goal progress', async () => {
+  resetTestState();
+
+  const createRes = await request(app)
+    .post('/api/v1/external/tasks/goals')
+    .set('x-api-key', keyPairFull.rawKey)
+    .send({
+      title: 'Progress Target Goal',
+      targetValue: 100,
+      unit: 'units',
+      goalType: 'COMPANY'
+    });
+  assert.strictEqual(createRes.statusCode, 201);
+  const goalId = createRes.body.id || createRes.body.data.id;
+
+  const progressRes = await request(app)
+    .patch(`/api/v1/external/tasks/goals/${goalId}/progress`)
+    .set('x-api-key', keyPairFull.rawKey)
+    .send({
+      currentValue: 50
+    });
+
+  assert.strictEqual(progressRes.statusCode, 200);
+  assert.strictEqual(progressRes.body.success, true);
+  assert.strictEqual(progressRes.body.data.currentValue, 50);
+  assert.strictEqual(progressRes.body.data.progress, 50);
+});
+
+test('15) Acceptance Criterion: PATCH /goals/:id updates goal properties', async () => {
+  resetTestState();
+
+  const createRes = await request(app)
+    .post('/api/v1/external/tasks/goals')
+    .set('x-api-key', keyPairFull.rawKey)
+    .send({
+      title: 'Original Goal Title',
+      targetValue: 30,
+      unit: 'tickets',
+      goalType: 'COMPANY'
+    });
+  assert.strictEqual(createRes.statusCode, 201);
+  const goalId = createRes.body.id || createRes.body.data.id;
+
+  const updateRes = await request(app)
+    .patch(`/api/v1/external/tasks/goals/${goalId}`)
+    .set('x-api-key', keyPairFull.rawKey)
+    .send({
+      title: 'Updated Goal Title',
+      priority: 'HIGH'
+    });
+
+  assert.strictEqual(updateRes.statusCode, 200);
+  assert.strictEqual(updateRes.body.success, true);
+  assert.strictEqual(updateRes.body.data.title, 'Updated Goal Title');
+  assert.strictEqual(updateRes.body.data.priority, 'HIGH');
+});
+
+test('16) Acceptance Criterion: POST / tasks creates task with goalId, and GET returns goalTitle, goalType, goalProgress', async () => {
+  resetTestState();
+
+  // Create a goal
+  const goalRes = await request(app)
+    .post('/api/v1/external/tasks/goals')
+    .set('x-api-key', keyPairFull.rawKey)
+    .send({
+      title: 'Q4 Revenue Goal',
+      targetValue: 50000,
+      unit: 'EGP',
+      goalType: 'COMPANY'
+    });
+  assert.strictEqual(goalRes.statusCode, 201);
+  const goalId = goalRes.body.id || goalRes.body.data.id;
+
+  // Create task linked to goal
+  const taskRes = await request(app)
+    .post('/api/v1/external/tasks')
+    .set('x-api-key', keyPairFull.rawKey)
+    .send({
+      title: 'Close enterprise lead deal',
+      description: 'Negotiate and sign contract',
+      assignedTo: activeAssignee.id,
+      goalId
+    });
+
+  assert.strictEqual(taskRes.statusCode, 201);
+  assert.strictEqual(taskRes.body.success, true);
+  assert.strictEqual(taskRes.body.data.goalId, goalId);
+  assert.strictEqual(taskRes.body.data.goalTitle, 'Q4 Revenue Goal');
+  assert.strictEqual(taskRes.body.data.goalType, 'COMPANY');
+
+  const taskId = taskRes.body.data.id;
+
+  // GET /:id returns goal fields
+  const getTaskRes = await request(app)
+    .get(`/api/v1/external/tasks/${taskId}`)
+    .set('x-api-key', keyPairFull.rawKey);
+
+  assert.strictEqual(getTaskRes.statusCode, 200);
+  assert.strictEqual(getTaskRes.body.data.goalTitle, 'Q4 Revenue Goal');
+  assert.strictEqual(getTaskRes.body.data.goalType, 'COMPANY');
+  assert.strictEqual(getTaskRes.body.data.goalId, goalId);
+
+  // GET / returns goal fields for task
+  const listTasksRes = await request(app)
+    .get('/api/v1/external/tasks')
+    .set('x-api-key', keyPairFull.rawKey);
+
+  assert.strictEqual(listTasksRes.statusCode, 200);
+  const matchedTask = listTasksRes.body.data.find((t) => t.id === taskId);
+  assert.ok(matchedTask);
+  assert.strictEqual(matchedTask.goalTitle, 'Q4 Revenue Goal');
+  assert.strictEqual(matchedTask.goalType, 'COMPANY');
+});
+
+test('17) Read-only API key cannot create or update goals (403)', async () => {
+  resetTestState();
+
+  const response = await request(app)
+    .post('/api/v1/external/tasks/goals')
+    .set('x-api-key', keyPairReadOnly.rawKey)
+    .send({
+      title: 'Unauthorized Goal',
+      targetValue: 10
+    });
+
+  assert.strictEqual(response.statusCode, 403);
+  assert.strictEqual(response.body.success, false);
+});
+
+test('18) Key with only goals:read can read goals but cannot write tasks or goals (403)', async () => {
+  resetTestState();
+
+  // Reading goals works with goals:read
+  const getRes = await request(app)
+    .get('/api/v1/external/tasks/goals')
+    .set('x-api-key', keyPairGoalsOnly.rawKey);
+
+  assert.strictEqual(getRes.statusCode, 200);
+  assert.strictEqual(getRes.body.success, true);
+
+  // Writing task is denied without tasks:write
+  const postTaskRes = await request(app)
+    .post('/api/v1/external/tasks')
+    .set('x-api-key', keyPairGoalsOnly.rawKey)
+    .send({
+      title: 'Should fail',
+      description: 'No tasks:write scope'
+    });
+
+  assert.strictEqual(postTaskRes.statusCode, 403);
+});
+
+test('19) Rejects invalid goalId with 400 when creating task', async () => {
+  resetTestState();
+
+  const response = await request(app)
+    .post('/api/v1/external/tasks')
+    .set('x-api-key', keyPairFull.rawKey)
+    .send({
+      title: 'Task with bogus goal',
+      description: 'Description',
+      goalId: 'non-existent-goal-id'
+    });
+
+  assert.strictEqual(response.statusCode, 400);
+  assert.strictEqual(response.body.success, false);
+  assert.match(response.body.message, /goalId/i);
+});
+

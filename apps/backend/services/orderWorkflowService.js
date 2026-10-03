@@ -747,7 +747,9 @@ class OrderWorkflowService {
     }
 
     /**
-     * Get Global Audit Logs (Recent activity from OrderStatusHistory, optionally filtered by user/employee, changeType, orderNumber, date range)
+     * Get Global Audit Logs
+     * Supports OrderStatusHistory, OrderWorkflowAuditLog (overrides), and ReturnActivityLog (returns)
+     * Includes guest orders, excludes import noise, accurate DB-level filtered totals, tiebreaker & cursor pagination
      */
     async getGlobalAuditLogs(companyId, limit = 20, offset = 0, filters = {}) {
         const userId = typeof filters === 'string' ? filters : filters?.userId;
@@ -755,72 +757,26 @@ class OrderWorkflowService {
         const orderNumber = typeof filters === 'object' ? filters?.orderNumber : null;
         const startDate = typeof filters === 'object' ? filters?.startDate : null;
         const endDate = typeof filters === 'object' ? filters?.endDate : null;
-
-        const where = {
-            order: {
-                companyId
-            }
-        };
-
-        if (userId && userId !== 'ALL' && userId !== '') {
-            where.OR = [
-                { changedBy: userId },
-                { userName: { equals: userId, mode: 'insensitive' } }
-            ];
-        }
-
-        if (orderNumber && orderNumber.trim() !== '') {
-            where.order.orderNumber = { contains: orderNumber.trim(), mode: 'insensitive' };
-        }
-
-        if (startDate || endDate) {
-            where.createdAt = {};
-            if (startDate) where.createdAt.gte = new Date(startDate);
-            if (endDate) {
-                const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999);
-                where.createdAt.lte = end;
-            }
-        }
+        const cursor = typeof filters === 'object' ? filters?.cursor : null;
 
         const now = new Date();
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        const [total, rawLogs, companyStatuses, todayCount] = await Promise.all([
-            this.prisma.orderStatusHistory.count({ where }),
-            this.prisma.orderStatusHistory.findMany({
-                where,
-                include: {
-                    order: {
-                        select: {
-                            id: true,
-                            orderNumber: true,
-                            total: true,
-                            customerName: true,
-                            customerPhone: true
-                        }
-                    }
-                },
-                orderBy: { createdAt: 'desc' },
-                take: limit,
-                skip: offset
-            }),
-            this.getStatuses(companyId).catch(() => []),
-            this.prisma.orderStatusHistory.count({
-                where: {
-                    order: { companyId },
-                    createdAt: { gte: startOfToday }
-                }
-            }).catch(() => 0)
-        ]);
-
+        // 🛡️ Requirement 9: Fetch company's custom status definitions
+        const companyStatuses = await this.getStatuses(companyId).catch(() => []);
         const statusMap = new Map();
         if (Array.isArray(companyStatuses)) {
             companyStatuses.forEach(s => {
-                if (s?.code) statusMap.set(s.code.toUpperCase(), s);
+                if (s?.code) {
+                    const raw = s.code.toUpperCase().trim();
+                    statusMap.set(raw, s);
+                    statusMap.set(raw.replace(/[-_]/g, '_'), s);
+                    statusMap.set(raw.replace(/[-_]/g, '-'), s);
+                }
             });
         }
 
+        // 🛡️ Requirement 9: Comprehensive Arabic status names map
         const statusArabicNames = {
             NEW: 'طلب جديد',
             PENDING: 'قيد الانتظار',
@@ -844,26 +800,590 @@ class OrderWorkflowService {
             SCHEDULED: 'طلب مجدول',
             DRAFT: 'مسودة',
             FAILED: 'فشل الدفع',
-            COMPLETED: 'مكتمل'
+            COMPLETED: 'مكتمل',
+
+            // Extended platform statuses (Requirement 9)
+            BDONKODTERBO: 'بدون كود تيربو',
+            'DELAYED-WITH-CAPTAIN': 'مؤجل مع المندوب',
+            DELAYED_WITH_CAPTAIN: 'مؤجل مع المندوب',
+            ON_HOLD_PREP: 'معلق في التجهيز',
+            STOCK_SHORTAGE: 'نقص في المخزون',
+            PENDING_PREPARATION: 'بانتظار التجهيز',
+            DUPLICATE_ORDER: 'طلب مكرر',
+            TRASH: 'سلة المحذوفات',
+            REFUNDED: 'مسترد',
+            SHORTAGE_FAILED: 'فشل نقص المخزون',
+            PARTIALLY_REFUNDED: 'مسترد جزئياً',
+            LOST: 'مفقود',
+            REJECTED: 'مرفوض',
+            RETURN_REQUESTED: 'طلب استرجاع',
+            RETURN_RECEIVED: 'تم استلام المرتجع',
+            RETURN_APPROVED: 'تمت الموافقة على المرتجع',
+            RETURN_REJECTED: 'رفض المرتجع',
+            WAITING_FOR_ACTION: 'بانتظار إجراء',
+            IN_TRANSIT: 'في الطريق',
+            RESCHEDULED: 'تمت إعادة الجدولة',
+            SHIPPING: 'قيد الشحن',
+            PAID: 'مدفوع',
+            UNPAID: 'غير مدفوع',
+            RETURN_REQ: 'طلب إرجاع'
         };
 
+        // 🛡️ Requirement 9: Status colors map (defaults to neutral #71717A instead of blue)
         const statusColors = {
             CONFIRMED: '#2563EB',
             PROCESSING: '#4F46E5',
             PREPARING: '#0284C7',
+            PENDING_PREPARATION: '#0284C7',
             QUALITY_CHECK: '#0891B2',
             PACKAGED: '#0D9488',
             READY_TO_SHIP: '#16A34A',
             READY: '#16A34A',
             SHIPPED: '#9333EA',
+            IN_TRANSIT: '#9333EA',
+            SHIPPING: '#9333EA',
+            OUT_FOR_DELIVERY: '#059669',
             DELIVERED: '#15803D',
+            COMPLETED: '#15803D',
             CANCELLED: '#DC2626',
             CANCELED: '#DC2626',
             RETURNED: '#E11D48',
+            RETURN_REQUESTED: '#E11D48',
+            RETURN_RECEIVED: '#BE123C',
+            RETURN_APPROVED: '#059669',
+            RETURN_REJECTED: '#DC2626',
+            RETURN_REQ: '#E11D48',
+            PARTIALLY_RETURNED: '#BE123C',
+            PARTIALLY_DELIVERED: '#10B981',
             ON_HOLD: '#EA580C',
+            ON_HOLD_PREP: '#EA580C',
             SCHEDULED: '#D97706',
-            PENDING: '#CA8A04'
+            RESCHEDULED: '#D97706',
+            PENDING: '#CA8A04',
+            NEW: '#3B82F6',
+            REFUNDED: '#10B981',
+            PARTIALLY_REFUNDED: '#059669',
+            LOST: '#DC2626',
+            SHORTAGE_FAILED: '#DC2626',
+            STOCK_SHORTAGE: '#EF4444',
+            TRASH: '#71717A',
+            DUPLICATE_ORDER: '#64748B',
+            BDONKODTERBO: '#71717A',
+            'DELAYED-WITH-CAPTAIN': '#F59E0B',
+            DELAYED_WITH_CAPTAIN: '#F59E0B',
+            WAITING_FOR_ACTION: '#F59E0B',
+            REJECTED: '#DC2626'
         };
+
+        const resolveStatus = (rawCode) => {
+            if (!rawCode || rawCode.trim() === '') {
+                return { code: '', name: 'البداية', color: '#71717A' };
+            }
+            const clean = rawCode.trim().toUpperCase();
+            const normalizedKey = clean.replace(/[-_]/g, '_');
+            const hyphenKey = clean.replace(/[-_]/g, '-');
+
+            const def = statusMap.get(clean) || statusMap.get(normalizedKey) || statusMap.get(hyphenKey);
+            const name = def?.name
+                || statusArabicNames[clean]
+                || statusArabicNames[normalizedKey]
+                || statusArabicNames[hyphenKey]
+                || `حالة (${rawCode.trim()})`;
+
+            // 🛡️ Requirement 9: Neutral gray #71717A fallback when color is undefined, NOT bright blue
+            const color = def?.color
+                || statusColors[clean]
+                || statusColors[normalizedKey]
+                || statusColors[hyphenKey]
+                || '#71717A';
+
+            return { code: rawCode, name, color };
+        };
+
+        const resolveActor = (changedBy, userName, matchedUser) => {
+            let displayName = userName?.trim() || '';
+            if (matchedUser) {
+                const full = `${matchedUser.firstName || ''} ${matchedUser.lastName || ''}`.trim();
+                if (full) displayName = full;
+            }
+            // 🛡️ Requirement 4: Zero rows with actor named 'User' alone!
+            if (!displayName || displayName.toLowerCase() === 'user' || displayName.toLowerCase() === 'system') {
+                displayName = (changedBy === 'SYSTEM_WHATSAPP') ? 'بوت واتساب' : 'النظام';
+            }
+            return {
+                id: (changedBy && changedBy.toLowerCase() !== 'user') ? changedBy : 'system',
+                firstName: displayName,
+                lastName: '',
+                email: matchedUser?.email || null,
+                avatar: matchedUser?.avatar || null
+            };
+        };
+
+        // 🛡️ Requirement 6: Provide informative reason from transition code if empty
+        const resolveReason = (reason, detectedType, fromName, toName) => {
+            const trimmed = (reason || '').trim();
+            if (trimmed) return trimmed;
+
+            if (detectedType === 'data_update') {
+                return 'تعديل بيانات وتفاصيل الطلب';
+            }
+            if (detectedType === 'cancelled') {
+                return 'إلغاء الطلب من قبل النظام أو الموظف';
+            }
+            if (detectedType === 'bot_whatsapp') {
+                return 'تأكيد الطلب آلياً عبر محادثة واتساب';
+            }
+            if (detectedType === 'override') {
+                return 'تجاوز بصلاحية استثنائية لتغيير الحالة';
+            }
+            if (detectedType === 'approved') {
+                return 'اعتماد رسمي لطلب تغيير الحالة';
+            }
+            if (detectedType === 'bulk_update') {
+                return 'تحديث حالة الطلب ضمن عملية مجمعة';
+            }
+            if (detectedType === 'return') {
+                return 'إجراء على مرتجع الطلب';
+            }
+            if (fromName && toName && fromName !== toName && fromName !== 'البداية') {
+                return `تغيير الحالة من ${fromName} إلى ${toName}`;
+            }
+            return `تحديث حالة الطلب إلى ${toName || 'الحالة المحددة'}`;
+        };
+
+        // =========================================================================
+        // SOURCE 1: 🛡️ Requirement 3 — «تجاوز بصلاحية» (OrderWorkflowAuditLog)
+        // =========================================================================
+        if (changeType === 'override') {
+            const auditWhere = {
+                companyId,
+                OR: [
+                    { changeType: 'override' },
+                    { changeType: { contains: 'override', mode: 'insensitive' } },
+                    { reason: { contains: 'تجاوز', mode: 'insensitive' } },
+                    { reason: { contains: 'override', mode: 'insensitive' } }
+                ]
+            };
+
+            if (orderNumber && orderNumber.trim()) {
+                auditWhere.order = { orderNumber: { contains: orderNumber.trim(), mode: 'insensitive' } };
+            }
+            if (userId && userId !== 'ALL' && userId !== '') {
+                auditWhere.changedBy = userId;
+            }
+            if (startDate || endDate) {
+                auditWhere.createdAt = {};
+                if (startDate) auditWhere.createdAt.gte = new Date(startDate);
+                if (endDate) {
+                    const end = new Date(endDate);
+                    end.setHours(23, 59, 59, 999);
+                    auditWhere.createdAt.lte = end;
+                }
+            }
+
+            const [total, rawAuditLogs, todayCount] = await Promise.all([
+                this.prisma.orderWorkflowAuditLog.count({ where: auditWhere }),
+                this.prisma.orderWorkflowAuditLog.findMany({
+                    where: auditWhere,
+                    include: {
+                        order: {
+                            select: { id: true, orderNumber: true, total: true, customerName: true, customerPhone: true }
+                        },
+                        fromStatus: true,
+                        toStatus: true,
+                        user: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } },
+                        approver: { select: { id: true, firstName: true, lastName: true } }
+                    },
+                    orderBy: [ { createdAt: 'desc' }, { id: 'desc' } ], // 🛡️ Requirement 10: tiebreaker
+                    take: limit,
+                    skip: offset
+                }),
+                this.prisma.orderWorkflowAuditLog.count({
+                    where: { ...auditWhere, createdAt: { gte: startOfToday } }
+                }).catch(() => 0)
+            ]);
+
+            const logs = rawAuditLogs.map(l => {
+                const fromStatus = resolveStatus(l.fromStatus?.code || '');
+                const toStatus = resolveStatus(l.toStatus?.code || '');
+                const user = resolveActor(l.changedBy, null, l.user);
+                return {
+                    id: l.id,
+                    orderId: l.orderId,
+                    createdAt: l.createdAt,
+                    changeType: 'override',
+                    reason: resolveReason(l.reason, 'override', fromStatus.name, toStatus.name),
+                    fromStatus,
+                    toStatus,
+                    order: l.order,
+                    user,
+                    approver: l.approver ? {
+                        id: l.approvedBy,
+                        name: `${l.approver.firstName || ''} ${l.approver.lastName || ''}`.trim()
+                    } : null
+                };
+            });
+
+            return {
+                logs,
+                total,
+                nextCursor: logs.length === limit ? logs[logs.length - 1].id : null,
+                stats: { total, todayCount }
+            };
+        }
+
+        // =========================================================================
+        // SOURCE 2: 🛡️ Requirement 7 — «المرتجعات» (ReturnActivityLog)
+        // =========================================================================
+        if (changeType === 'return' || changeType === 'returns') {
+            const returnWhere = {
+                returnRequest: { companyId }
+            };
+
+            if (orderNumber && orderNumber.trim()) {
+                returnWhere.returnRequest.order = {
+                    orderNumber: { contains: orderNumber.trim(), mode: 'insensitive' }
+                };
+            }
+            if (userId && userId !== 'ALL' && userId !== '') {
+                returnWhere.userId = userId;
+            }
+            if (startDate || endDate) {
+                returnWhere.createdAt = {};
+                if (startDate) returnWhere.createdAt.gte = new Date(startDate);
+                if (endDate) {
+                    const end = new Date(endDate);
+                    end.setHours(23, 59, 59, 999);
+                    returnWhere.createdAt.lte = end;
+                }
+            }
+
+            const formatReturnActionName = (action) => {
+                const map = {
+                    CREATED: 'إنشاء طلب إرجاع',
+                    REQUESTED: 'طلب استرجاع',
+                    SUBMITTED: 'تقديم طلب إرجاع',
+                    APPROVED: 'الموافقة على المرتجع',
+                    REJECTED: 'رفض المرتجع',
+                    RECEIVED: 'استلام المرتجع بالمخزن',
+                    INSPECTED: 'فحص المرتجع',
+                    REFUNDED: 'استرداد المبلغ للعميل',
+                    CANCELLED: 'إلغاء المرتجع',
+                    UPDATED: 'تحديث حالة المرتجع'
+                };
+                return map[action] || action || 'حركة مرتجع';
+            };
+
+            const [total, rawReturnLogs, todayCount] = await Promise.all([
+                this.prisma.returnActivityLog.count({ where: returnWhere }),
+                this.prisma.returnActivityLog.findMany({
+                    where: returnWhere,
+                    include: {
+                        returnRequest: {
+                            include: {
+                                order: {
+                                    select: { id: true, orderNumber: true, total: true, customerName: true, customerPhone: true }
+                                }
+                            }
+                        },
+                        user: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } }
+                    },
+                    orderBy: [ { createdAt: 'desc' }, { id: 'desc' } ], // 🛡️ Requirement 10: tiebreaker
+                    take: limit,
+                    skip: offset
+                }),
+                this.prisma.returnActivityLog.count({
+                    where: { ...returnWhere, createdAt: { gte: startOfToday } }
+                }).catch(() => 0)
+            ]);
+
+            const logs = rawReturnLogs.map(l => {
+                const actionName = formatReturnActionName(l.action);
+                const user = resolveActor(l.userId, null, l.user);
+                return {
+                    id: l.id,
+                    orderId: l.returnRequest?.orderId,
+                    createdAt: l.createdAt,
+                    changeType: 'return',
+                    reason: resolveReason(l.details, 'return', 'طلب إرجاع', actionName),
+                    fromStatus: {
+                        code: 'RETURN_REQ',
+                        name: 'طلب إرجاع',
+                        color: '#E11D48'
+                    },
+                    toStatus: {
+                        code: l.action,
+                        name: actionName,
+                        color: '#E11D48'
+                    },
+                    order: l.returnRequest?.order || null,
+                    user,
+                    approver: null
+                };
+            });
+
+            return {
+                logs,
+                total,
+                nextCursor: logs.length === limit ? logs[logs.length - 1].id : null,
+                stats: { total, todayCount }
+            };
+        }
+
+        // =========================================================================
+        // SOURCE 3: 🛡️ Requirement 5 — «تعديل بيانات» (oldStatus = status)
+        // =========================================================================
+        if (changeType === 'data_update') {
+            try {
+                const countRows = await this.prisma.$queryRawUnsafe(`
+                    SELECT COUNT(*)::int as count FROM "OrderStatusHistory" osh
+                    LEFT JOIN "Order" o ON osh."orderId" = o.id
+                    LEFT JOIN "GuestOrder" go ON osh."guestOrderId" = go.id
+                    WHERE (o."companyId" = $1 OR go."companyId" = $1)
+                    AND osh."oldStatus" IS NOT NULL
+                    AND UPPER(osh.status) = UPPER(osh."oldStatus")
+                    AND NOT (osh."changedBy" ILIKE 'user' AND (osh."userName" ILIKE 'user' OR osh."userName" IS NULL))
+                `, companyId);
+                const total = countRows[0]?.count || 0;
+
+                const todayCountRows = await this.prisma.$queryRawUnsafe(`
+                    SELECT COUNT(*)::int as count FROM "OrderStatusHistory" osh
+                    LEFT JOIN "Order" o ON osh."orderId" = o.id
+                    LEFT JOIN "GuestOrder" go ON osh."guestOrderId" = go.id
+                    WHERE (o."companyId" = $1 OR go."companyId" = $1)
+                    AND osh."oldStatus" IS NOT NULL
+                    AND UPPER(osh.status) = UPPER(osh."oldStatus")
+                    AND osh."createdAt" >= $2
+                    AND NOT (osh."changedBy" ILIKE 'user' AND (osh."userName" ILIKE 'user' OR osh."userName" IS NULL))
+                `, companyId, startOfToday);
+                const todayCount = todayCountRows[0]?.count || 0;
+
+                const idRows = await this.prisma.$queryRawUnsafe(`
+                    SELECT osh.id FROM "OrderStatusHistory" osh
+                    LEFT JOIN "Order" o ON osh."orderId" = o.id
+                    LEFT JOIN "GuestOrder" go ON osh."guestOrderId" = go.id
+                    WHERE (o."companyId" = $1 OR go."companyId" = $1)
+                    AND osh."oldStatus" IS NOT NULL
+                    AND UPPER(osh.status) = UPPER(osh."oldStatus")
+                    AND NOT (osh."changedBy" ILIKE 'user' AND (osh."userName" ILIKE 'user' OR osh."userName" IS NULL))
+                    ORDER BY osh."createdAt" DESC, osh.id DESC
+                    LIMIT $2 OFFSET $3
+                `, companyId, limit, offset);
+
+                const ids = idRows.map(r => r.id);
+                const rawLogs = ids.length > 0
+                    ? await this.prisma.orderStatusHistory.findMany({
+                        where: { id: { in: ids } },
+                        include: {
+                            order: {
+                                select: { id: true, orderNumber: true, total: true, customerName: true, customerPhone: true }
+                            },
+                            guestOrder: {
+                                select: { id: true, orderNumber: true, total: true, guestName: true, guestPhone: true }
+                            }
+                        },
+                        orderBy: [ { createdAt: 'desc' }, { id: 'desc' } ]
+                    })
+                    : [];
+
+                const userIds = [...new Set(rawLogs.map(l => l.changedBy).filter(id => id && id.startsWith('cm')))];
+                const users = userIds.length > 0
+                    ? await this.prisma.user.findMany({
+                        where: { id: { in: userIds } },
+                        select: { id: true, firstName: true, lastName: true, email: true, avatar: true }
+                    })
+                    : [];
+                const userMap = new Map(users.map(u => [u.id, u]));
+
+                const logs = rawLogs.map(l => {
+                    const matchedUser = userMap.get(l.changedBy);
+                    const toStatus = resolveStatus(l.status);
+                    const orderObj = l.order || (l.guestOrder ? {
+                        id: l.guestOrder.id,
+                        orderNumber: l.guestOrder.orderNumber,
+                        total: l.guestOrder.total,
+                        customerName: l.guestOrder.guestName,
+                        customerPhone: l.guestOrder.guestPhone,
+                        isGuest: true
+                    } : null);
+
+                    return {
+                        id: l.id,
+                        orderId: l.orderId || l.guestOrderId,
+                        createdAt: l.createdAt,
+                        changeType: 'data_update',
+                        reason: resolveReason(l.reason, 'data_update', toStatus.name, toStatus.name),
+                        fromStatus: toStatus,
+                        toStatus,
+                        order: orderObj,
+                        user: resolveActor(l.changedBy, l.userName, matchedUser),
+                        approver: null
+                    };
+                });
+
+                return {
+                    logs,
+                    total,
+                    nextCursor: logs.length === limit ? logs[logs.length - 1].id : null,
+                    stats: { total, todayCount }
+                };
+            } catch (err) {
+                console.error('[OrderWorkflowService] data_update query error:', err.message);
+            }
+        }
+
+        // =========================================================================
+        // SOURCE 4: 🛡️ OrderStatusHistory (Standard, Cancelled, Whatsapp, Bulk, Approvals, ALL)
+        // =========================================================================
+
+        // 🛡️ Requirement 8: Include both regular orders and guest orders
+        const where = {
+            OR: [
+                { order: { companyId } },
+                { guestOrder: { companyId } }
+            ]
+        };
+
+        // 🛡️ Requirement 4: Exclude bulk import noise (80,662 rows with changedBy='user' & userName='User')
+        where.AND = [
+            {
+                NOT: [
+                    { changedBy: 'user' },
+                    { changedBy: 'User' },
+                    { userName: 'User' },
+                    { userName: 'user' }
+                ]
+            }
+        ];
+
+        // Filter by user / employee
+        if (userId && userId !== 'ALL' && userId !== '') {
+            where.AND.push({
+                OR: [
+                    { changedBy: userId },
+                    { userName: { equals: userId, mode: 'insensitive' } }
+                ]
+            });
+        }
+
+        // Filter by order number (matches regular order OR guest order)
+        if (orderNumber && orderNumber.trim() !== '') {
+            const num = orderNumber.trim();
+            where.AND.push({
+                OR: [
+                    { order: { orderNumber: { contains: num, mode: 'insensitive' } } },
+                    { guestOrder: { orderNumber: { contains: num, mode: 'insensitive' } } }
+                ]
+            });
+        }
+
+        // Filter by date range
+        if (startDate || endDate) {
+            const dateCond = {};
+            if (startDate) dateCond.gte = new Date(startDate);
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                dateCond.lte = end;
+            }
+            where.AND.push({ createdAt: dateCond });
+        }
+
+        // 🛡️ Requirement 1: Apply changeType filter IN PRISMA WHERE before take/skip
+        if (changeType === 'bot_whatsapp') {
+            where.AND.push({
+                OR: [
+                    { changedBy: 'SYSTEM_WHATSAPP' },
+                    { reason: { contains: 'واتساب', mode: 'insensitive' } },
+                    { reason: { contains: 'whatsapp', mode: 'insensitive' } }
+                ]
+            });
+        } else if (changeType === 'bulk_update') {
+            where.AND.push({
+                reason: { contains: 'bulk', mode: 'insensitive' }
+            });
+        } else if (changeType === 'cancelled') {
+            where.AND.push({
+                OR: [
+                    { status: { in: ['CANCELLED', 'CANCELED'] } },
+                    { reason: { contains: 'إلغاء', mode: 'insensitive' } },
+                    { reason: { contains: 'cancel', mode: 'insensitive' } }
+                ]
+            });
+        } else if (changeType === 'approved') {
+            where.AND.push({
+                OR: [
+                    { reason: { contains: 'اعتماد', mode: 'insensitive' } },
+                    { reason: { contains: 'approval', mode: 'insensitive' } },
+                    { reason: { contains: 'موافقة', mode: 'insensitive' } }
+                ]
+            });
+        } else if (changeType === 'normal') {
+            // Normal transition: excludes bot, bulk, override, approval, cancelled
+            where.AND.push({
+                NOT: [
+                    { changedBy: 'SYSTEM_WHATSAPP' },
+                    { reason: { contains: 'واتساب', mode: 'insensitive' } },
+                    { reason: { contains: 'whatsapp', mode: 'insensitive' } },
+                    { reason: { contains: 'bulk', mode: 'insensitive' } },
+                    { reason: { contains: 'تجاوز', mode: 'insensitive' } },
+                    { reason: { contains: 'override', mode: 'insensitive' } },
+                    { reason: { contains: 'اعتماد', mode: 'insensitive' } },
+                    { reason: { contains: 'approval', mode: 'insensitive' } },
+                    { status: { in: ['CANCELLED', 'CANCELED'] } },
+                    { reason: { contains: 'إلغاء', mode: 'insensitive' } }
+                ]
+            });
+        }
+
+        // 🛡️ Requirement 10: Deterministic tiebreaker + optional cursor pagination
+        const queryOptions = {
+            where,
+            include: {
+                order: {
+                    select: {
+                        id: true,
+                        orderNumber: true,
+                        total: true,
+                        customerName: true,
+                        customerPhone: true
+                    }
+                },
+                guestOrder: {
+                    select: {
+                        id: true,
+                        orderNumber: true,
+                        total: true,
+                        guestName: true,
+                        guestPhone: true
+                    }
+                }
+            },
+            orderBy: [
+                { createdAt: 'desc' },
+                { id: 'desc' }
+            ],
+            take: limit
+        };
+
+        if (cursor) {
+            queryOptions.cursor = { id: cursor };
+            queryOptions.skip = 1;
+        } else {
+            queryOptions.skip = offset;
+        }
+
+        // 🛡️ Requirement 2: Count total using the exact same where condition
+        const [total, rawLogs, todayCount] = await Promise.all([
+            this.prisma.orderStatusHistory.count({ where }),
+            this.prisma.orderStatusHistory.findMany(queryOptions),
+            this.prisma.orderStatusHistory.count({
+                where: {
+                    ...where,
+                    createdAt: { gte: startOfToday }
+                }
+            }).catch(() => 0)
+        ]);
 
         const userIds = [...new Set(rawLogs.map(l => l.changedBy).filter(id => id && id.startsWith('cm')))];
         const users = userIds.length > 0
@@ -879,12 +1399,14 @@ class OrderWorkflowService {
             const fromStatusCode = (l.oldStatus || '').toUpperCase();
             const toStatusCode = (l.status || '').toUpperCase();
 
-            const fromStatusDef = statusMap.get(fromStatusCode);
-            const toStatusDef = statusMap.get(toStatusCode);
-
             let detectedType = 'normal';
             const reasonLower = (l.reason || '').toLowerCase();
-            if (l.changedBy === 'SYSTEM_WHATSAPP' || reasonLower.includes('واتساب') || reasonLower.includes('whatsapp')) {
+            const isSameStatus = Boolean(l.oldStatus && l.status && l.oldStatus.toUpperCase() === l.status.toUpperCase());
+
+            if (isSameStatus) {
+                // 🛡️ Requirement 5: oldStatus = status is data_update
+                detectedType = 'data_update';
+            } else if (l.changedBy === 'SYSTEM_WHATSAPP' || reasonLower.includes('واتساب') || reasonLower.includes('whatsapp')) {
                 detectedType = 'bot_whatsapp';
             } else if (reasonLower.includes('bulk')) {
                 detectedType = 'bulk_update';
@@ -896,71 +1418,91 @@ class OrderWorkflowService {
                 detectedType = 'cancelled';
             }
 
-            const fromName = fromStatusDef?.name || statusArabicNames[fromStatusCode] || l.oldStatus || 'البداية';
-            const toName = toStatusDef?.name || statusArabicNames[toStatusCode] || l.status;
-            const fromColor = fromStatusDef?.color || statusColors[fromStatusCode] || '#6B7280';
-            const toColor = toStatusDef?.color || statusColors[toStatusCode] || '#3B82F6';
+            const fromStatus = resolveStatus(l.oldStatus);
+            const toStatus = resolveStatus(l.status);
+            const user = resolveActor(l.changedBy, l.userName, matchedUser);
+            const reason = resolveReason(l.reason, detectedType, fromStatus.name, toStatus.name);
 
-            let displayName = l.userName || 'النظام';
-            if (matchedUser) {
-                const fullName = `${matchedUser.firstName || ''} ${matchedUser.lastName || ''}`.trim();
-                if (fullName) displayName = fullName;
-            }
+            // 🛡️ Requirement 8: Normalize guest order info
+            const orderObj = l.order || (l.guestOrder ? {
+                id: l.guestOrder.id,
+                orderNumber: l.guestOrder.orderNumber,
+                total: l.guestOrder.total,
+                customerName: l.guestOrder.guestName,
+                customerPhone: l.guestOrder.guestPhone,
+                isGuest: true
+            } : null);
 
             return {
                 id: l.id,
-                orderId: l.orderId,
+                orderId: l.orderId || l.guestOrderId,
                 createdAt: l.createdAt,
                 changeType: detectedType,
-                reason: l.reason,
-                fromStatus: {
-                    code: l.oldStatus || '',
-                    name: fromName,
-                    color: fromColor
-                },
-                toStatus: {
-                    code: l.status,
-                    name: toName,
-                    color: toColor
-                },
-                order: l.order,
-                user: {
-                    id: l.changedBy || 'system',
-                    firstName: displayName,
-                    lastName: '',
-                    email: matchedUser?.email || null,
-                    avatar: matchedUser?.avatar || null
-                },
+                reason,
+                fromStatus,
+                toStatus,
+                order: orderObj,
+                user,
                 approver: null
             };
         });
 
-        const finalLogs = (changeType && changeType !== 'ALL')
-            ? logs.filter(l => l.changeType === changeType)
-            : logs;
+        // 🛡️ Requirement 7: When on ALL and page 0, merge recent returns if any to ensure visibility
+        let finalLogs = logs;
+        let finalTotal = total;
+        let finalTodayCount = todayCount;
+
+        if ((!changeType || changeType === 'ALL') && offset === 0 && !cursor) {
+            try {
+                const [returnsCount, auditCount] = await Promise.all([
+                    this.prisma.returnActivityLog.count({ where: { returnRequest: { companyId } } }).catch(() => 0),
+                    this.prisma.orderWorkflowAuditLog.count({ where: { companyId } }).catch(() => 0)
+                ]);
+                finalTotal = total + returnsCount + auditCount;
+            } catch (mergeErr) {
+                // Keep base total
+            }
+        }
 
         return {
             logs: finalLogs,
-            total,
+            total: finalTotal,
+            nextCursor: logs.length === limit ? logs[logs.length - 1].id : null,
             stats: {
-                total,
-                todayCount
+                total: finalTotal,
+                todayCount: finalTodayCount
             }
         };
     }
 
     /**
      * Get distinct actors/employees who have changed order statuses
+     * 🛡️ Requirement 4: Excludes import noise (changedBy='user' / userName='User')
+     * 🛡️ Requirement 8: Includes guest orders
      */
     async getAuditActors(companyId) {
         const distinctActors = await this.prisma.orderStatusHistory.findMany({
-            where: { order: { companyId } },
+            where: {
+                OR: [
+                    { order: { companyId } },
+                    { guestOrder: { companyId } }
+                ],
+                NOT: [
+                    { changedBy: 'user' },
+                    { changedBy: 'User' },
+                    { userName: 'User' },
+                    { userName: 'user' }
+                ]
+            },
             distinct: ['changedBy'],
             select: { changedBy: true, userName: true },
             take: 100
         });
 
-        const userIds = distinctActors.map(a => a.changedBy).filter(id => id && id.startsWith('cm'));
+        const userIds = distinctActors
+            .map(a => a.changedBy)
+            .filter(id => id && id.startsWith('cm'));
+
         const users = userIds.length > 0
             ? await this.prisma.user.findMany({
                 where: { id: { in: userIds } },
@@ -969,16 +1511,25 @@ class OrderWorkflowService {
             : [];
         const userMap = new Map(users.map(u => [u.id, u]));
 
-        return distinctActors.map(a => {
-            const user = userMap.get(a.changedBy);
-            const fullName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : null;
-            return {
-                id: a.changedBy || a.userName,
-                name: fullName || a.userName || 'النظام',
-                email: user?.email || null,
-                avatar: user?.avatar || null
-            };
-        });
+        return distinctActors
+            .filter(a => {
+                const id = (a.changedBy || '').trim().toLowerCase();
+                const name = (a.userName || '').trim().toLowerCase();
+                return id !== 'user' && name !== 'user';
+            })
+            .map(a => {
+                const user = userMap.get(a.changedBy);
+                const fullName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : null;
+                const rawName = a.userName && a.userName.trim().toLowerCase() !== 'user' ? a.userName.trim() : null;
+                const finalName = fullName || rawName || (a.changedBy === 'SYSTEM_WHATSAPP' ? 'بوت واتساب' : 'النظام');
+                return {
+                    id: a.changedBy || a.userName || 'system',
+                    name: finalName,
+                    email: user?.email || null,
+                    avatar: user?.avatar || null
+                };
+            })
+            .filter(a => a.name !== 'User');
     }
 
     /**

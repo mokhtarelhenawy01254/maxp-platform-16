@@ -38,6 +38,10 @@ const CHANGE_TYPE_CONFIG: Record<string, { label: string; badgeClass: string }> 
         label: 'تغيير حالة',
         badgeClass: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700',
     },
+    data_update: {
+        label: 'تعديل بيانات',
+        badgeClass: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+    },
     bot_whatsapp: {
         label: 'تأكيد واتساب',
         badgeClass: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
@@ -56,6 +60,10 @@ const CHANGE_TYPE_CONFIG: Record<string, { label: string; badgeClass: string }> 
     },
     cancelled: {
         label: 'إلغاء طلب',
+        badgeClass: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+    },
+    return: {
+        label: 'حركة مرتجع',
         badgeClass: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800',
     },
 };
@@ -78,6 +86,7 @@ export const OrderActivityLogPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const [offset, setOffset] = useState(0);
+    const [cursor, setCursor] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(true);
 
     // Actors / Employees List
@@ -125,6 +134,7 @@ export const OrderActivityLogPage: React.FC = () => {
     // Fetch Logs
     const fetchLogs = useCallback(async (isLoadMore = false) => {
         const currentOffset = isLoadMore ? offset : 0;
+        const currentCursor = isLoadMore ? (cursor || undefined) : undefined;
         if (isLoadMore) {
             setLoadingMore(true);
         } else {
@@ -139,22 +149,31 @@ export const OrderActivityLogPage: React.FC = () => {
                 orderNumber: orderNumber.trim() || undefined,
                 startDate: dateRange.startDate,
                 endDate: dateRange.endDate,
+                cursor: currentCursor,
             };
 
             const res = await orderWorkflowService.getGlobalAuditLogs(PAGE_SIZE, currentOffset, filters);
             const fetchedLogs = Array.isArray(res.data) ? res.data : [];
 
             if (isLoadMore) {
-                setLogs((prev) => [...prev, ...fetchedLogs]);
+                setLogs((prev) => {
+                    const existingIds = new Set(prev.map(l => l.id));
+                    const uniqueNew = fetchedLogs.filter(l => !existingIds.has(l.id));
+                    return [...prev, ...uniqueNew];
+                });
                 setOffset((prev) => prev + fetchedLogs.length);
             } else {
                 setLogs(fetchedLogs);
                 setOffset(fetchedLogs.length);
             }
 
+            if (res.nextCursor !== undefined) {
+                setCursor(res.nextCursor);
+            }
+
             if (typeof res.total === 'number') {
                 setTotalCount(res.total);
-                setHasMore(currentOffset + fetchedLogs.length < res.total);
+                setHasMore(currentOffset + fetchedLogs.length < res.total && (res.nextCursor !== null || fetchedLogs.length >= PAGE_SIZE));
             } else {
                 setHasMore(fetchedLogs.length >= PAGE_SIZE);
             }
@@ -168,7 +187,7 @@ export const OrderActivityLogPage: React.FC = () => {
             setLoading(false);
             setLoadingMore(false);
         }
-    }, [selectedActorId, changeType, orderNumber, getDateRange, offset]);
+    }, [selectedActorId, changeType, orderNumber, getDateRange, offset, cursor]);
 
     // Refetch on primary filter change
     useEffect(() => {
@@ -186,6 +205,7 @@ export const OrderActivityLogPage: React.FC = () => {
         setOrderNumber('');
         setChangeType('ALL');
         setDatePreset('ALL');
+        setCursor(null);
     };
 
     const isFilterActive = selectedActorId !== '' || orderNumber.trim() !== '' || changeType !== 'ALL' || datePreset !== 'ALL';
@@ -387,11 +407,13 @@ export const OrderActivityLogPage: React.FC = () => {
                     >
                         <option value="ALL">جميع أنواع الحركات</option>
                         <option value="normal">تغيير حالة عادي</option>
+                        <option value="data_update">تعديل بيانات</option>
                         <option value="bot_whatsapp">تأكيد بوت واتساب</option>
                         <option value="bulk_update">تحديث جماعي</option>
                         <option value="override">تجاوز بصلاحية</option>
                         <option value="approved">اعتماد رسمي</option>
                         <option value="cancelled">إلغاء طلب</option>
+                        <option value="return">حركات المرتجعات</option>
                     </select>
                 </div>
 
@@ -498,12 +520,16 @@ export const OrderActivityLogPage: React.FC = () => {
                                                     {isBot ? (
                                                         <Bot className="w-3.5 h-3.5" />
                                                     ) : (
-                                                        log.user?.firstName?.charAt(0) || 'U'
+                                                        (log.user?.firstName && log.user.firstName.trim().toLowerCase() !== 'user')
+                                                            ? log.user.firstName.charAt(0)
+                                                            : 'ن'
                                                     )}
                                                 </div>
 
                                                 <span className="text-xs sm:text-sm font-semibold text-foreground">
-                                                    {log.user?.firstName || 'النظام'}
+                                                    {(log.user?.firstName && log.user.firstName.trim().toLowerCase() !== 'user')
+                                                        ? log.user.firstName
+                                                        : 'النظام'}
                                                 </span>
 
                                                 <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${typeConfig.badgeClass}`}>
@@ -524,36 +550,57 @@ export const OrderActivityLogPage: React.FC = () => {
                                         <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2.5">
                                             {/* Transition Badge */}
                                             <div className="flex items-center gap-2 text-xs">
-                                                {log.fromStatus?.name && (
+                                                {log.changeType === 'data_update' || (log.fromStatus?.name && log.toStatus?.name && log.fromStatus.name === log.toStatus.name) ? (
+                                                    <span
+                                                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold border"
+                                                        style={{
+                                                            borderColor: `${log.toStatus?.color || '#71717A'}50`,
+                                                            backgroundColor: `${log.toStatus?.color || '#71717A'}20`,
+                                                            color: log.toStatus?.color || '#71717A',
+                                                        }}
+                                                    >
+                                                        <span>{log.toStatus?.name || 'تعديل بيانات'}</span>
+                                                        <span className="text-[10px] font-medium opacity-80">(تعديل بيانات)</span>
+                                                    </span>
+                                                ) : (
                                                     <>
+                                                        {log.fromStatus?.name && (
+                                                            <>
+                                                                <span
+                                                                    className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium border"
+                                                                    style={{
+                                                                        borderColor: `${log.fromStatus.color || '#71717A'}40`,
+                                                                        backgroundColor: `${log.fromStatus.color || '#71717A'}15`,
+                                                                        color: log.fromStatus.color || '#71717A',
+                                                                    }}
+                                                                >
+                                                                    {log.fromStatus.name}
+                                                                </span>
+                                                                <ArrowRight className="w-3 h-3 text-muted-foreground rotate-180" />
+                                                            </>
+                                                        )}
                                                         <span
-                                                            className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium border"
+                                                            className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold border"
                                                             style={{
-                                                                borderColor: `${log.fromStatus.color}40`,
-                                                                backgroundColor: `${log.fromStatus.color}15`,
-                                                                color: log.fromStatus.color,
+                                                                borderColor: `${log.toStatus?.color || '#71717A'}50`,
+                                                                backgroundColor: `${log.toStatus?.color || '#71717A'}20`,
+                                                                color: log.toStatus?.color || '#71717A',
                                                             }}
                                                         >
-                                                            {log.fromStatus.name}
+                                                            {log.toStatus?.name || log.toStatus?.code}
                                                         </span>
-                                                        <ArrowRight className="w-3 h-3 text-muted-foreground rotate-180" />
                                                     </>
                                                 )}
-                                                <span
-                                                    className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold border"
-                                                    style={{
-                                                        borderColor: `${log.toStatus?.color}50`,
-                                                        backgroundColor: `${log.toStatus?.color}20`,
-                                                        color: log.toStatus?.color,
-                                                    }}
-                                                >
-                                                    {log.toStatus?.name || log.toStatus?.code}
-                                                </span>
                                             </div>
 
                                             {/* Order Badge & Customer */}
                                             {log.order && (
                                                 <div className="flex items-center gap-2">
+                                                    {log.order.isGuest && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                                            طلب زائر
+                                                        </span>
+                                                    )}
                                                     <a
                                                         href={`/orders?search=${encodeURIComponent(log.order.orderNumber)}`}
                                                         target="_blank"
@@ -635,14 +682,21 @@ export const OrderActivityLogPage: React.FC = () => {
 
                                                 <td className="py-2.5 px-3 whitespace-nowrap font-mono font-medium">
                                                     {log.order ? (
-                                                        <a
-                                                            href={`/orders?search=${encodeURIComponent(log.order.orderNumber)}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="hover:underline text-blue-600 dark:text-blue-400"
-                                                        >
-                                                            {log.order.orderNumber}
-                                                        </a>
+                                                        <div className="flex items-center gap-1.5">
+                                                            {log.order.isGuest && (
+                                                                <span className="px-1 py-0.2 rounded text-[9px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                                                    زائر
+                                                                </span>
+                                                            )}
+                                                            <a
+                                                                href={`/orders?search=${encodeURIComponent(log.order.orderNumber)}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="hover:underline text-blue-600 dark:text-blue-400"
+                                                            >
+                                                                {log.order.orderNumber}
+                                                            </a>
+                                                        </div>
                                                     ) : (
                                                         <span className="text-muted-foreground">—</span>
                                                     )}
@@ -653,37 +707,53 @@ export const OrderActivityLogPage: React.FC = () => {
                                                 </td>
 
                                                 <td className="py-2.5 px-3 whitespace-nowrap font-medium text-foreground">
-                                                    {log.user?.firstName || 'النظام'}
+                                                    {(log.user?.firstName && log.user.firstName.trim().toLowerCase() !== 'user')
+                                                        ? log.user.firstName
+                                                        : 'النظام'}
                                                 </td>
 
                                                 <td className="py-2.5 px-3 whitespace-nowrap">
-                                                    <div className="flex items-center gap-1.5">
-                                                        {log.fromStatus?.name && (
-                                                            <>
-                                                                <span
-                                                                    className="px-1.5 py-0.5 rounded text-[10px] font-medium border"
-                                                                    style={{
-                                                                        borderColor: `${log.fromStatus.color}40`,
-                                                                        backgroundColor: `${log.fromStatus.color}15`,
-                                                                        color: log.fromStatus.color,
-                                                                    }}
-                                                                >
-                                                                    {log.fromStatus.name}
-                                                                </span>
-                                                                <ArrowRight className="w-2.5 h-2.5 text-muted-foreground rotate-180" />
-                                                            </>
-                                                        )}
+                                                    {log.changeType === 'data_update' || (log.fromStatus?.name && log.toStatus?.name && log.fromStatus.name === log.toStatus.name) ? (
                                                         <span
-                                                            className="px-2 py-0.5 rounded text-[11px] font-semibold border"
+                                                            className="px-2 py-0.5 rounded text-[11px] font-semibold border inline-flex items-center gap-1"
                                                             style={{
-                                                                borderColor: `${log.toStatus?.color}50`,
-                                                                backgroundColor: `${log.toStatus?.color}20`,
-                                                                color: log.toStatus?.color,
+                                                                borderColor: `${log.toStatus?.color || '#71717A'}50`,
+                                                                backgroundColor: `${log.toStatus?.color || '#71717A'}20`,
+                                                                color: log.toStatus?.color || '#71717A',
                                                             }}
                                                         >
-                                                            {log.toStatus?.name || log.toStatus?.code}
+                                                            <span>{log.toStatus?.name || 'تعديل بيانات'}</span>
+                                                            <span className="text-[9px] font-medium opacity-80">(تعديل بيانات)</span>
                                                         </span>
-                                                    </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-1.5">
+                                                            {log.fromStatus?.name && (
+                                                                <>
+                                                                    <span
+                                                                        className="px-1.5 py-0.5 rounded text-[10px] font-medium border"
+                                                                        style={{
+                                                                            borderColor: `${log.fromStatus.color || '#71717A'}40`,
+                                                                            backgroundColor: `${log.fromStatus.color || '#71717A'}15`,
+                                                                            color: log.fromStatus.color || '#71717A',
+                                                                        }}
+                                                                    >
+                                                                        {log.fromStatus.name}
+                                                                    </span>
+                                                                    <ArrowRight className="w-2.5 h-2.5 text-muted-foreground rotate-180" />
+                                                                </>
+                                                            )}
+                                                            <span
+                                                                className="px-2 py-0.5 rounded text-[11px] font-semibold border"
+                                                                style={{
+                                                                    borderColor: `${log.toStatus?.color || '#71717A'}50`,
+                                                                    backgroundColor: `${log.toStatus?.color || '#71717A'}20`,
+                                                                    color: log.toStatus?.color || '#71717A',
+                                                                }}
+                                                            >
+                                                                {log.toStatus?.name || log.toStatus?.code}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </td>
 
                                                 <td className="py-2.5 px-3 whitespace-nowrap">

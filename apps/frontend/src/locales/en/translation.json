@@ -1459,7 +1459,7 @@
     "msg_7330": "تم رفع المستند بنجاح"
   },
   "DuplicateOrderSettings": {
-    "success_save_eed8": "Duplicate order settings saved successfully"
+    "success_save_eed8": "تم حفظ إعدادات الطلبات المكررة بنجاح ✅"
   },
   "DynamicCreativeOptimization": {
     "msg_ccda": "يرجى إدخال معرف الصفحة",
@@ -15138,7 +15138,7 @@
     "k_11": "Order numbering",
     "k_12": "Customize order number sequences",
     "k_13": "Duplicate orders",
-    "k_14": "Per-company duplicate order detection, classification and rule settings",
+    "k_14": "Settings to filter or ignore duplicate requests",
     "k_15": "Billing settings",
     "k_16": "Allocate and generate invoices for orders",
     "k_17": "Customer evaluation",
