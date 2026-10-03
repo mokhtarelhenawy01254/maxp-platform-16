@@ -1,6 +1,7 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('../utils/jwtSecret');
+const { buildInstalledMarketplaceAppSettings } = require('../utils/marketplaceAppSettings');
 
 const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'REMITTED'];
 
@@ -58,81 +59,86 @@ async function listCouriers(companyId, { search, status, isActive, restrictToCou
     }
   });
 
-  // Calculate live custody and telemetry for each courier
-  const couriersWithMetrics = await Promise.all(
-    couriers.map(async (courier) => {
-      // 1. Active shipments currently in field
-      const activeShipments = await prisma.shipment.findMany({
-        where: {
-          companyId,
-          courierId: courier.id,
-          status: { in: ['OUT_FOR_DELIVERY', 'IN_TRANSIT', 'PENDING'] }
-        },
-        select: {
-          id: true,
-          cost: true,
-          order: { select: { total: true } }
-        }
-      });
+  if (couriers.length === 0) return [];
 
-      const activeShipmentsCount = activeShipments.length;
-      const expectedCashInTransit = activeShipments.reduce(
-        (sum, s) => sum + normalizeAmount(s.order?.total),
-        0
-      );
-
-      // 2. Delivered shipments pending financial settlement
-      const unsettledDelivered = await prisma.shipment.findMany({
-        where: {
-          companyId,
-          courierId: courier.id,
-          status: { in: DELIVERED_STATUSES },
-          settlementStatus: { not: 'SETTLED' }
-        },
-        select: {
-          id: true,
-          collectedAmount: true,
-          order: { select: { total: true } }
-        }
-      });
-
-      const pendingSettlementCash = unsettledDelivered.reduce(
-        (sum, s) => sum + (s.collectedAmount !== null ? normalizeAmount(s.collectedAmount) : normalizeAmount(s.order?.total)),
-        0
-      );
-
-      // 3. Lifetime success rate
-      const deliveredCount = await prisma.shipment.count({
-        where: {
-          companyId,
-          courierId: courier.id,
-          status: { in: DELIVERED_STATUSES }
-        }
-      });
-
-      const returnedCount = await prisma.shipment.count({
-        where: {
-          companyId,
-          courierId: courier.id,
-          status: { in: ['RETURNED', 'FAILED', 'CANCELLED'] }
-        }
-      });
-
-      const totalFinished = deliveredCount + returnedCount;
-      const successRate = totalFinished > 0 ? Math.round((deliveredCount / totalFinished) * 100) : 100;
-
-      return {
-        ...courier,
-        commissionAmount: normalizeAmount(courier.commissionAmount),
-        activeShipmentsCount,
-        expectedCashInTransit,
-        pendingSettlementCash,
-        deliveredCount,
-        returnedCount,
-        successRate
-      };
+  // Set-level metrics: 4 queries total instead of 4 per courier (the old N+1 hit ~201
+  // queries against connection_limit=40 with 50 couriers).
+  const courierIds = couriers.map((c) => c.id);
+  const [activeShipments, unsettledDelivered, deliveredGroups, returnedGroups] = await Promise.all([
+    prisma.shipment.findMany({
+      where: {
+        companyId,
+        courierId: { in: courierIds },
+        status: { in: ['OUT_FOR_DELIVERY', 'IN_TRANSIT', 'PENDING'] }
+      },
+      select: { courierId: true, order: { select: { total: true } } }
+    }),
+    prisma.shipment.findMany({
+      where: {
+        companyId,
+        courierId: { in: courierIds },
+        status: { in: DELIVERED_STATUSES },
+        settlementStatus: { not: 'SETTLED' }
+      },
+      select: { courierId: true, collectedAmount: true, order: { select: { total: true } } }
+    }),
+    prisma.shipment.groupBy({
+      by: ['courierId'],
+      where: { companyId, courierId: { in: courierIds }, status: { in: DELIVERED_STATUSES } },
+      _count: { _all: true }
+    }),
+    prisma.shipment.groupBy({
+      by: ['courierId'],
+      where: { companyId, courierId: { in: courierIds }, status: { in: ['RETURNED', 'FAILED', 'CANCELLED'] } },
+      _count: { _all: true }
     })
-  );
+  ]);
+
+  const activeByCourier = new Map();
+  for (const s of activeShipments) {
+    if (!activeByCourier.has(s.courierId)) activeByCourier.set(s.courierId, []);
+    activeByCourier.get(s.courierId).push(s);
+  }
+  const unsettledByCourier = new Map();
+  for (const s of unsettledDelivered) {
+    if (!unsettledByCourier.has(s.courierId)) unsettledByCourier.set(s.courierId, []);
+    unsettledByCourier.get(s.courierId).push(s);
+  }
+  const deliveredCountByCourier = new Map(deliveredGroups.map((g) => [g.courierId, g._count._all]));
+  const returnedCountByCourier = new Map(returnedGroups.map((g) => [g.courierId, g._count._all]));
+
+  const couriersWithMetrics = couriers.map((courier) => {
+    const courierActive = activeByCourier.get(courier.id) || [];
+    const courierUnsettled = unsettledByCourier.get(courier.id) || [];
+
+    const activeShipmentsCount = courierActive.length;
+    const expectedCashInTransit = courierActive.reduce(
+      (sum, s) => sum + normalizeAmount(s.order?.total),
+      0
+    );
+
+    const pendingSettlementCash = courierUnsettled.reduce(
+      (sum, s) => sum + (s.collectedAmount !== null ? normalizeAmount(s.collectedAmount) : normalizeAmount(s.order?.total)),
+      0
+    );
+
+    const deliveredCount = deliveredCountByCourier.get(courier.id) || 0;
+    const returnedCount = returnedCountByCourier.get(courier.id) || 0;
+
+    const totalFinished = deliveredCount + returnedCount;
+    const successRate = totalFinished > 0 ? Math.round((deliveredCount / totalFinished) * 100) : 100;
+
+    return {
+      ...courier,
+      commissionAmount: normalizeAmount(courier.commissionAmount),
+      activeShipmentsCount,
+      expectedCashInTransit,
+      pendingSettlementCash,
+      deliveredCount,
+      returnedCount,
+      successRate
+    };
+  });
 
   return couriersWithMetrics;
 }
@@ -419,9 +425,14 @@ async function createDeliveryRun(companyId, { courierId, shipmentIds, orderIds, 
 async function listDeliveryRuns(companyId, { courierId, status, dateFrom, dateTo, search, page = 1, limit = 20 } = {}) {
   const prisma = getSharedPrismaClient();
 
+  const safePage = Math.max(1, parseInt(page, 10) || 1);
+  const safeLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+
   const where = { companyId };
   if (courierId) where.courierId = courierId;
-  if (status && status !== 'ALL') where.status = status;
+  // UNSETTLED is the operationally critical view: runs whose cash has not been remitted yet
+  if (status === 'UNSETTLED') where.status = { notIn: ['SETTLED', 'CANCELLED'] };
+  else if (status && status !== 'ALL') where.status = status;
   if (search) {
     where.OR = [
       { runNumber: { contains: search, mode: 'insensitive' } },
@@ -440,8 +451,8 @@ async function listDeliveryRuns(companyId, { courierId, status, dateFrom, dateTo
     prisma.deliveryRun.findMany({
       where,
       orderBy: { dispatchDate: 'desc' },
-      skip: (page - 1) * limit,
-      take: limit,
+      skip: (safePage - 1) * safeLimit,
+      take: safeLimit,
       include: {
         courier: {
           select: {
@@ -486,9 +497,9 @@ async function listDeliveryRuns(companyId, { courierId, status, dateFrom, dateTo
     data: formattedRuns,
     pagination: {
       total,
-      page,
-      limit,
-      pages: Math.ceil(total / limit) || 1
+      page: safePage,
+      limit: safeLimit,
+      pages: Math.ceil(total / safeLimit) || 1
     }
   };
 }
@@ -546,7 +557,9 @@ async function getDeliveryRunById(companyId, runId) {
         companyId: run.companyId
       },
       getJwtSecret(),
-      { expiresIn: '30d' }
+      // 7 days: long enough for a full run lifecycle, short enough that a leaked
+      // WhatsApp link does not stay a valid courier identity for a month.
+      { expiresIn: '7d' }
     );
   } catch (err) {
     console.warn('⚠️ Could not sign mobileToken:', err?.message);
@@ -718,7 +731,61 @@ async function settleDeliveryRun(companyId, runId, { treasuryAccountId, actualCa
     throw serviceError('تمت تسوية هذه الوردية وتوريدها بالفعل سابقاً', 409);
   }
 
+  // 🛡️ Custody discipline: a run still holding parcels in the field cannot be closed —
+  // the cash of undelivered parcels has no honest reconciliation yet.
+  const pendingShipments = run.shipments.filter((s) =>
+    ['OUT_FOR_DELIVERY', 'IN_TRANSIT', 'PENDING'].includes(s.status)
+  );
+  if (pendingShipments.length > 0) {
+    throw serviceError(
+      `لا يمكن توريد الوردية وما زالت فيها ${pendingShipments.length} طرد في الميدان — سجل حالتها (تسليم/تأجيل/مرتجع) أولًا`,
+      409
+    );
+  }
+
+  // 💰 Backend-enforced remittance policies from the fleet app settings (no longer UI-only)
   const cashAmount = normalizeAmount(actualCashReceived);
+  const expectedCash = run.shipments
+    .filter((s) => DELIVERED_STATUSES.includes(s.status))
+    .reduce(
+      (sum, s) =>
+        sum + (s.collectedAmount !== null && s.collectedAmount !== undefined ? normalizeAmount(s.collectedAmount) : normalizeAmount(s.order?.total)),
+      0
+    );
+  const variance = Math.round((expectedCash - cashAmount) * 100) / 100;
+
+  let remittancePolicy = {
+    shortagePolicy: 'DEDUCT_FROM_COURIER',
+    allowPartialRemittance: true,
+    requireTreasuryNoteOnVariance: true
+  };
+  try {
+    const fleetApp = await prisma.companyApp.findFirst({
+      where: { companyId, app: { slug: 'internal-courier-fleet' } },
+      select: { settings: true }
+    });
+    const installed = buildInstalledMarketplaceAppSettings('internal-courier-fleet', fleetApp?.settings || {}, {});
+    if (installed?.remittance) {
+      remittancePolicy = { ...remittancePolicy, ...installed.remittance };
+    }
+  } catch {
+    // fall back to defaults
+  }
+
+  if (variance > 0.009) {
+    if (remittancePolicy.allowPartialRemittance === false) {
+      throw serviceError(
+        `التوريد الجزئي معطل وفق إعدادات الأسطول — المطلوب توريد ${expectedCash} والمستلم فعليًا ${cashAmount}`,
+        400
+      );
+    }
+    if (remittancePolicy.shortagePolicy === 'HOLD_SETTLEMENT') {
+      throw serviceError(`التسوية موقوفة بسبب عجز نقدي بقيمة ${variance} (سياسة HOLD_SETTLEMENT)`, 409);
+    }
+    if (remittancePolicy.requireTreasuryNoteOnVariance && !String(notes || '').trim()) {
+      throw serviceError('مطلوب ملاحظة توضح سبب الفرق النقدي قبل إتمام التسوية (إعدادات الأسطول)', 400);
+    }
+  }
 
   return prisma.$transaction(async (tx) => {
     // Claim the run atomically BEFORE any money moves — two concurrent settles can never
@@ -819,6 +886,63 @@ async function settleDeliveryRun(companyId, runId, { treasuryAccountId, actualCa
       }
     }
 
+    // 2.5 Record the courier's commission payables (DUE) — previously the commission
+    // fields were stored and displayed but never computed anywhere.
+    let commissionTotal = 0;
+    let commissionCount = 0;
+    const courierCommissionType = run.courier?.commissionType;
+    if (courierCommissionType && courierCommissionType !== 'SALARY_ONLY' && deliveredShipments.length > 0) {
+      const perOrder = normalizeAmount(run.courier.commissionAmount);
+      const commissionRows = deliveredShipments.map((s) => {
+        let amount = 0;
+        if (courierCommissionType === 'PERCENTAGE') {
+          const base =
+            s.collectedAmount !== null && s.collectedAmount !== undefined
+              ? normalizeAmount(s.collectedAmount)
+              : normalizeAmount(s.order?.total);
+          amount = (base * perOrder) / 100;
+        } else {
+          amount = perOrder;
+        }
+        amount = Math.round(amount * 100) / 100;
+        commissionTotal += amount;
+        return {
+          companyId,
+          courierId: run.courierId,
+          deliveryRunId: run.id,
+          shipmentId: s.id,
+          orderId: s.orderId || null,
+          commissionType: courierCommissionType,
+          amount,
+          status: 'DUE',
+          notes: `عمولة مأمورية ${run.runNumber}`
+        };
+      });
+      commissionTotal = Math.round(commissionTotal * 100) / 100;
+      if (commissionTotal > 0) {
+        await tx.courierCommission.createMany({ data: commissionRows });
+        commissionCount = commissionRows.length;
+      }
+    }
+
+    // 2.6 RECORD_AS_EXPENSE shortage policy: book the cash shortage as a pending expense
+    if (variance > 0.009 && remittancePolicy.shortagePolicy === 'RECORD_AS_EXPENSE' && treasuryAccountId) {
+      await tx.companyExpense.create({
+        data: {
+          companyId,
+          expenseNumber: `EXP-COURIER-${run.runNumber}`,
+          title: `عجز نقدية مأمورية ${run.runNumber} - ${run.courier?.name || ''}`,
+          amount: variance,
+          treasuryAccountId,
+          type: 'OPEX',
+          beneficiary: run.courier?.name || null,
+          status: 'PENDING',
+          notes: notes?.trim() || null,
+          createdById: userId || null
+        }
+      });
+    }
+
     // 3. Attach the treasury transaction reference (run row already claimed as SETTLED above)
     const settledRun = await tx.deliveryRun.update({
       where: { id: run.id },
@@ -846,7 +970,9 @@ async function settleDeliveryRun(companyId, runId, { treasuryAccountId, actualCa
 
     return {
       run: settledRun,
-      treasuryTransaction
+      treasuryTransaction,
+      commission: { total: commissionTotal, shipments: commissionCount, type: courierCommissionType || 'SALARY_ONLY' },
+      reconciliation: { expectedCash, actualCash: cashAmount, variance }
     };
   });
 }
@@ -873,24 +999,37 @@ async function getCourierDashboardSummary(companyId) {
   const totalParcelsInField = dispatchedRuns.reduce((sum, r) => sum + r.totalShipments, 0);
   const totalExpectedCashInField = dispatchedRuns.reduce((sum, r) => sum + normalizeAmount(r.totalCODExpected), 0);
 
-  // Unsettled cash in delivered status
-  const deliveredUnsettled = await prisma.shipment.findMany({
-    where: {
-      companyId,
-      courierId: { not: null },
-      status: { in: DELIVERED_STATUSES },
-      settlementStatus: { not: 'SETTLED' }
-    },
-    select: {
-      collectedAmount: true,
-      order: { select: { total: true } }
-    }
-  });
+  // Unsettled cash in delivered status — aggregated in the database instead of
+  // streaming every unsettled row into JS (grows ~2,000 rows/day with delayed settlement)
+  const [collectedAgg, fallbackAgg] = await Promise.all([
+    prisma.shipment.aggregate({
+      where: {
+        companyId,
+        courierId: { not: null },
+        status: { in: DELIVERED_STATUSES },
+        settlementStatus: { not: 'SETTLED' },
+        collectedAmount: { not: null }
+      },
+      _sum: { collectedAmount: true }
+    }),
+    prisma.order.aggregate({
+      where: {
+        companyId,
+        shipments: {
+          some: {
+            courierId: { not: null },
+            status: { in: DELIVERED_STATUSES },
+            settlementStatus: { not: 'SETTLED' },
+            collectedAmount: null
+          }
+        }
+      },
+      _sum: { total: true }
+    })
+  ]);
 
-  const totalCashAwaitingRemittance = deliveredUnsettled.reduce(
-    (sum, s) => sum + (s.collectedAmount !== null ? normalizeAmount(s.collectedAmount) : normalizeAmount(s.order?.total)),
-    0
-  );
+  const totalCashAwaitingRemittance =
+    normalizeAmount(collectedAgg._sum.collectedAmount) + normalizeAmount(fallbackAgg._sum.total);
 
   return {
     totalCouriers,

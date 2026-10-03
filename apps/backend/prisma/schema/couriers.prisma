@@ -19,6 +19,7 @@ model Courier {
   company          Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   shipments        Shipment[]
   deliveryRuns     DeliveryRun[]
+  commissions      CourierCommission[]
 
   @@index([companyId])
   @@index([isActive])
@@ -48,6 +49,7 @@ model DeliveryRun {
   company               Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   courier               Courier     @relation(fields: [courierId], references: [id], onDelete: Cascade)
   shipments             Shipment[]
+  commissions           CourierCommission[]
 
   @@unique([companyId, runNumber])
   @@index([companyId])
@@ -55,4 +57,32 @@ model DeliveryRun {
   @@index([status])
   @@index([dispatchDate])
   @@map("delivery_runs")
+}
+
+/// Payable commission earned by a courier per settled delivery — stored as DUE at run
+/// settlement so payouts can be tracked and audited. The shipment/order references are
+/// plain strings to keep the module self-contained.
+model CourierCommission {
+  id             String    @id @default(cuid())
+  companyId      String
+  courierId      String
+  deliveryRunId  String?
+  shipmentId     String?
+  orderId        String?
+  commissionType String    @default("FIXED_PER_ORDER") /// FIXED_PER_ORDER, PERCENTAGE, SALARY_ONLY
+  amount         Decimal   @default(0.0) @db.Decimal(10, 2)
+  status         String    @default("DUE") /// DUE, PAID
+  paidAt         DateTime?
+  paidBy         String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  courier     Courier      @relation(fields: [courierId], references: [id], onDelete: Cascade)
+  deliveryRun DeliveryRun? @relation(fields: [deliveryRunId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([courierId, status])
+  @@index([deliveryRunId])
+  @@map("courier_commissions")
 }

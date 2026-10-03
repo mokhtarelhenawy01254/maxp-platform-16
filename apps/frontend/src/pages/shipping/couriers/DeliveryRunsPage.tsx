@@ -39,6 +39,8 @@ const DeliveryRunsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<{ total: number; page: number; pages: number } | null>(null);
   const [selectedRun, setSelectedRun] = useState<DeliveryRun | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -56,21 +58,29 @@ const DeliveryRunsPage: React.FC = () => {
     try {
       const res = await courierService.getDeliveryRuns({
         search: search || undefined,
-        status: statusFilter !== 'ALL' ? statusFilter : undefined
+        status: statusFilter !== 'ALL' ? statusFilter : undefined,
+        page,
+        limit: 20
       });
       if (res.success) {
         setRuns(res.data || []);
+        setPagination(res.pagination || null);
       }
     } catch (err: any) {
       toast.error(err?.message || 'تعذر تحميل مأموريات التوصيل');
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter]);
+  }, [search, statusFilter, page]);
 
   useEffect(() => {
     fetchRuns();
   }, [fetchRuns]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter]);
 
   const loadCouriersForDispatch = async () => {
     try {
@@ -280,6 +290,7 @@ const DeliveryRunsPage: React.FC = () => {
             className="w-full sm:w-auto px-3 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none"
           >
             <option value="ALL">كل الحالات</option>
+            <option value="UNSETTLED">غير مسوّاة (بانتظار التوريد)</option>
             <option value="DISPATCHED">في الميدان</option>
             <option value="COMPLETED">اكتمل التوصيل</option>
             <option value="SETTLED">تمت التسوية والتوريد</option>
@@ -382,6 +393,29 @@ const DeliveryRunsPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+        {pagination && pagination.pages > 1 && (
+          <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+            <span className="tabular-nums">
+              {pagination.total} مأمورية — صفحة {pagination.page} من {pagination.pages}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1 || loading}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 transition"
+              >
+                السابق
+              </button>
+              <button
+                onClick={() => setPage((p) => (pagination && p < pagination.pages ? p + 1 : p))}
+                disabled={!pagination || page >= pagination.pages || loading}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 transition"
+              >
+                التالي
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Manifest Detail Modal */}

@@ -229,7 +229,9 @@ const listOrders = async (req, res) => {
     const entries = [];
 
     if (includeShipments) {
-      const shipmentWhere = { companyId };
+      // Internal-courier shipments settle exclusively through the fleet module
+      // (courier custody → treasury remittance); they must never appear here.
+      const shipmentWhere = { companyId, carrierType: { not: 'INTERNAL_COURIER' } };
       if (!isTurboFilter && shippingCompanyId) shipmentWhere.shippingCompanyId = shippingCompanyId;
       if (settlementStatusFilter === 'SETTLED') shipmentWhere.settlementStatus = 'SETTLED';
       else if (settlementStatusFilter === 'PENDING') shipmentWhere.settlementStatus = { not: 'SETTLED' };
@@ -370,7 +372,7 @@ const settle = async (req, res) => {
         return res.status(400).json({ success: false, message: 'حدد شركة الشحن أو قائمة الشحنات' });
       }
 
-      const where = { companyId };
+      const where = { companyId, carrierType: { not: 'INTERNAL_COURIER' } };
       if (shippingCompanyId) where.shippingCompanyId = shippingCompanyId;
       if (hasShipmentTarget) where.id = { in: shipmentIds };
       where.settlementStatus = { not: 'SETTLED' };

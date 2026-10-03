@@ -32,13 +32,18 @@ const CourierSettlementPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadingRun, setLoadingRun] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Pagination + settlement-state filter: the default 20-run window used to freeze
+  // the cash of older runs — they were unreachable from any screen.
+  const [runStatusFilter, setRunStatusFilter] = useState<'UNSETTLED' | 'SETTLED' | 'ALL'>('UNSETTLED');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<{ total: number; page: number; pages: number } | null>(null);
 
   // Fetch runs that are eligible for settlement
   const loadEligibleRuns = useCallback(async () => {
     setLoading(true);
     try {
       const [runsRes, accountsRes, settings] = await Promise.all([
-        courierService.getDeliveryRuns({ status: 'ALL' }),
+        courierService.getDeliveryRuns({ status: runStatusFilter, page, limit: 20 }),
         courierService.getTreasuryAccounts(),
         courierService.getFleetSettings()
       ]);
@@ -48,16 +53,12 @@ const CourierSettlementPage: React.FC = () => {
       }
 
       if (runsRes.success) {
-        // Show runs that are DISPATCHED or COMPLETED first, or recently settled
         const list = runsRes.data || [];
         setRuns(list);
+        setPagination(runsRes.pagination || null);
         if (list.length > 0 && !selectedRunId) {
           const firstUnsettled = list.find((r) => r.status !== 'SETTLED');
-          if (firstUnsettled) {
-            setSelectedRunId(firstUnsettled.id);
-          } else {
-            setSelectedRunId(list[0].id);
-          }
+          setSelectedRunId(firstUnsettled ? firstUnsettled.id : list[0].id);
         }
       }
 
@@ -74,7 +75,12 @@ const CourierSettlementPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedRunId]);
+  }, [selectedRunId, runStatusFilter, page]);
+
+  // Reset to the first page whenever the filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [runStatusFilter]);
 
   useEffect(() => {
     loadEligibleRuns();
@@ -222,6 +228,16 @@ const CourierSettlementPage: React.FC = () => {
             </button>
           </div>
 
+          <select
+            value={runStatusFilter}
+            onChange={(e) => setRunStatusFilter(e.target.value as 'UNSETTLED' | 'SETTLED' | 'ALL')}
+            className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none"
+          >
+            <option value="UNSETTLED">بانتظار التوريد (غير مسوّاة)</option>
+            <option value="SETTLED">تم توريدها</option>
+            <option value="ALL">كل الورديات</option>
+          </select>
+
           <div className="space-y-2 max-h-[600px] overflow-y-auto">
             {runs.length === 0 ? (
               <div className="py-6 text-center text-xs text-slate-400">لا توجد ورديات مسجلة</div>
@@ -262,6 +278,30 @@ const CourierSettlementPage: React.FC = () => {
               })
             )}
           </div>
+
+          {pagination && pagination.pages > 1 && (
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
+              <span className="tabular-nums">
+                {pagination.total} وردية — صفحة {pagination.page} من {pagination.pages}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1 || loading}
+                  className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 transition"
+                >
+                  السابق
+                </button>
+                <button
+                  onClick={() => setPage((p) => (pagination && p < pagination.pages ? p + 1 : p))}
+                  disabled={!pagination || page >= pagination.pages || loading}
+                  className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 transition"
+                >
+                  التالي
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Active Settlement Form & Breakdown */}
