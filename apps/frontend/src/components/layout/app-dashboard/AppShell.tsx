@@ -29,6 +29,13 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
   const mobileDrawerRef = useRef<HTMLDivElement>(null);
   const mobileMenuToggleRef = useRef<HTMLButtonElement>(null);
 
+  // كابينات التشغيل الكاملة الارتفاع: السايدبار يُطوى تلقائيًا (شريط أيقونات)
+  // لتحرير أكبر مساحة ممكنة لمركز التنفيذ
+  const AUTO_COLLAPSE_SIDEBAR_ROUTES = ['/orders/workspace'];
+  const shouldCollapseSidebar = AUTO_COLLAPSE_SIDEBAR_ROUTES.some((route) =>
+    location.pathname.startsWith(route),
+  );
+
   const app = useMemo(() => {
     const sectionById = allSections.find((section) => section.id === appId && sectionHasVisibleItems(section));
     if (sectionById) {
@@ -230,6 +237,7 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
             appColor={app.color}
             sections={appSections}
             onBack={handleBack}
+            isCollapsed={shouldCollapseSidebar}
           />
         </div>
 

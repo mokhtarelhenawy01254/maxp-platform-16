@@ -84,7 +84,7 @@ export const AgentWorkspace: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-background text-foreground">
+    <div className="workspace-cockpit flex h-full w-full flex-col overflow-hidden bg-background text-foreground">
       {/* 1. Cockpit Top Bar */}
       <WorkspaceTopBar
         activeTab={activeTab}

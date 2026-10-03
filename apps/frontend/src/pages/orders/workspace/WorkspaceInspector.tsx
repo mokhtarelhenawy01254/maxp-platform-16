@@ -297,8 +297,9 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
       {/* 3.5 Dedicated Call History and Timeline */}
       <WorkspaceCallHistory order={order} isArabic={isArabic} />
 
-      {/* 4. Action Command Bar */}
-      <section className="pt-1">
+      {/* 4. Action Command Bar — مثبت أسفل الإنسبكتر: تأكيد الطلب دائمًا فوق خط
+          الطية بلا سكرول (قاعدة Laptop Ergonomics للكابينات) */}
+      <section className="sticky bottom-0 z-10 -mx-4 border-t border-border/30 bg-card px-4 pb-3 pt-2">
         {order.isIncomplete ? (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <button
