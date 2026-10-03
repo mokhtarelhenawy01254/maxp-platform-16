@@ -116,6 +116,7 @@ model ReturnActivityLog {
 
   @@index([returnRequestId])
   @@index([userId])
+  @@index([createdAt])
   @@map("return_activity_logs")
 }
 

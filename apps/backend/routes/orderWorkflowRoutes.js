@@ -317,17 +317,24 @@ router.get('/audit-logs', async (req, res) => {
 
         const limit = parseInt(req.query.limit) || 20;
         const offset = parseInt(req.query.offset) || 0;
-        const { userId, changeType, orderNumber, startDate, endDate } = req.query;
+        const { userId, changeType, orderNumber, startDate, endDate, cursor } = req.query;
 
         const result = await orderWorkflowService.getGlobalAuditLogs(companyId, limit, offset, {
             userId,
             changeType,
             orderNumber,
             startDate,
-            endDate
+            endDate,
+            cursor
         });
 
-        res.json({ success: true, data: result.logs, total: result.total, stats: result.stats });
+        res.json({
+            success: true,
+            data: result.logs,
+            total: result.total,
+            nextCursor: result.nextCursor || null,
+            stats: result.stats
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

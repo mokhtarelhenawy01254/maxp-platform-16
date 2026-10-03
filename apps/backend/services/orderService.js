@@ -1846,7 +1846,11 @@ class OrderService {
                 oldStatus: order.status,
                 changedBy: userId,
                 userName: userName,
-                reason: notes || undefined
+                reason: (notes && notes.trim())
+                  ? notes.trim()
+                  : (order.status && originalRequestedStatus && order.status !== originalRequestedStatus
+                      ? `تغيير الحالة من ${order.status} إلى ${originalRequestedStatus}`
+                      : `تحديث حالة الطلب إلى ${originalRequestedStatus || status}`)
               }
             }
           },

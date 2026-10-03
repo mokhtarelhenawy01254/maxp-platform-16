@@ -585,6 +585,7 @@ model OrderStatusHistory {
 
   @@index([guestOrderId])
   @@index([orderId])
+  @@index([createdAt])
 }
 
 model CancellationReasonCategory {

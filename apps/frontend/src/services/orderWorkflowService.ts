@@ -39,6 +39,7 @@ export interface AuditLogFilters {
     orderNumber?: string;
     startDate?: string;
     endDate?: string;
+    cursor?: string;
 }
 
 const orderWorkflowService = {
@@ -70,6 +71,7 @@ const orderWorkflowService = {
             if (filters.orderNumber && filters.orderNumber.trim()) params.append('orderNumber', filters.orderNumber.trim());
             if (filters.startDate) params.append('startDate', filters.startDate);
             if (filters.endDate) params.append('endDate', filters.endDate);
+            if (filters.cursor) params.append('cursor', filters.cursor);
         }
 
         return api.get(`/order-workflow/audit-logs?${params.toString()}`).then(res => res.data);
