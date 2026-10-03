@@ -49,7 +49,10 @@ export const validateNationalId = (nationalId: string): boolean => {
 /**
  * التحقق من صحة بيانات الموظف
  */
-export const validateEmployeeData = (data: any): ValidationResult => {
+export const validateEmployeeData = (
+  data: any,
+  options?: { isExistingUser?: boolean }
+): ValidationResult => {
   const errors: ValidationError[] = [];
 
   // الاسم الأول
@@ -160,17 +163,19 @@ export const validateEmployeeData = (data: any): ValidationResult => {
     });
   }
 
-  // كلمة المرور (مطلوبة)
-  if (!data.password || data.password.trim().length === 0) {
-    errors.push({
-      field: "password",
-      message: "كلمة المرور مطلوبة",
-    });
-  } else if (data.password.length < 6) {
-    errors.push({
-      field: "password",
-      message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
-    });
+  // كلمة المرور (مطلوبة فقط للمستخدمين الجدد غير المسجلين بالمنصة)
+  if (!options?.isExistingUser) {
+    if (!data.password || data.password.trim().length === 0) {
+      errors.push({
+        field: "password",
+        message: "كلمة المرور مطلوبة",
+      });
+    } else if (data.password.length < 6) {
+      errors.push({
+        field: "password",
+        message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+      });
+    }
   }
 
   return {

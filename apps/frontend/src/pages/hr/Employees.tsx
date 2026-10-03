@@ -365,23 +365,29 @@ const Employees: React.FC = () => {
       return;
     }
 
-    // Frontend Validation
-    const result = validateEmployeeData(formData);
+    const isExistingUser = Boolean(lookupResult?.exists);
+
+    // Frontend Validation (Password is only required for new platform users)
+    const result = validateEmployeeData(formData, { isExistingUser });
     if (!result.isValid) {
       setErrors(result.errors);
       toast.error(t("employees.errorFormValidation"));
       return;
     }
 
-    // Check if email is already being used in the current list
-    const emailExists = employees.some(
-      (emp) =>
-        emp.email && emp.email.toLowerCase() === formData.email.toLowerCase(),
-    );
+    // Check if email is already active in the current list of employees
+    if (!isExistingUser) {
+      const emailExists = employees.some(
+        (emp) =>
+          emp.email &&
+          emp.email.toLowerCase() === formData.email.toLowerCase() &&
+          emp.status === "ACTIVE"
+      );
 
-    if (emailExists) {
-      toast.error(t("employees.errorEmailExists"));
-      return;
+      if (emailExists) {
+        toast.error(t("employees.errorEmailExists"));
+        return;
+      }
     }
 
     try {
