@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
@@ -171,6 +171,24 @@ const TimeReports: React.FC = () => {
       minute: "2-digit",
     });
   };
+
+  const filteredTimeEntries = useMemo(() => {
+    return timeEntries.filter((entry) => {
+      if (unifiedFilters.search) {
+        const query = unifiedFilters.search.toLowerCase();
+        const matchesSearch =
+          (entry.taskTitle && entry.taskTitle.toLowerCase().includes(query)) ||
+          (entry.projectName && entry.projectName.toLowerCase().includes(query)) ||
+          (entry.userName && entry.userName.toLowerCase().includes(query)) ||
+          (entry.description && entry.description.toLowerCase().includes(query));
+        if (!matchesSearch) return false;
+      }
+      if (unifiedFilters.assignedTo && unifiedFilters.assignedTo !== "all") {
+        if (entry.userId !== unifiedFilters.assignedTo) return false;
+      }
+      return true;
+    });
+  }, [timeEntries, unifiedFilters]);
 
   // Calculate stats using filtered entries
   const totalMinutes = filteredTimeEntries.reduce(
@@ -369,6 +387,7 @@ const TimeReports: React.FC = () => {
               <p className="text-2xl font-bold text-blue-600">
                 {projectStats.length}
               </p>
+            </div>
             <FolderIcon className="h-10 w-10 text-blue-400" />
           </div>
         </div>

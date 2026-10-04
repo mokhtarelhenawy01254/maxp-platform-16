@@ -26,6 +26,13 @@ import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { TaskItemCard } from '../components/tasks/TaskItemCard';
 import { TaskDetailDrawer } from '../components/tasks/TaskDetailDrawer';
 import { TaskReportView } from '../components/tasks/reports/TaskReportView';
+import { TaskUnifiedFilterBar } from '../components/tasks/TaskUnifiedFilterBar';
+import {
+  UnifiedTaskFilters,
+  defaultUnifiedTaskFilters,
+  matchesUnifiedFilter,
+  parseUnifiedFiltersFromUrl,
+} from '../components/tasks/taskFilterEngine';
 import { audioAlerts } from '../utils/audioAlerts';
 
 interface ActiveTaskState {
@@ -716,7 +723,16 @@ export const TasksTab: React.FC = () => {
     return false;
   };
 
+  const [unifiedFilters, setUnifiedFilters] = useState<UnifiedTaskFilters>(() =>
+    parseUnifiedFiltersFromUrl(typeof window !== 'undefined' ? (window.location.hash || window.location.search) : '')
+  );
+
   const filteredTasks = tasks.filter((t) => {
+    // If status filter is set in unifiedFilters, respect it
+    if (unifiedFilters.status && unifiedFilters.status !== 'all') {
+      return matchesUnifiedFilter(t, unifiedFilters);
+    }
+
     const raw = String(t.status || '').toUpperCase();
     const isDone = raw === 'COMPLETED';
     const isReview = raw === 'IN_REVIEW' || raw === 'PENDING_REVIEW';
@@ -729,13 +745,23 @@ export const TasksTab: React.FC = () => {
   });
 
   const displayTasks = filteredTasks.filter((t) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    const title = (t.title || '').toLowerCase();
-    const desc = (t.description || '').toLowerCase();
-    const creator = (t.createdByName || t.creator?.name || '').toLowerCase();
-    const assignee = (t.assignedToName || t.assignee?.name || '').toLowerCase();
-    return title.includes(q) || desc.includes(q) || creator.includes(q) || assignee.includes(q);
+    // Apply full unified filter engine (omnisearch, user, priority, dates, tag)
+    if (!matchesUnifiedFilter(t, unifiedFilters)) {
+      return false;
+    }
+    // Also support quick search input if typed separately
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const title = (t.title || '').toLowerCase();
+      const desc = (t.description || '').toLowerCase();
+      const creator = (t.createdByName || t.creator?.name || '').toLowerCase();
+      const assignee = (t.assignedToName || t.assignee?.name || '').toLowerCase();
+      const idStr = String(t.id || '').toLowerCase();
+      if (!title.includes(q) && !desc.includes(q) && !creator.includes(q) && !assignee.includes(q) && !idStr.includes(q)) {
+        return false;
+      }
+    }
+    return true;
   });
 
   const completedCount = tasks.filter(
@@ -1022,6 +1048,18 @@ export const TasksTab: React.FC = () => {
 
       {/* Linear-Style Tasks Surface Chassis (Unified Single-Surface) */}
       <div style={styles.list}>
+        {/* Unified Omnisearch & Filter Bar (Web & Desktop Shared Engine) */}
+        <TaskUnifiedFilterBar
+          filters={unifiedFilters}
+          onFiltersChange={setUnifiedFilters}
+          users={users}
+          onRefresh={() => loadData(true)}
+          isLoading={loading}
+          totalCount={tasks.length}
+          filteredCount={displayTasks.length}
+          className="mb-2"
+        />
+
         {/* Table Filter & Status Ribbon (Directly integrated into the top of the chassis) */}
         <div style={styles.tableFilterRibbon}>
           {/* View mode + grouping toggles */}

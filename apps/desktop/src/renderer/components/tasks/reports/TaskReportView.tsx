@@ -21,6 +21,13 @@ import { TaskReportKpis } from './TaskReportKpis';
 import { TaskReportExceptions } from './TaskReportExceptions';
 import { TaskReportLedger } from './TaskReportLedger';
 import { TaskReportTeamMatrix } from './TaskReportTeamMatrix';
+import { TaskUnifiedFilterBar } from '../TaskUnifiedFilterBar';
+import {
+  UnifiedTaskFilters,
+  defaultUnifiedTaskFilters,
+  matchesUnifiedFilter,
+  parseUnifiedFiltersFromUrl,
+} from '../taskFilterEngine';
 
 interface TaskReportViewProps {
   isExecutiveMode?: boolean; // When rendered in SimpleReportTab
@@ -34,6 +41,10 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
   const [users, setUsers] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isCopied, setIsCopied] = useState(false);
+
+  const [unifiedFilters, setUnifiedFilters] = useState<UnifiedTaskFilters>(() =>
+    parseUnifiedFiltersFromUrl(typeof window !== 'undefined' ? (window.location.hash || window.location.search) : '')
+  );
 
   const [filters, setFilters] = useState<TaskReportFilterState>({
     dateRange: 'today',
@@ -228,7 +239,16 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
   const filteredItems = useMemo(() => {
     const todayStr = new Date().toISOString().slice(0, 10);
     return reportItems.filter((t) => {
-      if (filters.selectedUserId !== 'all' && t.assignedToId !== filters.selectedUserId) {
+      // 1. Unified filter engine match (omnisearch tokens, user, priority, status, dates, tags)
+      if (!matchesUnifiedFilter(t, unifiedFilters)) {
+        return false;
+      }
+
+      const effectiveUser =
+        unifiedFilters.assignedTo && unifiedFilters.assignedTo !== 'all'
+          ? unifiedFilters.assignedTo
+          : filters.selectedUserId;
+      if (effectiveUser !== 'all' && t.assignedToId !== effectiveUser) {
         return false;
       }
       if (filters.selectedProject !== 'all' && t.projectName !== filters.selectedProject) {
@@ -238,31 +258,55 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       if (filters.exceptionFilter === 'review_blocked' && !t.isReviewBlocked) return false;
       if (filters.exceptionFilter === 'overdue' && !t.isOverdue) return false;
 
+      // Quick search fallback if provided in TaskReportFilterState
+      if (filters.searchQuery.trim()) {
+        const q = filters.searchQuery.toLowerCase();
+        const titleMatch = t.title.toLowerCase().includes(q);
+        const projMatch = t.projectName.toLowerCase().includes(q);
+        const userMatch = t.assignedToName.toLowerCase().includes(q);
+        const idMatch = String(t.id || '').toLowerCase().includes(q);
+        if (!titleMatch && !projMatch && !userMatch && !idMatch) {
+          return false;
+        }
+      }
+
       const compDate = (t.completedAt || '').slice(0, 10);
 
-      if (filters.dateRange === 'today') {
-        const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
-        const isCompletedToday = t.status === 'COMPLETED' && compDate === todayStr;
-        return isActive || isCompletedToday;
+      // If unified date filters are provided, they take precedence
+      if (unifiedFilters.dueDateFrom && (t.dueDate || t.createdAt)) {
+        const d = String(t.dueDate || t.createdAt).slice(0, 10);
+        if (d < unifiedFilters.dueDateFrom) return false;
+      }
+      if (unifiedFilters.dueDateTo && (t.dueDate || t.createdAt)) {
+        const d = String(t.dueDate || t.createdAt).slice(0, 10);
+        if (d > unifiedFilters.dueDateTo) return false;
       }
 
-      if (filters.dateRange === '7days' || filters.dateRange === 'week') {
-        const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
-        const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
-        const isCompletedInWeek = t.status === 'COMPLETED' && compDate >= sevenDaysAgo;
-        return isActive || isCompletedInWeek;
-      }
+      if (!unifiedFilters.dueDateFrom && !unifiedFilters.dueDateTo) {
+        if (filters.dateRange === 'today') {
+          const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
+          const isCompletedToday = t.status === 'COMPLETED' && compDate === todayStr;
+          return isActive || isCompletedToday;
+        }
 
-      if (filters.dateRange === '30days' || filters.dateRange === 'month') {
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-        const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
-        const isCompletedInMonth = t.status === 'COMPLETED' && compDate >= thirtyDaysAgo;
-        return isActive || isCompletedInMonth;
+        if (filters.dateRange === '7days') {
+          const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+          const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
+          const isCompletedInWeek = t.status === 'COMPLETED' && compDate >= sevenDaysAgo;
+          return isActive || isCompletedInWeek;
+        }
+
+        if (filters.dateRange === '30days') {
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+          const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
+          const isCompletedInMonth = t.status === 'COMPLETED' && compDate >= thirtyDaysAgo;
+          return isActive || isCompletedInMonth;
+        }
       }
 
       return true;
     });
-  }, [reportItems, filters]);
+  }, [reportItems, filters, unifiedFilters]);
 
   // Aggregate KPIs
   const kpis: TaskReportKpiData = useMemo(() => {
@@ -483,6 +527,18 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
 
   return (
     <div style={styles.chassis}>
+      {/* Unified Task Omnisearch & Filter Bar (Shared Across All 7 Screens) */}
+      <TaskUnifiedFilterBar
+        filters={unifiedFilters}
+        onFiltersChange={setUnifiedFilters}
+        users={users}
+        onRefresh={() => loadData(true)}
+        isLoading={loading}
+        totalCount={reportItems.length}
+        filteredCount={filteredItems.length}
+        className="mb-3"
+      />
+
       {/* Top Controls Toolbar */}
       <div style={styles.topToolbar}>
         <div style={styles.toolbarLeft}>
