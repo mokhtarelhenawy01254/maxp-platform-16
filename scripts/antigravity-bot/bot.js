@@ -1,11 +1,14 @@
 /**
- * Antigravity Telegram Bot Companion
- * Dedicated AI assistant on Telegram for Mokhtar (MaxP Platform).
+ * Antigravity Telegram Bot Companion (v2.0 - Tool-Enabled Autonomous Agent)
+ * Connected to MaxP Platform workspace (H:\maxp-platform).
+ * Open for all authorized operators & team members on Telegram.
  */
 
 const fs = require('fs');
 const path = require('path');
+const { exec } = require('child_process');
 
+const WORKSPACE_DIR = 'H:\\maxp-platform';
 const LOG_FILE = path.join(__dirname, 'bot.log');
 
 function log(...args) {
@@ -42,13 +45,21 @@ function resolveAiKey() {
   return null;
 }
 
-const SYSTEM_PROMPT = `أنت Antigravity (أنتيجرافيتي)، مساعد الذكاء الاصطناعي ورفيق البرمجة والتطوير الخاص بمختار في منصة MaxP.
-أسلوبك وطريقتك:
-- تتكلم بلهجة مصرية ذكية، ودودة ومباشرة بدون حشو أو مقدمات رسمية مملة ("أهلاً يا مختار"، "يا هلا"، إلخ).
-- السؤال السريع ياخد جواب سريع ومباشر، والطلب اللي محتاج تفصيل أو كود ياخد إجابة منظمة وشافية.
-- خبير عميق في هندسة البرمجيات، Node.js، React، Tailwind، Python، PostgreSQL، معمارية الـ Microservices، وأتمتة الذكاء الاصطناعي.
-- عارف منصة MaxP ومشروعات مختار، ومستعد تناقشه وتفكر معاه وتراجع أفكاره وأكواده وتخطط معاه من أي مكان من تليجرام.
-- لو حد سألك مين أنت، وضّح إنك Antigravity المساعد البرمجي المخصص لمختار في MaxP.`;
+const SYSTEM_PROMPT = `أنت Antigravity (أنتيجرافيتي)، مساعد ورفيق البرمجة والتطوير الذكي لمختار وفريق منصة MaxP.
+أنت متصل مباشرة بنظام التشغيل وبيئة العمل الحية على المسار: H:\\maxp-platform (Windows).
+
+أهم القواعد وسلوك العمل:
+1. تتكلم بلهجة مصرية ذكية، واضحة ومباشرة بدون مقدمات مطولة ("أهلاً يا باشا"، "تمام هفحص حالا"، إلخ).
+2. أنت لست مجرد نموذج محادثة نصي؛ أنت تمتلك أدوات تنفيذية حقيقية (Tools):
+   - run_command: لتشغيل أي أمر في PowerShell أو فحص Git أو اختبار الاتصال بالسيرفر.
+   - read_file: لقراءة وفحص ملفات المشروع الفعلية.
+   - write_file: لإنشاء أو تعديل الأكواد والملفات.
+   - list_directory: لاستعراض محتويات المجلدات.
+3. قاعدة ذهبية: لو سألك المستخدم عن أي ملف، أو كود، أو Git status، أو فحص السيرفر، أو تشغيل اختبار؛ لا تخمن ولا تجب في الهواء أبداً. استخدم أدواتك فوراً ونفّذ الأمر الحقيقي أولاً ثم اشرح النتيجة الحرفية.
+4. سيرفر MaxP الإنتاجي:
+   - Host: srv974554.hstgr.cloud (أو 153.92.223.119)
+   - أمر SSH الافتراضي: ssh -i ~/.ssh/maxp_server -o StrictHostKeyChecking=no root@srv974554.hstgr.cloud <command>
+5. متاح للتحدث مع أي شخص من فريق العمل عبر تليجرام، وتدير سياق كل محادثة بشكل مستقل.`;
 
 // In-memory conversation state per chat ID (keeps last 16 turns)
 const chatHistories = new Map();
@@ -87,13 +98,11 @@ async function callTelegram(method, body = {}) {
 async function sendChatAction(chatId, action = 'typing') {
   try {
     await callTelegram('sendChatAction', { chat_id: chatId, action });
-  } catch (err) {
-    // Non-critical
-  }
+  } catch (err) {}
 }
 
-// Split text into chunks <= 4000 characters
 function splitMessage(text, maxLen = 4000) {
+  if (!text) return [''];
   if (text.length <= maxLen) return [text];
   const chunks = [];
   let remaining = text;
@@ -118,14 +127,12 @@ function splitMessage(text, maxLen = 4000) {
 async function sendTelegramMessage(chatId, text, replyToMessageId = null) {
   const chunks = splitMessage(text);
   for (const chunk of chunks) {
-    // Try sending with Markdown first
     let res = await callTelegram('sendMessage', {
       chat_id: chatId,
       text: chunk,
       parse_mode: 'Markdown',
       reply_to_message_id: replyToMessageId,
     });
-    // If Markdown parse error, retry as plain text
     if (!res?.ok) {
       res = await callTelegram('sendMessage', {
         chat_id: chatId,
@@ -136,11 +143,169 @@ async function sendTelegramMessage(chatId, text, replyToMessageId = null) {
   }
 }
 
-// Call LLM
+// Tool Definitions
+const TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'run_command',
+      description: 'Execute a command in PowerShell within H:\\maxp-platform, or run SSH commands to the server. Returns stdout and stderr.',
+      parameters: {
+        type: 'object',
+        properties: {
+          command: { type: 'string', description: 'The exact command string to execute (e.g. git status, ssh ..., dir, npm test)' },
+          timeoutMs: { type: 'number', description: 'Timeout in milliseconds (default 30000)' }
+        },
+        required: ['command']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'read_file',
+      description: 'Read the contents of a file in the workspace or system with line numbers.',
+      parameters: {
+        type: 'object',
+        properties: {
+          filePath: { type: 'string', description: 'Path to file (relative to H:\\maxp-platform or absolute)' },
+          startLine: { type: 'number', description: 'Optional 1-indexed start line' },
+          endLine: { type: 'number', description: 'Optional 1-indexed end line' }
+        },
+        required: ['filePath']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'write_file',
+      description: 'Write or overwrite content to a file in the workspace.',
+      parameters: {
+        type: 'object',
+        properties: {
+          filePath: { type: 'string', description: 'File path to write' },
+          content: { type: 'string', description: 'Text content to save' }
+        },
+        required: ['filePath', 'content']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_directory',
+      description: 'List contents of a directory in the workspace or filesystem.',
+      parameters: {
+        type: 'object',
+        properties: {
+          dirPath: { type: 'string', description: 'Directory path (relative to H:\\maxp-platform or absolute, default is workspace root)' }
+        },
+        required: []
+      }
+    }
+  }
+];
+
+// Tool Executors
+async function executeTool(name, args) {
+  log(`⚙️ [Tool Call] ${name}:`, JSON.stringify(args).slice(0, 150));
+
+  if (name === 'run_command') {
+    const rawCmd = args.command || '';
+    const timeout = args.timeoutMs || 30000;
+
+    // Safety guard against catastrophic OS destructive commands
+    const lower = rawCmd.toLowerCase();
+    if (lower.includes('format c:') || lower.includes('rmdir /s /q c:\\windows') || lower.includes('stop-computer')) {
+      return 'Error: Blocked dangerous system destruction command.';
+    }
+
+    return new Promise((resolve) => {
+      exec(rawCmd, { cwd: WORKSPACE_DIR, shell: 'powershell.exe', timeout, maxBuffer: 1024 * 1024 * 2 }, (error, stdout, stderr) => {
+        let out = '';
+        if (stdout) out += stdout;
+        if (stderr) out += (out ? '\n[STDERR]\n' : '') + stderr;
+        if (error && !out) out = `Command failed: ${error.message}`;
+        if (!out) out = '(Command executed with empty output)';
+        if (out.length > 3500) {
+          out = out.slice(0, 3500) + '\n... [output truncated]';
+        }
+        resolve(out);
+      });
+    });
+  }
+
+  if (name === 'read_file') {
+    const targetPath = path.isAbsolute(args.filePath)
+      ? args.filePath
+      : path.join(WORKSPACE_DIR, args.filePath);
+
+    if (!fs.existsSync(targetPath)) {
+      return `Error: File not found: ${args.filePath}`;
+    }
+
+    try {
+      const content = fs.readFileSync(targetPath, 'utf8');
+      const lines = content.split('\n');
+      const start = args.startLine ? Math.max(1, args.startLine) : 1;
+      const end = args.endLine ? Math.min(lines.length, args.endLine) : Math.min(lines.length, start + 300);
+
+      const numbered = lines
+        .slice(start - 1, end)
+        .map((line, idx) => `${start + idx}: ${line}`)
+        .join('\n');
+
+      return `File: ${args.filePath} (lines ${start}-${end} of ${lines.length}):\n${numbered.slice(0, 3500)}`;
+    } catch (err) {
+      return `Error reading file: ${err.message}`;
+    }
+  }
+
+  if (name === 'write_file') {
+    const targetPath = path.isAbsolute(args.filePath)
+      ? args.filePath
+      : path.join(WORKSPACE_DIR, args.filePath);
+
+    try {
+      const dir = path.dirname(targetPath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(targetPath, args.content, 'utf8');
+      return `Success: File written successfully (${args.content.length} characters) at ${args.filePath}`;
+    } catch (err) {
+      return `Error writing file: ${err.message}`;
+    }
+  }
+
+  if (name === 'list_directory') {
+    const targetDir = args.dirPath
+      ? (path.isAbsolute(args.dirPath) ? args.dirPath : path.join(WORKSPACE_DIR, args.dirPath))
+      : WORKSPACE_DIR;
+
+    if (!fs.existsSync(targetDir)) {
+      return `Error: Directory not found: ${targetDir}`;
+    }
+
+    try {
+      const entries = fs.readdirSync(targetDir, { withFileTypes: true });
+      const summary = entries.slice(0, 100).map(e => {
+        const type = e.isDirectory() ? '[DIR]' : '[FILE]';
+        return `${type} ${e.name}`;
+      }).join('\n');
+      return `Directory contents (${entries.length} items):\n${summary}`;
+    } catch (err) {
+      return `Error listing directory: ${err.message}`;
+    }
+  }
+
+  return `Error: Unknown tool ${name}`;
+}
+
+// Call LLM with Multi-Step Tool Calling Loop
 async function generateAiReply(chatId, userMessage) {
   const apiKey = resolveAiKey();
   if (!apiKey) {
-    return 'عذراً يا مختار، لم أتمكن من العثور على مفتاح الذكاء الاصطناعي (OPENCODE_GO_API_KEY) في إعدادات النظام.';
+    return 'عذراً، لم أتمكن من العثور على مفتاح الذكاء الاصطناعي (OPENCODE_GO_API_KEY) في إعدادات النظام.';
   }
 
   const history = getChatHistory(chatId);
@@ -151,43 +316,88 @@ async function generateAiReply(chatId, userMessage) {
   ];
 
   const startTime = Date.now();
-  const res = await fetch('https://opencode.ai/zen/go/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'x-opencode-session': `antigravity_tg_${chatId}`,
-    },
-    body: JSON.stringify({
-      model: 'deepseek-v4.1-flash',
-      messages,
-      temperature: 0.6,
-    }),
-  });
+  const maxIterations = 8;
+  let iteration = 0;
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.error('❌ [LLM Error]:', res.status, errorText);
-    return `حصل خطأ أثناء معالجة الطلب من مزود الذكاء الاصطناعي (${res.status}).`;
+  while (iteration < maxIterations) {
+    iteration++;
+
+    const res = await fetch('https://opencode.ai/zen/go/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'x-opencode-session': `antigravity_tg_${chatId}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-v4.1-flash',
+        messages,
+        tools: TOOLS,
+        temperature: 0.3,
+      }),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('❌ [LLM Error]:', res.status, errorText);
+      return `حصل خطأ أثناء معالجة الطلب (${res.status}).`;
+    }
+
+    const data = await res.json();
+    const message = data?.choices?.[0]?.message;
+
+    if (!message) {
+      return 'عذراً، لم أتلقَ رداً واضحاً من النموذج.';
+    }
+
+    // Check if model wants to call tools
+    if (message.tool_calls && message.tool_calls.length > 0) {
+      messages.push(message);
+
+      for (const call of message.tool_calls) {
+        let args = {};
+        try {
+          args = typeof call.function.arguments === 'string'
+            ? JSON.parse(call.function.arguments)
+            : call.function.arguments;
+        } catch (e) {
+          args = {};
+        }
+
+        sendChatAction(chatId, 'typing');
+        const toolResult = await executeTool(call.function.name, args);
+
+        messages.push({
+          role: 'tool',
+          tool_call_id: call.id,
+          content: String(toolResult),
+        });
+      }
+
+      // Loop continues to next iteration to let model inspect output
+      continue;
+    }
+
+    // Final response reached
+    const reply = message.content?.trim();
+    const latency = Date.now() - startTime;
+    log(`⚡ [LLM] Completed in ${latency}ms (iterations: ${iteration})`);
+
+    if (!reply) {
+      return 'تم تنفيذ العملية بنجاح.';
+    }
+
+    // Update persistent history
+    addToHistory(chatId, 'user', userMessage);
+    addToHistory(chatId, 'assistant', reply);
+
+    return reply;
   }
 
-  const data = await res.json();
-  const reply = data?.choices?.[0]?.message?.content?.trim();
-  const latency = Date.now() - startTime;
-  log(`⚡ [LLM] Replied in ${latency}ms`);
-
-  if (!reply) {
-    return 'عذراً، لم أتلقَ رداً واضحاً من النموذج. حاول مرة أخرى.';
-  }
-
-  // Update history
-  addToHistory(chatId, 'user', userMessage);
-  addToHistory(chatId, 'assistant', reply);
-
-  return reply;
+  return 'عذراً، استغرقت العملية خطوات تنفيذ كثيرة دون اكتمال. يرجى تبسيط الطلب.';
 }
 
-// Handle incoming message
+// Handle incoming message (Open for ALL users)
 async function handleMessage(msg) {
   const chatId = msg.chat?.id;
   const text = msg.text?.trim();
@@ -201,20 +411,20 @@ async function handleMessage(msg) {
   if (text === '/start') {
     const welcome = `أهلاً بك يا ${fromUser}! 👋
 
-أنا **Antigravity** — مساعدك الذكي ورفيقك في البرمجة وتطوير منصة MaxP.
+أنا **Antigravity** — رفيقك البرمجي المتصل مباشرة بمشروع منصة **MaxP** (H:\\maxp-platform).
 
-تقدر تكلمني في أي وقت من هنا وتسألني عن:
-- 💻 كتابة أو مراجعة أي كود أو حل أخطاء (Debugging).
-- 🧠 مناقشة أفكار وتصميمات معمارية لمنصة MaxP.
-- 📋 تخطيط المهام وتنظيم أولويات الشغل.
-- ⚡ أي استشارة برمجية أو تقنية في أي وقت!
+أنا الآن مجهز بأدوات تنفيذ كاملة:
+- ⚡ تشغيل أوامر النظام و Git وفحص السيرفر (\`run_command\`).
+- 📂 قراءة وفحص ملفات المشروع لايف (\`read_file\`).
+- ✍️ تعديل وإنشاء الملفات والأكواد (\`write_file\`).
+- 📁 استعراض المجلدات والملفات (\`list_directory\`).
 
 أوامر سريعة:
+/status - حالة الاتصال والأدوات.
 /clear - مسح سياق المحادثة والبدء من جديد.
-/status - حالة البوت والنموذج الفعال.
 /help - المساعدة.
 
-اكتبلي أي حاجة ويلا ننطلق! 🚀`;
+اطلب مني أي حاجة في المشروع أو السيرفر وهنفذها فوراً! 🚀`;
     await sendTelegramMessage(chatId, welcome);
     return;
   }
@@ -227,22 +437,21 @@ async function handleMessage(msg) {
 
   if (text === '/status') {
     const historyCount = getChatHistory(chatId).length / 2;
-    const statusMsg = `🟢 **حالة Antigravity Bot:**
-- النموذج: DeepSeek V4.1 Flash (عالي السرعة)
-- التفاعل: متصل ومستعد 24/7
-- رسائل السياق الحالية: ${historyCount} أدوار
-- التوافق: منصة MaxP`;
+    const statusMsg = `🟢 **حالة Antigravity Bot (Live Workspace Agent):**
+- مسار العمل: \`H:\\maxp-platform\`
+- النموذج: DeepSeek V4.1 Flash (Tool-Calling ReAct Engine)
+- الأدوات النشطة: \`run_command\`, \`read_file\`, \`write_file\`, \`list_directory\`
+- وضع الوصول: متاح لجميع أعضاء الفريق (Open Access)
+- رسائل السياق الحالية لك: ${historyCount} أدوار`;
     await sendTelegramMessage(chatId, statusMsg);
     return;
   }
 
   if (text === '/help') {
     const helpMsg = `💡 **كيفية استخدام Antigravity على تليجرام:**
-
-- ببساطة اكتب رسالتك أو سؤالك وكأنك بتكلمني في بيئة التطوير.
-- بفتكر المحادثة اللي بيننا علشان نقدر نكمل مناقشة الأفكار بسهولة.
-- لو حبيت تفتح موضوع جديد تماماً، اكتب \`/clear\`.
-- متاح 24/7 لمساعدتك على مدار الساعة.`;
+- اكتب سؤالك أو طلبك مباشرة (مثال: "اقرأ ملف prisma/schema/main.prisma" أو "افحص git status" أو "شوف حالة السيرفر").
+- البوت بيستخدم الأدوات مباشرة وبينفذ المطلوب وبيجيبلك النتيجة الحرفية.
+- لمسح سياق الجلسة، اكتب \`/clear\`.`;
     await sendTelegramMessage(chatId, helpMsg);
     return;
   }
@@ -263,7 +472,7 @@ async function handleMessage(msg) {
     isThinking = false;
     clearInterval(typingInterval);
     console.error('❌ [Error handling message]:', err);
-    await sendTelegramMessage(chatId, 'عذراً، حدث خطأ غير متوقع أثناء معالجة رسالتك.', msg.message_id);
+    await sendTelegramMessage(chatId, `عذراً، حدث خطأ: ${err.message}`, msg.message_id);
   }
 }
 
@@ -296,7 +505,7 @@ async function startPolling() {
   }
 
   let offset = 0;
-  log('🚀 [Antigravity Bot] Polling started. Ready to receive messages!');
+  log('🚀 [Antigravity Bot v2.0] Polling started with live tools! Ready for all users.');
 
   while (true) {
     try {
