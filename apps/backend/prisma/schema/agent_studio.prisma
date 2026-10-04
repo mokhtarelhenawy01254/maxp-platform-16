@@ -1,0 +1,34 @@
+model AgentStudioSession {
+  id        String   @id
+  companyId String
+  domain    String   @default("inventory")
+  userId    String?
+  title     String?  @default("جلسة جديدة")
+  status    String   @default("ACTIVE")
+  context   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  messages  AgentStudioMessage[]
+
+  @@index([companyId, domain, updatedAt(sort: Desc)])
+  @@map("agent_studio_sessions")
+}
+
+model AgentStudioMessage {
+  id          String    @id
+  sessionId   String
+  role        String
+  content     String?   @db.Text
+  toolCalls   Json?
+  toolResults Json?
+  images      Json?
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  session     AgentStudioSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt(sort: Asc)])
+  @@map("agent_studio_messages")
+}

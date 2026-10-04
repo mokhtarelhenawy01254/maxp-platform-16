@@ -580,6 +580,43 @@ elif [ ! -f .last_prisma_schema_hash ]; then
 fi
 
 if [ "$NEED_DB_PUSH" = "true" ]; then
+  # ── SCHEMA GUARD (pre-push): review drift before touching the database ──
+  # Refuses destructive drift (DROP TABLE/COLUMN/...) unless explicitly
+  # allowed with ALLOW_SCHEMA_DROPS=true. Fail-open only if the diff itself
+  # cannot run (tool/URL problem) — and says so loudly.
+  cat prisma/schema/*.prisma > /tmp/maxp_combined_schema.prisma
+  # Resolve the DB URL for the guard: DATABASE_URL env → POSTGRES_URL → DIRECT_URL
+  DB_URL_FOR_GUARD="${DATABASE_URL:-}"
+  if [ -z "$DB_URL_FOR_GUARD" ] && [ -f .env ]; then
+    DB_URL_FOR_GUARD="$(grep -m1 -E '^POSTGRES_URL=' .env | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'\$//")"
+  fi
+  if [ -z "$DB_URL_FOR_GUARD" ] && [ -f .env ]; then
+    DB_URL_FOR_GUARD="$(grep -m1 -E '^DIRECT_URL=' .env | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'\$//")"
+  fi
+  export DB_URL_FOR_GUARD
+  SCHEMA_GUARD_DIFF="/tmp/maxp_schema_guard_diff.sql"
+  if [ -n "${DB_URL_FOR_GUARD:-}" ] && timeout 120 "$PRISMA_BIN" migrate diff \
+      --from-url "$DB_URL_FOR_GUARD" \
+      --to-schema-datamodel /tmp/maxp_combined_schema.prisma \
+      --script > "$SCHEMA_GUARD_DIFF" 2>/dev/null; then
+    DROP_COUNT="$(grep -ciE 'DROP (TABLE|COLUMN|SCHEMA|INDEX|CONSTRAINT) ' "$SCHEMA_GUARD_DIFF" || true)"
+    if [ "${DROP_COUNT:-0}" -gt 0 ]; then
+      echo "🚨 SCHEMA GUARD: $DROP_COUNT destructive statement(s) in pending drift:"
+      grep -iE 'DROP (TABLE|COLUMN|SCHEMA|INDEX|CONSTRAINT) ' "$SCHEMA_GUARD_DIFF" | head -20 | sed 's/^/      /'
+      if [ "${ALLOW_SCHEMA_DROPS:-false}" != "true" ]; then
+        echo "❌ REFUSING db push — destructive drift requires explicit review."
+        echo "   Full diff saved at: $SCHEMA_GUARD_DIFF"
+        echo "   To proceed deliberately: re-run this deploy with ALLOW_SCHEMA_DROPS=true"
+        exit 1
+      fi
+      echo "⚠️ ALLOW_SCHEMA_DROPS=true — continuing despite $DROP_COUNT destructive op(s). See $SCHEMA_GUARD_DIFF"
+    else
+      echo "🛡️ SCHEMA GUARD: drift reviewed — zero destructive operations (additive/alter only)."
+      rm -f "$SCHEMA_GUARD_DIFF"
+    fi
+  else
+    echo "⚠️ SCHEMA GUARD: pre-push diff unavailable (missing DATABASE_URL or diff failed) — push proceeding UNGUARDED."
+  fi
   if [ -f "prisma/migrations/20261001_remove_legacy_plans_system/migration.sql" ]; then
     echo "🛡️ Backing up platform_subscriptions and cleaning legacy plan types before db push..."
     "$PRISMA_BIN" db execute --file prisma/migrations/20261001_remove_legacy_plans_system/migration.sql --schema=prisma/schema || echo "⚠️ Pre-push migration warning (continuing...)"
@@ -601,6 +638,23 @@ if [ "$NEED_DB_PUSH" = "true" ]; then
   if [ -n "$CURRENT_SCHEMA_HASH" ]; then
     echo "$CURRENT_SCHEMA_HASH" > .last_prisma_schema_hash
   fi
+  # ── POST-PUSH REPORT: verify the database now matches the schema ────────
+  if [ -f /tmp/maxp_combined_schema.prisma ] && [ -n "${DB_URL_FOR_GUARD:-}" ] && timeout 120 "$PRISMA_BIN" migrate diff \
+      --from-url "$DB_URL_FOR_GUARD" \
+      --to-schema-datamodel /tmp/maxp_combined_schema.prisma \
+      --script > /tmp/maxp_postpush_diff.sql 2>/dev/null; then
+    if grep -qiE '^(ALTER|CREATE|DROP) ' /tmp/maxp_postpush_diff.sql; then
+      echo "⚠️ POST-PUSH REPORT: residual drift remains after push (unexpected):"
+      head -15 /tmp/maxp_postpush_diff.sql | sed 's/^/      /'
+      rm -f /tmp/maxp_postpush_diff.sql
+    else
+      echo "✅ POST-PUSH REPORT: database schema fully matches prisma/schema — zero residual drift."
+      rm -f /tmp/maxp_postpush_diff.sql
+    fi
+  else
+    echo "⚠️ POST-PUSH REPORT: verification diff unavailable — verify schema match manually."
+  fi
+  rm -f /tmp/maxp_combined_schema.prisma
   echo "✅ Database schema synchronized with PostgreSQL"
 else
   echo "⚡ Prisma schema unchanged — skipping db push and seeding (saved ~2-3 minutes)"

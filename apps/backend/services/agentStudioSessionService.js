@@ -8,6 +8,7 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 
 let _tablesEnsured = false;
+let _ensuringPromise = null;
 
 class AgentStudioSessionService {
   constructor() {
@@ -22,64 +23,100 @@ class AgentStudioSessionService {
   }
 
   /**
-   * Ensure tables exist for general agent studio sessions (safe, idempotent).
+   * Safe execution wrapper with automatic self-healing retry on missing relations (42P01).
+   */
+  async _executeWithRetry(operation) {
+    await this.ensureTables();
+    try {
+      return await operation();
+    } catch (err) {
+      const isRelationMissing =
+        err?.code === '42P01' ||
+        err?.meta?.code === '42P01' ||
+        (typeof err?.message === 'string' && (err.message.includes('does not exist') || err.message.includes('42P01')));
+
+      if (isRelationMissing) {
+        console.warn('⚠️ [AgentStudioSessionService] Relation missing, re-ensuring tables and retrying query...');
+        _tablesEnsured = false;
+        await this.ensureTables();
+        return await operation();
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Ensure tables exist for general agent studio sessions (safe, idempotent, concurrency-locked).
    */
   async ensureTables() {
     if (_tablesEnsured) return;
-    try {
-      await this.prisma.$executeRawUnsafe(`
-        CREATE TABLE IF NOT EXISTS public.agent_studio_sessions (
-            id TEXT NOT NULL PRIMARY KEY,
-            "companyId" TEXT NOT NULL,
-            domain TEXT NOT NULL DEFAULT 'inventory',
-            "userId" TEXT,
-            title TEXT DEFAULT 'جلسة جديدة',
-            status TEXT NOT NULL DEFAULT 'ACTIVE',
-            context JSONB,
-            "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-      `);
+    if (_ensuringPromise) return _ensuringPromise;
 
-      await this.prisma.$executeRawUnsafe(`
-        CREATE INDEX IF NOT EXISTS agent_studio_sessions_company_domain_idx
-            ON public.agent_studio_sessions ("companyId", domain, "updatedAt" DESC);
-      `);
+    _ensuringPromise = (async () => {
+      try {
+        await this.prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS public.agent_studio_sessions (
+              id TEXT NOT NULL PRIMARY KEY,
+              "companyId" TEXT NOT NULL,
+              domain TEXT NOT NULL DEFAULT 'inventory',
+              "userId" TEXT,
+              title TEXT DEFAULT 'جلسة جديدة',
+              status TEXT NOT NULL DEFAULT 'ACTIVE',
+              context JSONB,
+              "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
 
-      await this.prisma.$executeRawUnsafe(`
-        CREATE TABLE IF NOT EXISTS public.agent_studio_messages (
-            id TEXT NOT NULL PRIMARY KEY,
-            "sessionId" TEXT NOT NULL,
-            role TEXT NOT NULL,
-            content TEXT,
-            "toolCalls" JSONB,
-            "toolResults" JSONB,
-            "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-      `);
+        await this.prisma.$executeRawUnsafe(`
+          CREATE INDEX IF NOT EXISTS agent_studio_sessions_company_domain_idx
+              ON public.agent_studio_sessions ("companyId", domain, "updatedAt" DESC);
+        `);
 
-      await this.prisma.$executeRawUnsafe(`
-        CREATE INDEX IF NOT EXISTS agent_studio_messages_session_idx
-            ON public.agent_studio_messages ("sessionId", "createdAt" ASC);
-      `);
+        await this.prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS public.agent_studio_messages (
+              id TEXT NOT NULL PRIMARY KEY,
+              "sessionId" TEXT NOT NULL,
+              role TEXT NOT NULL,
+              content TEXT,
+              "toolCalls" JSONB,
+              "toolResults" JSONB,
+              "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
 
-      await this.prisma.$executeRawUnsafe(`
-        ALTER TABLE public.agent_studio_messages ADD COLUMN IF NOT EXISTS images JSONB;
-      `);
+        await this.prisma.$executeRawUnsafe(`
+          CREATE INDEX IF NOT EXISTS agent_studio_messages_session_idx
+              ON public.agent_studio_messages ("sessionId", "createdAt" ASC);
+        `);
 
-      await this.prisma.$executeRawUnsafe(`
-        ALTER TABLE public.agent_studio_messages ADD COLUMN IF NOT EXISTS "isDeleted" BOOLEAN NOT NULL DEFAULT FALSE;
-      `);
+        await this.prisma.$executeRawUnsafe(`
+          ALTER TABLE public.agent_studio_messages ADD COLUMN IF NOT EXISTS images JSONB;
+        `);
 
-      await this.prisma.$executeRawUnsafe(`
-        ALTER TABLE public.agent_studio_messages ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
-      `);
+        await this.prisma.$executeRawUnsafe(`
+          ALTER TABLE public.agent_studio_messages ADD COLUMN IF NOT EXISTS "isDeleted" BOOLEAN NOT NULL DEFAULT FALSE;
+        `);
 
-      _tablesEnsured = true;
-    } catch (err) {
-      console.error('❌ [AgentStudioSessionService] ensureTables error:', err.message);
-      throw err;
-    }
+        await this.prisma.$executeRawUnsafe(`
+          ALTER TABLE public.agent_studio_messages ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+        `);
+
+        _tablesEnsured = true;
+      } catch (err) {
+        if (err.message && (err.message.includes('already exists') || err.message.includes('23505'))) {
+          _tablesEnsured = true;
+        } else {
+          _tablesEnsured = false;
+          console.error('❌ [AgentStudioSessionService] ensureTables error:', err.message);
+          throw err;
+        }
+      } finally {
+        _ensuringPromise = null;
+      }
+    })();
+
+    return _ensuringPromise;
   }
 
   /**
@@ -87,9 +124,8 @@ class AgentStudioSessionService {
    */
   async listSessions(companyId, domain = 'inventory', limit = 50) {
     if (!companyId) return [];
-    await this.ensureTables();
 
-    try {
+    return this._executeWithRetry(async () => {
       const sessions = await this.prisma.$queryRawUnsafe(`
         SELECT id, "companyId", domain, "userId", title, status, context, "createdAt", "updatedAt"
         FROM public.agent_studio_sessions
@@ -136,10 +172,7 @@ class AgentStudioSessionService {
         context: s.context || {},
         messages: msgMap[s.id] || [],
       }));
-    } catch (err) {
-      console.error('❌ [AgentStudioSessionService] listSessions error:', err.message);
-      throw err;
-    }
+    });
   }
 
   /**
@@ -147,9 +180,8 @@ class AgentStudioSessionService {
    */
   async getSession(companyId, sessionId, domain = null) {
     if (!companyId || !sessionId) return null;
-    await this.ensureTables();
 
-    try {
+    return this._executeWithRetry(async () => {
       let rows;
       if (domain) {
         rows = await this.prisma.$queryRawUnsafe(`
@@ -198,10 +230,7 @@ class AgentStudioSessionService {
           };
         }),
       };
-    } catch (err) {
-      console.error('❌ [AgentStudioSessionService] getSession error:', err.message);
-      throw err;
-    }
+    });
   }
 
   /**
@@ -212,9 +241,8 @@ class AgentStudioSessionService {
     if (!companyId || !sessionId) {
       return { status: 'NOT_FOUND', session: null };
     }
-    await this.ensureTables();
 
-    try {
+    return this._executeWithRetry(async () => {
       // 1. Check if session exists in DB at all (across any company)
       const existing = await this.prisma.$queryRawUnsafe(`
         SELECT id, "companyId", domain, status
@@ -244,10 +272,7 @@ class AgentStudioSessionService {
       // Valid and belongs to company: fetch full session and messages
       const session = await this.getSession(companyId, sessionId, domain);
       return { status: 'OK', session };
-    } catch (err) {
-      console.error('❌ [AgentStudioSessionService] getSessionWithSecurityCheck error:', err.message);
-      return { status: 'ERROR', session: null, error: err.message };
-    }
+    });
   }
 
   /**
@@ -255,13 +280,12 @@ class AgentStudioSessionService {
    */
   async saveSession(companyId, userId, domain = 'inventory', sessionData) {
     if (!companyId || !sessionData?.id) return null;
-    await this.ensureTables();
 
-    const { id, title, messages, context } = sessionData;
-    const safeTitle = typeof title === 'string' && title.trim() ? title.trim().slice(0, 80) : 'جلسة جديدة';
-    const now = new Date();
+    return this._executeWithRetry(async () => {
+      const { id, title, messages, context } = sessionData;
+      const safeTitle = typeof title === 'string' && title.trim() ? title.trim().slice(0, 80) : 'جلسة جديدة';
+      const now = new Date();
 
-    try {
       await this.prisma.$executeRawUnsafe(`
         INSERT INTO public.agent_studio_sessions (id, "companyId", domain, "userId", title, status, context, "createdAt", "updatedAt")
         VALUES ($1, $2, $3, $4, $5, 'ACTIVE', $6::jsonb, $7, $7)
@@ -292,10 +316,7 @@ class AgentStudioSessionService {
       }
 
       return { id, title: safeTitle, domain, updatedAt: now.toISOString() };
-    } catch (err) {
-      console.error('❌ [AgentStudioSessionService] saveSession error:', err.message);
-      throw err;
-    }
+    });
   }
 
   /**
@@ -305,17 +326,16 @@ class AgentStudioSessionService {
     if (!companyId || !sessionId || !messageData) {
       throw new Error('companyId, sessionId, and messageData are required');
     }
-    await this.ensureTables();
 
-    const now = new Date();
-    const msgId = messageData.id || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const role = messageData.sender === 'user' || messageData.role === 'user' ? 'user' : 'assistant';
-    const content = messageData.text || messageData.content || '';
-    const toolCallsJson = messageData.toolCalls ? JSON.stringify(messageData.toolCalls) : null;
-    const rawImages = messageData.images || messageData.attachments;
-    const imagesJson = rawImages && Array.isArray(rawImages) && rawImages.length > 0 ? JSON.stringify(rawImages) : null;
+    return this._executeWithRetry(async () => {
+      const now = new Date();
+      const msgId = messageData.id || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const role = messageData.sender === 'user' || messageData.role === 'user' ? 'user' : 'assistant';
+      const content = messageData.text || messageData.content || '';
+      const toolCallsJson = messageData.toolCalls ? JSON.stringify(messageData.toolCalls) : null;
+      const rawImages = messageData.images || messageData.attachments;
+      const imagesJson = rawImages && Array.isArray(rawImages) && rawImages.length > 0 ? JSON.stringify(rawImages) : null;
 
-    try {
       // Ensure parent session exists
       await this.prisma.$executeRawUnsafe(`
         INSERT INTO public.agent_studio_sessions (id, "companyId", domain, title, status, "createdAt", "updatedAt")
@@ -334,10 +354,7 @@ class AgentStudioSessionService {
       `, msgId, sessionId, role, content, toolCallsJson, imagesJson, now);
 
       return true;
-    } catch (err) {
-      console.error('❌ [AgentStudioSessionService] appendMessage error:', err.message);
-      throw err;
-    }
+    });
   }
 
   /**
@@ -345,9 +362,8 @@ class AgentStudioSessionService {
    */
   async deleteSession(companyId, sessionId, domain = null) {
     if (!companyId || !sessionId) return false;
-    await this.ensureTables();
 
-    try {
+    return this._executeWithRetry(async () => {
       if (domain) {
         await this.prisma.$executeRawUnsafe(`
           UPDATE public.agent_studio_sessions
@@ -369,10 +385,7 @@ class AgentStudioSessionService {
       `, sessionId);
 
       return true;
-    } catch (err) {
-      console.error('❌ [AgentStudioSessionService] deleteSession error:', err.message);
-      throw err;
-    }
+    });
   }
 
   /**
@@ -380,9 +393,8 @@ class AgentStudioSessionService {
    */
   async rewindSession(companyId, sessionId, domain = null) {
     if (!companyId || !sessionId) throw new Error('companyId and sessionId are required');
-    await this.ensureTables();
 
-    try {
+    return this._executeWithRetry(async () => {
       const lastMessages = await this.prisma.$queryRawUnsafe(`
         SELECT id, role, content FROM public.agent_studio_messages
         WHERE "sessionId" = $1 AND ("isDeleted" IS FALSE OR "isDeleted" IS NULL)
@@ -442,10 +454,7 @@ class AgentStudioSessionService {
         messages: formatted,
         message: 'تم التراجع عن آخر خطوة بنجاح واستعادة حالة المحادثة السابقة ↩️',
       };
-    } catch (err) {
-      console.error('❌ [AgentStudioSessionService] rewindSession error:', err);
-      throw err;
-    }
+    });
   }
 
   /**
@@ -453,18 +462,19 @@ class AgentStudioSessionService {
    */
   async updateSessionContext(companyId, sessionId, contextUpdates = {}, domain = 'copilot') {
     if (!companyId || !sessionId || !contextUpdates) return;
-    await this.ensureTables();
 
-    try {
-      await this.prisma.$executeRawUnsafe(`
-        UPDATE public.agent_studio_sessions
-        SET context = COALESCE(context, '{}'::jsonb) || $1::jsonb,
-            "updatedAt" = CURRENT_TIMESTAMP
-        WHERE "companyId" = $2 AND id = $3 AND domain = $4
-      `, JSON.stringify(contextUpdates), companyId, sessionId, domain);
-    } catch (err) {
-      console.warn('⚠️ [AgentStudioSessionService] updateSessionContext warning:', err.message);
-    }
+    return this._executeWithRetry(async () => {
+      try {
+        await this.prisma.$executeRawUnsafe(`
+          UPDATE public.agent_studio_sessions
+          SET context = COALESCE(context, '{}'::jsonb) || $1::jsonb,
+              "updatedAt" = CURRENT_TIMESTAMP
+          WHERE "companyId" = $2 AND id = $3 AND domain = $4
+        `, JSON.stringify(contextUpdates), companyId, sessionId, domain);
+      } catch (err) {
+        console.warn('⚠️ [AgentStudioSessionService] updateSessionContext warning:', err.message);
+      }
+    });
   }
 
   /**
@@ -472,28 +482,29 @@ class AgentStudioSessionService {
    */
   async cleanupEmptySessions(companyId, domain = 'copilot', olderThanMinutes = 30) {
     if (!companyId) return 0;
-    await this.ensureTables();
 
-    try {
-      const result = await this.prisma.$executeRawUnsafe(`
-        UPDATE public.agent_studio_sessions s
-        SET status = 'DELETED', "updatedAt" = CURRENT_TIMESTAMP
-        WHERE s."companyId" = $1
-          AND s.domain = $2
-          AND s.status = 'ACTIVE'
-          AND s."createdAt" < NOW() - ($3 || ' minutes')::interval
-          AND NOT EXISTS (
-            SELECT 1 FROM public.agent_studio_messages m
-            WHERE m."sessionId" = s.id
-              AND (m."isDeleted" IS FALSE OR m."isDeleted" IS NULL)
-          )
-      `, companyId, domain, String(olderThanMinutes));
+    return this._executeWithRetry(async () => {
+      try {
+        const result = await this.prisma.$executeRawUnsafe(`
+          UPDATE public.agent_studio_sessions s
+          SET status = 'DELETED', "updatedAt" = CURRENT_TIMESTAMP
+          WHERE s."companyId" = $1
+            AND s.domain = $2
+            AND s.status = 'ACTIVE'
+            AND s."createdAt" < NOW() - ($3 || ' minutes')::interval
+            AND NOT EXISTS (
+              SELECT 1 FROM public.agent_studio_messages m
+              WHERE m."sessionId" = s.id
+                AND (m."isDeleted" IS FALSE OR m."isDeleted" IS NULL)
+            )
+        `, companyId, domain, String(olderThanMinutes));
 
-      return result;
-    } catch (err) {
-      console.error('❌ [AgentStudioSessionService] cleanupEmptySessions error:', err.message);
-      return 0;
-    }
+        return result;
+      } catch (err) {
+        console.error('❌ [AgentStudioSessionService] cleanupEmptySessions error:', err.message);
+        return 0;
+      }
+    });
   }
 }
 

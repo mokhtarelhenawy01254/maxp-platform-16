@@ -23,13 +23,13 @@ describe('Executive Copilot Session & Rewind Integrity', () => {
       $queryRawUnsafe: jest.fn(),
     };
 
-    jest.doMock('../../services/sharedDatabase', () => ({
+    jest.doMock('../services/sharedDatabase', () => ({
       getSharedPrismaClient: () => mockPrisma,
     }));
 
-    agentStudioSessionService = require('../../services/agentStudioSessionService');
-    aiSessionService = require('../../services/aiSessionService');
-    marketingCopilotSessionService = require('../../services/marketingCopilotSessionService');
+    agentStudioSessionService = require('../services/agentStudioSessionService');
+    aiSessionService = require('../services/aiSessionService');
+    marketingCopilotSessionService = require('../services/marketingCopilotSessionService');
   });
 
   describe('Flaw 1 & 4: Domain Enforcement & Error Propagation in aiSessionService', () => {
@@ -128,14 +128,14 @@ describe('Executive Copilot Session & Rewind Integrity', () => {
 
   describe('Flaw 6: Empty Session Cleanup', () => {
     it('cleanupEmptySessions should execute soft-delete query on empty stale sessions', async () => {
-      mockPrisma.$executeRawUnsafe.mockResolvedValueOnce(3);
+      mockPrisma.$executeRawUnsafe.mockResolvedValue(3);
 
       const count = await agentStudioSessionService.cleanupEmptySessions('comp_1', 'copilot', 30);
       expect(count).toBe(3);
 
-      const callSql = mockPrisma.$executeRawUnsafe.mock.calls[0][0];
-      expect(callSql).toContain("status = 'DELETED'");
-      expect(callSql).toContain('NOT EXISTS');
+      const updateCall = mockPrisma.$executeRawUnsafe.mock.calls.find(c => String(c[0]).includes("status = 'DELETED'"));
+      expect(updateCall).toBeDefined();
+      expect(updateCall[0]).toContain('NOT EXISTS');
     });
   });
 });
