@@ -12,6 +12,13 @@ import {
   UserCircleIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
+import { TaskUnifiedFilterBar } from "../../components/tasks/TaskUnifiedFilterBar";
+import {
+  UnifiedTaskFilters,
+  parseUnifiedFiltersFromUrl,
+  matchesUnifiedFilter,
+  filterTasksWithUnifiedEngine,
+} from "../../components/tasks/taskFilterEngine";
 
 interface Task {
   id: string;
@@ -35,6 +42,9 @@ interface CalendarDay {
 const CalendarView: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unifiedFilters, setUnifiedFilters] = useState<UnifiedTaskFilters>(() =>
+    parseUnifiedFiltersFromUrl(typeof window !== "undefined" ? window.location.search : "")
+  );
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"month" | "week" | "day">("month");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -68,7 +78,7 @@ const CalendarView: React.FC = () => {
 
   useEffect(() => {
     fetchTasks();
-  }, [currentDate]);
+  }, [currentDate, unifiedFilters]);
 
   const fetchTasks = async () => {
     try {
@@ -87,10 +97,18 @@ const CalendarView: React.FC = () => {
         0,
       );
 
+      const queryParams = new URLSearchParams();
+      queryParams.set("dueDateFrom", startDate.toISOString().split("T")[0]);
+      queryParams.set("dueDateTo", endDate.toISOString().split("T")[0]);
+
+      if (unifiedFilters.search) queryParams.set("search", unifiedFilters.search);
+      if (unifiedFilters.assignedTo && unifiedFilters.assignedTo !== "all") queryParams.set("assignedTo", unifiedFilters.assignedTo);
+      if (unifiedFilters.status && unifiedFilters.status !== "all") queryParams.set("status", unifiedFilters.status);
+      if (unifiedFilters.priority && unifiedFilters.priority !== "all") queryParams.set("priority", unifiedFilters.priority);
+      if (unifiedFilters.tag && unifiedFilters.tag !== "all") queryParams.set("tag", unifiedFilters.tag);
+
       const response = await fetch(
-        buildApiUrl(
-          `tasks?dueDateFrom=${startDate.toISOString().split("T")[0]}&dueDateTo=${endDate.toISOString().split("T")[0]}`,
-        ),
+        buildApiUrl(`tasks?${queryParams.toString()}`),
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -161,6 +179,7 @@ const CalendarView: React.FC = () => {
 
   const getTasksForDate = (date: Date): Task[] => {
     return tasks.filter((task) => {
+      if (!matchesUnifiedFilter(task, unifiedFilters)) return false;
       if (!task.dueDate) return false;
       const taskDate = new Date(task.dueDate);
       return (
@@ -323,6 +342,18 @@ const CalendarView: React.FC = () => {
             </Link>
           </div>
         </div>
+      </div>
+
+      {/* Unified Filter Bar */}
+      <div className="mb-6">
+        <TaskUnifiedFilterBar
+          filters={unifiedFilters}
+          onFiltersChange={setUnifiedFilters}
+          onRefresh={fetchTasks}
+          isLoading={loading}
+          totalCount={tasks.length}
+          filteredCount={filterTasksWithUnifiedEngine(tasks, unifiedFilters).length}
+        />
       </div>
 
       {/* Calendar Navigation */}

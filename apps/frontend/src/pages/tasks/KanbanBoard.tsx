@@ -15,6 +15,12 @@ import {
   PlayIcon,
   StopIcon,
 } from "@heroicons/react/24/outline";
+import { TaskUnifiedFilterBar } from "../../components/tasks/TaskUnifiedFilterBar";
+import {
+  UnifiedTaskFilters,
+  parseUnifiedFiltersFromUrl,
+  filterTasksWithUnifiedEngine,
+} from "../../components/tasks/taskFilterEngine";
 
 interface Task {
   id: string;
@@ -68,6 +74,9 @@ const KanbanBoard: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [runningTimer, setRunningTimer] = useState<RunningTimer | null>(null);
+  const [unifiedFilters, setUnifiedFilters] = useState<UnifiedTaskFilters>(() =>
+    parseUnifiedFiltersFromUrl(typeof window !== "undefined" ? window.location.search : "")
+  );
 
   const columns = [
     {
@@ -100,10 +109,18 @@ const KanbanBoard: React.FC = () => {
     try {
       setLoading(true);
       const token = tokenManager.getAccessToken();
-      let url = "tasks/kanban";
-      if (selectedProject) {
-        url += `?projectId=${selectedProject}`;
-      }
+      const queryParams = new URLSearchParams();
+      if (selectedProject) queryParams.set("projectId", selectedProject);
+      if (unifiedFilters.search) queryParams.set("search", unifiedFilters.search);
+      if (unifiedFilters.assignedTo && unifiedFilters.assignedTo !== "all") queryParams.set("assignedTo", unifiedFilters.assignedTo);
+      if (unifiedFilters.status && unifiedFilters.status !== "all") queryParams.set("status", unifiedFilters.status);
+      if (unifiedFilters.priority && unifiedFilters.priority !== "all") queryParams.set("priority", unifiedFilters.priority);
+      if (unifiedFilters.dueDateFrom) queryParams.set("dueDateFrom", unifiedFilters.dueDateFrom);
+      if (unifiedFilters.dueDateTo) queryParams.set("dueDateTo", unifiedFilters.dueDateTo);
+      if (unifiedFilters.tag && unifiedFilters.tag !== "all") queryParams.set("tag", unifiedFilters.tag);
+
+      const qs = queryParams.toString();
+      const url = qs ? `tasks/kanban?${qs}` : "tasks/kanban";
 
       const response = await fetch(buildApiUrl(url), {
         headers: { Authorization: `Bearer ${token}` },
@@ -118,7 +135,7 @@ const KanbanBoard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedProject]);
+  }, [selectedProject, unifiedFilters]);
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -391,36 +408,61 @@ const KanbanBoard: React.FC = () => {
         </div>
       </div>
 
+      {/* Unified Filter Bar */}
+      <div className="px-6 pt-4">
+        <TaskUnifiedFilterBar
+          filters={unifiedFilters}
+          onFiltersChange={setUnifiedFilters}
+          onRefresh={fetchKanbanTasks}
+          isLoading={loading}
+          totalCount={Object.values(kanbanData).reduce((sum, list) => sum + list.length, 0)}
+          filteredCount={columns.reduce(
+            (sum, col) =>
+              sum +
+              filterTasksWithUnifiedEngine(
+                kanbanData[col.id as keyof KanbanData] || [],
+                unifiedFilters
+              ).length,
+            0
+          )}
+        />
+      </div>
+
       {/* Kanban Board */}
       <div className="flex-1 overflow-x-auto p-6 bg-gray-100 dark:bg-gray-900">
         <div className="flex space-x-4 space-x-reverse h-full min-w-max">
-          {columns.map((column) => (
-            <div
-              key={column.id}
-              className="w-80 flex flex-col bg-gray-50 dark:bg-gray-800 rounded-lg"
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, column.id)}
-            >
-              {/* Column Header */}
-              <div className={`p-4 rounded-t-lg ${column.bgColor}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div
-                      className={`w-3 h-3 rounded-full ${column.color} ml-2`}
-                    ></div>
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-200">
-                      {column.title}
-                    </h3>
+          {columns.map((column) => {
+            const columnTasks = filterTasksWithUnifiedEngine(
+              kanbanData[column.id as keyof KanbanData] || [],
+              unifiedFilters
+            );
+            return (
+              <div
+                key={column.id}
+                className="w-80 flex flex-col bg-gray-50 dark:bg-gray-800 rounded-lg"
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, column.id)}
+              >
+                {/* Column Header */}
+                <div className={`p-4 rounded-t-lg ${column.bgColor}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div
+                        className={`w-3 h-3 rounded-full ${column.color} ml-2`}
+                      ></div>
+                      <h3 className="font-semibold text-gray-800 dark:text-gray-200">
+                        {column.title}
+                      </h3>
+                    </div>
+                    <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded-full text-sm font-medium text-gray-600 dark:text-gray-300">
+                      {columnTasks.length}
+                    </span>
                   </div>
-                  <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded-full text-sm font-medium text-gray-600 dark:text-gray-300">
-                    {kanbanData[column.id as keyof KanbanData].length}
-                  </span>
                 </div>
-              </div>
 
-              {/* Tasks */}
-              <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[calc(100vh-280px)]">
-                {kanbanData[column.id as keyof KanbanData].map((task) => (
+                {/* Tasks */}
+                <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[calc(100vh-280px)]">
+                  {columnTasks.map((task) => (
                   <div
                     key={task.id}
                     draggable
@@ -552,11 +594,12 @@ const KanbanBoard: React.FC = () => {
                 )}
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default KanbanBoard;

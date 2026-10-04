@@ -16,6 +16,12 @@ import {
   PauseCircleIcon,
 } from "@heroicons/react/24/outline";
 import { TaskFilters } from "./components/TaskFilters";
+import { TaskUnifiedFilterBar } from "../../components/tasks/TaskUnifiedFilterBar";
+import {
+  UnifiedTaskFilters,
+  parseUnifiedFiltersFromUrl,
+  matchesUnifiedFilter,
+} from "../../components/tasks/taskFilterEngine";
 import { CreateTaskModal } from "./components/CreateTaskModal";
 import { CreateGoalModal } from "./components/CreateGoalModal";
 import { GoalProgressStrip } from "./components/GoalProgressStrip";
@@ -177,6 +183,9 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     dueDateFrom: "",
     dueDateTo: "",
   });
+  const [unifiedFilters, setUnifiedFilters] = useState<UnifiedTaskFilters>(() =>
+    parseUnifiedFiltersFromUrl(typeof window !== "undefined" ? window.location.search : "")
+  );
   const [taskFilter, setTaskFilter] = useState<TaskScopeFilter>("all");
   const [hideCompleted, setHideCompleted] = useState(true); // Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù…Ù‡Ø§Ù… Ø§Ù„Ù…ÙƒØªÙ…Ù„Ø© Ø§ÙØªØ±Ø§Ø¶ÙŠØ§Ù‹
 
@@ -335,6 +344,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
   }, [
     activeCompanyId,
     filters,
+    unifiedFilters,
     taskFilter,
     currentPage,
     itemsPerPage,
@@ -634,8 +644,29 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
       Object.entries(filters).forEach(([key, value]) => {
         if (value) queryParams.append(key, value);
       });
-      if (debouncedSearch) {
+      // Unified filters
+      if (unifiedFilters.search) {
+        queryParams.append("search", unifiedFilters.search);
+      } else if (debouncedSearch) {
         queryParams.append("search", debouncedSearch);
+      }
+      if (unifiedFilters.assignedTo && unifiedFilters.assignedTo !== "all") {
+        queryParams.append("assignedTo", unifiedFilters.assignedTo);
+      }
+      if (unifiedFilters.status && unifiedFilters.status !== "all") {
+        queryParams.append("status", unifiedFilters.status);
+      }
+      if (unifiedFilters.priority && unifiedFilters.priority !== "all") {
+        queryParams.append("priority", unifiedFilters.priority);
+      }
+      if (unifiedFilters.dueDateFrom) {
+        queryParams.append("dueDateFrom", unifiedFilters.dueDateFrom);
+      }
+      if (unifiedFilters.dueDateTo) {
+        queryParams.append("dueDateTo", unifiedFilters.dueDateTo);
+      }
+      if (unifiedFilters.tag && unifiedFilters.tag !== "all") {
+        queryParams.append("tag", unifiedFilters.tag);
       }
       queryParams.append("page", currentPage.toString());
       queryParams.append("limit", itemsPerPage.toString());
@@ -1151,9 +1182,13 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
 
   // Filter and sort tasks
   const filteredAndSortedTasks = safeTasks.filter((task) => {
+    if (!matchesUnifiedFilter(task, unifiedFilters)) {
+      return false;
+    }
     const taskStatus = task.status?.toLowerCase();
     if (
       hideCompleted &&
+      (!unifiedFilters.status || unifiedFilters.status === "all") &&
       !filters.status &&
       (taskStatus === "completed" || taskStatus === "cancelled")
     ) {
@@ -1363,6 +1398,16 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
             scrollToBulkActions={scrollToBulkActions}
             showOverdueIndicators={workspaceSettings.highlightOverdue}
             showProjectShortcut={workspaceSettings.showProjectShortcut}
+          />
+
+          <TaskUnifiedFilterBar
+            filters={unifiedFilters}
+            onFiltersChange={setUnifiedFilters}
+            users={users}
+            totalCount={safeTasks.length}
+            filteredCount={filteredAndSortedTasks.length}
+            onRefresh={fetchTasks}
+            isLoading={loading}
           />
 
           <TaskFilters

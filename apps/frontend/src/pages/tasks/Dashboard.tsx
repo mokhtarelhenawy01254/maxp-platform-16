@@ -11,6 +11,12 @@ import {
 } from '@heroicons/react/24/outline';
 import { buildApiUrl } from '../../utils/urlHelper';
 import { createStorageKey, getWithExpiry, setWithExpiry } from '../../utils/storage';
+import { TaskUnifiedFilterBar } from '../../components/tasks/TaskUnifiedFilterBar';
+import {
+  UnifiedTaskFilters,
+  parseUnifiedFiltersFromUrl,
+  filterTasksWithUnifiedEngine,
+} from '../../components/tasks/taskFilterEngine';
 
 interface DashboardStats {
   tasks: {
@@ -88,6 +94,9 @@ const getPriorityColor = (priority: string) => {
 };
 
 const Dashboard: React.FC = () => {
+  const [unifiedFilters, setUnifiedFilters] = React.useState<UnifiedTaskFilters>(() =>
+    parseUnifiedFiltersFromUrl(typeof window !== "undefined" ? window.location.search : "")
+  );
   const [stats, setStats] = React.useState<DashboardStats | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -100,11 +109,11 @@ const Dashboard: React.FC = () => {
       const parsedUser = rawUser ? JSON.parse(rawUser) : null;
       const userId = parsedUser?.id || parsedUser?.userId || 'unknown';
       const companyId = parsedUser?.companyId || parsedUser?.company?.id || 'unknown';
-      return createStorageKey('tasks-dashboard', `${companyId}:${userId}`);
+      return createStorageKey('tasks-dashboard', `${companyId}:${userId}:${unifiedFilters.assignedTo}:${unifiedFilters.status}:${unifiedFilters.priority}`);
     } catch {
       return createStorageKey('tasks-dashboard', 'unknown');
     }
-  }, []);
+  }, [unifiedFilters.assignedTo, unifiedFilters.status, unifiedFilters.priority]);
 
   const fetchDashboardStats = React.useCallback(async ({
     signal,
@@ -120,7 +129,20 @@ const Dashboard: React.FC = () => {
       }
 
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(buildApiUrl('tasks/dashboard-stats'), {
+      const queryParams = new URLSearchParams();
+      if (unifiedFilters.assignedTo && unifiedFilters.assignedTo !== 'all') {
+        queryParams.set('assignedTo', unifiedFilters.assignedTo);
+      }
+      if (unifiedFilters.status && unifiedFilters.status !== 'all') {
+        queryParams.set('status', unifiedFilters.status);
+      }
+      if (unifiedFilters.priority && unifiedFilters.priority !== 'all') {
+        queryParams.set('priority', unifiedFilters.priority);
+      }
+      const qs = queryParams.toString();
+      const endpoint = qs ? `tasks/dashboard-stats?${qs}` : 'tasks/dashboard-stats';
+
+      const response = await fetch(buildApiUrl(endpoint), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -149,22 +171,13 @@ const Dashboard: React.FC = () => {
         setLoading(false);
       }
     }
-  }, [cacheKey]);
+  }, [cacheKey, unifiedFilters]);
 
   React.useEffect(() => {
     const controller = new AbortController();
-    const cached = getWithExpiry<DashboardStats>(cacheKey);
-
-    if (cached) {
-      setStats(cached);
-      setLoading(false);
-      fetchDashboardStats({ signal: controller.signal, background: true });
-    } else {
-      fetchDashboardStats({ signal: controller.signal });
-    }
-
+    fetchDashboardStats({ signal: controller.signal });
     return () => controller.abort();
-  }, [cacheKey, fetchDashboardStats]);
+  }, [fetchDashboardStats]);
 
   if (loading && !stats) {
     return (
@@ -182,15 +195,31 @@ const Dashboard: React.FC = () => {
     return <div className="text-center py-12">فشل في تحميل الإحصائيات</div>;
   }
 
+  const filteredRecentTasks = React.useMemo(() => {
+    return filterTasksWithUnifiedEngine(stats?.recentTasks || [], unifiedFilters);
+  }, [stats?.recentTasks, unifiedFilters]);
+
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
           <ChartBarIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400 mr-3" />
           لوحة التحكم
         </h1>
         <p className="mt-2 text-gray-600 dark:text-gray-400">نظرة عامة على المهام والمشاريع</p>
+      </div>
+
+      {/* Unified Filter Bar */}
+      <div className="mb-6">
+        <TaskUnifiedFilterBar
+          filters={unifiedFilters}
+          onFiltersChange={setUnifiedFilters}
+          onRefresh={() => fetchDashboardStats()}
+          isLoading={loading}
+          totalCount={stats.recentTasks?.length}
+          filteredCount={filteredRecentTasks.length}
+        />
       </div>
 
       {/* Stats Cards */}
@@ -462,7 +491,7 @@ const Dashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {stats.recentTasks.map((task) => (
+              {filteredRecentTasks.map((task) => (
                 <tr key={task.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                     {task.title}

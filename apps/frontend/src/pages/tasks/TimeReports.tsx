@@ -12,6 +12,12 @@ import {
   ArrowDownTrayIcon,
   FunnelIcon,
 } from "@heroicons/react/24/outline";
+import { TaskUnifiedFilterBar } from "../../components/tasks/TaskUnifiedFilterBar";
+import {
+  UnifiedTaskFilters,
+  parseUnifiedFiltersFromUrl,
+  filterTasksWithUnifiedEngine,
+} from "../../components/tasks/taskFilterEngine";
 
 interface TimeEntry {
   id: string;
@@ -50,6 +56,9 @@ interface DailyStats {
 type TimeReportsTab = "entries" | "users" | "projects" | "daily";
 
 const TimeReports: React.FC = () => {
+  const [unifiedFilters, setUnifiedFilters] = useState<UnifiedTaskFilters>(() =>
+    parseUnifiedFiltersFromUrl(typeof window !== "undefined" ? window.location.search : "")
+  );
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TimeReportsTab>("entries");
@@ -71,8 +80,14 @@ const TimeReports: React.FC = () => {
       setLoading(true);
       const token = tokenManager.getAccessToken();
 
-      let url = `tasks/time-entries?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
-      if (selectedUser) url += `&userId=${selectedUser}`;
+      const startDate = unifiedFilters.dueDateFrom || dateRange.startDate;
+      const endDate = unifiedFilters.dueDateTo || dateRange.endDate;
+      let url = `tasks/time-entries?startDate=${startDate}&endDate=${endDate}`;
+      const effectiveUser =
+        unifiedFilters.assignedTo && unifiedFilters.assignedTo !== "all"
+          ? unifiedFilters.assignedTo
+          : selectedUser;
+      if (effectiveUser) url += `&userId=${effectiveUser}`;
       if (selectedProject) url += `&projectId=${selectedProject}`;
 
       const response = await fetch(buildApiUrl(url), {
@@ -89,7 +104,7 @@ const TimeReports: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [dateRange, selectedProject, selectedUser]);
+  }, [dateRange, selectedProject, selectedUser, unifiedFilters]);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -157,14 +172,14 @@ const TimeReports: React.FC = () => {
     });
   };
 
-  // Calculate stats
-  const totalMinutes = timeEntries.reduce(
+  // Calculate stats using filtered entries
+  const totalMinutes = filteredTimeEntries.reduce(
     (sum, entry) => sum + (entry.duration || 0),
     0,
   );
 
   const userStats: UserTimeStats[] = Object.values(
-    timeEntries.reduce(
+    filteredTimeEntries.reduce(
       (acc, entry) => {
         if (!acc[entry.userId]) {
           acc[entry.userId] = {
@@ -183,7 +198,7 @@ const TimeReports: React.FC = () => {
   ).sort((a, b) => b.totalMinutes - a.totalMinutes);
 
   const projectStats: ProjectTimeStats[] = Object.values(
-    timeEntries.reduce(
+    filteredTimeEntries.reduce(
       (acc, entry) => {
         const projectId = entry.projectName || "no-project";
         if (!acc[projectId]) {
@@ -204,7 +219,7 @@ const TimeReports: React.FC = () => {
   ).sort((a, b) => b.totalMinutes - a.totalMinutes);
 
   const dailyStats: DailyStats[] = Object.values(
-    timeEntries.reduce(
+    filteredTimeEntries.reduce(
       (acc, entry) => {
         const date = entry.startTime?.split("T")[0] || "";
         if (!date) return acc;
@@ -234,7 +249,7 @@ const TimeReports: React.FC = () => {
       "المدة (دقائق)",
       "الوصف",
     ];
-    const rows = timeEntries.map((entry) => [
+    const rows = filteredTimeEntries.map((entry) => [
       entry.taskTitle,
       entry.projectName || "غير محدد",
       entry.userName,
@@ -249,7 +264,9 @@ const TimeReports: React.FC = () => {
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `time_report_${dateRange.startDate}_${dateRange.endDate}.csv`;
+    const startDate = unifiedFilters.dueDateFrom || dateRange.startDate;
+    const endDate = unifiedFilters.dueDateTo || dateRange.endDate;
+    link.download = `time_report_${startDate}_${endDate}.csv`;
     link.click();
   };
 
@@ -290,77 +307,17 @@ const TimeReports: React.FC = () => {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-        <div className="flex items-center mb-4">
-          <FunnelIcon className="h-5 w-5 text-gray-400 ml-2" />
-          <span className="font-medium text-gray-700 dark:text-gray-300">
-            الفلاتر
-          </span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              من تاريخ
-            </label>
-            <input
-              type="date"
-              value={dateRange.startDate}
-              onChange={(e) =>
-                setDateRange({ ...dateRange, startDate: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              إلى تاريخ
-            </label>
-            <input
-              type="date"
-              value={dateRange.endDate}
-              onChange={(e) =>
-                setDateRange({ ...dateRange, endDate: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              المستخدم
-            </label>
-            <select
-              value={selectedUser}
-              onChange={(e) => setSelectedUser(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">جميع المستخدمين</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.firstName} {user.lastName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              المشروع
-            </label>
-            <select
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">جميع المشاريع</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+      {/* Unified Filters Bar */}
+      <TaskUnifiedFilterBar
+        filters={unifiedFilters}
+        onFiltersChange={setUnifiedFilters}
+        users={users}
+        onRefresh={fetchTimeEntries}
+        isLoading={loading}
+        totalCount={timeEntries.length}
+        filteredCount={filteredTimeEntries.length}
+        className="mb-6"
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -377,6 +334,42 @@ const TimeReports: React.FC = () => {
             <ClockIcon className="h-10 w-10 text-indigo-400" />
           </div>
         </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                عدد السجلات
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {filteredTimeEntries.length}
+              </p>
+            </div>
+            <ChartBarIcon className="h-10 w-10 text-gray-400" />
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                المستخدمين النشطين
+              </p>
+              <p className="text-2xl font-bold text-green-600">
+                {userStats.length}
+              </p>
+            </div>
+            <UserGroupIcon className="h-10 w-10 text-green-400" />
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                المشاريع النشطة
+              </p>
+              <p className="text-2xl font-bold text-blue-600">
+                {projectStats.length}
+              </p>
+            </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
