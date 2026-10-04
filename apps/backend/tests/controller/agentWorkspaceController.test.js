@@ -182,12 +182,31 @@ describe('agentWorkspaceController.getMyOrders', () => {
     ]);
 
     // Exclusion filtering is pushed to the database.
-    // Note: The excluded set must only contain valid OrderStatus enum members (see prisma/schema/enums.prisma).
-    // 'DELETED' and 'COMPLETED' are not valid OrderStatus values and would cause Prisma to reject the query.
+    // Note: The excluded set must only contain valid OrderStatus enum values (see prisma/schema/enums.prisma).
+    // The workspace excludes TRASH + every terminal/logistics status (shipped,
+    // delivered, returned, refunded, duplicate, lost) — it is a confirmation
+    // cockpit, not the company archive.
     const findManyArg = findMany.mock.calls[0][0];
-    expect(findManyArg.where.OR).toEqual([
-      { order: { status: { notIn: ['TRASH'] } } },
-      { guestOrder: { status: { notIn: ['TRASH'] } } }
+    const excludedOrder = findManyArg.where.OR[0].order.status.notIn;
+    const excludedGuest = findManyArg.where.OR[1].guestOrder.status.notIn;
+    expect(excludedOrder).toEqual([
+      'TRASH',
+      'DUPLICATE_ORDER',
+      'SHIPPED',
+      'OUT_FOR_DELIVERY',
+      'DELIVERED',
+      'PARTIALLY_DELIVERED',
+      'RETURNED',
+      'PARTIALLY_RETURNED',
+      'REFUNDED',
+      'PARTIALLY_REFUNDED',
+      'EXCHANGED',
+      'LOST'
+    ]);
+    // guest statuses are stored as free text — exclusion covers both cases
+    expect(excludedGuest).toEqual([
+      ...excludedOrder,
+      ...excludedOrder.map((s) => s.toLowerCase())
     ]);
   });
 

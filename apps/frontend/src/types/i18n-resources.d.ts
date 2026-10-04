@@ -15133,6 +15133,9 @@ declare module 'react-i18next' {
           refunded: string;
           partiallyRefunded: string;
         };
+        noOrderSelected: string;
+        selectOrderFromList: string;
+        orderItems: string;
       };
       orderSettings: {
         title: string;

@@ -6,8 +6,24 @@ const orderService = require('../services/orderService');
  * Handles orders assigned to confirmation agents and supervisor fleet oversight
  */
 
+// حالات مستبعدة من كابينة التأكيد: المهملة + كل ما انتهى عمره التشغيلي
+// (تم شحنه/تسليمه/ترجعه/استرداده/مكرر/ضائع) — الـ workspace للطلبات
+// التي ما زالت في مرحلة التأكيد فقط، لا أرشيف الشركة كله
 // Must only contain valid OrderStatus enum values (see prisma/schema/enums.prisma)
-const WORKSPACE_EXCLUDED_STATUSES = new Set(['TRASH']);
+const WORKSPACE_EXCLUDED_STATUSES = new Set([
+  'TRASH',
+  'DUPLICATE_ORDER',
+  'SHIPPED',
+  'OUT_FOR_DELIVERY',
+  'DELIVERED',
+  'PARTIALLY_DELIVERED',
+  'RETURNED',
+  'PARTIALLY_RETURNED',
+  'REFUNDED',
+  'PARTIALLY_REFUNDED',
+  'EXCHANGED',
+  'LOST',
+]);
 
 const MANAGER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'TEAM_LEADER'];
 const isManagerUser = (user) => MANAGER_ROLES.includes(String(user?.role || '').toUpperCase());
@@ -60,6 +76,13 @@ const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUp
   }
 
   let statusCondition;
+  // الضيوف يخزنون الحالة نصيًا بحالة مختلطة — الاستبعاد يتطلب النسختين
+  const excludedStatuses = [...WORKSPACE_EXCLUDED_STATUSES];
+  const excludedGuestStatuses = [
+    ...excludedStatuses,
+    ...excludedStatuses.map((s) => s.toLowerCase()),
+  ];
+
   if (requestedStatus) {
     statusCondition = {
       OR: [
@@ -68,17 +91,18 @@ const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUp
       ]
     };
   } else if (followUpOnly) {
+    // المتابعة: ميعاد قائم وحالة لم تنتهِ ولم تلغَ
     statusCondition = {
       OR: [
-        { order: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } },
-        { guestOrder: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } }
+        { order: { followUpDate: { not: null }, status: { notIn: [...excludedStatuses, 'CANCELLED'] } } },
+        { guestOrder: { followUpDate: { not: null }, status: { notIn: [...excludedGuestStatuses, 'CANCELLED', 'cancelled'] } } }
       ]
     };
   } else {
     statusCondition = {
       OR: [
-        { order: { status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES] } } },
-        { guestOrder: { status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES] } } }
+        { order: { status: { notIn: excludedStatuses } } },
+        { guestOrder: { status: { notIn: excludedGuestStatuses } } }
       ]
     };
   }
@@ -192,8 +216,25 @@ const getWorkspaceStats = async (prisma, companyId, userId, { assignedTo = '', i
   const followupWhere = {
     ...base,
     OR: [
-      { order: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } },
-      { guestOrder: { followUpDate: { not: null }, status: { notIn: ['cancelled', 'CANCELLED'] } } }
+      {
+        order: {
+          followUpDate: { not: null },
+          status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES, 'CANCELLED'] }
+        }
+      },
+      {
+        guestOrder: {
+          followUpDate: { not: null },
+          status: {
+            notIn: [
+              ...WORKSPACE_EXCLUDED_STATUSES,
+              ...[...WORKSPACE_EXCLUDED_STATUSES].map((s) => s.toLowerCase()),
+              'cancelled',
+              'CANCELLED'
+            ]
+          }
+        }
+      }
     ]
   };
 

@@ -44,6 +44,7 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
   const [showDisposition, setShowDisposition] = useState(false);
   const [lastDuration, setLastDuration] = useState(0);
   const [cooldown, setCooldown] = useState(0);
+  const [dialSeconds, setDialSeconds] = useState(0);
   const dialWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 20-second cooldown timer between call attempts
@@ -54,6 +55,18 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
     }, 1000);
     return () => clearInterval(interval);
   }, [cooldown]);
+
+  // عداد مرئي أثناء الرنين — الانتظار الصامت كان يوحي بالتعليق (الحارس 30ث موجود)
+  useEffect(() => {
+    if (!isDialing) {
+      setDialSeconds(0);
+      return;
+    }
+    setDialSeconds(0);
+    const started = Date.now();
+    const timer = setInterval(() => setDialSeconds(Math.floor((Date.now() - started) / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, [isDialing]);
 
   const clearDialWatchdog = () => {
     if (dialWatchdogRef.current) {
@@ -198,7 +211,7 @@ export const OrderCallButton: React.FC<OrderCallButtonProps> = ({
           {isLoading
             ? "جاري الربط..."
             : isDialing
-            ? "مكالمة جارية..."
+            ? `يرن… ${dialSeconds}ث`
             : cooldown > 0
             ? `انتظر (${cooldown}ث)`
             : compact
