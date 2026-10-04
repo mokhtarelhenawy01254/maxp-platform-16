@@ -22,6 +22,10 @@ import {
 } from './types';
 
 function normalizeWorkspaceTab(value: string | null): FilterTab {
+  // «مؤكد» و«ملغي» أرشيف — مساحته صفحة الطلبات الرئيسية؛ الروابط القديمة تُوجَّه للكل
+  if (value === 'confirmed' || value === 'cancelled') {
+    return 'all';
+  }
   return WORKSPACE_TAB_KEYS.includes(value as FilterTab)
     ? (value as FilterTab)
     : 'pending';

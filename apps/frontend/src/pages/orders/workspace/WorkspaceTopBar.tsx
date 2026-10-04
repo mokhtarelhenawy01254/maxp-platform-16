@@ -56,11 +56,11 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
   const pendingCount = (stats?.pending || 0) + (stats?.incomplete || 0);
   const totalCount = (stats?.total || 0) + (stats?.incomplete || 0);
 
+  // طابور عمل فقط: الانتظار والمتابعة — «الكل» هو النشط فقط (بدون أرشيف المؤكد/الملغي
+  // الذي تديره صفحة الطلبات الرئيسية بفلاترها الكاملة)
   const tabs: { key: FilterTab; label: string; count?: number }[] = [
     { key: 'pending', label: t('orders.workspacePending'), count: pendingCount },
     { key: 'followup', label: t('orders.workspaceFollowUpLater'), count: stats?.followup },
-    { key: 'confirmed', label: t('orders.workspaceConfirmed'), count: stats?.confirmed },
-    { key: 'cancelled', label: t('orders.workspaceCancelled'), count: stats?.cancelled },
     { key: 'all', label: t('orders.workspaceAll'), count: totalCount },
   ];
 
