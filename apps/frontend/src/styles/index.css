@@ -4266,6 +4266,12 @@ select {
   }
 }
 
+/* الكابينة كاملة الشاشة: سايدبار المنصة مخفي كليًا هنا —
+   التنقل عبر زر الرجوع في شريط الكابينة نفسه */
+.app-shell-body:has(.workspace-cockpit) .app-shell-sidebar {
+  display: none;
+}
+
 /* ─────────────────────────────────────────────────────────────
    📜 Custom slim scrollbars — inbox conversation list, chat log,
    profile panel. Thin, rounded, blends with light & dark mode.

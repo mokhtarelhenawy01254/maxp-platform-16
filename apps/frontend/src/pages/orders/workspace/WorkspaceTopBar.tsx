@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import {
   ArrowPathIcon,
   MagnifyingGlassIcon,
   XMarkIcon,
+  ArrowUturnLeftIcon,
 } from '@heroicons/react/24/outline';
 import { Tabs, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 import { FilterTab, WorkspaceStats } from './types';
@@ -67,31 +69,43 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
   return (
     <header className="border-b border-border/40 bg-card/95 px-3 py-2 backdrop-blur-sm sm:px-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        {/* Start (Right in RTL): Status Filter Tabs — مكوّن التابات القياسي للموقع */}
-        <Tabs
-          value={activeTab}
-          onValueChange={(v) => onSelectTab(v as FilterTab)}
-        >
-          <TabsList
-            className="justify-start overflow-x-auto rounded-2xl bg-muted/60 p-1"
-            aria-label={t('orders.workspaceFilters')}
+        {/* Start (Right in RTL): Back to Orders list (السايدبار مخفي في هذه الكابينة) */}
+        <div className="flex items-center gap-2">
+          <Link
+            to="/orders"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border/50 bg-background text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+            title={isArabic ? 'رجوع إلى قائمة الطلبات' : 'Back to orders list'}
+            aria-label={isArabic ? 'رجوع إلى قائمة الطلبات' : 'Back to orders list'}
           >
-            {tabs.map((tab) => (
-              <TabsTrigger
-                key={tab.key}
-                value={tab.key}
-                className="gap-1.5 rounded-xl px-2.5 text-xs font-semibold"
-              >
-                <span className="whitespace-nowrap">{tab.label}</span>
-                {typeof tab.count === 'number' && (
-                  <span className="rounded-full bg-muted-foreground/15 px-1.5 py-0.5 text-[10px] font-mono tabular-nums text-foreground">
-                    {tab.count}
-                  </span>
-                )}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+            <ArrowUturnLeftIcon className={`h-3.5 w-3.5 ${isArabic ? '' : 'rotate-180'}`} />
+          </Link>
+
+          {/* Status Filter Tabs — مكوّن التابات القياسي للموقع */}
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => onSelectTab(v as FilterTab)}
+          >
+            <TabsList
+              className="justify-start overflow-x-auto rounded-2xl bg-muted/60 p-1"
+              aria-label={t('orders.workspaceFilters')}
+            >
+              {tabs.map((tab) => (
+                <TabsTrigger
+                  key={tab.key}
+                  value={tab.key}
+                  className="gap-1.5 rounded-xl px-2.5 text-xs font-semibold"
+                >
+                  <span className="whitespace-nowrap">{tab.label}</span>
+                  {typeof tab.count === 'number' && (
+                    <span className="rounded-full bg-muted-foreground/15 px-1.5 py-0.5 text-[10px] font-mono tabular-nums text-foreground">
+                      {tab.count}
+                    </span>
+                  )}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
 
         {/* End (Left in RTL): Search + Sort + Freshness + Refresh */}
         <div className="flex items-center gap-2 shrink-0">
