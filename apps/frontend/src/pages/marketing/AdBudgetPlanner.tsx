@@ -48,8 +48,8 @@ interface SavedScenario { id: string; name: string; inputs: Inputs; mode: InputM
 type WhatIfAction = "raiseRoas" | "doubleCap" | "improveConv";
 
 const PRESETS: Record<Preset, Inputs> = {
-  starter: { targetRevenue: 100000, aov: 500, targetRoas: 3, cpp: 120, totalBudget: 24000, convRate: 3, dailyCap: 3000 },
-  growth: { targetRevenue: 300000, aov: 800, targetRoas: 4, cpp: 180, totalBudget: 67500, convRate: 4, dailyCap: 8000 },
+  starter: { targetRevenue: 100000, aov: 500, targetRoas: 3, cpp: 120, totalBudget: 33333, convRate: 3, dailyCap: 3000 },
+  growth: { targetRevenue: 300000, aov: 800, targetRoas: 4, cpp: 180, totalBudget: 75000, convRate: 4, dailyCap: 8000 },
   scale: { targetRevenue: 700000, aov: 1200, targetRoas: 5, cpp: 250, totalBudget: 140000, convRate: 5, dailyCap: 20000 },
 };
 
@@ -59,14 +59,16 @@ const STORAGE_KEY = "maxp_ad_budget_saved";
 const fmt = (n: number) => Math.round(n).toLocaleString();
 const fmt1 = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
-function compute(inputs: Inputs, _mode: InputMode): Results {
-  const orders = Math.round(inputs.targetRevenue / inputs.aov);
-  const budget = inputs.targetRevenue / inputs.targetRoas;
+export function compute(inputs: Inputs, mode: InputMode = "cpp"): Results {
+  // cpp mode: revenue target fixed, budget derived. budget mode: budget fixed, revenue derived.
+  const budget = mode === "budget" ? inputs.totalBudget : inputs.targetRevenue / inputs.targetRoas;
+  const expectedRevenue = mode === "budget" ? budget * inputs.targetRoas : inputs.targetRevenue;
+  const orders = Math.round(expectedRevenue / inputs.aov);
   const dailySpend = budget / 30;
   const costPerOrder = orders > 0 ? budget / orders : 0;
-  const profit = inputs.targetRevenue - budget;
-  const roas = inputs.targetRevenue / budget;
-  const days = inputs.dailyCap > 0 ? Math.ceil(inputs.targetRevenue / (inputs.dailyCap * inputs.targetRoas)) : 0;
+  const profit = expectedRevenue - budget;
+  const roas = budget > 0 ? expectedRevenue / budget : 0;
+  const days = inputs.dailyCap > 0 ? Math.ceil(budget / inputs.dailyCap) : 0;
   const clicks = Math.round(orders / (inputs.convRate / 100));
   const dailyClicks = Math.round(clicks / 30);
   const cpc = clicks > 0 ? budget / clicks : 0;
@@ -77,7 +79,7 @@ function compute(inputs: Inputs, _mode: InputMode): Results {
     dailySpend,
     expectedOrders: orders,
     costPerOrder,
-    expectedRevenue: inputs.targetRevenue,
+    expectedRevenue,
     profitAfterAds: profit,
     actualRoas: roas,
     daysToTarget: days,

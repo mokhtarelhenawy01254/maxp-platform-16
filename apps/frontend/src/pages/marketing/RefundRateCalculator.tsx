@@ -67,17 +67,21 @@ const fmt = (v: number) => Math.round(v).toLocaleString("en-US");
 
 const fmt1 = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: 1 });
 
-const compute = (i: Inputs): Results => {
+// Industry rule of thumb: keep total refund losses under ~15% of revenue.
+const MAX_ACCEPTABLE_REFUND_REVENUE_SHARE = 0.15;
+
+export const compute = (i: Inputs): Results => {
   const refundedOrders = i.orders * (i.refundRate / 100);
   const totalRefund = refundedOrders * i.refundAmount;
   const shippingCost = refundedOrders * i.shipping;
   const restockingRecovery = totalRefund * (i.restocking / 100);
   const netRefundLoss = totalRefund + shippingCost - restockingRecovery;
-  const lostProfit = netRefundLoss * (i.margin / 100);
+  // Refund loss is cash out the door — it equals the net refund amount, not a margin-adjusted fraction.
+  const lostProfit = netRefundLoss;
   const effectiveRevenue = i.revenue - netRefundLoss;
   const perUnitCost = i.refundAmount + i.shipping - i.refundAmount * (i.restocking / 100);
   const maxAcceptableRate = perUnitCost > 0 && i.orders > 0
-    ? ((i.revenue * 0.15) / (i.orders * perUnitCost)) * 100
+    ? ((i.revenue * MAX_ACCEPTABLE_REFUND_REVENUE_SHARE) / (i.orders * perUnitCost)) * 100
     : 0;
   const lossPct = i.revenue > 0 ? (netRefundLoss / i.revenue) * 100 : 0;
   return {
@@ -361,7 +365,7 @@ export default function RefundRateCalculator() {
                   <MetricCard label={T("netRefundLoss")} value={fmtCurr(r.netRefundLoss)} sub={`${fmt1(r.lossPct)}% ${T("revenueLabel")}`}
                     positive={false} accent="red"
                     badge={getStatusBadge(r.lossPct, { safe: 5, warn: 15 })} />
-                  <MetricCard label={T("lostProfit")} value={fmtCurr(r.lostProfit)} sub={T("lostProfitSub", { margin: inputs.margin })}
+                  <MetricCard label={T("lostProfit")} value={fmtCurr(r.lostProfit)} sub={T("netRefundLossSub")}
                     positive={false} accent="yellow" />
                   <MetricCard label={T("effectiveRevenue")} value={fmtCurr(r.effectiveRevenue)} sub={T("effectiveRevenueSub")}
                     positive accent="blue" />
