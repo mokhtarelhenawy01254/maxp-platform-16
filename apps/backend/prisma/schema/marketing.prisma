@@ -1352,6 +1352,7 @@ model LpPage {
   id             String   @id @default(cuid())
   slug           String   @unique
   title          String
+  description    String?
   componentName  String
   sortOrder      Int      @default(0)
   isActive       Boolean  @default(true)
