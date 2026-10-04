@@ -388,4 +388,158 @@ describe("useAgentSandbox", () => {
     expect(success).toBe(true);
     expect(writeTextMock).toHaveBeenCalledWith(link);
   });
+
+  test("switches agent and updates selectedAgentId without reverting", async () => {
+    sandboxApiMock.getAgents.mockResolvedValue({
+      success: true,
+      agents: [
+        {
+          id: "agent_fb",
+          name: "Facebook Agent",
+          role: "FACEBOOK_SALES_SUPPORT",
+          icon: "F",
+          defaultModel: "gemini-2.5-flash",
+          allowedTools: [],
+        },
+        {
+          id: "agent_ceo",
+          name: "CEO Agent",
+          role: "CEO",
+          icon: "C",
+          defaultModel: "gemini-2.5-flash",
+          allowedTools: [],
+        },
+      ],
+    });
+    sandboxApiMock.listSessions.mockResolvedValue({
+      success: true,
+      sessions: [
+        {
+          id: "session_fb_1",
+          title: "FB Session",
+          agentId: "agent_fb",
+          model: "gemini-2.5-flash",
+          provider: "GOOGLE",
+          messageCount: 0,
+          toolCallCount: 0,
+          totalCost: 0,
+          totalTokens: 0,
+          avgLatency: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: "session_ceo_1",
+          title: "CEO Session",
+          agentId: "agent_ceo",
+          model: "gemini-2.5-flash",
+          provider: "GOOGLE",
+          messageCount: 0,
+          toolCallCount: 0,
+          totalCost: 0,
+          totalTokens: 0,
+          avgLatency: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      count: 2,
+    });
+    sandboxApiMock.getSession.mockImplementation(async (id: string) => ({
+      success: true,
+      session: {
+        id,
+        title: id === "session_ceo_1" ? "CEO Session" : "FB Session",
+        agentId: id === "session_ceo_1" ? "agent_ceo" : "agent_fb",
+        model: "gemini-2.5-flash",
+        provider: "GOOGLE",
+        messageCount: 0,
+        toolCallCount: 0,
+        totalCost: 0,
+        totalTokens: 0,
+        avgLatency: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messages: [],
+      },
+    }));
+
+    const { result } = renderHook(() => useAgentSandbox());
+
+    await waitFor(() => {
+      expect(result.current.isSessionsLoading).toBe(false);
+    });
+
+    expect(result.current.selectedAgentId).toBe("agent_fb");
+    expect(result.current.activeSessionId).toBe("session_fb_1");
+
+    // User switches agent to CEO
+    act(() => {
+      result.current.setSelectedAgentId("agent_ceo");
+    });
+
+    expect(result.current.selectedAgentId).toBe("agent_ceo");
+    expect(result.current.activeSessionId).toBe("session_ceo_1");
+  });
+
+  test("switches to agent with no sessions and sets activeSessionId to null", async () => {
+    sandboxApiMock.getAgents.mockResolvedValue({
+      success: true,
+      agents: [
+        {
+          id: "agent_fb",
+          name: "Facebook Agent",
+          role: "FACEBOOK_SALES_SUPPORT",
+          icon: "F",
+          defaultModel: "gemini-2.5-flash",
+          allowedTools: [],
+        },
+        {
+          id: "agent_new",
+          name: "New Agent",
+          role: "SUPPORT",
+          icon: "S",
+          defaultModel: "gemini-2.5-flash",
+          allowedTools: [],
+        },
+      ],
+    });
+    sandboxApiMock.listSessions.mockResolvedValue({
+      success: true,
+      sessions: [
+        {
+          id: "session_fb_1",
+          title: "FB Session",
+          agentId: "agent_fb",
+          model: "gemini-2.5-flash",
+          provider: "GOOGLE",
+          messageCount: 0,
+          toolCallCount: 0,
+          totalCost: 0,
+          totalTokens: 0,
+          avgLatency: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      count: 1,
+    });
+
+    const { result } = renderHook(() => useAgentSandbox());
+
+    await waitFor(() => {
+      expect(result.current.isSessionsLoading).toBe(false);
+    });
+
+    expect(result.current.selectedAgentId).toBe("agent_fb");
+    expect(result.current.activeSessionId).toBe("session_fb_1");
+
+    // Switch to agent_new which has no sessions
+    act(() => {
+      result.current.setSelectedAgentId("agent_new");
+    });
+
+    expect(result.current.selectedAgentId).toBe("agent_new");
+    expect(result.current.activeSessionId).toBeNull();
+  });
 });

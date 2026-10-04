@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -324,6 +324,8 @@ export function useAgentSandbox() {
   const [skills, setSkills] = useState<SkillDefinition[]>([]);
   const [typingStage, setTypingStage] = useState<string | null>(null);
   const [activeToolCalls, setActiveToolCalls] = useState<ToolCall[]>([]);
+  const lastSyncedSessionIdRef = useRef<string | null>(urlSessionId);
+  const lastSyncedAgentIdRef = useRef<string | null>(urlAgentId);
 
   const tracing = useOTelTracing();
   const costTracker = useCostTracker();
@@ -386,6 +388,7 @@ export function useAgentSandbox() {
             || null;
           if (preferredAgent && (selectedAgentId === "ceo" || !mappedAgents.some((agent) => agent.id === selectedAgentId))) {
             setSelectedAgentId(preferredAgent.id);
+            lastSyncedAgentIdRef.current = preferredAgent.id;
           }
         }
         if (modelsRes.status === "fulfilled" && modelsRes.value.providers?.length) {
@@ -445,8 +448,10 @@ export function useAgentSandbox() {
           setSessions(allSessions);
           if (targetSession) {
             setActiveSessionId(targetSession.id);
+            lastSyncedSessionIdRef.current = targetSession.id;
             if (targetSession.agentId) {
               setSelectedAgentId(targetSession.agentId);
+              lastSyncedAgentIdRef.current = targetSession.agentId;
             }
             loadSessionMessages(targetSession.id);
           } else {
@@ -454,6 +459,7 @@ export function useAgentSandbox() {
               ? allSessions.find((s) => s.agentId === preferredAgent!.id) || allSessions[0]
               : allSessions[0];
             setActiveSessionId(matchingSession.id);
+            lastSyncedSessionIdRef.current = matchingSession.id;
             loadSessionMessages(matchingSession.id);
           }
         }
@@ -471,29 +477,44 @@ export function useAgentSandbox() {
     return () => { cancelled = true; };
   }, [loadSessionMessages, urlSessionId, urlAgentId]);
 
-  useEffect(() => {
-    if (!selectedAgentId) return;
+  const handleSelectAgent = useCallback((newAgentId: string) => {
+    if (!newAgentId) return;
+    setSelectedAgentId(newAgentId);
+    lastSyncedAgentIdRef.current = newAgentId;
 
-    const currentSession = activeSessionId
-      ? sessions.find((session) => session.id === activeSessionId)
-      : null;
-
-    if (currentSession?.agentId === selectedAgentId) {
-      return;
-    }
-
-    const nextSession = sessions.find((session) => session.agentId === selectedAgentId) || null;
-    setActiveSessionId(nextSession?.id || null);
     setActivityLog([]);
     setCurrentEval(null);
     setSafetyChecks([]);
 
-    if (nextSession && nextSession.messages.length === 0) {
-      loadSessionMessages(nextSession.id);
-    } else if (nextSession) {
-      setActivityLog(reconstructActivityLogFromMessages(nextSession.messages));
+    const agentSessions = sessions.filter((s) => s.agentId === newAgentId);
+    const nextSession = agentSessions.length > 0
+      ? [...agentSessions].sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime())[0]
+      : null;
+    const nextSessionId = nextSession?.id || null;
+
+    setActiveSessionId(nextSessionId);
+    lastSyncedSessionIdRef.current = nextSessionId;
+
+    if (nextSession) {
+      if (nextSession.messages.length === 0) {
+        loadSessionMessages(nextSession.id);
+      } else {
+        setActivityLog(reconstructActivityLogFromMessages(nextSession.messages));
+      }
     }
-  }, [activeSessionId, selectedAgentId, sessions, loadSessionMessages]);
+
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (nextSessionId) {
+        next.set("sessionId", nextSessionId);
+      } else {
+        next.delete("sessionId");
+      }
+      next.delete("session");
+      next.set("agent", newAgentId);
+      return next;
+    }, { replace: true });
+  }, [sessions, loadSessionMessages, setSearchParams]);
 
   // ponytail: auto-select model from agent's template config when agent changes
   useEffect(() => {
@@ -525,14 +546,19 @@ export function useAgentSandbox() {
 
   const handleSetActiveSessionId = useCallback((id: string | null) => {
     setActiveSessionId(id);
+    lastSyncedSessionIdRef.current = id;
     setActivityLog([]);
     setCurrentEval(null);
     setSafetyChecks([]);
+
+    let targetAgentId = selectedAgentId;
     if (id) {
       const existing = sessions.find((s) => s.id === id);
       if (existing) {
         if (existing.agentId && existing.agentId !== selectedAgentId) {
+          targetAgentId = existing.agentId;
           setSelectedAgentId(existing.agentId);
+          lastSyncedAgentIdRef.current = existing.agentId;
         }
         if (existing.messages.length === 0) {
           loadSessionMessages(id);
@@ -541,35 +567,69 @@ export function useAgentSandbox() {
         }
       }
     }
-  }, [sessions, selectedAgentId, loadSessionMessages]);
 
-  // Sync activeSessionId to URL search params
-  useEffect(() => {
-    if (!activeSessionId) return;
     setSearchParams((prev) => {
-      const current = prev.get("sessionId") || prev.get("session");
-      if (current === activeSessionId) return prev;
       const next = new URLSearchParams(prev);
-      next.set("sessionId", activeSessionId);
+      if (id) {
+        next.set("sessionId", id);
+      } else {
+        next.delete("sessionId");
+      }
       next.delete("session");
+      if (targetAgentId) {
+        next.set("agent", targetAgentId);
+      }
       return next;
     }, { replace: true });
-  }, [activeSessionId, setSearchParams]);
+  }, [sessions, selectedAgentId, loadSessionMessages, setSearchParams]);
 
-  // Sync from URL changes (back/forward navigation)
+  // Sync from external URL changes (e.g. browser back/forward navigation)
   useEffect(() => {
-    const paramId = searchParams.get("sessionId") || searchParams.get("session");
-    if (paramId && paramId !== activeSessionId) {
+    const paramId = searchParams.get("sessionId") || searchParams.get("session") || null;
+    const paramAgent = searchParams.get("agent") || searchParams.get("agentId") || null;
+
+    if (paramId === lastSyncedSessionIdRef.current && (!paramAgent || paramAgent === lastSyncedAgentIdRef.current)) {
+      return;
+    }
+
+    lastSyncedSessionIdRef.current = paramId;
+    if (paramAgent) {
+      lastSyncedAgentIdRef.current = paramAgent;
+    }
+
+    if (paramId) {
       const match = sessions.find((s) => s.id === paramId);
       if (match) {
         setActiveSessionId(match.id);
         if (match.agentId && match.agentId !== selectedAgentId) {
           setSelectedAgentId(match.agentId);
         }
-        loadSessionMessages(match.id);
+        if (match.messages.length === 0) {
+          loadSessionMessages(match.id);
+        } else {
+          setActivityLog(reconstructActivityLogFromMessages(match.messages));
+        }
+      } else {
+        loadSessionMessages(paramId);
+      }
+    } else if (paramAgent && paramAgent !== selectedAgentId) {
+      setSelectedAgentId(paramAgent);
+      const agentSessions = sessions.filter((s) => s.agentId === paramAgent);
+      const match = agentSessions.length > 0
+        ? [...agentSessions].sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime())[0]
+        : null;
+      setActiveSessionId(match?.id || null);
+      if (match) {
+        if (match.messages.length === 0) {
+          loadSessionMessages(match.id);
+        } else {
+          setActivityLog(reconstructActivityLogFromMessages(match.messages));
+        }
+      } else {
+        setActivityLog([]);
       }
     }
-  }, [searchParams, activeSessionId, sessions, selectedAgentId, loadSessionMessages]);
+  }, [searchParams, sessions, selectedAgentId, loadSessionMessages]);
 
   const getConversationLink = useCallback((sessionId?: string) => {
     const id = sessionId || activeSessionId;
@@ -622,6 +682,15 @@ export function useAgentSandbox() {
       };
       setSessions((prev) => [newSession, ...prev]);
       setActiveSessionId(newSession.id);
+      lastSyncedSessionIdRef.current = newSession.id;
+      lastSyncedAgentIdRef.current = selectedAgentId;
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("sessionId", newSession.id);
+        next.delete("session");
+        next.set("agent", selectedAgentId);
+        return next;
+      }, { replace: true });
       setActivityLog([]);
       setCurrentEval(null);
       setSafetyChecks([]);
@@ -633,7 +702,7 @@ export function useAgentSandbox() {
       setError(msg);
       return null;
     }
-  }, [selectedAgentId, selectedModel, selectedProvider, selectedKeyId, sessions.length, tracing, costTracker]);
+  }, [selectedAgentId, selectedModel, selectedProvider, selectedKeyId, sessions.length, tracing, costTracker, setSearchParams]);
 
   const deleteSession = useCallback(async (sessionId: string) => {
     try {
@@ -641,7 +710,14 @@ export function useAgentSandbox() {
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
       setActiveSessionId((current) => {
         if (current === sessionId) {
+          lastSyncedSessionIdRef.current = null;
           setActivityLog([]);
+          setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.delete("sessionId");
+            next.delete("session");
+            return next;
+          }, { replace: true });
           return null;
         }
         return current;
@@ -649,7 +725,7 @@ export function useAgentSandbox() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete session failed");
     }
-  }, []);
+  }, [setSearchParams]);
 
   const updateSessionTitle = useCallback(async (sessionId: string, title: string) => {
     try {
@@ -1242,7 +1318,7 @@ export function useAgentSandbox() {
     selectedAgent,
     typingStage,
     activeToolCalls,
-    setSelectedAgentId,
+    setSelectedAgentId: handleSelectAgent,
     setSelectedModel,
     setSelectedProvider,
     setSelectedKeyId,
