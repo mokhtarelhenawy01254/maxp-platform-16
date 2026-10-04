@@ -56,6 +56,17 @@ const CustomerPayments = () => {
     }
   }, [marketplaceContext]);
 
+  // Handle ESC key to close recharge modal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && showRechargeModal) {
+        setShowRechargeModal(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showRechargeModal]);
+
   useEffect(() => {
     const handleReturnParams = async () => {
       const params = new URLSearchParams(window.location.search);
@@ -286,27 +297,97 @@ const CustomerPayments = () => {
       </div>
 
       {showRechargeModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity overflow-y-auto"
+          onClick={() => setShowRechargeModal(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="wallet-recharge-modal-title"
+        >
+          <div
+            className="relative w-full max-w-sm my-auto bg-white dark:bg-[#18181b] rounded-2xl p-6 shadow-2xl border border-gray-200 dark:border-white/10 text-gray-900 dark:text-gray-100 transition-all"
+            onClick={(e) => e.stopPropagation()}
+            dir="rtl"
+          >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold">{t("billing.payments.rechargeWallet")}</h2>
-              <button onClick={() => { setShowRechargeModal(false); setRechargeAmount(""); }} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+              <h2 id="wallet-recharge-modal-title" className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {t("billing.payments.rechargeWallet") || "شحن المحفظة"}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowRechargeModal(false)}
+                aria-label="إغلاق"
+                className="text-gray-400 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-100 text-2xl leading-none font-normal p-1 cursor-pointer transition"
+              >
+                &times;
+              </button>
             </div>
-            <input
-              type="number"
-              value={rechargeAmount}
-              onChange={(e) => setRechargeAmount(e.target.value)}
-              placeholder={t("billing.payments.amountPlaceholder")}
-              min="1"
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 mb-4 focus:outline-none focus:ring-2 focus:ring-stone-900"
-            />
-            <button
-              onClick={handleRecharge}
-              disabled={recharging || !rechargeAmount}
-              className="w-full bg-stone-900 hover:bg-stone-800 disabled:bg-stone-300 text-white px-4 py-3 rounded-xl font-bold transition"
+
+            {wallet && (
+              <div className="flex items-center justify-between px-3.5 py-2.5 mb-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5 text-xs">
+                <span className="text-gray-500 dark:text-gray-400">
+                  {t("billing.payments.walletBalance") || "الرصيد الحالي"}:
+                </span>
+                <span className="font-bold text-gray-900 dark:text-white tabular-nums text-sm">
+                  {toNumber(wallet.balance).toFixed(2)} {t("billing.payments.currency") || "ج.م"}
+                </span>
+              </div>
+            )}
+
+            {marketplaceContext?.requiredAmount && (
+              <div className="p-3 mb-4 rounded-xl bg-primary/10 border border-primary/20 text-xs text-foreground flex items-center justify-between">
+                <span className="text-muted-foreground">
+                  {marketplaceContext.appName ? `مطلوب لتفعيل ${marketplaceContext.appName}:` : "المبلغ المطلوب للتفعيل:"}
+                </span>
+                <span className="font-bold text-primary tabular-nums text-sm">
+                  {marketplaceContext.requiredAmount} {t("billing.payments.currency") || "ج.م"}
+                </span>
+              </div>
+            )}
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleRecharge();
+              }}
+              className="space-y-4"
             >
-              {recharging ? t("billing.payments.recharging") : t("billing.payments.confirmRecharge")}
-            </button>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  {t("billing.payments.amount") || "مبلغ الشحن (جنيه)"}
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={rechargeAmount}
+                    onChange={(e) => setRechargeAmount(e.target.value)}
+                    placeholder={t("billing.payments.amountPlaceholder") || "أدخل المبلغ..."}
+                    min="1"
+                    step="any"
+                    autoFocus
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#121214] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary text-base font-semibold tabular-nums"
+                  />
+                  <span className="absolute end-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 dark:text-gray-500 pointer-events-none">
+                    {t("billing.payments.currency") || "ج.م"}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={recharging || !rechargeAmount || parseFloat(rechargeAmount) <= 0}
+                className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground px-4 py-3 rounded-xl font-bold transition flex items-center justify-center gap-2 cursor-pointer text-sm shadow-sm active:scale-[0.98]"
+              >
+                {recharging ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                    <span>{t("billing.payments.recharging") || "جاري التحويل لكاشير..."}</span>
+                  </>
+                ) : (
+                  <span>{t("billing.payments.confirmRecharge") || "تأكيد الشحن"}</span>
+                )}
+              </button>
+            </form>
           </div>
         </div>
       )}
