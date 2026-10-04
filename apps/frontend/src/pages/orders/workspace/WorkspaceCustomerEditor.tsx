@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { PencilSquareIcon, CheckIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import { useTranslation } from 'react-i18next';
+import {
+  PencilSquareIcon,
+  CheckIcon,
+  MapPinIcon,
+  ClipboardDocumentIcon,
+} from '@heroicons/react/24/outline';
+import { toast } from 'sonner';
 import { GovernorateAreaSearch } from '../../../components/ui/GovernorateAreaSearch';
 import { WorkspaceOrder, AgentWorkload } from './types';
 
@@ -110,11 +117,44 @@ export const WorkspaceCustomerEditor: React.FC<WorkspaceCustomerEditorProps> = (
       </div>
 
       <div className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-xs text-muted-foreground" dir="ltr">
-        <span>{customerPhone || (isArabic ? 'بدون هاتف' : 'No phone')}</span>
+        {customerPhone ? (
+          <span className="inline-flex items-center gap-1">
+            {/* اتصال بنقرة: البديل الأول لما هاتف الوورك-سبيس يكون أوفلاين */}
+            <a
+              href={`tel:${customerPhone.replace(/\s/g, '')}`}
+              className="font-semibold text-foreground hover:text-primary hover:underline"
+              title={isArabic ? 'اتصال بالرقم من الجهاز الحالي' : 'Dial this number'}
+            >
+              {customerPhone}
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard?.writeText(customerPhone).then(
+                  () => toast.success(isArabic ? 'تم نسخ الرقم' : 'Number copied'),
+                  () => toast.error(isArabic ? 'تعذر النسخ' : 'Copy failed'),
+                );
+              }}
+              className="rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+              title={isArabic ? 'نسخ الرقم' : 'Copy number'}
+              aria-label={isArabic ? 'نسخ رقم العميل' : 'Copy customer number'}
+            >
+              <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+            </button>
+          </span>
+        ) : (
+          <span>{isArabic ? 'بدون هاتف' : 'No phone'}</span>
+        )}
         {secondaryPhone && secondaryPhone !== customerPhone && (
           <span className="inline-flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.5 text-[11px] font-semibold text-foreground">
             <span className="text-[10px] text-muted-foreground">{isArabic ? 'بديل:' : 'Alt:'}</span>
-            <span>{secondaryPhone}</span>
+            <a
+              href={`tel:${secondaryPhone.replace(/\s/g, '')}`}
+              className="hover:text-primary hover:underline"
+              title={isArabic ? 'اتصال بالرقم البديل' : 'Dial alternate number'}
+            >
+              {secondaryPhone}
+            </a>
           </span>
         )}
       </div>
