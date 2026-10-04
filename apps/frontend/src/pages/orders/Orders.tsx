@@ -102,6 +102,15 @@ export interface Order {
   updatedAt: string;
   customerId?: string;
   customerRating?: string;
+  customerSuccessScore?: number;
+  healthScore?: number | null;
+  healthDiagnosis?: string | null;
+  deliveryRate?: number | null;
+  totalDelivered?: number | null;
+  totalFailed?: number | null;
+  totalCancelled?: number | null;
+  totalAttempts?: number | null;
+  totalOrdersCount?: number | null;
   // Enhanced fields
   confidence?: number;
   extractionMethod?: string;
@@ -623,6 +632,15 @@ const transformOrder = (order: RawOrder): Order => {
     customer: order.customer,
     customerId: order.customerId || order.customer?.id,
     customerRating: order.customerRating || order.customer?.customerRating,
+    customerSuccessScore: (order as any).customerSuccessScore ?? (order as any).healthScore ?? null,
+    healthScore: (order as any).healthScore ?? (order as any).customer?.healthScore ?? null,
+    healthDiagnosis: (order as any).healthDiagnosis ?? null,
+    deliveryRate: (order as any).deliveryRate ?? order.customer?.deliveryRate ?? (order as any).customerDeliveryRate ?? null,
+    totalDelivered: (order as any).totalDelivered ?? order.customer?.totalDelivered ?? null,
+    totalFailed: (order as any).totalFailed ?? null,
+    totalCancelled: (order as any).totalCancelled ?? null,
+    totalAttempts: (order as any).totalAttempts ?? (order as any).totalOrdersCount ?? order.customer?.totalOrdersCount ?? null,
+    totalOrdersCount: (order as any).totalOrdersCount ?? order.customer?.totalOrdersCount ?? null,
     conversation: order.conversation,
     metadata: order.metadata || {},
     // Scheduled order fields

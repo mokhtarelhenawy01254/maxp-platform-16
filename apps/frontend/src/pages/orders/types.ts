@@ -130,6 +130,14 @@ export interface OrderDetailsType {
   statusHistory?: OrderStatusHistory[];
   customerRating?: string;
   customerSuccessScore?: number;
+  deliveryRate?: number | null;
+  totalDelivered?: number | null;
+  totalOrdersCount?: number | null;
+  totalAttempts?: number | null;
+  totalFailed?: number | null;
+  totalCancelled?: number | null;
+  healthScore?: number | null;
+  healthDiagnosis?: string | null;
 
   // Order Source Fields
   sourceType?: string;

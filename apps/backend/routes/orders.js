@@ -3820,25 +3820,190 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       console.log(`🔍 [ORDERS-DEBUG] Items count in database for order ${firstOrder.orderNumber}:`, itemsCount);
     }
 
-    // 🏷️ جلب تقييم العملاء للطلبات الضيف عبر أرقام الهواتف
-    const guestPhones = [...new Set(guestOrders.map(o => o.guestPhone).filter(Boolean))];
+    // 🏷️ جلب إحصائيات تقييم وصحة العملاء الحقيقية (Real Customer Health Stats Engine)
+    const allPhones = [...new Set([
+      ...regularOrders.map(o => o.customerPhone || o.customer?.phone).filter(Boolean),
+      ...guestOrders.map(o => o.guestPhone).filter(Boolean)
+    ])];
+    const allCustomerIds = [...new Set(regularOrders.map(o => o.customerId || o.customer?.id).filter(Boolean))];
+
     const guestCustomerByPhone = new Map();
-    if (guestPhones.length > 0) {
-      try {
-        const foundCustomers = await getSharedPrismaClient().customer.findMany({
-          where: {
-            companyId,
-            phone: { in: guestPhones }
-          },
-          select: { id: true, phone: true, customerRating: true, successScore: true, deliveryRate: true, totalDelivered: true, totalOrdersCount: true }
-        });
-        foundCustomers.forEach(c => {
-          if (c.phone) guestCustomerByPhone.set(c.phone, c);
-        });
-      } catch (err) {
-        console.warn('⚠️ [ORDERS] Failed to batch fetch guest customers for rating:', err.message);
+    const statsByPhone = new Map();
+    const statsByCustomerId = new Map();
+
+    try {
+      const prismaClient = getSharedPrismaClient();
+      const promises = [];
+
+      if (allPhones.length > 0) {
+        promises.push(
+          prismaClient.customer.findMany({
+            where: { companyId, phone: { in: allPhones } },
+            select: { id: true, phone: true, customerRating: true, successScore: true, deliveryRate: true, totalDelivered: true, totalOrdersCount: true }
+          }).then(found => {
+            found.forEach(c => {
+              if (c.phone) guestCustomerByPhone.set(c.phone, c);
+            });
+          }).catch(err => {
+            console.warn('⚠️ [ORDERS] Failed to batch fetch customers by phone:', err.message);
+          })
+        );
+
+        promises.push(
+          prismaClient.order.groupBy({
+            by: ['customerPhone', 'status'],
+            where: { companyId, customerPhone: { in: allPhones } },
+            _count: { id: true }
+          }).then(groups => {
+            groups.forEach(g => {
+              if (!g.customerPhone) return;
+              if (!statsByPhone.has(g.customerPhone)) {
+                statsByPhone.set(g.customerPhone, { delivered: 0, returned: 0, cancelled: 0, inFlight: 0, total: 0 });
+              }
+              const rec = statsByPhone.get(g.customerPhone);
+              const count = g._count.id;
+              rec.total += count;
+              const st = String(g.status || '').toUpperCase();
+              if (st === 'DELIVERED') rec.delivered += count;
+              else if (st === 'PARTIALLY_DELIVERED') { rec.delivered += count * 0.5; rec.returned += count * 0.5; }
+              else if (st === 'RETURNED') rec.returned += count;
+              else if (st === 'PARTIALLY_RETURNED') { rec.delivered += count * 0.5; rec.returned += count * 0.5; }
+              else if (st === 'CANCELLED') rec.cancelled += count;
+              else rec.inFlight += count;
+            });
+          }).catch(err => {
+            console.warn('⚠️ [ORDERS] Failed to group orders by phone:', err.message);
+          })
+        );
       }
+
+      if (allCustomerIds.length > 0) {
+        promises.push(
+          prismaClient.order.groupBy({
+            by: ['customerId', 'status'],
+            where: { companyId, customerId: { in: allCustomerIds } },
+            _count: { id: true }
+          }).then(groups => {
+            groups.forEach(g => {
+              if (!g.customerId) return;
+              if (!statsByCustomerId.has(g.customerId)) {
+                statsByCustomerId.set(g.customerId, { delivered: 0, returned: 0, cancelled: 0, inFlight: 0, total: 0 });
+              }
+              const rec = statsByCustomerId.get(g.customerId);
+              const count = g._count.id;
+              rec.total += count;
+              const st = String(g.status || '').toUpperCase();
+              if (st === 'DELIVERED') rec.delivered += count;
+              else if (st === 'PARTIALLY_DELIVERED') { rec.delivered += count * 0.5; rec.returned += count * 0.5; }
+              else if (st === 'RETURNED') rec.returned += count;
+              else if (st === 'PARTIALLY_RETURNED') { rec.delivered += count * 0.5; rec.returned += count * 0.5; }
+              else if (st === 'CANCELLED') rec.cancelled += count;
+              else rec.inFlight += count;
+            });
+          }).catch(err => {
+            console.warn('⚠️ [ORDERS] Failed to group orders by customerId:', err.message);
+          })
+        );
+      }
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
+      }
+    } catch (batchErr) {
+      console.warn('⚠️ [ORDERS] Failed in batch customer health aggregation:', batchErr.message);
     }
+
+    // ⭐ الدالة المركزية لاحتساب مؤشر صحة العميل الحقيقي (0.0 - 10.0)
+    const resolveOrderHealthStats = (order, customer) => {
+      const isDuplicate = order.status === 'DUPLICATE_ORDER' || Boolean(order.metadata?.duplicate);
+      const phone = order.customerPhone || customer?.phone || order.guestPhone;
+      const custId = order.customerId || customer?.id;
+
+      const phoneStat = phone ? statsByPhone.get(phone) : null;
+      const idStat = custId ? statsByCustomerId.get(custId) : null;
+
+      const chosen = (phoneStat && (!idStat || phoneStat.total >= idStat.total))
+        ? phoneStat
+        : (idStat || phoneStat || { delivered: 0, returned: 0, cancelled: 0, inFlight: 0, total: 0 });
+
+      let delivered = chosen.delivered;
+      let total = chosen.total;
+      let returned = chosen.returned;
+      let cancelled = chosen.cancelled;
+
+      if (total === 0 && customer?.totalOrdersCount > 0) {
+        total = customer.totalOrdersCount;
+        delivered = customer.totalDelivered || 0;
+        returned = Math.max(0, total - delivered);
+      }
+
+      const attempts = delivered + returned;
+      let deliveryRate = null;
+      let score = 7.5;
+      let diagnosis = 'عميل جديد — رصيد أولي موثوق (7.5/10)';
+      let ratingTier = 'UNKNOWN';
+
+      if (isDuplicate) {
+        score = 3.3;
+        ratingTier = 'POOR';
+        diagnosis = 'تحذير: طلب مكرر لنفس العميل — نسبة مخاطرة مرتفعة';
+      } else if (attempts > 0) {
+        const rate = delivered / attempts;
+        deliveryRate = Math.round(rate * 1000) / 10;
+
+        let s;
+        if (delivered === 0) {
+          s = Math.max(1.5, 2.8 - returned * 0.5);
+        } else if (returned === 0) {
+          s = (delivered + 1.125) / (attempts + 1.5) * 10;
+        } else {
+          const base = (delivered + 1.125) / (attempts + 1.5) * 10;
+          const penalty = (1 - rate) * 1.8;
+          s = base - penalty;
+        }
+
+        if (cancelled > 0) {
+          s -= Math.min(cancelled * 0.3, 1.0);
+        }
+
+        score = Math.min(9.9, Math.max(1.0, Math.round(s * 10) / 10));
+
+        if (score >= 8.0) {
+          ratingTier = 'EXCELLENT';
+          diagnosis = `سجل استلام ممتاز (${Math.round(deliveryRate)}%) — ${Math.floor(delivered)} من ${Math.round(attempts)} طلب`;
+        } else if (score >= 7.0) {
+          ratingTier = 'GOOD';
+          diagnosis = `سجل استلام جيد (${Math.round(deliveryRate)}%) — ${Math.floor(delivered)} من ${Math.round(attempts)} طلب`;
+        } else if (score >= 5.0) {
+          ratingTier = 'AVERAGE';
+          diagnosis = `سجل استلام متوسط (${Math.round(deliveryRate)}%) — ${returned > 0 ? `${returned} مرتجع سابق` : ''}`;
+        } else {
+          ratingTier = 'POOR';
+          diagnosis = `تحذير: مخاطرة مرتفعة (${Math.round(deliveryRate)}%) — ${returned} مرتجع سابق`;
+        }
+      } else if (cancelled > 0) {
+        score = Math.max(2.5, Math.round((7.5 - cancelled * 1.5) * 10) / 10);
+        ratingTier = score >= 5.0 ? 'AVERAGE' : 'POOR';
+        diagnosis = `عميل لديه ${cancelled} طلب ملغي سابقاً`;
+      } else if (order.status === 'CANCELLED') {
+        score = 4.7;
+        ratingTier = 'POOR';
+        diagnosis = 'تم إلغاء هذا الطلب';
+      }
+
+      return {
+        healthScore: score,
+        healthDiagnosis: diagnosis,
+        deliveryRate,
+        totalDelivered: Math.floor(delivered),
+        totalFailed: Math.ceil(returned),
+        totalCancelled: cancelled,
+        totalAttempts: Math.round(attempts),
+        totalOrdersCount: Math.max(1, total),
+        customerRating: ratingTier
+      };
+    };
+
 
     // تحويل البيانات (Mapping)
     const formattedRegularOrders = regularOrders.map(order => {
@@ -3917,26 +4082,33 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
             : order.status || 'PENDING'
       ).toLowerCase();
 
+      const healthStats = resolveOrderHealthStats(order, order.customer);
       return applyOrderDetailFeatureAccess({
         id: order.orderNumber,
         orderNumber: order.orderNumber,
         customerId: order.customerId || order.customer?.id || null,
-        customerRating: order.customer?.customerRating || 'UNKNOWN',
-        customerSuccessScore: order.customer?.successScore ?? null,
-        customerDeliveryRate: order.customer?.deliveryRate ?? null,
-        deliveryRate: order.customer?.deliveryRate ?? null,
-        totalDelivered: order.customer?.totalDelivered ?? 0,
-        totalOrdersCount: order.customer?.totalOrdersCount ?? 0,
+        customerRating: healthStats.customerRating || order.customer?.customerRating || 'UNKNOWN',
+        customerSuccessScore: healthStats.healthScore,
+        customerDeliveryRate: healthStats.deliveryRate,
+        healthScore: healthStats.healthScore,
+        healthDiagnosis: healthStats.healthDiagnosis,
+        deliveryRate: healthStats.deliveryRate,
+        totalDelivered: healthStats.totalDelivered,
+        totalFailed: healthStats.totalFailed,
+        totalCancelled: healthStats.totalCancelled,
+        totalAttempts: healthStats.totalAttempts,
+        totalOrdersCount: healthStats.totalOrdersCount,
         customer: order.customer ? {
           id: order.customer.id,
           firstName: order.customer.firstName,
           lastName: order.customer.lastName,
           phone: order.customer.phone,
           email: order.customer.email,
-          customerRating: order.customer.customerRating || 'UNKNOWN',
-          deliveryRate: order.customer.deliveryRate ?? null,
-          totalDelivered: order.customer.totalDelivered ?? 0,
-          totalOrdersCount: order.customer.totalOrdersCount ?? 0,
+          customerRating: healthStats.customerRating || order.customer.customerRating || 'UNKNOWN',
+          healthScore: healthStats.healthScore,
+          deliveryRate: healthStats.deliveryRate ?? order.customer.deliveryRate ?? null,
+          totalDelivered: healthStats.totalDelivered,
+          totalOrdersCount: healthStats.totalOrdersCount,
         } : null,
         customerName: finalCustomerName,
         customerPhone: order.customer?.phone || order.customerPhone || '',
@@ -4137,26 +4309,33 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       ).toLowerCase();
 
       const matchedCust = guestCustomerByPhone.get(order.guestPhone);
+      const healthStats = resolveOrderHealthStats(order, matchedCust);
       return applyOrderDetailFeatureAccess({
         id: order.orderNumber,
         orderNumber: order.orderNumber,
         customerId: matchedCust?.id || null,
-        customerRating: matchedCust?.customerRating || 'UNKNOWN',
-        customerSuccessScore: matchedCust?.successScore ?? null,
-        customerDeliveryRate: matchedCust?.deliveryRate ?? null,
-        deliveryRate: matchedCust?.deliveryRate ?? null,
-        totalDelivered: matchedCust?.totalDelivered ?? 0,
-        totalOrdersCount: matchedCust?.totalOrdersCount ?? 0,
+        customerRating: healthStats.customerRating || matchedCust?.customerRating || 'UNKNOWN',
+        customerSuccessScore: healthStats.healthScore,
+        customerDeliveryRate: healthStats.deliveryRate,
+        healthScore: healthStats.healthScore,
+        healthDiagnosis: healthStats.healthDiagnosis,
+        deliveryRate: healthStats.deliveryRate,
+        totalDelivered: healthStats.totalDelivered,
+        totalFailed: healthStats.totalFailed,
+        totalCancelled: healthStats.totalCancelled,
+        totalAttempts: healthStats.totalAttempts,
+        totalOrdersCount: healthStats.totalOrdersCount,
         customer: matchedCust ? {
           id: matchedCust.id,
           firstName: order.guestName || '',
           lastName: '',
           phone: order.guestPhone,
           email: order.guestEmail,
-          customerRating: matchedCust.customerRating || 'UNKNOWN',
-          deliveryRate: matchedCust.deliveryRate ?? null,
-          totalDelivered: matchedCust.totalDelivered ?? 0,
-          totalOrdersCount: matchedCust.totalOrdersCount ?? 0,
+          customerRating: healthStats.customerRating || matchedCust.customerRating || 'UNKNOWN',
+          healthScore: healthStats.healthScore,
+          deliveryRate: healthStats.deliveryRate ?? matchedCust.deliveryRate ?? null,
+          totalDelivered: healthStats.totalDelivered,
+          totalOrdersCount: healthStats.totalOrdersCount,
         } : null,
         customerName: order.guestName || '',
         customerPhone: order.guestPhone || '',
@@ -8598,6 +8777,7 @@ const handleCustomerRatingRecalculate = async (req, res) => {
           orderNumber,
           customerId,
           customerRating: result.rating,
+          healthScore: result.healthScore,
           deliveryRate: result.deliveryRate,
           totalDelivered: result.totalDelivered,
           totalAttempts: result.totalAttempts
@@ -8613,6 +8793,7 @@ const handleCustomerRatingRecalculate = async (req, res) => {
         orderNumber,
         customerId,
         rating: result.rating,
+        healthScore: result.healthScore,
         deliveryRate: result.deliveryRate,
         totalDelivered: result.totalDelivered,
         totalAttempts: result.totalAttempts

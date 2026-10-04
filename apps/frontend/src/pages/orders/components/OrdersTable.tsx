@@ -167,8 +167,8 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                 </th>
               )}
               {columns.includes("customerRating") && (
-                <th className={`${headerPadding} text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
-                  تقييم العميل
+                <th className={`${headerPadding} whitespace-nowrap text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
+                  HEALTH SCORE
                 </th>
               )}
               {columns.includes("amount") && (
@@ -334,11 +334,17 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                             {!columns.includes("customerRating") && (
                               <CustomerRatingBadge
                                 rating={order.customerRating || order.customer?.customerRating}
+                                healthScore={order.healthScore}
+                                healthDiagnosis={order.healthDiagnosis}
                                 orderNumber={order.orderNumber}
                                 customerId={order.customerId || order.customer?.id}
                                 deliveryRate={(order as any).deliveryRate ?? order.customer?.deliveryRate}
                                 totalDelivered={(order as any).totalDelivered ?? order.customer?.totalDelivered}
-                                totalAttempts={(order as any).totalOrdersCount ?? order.customer?.totalOrdersCount}
+                                totalAttempts={(order as any).totalAttempts ?? (order as any).totalOrdersCount ?? order.customer?.totalOrdersCount}
+                                totalFailed={(order as any).totalFailed}
+                                totalCancelled={(order as any).totalCancelled}
+                                isDuplicate={order.status === "DUPLICATE_ORDER" || Boolean(order.metadata?.duplicate)}
+                                orderStatus={order.status}
                                 interactive={true}
                                 onRatingChange={(newRating) =>
                                   onCustomerRatingChange?.(order.orderNumber, newRating)
@@ -363,11 +369,17 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                       <td className={cellPadding} onClick={(e) => e.stopPropagation()}>
                         <CustomerRatingBadge
                           rating={order.customerRating || order.customer?.customerRating}
+                          healthScore={order.healthScore}
+                          healthDiagnosis={order.healthDiagnosis}
                           orderNumber={order.orderNumber}
                           customerId={order.customerId || order.customer?.id}
                           deliveryRate={(order as any).deliveryRate ?? order.customer?.deliveryRate}
                           totalDelivered={(order as any).totalDelivered ?? order.customer?.totalDelivered}
-                          totalAttempts={(order as any).totalOrdersCount ?? order.customer?.totalOrdersCount}
+                          totalAttempts={(order as any).totalAttempts ?? (order as any).totalOrdersCount ?? order.customer?.totalOrdersCount}
+                          totalFailed={(order as any).totalFailed}
+                          totalCancelled={(order as any).totalCancelled}
+                          isDuplicate={order.status === "DUPLICATE_ORDER" || Boolean(order.metadata?.duplicate)}
+                          orderStatus={order.status}
                           interactive={true}
                           onRatingChange={(newRating) =>
                             onCustomerRatingChange?.(order.orderNumber, newRating)

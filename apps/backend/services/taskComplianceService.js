@@ -10,7 +10,7 @@
  * 6. أقدم مهمة مفتوحة (Oldest open task)
  */
 
-const { getSharedPrismaClient } = require('../utils/prismaClient');
+const { getSharedPrismaClient } = require('./sharedDatabase');
 
 /**
  * Computes compliance report for a company, with optional filter by memberId / userId.

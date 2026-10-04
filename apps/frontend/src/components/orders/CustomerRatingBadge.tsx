@@ -5,7 +5,6 @@ import {
   MinusCircleIcon,
   ExclamationTriangleIcon,
   QuestionMarkCircleIcon,
-  ChevronDownIcon,
   CheckIcon,
   ArrowPathIcon,
 } from "@heroicons/react/20/solid";
@@ -86,39 +85,225 @@ export const normalizeRatingLevel = (raw?: string | null): CustomerRatingLevel =
   return "UNKNOWN";
 };
 
+// Clean circular info icon outline (exact match to Screenshot 2)
+export const InfoOutlineIcon: React.FC<{ className?: string }> = ({ className = "w-3.5 h-3.5" }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={className}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="16" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12.01" y2="8" />
+  </svg>
+);
+
+export interface ComputedHealthScore {
+  score: number;
+  formattedScore: string;
+  tier: "high" | "medium" | "low";
+  tierLabel: string;
+  badgeClass: string;
+  iconClass: string;
+  barColor: string;
+  diagnosis: string;
+  isNew: boolean;
+}
+
+/**
+ * Calculates continuous, Bayesian-smoothed Customer Health Score (0.0 - 10.0)
+ * reflecting real delivery reliability, return rate, duplicate risk, and cancellation history.
+ */
+export function computeHealthScore({
+  healthScore,
+  deliveryRate,
+  totalDelivered,
+  totalAttempts,
+  totalFailed,
+  totalCancelled,
+  rating,
+  isDuplicate,
+  orderStatus,
+}: {
+  healthScore?: number | null;
+  deliveryRate?: number | null;
+  totalDelivered?: number | null;
+  totalAttempts?: number | null;
+  totalFailed?: number | null;
+  totalCancelled?: number | null;
+  rating?: string | null;
+  isDuplicate?: boolean;
+  orderStatus?: string | null;
+}): ComputedHealthScore {
+  let score = 7.5;
+  let diagnosis = "عميل جديد — رصيد أولي موثوق (7.5/10)";
+  let isNew = false;
+
+  if (healthScore !== null && healthScore !== undefined && !isNaN(Number(healthScore))) {
+    score = Number(healthScore);
+    if (deliveryRate !== null && deliveryRate !== undefined) {
+      diagnosis = `نسبة الاستلام: ${Math.round(deliveryRate)}% — مؤشر موثوقية ${score.toFixed(1)}/10`;
+    }
+  } else if (isDuplicate) {
+    score = 3.3;
+    diagnosis = "تحذير: طلب مكرر لنفس العميل — نسبة مخاطرة مرتفعة";
+  } else if (totalAttempts && totalAttempts > 0) {
+    const delivered = totalDelivered ?? 0;
+    const attempts = totalAttempts;
+    const returned = totalFailed ?? Math.max(0, attempts - delivered);
+    const rate = delivered / attempts;
+
+    let s: number;
+    if (delivered === 0) {
+      s = Math.max(1.5, 2.8 - returned * 0.5);
+    } else if (returned === 0) {
+      s = ((delivered + 1.125) / (attempts + 1.5)) * 10;
+    } else {
+      const base = ((delivered + 1.125) / (attempts + 1.5)) * 10;
+      const penalty = (1 - rate) * 1.8;
+      s = base - penalty;
+    }
+
+    if (totalCancelled && totalCancelled > 0) {
+      s -= Math.min(totalCancelled * 0.3, 1.0);
+    }
+
+    score = Math.min(9.9, Math.max(1.0, Math.round(s * 10) / 10));
+    const pct = Math.round(rate * 100);
+    if (score >= 8.0) {
+      diagnosis = `سجل استلام ممتاز (${pct}%) — ${delivered} من ${attempts} طلب`;
+    } else if (score >= 7.0) {
+      diagnosis = `سجل استلام جيد (${pct}%) — ${delivered} من ${attempts} طلب`;
+    } else if (score >= 5.0) {
+      diagnosis = `سجل استلام متوسط (${pct}%) — ${returned > 0 ? `${returned} مرتجع سابق` : ""}`;
+    } else {
+      diagnosis = `تحذير: مخاطرة مرتفعة (${pct}%) — ${returned} مرتجع سابق`;
+    }
+  } else if (deliveryRate !== null && deliveryRate !== undefined && deliveryRate > 0) {
+    if (deliveryRate >= 90) score = 9.2;
+    else if (deliveryRate >= 80) score = 8.5;
+    else if (deliveryRate >= 70) score = 7.7;
+    else if (deliveryRate >= 60) score = 6.4;
+    else if (deliveryRate >= 50) score = 5.2;
+    else score = 3.5;
+    diagnosis = `نسبة الاستلام: ${Math.round(deliveryRate)}%`;
+  } else if (rating && rating !== "UNKNOWN") {
+    if (rating === "EXCELLENT") {
+      score = 9.2;
+      diagnosis = "عميل ممتاز مصنف يدوياً";
+    } else if (rating === "GOOD") {
+      score = 8.2;
+      diagnosis = "عميل جيد مصنف يدوياً";
+    } else if (rating === "AVERAGE") {
+      score = 6.4;
+      diagnosis = "عميل متوسط مصنف يدوياً";
+    } else if (rating === "POOR") {
+      score = 3.3;
+      diagnosis = "عميل ضعيف / مخاطرة مصنف يدوياً";
+    }
+  } else if (orderStatus === "CANCELLED") {
+    score = 4.7;
+    diagnosis = "تم إلغاء هذا الطلب";
+  } else if (orderStatus === "RETURNED") {
+    score = 2.3;
+    diagnosis = "طلب مرتجع — مخاطرة عدم استلام";
+  } else if (orderStatus === "DELIVERED") {
+    score = 8.5;
+    diagnosis = "تم استلام الطلب بنجاح";
+  } else {
+    isNew = true;
+    score = 7.5;
+    diagnosis = "عميل جديد — رصيد أولي موثوق (7.5/10)";
+  }
+
+  score = Math.min(9.9, Math.max(1.0, Math.round(score * 10) / 10));
+  const formattedScore = score.toFixed(1);
+
+  let tier: "high" | "medium" | "low" = "medium";
+  let tierLabel = "عميل متوسط • موثوق جزئياً";
+  let badgeClass =
+    "bg-amber-50 text-amber-800 border-amber-200/90 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60";
+  let iconClass = "text-amber-600 dark:text-amber-400";
+  let barColor = "bg-amber-500";
+
+  if (score >= 8.0) {
+    tier = "high";
+    tierLabel = "عميل موثوق • عالي الجودة";
+    badgeClass =
+      "bg-emerald-50 text-emerald-800 border-emerald-200/90 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60";
+    iconClass = "text-emerald-600 dark:text-emerald-400";
+    barColor = "bg-emerald-500";
+  } else if (score < 5.0) {
+    tier = "low";
+    tierLabel = "عميل عالي المخاطر • حذر";
+    badgeClass =
+      "bg-rose-50 text-rose-800 border-rose-200/90 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60";
+    iconClass = "text-rose-600 dark:text-rose-400";
+    barColor = "bg-rose-500";
+  }
+
+  return {
+    score,
+    formattedScore,
+    tier,
+    tierLabel,
+    badgeClass,
+    iconClass,
+    barColor,
+    diagnosis,
+    isNew,
+  };
+}
+
 export interface CustomerRatingBadgeProps {
   rating?: string | null;
+  healthScore?: number | null;
+  healthDiagnosis?: string | null;
   orderNumber?: string;
   customerId?: string | null;
   interactive?: boolean;
   size?: "xs" | "sm" | "md";
   showLabel?: boolean;
+  legacyChip?: boolean;
   deliveryRate?: number | null;
   totalDelivered?: number | null;
   totalAttempts?: number | null;
+  totalFailed?: number | null;
+  totalCancelled?: number | null;
+  totalOrdersCount?: number | null;
+  isDuplicate?: boolean;
+  orderStatus?: string | null;
   onRatingChange?: (newRating: CustomerRatingLevel) => void;
   className?: string;
-  /**
-   * "dot": 8px indicator for orders table and mobile rows with single-line tooltip.
-   * "badge": rounded pill chip (used in customer profile header and table cells).
-   * "detailed": full telemetry card (used in customer details stats).
-   */
-  variant?: "dot" | "badge" | "detailed";
+  variant?: "dot" | "badge" | "detailed" | "health";
 }
 
 export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
   rating,
+  healthScore,
+  healthDiagnosis,
   orderNumber,
   customerId,
   interactive = false,
-  size = "xs",
+  size = "sm",
   showLabel = true,
+  legacyChip = false,
   deliveryRate,
   totalDelivered,
   totalAttempts,
+  totalFailed,
+  totalCancelled,
+  totalOrdersCount,
+  isDuplicate = false,
+  orderStatus,
   onRatingChange,
   className = "",
-  variant,
+  variant = "badge",
 }) => {
   const [currentRating, setCurrentRating] = useState<CustomerRatingLevel>(() =>
     normalizeRatingLevel(rating)
@@ -171,7 +356,17 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
       ? `${Math.round(deliveryRate)}%`
       : null;
 
-  const effectiveVariant = variant || (size === "xs" ? "dot" : "badge");
+  const healthInfo = computeHealthScore({
+    healthScore,
+    deliveryRate,
+    totalDelivered,
+    totalAttempts,
+    totalFailed,
+    totalCancelled,
+    rating: currentRating,
+    isDuplicate,
+    orderStatus,
+  });
 
   const tooltipText = `تقييم العميل: ${currentOption.label}${
     displayPercent ? ` (نسبة الاستلام: ${displayPercent})` : ""
@@ -247,7 +442,7 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
   };
 
   // 1. Non-interactive pure 8px Dot Indicator for backward compatibility
-  if (!interactive && effectiveVariant === "dot") {
+  if (!interactive && variant === "dot") {
     return (
       <span
         className={`inline-flex items-center justify-center shrink-0 ${className}`}
@@ -262,7 +457,7 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
   }
 
   // 2. Full Telemetry Card (For Customer Details / Analytics)
-  if (effectiveVariant === "detailed") {
+  if (variant === "detailed") {
     return (
       <div
         className={`bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-3 shadow-xs ${className}`}
@@ -275,9 +470,14 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
               تصنيف العميل الآلي
             </span>
           </div>
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-md border ${currentOption.badgeClass}`}>
-            {currentOption.label}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-md border tabular-nums ${healthInfo.badgeClass}`}>
+              {healthInfo.formattedScore} / 10
+            </span>
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-md border ${currentOption.badgeClass}`}>
+              {currentOption.label}
+            </span>
+          </div>
         </div>
 
         <div className="space-y-1.5 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/60">
@@ -292,7 +492,7 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
 
           <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
             <div
-              className={`h-full ${currentOption.barColor} transition-all duration-300`}
+              className={`h-full ${healthInfo.barColor} transition-all duration-300`}
               style={{
                 width: `${Math.min(100, Math.max(0, deliveryRate || 0))}%`,
               }}
@@ -310,28 +510,16 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
     );
   }
 
-  // 3. Non-interactive compact Badge Chip
-  if (!interactive) {
+  // 3. Optional Legacy Chip format (for backward tests or explicitly requested legacy display)
+  if (legacyChip) {
     const IconComponent = currentOption.icon;
-    const sizeClasses = {
-      xs: "px-1.5 py-0.5 text-[11px] gap-1",
-      sm: "px-2 py-0.5 text-xs gap-1.5",
-      md: "px-2.5 py-1 text-xs sm:text-sm gap-1.5",
-    }[size];
-
-    const iconSizes = {
-      xs: "w-3 h-3",
-      sm: "w-3.5 h-3.5",
-      md: "w-4 h-4",
-    }[size];
-
     return (
       <span
-        className={`inline-flex items-center font-medium rounded-md border select-none transition-colors duration-150 cursor-default ${sizeClasses} ${currentOption.badgeClass} ${className}`}
+        className={`inline-flex items-center font-medium rounded-md border select-none transition-colors duration-150 cursor-default px-2 py-0.5 text-xs gap-1.5 ${currentOption.badgeClass} ${className}`}
         title={tooltipText}
         aria-label={tooltipText}
       >
-        <IconComponent className={`${iconSizes} shrink-0`} />
+        <IconComponent className="w-3.5 h-3.5 shrink-0" />
         {showLabel && (
           <span className="truncate font-semibold tracking-tight inline-flex items-center gap-1">
             <span>{currentOption.shortLabel}</span>
@@ -346,8 +534,7 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
     );
   }
 
-  // 4. Interactive Mode (With Dropdown Menu)
-  const IconComponent = currentOption.icon;
+  // 4. ⭐ Standard Modern Health Score Pill Badge (Exact Design from Screenshot 2)
   const sizeClasses = {
     xs: "px-1.5 py-0.5 text-[11px] gap-1",
     sm: "px-2 py-0.5 text-xs gap-1.5",
@@ -363,128 +550,148 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
   return (
     <div
       ref={dropdownRef}
-      className={`relative inline-flex items-center text-start ${className}`}
+      className={`relative inline-flex items-center ${className}`}
       onClick={(e) => e.stopPropagation()}
     >
-      {effectiveVariant === "dot" ? (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsMenuOpen(!isMenuOpen);
-          }}
-          disabled={isUpdating || isRecalculating}
-          className="inline-flex items-center justify-center p-0.5 rounded-full hover:ring-2 hover:ring-slate-300 dark:hover:ring-slate-600 transition-all focus:outline-none cursor-pointer"
-          title={`${tooltipText} — انقر لتعديل التقييم`}
-          aria-label={`${tooltipText} — انقر لتعديل التقييم`}
-          aria-expanded={isMenuOpen}
-        >
-          <span
-            className={`w-2.5 h-2.5 rounded-full ring-2 shadow-xs transition-transform duration-100 hover:scale-125 ${currentOption.dotClass} ${
-              isUpdating ? "animate-pulse" : ""
-            }`}
-          />
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsMenuOpen(!isMenuOpen);
-          }}
-          disabled={isUpdating || isRecalculating}
-          className={`inline-flex items-center font-medium rounded-md border select-none transition-all duration-150 active:scale-97 cursor-pointer hover:shadow-xs focus:outline-none focus:ring-1 focus:ring-primary/40 ${sizeClasses} ${currentOption.badgeClass} ${
-            isUpdating ? "opacity-60 animate-pulse" : ""
-          }`}
-          title={`${tooltipText} — انقر لتعديل التقييم`}
-          aria-label={`${tooltipText} — انقر لتعديل التقييم`}
-          aria-expanded={isMenuOpen}
-        >
-          <IconComponent className={`${iconSizes} shrink-0`} />
-          {showLabel && (
-            <span className="truncate font-semibold tracking-tight inline-flex items-center gap-1">
-              <span>{currentOption.shortLabel}</span>
-              {displayPercent && (
-                <span className="text-[10px] opacity-80 tabular-nums">
-                  ({displayPercent})
-                </span>
-              )}
-            </span>
-          )}
-          <ChevronDownIcon
-            className={`w-3 h-3 opacity-60 transition-transform ${
-              isMenuOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsMenuOpen(!isMenuOpen);
+        }}
+        disabled={isUpdating || isRecalculating}
+        className={`group inline-flex items-center font-semibold rounded-md border select-none transition-all duration-150 active:scale-97 cursor-pointer hover:shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 ${sizeClasses} ${healthInfo.badgeClass}`}
+        title={`مؤشر صحة العميل: ${healthInfo.formattedScore}/10 — ${healthInfo.diagnosis} (انقر للتفاصيل)`}
+        aria-label={`تقييم العميل: ${healthInfo.formattedScore}`}
+        aria-expanded={isMenuOpen}
+      >
+        <span className="tabular-nums font-semibold tracking-tight">
+          {healthInfo.formattedScore}
+        </span>
+        <InfoOutlineIcon
+          className={`${iconSizes} shrink-0 opacity-80 group-hover:opacity-100 transition-opacity ${healthInfo.iconClass}`}
+        />
+      </button>
 
+      {/* 5. Rich Diagnostic Popover Modal */}
       {isMenuOpen && (
         <div
-          className="absolute start-0 top-full mt-1.5 z-50 w-56 rounded-xl border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-800 dark:bg-slate-900 select-none animate-in fade-in zoom-in-95 duration-100"
+          className="absolute start-0 top-full mt-1.5 z-50 w-72 rounded-xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-800 dark:bg-slate-900 select-none animate-in fade-in zoom-in-95 duration-100"
           role="menu"
           dir="rtl"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="px-2.5 py-1.5 border-b border-slate-100 dark:border-slate-800 text-[11px] font-bold text-slate-500 dark:text-slate-400">
-            تعديل تقييم العميل
+          {/* Popover Header */}
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+            <div className="min-w-0">
+              <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <span>مؤشر صحة العميل</span>
+                <span className="text-[10px] font-mono font-medium text-slate-400">HEALTH SCORE</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                {healthInfo.tierLabel}
+              </p>
+            </div>
+            <div
+              className={`px-2 py-0.5 rounded-md border text-xs font-bold tabular-nums shrink-0 ${healthInfo.badgeClass}`}
+            >
+              {healthInfo.formattedScore} / 10
+            </div>
           </div>
-          <div className="py-1 space-y-0.5">
-            {CUSTOMER_RATING_OPTIONS.map((opt) => {
-              const isSelected = opt.value === currentRating;
-              const OptionIcon = opt.icon;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  disabled={isUpdating || isRecalculating}
-                  onClick={(e) => handleRatingSelect(e, opt.value)}
-                  className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors text-right cursor-pointer ${
-                    isSelected
-                      ? "bg-slate-100 text-slate-900 font-semibold dark:bg-slate-800 dark:text-white"
-                      : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/60"
-                  }`}
-                >
-                  <span className="flex items-center gap-2 min-w-0">
-                    <OptionIcon
-                      className={`w-3.5 h-3.5 shrink-0 ${
-                        opt.value === "EXCELLENT"
-                          ? "text-emerald-500"
-                          : opt.value === "GOOD"
-                          ? "text-sky-500"
-                          : opt.value === "AVERAGE"
-                          ? "text-amber-500"
-                          : opt.value === "POOR"
-                          ? "text-rose-500"
-                          : "text-slate-400"
-                      }`}
-                    />
-                    <span className="truncate">{opt.label}</span>
-                  </span>
-                  {isSelected && (
-                    <CheckIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  )}
-                </button>
-              );
-            })}
+
+          {/* Real Metrics and Telemetry Breakdown */}
+          <div className="py-2.5 space-y-2">
+            <div className="flex items-center justify-between text-xs font-medium">
+              <span className="text-slate-600 dark:text-slate-400">نسبة نجاح الاستلام:</span>
+              <span className="font-bold tabular-nums text-slate-900 dark:text-white">
+                {displayPercent ? displayPercent : (totalAttempts && totalAttempts > 0 ? "0%" : "رصيد أولي (جديد)")}
+              </span>
+            </div>
+
+            <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-300 ${healthInfo.barColor}`}
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.max(0, deliveryRate != null ? deliveryRate : healthInfo.score * 10)
+                  )}%`,
+                }}
+              />
+            </div>
+
+            {/* Counter Grid */}
+            <div className="grid grid-cols-3 gap-1.5 pt-1 text-center">
+              <div className="bg-slate-50 dark:bg-slate-800/60 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400">مستلم</div>
+                <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                  {totalDelivered ?? 0}
+                </div>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-800/60 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400">مرتجع</div>
+                <div className="text-xs font-bold text-rose-600 dark:text-rose-400 tabular-nums">
+                  {totalFailed ?? Math.max(0, (totalAttempts || 0) - (totalDelivered || 0))}
+                </div>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-800/60 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400">الإجمالي</div>
+                <div className="text-xs font-bold text-slate-900 dark:text-white tabular-nums">
+                  {totalOrdersCount || totalAttempts || 1}
+                </div>
+              </div>
+            </div>
+
+            {/* Diagnosis note */}
+            <div className="text-[11px] text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/40 p-2 rounded-lg border border-slate-100 dark:border-slate-800 leading-relaxed">
+              {healthDiagnosis || healthInfo.diagnosis}
+            </div>
           </div>
+
+          {/* Quick Manual Override Options */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
+            <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 px-1">
+              تعديل يدوي للتصنيف:
+            </div>
+            <div className="grid grid-cols-2 gap-1">
+              {CUSTOMER_RATING_OPTIONS.slice(0, 4).map((opt) => {
+                const isSelected = opt.value === currentRating;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    disabled={isUpdating || isRecalculating}
+                    onClick={(e) => handleRatingSelect(e, opt.value)}
+                    className={`flex items-center justify-between px-2 py-1 text-[11px] font-medium rounded-md border transition-colors cursor-pointer ${
+                      isSelected
+                        ? "bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900"
+                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                    }`}
+                  >
+                    <span>{opt.shortLabel}</span>
+                    {isSelected && <CheckIcon className="w-3 h-3" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Recalculate Trigger */}
           {orderNumber && (
-            <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 mt-2">
               <button
                 type="button"
                 disabled={isUpdating || isRecalculating}
                 onClick={handleRecalculate}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-lg transition-colors text-right cursor-pointer"
+                className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-lg transition-colors cursor-pointer"
               >
                 <ArrowPathIcon
                   className={`w-3.5 h-3.5 shrink-0 ${
                     isRecalculating ? "animate-spin text-primary" : ""
                   }`}
                 />
-                <span className="truncate">
-                  {isRecalculating
-                    ? "جاري إعادة الاحتساب..."
-                    : "إعادة احتساب آلي (حسب التسليم)"}
+                <span>
+                  {isRecalculating ? "جاري إعادة الاحتساب..." : "إعادة احتساب آلي للتقييم"}
                 </span>
               </button>
             </div>

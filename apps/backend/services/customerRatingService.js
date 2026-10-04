@@ -464,11 +464,29 @@ const calculateCustomerScore = async (customerId, companyId, prismaClient = null
         const currentRatingVersion = (existingMetadata.ratingMetadata?.ratingVersion || 0) + 1;
         const nowIso = new Date().toISOString();
 
+        // Calculate continuous Health Score (0.0 to 10.0)
+        let healthScore = 7.5;
+        if (totalAttempts > 0) {
+            const rate = deliveredWeight / totalAttempts;
+            let s;
+            if (deliveredWeight === 0) {
+                s = Math.max(1.5, 2.8 - failedWeight * 0.5);
+            } else if (failedWeight === 0) {
+                s = (deliveredWeight + 1.125) / (totalAttempts + 1.5) * 10;
+            } else {
+                const base = (deliveredWeight + 1.125) / (totalAttempts + 1.5) * 10;
+                const penalty = (1 - rate) * 1.8;
+                s = base - penalty;
+            }
+            healthScore = Math.min(9.9, Math.max(1.0, Math.round(s * 10) / 10));
+        }
+
         const updatedRatingMetadata = {
             ratingVersion: currentRatingVersion,
             rulesVersion: CURRENT_RULES_VERSION,
             lastCalculatedAt: nowIso,
             lastCalculatedAsOf: asOfIso,
+            healthScore,
             ratingDirty: false
         };
 
@@ -491,6 +509,7 @@ const calculateCustomerScore = async (customerId, companyId, prismaClient = null
 
         return {
             customerId: customer.id,
+            healthScore,
             deliveryRate,
             totalDelivered: deliveredWeight,
             totalFailed: failedWeight,

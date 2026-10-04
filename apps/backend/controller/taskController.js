@@ -271,12 +271,36 @@ function buildLegacyTaskWhereClause(filters) {
   }
 
   if (filters.search) {
-    const searchParamIdx = params.length + 1;
-    clauses.push(`(
-      LOWER(COALESCE("title", '')) LIKE LOWER($${searchParamIdx}) ESCAPE '\\'
-      OR LOWER(COALESCE("description", '')) LIKE LOWER($${searchParamIdx}) ESCAPE '\\'
-    )`);
-    params.push(`%${escapeSqlLike(filters.search)}%`);
+    const rawSearch = String(filters.search).trim();
+    const tokens = rawSearch.split(/\s+/).filter(Boolean);
+    for (const token of tokens) {
+      const searchParamIdx = params.length + 1;
+      clauses.push(`(
+        LOWER(COALESCE("title", '')) LIKE LOWER($${searchParamIdx}) ESCAPE '\\'
+        OR LOWER(COALESCE("description", '')) LIKE LOWER($${searchParamIdx}) ESCAPE '\\'
+        OR LOWER(COALESCE("id", '')) LIKE LOWER($${searchParamIdx}) ESCAPE '\\'
+        OR LOWER(COALESCE("tags", '')) LIKE LOWER($${searchParamIdx}) ESCAPE '\\'
+      )`);
+      params.push(`%${escapeSqlLike(token)}%`);
+    }
+  }
+
+  if (filters.dueDateFrom) {
+    const idx = params.length + 1;
+    clauses.push(`"dueDate" >= $${idx}`);
+    params.push(new Date(`${filters.dueDateFrom}T00:00:00.000Z`));
+  }
+
+  if (filters.dueDateTo) {
+    const idx = params.length + 1;
+    clauses.push(`"dueDate" <= $${idx}`);
+    params.push(new Date(`${filters.dueDateTo}T23:59:59.999Z`));
+  }
+
+  if (filters.tag && filters.tag !== "all") {
+    const idx = params.length + 1;
+    clauses.push(`LOWER(COALESCE("tags", '')) LIKE LOWER($${idx}) ESCAPE '\\'`);
+    params.push(`%${escapeSqlLike(filters.tag)}%`);
   }
 
   return { sql: clauses.join(" AND "), params };
@@ -909,10 +933,14 @@ const taskController = {
     try {
       const {
         projectId,
+        categoryId,
         status,
         priority,
         assignedTo,
         search,
+        dueDateFrom,
+        dueDateTo,
+        tag,
         page = 1,
         limit = 50,
         sortBy = "createdAt",
@@ -934,10 +962,14 @@ const taskController = {
         const result = await fetchLegacyTaskSummaries({
           companyId,
           projectId,
+          categoryId,
           status,
           priority,
           assignedTo,
           search,
+          dueDateFrom,
+          dueDateTo,
+          tag,
           page: parsedPage,
           limit: parsedLimit,
           sortBy,
@@ -964,17 +996,54 @@ const taskController = {
       const where = {
         companyId,
         ...(projectId && { projectId }),
+        ...(categoryId && { categoryId }),
         ...(normalizeStatusFilter(status) && { status: normalizeStatusFilter(status) }),
-        ...(priority && { priority }),
-        ...(assignedTo && { assignedTo }),
+        ...(priority && priority !== "all" && { priority: normalizePriority(priority) }),
+        ...(assignedTo && assignedTo !== "all" && { assignedTo }),
       };
 
+      if (dueDateFrom || dueDateTo) {
+        where.dueDate = {};
+        if (dueDateFrom) where.dueDate.gte = new Date(`${dueDateFrom}T00:00:00.000Z`);
+        if (dueDateTo) where.dueDate.lte = new Date(`${dueDateTo}T23:59:59.999Z`);
+      }
+
+      if (tag && tag !== "all") {
+        where.tags = { contains: tag, mode: "insensitive" };
+      }
+
+      const andClauses = [];
+
       if (!isManagerOrAdmin && currentUserId) {
-        where.OR = [
-          { assignedTo: currentUserId },
-          { createdBy: currentUserId },
-          { taskWatchers: { some: { userId: currentUserId } } },
-        ];
+        andClauses.push({
+          OR: [
+            { assignedTo: currentUserId },
+            { createdBy: currentUserId },
+            { taskWatchers: { some: { userId: currentUserId } } },
+          ],
+        });
+      }
+
+      if (search && String(search).trim()) {
+        const tokens = String(search).trim().split(/\s+/).filter(Boolean);
+        for (const token of tokens) {
+          andClauses.push({
+            OR: [
+              { id: { contains: token, mode: "insensitive" } },
+              { title: { contains: token, mode: "insensitive" } },
+              { description: { contains: token, mode: "insensitive" } },
+              { tags: { contains: token, mode: "insensitive" } },
+              { assignee: { firstName: { contains: token, mode: "insensitive" } } },
+              { assignee: { lastName: { contains: token, mode: "insensitive" } } },
+              { creator: { firstName: { contains: token, mode: "insensitive" } } },
+              { creator: { lastName: { contains: token, mode: "insensitive" } } },
+            ],
+          });
+        }
+      }
+
+      if (andClauses.length > 0) {
+        where.AND = andClauses;
       }
 
       // Honour the sortBy/sortOrder the client already sends. The UI exposes sorting
@@ -2454,6 +2523,9 @@ const taskController = {
         status,
         priority,
         search,
+        dueDateFrom,
+        dueDateTo,
+        tag,
         page = 1,
         limit = 50,
         sortBy = "createdAt",
@@ -2480,6 +2552,9 @@ const taskController = {
           priority,
           assignedTo: userId,
           search,
+          dueDateFrom,
+          dueDateTo,
+          tag,
           page: parsedPage,
           limit: parsedLimit,
           sortBy,
@@ -2503,14 +2578,50 @@ const taskController = {
         companyId,
         ...(projectId && { projectId }),
         ...(normalizeStatusFilter(status) && { status: normalizeStatusFilter(status) }),
-        ...(priority && { priority }),
+        ...(priority && priority !== "all" && { priority: normalizePriority(priority) }),
       };
 
+      if (dueDateFrom || dueDateTo) {
+        where.dueDate = {};
+        if (dueDateFrom) where.dueDate.gte = new Date(`${dueDateFrom}T00:00:00.000Z`);
+        if (dueDateTo) where.dueDate.lte = new Date(`${dueDateTo}T23:59:59.999Z`);
+      }
+
+      if (tag && tag !== "all") {
+        where.tags = { contains: tag, mode: "insensitive" };
+      }
+
+      const andClauses = [];
+
       if (userId) {
-        where.OR = [
-          { assignedTo: userId },
-          { taskWatchers: { some: { userId } } },
-        ];
+        andClauses.push({
+          OR: [
+            { assignedTo: userId },
+            { taskWatchers: { some: { userId } } },
+          ],
+        });
+      }
+
+      if (search && String(search).trim()) {
+        const tokens = String(search).trim().split(/\s+/).filter(Boolean);
+        for (const token of tokens) {
+          andClauses.push({
+            OR: [
+              { id: { contains: token, mode: "insensitive" } },
+              { title: { contains: token, mode: "insensitive" } },
+              { description: { contains: token, mode: "insensitive" } },
+              { tags: { contains: token, mode: "insensitive" } },
+              { assignee: { firstName: { contains: token, mode: "insensitive" } } },
+              { assignee: { lastName: { contains: token, mode: "insensitive" } } },
+              { creator: { firstName: { contains: token, mode: "insensitive" } } },
+              { creator: { lastName: { contains: token, mode: "insensitive" } } },
+            ],
+          });
+        }
+      }
+
+      if (andClauses.length > 0) {
+        where.AND = andClauses;
       }
 
       // Get tasks with project and user information
@@ -2559,6 +2670,9 @@ const taskController = {
         priority,
         assignedTo,
         search,
+        dueDateFrom,
+        dueDateTo,
+        tag,
         page = 1,
         limit = 50,
         sortBy = "createdAt",
@@ -2586,6 +2700,9 @@ const taskController = {
           assignedTo,
           createdBy: userId,
           search,
+          dueDateFrom,
+          dueDateTo,
+          tag,
           page: parsedPage,
           limit: parsedLimit,
           sortBy,
@@ -2610,9 +2727,35 @@ const taskController = {
         createdBy: userId,
         ...(projectId && { projectId }),
         ...(normalizeStatusFilter(status) && { status: normalizeStatusFilter(status) }),
-        ...(priority && { priority }),
-        ...(assignedTo && { assignedTo }),
+        ...(priority && priority !== "all" && { priority: normalizePriority(priority) }),
+        ...(assignedTo && assignedTo !== "all" && { assignedTo }),
       };
+
+      if (dueDateFrom || dueDateTo) {
+        where.dueDate = {};
+        if (dueDateFrom) where.dueDate.gte = new Date(`${dueDateFrom}T00:00:00.000Z`);
+        if (dueDateTo) where.dueDate.lte = new Date(`${dueDateTo}T23:59:59.999Z`);
+      }
+
+      if (tag && tag !== "all") {
+        where.tags = { contains: tag, mode: "insensitive" };
+      }
+
+      if (search && String(search).trim()) {
+        const tokens = String(search).trim().split(/\s+/).filter(Boolean);
+        where.AND = tokens.map((token) => ({
+          OR: [
+            { id: { contains: token, mode: "insensitive" } },
+            { title: { contains: token, mode: "insensitive" } },
+            { description: { contains: token, mode: "insensitive" } },
+            { tags: { contains: token, mode: "insensitive" } },
+            { assignee: { firstName: { contains: token, mode: "insensitive" } } },
+            { assignee: { lastName: { contains: token, mode: "insensitive" } } },
+            { creator: { firstName: { contains: token, mode: "insensitive" } } },
+            { creator: { lastName: { contains: token, mode: "insensitive" } } },
+          ],
+        }));
+      }
 
       // Get tasks with project and user information
       const [tasks, totalTasks] = await Promise.all([
@@ -2711,6 +2854,8 @@ const taskController = {
     try {
       const companyId = await resolveCompanyContext(req);
       const userId = req.user?.userId || req.user?.id;
+      const { assignedTo, projectId, priority, status } = req.query;
+      const effectiveAssignedTo = (assignedTo && assignedTo !== "all") ? assignedTo : null;
       const prisma = getSharedPrismaClient();
 
       if (!companyId) {
@@ -2721,6 +2866,13 @@ const taskController = {
       }
 
       const now = new Date();
+      const baseTaskWhere = {
+        companyId,
+        ...(effectiveAssignedTo && { assignedTo: effectiveAssignedTo }),
+        ...(projectId && { projectId }),
+        ...(priority && priority !== "all" && { priority: normalizePriority(priority) }),
+        ...(status && status !== "all" && { status: normalizeStatusFilter(status) }),
+      };
 
       const [
         taskStatusCounts,
@@ -2734,29 +2886,29 @@ const taskController = {
       ] = await Promise.all([
         prisma.task.groupBy({
           by: ["status"],
-          where: { companyId },
+          where: baseTaskWhere,
           _count: { _all: true },
         }),
         prisma.task.groupBy({
           by: ["status"],
-          where: { companyId, assignedTo: userId },
+          where: { ...baseTaskWhere, assignedTo: userId },
           _count: { _all: true },
         }),
         prisma.task.groupBy({
           by: ["priority"],
-          where: { companyId },
+          where: baseTaskWhere,
           _count: { _all: true },
         }),
         prisma.task.count({
           where: {
-            companyId,
+            ...baseTaskWhere,
             dueDate: { lt: now },
             status: { notIn: ["COMPLETED", "CANCELLED"] },
           },
         }),
         prisma.task.count({
           where: {
-            companyId,
+            ...baseTaskWhere,
             assignedTo: userId,
             dueDate: { lt: now },
             status: { notIn: ["COMPLETED", "CANCELLED"] },
@@ -2773,7 +2925,7 @@ const taskController = {
           _sum: { budget: true, spentBudget: true },
         }),
         prisma.task.findMany({
-          where: { companyId },
+          where: baseTaskWhere,
           include: {
             project: { select: { name: true } },
             assignee: { select: { firstName: true, lastName: true } },
@@ -4139,11 +4291,47 @@ const taskController = {
 
   getKanbanTasks: async (req, res) => {
     try {
-      const { projectId } = req.query;
+      const {
+        projectId,
+        assignedTo,
+        priority,
+        status,
+        search,
+        dueDateFrom,
+        dueDateTo,
+        tag,
+      } = req.query;
       const companyId = req.user.companyId;
 
       const where = { companyId };
       if (projectId) where.projectId = projectId;
+      if (assignedTo && assignedTo !== "all") where.assignedTo = assignedTo;
+      if (priority && priority !== "all") where.priority = normalizePriority(priority);
+      if (status && status !== "all") where.status = normalizeStatusFilter(status);
+
+      if (dueDateFrom || dueDateTo) {
+        where.dueDate = {};
+        if (dueDateFrom) where.dueDate.gte = new Date(`${dueDateFrom}T00:00:00.000Z`);
+        if (dueDateTo) where.dueDate.lte = new Date(`${dueDateTo}T23:59:59.999Z`);
+      }
+
+      if (tag && tag !== "all") {
+        where.tags = { contains: tag, mode: "insensitive" };
+      }
+
+      if (search && String(search).trim()) {
+        const tokens = String(search).trim().split(/\s+/).filter(Boolean);
+        where.AND = tokens.map((token) => ({
+          OR: [
+            { id: { contains: token, mode: "insensitive" } },
+            { title: { contains: token, mode: "insensitive" } },
+            { description: { contains: token, mode: "insensitive" } },
+            { tags: { contains: token, mode: "insensitive" } },
+            { assignee: { firstName: { contains: token, mode: "insensitive" } } },
+            { assignee: { lastName: { contains: token, mode: "insensitive" } } },
+          ],
+        }));
+      }
 
       const tasks = await getSharedPrismaClient().task.findMany({
         where,

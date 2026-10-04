@@ -2,8 +2,8 @@ import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import CustomerRatingBadge from "../CustomerRatingBadge";
 
-describe("CustomerRatingBadge - 2026 Ergonomic Automated Rating Standards", () => {
-  it("renders 8px dot indicator for orders table with single-line tooltip, no popover, no buttons when interactive is false", () => {
+describe("CustomerRatingBadge - 2026 Customer Health Score Standards", () => {
+  it("renders 8px dot indicator for orders table with single-line tooltip when variant is dot", () => {
     const { container } = render(
       <CustomerRatingBadge
         rating="EXCELLENT"
@@ -23,12 +23,11 @@ describe("CustomerRatingBadge - 2026 Ergonomic Automated Rating Standards", () =
       expect.stringContaining("تقييم العميل: عميل ممتاز (نسبة الاستلام: 93%) — 10 من 11 طلب")
     );
 
-    // Verify there are NO popovers, explanations, or recalculate buttons
+    // Verify there are NO popovers or recalculate buttons
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
-    expect(screen.queryByText(/إعادة احتساب/i)).not.toBeInTheDocument();
   });
 
-  it("renders compact badge chip with label and percentage for customer header when not interactive", () => {
+  it("renders modern numeric health score pill badge (Screenshot 2 design) by default", () => {
     render(
       <CustomerRatingBadge
         rating="GOOD"
@@ -40,9 +39,24 @@ describe("CustomerRatingBadge - 2026 Ergonomic Automated Rating Standards", () =
       />
     );
 
+    // Renders continuous health score with 1 decimal place (e.g. 7.5)
+    expect(screen.getByText("7.5")).toBeInTheDocument();
+  });
+
+  it("renders legacy chip when legacyChip prop is true", () => {
+    render(
+      <CustomerRatingBadge
+        rating="GOOD"
+        deliveryRate={80}
+        totalDelivered={4}
+        totalAttempts={5}
+        legacyChip={true}
+        interactive={false}
+      />
+    );
+
     expect(screen.getByText("جيد")).toBeInTheDocument();
     expect(screen.getByText("(80%)")).toBeInTheDocument();
-    expect(screen.queryByText(/إعادة احتساب/i)).not.toBeInTheDocument();
   });
 
   it("renders detailed telemetry card for customer details page without any manual buttons", () => {
@@ -61,12 +75,11 @@ describe("CustomerRatingBadge - 2026 Ergonomic Automated Rating Standards", () =
     expect(screen.getByText("60%")).toBeInTheDocument();
     expect(screen.getByText("3 من 5 طلب مكتمل")).toBeInTheDocument();
 
-    // Zero manual override or recalculate buttons
+    // Zero manual override buttons in detailed view
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
-    expect(screen.queryByText(/إعادة احتساب/i)).not.toBeInTheDocument();
   });
 
-  it("displays UNKNOWN for new customers with 0 completed orders", () => {
+  it("displays neutral trust score (7.5) for new customers with 0 completed orders", () => {
     render(
       <CustomerRatingBadge
         rating="UNKNOWN"
@@ -78,10 +91,11 @@ describe("CustomerRatingBadge - 2026 Ergonomic Automated Rating Standards", () =
       />
     );
 
-    expect(screen.getByText("جديد")).toBeInTheDocument();
+    // Renders neutral baseline 7.5
+    expect(screen.getByText("7.5")).toBeInTheDocument();
   });
 
-  it("renders interactive badge button and allows editing customer rating", () => {
+  it("renders interactive badge button and allows editing customer rating in popover", () => {
     const handleRatingChange = jest.fn();
 
     render(
@@ -101,17 +115,17 @@ describe("CustomerRatingBadge - 2026 Ergonomic Automated Rating Standards", () =
     const trigger = screen.getByRole("button", { name: /تقييم العميل/i });
     expect(trigger).toBeInTheDocument();
 
-    // Open dropdown menu
+    // Open popover menu
     fireEvent.click(trigger);
 
-    // Menu header should be displayed
-    expect(screen.getByText("تعديل تقييم العميل")).toBeInTheDocument();
-    expect(screen.getByText("عميل ممتاز")).toBeInTheDocument();
-    expect(screen.getByText("عميل جيد")).toBeInTheDocument();
-    expect(screen.getByText("عميل ضعيف / مخاطرة")).toBeInTheDocument();
+    // Health Score modal header and telemetry should be displayed
+    expect(screen.getByText("مؤشر صحة العميل")).toBeInTheDocument();
+    expect(screen.getByText("HEALTH SCORE")).toBeInTheDocument();
+    expect(screen.getByText("ممتاز")).toBeInTheDocument();
+    expect(screen.getByText("جيد")).toBeInTheDocument();
 
     // Select excellent
-    const excellentOption = screen.getByText("عميل ممتاز");
+    const excellentOption = screen.getByText("ممتاز");
     fireEvent.click(excellentOption);
 
     expect(handleRatingChange).toHaveBeenCalledWith("EXCELLENT");
