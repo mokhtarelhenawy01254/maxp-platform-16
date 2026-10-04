@@ -254,10 +254,36 @@ describe('agentWorkspaceController.getMyOrders', () => {
     expect(res.payload.pagination.total).toBe(1);
     expect(res.payload.data.map((o) => o.id)).toEqual(['fu']);
 
+    // المتابعة تستبعد أيضاً الحالات النهائية/اللوجستية (تم شحنه/تسليمه/ترجعه...)
+    // لا الملغي فقط — طلب مسلّم بميعاد متابعة قديم لا يعود للطابور
+    const excludedOrder = [
+      'TRASH',
+      'DUPLICATE_ORDER',
+      'SHIPPED',
+      'OUT_FOR_DELIVERY',
+      'DELIVERED',
+      'PARTIALLY_DELIVERED',
+      'RETURNED',
+      'PARTIALLY_RETURNED',
+      'REFUNDED',
+      'PARTIALLY_REFUNDED',
+      'EXCHANGED',
+      'LOST'
+    ];
     const findManyArg = findMany.mock.calls[0][0];
     expect(findManyArg.where.OR).toEqual([
-      { order: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } },
-      { guestOrder: { followUpDate: { not: null }, status: { not: 'CANCELLED' } } }
+      {
+        order: {
+          followUpDate: { not: null },
+          status: { notIn: [...excludedOrder, 'CANCELLED'] }
+        }
+      },
+      {
+        guestOrder: {
+          followUpDate: { not: null },
+          status: { notIn: [...excludedOrder, ...excludedOrder.map((s) => s.toLowerCase()), 'CANCELLED', 'cancelled'] }
+        }
+      }
     ]);
   });
 
