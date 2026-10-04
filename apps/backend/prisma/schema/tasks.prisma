@@ -537,6 +537,19 @@ model Task {
   parentTaskId                                           String?
   recurringRule                                          String?
   startDate                                              DateTime?
+  hasEvidence                                            Boolean          @default(false)
+  missingEvidence                                        Boolean          @default(false)
+  evidence                                               Json?
+  acceptanceCriteria                                     String?
+  acceptanceCriteriaMet                                  Boolean          @default(false)
+  criteriaChecklist                                      Json?
+  returnCount                                            Int              @default(0)
+  lastReturnReason                                       String?
+  submittedForReviewAt                                   DateTime?
+  approvedAt                                             DateTime?
+  approvedBy                                             String?
+  ownerOverride                                          Boolean          @default(false)
+  ownerOverrideReason                                    String?
   assignee                                               User             @relation("tasks_assignedToTousers", fields: [assignedTo], references: [id])
   taskCategory                                           TaskCategory?    @relation(fields: [categoryId], references: [id])
   company                                                Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -553,6 +566,7 @@ model Task {
   task_dependencies_task_dependencies_dependsOnIdTotasks TaskDependency[] @relation("task_dependencies_dependsOnIdTotasks")
   task_dependencies_task_dependencies_taskIdTotasks      TaskDependency[] @relation("task_dependencies_taskIdTotasks")
   taskWatchers                                           TaskWatcher[]
+  convertedFromBacklog                                   TaskBacklog[]    @relation("task_backlog_convertedTask")
 
   @@index([assignedTo])
   @@index([categoryId])
@@ -912,3 +926,34 @@ model DevEvaluation {
   @@index([overallScore])
   @@map("dev_evaluations")
 }
+
+model TaskBacklog {
+  id                String        @id @default(cuid())
+  companyId         String
+  title             String
+  description       String
+  source            String        @default("PRODUCT_NOTE")
+  priority          TasksPriority @default(MEDIUM)
+  type              String        @default("improvement")
+  suggestedCategory String?
+  tags              String?
+  status            String        @default("PENDING")
+  convertedTaskId   String?
+  convertedAt       DateTime?
+  createdBy         String
+  assignedTo        String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  company           Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  creator           User          @relation("task_backlogs_createdByTousers", fields: [createdBy], references: [id])
+  assignee          User?         @relation("task_backlogs_assignedToTousers", fields: [assignedTo], references: [id])
+  convertedTask     Task?         @relation("task_backlog_convertedTask", fields: [convertedTaskId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdBy])
+  @@index([assignedTo])
+  @@map("task_backlogs")
+}
+

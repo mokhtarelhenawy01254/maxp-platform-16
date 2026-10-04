@@ -603,6 +603,78 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
 
           {/* SCROLLABLE DRAWER BODY (Sections 2 to 7) */}
           <div style={drawerStyles.scrollBody}>
+            {/* SECTION: DELIVERY EVIDENCE DOSSIER */}
+            {(task.hasEvidence || task.evidence || task.missingEvidence) && (
+              <div
+                style={{
+                  ...drawerStyles.cardSection,
+                  border: task.missingEvidence
+                    ? '1px solid rgba(239, 68, 68, 0.3)'
+                    : '1px solid rgba(59, 130, 246, 0.3)',
+                  backgroundColor: task.missingEvidence
+                    ? 'rgba(239, 68, 68, 0.04)'
+                    : 'rgba(59, 130, 246, 0.04)',
+                }}
+              >
+                <div style={drawerStyles.sectionHeaderRow}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Shield size={14} color={task.missingEvidence ? '#ef4444' : 'var(--accent-blue)'} />
+                    <span style={drawerStyles.sectionTitle}>
+                      {task.missingEvidence ? 'تنبيه: تسليم بدون دليل' : 'ملف دليل التسليم والإنجاز (Delivery Evidence)'}
+                    </span>
+                  </div>
+                  {task.returnCount && task.returnCount > 0 ? (
+                    <span style={{ fontSize: 11, color: '#f97316', fontWeight: 600 }}>
+                      أعيدت للتعديل {task.returnCount} مرات
+                    </span>
+                  ) : null}
+                </div>
+
+                {task.missingEvidence ? (
+                  <p style={{ fontSize: 12, color: '#ef4444', margin: '4px 0 0', lineHeight: 1.5 }}>
+                    المهمة تم تحويلها للمراجعة بدون استيفاء إثبات التشغيل أو الأسئلة الأربعة الإلزامية. يجب استكمال الدليل قبل الاعتماد.
+                  </p>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8, marginTop: 8, fontSize: 11 }}>
+                    {task.evidence?.changeType && (
+                      <div style={{ padding: 6, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 10 }}>نوع التغيير</span>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{task.evidence.changeType}</span>
+                      </div>
+                    )}
+                    {task.evidence?.commitOrPath && (
+                      <div style={{ padding: 6, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 10 }}>الكوميت / المسار</span>
+                        <code style={{ fontSize: 10, wordBreak: 'break-all' }}>{task.evidence.commitOrPath}</code>
+                      </div>
+                    )}
+                    {task.evidence?.numbersBeforeAfter && (
+                      <div style={{ padding: 6, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 10 }}>الأرقام قبل / بعد</span>
+                        <span>{task.evidence.numbersBeforeAfter}</span>
+                      </div>
+                    )}
+                    {task.evidence?.notTestedScope && (
+                      <div style={{ padding: 6, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 10 }}>ما لم يتم اختباره</span>
+                        <span style={{ color: '#f59e0b' }}>{task.evidence.notTestedScope}</span>
+                      </div>
+                    )}
+                    {task.evidence?.agentInfo?.isAgent && (
+                      <div style={{ gridColumn: '1 / -1', padding: 6, borderRadius: 6, backgroundColor: 'rgba(139, 92, 246, 0.08)', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+                        <span style={{ color: '#a78bfa', display: 'block', fontSize: 10, fontWeight: 600 }}>
+                          وكيل ذكاء اصطناعي: {task.evidence.agentInfo.agentName || 'AI Agent'} (Run: {task.evidence.agentInfo.commitOrRunId})
+                        </span>
+                        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                          ناتج الفحص: {task.evidence.agentInfo.testOutput}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* SECTION 2: DESCRIPTION */}
             <div style={drawerStyles.cardSection}>
               <TaskDescriptionRenderer description={task.description || ''} />

@@ -262,6 +262,7 @@ model Company {
   taskWebhookDeliveries           TaskWebhookDelivery[]
   taskWebhookEndpoints            TaskWebhookEndpoint[]
   taskWatchers                    TaskWatcher[]
+  taskBacklogs                    TaskBacklog[]
   telegramConfigs                 TelegramConfig[]
   textGalleries                   TextGallery[]
   userCompanies                   UserCompany[]
@@ -481,6 +482,8 @@ model User {
   taskNotifications                                 TaskNotification[]
   taskTemplates                                     TaskTemplate[]
   taskWatchers                                      TaskWatcher[]
+  taskBacklogsCreated                               TaskBacklog[]            @relation("task_backlogs_createdByTousers")
+  taskBacklogsAssigned                              TaskBacklog[]            @relation("task_backlogs_assignedToTousers")
   textGalleries                                     TextGallery[]
   userCompanies                                     UserCompany[]
   userInvitations                                   UserInvitation[]

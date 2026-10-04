@@ -5,6 +5,8 @@ import {
   FolderIcon,
   QueueListIcon,
   TagIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 
 import type { TaskPageTab } from "../types";
@@ -16,6 +18,8 @@ type TaskWorkspaceTabsProps = {
   taskCount: number;
   projectCount: number;
   categoryCount: number;
+  complianceCount?: number;
+  backlogCount?: number;
 };
 
 type TabDefinition = {
@@ -30,6 +34,7 @@ const buildTabs = (
   taskCount: number,
   projectCount: number,
   categoryCount: number,
+  backlogCount?: number,
 ): TabDefinition[] => {
   const baseTabs: TabDefinition[] = [
     {
@@ -37,6 +42,17 @@ const buildTabs = (
       label: "المهام",
       count: taskCount,
       icon: QueueListIcon,
+    },
+    {
+      key: "compliance",
+      label: "تقارير الالتزام",
+      icon: ShieldCheckIcon,
+    },
+    {
+      key: "backlog",
+      label: "الباك لوج والتحسين",
+      count: backlogCount,
+      icon: SparklesIcon,
     },
     {
       key: "projects",
@@ -75,12 +91,14 @@ export const TaskWorkspaceTabs: React.FC<TaskWorkspaceTabsProps> = ({
   taskCount,
   projectCount,
   categoryCount,
+  backlogCount,
 }) => {
   const tabs = buildTabs(
     canManageIntegrations,
     taskCount,
     projectCount,
     categoryCount,
+    backlogCount,
   );
 
   return (

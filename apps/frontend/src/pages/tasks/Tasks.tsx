@@ -33,6 +33,9 @@ import { FilterSidebar } from "./components/FilterSidebar";
 import { TaskIntegrationsTab } from "./components/TaskIntegrationsTab";
 import { TaskSettingsTab } from "./components/TaskSettingsTab";
 import { TaskWorkspaceHeader } from "./components/TaskWorkspaceHeader";
+import { TaskWorkspaceTabs } from "./components/TaskWorkspaceTabs";
+import { ComplianceReportsTab } from "./components/ComplianceReportsTab";
+import { TaskBacklogTab } from "./components/TaskBacklogTab";
 
 import { BusinessPageShell } from "../../components/business/BusinessSurface";
 import { Button } from "../../components/ui/button";
@@ -71,6 +74,8 @@ import type { TaskWorkspaceSettings } from "./taskWorkspaceSettings";
 
 const TASK_PAGE_ROUTES: Record<TaskPageTab, string> = {
   tasks: "/tasks",
+  compliance: "/tasks/compliance",
+  backlog: "/tasks/backlog",
   projects: "/tasks/projects",
   categories: "/tasks/categories",
   integrations: "/tasks/integrations",
@@ -80,6 +85,14 @@ const TASK_PAGE_ROUTES: Record<TaskPageTab, string> = {
 const getAccessToken = (): string | null => tokenManager.getAccessToken();
 
 const getTaskPageTabFromPathname = (pathname: string): TaskPageTab => {
+  if (pathname === TASK_PAGE_ROUTES.compliance) {
+    return "compliance";
+  }
+
+  if (pathname === TASK_PAGE_ROUTES.backlog) {
+    return "backlog";
+  }
+
   if (pathname === TASK_PAGE_ROUTES.projects) {
     return "projects";
   }
@@ -1450,6 +1463,8 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
 
           <TaskTable
             canApprove={isApprover}
+            userRole={user?.role}
+            onReloadTasks={fetchTasks}
             paginatedTasks={paginatedTasks}
             filteredAndSortedTasks={filteredAndSortedTasks}
             searchQuery={searchQuery}
@@ -1505,6 +1520,23 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
           setShowCategoryModal={setShowCategoryModal}
           setEditingCategory={setEditingCategory}
           deleteCategory={deleteCategory}
+        />
+      );
+    }
+
+    if (activeTab === "compliance") {
+      return (
+        <ComplianceReportsTab
+          userRole={user?.role}
+          onRefreshTasks={fetchTasks}
+        />
+      );
+    }
+
+    if (activeTab === "backlog") {
+      return (
+        <TaskBacklogTab
+          onTaskCreated={fetchTasks}
         />
       );
     }
@@ -1565,9 +1597,17 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
 
   return (
     <BusinessPageShell className="tasks-page p-2.5 pb-24 md:px-4 md:py-3 xl:px-5 xl:py-4">
-      <div className="mx-auto max-w-[1360px] space-y-2">
-        <div className="space-y-2">
+      <div className="mx-auto max-w-[1360px] space-y-2.5">
+        <TaskWorkspaceTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          canManageIntegrations={canManageIntegrations}
+          taskCount={tasks.length}
+          projectCount={projects.length}
+          categoryCount={categories.length}
+        />
 
+        <div className="space-y-2">
           {renderActiveTabContent()}
         </div>
 

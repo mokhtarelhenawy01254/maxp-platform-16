@@ -6,6 +6,9 @@ const taskNotificationService = require("../services/taskNotificationService");
 const { queueTaskWebhook } = require("../services/taskWebhookService");
 const recurringTaskService = require("../services/recurringTaskService");
 const taskNotificationHelpers = taskNotificationService.helpers;
+const taskEvidenceService = require("../services/taskEvidenceService");
+const taskComplianceService = require("../services/taskComplianceService");
+const taskBacklogService = require("../services/taskBacklogService");
 
 let legacyTaskColumnsCache = null;
 
@@ -528,6 +531,19 @@ async function hydrateLegacyTasks(tasks) {
       tags: parseStringArray(task.tags),
       dependencies: parseStringArray(task.dependencies),
       taskAttachments: [],
+      hasEvidence: Boolean(task.hasEvidence),
+      missingEvidence: Boolean(task.missingEvidence),
+      evidence: typeof task.evidence === "string" ? (() => { try { return JSON.parse(task.evidence); } catch { return null; } })() : (task.evidence || null),
+      acceptanceCriteria: task.acceptanceCriteria || null,
+      acceptanceCriteriaMet: Boolean(task.acceptanceCriteriaMet),
+      criteriaChecklist: typeof task.criteriaChecklist === "string" ? (() => { try { return JSON.parse(task.criteriaChecklist); } catch { return null; } })() : (task.criteriaChecklist || null),
+      returnCount: Number(task.returnCount || 0),
+      lastReturnReason: task.lastReturnReason || null,
+      submittedForReviewAt: task.submittedForReviewAt || null,
+      approvedAt: task.approvedAt || null,
+      approvedBy: task.approvedBy || null,
+      ownerOverride: Boolean(task.ownerOverride),
+      ownerOverrideReason: task.ownerOverrideReason || null,
       createdAt: task.createdAt,
       updatedAt: task.updatedAt,
     };
@@ -560,7 +576,20 @@ async function fetchLegacyTaskById(companyId, taskId) {
       "createdAt",
       "updatedAt",
       "completedDate",
-      "isRecurring"
+      "isRecurring",
+      "hasEvidence",
+      "missingEvidence",
+      "evidence",
+      "acceptanceCriteria",
+      "acceptanceCriteriaMet",
+      "criteriaChecklist",
+      "returnCount",
+      "lastReturnReason",
+      "submittedForReviewAt",
+      "approvedAt",
+      "approvedBy",
+      "ownerOverride",
+      "ownerOverrideReason"
     FROM "Task"
     WHERE "companyId" = $1
       AND "id" = $2
@@ -809,6 +838,19 @@ const formatTaskSummary = (task) => {
     })(),
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
+    hasEvidence: Boolean(task.hasEvidence),
+    missingEvidence: Boolean(task.missingEvidence),
+    evidence: typeof task.evidence === "string" ? (() => { try { return JSON.parse(task.evidence); } catch { return null; } })() : (task.evidence || null),
+    acceptanceCriteria: task.acceptanceCriteria || null,
+    acceptanceCriteriaMet: Boolean(task.acceptanceCriteriaMet),
+    criteriaChecklist: typeof task.criteriaChecklist === "string" ? (() => { try { return JSON.parse(task.criteriaChecklist); } catch { return null; } })() : (task.criteriaChecklist || null),
+    returnCount: Number(task.returnCount || 0),
+    lastReturnReason: task.lastReturnReason || null,
+    submittedForReviewAt: task.submittedForReviewAt || null,
+    approvedAt: task.approvedAt || null,
+    approvedBy: task.approvedBy || null,
+    ownerOverride: Boolean(task.ownerOverride),
+    ownerOverrideReason: task.ownerOverrideReason || null,
   };
 };
 
@@ -1633,7 +1675,56 @@ const taskController = {
         const isReopening = existingTask.status === "COMPLETED" && normalizedStatus !== "COMPLETED";
         const isSubmittingForReview = normalizedStatus === "IN_REVIEW" && existingTask.status !== "IN_REVIEW";
         const isApproving = existingTask.status === "IN_REVIEW" && normalizedStatus === "COMPLETED";
-        const isReturning = existingTask.status === "IN_REVIEW" && normalizedStatus === "IN_PROGRESS";
+        const isReturning = (existingTask.status === "IN_REVIEW" && normalizedStatus === "IN_PROGRESS") || Boolean(revisionReason);
+
+        let sanitizedEvidence = null;
+        let revisionInfo = null;
+
+        if (isSubmittingForReview) {
+          const taskAttachments = await getSharedPrismaClient().taskAttachment.findMany({
+            where: { taskId: id },
+            select: { id: true, fileName: true, originalName: true, filePath: true }
+          }).catch(() => []);
+
+          const validation = taskEvidenceService.validateDeliveryEvidence(req.body, taskAttachments);
+          if (!validation.isValid) {
+            return res.status(400).json({
+              success: false,
+              error: validation.errorSummary,
+              missingFields: validation.missingFields,
+              message: validation.errorSummary
+            });
+          }
+          sanitizedEvidence = validation.sanitizedEvidence;
+        } else if (isApproving) {
+          const approvalValidation = taskEvidenceService.validateApprovalGate(existingTask, req.user, {
+            criteriaChecked: Boolean(req.body.criteriaChecked),
+            ownerOverride: Boolean(req.body.ownerOverride),
+            ownerOverrideReason: req.body.ownerOverrideReason,
+            checklistState: req.body.checklistState
+          });
+          if (!approvalValidation.isValid) {
+            const isForbidden = approvalValidation.error && approvalValidation.error.includes("حصرياً");
+            return res.status(isForbidden ? 403 : 400).json({
+              success: false,
+              error: approvalValidation.error,
+              message: approvalValidation.error
+            });
+          }
+        } else if (isReturning) {
+          revisionInfo = taskEvidenceService.validateRevisionRequest(
+            req.body.revisionReason,
+            existingTask.returnCount || 0,
+            req.user
+          );
+          if (!revisionInfo.isValid) {
+            return res.status(400).json({
+              success: false,
+              error: revisionInfo.error,
+              message: revisionInfo.error
+            });
+          }
+        }
 
         const nextProgress =
           normalizedStatus === "COMPLETED"
@@ -1647,6 +1738,35 @@ const taskController = {
                   : clampProgress(progress);
         const completedDate =
           normalizedStatus === "COMPLETED" ? new Date() : null;
+
+        let evidenceVal = existingTask.evidence ? (typeof existingTask.evidence === "string" ? existingTask.evidence : JSON.stringify(existingTask.evidence)) : null;
+        let hasEvVal = Boolean(existingTask.hasEvidence);
+        let missEvVal = Boolean(existingTask.missingEvidence);
+        let subRevVal = existingTask.submittedForReviewAt ? new Date(existingTask.submittedForReviewAt) : null;
+        let appAtVal = existingTask.approvedAt ? new Date(existingTask.approvedAt) : null;
+        let appByVal = existingTask.approvedBy || null;
+        let retCountVal = Number(existingTask.returnCount || 0);
+        let lastRetVal = existingTask.lastReturnReason || null;
+        let ownOvVal = Boolean(existingTask.ownerOverride);
+        let ownOvReaVal = existingTask.ownerOverrideReason || null;
+
+        if (isSubmittingForReview && sanitizedEvidence) {
+          hasEvVal = true;
+          missEvVal = false;
+          evidenceVal = JSON.stringify(sanitizedEvidence);
+          subRevVal = new Date();
+        } else if (isApproving) {
+          appAtVal = new Date();
+          appByVal = currentUserId;
+          if (req.body.ownerOverride) {
+            ownOvVal = true;
+            ownOvReaVal = req.body.ownerOverrideReason || "Owner Override";
+          }
+        } else if (isReturning && revisionInfo) {
+          retCountVal = revisionInfo.nextReturnCount;
+          lastRetVal = req.body.revisionReason;
+        }
+
         const updatedCount = await getSharedPrismaClient().$executeRawUnsafe(
           `
           UPDATE "Task"
@@ -1654,7 +1774,17 @@ const taskController = {
             "status" = $1,
             "progress" = $2,
             "completedDate" = $3,
-            "updatedAt" = $4
+            "updatedAt" = $4,
+            "hasEvidence" = $7,
+            "missingEvidence" = $8,
+            "evidence" = $9::jsonb,
+            "submittedForReviewAt" = $10,
+            "approvedAt" = $11,
+            "approvedBy" = $12,
+            "returnCount" = $13,
+            "lastReturnReason" = $14,
+            "ownerOverride" = $15,
+            "ownerOverrideReason" = $16
           WHERE "id" = $5
             AND "companyId" = $6
         `,
@@ -1664,6 +1794,16 @@ const taskController = {
           new Date(),
           id,
           companyId,
+          hasEvVal,
+          missEvVal,
+          evidenceVal,
+          subRevVal,
+          appAtVal,
+          appByVal,
+          retCountVal,
+          lastRetVal,
+          ownOvVal,
+          ownOvReaVal,
         );
 
         if (!updatedCount) {
@@ -1840,6 +1980,55 @@ const taskController = {
       const isApproving = existingTask.status === "IN_REVIEW" && normalizedStatus === "COMPLETED";
       const isReturning = (existingTask.status === "IN_REVIEW" && normalizedStatus === "IN_PROGRESS") || Boolean(revisionReason);
 
+      let sanitizedEvidence = null;
+      let revisionInfo = null;
+
+      if (isSubmittingForReview) {
+        const taskAttachments = await getSharedPrismaClient().taskAttachment.findMany({
+          where: { taskId: id },
+          select: { id: true, fileName: true, originalName: true, filePath: true }
+        }).catch(() => []);
+
+        const validation = taskEvidenceService.validateDeliveryEvidence(req.body, taskAttachments);
+        if (!validation.isValid) {
+          return res.status(400).json({
+            success: false,
+            error: validation.errorSummary,
+            missingFields: validation.missingFields,
+            message: validation.errorSummary
+          });
+        }
+        sanitizedEvidence = validation.sanitizedEvidence;
+      } else if (isApproving) {
+        const approvalValidation = taskEvidenceService.validateApprovalGate(existingTask, req.user, {
+          criteriaChecked: Boolean(req.body.criteriaChecked),
+          ownerOverride: Boolean(req.body.ownerOverride),
+          ownerOverrideReason: req.body.ownerOverrideReason,
+          checklistState: req.body.checklistState
+        });
+        if (!approvalValidation.isValid) {
+          const isForbidden = approvalValidation.error && approvalValidation.error.includes("حصرياً");
+          return res.status(isForbidden ? 403 : 400).json({
+            success: false,
+            error: approvalValidation.error,
+            message: approvalValidation.error
+          });
+        }
+      } else if (isReturning) {
+        revisionInfo = taskEvidenceService.validateRevisionRequest(
+          req.body.revisionReason,
+          existingTask.returnCount || 0,
+          req.user
+        );
+        if (!revisionInfo.isValid) {
+          return res.status(400).json({
+            success: false,
+            error: revisionInfo.error,
+            message: revisionInfo.error
+          });
+        }
+      }
+
       const nextProgress =
         normalizedStatus === "COMPLETED"
           ? 100
@@ -1868,6 +2057,27 @@ const taskController = {
         tags: JSON.stringify(currentTags),
       };
 
+      if (isSubmittingForReview && sanitizedEvidence) {
+        updateData.hasEvidence = true;
+        updateData.missingEvidence = false;
+        updateData.evidence = sanitizedEvidence;
+        updateData.submittedForReviewAt = new Date();
+      }
+
+      if (isApproving) {
+        updateData.approvedAt = new Date();
+        updateData.approvedBy = currentUserId;
+        if (req.body.ownerOverride) {
+          updateData.ownerOverride = true;
+          updateData.ownerOverrideReason = req.body.ownerOverrideReason;
+        }
+      }
+
+      if (isReturning && revisionInfo) {
+        updateData.returnCount = revisionInfo.nextReturnCount;
+        updateData.lastReturnReason = req.body.revisionReason;
+      }
+
       const updatedTask = await getSharedPrismaClient().task.updateMany({
         where: {
           id,
@@ -1881,6 +2091,35 @@ const taskController = {
           success: false,
           error: "المهمة غير موجودة",
         });
+      }
+
+      if (isSubmittingForReview && sanitizedEvidence) {
+        await getSharedPrismaClient().taskComment.create({
+          data: {
+            taskId: id,
+            companyId,
+            userId: currentUserId,
+            content: taskEvidenceService.generateDeliveryComment(sanitizedEvidence, req.user)
+          }
+        }).catch((err) => console.warn("[taskController] delivery comment err:", err.message));
+      } else if (isReturning && revisionInfo) {
+        await getSharedPrismaClient().taskComment.create({
+          data: {
+            taskId: id,
+            companyId,
+            userId: currentUserId,
+            content: revisionInfo.comment
+          }
+        }).catch((err) => console.warn("[taskController] return comment err:", err.message));
+      } else if (isApproving && req.body.ownerOverride) {
+        await getSharedPrismaClient().taskComment.create({
+          data: {
+            taskId: id,
+            companyId,
+            userId: currentUserId,
+            content: `🛡️ **اعتماد استثنائي بتجاوز المالك (Owner Override)**\n- **السبب:** ${req.body.ownerOverrideReason}`
+          }
+        }).catch((err) => console.warn("[taskController] override comment err:", err.message));
       }
 
       if (["COMPLETED", "CANCELLED", "IN_REVIEW"].includes(normalizedStatus)) {
@@ -4976,6 +5215,136 @@ const taskController = {
     } catch (error) {
       console.error("Error removing dependency:", error);
       res.status(500).json({ success: false, error: "فشل في حذف التبعية" });
+    }
+  },
+
+  // ==================== Task Delivery Gate & Approval Gate Actions ====================
+
+  submitTaskForReview: async (req, res) => {
+    req.body.status = "IN_REVIEW";
+    return taskController.updateTaskStatus(req, res);
+  },
+
+  approveTask: async (req, res) => {
+    req.body.status = "COMPLETED";
+    return taskController.updateTaskStatus(req, res);
+  },
+
+  returnTaskForRevision: async (req, res) => {
+    req.body.status = "IN_PROGRESS";
+    return taskController.updateTaskStatus(req, res);
+  },
+
+  getComplianceReport: async (req, res) => {
+    try {
+      const companyId = await resolveCompanyContext(req);
+      const { memberId, userId, periodDays = 30 } = req.query;
+      const report = await taskComplianceService.computeTaskComplianceReport(companyId, {
+        userId: memberId || userId || null,
+        periodDays: Number(periodDays) || 30,
+      });
+      res.json({ success: true, data: report });
+    } catch (error) {
+      console.error("[taskController] getComplianceReport error:", error);
+      res.status(500).json({ success: false, error: "فشل في توليد تقرير الالتزام" });
+    }
+  },
+
+  flagLegacyTasksInReview: async (req, res) => {
+    try {
+      const companyId = await resolveCompanyContext(req);
+      const userRole = String(req.user?.role || "").toUpperCase();
+      if (!["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER"].includes(userRole)) {
+        return res.status(403).json({ success: false, error: "غير مصرح بتنفيذ هذه العملية (خاص بالإدارة والمالك)" });
+      }
+
+      const legacyFlagCount = await getSharedPrismaClient().$executeRawUnsafe(
+        `
+        UPDATE "Task"
+        SET 
+          "missingEvidence" = true,
+          "hasEvidence" = false
+        WHERE "companyId" = $1
+          AND "status" = 'IN_REVIEW' 
+          AND ("evidence" IS NULL OR "hasEvidence" = false);
+      `,
+        companyId,
+      );
+
+      res.json({
+        success: true,
+        message: `تم وسم ${legacyFlagCount} مهمة في مرحلة المراجعة كـ «بدون دليل» بنجاح`,
+        flaggedCount: legacyFlagCount,
+      });
+    } catch (error) {
+      console.error("[taskController] flagLegacyTasksInReview error:", error);
+      res.status(500).json({ success: false, error: "فشل في وسم المهام القديمة" });
+    }
+  },
+
+  // ==================== Continuous Backlog Actions ====================
+
+  getBacklogItems: async (req, res) => {
+    try {
+      const companyId = await resolveCompanyContext(req);
+      const result = await taskBacklogService.getBacklogItems(companyId, req.query);
+      res.json({ success: true, data: result.items, total: result.total, page: result.page, limit: result.limit });
+    } catch (error) {
+      console.error("[taskController] getBacklogItems error:", error);
+      res.status(500).json({ success: false, error: error.message || "فشل في جلب عناصر الباك لوج" });
+    }
+  },
+
+  createBacklogItem: async (req, res) => {
+    try {
+      const companyId = await resolveCompanyContext(req);
+      const currentUserId = req.user?.userId || req.user?.id;
+      const item = await taskBacklogService.createBacklogItem(companyId, currentUserId, req.body);
+      res.status(201).json({ success: true, data: item, message: "تمت إضافة عنصر الباك لوج بنجاح" });
+    } catch (error) {
+      console.error("[taskController] createBacklogItem error:", error);
+      res.status(400).json({ success: false, error: error.message || "فشل في إنشاء عنصر الباك لوج" });
+    }
+  },
+
+  convertBacklogItemToTask: async (req, res) => {
+    try {
+      const companyId = await resolveCompanyContext(req);
+      const currentUserId = req.user?.userId || req.user?.id;
+      const result = await taskBacklogService.convertBacklogItemToTask(companyId, currentUserId, req.params.id, req.body);
+      res.json({
+        success: true,
+        data: result.task,
+        backlog: result.backlog,
+        message: result.alreadyConverted ? "هذا العنصر تم تحويله مسبقاً" : "تم تحويل الملاحظة إلى مهمة بنجاح",
+      });
+    } catch (error) {
+      console.error("[taskController] convertBacklogItemToTask error:", error);
+      res.status(400).json({ success: false, error: error.message || "فشل في تحويل الملاحظة إلى مهمة" });
+    }
+  },
+
+  getDailyImprovementQuota: async (req, res) => {
+    try {
+      const companyId = await resolveCompanyContext(req);
+      const currentUserId = req.user?.userId || req.user?.id;
+      const quota = await taskBacklogService.getDailyImprovementQuota(companyId, currentUserId);
+      res.json({ success: true, data: quota });
+    } catch (error) {
+      console.error("[taskController] getDailyImprovementQuota error:", error);
+      res.status(500).json({ success: false, error: "فشل في جلب الحصة اليومية" });
+    }
+  },
+
+  getAutoSuggestions: async (req, res) => {
+    try {
+      const companyId = await resolveCompanyContext(req);
+      const currentUserId = req.user?.userId || req.user?.id;
+      const suggestions = await taskBacklogService.getAutoSuggestions(companyId, currentUserId);
+      res.json({ success: true, data: suggestions });
+    } catch (error) {
+      console.error("[taskController] getAutoSuggestions error:", error);
+      res.status(500).json({ success: false, error: "فشل في جلب المقترحات التلقائية" });
     }
   },
 };

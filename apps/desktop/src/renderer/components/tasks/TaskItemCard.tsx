@@ -298,6 +298,90 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             </span>
           )}
 
+          {/* Missing evidence badge */}
+          {(task.missingEvidence || (isInReview && !task.hasEvidence)) && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
+                fontSize: 10,
+                padding: '1px 6px',
+                borderRadius: 9999,
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                color: '#ef4444',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                fontWeight: 600,
+              }}
+              title="المهمة في المراجعة بدون مرفقات أو دليل عمل كافٍ"
+            >
+              ⚠️ بدون دليل
+            </span>
+          )}
+
+          {/* Blocked in review > 48h */}
+          {isInReview && task.submittedForReviewAt && (Date.now() - new Date(task.submittedForReviewAt).getTime()) > 48 * 3600 * 1000 && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
+                fontSize: 10,
+                padding: '1px 6px',
+                borderRadius: 9999,
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                color: '#f59e0b',
+                border: '1px solid rgba(245, 158, 11, 0.25)',
+                fontWeight: 600,
+              }}
+              title="معلقة في المراجعة لأكثر من 48 ساعة"
+            >
+              ⏳ مسدودة &gt; 48h
+            </span>
+          )}
+
+          {/* Return count badge */}
+          {task.returnCount && task.returnCount > 0 ? (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
+                fontSize: 10,
+                padding: '1px 6px',
+                borderRadius: 9999,
+                backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                color: '#f97316',
+                border: '1px solid rgba(249, 115, 22, 0.25)',
+                fontWeight: 600,
+              }}
+              title={`أعيدت للتعديل ${task.returnCount} مرات`}
+            >
+              ↩️ إرجاع ({task.returnCount})
+            </span>
+          ) : null}
+
+          {/* Backlog converted badge */}
+          {task.convertedFromBacklog && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
+                fontSize: 10,
+                padding: '1px 6px',
+                borderRadius: 9999,
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                color: '#10b981',
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+                fontWeight: 600,
+              }}
+              title="محوّلة من الباك لوج"
+            >
+              تحسين
+            </span>
+          )}
+
           {/* Ergonomic Priority Indicators */}
           {isUrgent && !isCompleted && (
             <span style={rowStyles.urgentBadge} title="أولوية قصوى - عاجل">

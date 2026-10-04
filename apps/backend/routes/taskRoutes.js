@@ -163,6 +163,19 @@ router.delete(
   businessGoalController.deleteGoal,
 );
 
+// ==================== Compliance & Quality Reports (MUST be before /:id) ====================
+router.get("/reports/compliance", taskController.getComplianceReport);
+
+// ==================== Backlog & Continuous Improvement (MUST be before /:id) ====================
+router.get("/backlog/daily-quota", taskController.getDailyImprovementQuota);
+router.get("/backlog/auto-suggest", taskController.getAutoSuggestions);
+router.get("/backlog", taskController.getBacklogItems);
+router.post("/backlog", taskController.createBacklogItem);
+router.post("/backlog/:id/convert", taskController.convertBacklogItemToTask);
+
+// ==================== Admin Legacy Cleanup (MUST be before /:id) ====================
+router.post("/admin/flag-legacy-in-review", taskController.flagLegacyTasksInReview);
+
 // ==================== Task Routes ====================
 router.get("/", taskController.getAllTasks);
 router.get("/my-tasks", taskController.getMyTasks);
@@ -184,6 +197,9 @@ router.get("/:id/details", taskController.getTaskDetails);
 router.put("/:id", taskController.updateTask);
 router.delete("/:id", taskController.deleteTask);
 router.put("/:id/status", taskController.updateTaskStatus);
+router.post("/:id/submit-review", taskController.submitTaskForReview);
+router.post("/:id/approve", taskController.approveTask);
+router.post("/:id/return-revision", taskController.returnTaskForRevision);
 router.post("/:id/ask-execution", taskController.askTaskExecution);
 router.put("/:id/order", taskController.updateTaskOrder);
 

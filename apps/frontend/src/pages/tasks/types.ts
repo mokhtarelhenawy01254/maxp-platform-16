@@ -12,6 +12,8 @@ export type TaskPageTab =
   | "tasks"
   | "projects"
   | "categories"
+  | "compliance"
+  | "backlog"
   | "integrations"
   | "settings";
 
@@ -66,6 +68,20 @@ export interface Task {
   dependencies: string[];
   isRecurring?: boolean;
   recurringRule?: string | null;
+  hasEvidence?: boolean;
+  missingEvidence?: boolean;
+  evidence?: any;
+  acceptanceCriteria?: any;
+  acceptanceCriteriaMet?: boolean;
+  criteriaChecklist?: any[];
+  returnCount?: number;
+  lastReturnReason?: string | null;
+  submittedForReviewAt?: string | null;
+  approvedAt?: string | null;
+  approvedBy?: string | null;
+  ownerOverride?: boolean;
+  ownerOverrideReason?: string | null;
+  convertedFromBacklog?: boolean;
   createdAt: string;
   updatedAt: string;
 }

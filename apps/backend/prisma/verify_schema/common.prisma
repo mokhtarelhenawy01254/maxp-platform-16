@@ -1378,6 +1378,19 @@ model Task {
   parentTaskId                                           String?
   recurringRule                                          String?          @db.LongText
   startDate                                              DateTime?
+  hasEvidence                                            Boolean          @default(false)
+  missingEvidence                                        Boolean          @default(false)
+  evidence                                               Json?
+  acceptanceCriteria                                     String?          @db.LongText
+  acceptanceCriteriaMet                                  Boolean          @default(false)
+  criteriaChecklist                                      Json?
+  returnCount                                            Int              @default(0)
+  lastReturnReason                                       String?          @db.LongText
+  submittedForReviewAt                                   DateTime?
+  approvedAt                                             DateTime?
+  approvedBy                                             String?
+  ownerOverride                                          Boolean          @default(false)
+  ownerOverrideReason                                    String?          @db.LongText
   taskActivities                                         TaskActivity[]
   taskAttachments                                        TaskAttachment[]
   taskChecklists                                         TaskChecklist[]

@@ -107,12 +107,16 @@ describe("TaskTable employee status actions", () => {
     expect(updateTaskStatus).toHaveBeenCalledWith("task-1", "in_progress");
   });
 
-  it("completes an in-progress task from the employee surface", () => {
-    const { updateTaskStatus } = renderTaskTable(buildTask("in_progress"));
+  it("opens delivery gate modal for an in-progress task from the employee surface", () => {
+    renderTaskTable(buildTask("in_progress"));
 
-    fireEvent.click(screen.getAllByRole("button", { name: /^إكمال$/i })[0]);
+    const submitBtn = screen.getAllByRole("button", { name: /تسليم للمراجعة/i })[0];
+    expect(submitBtn).toBeDefined();
+    fireEvent.click(submitBtn);
 
-    expect(updateTaskStatus).toHaveBeenCalledWith("task-1", "completed");
+    // Delivery gate modal is now open with the 4-question template
+    expect(screen.getAllByText(/بوابة تسليم المهمة/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/إيه الناقص للتسليم/i).length).toBeGreaterThan(0);
   });
 
   it("supports uppercase API task statuses in status action buttons", () => {
@@ -133,22 +137,14 @@ describe("TaskTable employee status actions", () => {
 
     cleanup();
 
-    const { updateTaskStatus: inProgressUpdateTaskStatus } = renderTaskTable({
+    renderTaskTable({
       ...buildTask("in_progress"),
       status: "IN_PROGRESS" as Task["status"],
     });
-    const completeButton = screen
-      .getAllByRole("button")
-      .find((button) =>
-        button.textContent?.includes("\u0625\u0643\u0645\u0627\u0644"),
-      );
-
-    expect(completeButton).toBeDefined();
-    fireEvent.click(completeButton as HTMLElement);
-    expect(inProgressUpdateTaskStatus).toHaveBeenCalledWith(
-      "task-1",
-      "completed",
-    );
+    const submitButtons = screen.getAllByRole("button", { name: /تسليم للمراجعة/i });
+    expect(submitButtons.length).toBeGreaterThan(0);
+    fireEvent.click(submitButtons[0]);
+    expect(screen.getAllByText(/بوابة تسليم المهمة/i).length).toBeGreaterThan(0);
   });
 
   it("renders in_review status correctly", () => {
@@ -157,8 +153,8 @@ describe("TaskTable employee status actions", () => {
     expect(screen.getAllByText("in_review").length).toBeGreaterThan(0);
   });
 
-  it("approves an in_review task when canApprove is true", () => {
-    const { updateTaskStatus } = renderTaskTable(buildTask("in_review"), {
+  it("opens approval gate modal for an in_review task when canApprove is true", () => {
+    renderTaskTable(buildTask("in_review"), {
       canApprove: true,
     });
 
@@ -166,11 +162,13 @@ describe("TaskTable employee status actions", () => {
     expect(approveButton).toBeDefined();
     fireEvent.click(approveButton);
 
-    expect(updateTaskStatus).toHaveBeenCalledWith("task-1", "completed");
+    // Approval gate modal is now open
+    expect(screen.getAllByText(/بوابة الاعتماد/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/معايير القبول/i).length).toBeGreaterThan(0);
   });
 
-  it("requests revisions for an in_review task when canApprove is true", () => {
-    const { updateTaskStatus } = renderTaskTable(buildTask("in_review"), {
+  it("opens revision request modal for an in_review task when canApprove is true", () => {
+    renderTaskTable(buildTask("in_review"), {
       canApprove: true,
     });
 
@@ -178,7 +176,7 @@ describe("TaskTable employee status actions", () => {
     expect(reviseButton).toBeDefined();
     fireEvent.click(reviseButton);
 
-    expect(updateTaskStatus).toHaveBeenCalledWith("task-1", "in_progress");
+    expect(screen.getAllByText(/بوابة الاعتماد/i).length).toBeGreaterThan(0);
   });
 
   it("renders pending approval badge and hides approval buttons when canApprove is false", () => {

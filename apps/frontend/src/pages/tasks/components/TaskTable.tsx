@@ -20,10 +20,17 @@ import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Target } from "lucide-react";
+import { toast } from "sonner";
+import { buildApiUrl } from "../../../utils/urlHelper";
+import { tokenManager } from "../../../utils/tokenManager";
 import type { Task, TaskSortBy } from "../types";
+import { DeliveryGateModal, type DeliveryEvidencePayload } from "./DeliveryGateModal";
+import { ApprovalGateModal } from "./ApprovalGateModal";
 
 export interface TaskTableProps {
   canApprove?: boolean;
+  userRole?: string;
+  onReloadTasks?: () => void;
   paginatedTasks: Task[];
   filteredAndSortedTasks: Task[];
   searchQuery: string;
@@ -188,6 +195,8 @@ const buildPageNumbers = (current: number, total: number): (number | "...")[] =>
 
 export const TaskTable: React.FC<TaskTableProps> = ({
   canApprove = true,
+  userRole = "",
+  onReloadTasks,
   paginatedTasks,
   filteredAndSortedTasks,
   searchQuery,
@@ -217,9 +226,157 @@ export const TaskTable: React.FC<TaskTableProps> = ({
   serverTotalTasks,
 }) => {
   const [jumpPage, setJumpPage] = useState("");
+  const [deliveryGateTask, setDeliveryGateTask] = useState<Task | null>(null);
+  const [approvalGateTask, setApprovalGateTask] = useState<Task | null>(null);
+  const [isSubmittingGate, setIsSubmittingGate] = useState(false);
+
   const totalCount =
     serverTotalTasks > 0 ? serverTotalTasks : filteredAndSortedTasks.length;
   const isEmpty = !loading && paginatedTasks.length === 0;
+
+  const handleDeliverySubmit = async (payload: DeliveryEvidencePayload, newFile?: File | null) => {
+    if (!deliveryGateTask) return;
+    try {
+      setIsSubmittingGate(true);
+      const token = tokenManager.getAccessToken();
+
+      let proofAttachmentId = payload.proofAttachmentId;
+      if (newFile) {
+        const formData = new FormData();
+        formData.append("file", newFile);
+        formData.append("taskId", deliveryGateTask.id);
+        const uploadRes = await fetch(buildApiUrl("tasks/attachments"), {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.success && uploadData.data?.id) {
+          proofAttachmentId = uploadData.data.id;
+        }
+      }
+
+      const res = await fetch(buildApiUrl(`tasks/${deliveryGateTask.id}/submit-review`), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...payload,
+          proofAttachmentId,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("تم تسليم المهمة للمراجعة بنجاح");
+        setDeliveryGateTask(null);
+        if (onReloadTasks) onReloadTasks();
+        else updateTaskStatus(deliveryGateTask.id, "in_review");
+      } else {
+        toast.error(data.error || "فشل تسليم المهمة للمراجعة");
+      }
+    } catch {
+      toast.error("حدث خطأ أثناء تسليم المهمة");
+    } finally {
+      setIsSubmittingGate(false);
+    }
+  };
+
+  const handleApprove = async (options: { ownerOverride?: boolean; ownerOverrideReason?: string; criteriaChecked?: boolean }) => {
+    if (!approvalGateTask) return;
+    try {
+      setIsSubmittingGate(true);
+      const token = tokenManager.getAccessToken();
+      const res = await fetch(buildApiUrl(`tasks/${approvalGateTask.id}/approve`), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(options),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("تم اعتماد المهمة بنجاح");
+        setApprovalGateTask(null);
+        if (onReloadTasks) onReloadTasks();
+        else updateTaskStatus(approvalGateTask.id, "completed");
+      } else {
+        toast.error(data.error || "فشل اعتماد المهمة");
+      }
+    } catch {
+      toast.error("حدث خطأ أثناء اعتماد المهمة");
+    } finally {
+      setIsSubmittingGate(false);
+    }
+  };
+
+  const handleReturn = async (reason: string) => {
+    if (!approvalGateTask) return;
+    try {
+      setIsSubmittingGate(true);
+      const token = tokenManager.getAccessToken();
+      const res = await fetch(buildApiUrl(`tasks/${approvalGateTask.id}/return-revision`), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.warning("تم إرجاع المهمة للتعديل بنجاح");
+        setApprovalGateTask(null);
+        if (onReloadTasks) onReloadTasks();
+        else updateTaskStatus(approvalGateTask.id, "in_progress");
+      } else {
+        toast.error(data.error || "فشل طلب التعديلات");
+      }
+    } catch {
+      toast.error("حدث خطأ أثناء إرجاع المهمة");
+    } finally {
+      setIsSubmittingGate(false);
+    }
+  };
+
+  const renderEvidenceBadges = (task: Task) => {
+    const normStatus = String(task.status || "").toLowerCase();
+    const isReview = normStatus === "in_review";
+    const isMissingEvidence = task.missingEvidence || (isReview && !task.hasEvidence);
+
+    let isBlocked48h = false;
+    if (isReview && task.submittedForReviewAt) {
+      const diffHours = (Date.now() - new Date(task.submittedForReviewAt).getTime()) / (1000 * 60 * 60);
+      isBlocked48h = diffHours > 48;
+    }
+
+    return (
+      <div className="inline-flex items-center gap-1 flex-wrap">
+        {isMissingEvidence && (
+          <span className="inline-flex items-center gap-0.5 rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-medium text-rose-600 dark:text-rose-400 border border-rose-500/20" title="المهمة في المراجعة بدون مرفقات أو دليل عمل كافٍ">
+            ⚠️ بدون دليل
+          </span>
+        )}
+        {isBlocked48h && (
+          <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400 border border-amber-500/20" title="معلقة في المراجعة لأكثر من 48 ساعة">
+            ⏳ مسدودة &gt; 48h
+          </span>
+        )}
+        {task.returnCount && task.returnCount > 0 ? (
+          <span className="inline-flex items-center gap-0.5 rounded-full bg-orange-500/10 px-2 py-0.5 text-[10px] font-medium text-orange-600 dark:text-orange-400 border border-orange-500/20" title={`أعيدت للتعديل ${task.returnCount} مرات`}>
+            ↩️ إرجاع ({task.returnCount})
+          </span>
+        ) : null}
+        {task.convertedFromBacklog && (
+          <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" title="محوّلة من الباك لوج">
+            تحسين
+          </span>
+        )}
+      </div>
+    );
+  };
 
   const openTask = (task: Task) => {
     setSelectedTask(task);
@@ -450,6 +607,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                         متكررة
                       </span>
                     ) : null}
+                    {renderEvidenceBadges(task)}
                   </div>
 
                   <p className="line-clamp-1 text-xs leading-5 text-muted-foreground">
@@ -532,10 +690,11 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                     <Button
                       type="button"
                       size="sm"
-                      className="h-8 rounded-full px-2.5 text-xs"
-                      onClick={() => updateTaskStatus(task.id, "completed")}
+                      className="h-8 rounded-full px-2.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                      onClick={() => setDeliveryGateTask(task)}
+                      title="تسليم المهمة للمراجعة وإرفاق الدليل"
                     >
-                      إكمال
+                      تسليم للمراجعة
                     </Button>
                   ) : null}
                   {statusNeedsReview(task.status) ? (
@@ -545,7 +704,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                           type="button"
                           size="sm"
                           className="h-8 rounded-full px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-                          onClick={() => updateTaskStatus(task.id, "completed")}
+                          onClick={() => setApprovalGateTask(task)}
                           title="اعتماد وإنجاز المهمة"
                         >
                           اعتماد
@@ -555,7 +714,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                           variant="outline"
                           size="sm"
                           className="h-8 rounded-full px-2.5 text-xs text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                          onClick={() => updateTaskStatus(task.id, "in_progress")}
+                          onClick={() => setApprovalGateTask(task)}
                           title="طلب تعديلات على المهمة"
                         >
                           طلب تعديلات
@@ -731,6 +890,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                                   متكررة
                                 </span>
                               ) : null}
+                              {renderEvidenceBadges(task)}
                             </div>
                             <p className="line-clamp-1 max-w-[34rem] text-xs leading-5 text-muted-foreground">
                               {task.description?.substring(0, 120) ||
@@ -853,11 +1013,11 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="h-8 rounded-full px-2.5 text-xs"
-                            onClick={() => updateTaskStatus(task.id, "completed")}
-                            title="إكمال المهمة"
+                            className="h-8 rounded-full px-2.5 text-xs text-primary border-primary/30 hover:bg-primary/5"
+                            onClick={() => setDeliveryGateTask(task)}
+                            title="تسليم المهمة للمراجعة وإرفاق الدليل"
                           >
-                            إكمال
+                            تسليم للمراجعة
                           </Button>
                         ) : null}
                         {statusNeedsReview(task.status) ? (
@@ -867,9 +1027,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                                 type="button"
                                 size="sm"
                                 className="h-8 rounded-full px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-                                onClick={() =>
-                                  updateTaskStatus(task.id, "completed")
-                                }
+                                onClick={() => setApprovalGateTask(task)}
                                 title="اعتماد وإنجاز المهمة"
                               >
                                 اعتماد
@@ -879,9 +1037,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                                 variant="outline"
                                 size="sm"
                                 className="h-8 rounded-full px-2.5 text-xs text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                                onClick={() =>
-                                  updateTaskStatus(task.id, "in_progress")
-                                }
+                                onClick={() => setApprovalGateTask(task)}
                                 title="طلب تعديلات على المهمة"
                               >
                                 طلب تعديلات
@@ -952,6 +1108,28 @@ export const TaskTable: React.FC<TaskTableProps> = ({
       </div>
 
       {!loading && renderDesktopPagination()}
+
+      {deliveryGateTask && (
+        <DeliveryGateModal
+          isOpen={Boolean(deliveryGateTask)}
+          onClose={() => setDeliveryGateTask(null)}
+          task={deliveryGateTask}
+          onSubmit={handleDeliverySubmit}
+          isSubmitting={isSubmittingGate}
+        />
+      )}
+
+      {approvalGateTask && (
+        <ApprovalGateModal
+          isOpen={Boolean(approvalGateTask)}
+          onClose={() => setApprovalGateTask(null)}
+          task={approvalGateTask}
+          currentUserRole={userRole}
+          onApprove={handleApprove}
+          onReturn={handleReturn}
+          isSubmitting={isSubmittingGate}
+        />
+      )}
     </div>
   );
 };

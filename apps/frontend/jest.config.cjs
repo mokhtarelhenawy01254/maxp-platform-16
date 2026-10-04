@@ -59,6 +59,7 @@ module.exports = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
     "^@shared/(.*)$": "<rootDir>/../shared/$1",
+    "^.*/config/environment$": "<rootDir>/src/test/__mocks__/environmentMock.ts",
     "^@base-ui/react/dialog$":
       "<rootDir>/src/test/__mocks__/baseUiDialogMock.tsx",
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",
