@@ -35,7 +35,10 @@ interface SavedSearch {
   filters: SearchFilters;
 }
 
-interface AdvancedSearchProps {
+export interface AdvancedSearchFilters extends SearchFilters {}
+
+export interface AdvancedSearchProps {
+  initialFilters?: Partial<SearchFilters>;
   onSearch: (filters: SearchFilters) => void;
   onClose: () => void;
 }
@@ -64,11 +67,15 @@ const defaultFilters: SearchFilters = {
 const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);
 
-const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
+export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
+  initialFilters,
   onSearch,
   onClose,
 }) => {
-  const [filters, setFilters] = useState<SearchFilters>(defaultFilters);
+  const [filters, setFilters] = useState<SearchFilters>(() => ({
+    ...defaultFilters,
+    ...initialFilters,
+  }));
   const [users, setUsers] = useState<
     { id: string; firstName: string; lastName: string }[]
   >([]);
