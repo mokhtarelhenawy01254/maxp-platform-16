@@ -369,43 +369,6 @@ const TimeReports: React.FC = () => {
               <p className="text-2xl font-bold text-blue-600">
                 {projectStats.length}
               </p>
-            </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                عدد السجلات
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {timeEntries.length}
-              </p>
-            </div>
-            <ChartBarIcon className="h-10 w-10 text-gray-400" />
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                المستخدمين النشطين
-              </p>
-              <p className="text-2xl font-bold text-green-600">
-                {userStats.length}
-              </p>
-            </div>
-            <UserGroupIcon className="h-10 w-10 text-green-400" />
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                المشاريع النشطة
-              </p>
-              <p className="text-2xl font-bold text-blue-600">
-                {projectStats.length}
-              </p>
-            </div>
             <FolderIcon className="h-10 w-10 text-blue-400" />
           </div>
         </div>
@@ -441,7 +404,7 @@ const TimeReports: React.FC = () => {
           {/* Entries Tab */}
           {activeTab === "entries" && (
             <div className="overflow-x-auto">
-              {timeEntries.length === 0 ? (
+              {filteredTimeEntries.length === 0 ? (
                 <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                   <ClockIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                   <p>لا توجد سجلات وقت في هذه الفترة</p>
@@ -474,7 +437,7 @@ const TimeReports: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200">
-                    {timeEntries.map((entry) => (
+                    {filteredTimeEntries.map((entry) => (
                       <tr key={entry.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <Link
