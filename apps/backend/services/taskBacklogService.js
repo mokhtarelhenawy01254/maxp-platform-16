@@ -5,7 +5,7 @@
  * tracking daily improvement quotas (at least 1 improvement task per day), and auto-suggestions.
  */
 
-const { getSharedPrismaClient } = require('../utils/prismaClient');
+const { getSharedPrismaClient } = require('./sharedDatabase');
 
 /**
  * Lists backlog items with filtering.
