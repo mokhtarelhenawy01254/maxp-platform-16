@@ -123,14 +123,9 @@ export const WorkspaceWhatsAppTemplates: React.FC<WorkspaceWhatsAppTemplatesProp
         <div>
           <div className="mb-2 flex items-center gap-1.5">
             <h4 className="text-xs font-black uppercase text-muted-foreground">
-              {isArabic ? 'قوالب Meta Cloud المعتمدة للمتجر' : 'Approved Meta Cloud Templates'}
+              {isArabic ? 'قوالب Meta Cloud المعتمدة' : 'Approved Meta Templates'}
             </h4>
           </div>
-          <p className="mb-2 text-[11px] leading-relaxed text-muted-foreground text-pretty">
-            {isArabic
-              ? 'القوالب الوحيدة القابلة للإرسال بعد انغلاق نافذة الـ 24 ساعة مع العميل — تُرسل رسميًا عبر Meta بمتغيراتها.'
-              : 'The only messages sendable after the 24h window closes — delivered officially via Meta with their variables.'}
-          </p>
           <div className="space-y-2">
             {templates.map((metaTmpl) => {
               const bodyComp = metaTmpl.components?.find((c) => c.type === 'BODY');

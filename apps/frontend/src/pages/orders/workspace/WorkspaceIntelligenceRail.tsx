@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import {
   ShieldCheckIcon,
   ExclamationTriangleIcon,
-  SparklesIcon,
   ChartBarIcon,
   UserGroupIcon,
 } from '@heroicons/react/24/outline';
@@ -71,20 +70,6 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
               )}
             </div>
           </section>
-
-          {/* Smart Upsell Script — سجل المكالمات يُعرض مرة واحدة في الـ Inspector
-              (كان مرسومًا على لوحين متجاورين بأسلوبين مختلفين) */}
-          <section className="py-3.5">
-            <div className="flex items-center gap-1.5 font-bold text-foreground">
-              <SparklesIcon className="h-4 w-4 text-amber-500" />
-              <span>{isArabic ? 'اقتراح العرض الإضافي' : 'Confirmation Upsell'}</span>
-            </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground text-pretty">
-              {isArabic
-                ? 'اقترح على العميل قطعة إضافية أو خصم باقة قبل اعتماد الشحن لرفع متوسط قيمة الطلب.'
-                : 'Suggest an additional item or bundle discount to increase average order value.'}
-            </p>
-          </section>
         </div>
       )}
 
@@ -122,11 +107,6 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
               <UserGroupIcon className="h-4 w-4 text-primary" />
               <span>{isArabic ? 'إدارة توزيع الفريق' : 'Team Distribution'}</span>
             </div>
-            <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground text-pretty">
-              {isArabic
-                ? 'توزيع الطلبات يتم آلياً وفقاً لقواعد الطاقة الاستيعابية والتناوب الدائري بين أعضاء الفريق.'
-                : 'Orders are distributed automatically via workload cap and round-robin rules across team members.'}
-            </p>
             <Link
               to="/settings/orders?tab=confirmation"
               className="mt-2.5 inline-block text-[11px] font-bold text-primary hover:underline"

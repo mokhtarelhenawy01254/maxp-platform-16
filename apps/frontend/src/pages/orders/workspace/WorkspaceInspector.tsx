@@ -301,9 +301,6 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
       {/* 3. Instant Call Dispositions (1-Click outcomes) — تُخفى على الملغي */}
       {!isReadOnly && (
         <section className="border-b border-border/30 pb-3">
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-            {isArabic ? 'تسجيل نتيجة الاتصال بنقرة واحدة' : 'Instant Call Outcome'}
-          </p>
           <div className="flex flex-wrap gap-1.5">
             {dispositions.map((disp) => (
               <button

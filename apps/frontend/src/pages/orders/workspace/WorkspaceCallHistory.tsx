@@ -101,11 +101,6 @@ export const WorkspaceCallHistory: React.FC<WorkspaceCallHistoryProps> = ({
       ) : (
         <div className="rounded-md border border-dashed border-border/60 bg-muted/10 p-3 text-center text-xs text-muted-foreground">
           <p>{isArabic ? 'لا توجد مكالمات مسجلة لهذا الطلب حتى الآن' : 'No calls recorded for this order yet'}</p>
-          <p className="mt-1 text-[11px] text-muted-foreground/80">
-            {isArabic
-              ? 'اضغط على زر "اتصال" بالأعلى لبدء الاتصال بالعميل عبر هاتفك الأندرويد'
-              : 'Click "Call" above to start calling via your connected phone'}
-          </p>
         </div>
       )}
     </section>
