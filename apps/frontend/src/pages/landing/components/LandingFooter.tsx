@@ -71,7 +71,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
             </div>
 
             <span className="block text-xs text-zinc-400 font-mono mt-3">
-              بدون بطاقة بنكية • نقل بياناتك القديمة خلال 24 ساعة • دعم فني مخصص في مصر
+              بدون بطاقة بنكية • نقل بياناتك القديمة بدون تعطيل • دعم فني مخصص في مصر
             </span>
           </div>
         </div>

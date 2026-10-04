@@ -125,7 +125,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
 
               <div className="text-left">
                 <div className="inline-flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 mb-1">
-                  <span>رد ذكي فوري (2 ثانية) • تأكيد مخزون تلقائي</span>
+                  <span>رد ذكي فوري • تأكيد مخزون تلقائي</span>
                 </div>
                 <div className="inline-block bg-emerald-950/40 text-emerald-100 border-l-2 border-emerald-500 text-xs sm:text-sm p-3.5 rounded-2xl rounded-tl-none max-w-[92%] leading-relaxed text-right">
                   أهلاً بحضرتك يا فندم! متاح مقاس 43 وجاهز للشحن الفوري. التوصيل لمصر الجديدة خلال 24 ساعة مع شركة بوسطة، ومتاح المعاينة قبل الدفع. تحب نسجل لحضرتك الطلب؟

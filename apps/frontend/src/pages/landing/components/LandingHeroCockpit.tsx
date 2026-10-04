@@ -299,13 +299,9 @@ export const LandingHeroCockpit: React.FC = () => {
           <div className="mt-6 pt-4 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-4 text-xs text-zinc-400">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>معدل معالجة الطلبات: <strong className="text-white">1,420 أوردر/ساعة</strong> عبر شبكة خوادم MaxP</span>
+              <span>معالجة طلبات لحظية على خوادم MaxP</span>
             </div>
             <div className="flex items-center gap-4 text-zinc-400 font-mono text-[11px]">
-              <span>Latency: 24ms</span>
-              <span>•</span>
-              <span>Uptime: 99.98%</span>
-              <span>•</span>
               <span className="text-emerald-400">SSL Encrypted</span>
             </div>
           </div>

@@ -122,7 +122,7 @@ export const LandingInteractiveDemo: React.FC = () => {
         <div className="space-y-3 bg-zinc-950 p-5 rounded-2xl border border-white/[0.06] text-xs font-mono">
           <div className="flex items-center justify-between pb-3 border-b border-white/[0.06] text-[11px]">
             <span className="text-zinc-300">حالة المستودع الرئيسي</span>
-            <span className="text-zinc-400">1,420 صنف مسجل</span>
+            <span className="text-zinc-400">مخزن مُزامَن لحظياً</span>
           </div>
           <div className="space-y-2">
             {[
