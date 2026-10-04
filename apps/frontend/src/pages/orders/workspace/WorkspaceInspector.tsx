@@ -133,6 +133,24 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
                 <span>{isArabic ? 'كامل التفاصيل' : 'Full Details'}</span>
                 <ArrowTopRightOnSquareIcon className="h-3 w-3" />
               </button>
+              {/* ميعاد المتابعة بجوار رقم الطلب — تذكير سياقي أثناء المكالمة نفسها */}
+              {order.followUpDate && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
+                    new Date(order.followUpDate).getTime() <= Date.now()
+                      ? 'bg-destructive/15 text-destructive'
+                      : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                  }`}
+                >
+                  <CalendarIcon className="h-3 w-3" />
+                  {new Date(order.followUpDate).getTime() <= Date.now()
+                    ? (isArabic ? 'متابعة مستحقة الآن' : 'Follow-up due')
+                    : new Date(order.followUpDate).toLocaleDateString(isArabic ? 'ar-EG' : 'en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                </span>
+              )}
             </div>
           </div>
 

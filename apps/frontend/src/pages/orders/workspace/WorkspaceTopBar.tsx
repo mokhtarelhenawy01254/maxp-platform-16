@@ -1,13 +1,12 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowPathIcon,
   MagnifyingGlassIcon,
   XMarkIcon,
-  UserIcon,
-  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
-import { FilterTab, PerspectiveMode, WorkspaceStats } from './types';
+import { Tabs, TabsList, TabsTrigger } from '../../../components/ui/tabs';
+import { FilterTab, WorkspaceStats } from './types';
 
 interface WorkspaceTopBarProps {
   activeTab: FilterTab;
@@ -15,15 +14,12 @@ interface WorkspaceTopBarProps {
   stats: WorkspaceStats | null;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  perspective: PerspectiveMode;
-  onPerspectiveChange: (mode: PerspectiveMode) => void;
   refreshing: boolean;
   onRefresh: () => void;
-  autoAdvance: boolean;
-  onToggleAutoAdvance: () => void;
   sortOption: 'recent' | 'oldest' | 'attempts';
   onSortChange: (sort: 'recent' | 'oldest' | 'attempts') => void;
-  isManager?: boolean;
+  /** آخر نجاح جلب — لشارة «حدث قبل X» بجانب زر التحديث */
+  lastFetchedAt: number | null;
 }
 
 export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
@@ -32,18 +28,30 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
   stats,
   searchQuery,
   onSearchChange,
-  perspective,
-  onPerspectiveChange,
   refreshing,
   onRefresh,
-  autoAdvance,
-  onToggleAutoAdvance,
   sortOption,
   onSortChange,
-  isManager = false,
+  lastFetchedAt,
 }) => {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
+
+  // نبض دقيقة لتحديث شارة الحداثة دون إعادة رندر الصفحة كلها
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => forceTick((n) => n + 1), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  const freshnessLabel = () => {
+    if (!lastFetchedAt) return null;
+    const mins = Math.floor((Date.now() - lastFetchedAt) / 60000);
+    if (mins < 1) return isArabic ? 'حدث الآن' : 'fresh';
+    if (mins < 60) return isArabic ? `حدث قبل ${mins} د` : `${mins}m old`;
+    const hrs = Math.floor(mins / 60);
+    return isArabic ? `حدث قبل ${hrs} س` : `${hrs}h old`;
+  };
 
   const pendingCount = (stats?.pending || 0) + (stats?.incomplete || 0);
   const totalCount = (stats?.total || 0) + (stats?.incomplete || 0);
@@ -59,45 +67,33 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
   return (
     <header className="border-b border-border/40 bg-card/95 px-3 py-2 backdrop-blur-sm sm:px-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        {/* Start (Right in RTL): Status Filter Tabs */}
-        <div
-          className="flex items-center gap-1.5 overflow-x-auto no-scrollbar"
-          role="tablist"
-          aria-label={t('orders.workspaceFilters')}
+        {/* Start (Right in RTL): Status Filter Tabs — مكوّن التابات القياسي للموقع */}
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => onSelectTab(v as FilterTab)}
         >
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.key;
-            return (
-              <button
+          <TabsList
+            className="justify-start overflow-x-auto rounded-2xl bg-muted/60 p-1"
+            aria-label={t('orders.workspaceFilters')}
+          >
+            {tabs.map((tab) => (
+              <TabsTrigger
                 key={tab.key}
-                type="button"
-                onClick={() => onSelectTab(tab.key)}
-                role="tab"
-                aria-selected={isActive}
-                className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
-                }`}
+                value={tab.key}
+                className="gap-1.5 rounded-xl px-2.5 text-xs font-semibold"
               >
-                <span>{tab.label}</span>
+                <span className="whitespace-nowrap">{tab.label}</span>
                 {typeof tab.count === 'number' && (
-                  <span
-                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-mono tabular-nums ${
-                      isActive
-                        ? 'bg-primary-foreground/20 text-primary-foreground'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
+                  <span className="rounded-full bg-muted-foreground/15 px-1.5 py-0.5 text-[10px] font-mono tabular-nums text-foreground">
                     {tab.count}
                   </span>
                 )}
-              </button>
-            );
-          })}
-        </div>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
 
-        {/* End (Left in RTL): Search + Sort + Refresh + Controls */}
+        {/* End (Left in RTL): Search + Sort + Freshness + Refresh */}
         <div className="flex items-center gap-2 shrink-0">
           {/* Search Bar */}
           <div className="relative w-36 sm:w-48 lg:w-56 transition-all">
@@ -132,66 +128,25 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
             <option value="attempts">{isArabic ? 'الأكثر محاولات' : 'Most Calls'}</option>
           </select>
 
-          {/* Refresh button */}
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={refreshing}
-            aria-busy={refreshing}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border/50 bg-background text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground disabled:opacity-50"
-            title={t('common.refresh')}
+          {/* Freshness + Refresh: الموظف يرى حيوية البيانات بلا ضغطة */}
+          <div
+            className="flex h-8 items-center gap-1.5 rounded-md border border-border/50 bg-background px-2"
+            title={isArabic ? 'آخر جلب ناجح للبيانات' : 'Last successful fetch'}
           >
-            <ArrowPathIcon className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-          </button>
-
-          {/* Auto-advance toggle */}
-          <button
-            type="button"
-            onClick={onToggleAutoAdvance}
-            className={`hidden items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors lg:inline-flex ${
-              autoAdvance
-                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                : 'border-border/40 text-muted-foreground hover:bg-muted/40'
-            }`}
-            title={isArabic ? 'التمرير التلقائي للطلب التالي فور إنهاء الإجراء' : 'Auto-advance to next order after action'}
-          >
-            <span className={`h-1.5 w-1.5 rounded-full ${autoAdvance ? 'bg-emerald-500' : 'bg-muted-foreground'}`} />
-            <span>{isArabic ? 'تمرير تلقائي' : 'Auto-Advance'}</span>
-          </button>
-
-          {/* Manager Perspective Switcher */}
-          {isManager && (
-            <div
-              className="flex items-center rounded-lg border border-border/40 bg-muted/30 p-0.5"
-              role="radiogroup"
-              aria-label={isArabic ? 'عدسة الدور' : 'Perspective Mode'}
+            <span className="text-[10px] font-medium text-muted-foreground tabular-nums">
+              {freshnessLabel() ?? (isArabic ? '…' : '…')}
+            </span>
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={refreshing}
+              aria-busy={refreshing}
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+              title={t('common.refresh')}
             >
-              <button
-                type="button"
-                onClick={() => onPerspectiveChange('operator')}
-                className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold transition-all ${
-                  perspective === 'operator'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <UserIcon className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{isArabic ? 'المشغل' : 'Operator'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onPerspectiveChange('supervisor')}
-                className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold transition-all ${
-                  perspective === 'supervisor'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <ShieldCheckIcon className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{isArabic ? 'المشرف' : 'Supervisor'}</span>
-              </button>
-            </div>
-          )}
+              <ArrowPathIcon className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
     </header>

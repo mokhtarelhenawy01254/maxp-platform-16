@@ -66,12 +66,10 @@ export function useAgentWorkspace() {
     normalizeWorkspaceTab(searchParams.get('tab')),
   );
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [perspective, setPerspective] = useState<PerspectiveMode>(() =>
-    isManager ? 'supervisor' : 'operator',
-  );
+  // العدسة تلقائية حسب الدور — لا مفتاح يدوي (توحيد قوائم التحكم مع باقي الموقع)
+  const perspective: PerspectiveMode = isManager ? 'supervisor' : 'operator';
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState<'recent' | 'oldest' | 'attempts'>('recent');
-  const [autoAdvance, setAutoAdvance] = useState(true);
 
   // Supervisor Dispatch State
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
@@ -85,6 +83,8 @@ export function useAgentWorkspace() {
   const [busyOrders, setBusyOrders] = useState<Record<string, OrderAction>>({});
   const [page, setPage] = useState(1);
   const [stats, setStats] = useState<WorkspaceStats | null>(null);
+  // آخر جلب ناجح — يغذي شارة «حدث قبل X» في الشريط العلوي
+  const [lastFetchedAt, setLastFetchedAt] = useState<number | null>(null);
   const [pagination, setPagination] = useState<WorkspacePagination>({
     total: 0,
     page: 1,
@@ -328,6 +328,7 @@ export function useAgentWorkspace() {
       // عند الاستبعاد المتعمد للإحصائيات (poll خفيف) نُبقي العدادات السابقة كما هي
 
       setFetchError(null);
+      setLastFetchedAt(Date.now());
     } catch (error: any) {
       if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || error?.message === 'canceled') {
         return;
@@ -392,7 +393,6 @@ export function useAgentWorkspace() {
 
   const advanceToNextOrder = useCallback(
     (currentId: string) => {
-      if (!autoAdvance) return;
       setOrders((current) => {
         const remaining = current.filter((o) => o.id !== currentId);
         if (remaining.length > 0) {
@@ -403,7 +403,7 @@ export function useAgentWorkspace() {
         return remaining;
       });
     },
-    [autoAdvance],
+    [],
   );
 
   const handleQuickAction = async (
@@ -790,14 +790,12 @@ export function useAgentWorkspace() {
     activeTab,
     selectTab,
     perspective,
-    setPerspective,
     searchQuery,
     setSearchQuery,
     handleSearchChange,
     sortOption,
     setSortOption,
-    autoAdvance,
-    setAutoAdvance,
+    lastFetchedAt,
     stats,
     pagination,
     page,

@@ -28,13 +28,11 @@ export const AgentWorkspace: React.FC = () => {
     activeTab,
     selectTab,
     perspective,
-    setPerspective,
     searchQuery,
     handleSearchChange,
     sortOption,
     setSortOption,
-    autoAdvance,
-    setAutoAdvance,
+    lastFetchedAt,
     stats,
     pagination,
     page,
@@ -92,17 +90,14 @@ export const AgentWorkspace: React.FC = () => {
         stats={stats}
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
-        perspective={perspective}
-        onPerspectiveChange={setPerspective}
         refreshing={refreshing}
         onRefresh={() => void fetchOrders({ silent: true })}
-        autoAdvance={autoAdvance}
-        onToggleAutoAdvance={() => setAutoAdvance(!autoAdvance)}
         sortOption={sortOption}
         onSortChange={(nextSort) => {
           setSortOption(nextSort);
           void fetchOrders({ silent: true, sort: nextSort });
         }}
+        lastFetchedAt={lastFetchedAt}
         isManager={isManager}
       />
 

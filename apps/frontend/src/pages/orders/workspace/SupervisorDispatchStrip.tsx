@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   InboxArrowDownIcon,
   BoltIcon,
   UsersIcon,
   ArrowPathIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from '@heroicons/react/24/outline';
 import { AgentWorkload } from './types';
 
@@ -29,9 +31,12 @@ export const SupervisorDispatchStrip: React.FC<SupervisorDispatchStripProps> = (
 }) => {
   const { i18n } = useTranslation();
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
+  // صف الموظفين قابل للطي: إفتراضيًا مطوي — مساحة التشغيل للمدير أهم من رؤية 12 زرًا دائمًا
+  const [teamExpanded, setTeamExpanded] = useState(false);
 
   const isUnassignedSelected = selectedAgentId === 'unassigned';
   const isAllSelected = selectedAgentId === null || selectedAgentId === 'all';
+  const hasActiveAgentFilter = Boolean(selectedAgentId) && !isUnassignedSelected;
 
   return (
     <div className="flex items-center justify-between gap-2 border-b border-border/40 bg-muted/20 px-3 py-1.5 backdrop-blur-sm sm:px-4">
@@ -73,55 +78,78 @@ export const SupervisorDispatchStrip: React.FC<SupervisorDispatchStripProps> = (
       {/* Vertical hairline divider */}
       <div className="hidden sm:block h-4 w-px bg-border/40 shrink-0 mx-1" aria-hidden="true" />
 
-      {/* Center & Right: Agent Workload Chips */}
-      <div className="flex flex-1 items-center justify-start sm:justify-end gap-1 overflow-x-auto ps-1 no-scrollbar">
-        {/* All Team chip */}
-        <button
-          type="button"
-          onClick={() => onSelectAgent(null)}
-          className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold whitespace-nowrap transition-all ${
-            isAllSelected
-              ? 'bg-foreground text-background shadow-xs'
-              : 'border border-border/40 text-muted-foreground hover:bg-muted/40 hover:text-foreground'
-          }`}
-        >
-          <UsersIcon className="h-3 w-3" />
-          <span>{isArabic ? 'فريق العمل' : 'All Team'}</span>
-        </button>
-
-        {loadingWorkload && agents.length === 0 && (
-          <span className="font-mono text-[11px] text-muted-foreground">…</span>
+      {/* Team toggle: chip يوسع صف الموظفين عند الحاجة */}
+      <button
+        type="button"
+        onClick={() => setTeamExpanded((v) => !v)}
+        aria-expanded={teamExpanded}
+        className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold whitespace-nowrap transition-all ${
+          teamExpanded || hasActiveAgentFilter
+            ? 'bg-foreground text-background shadow-xs'
+            : 'border border-border/40 text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+        }`}
+        title={isArabic ? 'عرض/إخفاء أحمال الفريق' : 'Toggle team workload chips'}
+      >
+        <UsersIcon className="h-3 w-3" />
+        <span>{isArabic ? `فريق العمل (${agents.length})` : `Team (${agents.length})`}</span>
+        {teamExpanded ? (
+          <ChevronUpIcon className="h-3 w-3" />
+        ) : (
+          <ChevronDownIcon className="h-3 w-3" />
         )}
+      </button>
 
-        {agents.map((agent) => {
-          const isSelected = selectedAgentId === agent.id;
-          return (
-            <button
-              key={agent.id}
-              type="button"
-              onClick={() => onSelectAgent(agent.id)}
-              className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold whitespace-nowrap transition-all ${
-                isSelected
-                  ? 'bg-primary text-primary-foreground shadow-xs'
-                  : 'border border-border/40 bg-background text-foreground hover:bg-muted/40'
-              }`}
-              title={`${agent.name} — ${agent.pendingCount} معلق، ${agent.todayConfirmedCount} مؤكد اليوم`}
-            >
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  agent.availability === 'offline' ? 'bg-zinc-400' : 'bg-emerald-500'
+      {/* Agent Workload Chips — تظهر فقط عند التوسيع أو وجود فلتر موظف نشط */}
+      {(teamExpanded || hasActiveAgentFilter) && (
+        <div className="flex flex-1 items-center justify-start sm:justify-end gap-1 overflow-x-auto ps-1 no-scrollbar">
+          {/* All Team chip */}
+          <button
+            type="button"
+            onClick={() => onSelectAgent(null)}
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold whitespace-nowrap transition-all ${
+              isAllSelected
+                ? 'bg-foreground text-background shadow-xs'
+                : 'border border-border/40 text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+            }`}
+          >
+            <UsersIcon className="h-3 w-3" />
+            <span>{isArabic ? 'الكل' : 'All'}</span>
+          </button>
+
+          {loadingWorkload && agents.length === 0 && (
+            <span className="font-mono text-[11px] text-muted-foreground">…</span>
+          )}
+
+          {agents.map((agent) => {
+            const isSelected = selectedAgentId === agent.id;
+            return (
+              <button
+                key={agent.id}
+                type="button"
+                onClick={() => onSelectAgent(agent.id)}
+                className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold whitespace-nowrap transition-all ${
+                  isSelected
+                    ? 'bg-primary text-primary-foreground shadow-xs'
+                    : 'border border-border/40 bg-background text-foreground hover:bg-muted/40'
                 }`}
-              />
-              <span className="truncate max-w-[90px]">{agent.name}</span>
-              <span className="font-mono text-[10px] font-bold tabular-nums opacity-85">
-                {agent.pendingCount}
-                <span className="opacity-60 font-normal"> / </span>
-                {agent.todayConfirmedCount}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+                title={`${agent.name} — ${agent.pendingCount} معلق، ${agent.todayConfirmedCount} مؤكد اليوم`}
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    agent.availability === 'offline' ? 'bg-zinc-400' : 'bg-emerald-500'
+                  }`}
+                />
+                <span className="truncate max-w-[90px]">{agent.name}</span>
+                <span className="font-mono text-[10px] font-bold tabular-nums opacity-85">
+                  {agent.pendingCount}
+                  <span className="opacity-60 font-normal"> / </span>
+                  {agent.todayConfirmedCount}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

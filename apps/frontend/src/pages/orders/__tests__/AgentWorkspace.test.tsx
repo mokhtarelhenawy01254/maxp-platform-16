@@ -441,8 +441,14 @@ describe("AgentWorkspace", () => {
 
     renderWorkspace();
 
-    // Verify unassigned button and agent name are rendered
-    await screen.findByText("Ahmed CS");
+    // Team strip collapsed by default: agent names hidden until expanded
+    // (test i18n mock uses language "en" → English labels)
+    const teamToggle = await screen.findByText(/Team \(1\)/);
+    expect(screen.queryByText("Ahmed CS")).not.toBeInTheDocument();
+
+    // Expanding reveals the workload chips
+    fireEvent.click(teamToggle);
+    expect(await screen.findByText("Ahmed CS")).toBeInTheDocument();
     expect(screen.getByText("(15)")).toBeInTheDocument();
   });
 

@@ -151,6 +151,13 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
             ? `معروض ${orders.length} من ${pagination.total || orders.length} طلب`
             : `Showing ${orders.length} of ${pagination.total || orders.length}`}
         </span>
+        <span
+          className="hidden items-center gap-1 sm:inline-flex"
+          title={isArabic ? 'تنقل بالكيبورد: j أو ↓ للطلب التالي، k أو ↑ للسابق، Enter لاختيار الصف' : 'Keyboard: j/↓ next, k/↑ previous, Enter to select'}
+        >
+          <kbd className="rounded border border-border/60 bg-background px-1 font-mono text-[9px]">j</kbd>
+          <kbd className="rounded border border-border/60 bg-background px-1 font-mono text-[9px]">k</kbd>
+        </span>
         {loadingMore && (
           <span className="flex items-center gap-1 text-primary">
             <ArrowPathIcon className="h-3 w-3 animate-spin" />
