@@ -1346,3 +1346,20 @@ model Occasion {
   @@index([nextRunAt])
   @@map("occasions")
 }
+
+/// Landing Pages (managed dynamically via lpAdminRoutes)
+model LpPage {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  title          String
+  componentName  String
+  sortOrder      Int      @default(0)
+  isActive       Boolean  @default(true)
+  bundleSlug     String?
+  activationType String?  @default("SINGLE")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("lp_pages")
+}
+

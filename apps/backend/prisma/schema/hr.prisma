@@ -796,6 +796,10 @@ model HRSettings {
   notificationRecipients        String?  @default("[]")
   aiNotificationTypes           String?  @default("[\"PROMOTION\", \"DEDUCTION\", \"WARNING\", \"KUDOS\", \"TRAINING\"]")
   aiNotificationTone            String   @default("PROFESSIONAL")
+  paidPermissionMinutesPerMonth Int?     @default(0)
+  permissionLeadDays            Int?     @default(2)
+  permissionWarningAfter         Int?     @default(4)
+  permissionExtraMode           String?  @default("deduct")
   createdAt                     DateTime @default(now())
   updatedAt                     DateTime @updatedAt
   company                       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
