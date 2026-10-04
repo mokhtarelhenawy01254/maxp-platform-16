@@ -79,13 +79,25 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
     return () => observer.disconnect();
   }, [pagination.pages, page, loadingMore, onLoadMore]);
 
+  // دقة الدقائق أساسية في الكول-سنتر: «منذ 7 د» معلومة تشغيلية، «الآن» لما كان
+  // أقل من دقيقة فقط — والقفز من «الآن» للساعات كان يمحو عمر الطلب في أول ساعة كاملة
   const formatTimeAgo = (dateStr: string) => {
-    const diffHours = (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60);
-    if (diffHours < 1) return isArabic ? 'الآن' : 'Just now';
-    if (diffHours < 24) return isArabic ? `منذ ${Math.floor(diffHours)} س` : `${Math.floor(diffHours)}h ago`;
+    const diffMinutes = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60));
+    if (diffMinutes < 1) return isArabic ? 'الآن' : 'Just now';
+    if (diffMinutes < 60) return isArabic ? `منذ ${diffMinutes} د` : `${diffMinutes}m ago`;
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return isArabic ? `منذ ${diffHours} س` : `${diffHours}h ago`;
     const days = Math.floor(diffHours / 24);
     return isArabic ? `منذ ${days} ي` : `${days}d ago`;
   };
+
+  const exactTimestamp = (dateStr: string) =>
+    new Date(dateStr).toLocaleString(isArabic ? 'ar-EG' : 'en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
 
   if (loading && orders.length === 0) {
     return (
@@ -216,7 +228,10 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
                     </span>
                   )}
                 </div>
-                <span className="text-[11px] font-mono text-muted-foreground">
+                <span
+                  className="text-[11px] font-mono text-muted-foreground"
+                  title={exactTimestamp(order.createdAt)}
+                >
                   {formatTimeAgo(order.createdAt)}
                 </span>
               </div>
