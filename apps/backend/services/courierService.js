@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { getJwtSecret } = require('../utils/jwtSecret');
 const { buildInstalledMarketplaceAppSettings } = require('../utils/marketplaceAppSettings');
-const { notifyRunDispatched, notifyFieldUpdate } = require('./courierNotificationService');
+const { notifyRunDispatched, notifyFieldUpdate, sendCourierNotification, COURIER_NOTIFICATION_EVENTS } = require('./courierNotificationService');
 
 const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'REMITTED'];
 
@@ -702,16 +702,25 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
 
   // 🔑 OTP delivery proof: when the fleet setting requires it and this parcel was
   // dispatched with a code, only the customer's code can mark it DELIVERED.
+  // Brute-force guard: 5 wrong attempts lock the parcel until a manager resends.
   if (isDelivered && shipment.otpHash) {
     const otpRequired = await isDeliveryOtpRequired(companyId);
     if (otpRequired) {
-      const providedOtp = String(otp || '').trim();
       const otpExpired = shipment.otpExpiresAt && new Date(shipment.otpExpiresAt) < new Date();
       if (otpExpired) {
         throw serviceError('انتهت صلاحية كود الاستلام — أعد إسناد الطرد لتوليد كود جديد', 409);
       }
+      if ((shipment.otpAttempts || 0) >= 5) {
+        throw serviceError('تم تجاوز عدد المحاولات المسموح بها — اطلب من المدير إعادة إرسال كود جديد', 429);
+      }
+      const providedOtp = String(otp || '').trim();
       if (!providedOtp || !bcrypt.compareSync(providedOtp, shipment.otpHash)) {
-        throw serviceError('كود الاستلام مطلوب وغير صحيح — اطلبه من العميل', 403);
+        await prisma.shipment.update({
+          where: { id: shipmentId },
+          data: { otpAttempts: { increment: 1 } }
+        });
+        const attemptsLeft = Math.max(0, 5 - ((shipment.otpAttempts || 0) + 1));
+        throw serviceError(`كود الاستلام غير صحيح — اطلبه من العميل (باقي ${attemptsLeft} محاولة)`, 403);
       }
     }
   }
@@ -724,6 +733,7 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, runId, status,
     cash = Math.max(0, orderTotal > 0 ? Math.min(cash, orderTotal) : cash);
     updateData.collectedAmount = cash;
     updateData.collectedAt = new Date();
+    updateData.otpAttempts = 0;
   } else if (normalizedStatus === 'RETURNED' || normalizedStatus === 'FAILED') {
     updateData.status = 'RETURNED';
     const priorCollected = normalizeAmount(shipment.collectedAmount);
@@ -914,14 +924,13 @@ async function settleDeliveryRun(companyId, runId, { treasuryAccountId, actualCa
         throw new Error('حساب الخزينة المحدد غير موجود أو غير تابع للشركة');
       }
 
-      const previousBalance = normalizeAmount(account.balance);
-      const newBalance = previousBalance + cashAmount;
-
-      // Update TreasuryAccount balance
-      await tx.treasuryAccount.update({
+      // Atomic balance move — two runs settling concurrently on the same treasury
+      // account must never read-then-write over each other's deposit.
+      const updatedAccount = await tx.treasuryAccount.update({
         where: { id: treasuryAccountId },
-        data: { balance: newBalance }
+        data: { balance: { increment: cashAmount } }
       });
+      const newBalance = normalizeAmount(updatedAccount.balance);
 
       // Create TreasuryTransaction audit record
       treasuryTransaction = await tx.treasuryTransaction.create({
@@ -1298,13 +1307,14 @@ async function payCourierCommissions(companyId, courierId, { treasuryAccountId, 
         throw serviceError('حساب الخزينة المحدد غير موجود أو غير تابع للشركة', 400);
       }
 
-      const previousBalance = normalizeAmount(account.balance);
-      const newBalance = previousBalance - total;
-      await tx.treasuryAccount.update({
+      // Atomic balance move — concurrent payouts on the same treasury account
+      // must never read-then-write over each other's withdrawal.
+      const updatedAccount = await tx.treasuryAccount.update({
         where: { id: treasuryAccountId },
-        data: { balance: newBalance }
+        data: { balance: { decrement: total } }
       });
-      treasuryTransaction = await tx.treasuryTransaction.create({
+      const newBalance = normalizeAmount(updatedAccount.balance);
+      await tx.treasuryTransaction.create({
         data: {
           companyId,
           treasuryAccountId,
@@ -1480,6 +1490,66 @@ async function reassignShipments(companyId, { shipmentIds, toCourierId, userId }
   };
 }
 
+/**
+ * Regenerate + resend the delivery OTP for a parcel (managers). This is the escape
+ * hatch when the WhatsApp message failed (no session, wrong number) and the courier
+ * is locked out of marking the parcel DELIVERED — without it, an OTP parcel whose
+ * message was lost can never be delivered. Runs synchronously so the manager sees
+ * the real send result, resets the wrong-attempt counter, and voids the old code.
+ */
+async function resendShipmentOtp(companyId, { shipmentId, userId }) {
+  const prisma = getSharedPrismaClient();
+
+  const shipment = await prisma.shipment.findFirst({
+    where: { id: shipmentId, companyId, carrierType: 'INTERNAL_COURIER' },
+    include: {
+      order: { select: { id: true, orderNumber: true, customerName: true, customerPhone: true, total: true } },
+      courier: { select: { id: true, name: true, phone: true } },
+      deliveryRun: { select: { id: true, status: true, runNumber: true } }
+    }
+  });
+
+  if (!shipment) {
+    throw serviceError('الشحنة غير موجودة', 404);
+  }
+  if (shipment.settlementStatus === 'SETTLED' || LOCKED_RUN_STATUSES.includes(shipment.deliveryRun?.status || '')) {
+    throw serviceError('لا يمكن إعادة إرسال كود لشحنة بعد تسويتها ماليًا أو إلغاء مأموريتها', 409);
+  }
+  if (DELIVERED_STATUSES.includes(shipment.status)) {
+    throw serviceError('الطرد تم تسليمه بالفعل — لا حاجة لكود جديد', 409);
+  }
+  if (!shipment.order?.customerPhone) {
+    throw serviceError('الطلب بلا رقم هاتف — لا يمكن إرسال كود استلام', 400);
+  }
+
+  const otp = String(crypto.randomInt(1000, 10000));
+  await prisma.shipment.update({
+    where: { id: shipment.id },
+    data: {
+      otpHash: bcrypt.hashSync(otp, 10),
+      otpExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      otpAttempts: 0
+    }
+  });
+
+  // Synchronous send so the manager sees the real result (not fire-and-forget)
+  const sendResult = await sendCourierNotification({
+    companyId,
+    eventType: COURIER_NOTIFICATION_EVENTS.OUT_FOR_DELIVERY,
+    order: shipment.order,
+    courier: shipment.courier,
+    amount: shipment.order?.total,
+    otpLine: `🔑 كود الاستلام الجديد: ${otp} — اعرضه للكابتن عند استلام الطلب`
+  });
+
+  return {
+    shipmentId: shipment.id,
+    runNumber: shipment.deliveryRun?.runNumber || null,
+    sent: Boolean(sendResult?.success),
+    reason: sendResult?.reason || sendResult?.error || (sendResult?.success ? 'sent' : 'unknown')
+  };
+}
+
 module.exports = {
   listCouriers,
   getCourierById,
@@ -1497,5 +1567,6 @@ module.exports = {
   listCourierCommissions,
   payCourierCommissions,
   getCouriersPerformance,
-  reassignShipments
+  reassignShipments,
+  resendShipmentOtp
 };

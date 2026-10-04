@@ -444,6 +444,36 @@ async function reassignShipments(req, res) {
   }
 }
 
+/**
+ * POST /api/v1/couriers/shipments/:shipmentId/resend-otp
+ * Regenerate + resend the delivery OTP (managers) — the escape hatch when the
+ * WhatsApp message failed and the courier is locked out of delivering.
+ */
+async function resendOtp(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const result = await courierService.resendShipmentOtp(companyId, {
+      shipmentId: req.params.shipmentId,
+      userId: req.user?.id
+    });
+
+    res.json({
+      success: true,
+      data: result,
+      message: result.sent
+        ? 'تم إرسال كود استلام جديد للعميل على واتساب'
+        : `تعذر إرسال الرسالة (${result.reason}) — الكود الجديد صالح لكن وصل العميل غير مضمون، تأكد من جلسة الواتساب`
+    });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in resendOtp:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || 'تعذر إعادة إرسال كود الاستلام' });
+  }
+}
+
 module.exports = {
   getSummary,
   listCouriers,
@@ -461,5 +491,6 @@ module.exports = {
   listCommissions,
   payCommissions,
   getPerformance,
-  reassignShipments
+  reassignShipments,
+  resendOtp
 };

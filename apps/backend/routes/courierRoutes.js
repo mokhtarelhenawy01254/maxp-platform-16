@@ -52,6 +52,14 @@ router.post(
   courierController.reassignShipments
 );
 
+// Regenerate + resend a parcel's delivery OTP (managers) — escape hatch when the
+// customer's WhatsApp message failed and the courier is locked out of delivering
+router.post(
+  '/shipments/:shipmentId/resend-otp',
+  verifyToken.requireRole(MANAGE_ROLES),
+  courierController.resendOtp
+);
+
 // Delivery Runs (Manifests)
 router.post(
   '/runs',

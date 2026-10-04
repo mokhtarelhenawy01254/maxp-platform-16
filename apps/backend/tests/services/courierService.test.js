@@ -1,9 +1,16 @@
 const courierService = require('../../services/courierService');
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
+const bcrypt = require('bcryptjs');
 
 jest.mock('../../services/courierNotificationService', () => ({
   notifyRunDispatched: jest.fn(),
   notifyFieldUpdate: jest.fn(),
+  sendCourierNotification: jest.fn().mockResolvedValue({ success: true }),
+  COURIER_NOTIFICATION_EVENTS: {
+    OUT_FOR_DELIVERY: 'courier_out_for_delivery',
+    DELIVERED: 'courier_delivered',
+    RETURNED: 'courier_returned'
+  },
 }));
 
 jest.mock('../../services/sharedDatabase', () => {
@@ -45,7 +52,11 @@ jest.mock('../../services/sharedDatabase', () => {
       findFirst: jest.fn(),
     },
     order: {
+      update: jest.fn(),
       updateMany: jest.fn(),
+    },
+    orderStatusHistory: {
+      create: jest.fn(),
     },
     courierCommission: {
       findMany: jest.fn(),
@@ -154,10 +165,11 @@ describe('Courier Service Module Unit Tests', () => {
         userId: 'admin-1',
       });
 
-      // Verify treasury balance was updated (1000 + 500 = 1500)
+      // Verify treasury balance moved ATOMICALLY (increment, not read-then-write —
+      // two runs settling concurrently on one account must not clobber each other)
       expect(prisma.treasuryAccount.update).toHaveBeenCalledWith({
         where: { id: 'acc-treasury-cairo' },
-        data: { balance: 1500 },
+        data: { balance: { increment: 500 } },
       });
 
       // Verify TreasuryTransaction was created
@@ -271,6 +283,176 @@ describe('Courier Service Module Unit Tests', () => {
       await expect(
         courierService.createDeliveryRun(companyId, { courierId: 'courier-9', shipmentIds: ['ship-settled'] })
       ).rejects.toThrow('لا يمكن إسناد شحنات مسوّاة ماليًا أو منتهية لرحلة جديدة');
+    });
+  });
+
+  describe('delivery OTP brute-force guard', () => {
+    const companyId = 'comp-otp';
+
+    const otpShipment = (attempts) => ({
+      id: 'ship-otp',
+      companyId,
+      status: 'OUT_FOR_DELIVERY',
+      settlementStatus: 'PENDING',
+      collectedAmount: 0,
+      deliveryRunId: 'run-otp',
+      otpHash: bcrypt.hashSync('1234', 10),
+      otpExpiresAt: new Date(Date.now() + 86400000),
+      otpAttempts: attempts,
+      deliveryRun: { id: 'run-otp', status: 'DISPATCHED' },
+      courier: { id: 'courier-1', pinHash: null, name: 'كابتن', phone: '010' },
+      order: { id: 'o1', status: 'OUT_FOR_DELIVERY', total: 500 }
+    });
+
+    const enableOtp = () => prisma.companyApp.findFirst.mockResolvedValue({
+      settings: { fieldWorkflow: { requireDeliveryOtp: true } }
+    });
+
+    beforeEach(() => {
+      enableOtp();
+    });
+
+    it('7. counts a wrong code as an attempt and tells the courier how many are left', async () => {
+      prisma.shipment.findFirst.mockResolvedValueOnce(otpShipment(0));
+      prisma.shipment.update.mockResolvedValueOnce({});
+
+      await expect(
+        courierService.updateDeliveryRunShipment(companyId, {
+          shipmentId: 'ship-otp', runId: 'run-otp', status: 'DELIVERED', otp: '9999', collectedAmount: 500
+        })
+      ).rejects.toThrow('باقي 4 محاولة');
+
+      expect(prisma.shipment.update).toHaveBeenCalledWith({
+        where: { id: 'ship-otp' },
+        data: { otpAttempts: { increment: 1 } },
+      });
+    });
+
+    it('8. locks the parcel after 5 wrong attempts until a manager resends', async () => {
+      prisma.shipment.findFirst.mockResolvedValueOnce(otpShipment(5));
+
+      await expect(
+        courierService.updateDeliveryRunShipment(companyId, {
+          shipmentId: 'ship-otp', runId: 'run-otp', status: 'DELIVERED', otp: '1234', collectedAmount: 500
+        })
+      ).rejects.toThrow('تم تجاوز عدد المحاولات المسموح بها');
+    });
+
+    it('9. accepts the correct code and resets the attempt counter', async () => {
+      prisma.shipment.findFirst.mockResolvedValueOnce(otpShipment(3));
+      prisma.shipment.update.mockResolvedValueOnce({ id: 'ship-otp', status: 'DELIVERED' });
+      prisma.order.update.mockResolvedValueOnce({});
+      prisma.orderStatusHistory.create.mockResolvedValueOnce({});
+      prisma.shipment.count.mockResolvedValueOnce(0);
+      prisma.deliveryRun.update.mockResolvedValueOnce({});
+
+      const result = await courierService.updateDeliveryRunShipment(companyId, {
+        shipmentId: 'ship-otp', runId: 'run-otp', status: 'DELIVERED', otp: '1234', collectedAmount: 500
+      });
+
+      expect(result.status).toBe('DELIVERED');
+      expect(prisma.shipment.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'ship-otp' },
+          data: expect.objectContaining({ status: 'DELIVERED', otpAttempts: 0 }),
+        })
+      );
+    });
+  });
+
+  describe('resendShipmentOtp (manager escape hatch)', () => {
+    const companyId = 'comp-resend';
+
+    it('10. regenerates the code, resets attempts, and reports the real send result', async () => {
+      const { sendCourierNotification } = require('../../services/courierNotificationService');
+
+      prisma.shipment.findFirst.mockResolvedValueOnce({
+        id: 'ship-r',
+        companyId,
+        status: 'DELAYED',
+        settlementStatus: 'PENDING',
+        deliveryRun: { id: 'run-r', status: 'DISPATCHED', runNumber: 'RUN-R-1' },
+        order: { id: 'o-r', orderNumber: 'ORD-R', customerName: 'عميل', customerPhone: '01234567890', total: 400 },
+        courier: { id: 'c-r', name: 'كابتن', phone: '010' }
+      });
+      prisma.shipment.update.mockResolvedValueOnce({});
+
+      const result = await courierService.resendShipmentOtp(companyId, { shipmentId: 'ship-r', userId: 'admin-1' });
+
+      expect(result.sent).toBe(true);
+      expect(prisma.shipment.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'ship-r' },
+          data: expect.objectContaining({ otpHash: expect.any(String), otpAttempts: 0, otpExpiresAt: expect.any(Date) }),
+        })
+      );
+      expect(sendCourierNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ eventType: 'courier_out_for_delivery', companyId })
+      );
+    });
+
+    it('11. refuses resending for already-settled parcels', async () => {
+      prisma.shipment.findFirst.mockResolvedValueOnce({
+        id: 'ship-s',
+        companyId,
+        status: 'DELIVERED',
+        settlementStatus: 'SETTLED',
+        deliveryRun: { id: 'run-s', status: 'SETTLED', runNumber: 'RUN-S-1' },
+        order: { id: 'o-s', customerPhone: '01234567890', total: 100 },
+        courier: { id: 'c-s', name: 'كابتن', phone: '010' }
+      });
+
+      await expect(
+        courierService.resendShipmentOtp(companyId, { shipmentId: 'ship-s' })
+      ).rejects.toThrow('لا يمكن إعادة إرسال كود لشحنة بعد تسويتها ماليًا');
+    });
+  });
+
+  describe('payCourierCommissions payout flow', () => {
+    const companyId = 'comp-pay';
+
+    it('12. pays DUE commissions with an atomic treasury decrement and marks them PAID', async () => {
+      prisma.courier.findFirst.mockResolvedValueOnce({ id: 'courier-p', companyId, name: 'كابتن العمولة' });
+      prisma.courierCommission.findMany.mockResolvedValueOnce([
+        { id: 'cc1', amount: 30 },
+        { id: 'cc2', amount: 30 },
+      ]);
+      prisma.treasuryAccount.findFirst.mockResolvedValueOnce({ id: 'acc-p', companyId, balance: 1000 });
+      prisma.treasuryAccount.update.mockResolvedValueOnce({ id: 'acc-p', balance: 940 });
+      prisma.treasuryTransaction.create.mockResolvedValueOnce({ id: 'tx-p' });
+      prisma.courierCommission.updateMany.mockResolvedValueOnce({ count: 2 });
+
+      const result = await courierService.payCourierCommissions(companyId, 'courier-p', {
+        treasuryAccountId: 'acc-p',
+        userId: 'admin-1'
+      });
+
+      expect(result.total).toBe(60);
+      expect(result.paidCount).toBe(2);
+      expect(prisma.treasuryAccount.update).toHaveBeenCalledWith({
+        where: { id: 'acc-p' },
+        data: { balance: { decrement: 60 } },
+      });
+      expect(prisma.treasuryTransaction.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ type: 'WITHDRAWAL', runningBalance: 940, amount: 60 }),
+        })
+      );
+      expect(prisma.courierCommission.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ status: 'DUE' }),
+          data: expect.objectContaining({ status: 'PAID' }),
+        })
+      );
+    });
+
+    it('13. refuses payout when nothing is due', async () => {
+      prisma.courier.findFirst.mockResolvedValueOnce({ id: 'courier-p', companyId, name: 'كابتن' });
+      prisma.courierCommission.findMany.mockResolvedValueOnce([]);
+
+      await expect(
+        courierService.payCourierCommissions(companyId, 'courier-p', {})
+      ).rejects.toThrow('لا توجد مستحقات غير مدفوعة لهذا المندوب');
     });
   });
 });

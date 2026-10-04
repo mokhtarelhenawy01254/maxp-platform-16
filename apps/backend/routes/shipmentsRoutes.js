@@ -292,6 +292,12 @@ router.get('/', verifyToken.authenticateToken, blockCourierMobileToken, async (r
             },
           },
         },
+        // 🛡️ Bounded (was unbounded — every list read streamed the company's ENTIRE
+        // shipment history just to classify stage counters in JS). Stage counters now
+        // reflect the latest 5,000 shipments of the filter; summary.totalShipments
+        // still comes from the exact count so totals never lie.
+        orderBy: { createdAt: 'desc' },
+        take: 5000,
       }),
     ]);
 
