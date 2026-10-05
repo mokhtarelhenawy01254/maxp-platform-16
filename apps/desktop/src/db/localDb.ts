@@ -263,6 +263,23 @@ class LocalDatabase {
     return this.dailyStatsMap[date] || null;
   }
 
+  getDailyStatsRange(startDate: string, endDate: string): any {
+    const keys = Object.keys(this.dailyStatsMap).filter((d) => d >= startDate && d <= endDate);
+    if (keys.length === 0) return null;
+    return {
+      date: `${startDate} to ${endDate}`,
+      startDate,
+      endDate,
+      total_active_seconds: keys.reduce((s, k) => s + (this.dailyStatsMap[k].total_active_seconds || 0), 0),
+      total_idle_seconds: keys.reduce((s, k) => s + (this.dailyStatsMap[k].total_idle_seconds || 0), 0),
+      total_break_seconds: keys.reduce((s, k) => s + (this.dailyStatsMap[k].total_break_seconds || 0), 0),
+      total_break_count: keys.reduce((s, k) => s + (this.dailyStatsMap[k].total_break_count || 0), 0),
+      total_mouse_events: keys.reduce((s, k) => s + (this.dailyStatsMap[k].total_mouse_events || 0), 0),
+      total_keyboard_events: keys.reduce((s, k) => s + (this.dailyStatsMap[k].total_keyboard_events || 0), 0),
+      days_count: keys.length,
+    };
+  }
+
   getAllDailyStatsKeys(): string[] {
     return Object.keys(this.dailyStatsMap).sort().reverse();
   }

@@ -15,8 +15,10 @@ async function getSummary(req, res) {
     const employeeId = isSelf ? (req.user.employeeId || userId) : requestedId;
     const alternateId = isSelf ? userId : null;
     const date = req.query.date || new Date().toISOString().split('T')[0];
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
     
-    const summary = await monitorService.getDailySummary(companyId, employeeId, date, alternateId);
+    const summary = await monitorService.getDailySummary(companyId, employeeId, date, alternateId, startDate, endDate);
     return res.status(200).json({ data: summary });
   } catch (error) {
     console.error('Error in getSummary:', error);
@@ -59,8 +61,10 @@ async function getTeamOverview(req, res) {
     }
 
     const date = req.query.date || new Date().toISOString().split('T')[0];
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
     
-    const overview = await monitorService.getTeamOverview(companyId, date);
+    const overview = await monitorService.getTeamOverview(companyId, date, startDate, endDate);
     return res.status(200).json({ data: overview });
   } catch (error) {
     console.error('Error in getTeamOverview:', error);

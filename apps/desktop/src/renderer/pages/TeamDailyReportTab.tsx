@@ -39,8 +39,36 @@ interface MemberDay {
 }
 
 type SortKey = 'completed' | 'active' | 'productivity' | 'break' | 'name';
+type PeriodMode = 'day' | 'range';
+type RangePreset = 'this_week' | '7days' | 'this_month' | '30days' | 'custom';
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
+
+const getYesterdayStr = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+};
+
+const getDaysAgoStr = (days: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+};
+
+const getThisWeekStartStr = () => {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = (day + 1) % 7;
+  d.setDate(d.getDate() - diff);
+  return d.toISOString().slice(0, 10);
+};
+
+const getThisMonthStartStr = () => {
+  const d = new Date();
+  d.setDate(1);
+  return d.toISOString().slice(0, 10);
+};
 
 const addDays = (dateStr: string, days: number): string => {
   const d = new Date(`${dateStr}T12:00:00`);
@@ -80,9 +108,27 @@ const formatDayLabel = (dateStr: string): string => {
   }
 };
 
+const formatShortDate = (dateStr: string): string => {
+  try {
+    const d = new Date(`${dateStr}T12:00:00`);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('ar-EG-u-nu-latn', {
+      day: 'numeric',
+      month: 'short',
+    });
+  } catch {
+    return dateStr;
+  }
+};
+
 export const TeamDailyReportTab: React.FC = () => {
   const { mode } = useTheme();
-  const [date, setDate] = useState<string>(todayStr());
+  const [periodMode, setPeriodMode] = useState<PeriodMode>('day');
+  const [singleDate, setSingleDate] = useState<string>(todayStr());
+  const [rangePreset, setRangePreset] = useState<RangePreset>('this_week');
+  const [customRangeStart, setCustomRangeStart] = useState<string>(getDaysAgoStr(7));
+  const [customRangeEnd, setCustomRangeEnd] = useState<string>(todayStr());
+
   const [members, setMembers] = useState<MemberDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,14 +137,71 @@ export const TeamDailyReportTab: React.FC = () => {
   const [sortAsc, setSortAsc] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const isToday = date === todayStr();
+  const activePeriod = useMemo(() => {
+    const today = todayStr();
+    if (periodMode === 'day') {
+      const isToday = singleDate === today;
+      const isYesterday = singleDate === getYesterdayStr();
+      let label = formatDayLabel(singleDate);
+      if (isToday) label = `اليوم (${formatDayLabel(today)})`;
+      else if (isYesterday) label = `أمس (${formatDayLabel(singleDate)})`;
+      return {
+        startDate: singleDate,
+        endDate: singleDate,
+        isRange: false,
+        isToday,
+        label,
+      };
+    } else {
+      let start = today;
+      let end = today;
+      let label = '';
+      switch (rangePreset) {
+        case 'this_week':
+          start = getThisWeekStartStr();
+          end = today;
+          label = `هذا الأسبوع (${formatShortDate(start)} ← ${formatShortDate(end)})`;
+          break;
+        case '7days':
+          start = getDaysAgoStr(7);
+          end = today;
+          label = `آخر 7 أيام (${formatShortDate(start)} ← ${formatShortDate(end)})`;
+          break;
+        case 'this_month':
+          start = getThisMonthStartStr();
+          end = today;
+          label = `هذا الشهر (${formatShortDate(start)} ← ${formatShortDate(end)})`;
+          break;
+        case '30days':
+          start = getDaysAgoStr(30);
+          end = today;
+          label = `آخر 30 يوم (${formatShortDate(start)} ← ${formatShortDate(end)})`;
+          break;
+        case 'custom':
+        default:
+          start = customRangeStart || getDaysAgoStr(7);
+          end = customRangeEnd || today;
+          label = `فترة مخصصة (${formatShortDate(start)} ← ${formatShortDate(end)})`;
+          break;
+      }
+      return {
+        startDate: start,
+        endDate: end,
+        isRange: true,
+        isToday: false,
+        label,
+      };
+    }
+  }, [periodMode, singleDate, rangePreset, customRangeStart, customRangeEnd]);
 
-  const loadData = useCallback(async (showSpinner = false, targetDate?: string) => {
-    const d = targetDate || date;
+  const loadData = useCallback(async (showSpinner = false) => {
     if (showSpinner) setLoading(true);
     try {
       setError(null);
-      const res = await window.electronAPI.getTeamOverview(d);
+      const res = await window.electronAPI.getTeamOverview(
+        activePeriod.startDate,
+        activePeriod.isRange ? activePeriod.endDate : undefined
+      );
       if (res?.success && Array.isArray(res.data)) {
         const mapped: MemberDay[] = res.data.map((item: any) => {
           const emp = item.employee || {};
@@ -138,22 +241,22 @@ export const TeamDailyReportTab: React.FC = () => {
       }
     } catch (err: any) {
       console.warn('[TeamDailyReportTab] load error:', err);
-      setError('تعذر تحميل يومية الفريق — تحقق من الاتصال بالسيرفر.');
+      setError('تعذر تحميل تقرير الفريق — تحقق من الاتصال بالسيرفر.');
     } finally {
       if (showSpinner) setLoading(false);
     }
-  }, [date]);
+  }, [activePeriod.startDate, activePeriod.endDate, activePeriod.isRange]);
 
   useEffect(() => {
     loadData(true);
-  }, [date, loadData]);
+  }, [loadData]);
 
-  // Historical days are frozen — poll only while viewing today
+  // Historical days or ranges are frozen — poll only while viewing today
   useEffect(() => {
-    if (!isToday) return;
+    if (!activePeriod.isToday) return;
     const poll = setInterval(() => loadData(false), 60_000);
     return () => clearInterval(poll);
-  }, [isToday, loadData]);
+  }, [activePeriod.isToday, loadData]);
 
   const filteredMembers = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -200,13 +303,15 @@ export const TeamDailyReportTab: React.FC = () => {
   };
 
   const handleCopyStandup = () => {
-    const dateLabel = formatDayLabel(date);
+    const periodTitle = activePeriod.isRange
+      ? `ملخص إنتاجية الفريق — ${activePeriod.label}`
+      : `يومية الفريق — ${activePeriod.label}`;
     const fmtH = (sec: number) => {
       const h = Math.floor(sec / 3600);
       const m = Math.floor((sec % 3600) / 60);
       return h > 0 ? `${h}س ${m}د` : `${m}د`;
     };
-    let text = `*يومية الفريق — ${dateLabel}*\n`;
+    let text = `*${periodTitle}*\n`;
     text += `المنجز: ${totals.completed} مهمة • موثق: ${totals.clockH.toFixed(1)} ساعة • متوسط الإنتاجية: ${totals.avgProd}%\n\n`;
     filteredMembers.forEach((m) => {
       text += `• *${m.name}* — منجز: ${m.completedCount} | عمل فعلي: ${fmtH(m.activeSeconds)}`;
@@ -220,7 +325,7 @@ export const TeamDailyReportTab: React.FC = () => {
 
   const handleExportCsv = () => {
     const headers = [
-      'الموظف', 'القسم', 'منجز اليوم', 'قيد العمل', 'متأخرة',
+      'الموظف', 'القسم', activePeriod.isRange ? 'المنجز في الفترة' : 'منجز اليوم', 'قيد العمل', 'متأخرة',
       'حضور (ساعة)', 'عمل فعلي (ساعة)', 'بريك (دقيقة)', 'عدد البريكات', 'سكون (دقيقة)',
       'دخول', 'خروج', 'أول نشاط بعد البصمة (دقيقة)', 'الإنتاجية %', 'أكثر تطبيق',
     ];
@@ -246,7 +351,9 @@ export const TeamDailyReportTab: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `MaxP_Team_Daily_${date}.csv`;
+    link.download = activePeriod.isRange
+      ? `MaxP_Team_Summary_${activePeriod.startDate}_to_${activePeriod.endDate}.csv`
+      : `MaxP_Team_Daily_${activePeriod.startDate}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -254,70 +361,163 @@ export const TeamDailyReportTab: React.FC = () => {
   const sortIndicator = (key: SortKey) =>
     sortKey === key ? (sortAsc ? ' ↑' : ' ↓') : '';
 
-  const renderPresence = (m: MemberDay) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-      <span style={styles.num}>
-        {formatClock(m.clockInTime)} ← {formatClock(m.clockOutTime)}
-      </span>
-      {m.lateStartMinutes > 5 && (
-        <span
-          title={`أول نشاط فعلي على الجهاز بدأ بعد ${m.lateStartMinutes} دقيقة من بصمة الحضور — مؤشر مراقبة (وقت تسخين) ولا يُحسب خصماً على الراتب`}
-          style={{ ...styles.miniBadge, color: '#f59e0b', borderColor: 'rgba(245,158,11,0.35)' }}
-        >
-          {m.lateStartMinutes} د بدون نشاط بعد البصمة
+  const renderPresence = (m: MemberDay) => {
+    if (activePeriod.isRange) {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <span style={styles.num}>
+            {formatDuration(m.clockSeconds)}
+          </span>
+          <span style={styles.memberMeta}>إجمالي التوثيق</span>
+        </div>
+      );
+    }
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <span style={styles.num}>
+          {formatClock(m.clockInTime)} ← {formatClock(m.clockOutTime)}
         </span>
-      )}
-      {m.hasMissingClockOut && (
-        <span style={{ ...styles.miniBadge, color: 'var(--text-muted)', borderColor: 'var(--border-default)' }}>
-          بدون بصمة خروج
-        </span>
-      )}
-    </div>
-  );
+        {m.lateStartMinutes > 5 && (
+          <span
+            title={`أول نشاط فعلي على الجهاز بدأ بعد ${m.lateStartMinutes} دقيقة من بصمة الحضور — مؤشر مراقبة (وقت تسخين) ولا يُحسب خصماً على الراتب`}
+            style={{ ...styles.miniBadge, color: '#f59e0b', borderColor: 'rgba(245,158,11,0.35)' }}
+          >
+            {m.lateStartMinutes} د بدون نشاط بعد البصمة
+          </span>
+        )}
+        {m.hasMissingClockOut && (
+          <span style={{ ...styles.miniBadge, color: 'var(--text-muted)', borderColor: 'var(--border-default)' }}>
+            بدون بصمة خروج
+          </span>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div style={styles.container}>
-      {/* Unified Header: Title + Date Navigation */}
+      {/* Unified Header: Title + Period Selector */}
       <div style={styles.headerStrip}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
           <div style={styles.headerIconBox}>
             <CalendarDays size={16} color="var(--accent-blue)" />
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={styles.headerTitle}>يومية الفريق</div>
-            <div style={styles.headerSubtitle}>{formatDayLabel(date)}{isToday ? ' — مباشر' : ''}</div>
+            <div style={styles.headerTitle}>
+              {activePeriod.isRange ? 'ملخص إنتاجية الفريق' : 'يومية الفريق'}
+            </div>
+            <div style={styles.headerSubtitle}>
+              {activePeriod.label}
+              {activePeriod.isToday ? ' — مباشر' : ''}
+            </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <button
-            onClick={() => setDate((d) => addDays(d, -1))}
-            style={styles.iconBtn}
-            title="اليوم السابق"
-            aria-label="اليوم السابق"
-          >
-            <ChevronRight size={14} />
-          </button>
-          <input
-            type="date"
-            value={date}
-            max={todayStr()}
-            onChange={(e) => e.target.value && setDate(e.target.value)}
-            style={{ ...styles.dateInput, colorScheme: mode } as React.CSSProperties}
-            aria-label="اختيار التاريخ"
-          />
-          <button
-            onClick={() => setDate((d) => (d < todayStr() ? addDays(d, 1) : d))}
-            disabled={isToday}
-            style={{ ...styles.iconBtn, opacity: isToday ? 0.4 : 1, cursor: isToday ? 'default' : 'pointer' }}
-            title="اليوم التالي"
-            aria-label="اليوم التالي"
-          >
-            <ChevronLeft size={14} />
-          </button>
-          {!isToday && (
-            <button onClick={() => setDate(todayStr())} style={styles.todayBtn}>اليوم</button>
+        {/* Mode Switcher & Date Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          {/* Mode Segment: Day vs Range */}
+          <div style={styles.segmentWrap}>
+            <button
+              onClick={() => setPeriodMode('day')}
+              style={{
+                ...styles.segmentBtn,
+                background: periodMode === 'day' ? 'var(--bg-elevated)' : 'transparent',
+                color: periodMode === 'day' ? 'var(--accent-blue)' : 'var(--text-muted)',
+                fontWeight: periodMode === 'day' ? 700 : 500,
+              }}
+            >
+              يوم محدد
+            </button>
+            <button
+              onClick={() => setPeriodMode('range')}
+              style={{
+                ...styles.segmentBtn,
+                background: periodMode === 'range' ? 'var(--bg-elevated)' : 'transparent',
+                color: periodMode === 'range' ? 'var(--accent-blue)' : 'var(--text-muted)',
+                fontWeight: periodMode === 'range' ? 700 : 500,
+              }}
+            >
+              فترة زمنية
+            </button>
+          </div>
+
+          {periodMode === 'day' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <button
+                onClick={() => setSingleDate((d) => addDays(d, -1))}
+                style={styles.iconBtn}
+                title="اليوم السابق"
+                aria-label="اليوم السابق"
+              >
+                <ChevronRight size={14} />
+              </button>
+              <input
+                type="date"
+                value={singleDate}
+                max={todayStr()}
+                onChange={(e) => e.target.value && setSingleDate(e.target.value)}
+                style={{ ...styles.dateInput, colorScheme: mode } as React.CSSProperties}
+                aria-label="اختيار التاريخ"
+              />
+              <button
+                onClick={() => setSingleDate((d) => (d < todayStr() ? addDays(d, 1) : d))}
+                disabled={activePeriod.isToday}
+                style={{
+                  ...styles.iconBtn,
+                  opacity: activePeriod.isToday ? 0.4 : 1,
+                  cursor: activePeriod.isToday ? 'default' : 'pointer',
+                }}
+                title="اليوم التالي"
+                aria-label="اليوم التالي"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              {!activePeriod.isToday && (
+                <button onClick={() => setSingleDate(todayStr())} style={styles.todayBtn}>
+                  اليوم
+                </button>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+              <select
+                value={rangePreset}
+                onChange={(e) => setRangePreset(e.target.value as RangePreset)}
+                style={styles.selectInput}
+                aria-label="اختيار الفترة الزمنية"
+              >
+                <option value="this_week">هذا الأسبوع</option>
+                <option value="7days">آخر 7 أيام</option>
+                <option value="this_month">هذا الشهر</option>
+                <option value="30days">آخر 30 يوم</option>
+                <option value="custom">فترة مخصصة…</option>
+              </select>
+
+              {rangePreset === 'custom' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={styles.rangeSep}>من</span>
+                  <input
+                    type="date"
+                    value={customRangeStart}
+                    max={customRangeEnd || todayStr()}
+                    onChange={(e) => e.target.value && setCustomRangeStart(e.target.value)}
+                    style={{ ...styles.dateInput, colorScheme: mode } as React.CSSProperties}
+                    aria-label="تاريخ البداية"
+                  />
+                  <span style={styles.rangeSep}>إلى</span>
+                  <input
+                    type="date"
+                    value={customRangeEnd}
+                    max={todayStr()}
+                    onChange={(e) => e.target.value && setCustomRangeEnd(e.target.value)}
+                    style={{ ...styles.dateInput, colorScheme: mode } as React.CSSProperties}
+                    aria-label="تاريخ النهاية"
+                  />
+                </div>
+              )}
+            </div>
           )}
+
           <button onClick={() => loadData(true)} style={styles.refreshBtn} title="تحديث" aria-label="تحديث">
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -327,7 +527,7 @@ export const TeamDailyReportTab: React.FC = () => {
       {/* KPI Ribbon */}
       <div style={styles.kpiRibbon}>
         <div style={styles.kpiPill}>
-          <span>موثق اليوم:</span>
+          <span>{activePeriod.isRange ? 'موثق الفترة:' : 'موثق اليوم:'}</span>
           <strong style={styles.num}>{totals.clockH.toFixed(1)} ساعة</strong>
         </div>
         <div style={styles.kpiPill}>
@@ -354,7 +554,7 @@ export const TeamDailyReportTab: React.FC = () => {
           <span>بريكات الفريق:</span>
           <strong style={styles.num}>{totals.breakMin} د</strong>
         </div>
-        {totals.late > 0 && (
+        {totals.late > 0 && !activePeriod.isRange && (
           <div
             style={styles.kpiPill}
             title="عدد من بدأ أول نشاط فعلي على جهازه بعد أكثر من 5 دقائق من بصمة الحضور"
@@ -386,7 +586,7 @@ export const TeamDailyReportTab: React.FC = () => {
             {copied ? <Check size={12} color="var(--text-inverse)" /> : <Copy size={12} color="var(--text-inverse)" />}
             <span style={{ color: 'var(--text-inverse)' }}>{copied ? 'تم النسخ!' : 'نسخ اليومية'}</span>
           </button>
-          <button onClick={handleExportCsv} style={styles.actionBtnGhost} title="تصدير يومية الفريق CSV">
+          <button onClick={handleExportCsv} style={styles.actionBtnGhost} title="تصدير تقرير الفريق CSV">
             <Download size={12} color="var(--text-muted)" />
             <span>تصدير CSV</span>
           </button>
@@ -398,11 +598,11 @@ export const TeamDailyReportTab: React.FC = () => {
       {/* Daily Ledger Table */}
       <div style={styles.tableWrap}>
         {loading && members.length === 0 ? (
-          <div style={styles.emptyState}>جاري جلب يومية الفريق…</div>
+          <div style={styles.emptyState}>جاري جلب بيانات الفريق…</div>
         ) : filteredMembers.length === 0 ? (
           <div style={styles.emptyState}>
             {members.length === 0
-              ? 'لا توجد بيانات موثقة لهذا اليوم — تأكد من اتصال أجهزة الفريق بتطبيق الديسك توب.'
+              ? 'لا توجد بيانات موثقة لهذه الفترة — تأكد من اتصال أجهزة الفريق بتطبيق الديسك توب.'
               : 'لا يوجد موظفون يطابقون البحث الحالي.'}
           </div>
         ) : (
@@ -413,7 +613,7 @@ export const TeamDailyReportTab: React.FC = () => {
                   الموظف{sortIndicator('name')}
                 </th>
                 <th style={{ ...styles.th, cursor: 'pointer', textAlign: 'center' }} onClick={() => toggleSort('completed')}>
-                  إنجاز اليوم{sortIndicator('completed')}
+                  {activePeriod.isRange ? 'إنجاز الفترة' : 'إنجاز اليوم'}{sortIndicator('completed')}
                 </th>
                 <th style={{ ...styles.th, cursor: 'pointer' }} onClick={() => toggleSort('active')}>
                   عمل فعلي{sortIndicator('active')}
@@ -576,6 +776,40 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--accent-blue)',
     cursor: 'pointer',
     fontFamily: 'inherit',
+  },
+  segmentWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 7,
+    padding: 2,
+    gap: 2,
+  },
+  segmentBtn: {
+    border: 'none',
+    borderRadius: 5,
+    padding: '3px 9px',
+    fontSize: 11,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  selectInput: {
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 6,
+    padding: '4px 8px',
+    fontSize: 11.5,
+    color: 'var(--text-primary)',
+    fontFamily: 'inherit',
+    outline: 'none',
+    cursor: 'pointer',
+  },
+  rangeSep: {
+    fontSize: 11,
+    color: 'var(--text-muted)',
+    fontWeight: 600,
   },
   refreshBtn: {
     display: 'inline-flex',

@@ -40,7 +40,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   endOvertime: (data?: { taskSummary?: string }) =>
     ipcRenderer.invoke('tracker:end-overtime', data),
   getShiftStatus: () => ipcRenderer.invoke('tracker:get-shift-status'),
-  getDailySummary: (date?: string) => ipcRenderer.invoke(CHANNELS.GET_DAILY_SUMMARY, date),
+  getDailySummary: (date?: string, endDate?: string) =>
+    ipcRenderer.invoke(CHANNELS.GET_DAILY_SUMMARY, date, endDate),
   getAppsSummary: (date?: string) => ipcRenderer.invoke(CHANNELS.GET_APPS_SUMMARY, date),
   getWebsitesSummary: (date?: string) => ipcRenderer.invoke(CHANNELS.GET_WEBSITES_SUMMARY, date),
   getAllDailyStatsKeys: () => ipcRenderer.invoke('tracker:get-all-daily-keys'),
@@ -81,8 +82,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('tasks:get-running-timer'),
   getCompanyActiveTimers: () =>
     ipcRenderer.invoke('tasks:get-company-active-timers'),
-  getTeamOverview: (date?: string) =>
-    ipcRenderer.invoke('monitor:get-team-overview', date),
+  getTeamOverview: (date?: string, endDate?: string) =>
+    ipcRenderer.invoke('monitor:get-team-overview', date, endDate),
   getAuthToken: () =>
     ipcRenderer.invoke('auth:get-token'),
   uploadTaskAttachment: (data: {

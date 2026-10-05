@@ -978,9 +978,36 @@ function registerIpcHandlers(): void {
     }
   });
 
-  ipcMain.handle(IPC_CHANNELS.GET_DAILY_SUMMARY, async (_, targetDate?: string) => {
+  ipcMain.handle(IPC_CHANNELS.GET_DAILY_SUMMARY, async (_, targetDate?: string, endDate?: string) => {
     const today = getLocalDateString();
     const dateToQuery = targetDate || today;
+
+    // Range query support
+    if (endDate && dateToQuery !== endDate) {
+      if (apiClient.isConfigured) {
+        try {
+          const serverSummary: any = await apiClient.getDailySummary(dateToQuery, endDate);
+          if (serverSummary) return serverSummary;
+        } catch (err: any) {
+          console.warn('[Main] Cloud range summary fallback notice:', err.message);
+        }
+      }
+      const localRange = localDb.getDailyStatsRange(dateToQuery, endDate);
+      if (localRange) return localRange;
+      return {
+        date: `${dateToQuery} to ${endDate}`,
+        startDate: dateToQuery,
+        endDate,
+        total_active_seconds: 0,
+        total_idle_seconds: 0,
+        total_break_seconds: 0,
+        total_break_count: 0,
+        total_mouse_events: 0,
+        total_keyboard_events: 0,
+        days_count: 0,
+      };
+    }
+
     let stored = localDb.getDailyStats(dateToQuery);
 
     const isToday = dateToQuery === today;
@@ -1229,9 +1256,9 @@ function registerIpcHandlers(): void {
     }
   });
 
-  ipcMain.handle('monitor:get-team-overview', async (_, date?: string) => {
+  ipcMain.handle('monitor:get-team-overview', async (_, date?: string, endDate?: string) => {
     try {
-      const data = await apiClient.getTeamOverview(date);
+      const data = await apiClient.getTeamOverview(date, endDate);
       return { success: true, data };
     } catch (err: any) {
       return { success: false, data: [], error: err.message };

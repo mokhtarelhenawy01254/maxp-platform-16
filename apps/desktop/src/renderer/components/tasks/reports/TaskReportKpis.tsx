@@ -14,6 +14,7 @@ interface TaskReportKpisProps {
   activeFilter: TaskExceptionFilter;
   onFilterChange: (filter: TaskExceptionFilter) => void;
   dateRange?: TaskDateRange;
+  periodLabel?: string;
 }
 
 export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
@@ -21,6 +22,7 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
   activeFilter,
   onFilterChange,
   dateRange = 'today',
+  periodLabel,
 }) => {
   const formatHours = (seconds: number): string => {
     const totalMinutes = Math.round(seconds / 60);
@@ -31,8 +33,12 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
   };
 
   const getTimerLabel = (): string => {
+    if (periodLabel) return `ساعات التايمر (${periodLabel})`;
     if (dateRange === 'today') return 'ساعات التايمر (اليوم)';
+    if (dateRange === 'yesterday') return 'ساعات التايمر (أمس)';
+    if (dateRange === 'this_week') return 'ساعات التايمر (هذا الأسبوع)';
     if (dateRange === '7days') return 'ساعات التايمر (7 أيام)';
+    if (dateRange === 'this_month') return 'ساعات التايمر (هذا الشهر)';
     if (dateRange === '30days') return 'ساعات التايمر (30 يوم)';
     return 'ساعات التايمر (الكل)';
   };

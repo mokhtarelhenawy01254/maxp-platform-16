@@ -690,7 +690,37 @@ class MonitorService {
     }
   }
 
-  async getDailySummary(companyId, employeeId, date, alternateEmployeeId = null) {
+  async getDailySummary(companyId, employeeId, date, alternateEmployeeId = null, startDate = null, endDate = null) {
+    if (startDate && endDate && startDate !== endDate) {
+      const startOfDay = new Date(`${startDate}T00:00:00.000Z`);
+      const endOfDay = new Date(`${endDate}T23:59:59.999Z`);
+      const ids = [employeeId, alternateEmployeeId].filter(Boolean);
+      const summaries = await this.prisma.monitorDailySummary.findMany({
+        where: {
+          companyId,
+          employeeId: ids.length > 1 ? { in: ids } : employeeId,
+          date: { gte: startOfDay, lte: endOfDay }
+        },
+        orderBy: { date: 'asc' }
+      });
+      if (!summaries || summaries.length === 0) return null;
+      return {
+        date: `${startDate} to ${endDate}`,
+        startDate,
+        endDate,
+        totalActiveSeconds: summaries.reduce((s, x) => s + (x.totalActiveSeconds || 0), 0),
+        totalIdleSeconds: summaries.reduce((s, x) => s + (x.totalIdleSeconds || 0), 0),
+        totalBreakSeconds: summaries.reduce((s, x) => s + (x.totalBreakSeconds || 0), 0),
+        totalBreaksCount: summaries.reduce((s, x) => s + (x.totalBreaksCount || 0), 0),
+        totalMouseEvents: summaries.reduce((s, x) => s + (x.totalMouseEvents || 0), 0),
+        totalKeyboardEvents: summaries.reduce((s, x) => s + (x.totalKeyboardEvents || 0), 0),
+        totalProductiveSeconds: summaries.reduce((s, x) => s + (x.totalProductiveSeconds || 0), 0),
+        totalUnproductiveSeconds: summaries.reduce((s, x) => s + (x.totalUnproductiveSeconds || 0), 0),
+        shiftEndedAt: summaries[summaries.length - 1]?.shiftEndedAt || null,
+        daysCount: summaries.length,
+      };
+    }
+
     const dateStr = typeof date === 'string' ? date.split('T')[0] : new Date(date).toISOString().split('T')[0];
     const targetDate = new Date(`${dateStr}T00:00:00.000Z`);
     let summary = await this.prisma.monitorDailySummary.findUnique({
@@ -1289,11 +1319,13 @@ class MonitorService {
     }
   }
 
-  async getTeamOverview(companyId, date) {
+  async getTeamOverview(companyId, date, startDate = null, endDate = null) {
     const dateStr = typeof date === 'string' ? date.split('T')[0] : new Date(date).toISOString().split('T')[0];
-    const startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
-    const endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
-    const isToday = dateStr === new Date().toISOString().split('T')[0];
+    const sDate = startDate || dateStr;
+    const eDate = endDate || dateStr;
+    const startOfDay = new Date(`${sDate}T00:00:00.000Z`);
+    const endOfDay = new Date(`${eDate}T23:59:59.999Z`);
+    const isToday = sDate === eDate && sDate === new Date().toISOString().split('T')[0];
 
     const [summaries, activeLogs, appUsages, webUsages, allCompanyTasks, createdTasks, attendances, deviceSessions, activeTimers, customCategories, pastSummaries] = await Promise.all([
       this.prisma.monitorDailySummary.findMany({

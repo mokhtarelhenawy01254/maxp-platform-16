@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ShieldCheck,
   MousePointer,
@@ -31,6 +31,9 @@ interface CockpitTabProps {
   isAdmin?: boolean;
 }
 
+type CockpitPeriodMode = 'day' | 'range';
+type CockpitRangePreset = 'this_week' | '7days' | 'this_month' | '30days' | 'custom';
+
 export const CockpitTab: React.FC<CockpitTabProps> = ({
   trackerState,
   dailySummary,
@@ -49,6 +52,46 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
     return `${year}-${month}-${day}`;
   };
 
+  const getYesterdayStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  const getDaysAgoStr = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  const getThisWeekStartStr = () => {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = (day + 1) % 7;
+    d.setDate(d.getDate() - diff);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  const getThisMonthStartStr = () => {
+    const d = new Date();
+    d.setDate(1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  const formatShortDate = (dateStr: string): string => {
+    try {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dt = new Date(y, m - 1, d, 12, 0, 0);
+      if (isNaN(dt.getTime())) return dateStr;
+      return dt.toLocaleDateString('ar-EG-u-nu-latn', {
+        day: 'numeric',
+        month: 'short',
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
   const parseLocalDate = (dateStr: string) => {
     const [y, m, d] = dateStr.split('-').map(Number);
     return new Date(y, m - 1, d, 12, 0, 0);
@@ -62,9 +105,66 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
   };
 
   const todayStr = trackerState?.currentDate || getTodayLocal();
+  const [periodMode, setPeriodMode] = useState<CockpitPeriodMode>('day');
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const [rangePreset, setRangePreset] = useState<CockpitRangePreset>('this_week');
+  const [customRangeStart, setCustomRangeStart] = useState<string>(getDaysAgoStr(7));
+  const [customRangeEnd, setCustomRangeEnd] = useState<string>(todayStr);
+
   const [historicalSummary, setHistoricalSummary] = useState<any>(null);
   const [loadingDate, setLoadingDate] = useState(false);
+
+  const activeRange = useMemo(() => {
+    let start = todayStr;
+    let end = todayStr;
+    let label = '';
+    switch (rangePreset) {
+      case 'this_week':
+        start = getThisWeekStartStr();
+        end = todayStr;
+        label = `هذا الأسبوع (${formatShortDate(start)} ← ${formatShortDate(end)})`;
+        break;
+      case '7days':
+        start = getDaysAgoStr(7);
+        end = todayStr;
+        label = `آخر 7 أيام (${formatShortDate(start)} ← ${formatShortDate(end)})`;
+        break;
+      case 'this_month':
+        start = getThisMonthStartStr();
+        end = todayStr;
+        label = `هذا الشهر (${formatShortDate(start)} ← ${formatShortDate(end)})`;
+        break;
+      case '30days':
+        start = getDaysAgoStr(30);
+        end = todayStr;
+        label = `آخر 30 يوم (${formatShortDate(start)} ← ${formatShortDate(end)})`;
+        break;
+      case 'custom':
+      default:
+        start = customRangeStart || getDaysAgoStr(7);
+        end = customRangeEnd || todayStr;
+        label = `فترة مخصصة (${formatShortDate(start)} ← ${formatShortDate(end)})`;
+        break;
+    }
+    return { start, end, label };
+  }, [rangePreset, customRangeStart, customRangeEnd, todayStr]);
+
+  const isRange = periodMode === 'range';
+  const isToday = !isRange && selectedDate === todayStr;
+
+  const displayDateLabel = useMemo(() => {
+    if (isRange) return activeRange.label;
+    try {
+      return parseLocalDate(selectedDate).toLocaleDateString('ar-EG-u-nu-latn', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+    } catch {
+      return selectedDate;
+    }
+  }, [isRange, activeRange.label, selectedDate]);
 
   // Sync selectedDate when today changes due to rollover
   useEffect(() => {
@@ -73,16 +173,19 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
     }
   }, [todayStr]);
 
-  // Load historical summary when another date is selected
+  // Load historical summary when another date or range is selected
   useEffect(() => {
-    if (selectedDate === todayStr) {
+    if (isToday) {
       setHistoricalSummary(null);
       return;
     }
     let cancelled = false;
     setLoadingDate(true);
+    const startDate = isRange ? activeRange.start : selectedDate;
+    const endDate = isRange ? activeRange.end : undefined;
+
     window.electronAPI
-      .getDailySummary(selectedDate)
+      .getDailySummary(startDate, endDate)
       .then((data: any) => {
         if (!cancelled) {
           setHistoricalSummary(data);
@@ -95,7 +198,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [selectedDate, todayStr]);
+  }, [isToday, isRange, selectedDate, activeRange.start, activeRange.end]);
 
   const [taskStats, setTaskStats] = useState<{ total: number; completed: number }>({
     total: 0,
@@ -120,7 +223,6 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  const isToday = selectedDate === todayStr;
   const effectiveSummary = isToday ? dailySummary : (historicalSummary || {});
   const baseActive = effectiveSummary?.total_active_seconds ?? 0;
   const baseIdle = effectiveSummary?.total_idle_seconds ?? 0;
@@ -136,7 +238,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
     setLiveActiveOffset(0);
     setLiveIdleOffset(0);
     setLiveBreakOffset(0);
-  }, [baseActive, baseIdle, baseBreak, selectedDate]);
+  }, [baseActive, baseIdle, baseBreak, selectedDate, isRange, activeRange.start, activeRange.end]);
 
   const currentApp = trackerState?.currentApp || 'سطح المكتب / مستكشف ويندوز';
   const currentUrl = trackerState?.currentUrl;
@@ -202,61 +304,134 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
       {/* Date & Shift Navigator Bar */}
       <div style={styles.dateNavBar}>
         <div style={styles.dateNavControls}>
-          <button
-            onClick={handlePrevDay}
-            style={styles.dateNavBtn}
-            title="اليوم السابق"
-            onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
-            onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
-          >
-            <ChevronRight size={15} />
-            <span>اليوم السابق</span>
-          </button>
+          {/* Mode Switcher */}
+          <div style={styles.modeSegment}>
+            <button
+              onClick={() => setPeriodMode('day')}
+              style={{
+                ...styles.modeSegmentBtn,
+                background: periodMode === 'day' ? 'var(--bg-surface)' : 'transparent',
+                color: periodMode === 'day' ? 'var(--accent-blue)' : 'var(--text-muted)',
+                fontWeight: periodMode === 'day' ? 700 : 500,
+              }}
+            >
+              يوم محدد
+            </button>
+            <button
+              onClick={() => setPeriodMode('range')}
+              style={{
+                ...styles.modeSegmentBtn,
+                background: periodMode === 'range' ? 'var(--bg-surface)' : 'transparent',
+                color: periodMode === 'range' ? 'var(--accent-blue)' : 'var(--text-muted)',
+                fontWeight: periodMode === 'range' ? 700 : 500,
+              }}
+            >
+              فترة زمنية
+            </button>
+          </div>
 
-          <button
-            onClick={handleGoToday}
-            style={{
-              ...styles.dateNavPill,
-              background: isToday ? 'var(--accent-green-bg)' : 'transparent',
-              borderColor: isToday ? 'var(--accent-green-border)' : 'var(--border-default)',
-              color: isToday ? 'var(--accent-green)' : 'var(--text-secondary)',
-            }}
-          >
-            <Calendar size={13} />
-            <span>اليوم (الوردية النشطة)</span>
-          </button>
+          {periodMode === 'day' ? (
+            <>
+              <button
+                onClick={handlePrevDay}
+                style={styles.dateNavBtn}
+                title="اليوم السابق"
+                onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+              >
+                <ChevronRight size={15} />
+                <span>اليوم السابق</span>
+              </button>
 
-          <button
-            onClick={handleNextDay}
-            disabled={isToday}
-            style={{
-              ...styles.dateNavBtn,
-              opacity: isToday ? 0.35 : 1,
-              cursor: isToday ? 'not-allowed' : 'pointer',
-            }}
-            title="اليوم التالي"
-            onMouseDown={(e) => { if (!isToday) (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
-            onMouseUp={(e) => { if (!isToday) (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
-          >
-            <span>اليوم التالي</span>
-            <ChevronLeft size={15} />
-          </button>
+              <input
+                type="date"
+                value={selectedDate}
+                max={todayStr}
+                onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+                style={styles.datePickerInput}
+                title="اختر يوماً معيناً"
+                aria-label="اختيار التاريخ"
+              />
+
+              <button
+                onClick={handleGoToday}
+                style={{
+                  ...styles.dateNavPill,
+                  background: isToday ? 'var(--accent-green-bg)' : 'transparent',
+                  borderColor: isToday ? 'var(--accent-green-border)' : 'var(--border-default)',
+                  color: isToday ? 'var(--accent-green)' : 'var(--text-secondary)',
+                }}
+              >
+                <Calendar size={13} />
+                <span>اليوم (الوردية النشطة)</span>
+              </button>
+
+              <button
+                onClick={handleNextDay}
+                disabled={isToday}
+                style={{
+                  ...styles.dateNavBtn,
+                  opacity: isToday ? 0.35 : 1,
+                  cursor: isToday ? 'not-allowed' : 'pointer',
+                }}
+                title="اليوم التالي"
+                onMouseDown={(e) => { if (!isToday) (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                onMouseUp={(e) => { if (!isToday) (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+              >
+                <span>اليوم التالي</span>
+                <ChevronLeft size={15} />
+              </button>
+            </>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <select
+                value={rangePreset}
+                onChange={(e) => setRangePreset(e.target.value as CockpitRangePreset)}
+                style={styles.selectInput}
+                aria-label="اختيار الفترة الزمنية"
+              >
+                <option value="this_week">هذا الأسبوع</option>
+                <option value="7days">آخر 7 أيام</option>
+                <option value="this_month">هذا الشهر</option>
+                <option value="30days">آخر 30 يوم</option>
+                <option value="custom">فترة مخصصة…</option>
+              </select>
+
+              {rangePreset === 'custom' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={styles.rangeSep}>من</span>
+                  <input
+                    type="date"
+                    value={customRangeStart}
+                    max={customRangeEnd || todayStr}
+                    onChange={(e) => e.target.value && setCustomRangeStart(e.target.value)}
+                    style={styles.datePickerInput}
+                    aria-label="تاريخ البداية"
+                  />
+                  <span style={styles.rangeSep}>إلى</span>
+                  <input
+                    type="date"
+                    value={customRangeEnd}
+                    max={todayStr}
+                    onChange={(e) => e.target.value && setCustomRangeEnd(e.target.value)}
+                    style={styles.datePickerInput}
+                    aria-label="تاريخ النهاية"
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div style={styles.dateDisplayBadge}>
           <Clock size={13} color="var(--accent-blue)" />
           <span style={styles.dateDisplayText}>
-            {parseLocalDate(selectedDate).toLocaleDateString('ar-EG-u-nu-latn', {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
+            {displayDateLabel}
           </span>
           {!isToday && (
             <span style={styles.archivedTag}>
               <Archive size={11} />
-              مؤرشف وموثق
+              {isRange ? 'ملخص الفترة' : 'مؤرشف وموثق'}
             </span>
           )}
         </div>
@@ -271,12 +446,17 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
           <div style={{ flex: 1 }}>
             <div style={styles.bannerTitleRow}>
               <span style={styles.archivedTitle}>
-                سجل إنجاز وأنشطة يوم {selectedDate} (مؤرشف)
+                {isRange
+                  ? `ملخص إنتاجية وأنشطة ${activeRange.label}`
+                  : `سجل إنجاز وأنشطة يوم ${selectedDate} (مؤرشف)`}
               </span>
-              <span style={styles.archivedChip}>سجل نهائي معتمد</span>
+              <span style={styles.archivedChip}>
+                {isRange ? 'ملخص مجمع' : 'سجل نهائي معتمد'}
+              </span>
             </div>
             <div style={styles.archivedSubtext}>
-              تم توثيق إجمالي عمل فعلي: {formatTime(activeSeconds)} — واستراحات وتوقف: {formatTime(idleSeconds)}.
+              تم توثيق إجمالي عمل فعلي: {formatTime(activeSeconds)} — واستراحات وتوقف: {formatTime(idleSeconds)}
+              {isRange ? ' خلال الفترة المحددة.' : '.'}
             </div>
           </div>
         </div>
@@ -542,6 +722,52 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',
+  },
+  modeSegment: {
+    display: 'flex',
+    alignItems: 'center',
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 7,
+    padding: 2,
+    gap: 2,
+  },
+  modeSegmentBtn: {
+    border: 'none',
+    borderRadius: 5,
+    padding: '3px 8px',
+    fontSize: 11,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  datePickerInput: {
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border-strong)',
+    borderRadius: 7,
+    padding: '3px 8px',
+    fontSize: 11,
+    color: 'var(--text-primary)',
+    fontFamily: 'inherit',
+    fontVariantNumeric: 'tabular-nums',
+    outline: 'none',
+    cursor: 'pointer',
+  },
+  selectInput: {
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border-strong)',
+    borderRadius: 7,
+    padding: '3px 8px',
+    fontSize: 11,
+    color: 'var(--text-primary)',
+    fontFamily: 'inherit',
+    outline: 'none',
+    cursor: 'pointer',
+  },
+  rangeSep: {
+    fontSize: 11,
+    color: 'var(--text-muted)',
+    fontWeight: 600,
   },
   dateDisplayBadge: {
     display: 'flex',

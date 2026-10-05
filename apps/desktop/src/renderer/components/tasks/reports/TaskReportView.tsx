@@ -7,6 +7,10 @@ import {
   RefreshCw,
   Sparkles,
   Filter,
+  Calendar,
+  CalendarDays,
+  ChevronRight,
+  ChevronLeft,
 } from 'lucide-react';
 import { audioAlerts } from '../../../utils/audioAlerts';
 import {
@@ -29,6 +33,48 @@ import {
   parseUnifiedFiltersFromUrl,
 } from '../taskFilterEngine';
 
+const getTodayStr = () => new Date().toISOString().slice(0, 10);
+
+const getYesterdayStr = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+};
+
+const getDaysAgoStr = (days: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+};
+
+const getThisWeekStartStr = () => {
+  const d = new Date();
+  const day = d.getDay(); // 0 Sun, 6 Sat
+  const diff = (day + 1) % 7; // days since Saturday (Arabic business week start)
+  d.setDate(d.getDate() - diff);
+  return d.toISOString().slice(0, 10);
+};
+
+const getThisMonthStartStr = () => {
+  const d = new Date();
+  d.setDate(1);
+  return d.toISOString().slice(0, 10);
+};
+
+const formatArabicDate = (dateStr: string): string => {
+  try {
+    const d = new Date(`${dateStr}T12:00:00`);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('ar-EG-u-nu-latn', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    });
+  } catch {
+    return dateStr;
+  }
+};
+
 interface TaskReportViewProps {
   isExecutiveMode?: boolean; // When rendered in SimpleReportTab
 }
@@ -48,11 +94,85 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
 
   const [filters, setFilters] = useState<TaskReportFilterState>({
     dateRange: 'today',
+    specificDate: getTodayStr(),
+    startDate: getDaysAgoStr(7),
+    endDate: getTodayStr(),
     selectedUserId: 'all',
     selectedProject: 'all',
     exceptionFilter: 'all',
     searchQuery: '',
   });
+
+  const activePeriod = useMemo(() => {
+    const today = getTodayStr();
+    let start = today;
+    let end = today;
+    let label = 'اليوم';
+    let isSingle = true;
+
+    switch (filters.dateRange) {
+      case 'today':
+        start = today;
+        end = today;
+        label = `اليوم (${formatArabicDate(today)})`;
+        isSingle = true;
+        break;
+      case 'yesterday': {
+        const y = getYesterdayStr();
+        start = y;
+        end = y;
+        label = `أمس (${formatArabicDate(y)})`;
+        isSingle = true;
+        break;
+      }
+      case 'custom_day': {
+        const d = filters.specificDate || today;
+        start = d;
+        end = d;
+        label = `يوم ${formatArabicDate(d)}`;
+        isSingle = true;
+        break;
+      }
+      case 'this_week':
+        start = getThisWeekStartStr();
+        end = today;
+        label = `هذا الأسبوع (${formatArabicDate(start)} ← ${formatArabicDate(end)})`;
+        isSingle = false;
+        break;
+      case '7days':
+        start = getDaysAgoStr(7);
+        end = today;
+        label = `آخر 7 أيام (${formatArabicDate(start)} ← ${formatArabicDate(end)})`;
+        isSingle = false;
+        break;
+      case 'this_month':
+        start = getThisMonthStartStr();
+        end = today;
+        label = `هذا الشهر (${formatArabicDate(start)} ← ${formatArabicDate(end)})`;
+        isSingle = false;
+        break;
+      case '30days':
+        start = getDaysAgoStr(30);
+        end = today;
+        label = `آخر 30 يوم (${formatArabicDate(start)} ← ${formatArabicDate(end)})`;
+        isSingle = false;
+        break;
+      case 'custom_range':
+        start = filters.startDate || getDaysAgoStr(7);
+        end = filters.endDate || today;
+        label = `فترة مخصصة (${formatArabicDate(start)} ← ${formatArabicDate(end)})`;
+        isSingle = start === end;
+        break;
+      case 'all':
+        start = '1970-01-01';
+        end = '2099-12-31';
+        label = 'كافة الفترات';
+        isSingle = false;
+        break;
+    }
+
+    return { start, end, label, isSingle };
+  }, [filters.dateRange, filters.specificDate, filters.startDate, filters.endDate]);
 
   const roleStr = String(currentUser?.role || '').toUpperCase();
   const isAdmin = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER'].includes(roleStr);
@@ -102,11 +222,14 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       const hasPrivilege = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER', 'HR_MANAGER'].includes(userRole) || isExecutiveMode;
       const fetchType = hasPrivilege ? 'all' : 'my-tasks';
 
+      const qStart = activePeriod.start === '1970-01-01' ? undefined : activePeriod.start;
+      const qEnd = activePeriod.end === '2099-12-31' ? undefined : activePeriod.end;
+
       const [tasksRes, usersRes, teamRes, myDayRes] = await Promise.all([
         window.electronAPI.getTasks(fetchType),
         hasPrivilege ? window.electronAPI.getCompanyUsers() : Promise.resolve({ success: false, users: [] }),
-        hasPrivilege ? window.electronAPI.getTeamOverview().catch(() => null) : Promise.resolve(null),
-        window.electronAPI.getDailySummary(new Date().toISOString().slice(0, 10)).catch(() => null),
+        hasPrivilege ? window.electronAPI.getTeamOverview(qStart, qEnd).catch(() => null) : Promise.resolve(null),
+        window.electronAPI.getDailySummary(qStart, qEnd).catch(() => null),
       ]);
 
       if (tasksRes?.success && Array.isArray(tasksRes.tasks)) {
@@ -123,7 +246,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
     } finally {
       if (showSpinner) setLoading(false);
     }
-  }, [isExecutiveMode]);
+  }, [isExecutiveMode, activePeriod.start, activePeriod.end]);
 
   useEffect(() => {
     loadData(true);
@@ -158,7 +281,30 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         )
       );
 
-      // 2. Today's tracked minutes (strictly scoped to today's sessions, capped at 480m / 8h)
+      // 2. Tracked minutes scoped to active period
+      const todayStr = getTodayStr();
+      let periodTrackedMin = 0;
+      if (Array.isArray(t.timeEntries) || Array.isArray(t.time_entries)) {
+        const entries = t.timeEntries || t.time_entries;
+        periodTrackedMin = entries.reduce((sum: number, e: any) => {
+          const entryDate = (e.startTime || e.createdAt || '').slice(0, 10);
+          if (entryDate >= activePeriod.start && entryDate <= activePeriod.end) {
+            return sum + Math.min(480, Number(e.duration || 0));
+          }
+          return sum;
+        }, 0);
+      } else {
+        const createdDate = (t.createdAt || '').slice(0, 10);
+        const compDate = (t.completedAt || t.completedDate || '').slice(0, 10);
+        if (
+          (createdDate >= activePeriod.start && createdDate <= activePeriod.end) ||
+          (compDate >= activePeriod.start && compDate <= activePeriod.end)
+        ) {
+          periodTrackedMin = Math.min(lifetimeMin, 480);
+        }
+      }
+
+      // Today tracked minutes
       let todayMin = 0;
       if (t.todayTrackedMinutes != null) {
         todayMin = Number(t.todayTrackedMinutes);
@@ -167,9 +313,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       } else if (t.todayDuration != null) {
         todayMin = Number(t.todayDuration);
       } else if (Array.isArray(t.timeEntries) || Array.isArray(t.time_entries)) {
-        const entries = t.timeEntries || t.time_entries;
-        const todayStr = new Date().toISOString().slice(0, 10);
-        todayMin = entries.reduce((sum: number, e: any) => {
+        todayMin = (t.timeEntries || t.time_entries).reduce((sum: number, e: any) => {
           const entryDate = (e.startTime || e.createdAt || '').slice(0, 10);
           if (e.isToday || entryDate === todayStr) {
             return sum + Math.min(480, Number(e.duration || 0));
@@ -177,9 +321,9 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
           return sum;
         }, 0);
       } else {
-        const createdToday = (t.createdAt || '').slice(0, 10) === new Date().toISOString().slice(0, 10);
-        const completedToday = (t.completedAt || t.completedDate || '').slice(0, 10) === new Date().toISOString().slice(0, 10);
-        if (createdToday || completedToday) {
+        const createdToday = (t.createdAt || '').slice(0, 10) === todayStr;
+        const compToday = (t.completedAt || t.completedDate || '').slice(0, 10) === todayStr;
+        if (createdToday || compToday) {
           todayMin = Math.min(lifetimeMin, 480);
         }
       }
@@ -189,6 +333,8 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       let actualMin = lifetimeMin;
       if (filters.dateRange === 'today') {
         actualMin = todayMin;
+      } else if (filters.dateRange !== 'all') {
+        actualMin = periodTrackedMin > 0 ? periodTrackedMin : (activePeriod.isSingle && activePeriod.start === todayStr ? todayMin : lifetimeMin);
       }
 
       const varianceMin = actualMin - estMin;
@@ -233,11 +379,11 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         isReviewBlocked: isReview,
       };
     });
-  }, [tasks, users, filters.dateRange]);
+  }, [tasks, users, filters.dateRange, activePeriod]);
 
   // Filter tasks based on active controls
   const filteredItems = useMemo(() => {
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = getTodayStr();
     return reportItems.filter((t) => {
       // 1. Unified filter engine match (omnisearch tokens, user, priority, status, dates, tags)
       if (!matchesUnifiedFilter(t, unifiedFilters)) {
@@ -283,30 +429,36 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       }
 
       if (!unifiedFilters.dueDateFrom && !unifiedFilters.dueDateTo) {
-        if (filters.dateRange === 'today') {
-          const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
-          const isCompletedToday = t.status === 'COMPLETED' && compDate === todayStr;
-          return isActive || isCompletedToday;
+        if (filters.dateRange === 'all') {
+          return true;
         }
 
-        if (filters.dateRange === '7days') {
-          const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
-          const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
-          const isCompletedInWeek = t.status === 'COMPLETED' && compDate >= sevenDaysAgo;
-          return isActive || isCompletedInWeek;
+        const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
+
+        if (activePeriod.isSingle) {
+          const targetDay = activePeriod.start;
+          const isCompletedOnDay = t.status === 'COMPLETED' && compDate === targetDay;
+          const isWorkedOnDay = (t.timeEntries || []).some(
+            (e: any) => (e.startTime || e.createdAt || '').slice(0, 10) === targetDay
+          );
+          const isCreatedOnDay = (t.createdAt || '').slice(0, 10) === targetDay;
+          const isCurrentActive = targetDay === todayStr && isActive;
+          return isCompletedOnDay || isWorkedOnDay || isCreatedOnDay || isCurrentActive;
         }
 
-        if (filters.dateRange === '30days') {
-          const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-          const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
-          const isCompletedInMonth = t.status === 'COMPLETED' && compDate >= thirtyDaysAgo;
-          return isActive || isCompletedInMonth;
-        }
+        // Date range
+        const isCompletedInRange = t.status === 'COMPLETED' && compDate >= activePeriod.start && compDate <= activePeriod.end;
+        const isWorkedInRange = (t.timeEntries || []).some((e: any) => {
+          const d = (e.startTime || e.createdAt || '').slice(0, 10);
+          return d >= activePeriod.start && d <= activePeriod.end;
+        });
+        const isCreatedInRange = (t.createdAt || '').slice(0, 10) >= activePeriod.start && (t.createdAt || '').slice(0, 10) <= activePeriod.end;
+        return isCompletedInRange || isWorkedInRange || isCreatedInRange || isActive;
       }
 
       return true;
     });
-  }, [reportItems, filters, unifiedFilters]);
+  }, [reportItems, filters, unifiedFilters, activePeriod]);
 
   // Aggregate KPIs
   const kpis: TaskReportKpiData = useMemo(() => {
@@ -448,18 +600,14 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
 
   // 1-Click Daily Standup Generator
   const handleCopyDailyStandup = () => {
-    const dateStr = new Date().toLocaleDateString('ar-EG-u-nu-latn', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    });
+    const periodTitle = activePeriod.label;
     const userName = currentUser?.firstName
       ? `${currentUser.firstName} ${currentUser.lastName || ''}`.trim()
       : 'عضو الفريق';
 
-    const completedToday = filteredItems.filter((t) => t.status === 'COMPLETED');
-    const inProgressToday = filteredItems.filter((t) => t.status === 'IN_PROGRESS');
-    const pendingToday = filteredItems.filter((t) => t.status === 'PENDING' || t.status === 'IN_REVIEW');
+    const completedPeriod = filteredItems.filter((t) => t.status === 'COMPLETED');
+    const inProgressPeriod = filteredItems.filter((t) => t.status === 'IN_PROGRESS');
+    const pendingPeriod = filteredItems.filter((t) => t.status === 'PENDING' || t.status === 'IN_REVIEW');
 
     const formatM = (mins: number) => {
       const h = Math.floor(mins / 60);
@@ -467,27 +615,27 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       return h > 0 ? `${h}h ${m}m` : `${m}m`;
     };
 
-    let text = `*ملخص إنجاز المهام اليومي — ${userName}*\n📅 ${dateStr}\n\n`;
+    let text = `*ملخص إنجاز المهام والإنتاجية — ${userName}*\n📅 ${periodTitle}\n\n`;
 
-    if (completedToday.length > 0) {
-      text += `✅ *المهام المنجزة (${completedToday.length}):*\n`;
-      completedToday.forEach((t) => {
+    if (completedPeriod.length > 0) {
+      text += `✅ *المهام المنجزة (${completedPeriod.length}):*\n`;
+      completedPeriod.forEach((t) => {
         text += `• ${t.title} [${t.projectName}] — ${formatM(t.actualTrackedMinutes)}\n`;
       });
       text += '\n';
     }
 
-    if (inProgressToday.length > 0) {
-      text += `⏳ *قيد العمل الآن (${inProgressToday.length}):*\n`;
-      inProgressToday.forEach((t) => {
+    if (inProgressPeriod.length > 0) {
+      text += `⏳ *قيد العمل الآن (${inProgressPeriod.length}):*\n`;
+      inProgressPeriod.forEach((t) => {
         text += `• ${t.title} — تم تسجيل: ${formatM(t.actualTrackedMinutes)}\n`;
       });
       text += '\n';
     }
 
-    if (pendingToday.length > 0) {
-      text += `📌 *مهام مجدولة للمتابعة (${pendingToday.length}):*\n`;
-      pendingToday.slice(0, 3).forEach((t) => {
+    if (pendingPeriod.length > 0) {
+      text += `📌 *مهام قيد المتابعة (${pendingPeriod.length}):*\n`;
+      pendingPeriod.slice(0, 3).forEach((t) => {
         text += `• ${t.title} [${t.status === 'IN_REVIEW' ? 'بانتظار الاعتماد' : 'قيد الانتظار'}]\n`;
       });
       text += '\n';
@@ -520,7 +668,9 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `MaxP_Task_Report_${new Date().toISOString().slice(0, 10)}.csv`;
+    const startTag = activePeriod.start === '1970-01-01' ? 'all' : activePeriod.start;
+    const endTag = activePeriod.end === '2099-12-31' ? '' : `_to_${activePeriod.end}`;
+    link.download = `MaxP_Task_Report_${startTag}${activePeriod.start !== activePeriod.end ? endTag : ''}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -544,19 +694,109 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         <div style={styles.toolbarLeft}>
           {/* Date Segmented Controls */}
           <div style={styles.segmentedWrap}>
-            {(['today', '7days', '30days', 'all'] as TaskDateRange[]).map((range) => (
+            {(
+              [
+                { id: 'today', label: 'اليوم' },
+                { id: 'yesterday', label: 'أمس' },
+                { id: 'this_week', label: 'هذا الأسبوع' },
+                { id: '7days', label: '7 أيام' },
+                { id: 'this_month', label: 'هذا الشهر' },
+                { id: '30days', label: '30 يوم' },
+                { id: 'custom_day', label: 'يوم محدد' },
+                { id: 'custom_range', label: 'فترة مخصصة' },
+                { id: 'all', label: 'الكل' },
+              ] as { id: TaskDateRange; label: string }[]
+            ).map((item) => (
               <button
-                key={range}
-                onClick={() => setFilters((p) => ({ ...p, dateRange: range }))}
+                key={item.id}
+                onClick={() => setFilters((p) => ({ ...p, dateRange: item.id }))}
                 style={{
                   ...styles.segmentBtn,
-                  background: filters.dateRange === range ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                  color: filters.dateRange === range ? '#ffffff' : 'var(--text-muted)',
+                  background: filters.dateRange === item.id ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
+                  color: filters.dateRange === item.id ? '#ffffff' : 'var(--text-muted)',
+                  fontWeight: filters.dateRange === item.id ? 700 : 500,
                 }}
               >
-                {range === 'today' ? 'اليوم' : range === '7days' ? '7 أيام' : range === '30days' ? '30 يوم' : 'الكل'}
+                {item.label}
               </button>
             ))}
+          </div>
+
+          {/* Specific Day Picker Control */}
+          {filters.dateRange === 'custom_day' && (
+            <div style={styles.datePickerBox}>
+              <button
+                onClick={() => {
+                  const cur = filters.specificDate || getTodayStr();
+                  const d = new Date(`${cur}T12:00:00`);
+                  d.setDate(d.getDate() - 1);
+                  setFilters((p) => ({ ...p, specificDate: d.toISOString().slice(0, 10) }));
+                }}
+                style={styles.dateMiniBtn}
+                title="اليوم السابق"
+                aria-label="اليوم السابق"
+              >
+                <ChevronRight size={12} />
+              </button>
+              <input
+                type="date"
+                value={filters.specificDate || getTodayStr()}
+                max={getTodayStr()}
+                onChange={(e) => e.target.value && setFilters((p) => ({ ...p, specificDate: e.target.value }))}
+                style={styles.dateInput}
+                aria-label="اختيار تاريخ محدد"
+              />
+              <button
+                onClick={() => {
+                  const cur = filters.specificDate || getTodayStr();
+                  if (cur >= getTodayStr()) return;
+                  const d = new Date(`${cur}T12:00:00`);
+                  d.setDate(d.getDate() + 1);
+                  const next = d.toISOString().slice(0, 10);
+                  setFilters((p) => ({ ...p, specificDate: next > getTodayStr() ? getTodayStr() : next }));
+                }}
+                disabled={(filters.specificDate || getTodayStr()) >= getTodayStr()}
+                style={{
+                  ...styles.dateMiniBtn,
+                  opacity: (filters.specificDate || getTodayStr()) >= getTodayStr() ? 0.35 : 1,
+                  cursor: (filters.specificDate || getTodayStr()) >= getTodayStr() ? 'default' : 'pointer',
+                }}
+                title="اليوم التالي"
+                aria-label="اليوم التالي"
+              >
+                <ChevronLeft size={12} />
+              </button>
+            </div>
+          )}
+
+          {/* Custom Date Range Pickers */}
+          {filters.dateRange === 'custom_range' && (
+            <div style={styles.datePickerBox}>
+              <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>من:</span>
+              <input
+                type="date"
+                value={filters.startDate || getDaysAgoStr(7)}
+                max={getTodayStr()}
+                onChange={(e) => e.target.value && setFilters((p) => ({ ...p, startDate: e.target.value }))}
+                style={styles.dateInput}
+                aria-label="تاريخ البداية"
+              />
+              <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>إلى:</span>
+              <input
+                type="date"
+                value={filters.endDate || getTodayStr()}
+                max={getTodayStr()}
+                onChange={(e) => e.target.value && setFilters((p) => ({ ...p, endDate: e.target.value }))}
+                style={styles.dateInput}
+                aria-label="تاريخ النهاية"
+              />
+            </div>
+          )}
+
+          {/* Active Period Badge */}
+          <div style={styles.activePeriodBadge} title="الفترة الزمنية النشطة للتقرير">
+            <Calendar size={12} color="var(--accent-blue)" />
+            <span>{activePeriod.label}</span>
           </div>
 
           {/* Project Filter */}
@@ -614,7 +854,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
           >
             {isCopied ? <Check size={12} color="var(--text-inverse)" /> : <Copy size={12} color="var(--text-inverse)" />}
             <span style={{ color: 'var(--text-inverse)' }}>
-              {isCopied ? 'تم نسخ التقرير اليومي!' : 'نسخ تقرير اليومية'}
+              {isCopied ? 'تم نسخ التقرير!' : 'نسخ التقرير'}
             </span>
           </button>
 
@@ -643,6 +883,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         activeFilter={filters.exceptionFilter}
         onFilterChange={(f) => setFilters((p) => ({ ...p, exceptionFilter: f }))}
         dateRange={filters.dateRange}
+        periodLabel={activePeriod.label}
       />
 
       {/* ملخص يومي صادق — روح التقرير اليومي القديم بمصدر حقيقي */}
@@ -662,9 +903,9 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
           );
           return (
             <>
-              {chip('نشط اليوم', `${Math.floor(active / 3600)}س ${Math.floor((active % 3600) / 60)}د`, 'وقت نشاطك الفعلي المسجل بجهازك (أول نشاط ← آخر نشاط)')}
+              {chip(activePeriod.isSingle && activePeriod.start === getTodayStr() ? 'نشط اليوم' : 'نشط للفترة', `${Math.floor(active / 3600)}س ${Math.floor((active % 3600) / 60)}د`, 'وقت نشاطك الفعلي المسجل بجهازك للفترة المحددة')}
               {chip('خامل', `${Math.floor(idle / 60)}د`, 'وقت الجلسة بدون نشاط ماوس/كيبورد')}
-              {chip('نسبة النشاط', `${pct}%`, 'نشط ÷ (نشط + خامل) لليوم')}
+              {chip('نسبة النشاط', `${pct}%`, 'نشط ÷ (نشط + خامل) للفترة المحددة')}
             </>
           );
         })()}
@@ -674,13 +915,14 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       {isManager && teamOverview.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={presenceChipStyle}>
-            الحاضر الآن: <b>{presenceStats.activeNow}</b> / {teamOverview.length}
+            {activePeriod.isSingle && activePeriod.start === getTodayStr() ? 'الحاضر الآن: ' : 'أعضاء الفريق: '}
+            <b>{presenceStats.activeNow}</b> / {teamOverview.length}
           </span>
           <span style={presenceChipStyle}>
             متأخرون عن البصمة: <b>{presenceStats.late}</b>
           </span>
           <span style={presenceChipStyle}>
-            موثق اليوم: <b>{presenceStats.totalHours}</b> ساعة
+            موثق للفترة: <b>{presenceStats.totalHours}</b> ساعة
           </span>
           <span style={presenceChipStyle}>
             متوسط الإنتاجية: <b>{presenceStats.avgProd}%</b>
@@ -848,6 +1090,51 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--bg-elevated)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     cursor: 'pointer',
+  },
+  datePickerBox: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    background: 'var(--bg-surface)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: 6,
+    padding: '2px 6px',
+  },
+  dateInput: {
+    background: 'transparent',
+    border: 'none',
+    color: '#e2e8f0',
+    fontSize: 11,
+    fontFamily: 'inherit',
+    outline: 'none',
+    cursor: 'pointer',
+    padding: '2px 4px',
+  },
+  dateMiniBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    background: 'rgba(255, 255, 255, 0.06)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    color: '#cbd5e1',
+    cursor: 'pointer',
+    padding: 0,
+  },
+  activePeriodBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    background: 'rgba(56, 189, 248, 0.08)',
+    border: '1px solid rgba(56, 189, 248, 0.25)',
+    borderRadius: 6,
+    padding: '3px 9px',
+    fontSize: 11,
+    color: 'var(--accent-blue)',
+    fontWeight: 600,
+    whiteSpace: 'nowrap',
   },
   activeFilterChipBar: {
     display: 'flex',

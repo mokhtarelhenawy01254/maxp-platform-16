@@ -35,11 +35,23 @@ export interface TaskReportKpiData {
   focusAccuracyRate: number; // estimation accuracy
 }
 
-export type TaskDateRange = 'today' | '7days' | '30days' | 'all';
+export type TaskDateRange =
+  | 'today'
+  | 'yesterday'
+  | 'this_week'
+  | '7days'
+  | 'this_month'
+  | '30days'
+  | 'custom_day'
+  | 'custom_range'
+  | 'all';
 export type TaskExceptionFilter = 'all' | 'time_leaks' | 'review_blocked' | 'overdue';
 
 export interface TaskReportFilterState {
   dateRange: TaskDateRange;
+  specificDate?: string; // YYYY-MM-DD for single day
+  startDate?: string;    // YYYY-MM-DD for custom range
+  endDate?: string;      // YYYY-MM-DD for custom range
   selectedUserId: string; // 'all' or userId
   selectedProject: string; // 'all' or projectName
   exceptionFilter: TaskExceptionFilter;

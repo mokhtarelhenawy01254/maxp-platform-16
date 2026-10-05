@@ -150,9 +150,16 @@ class MonitorApiClient {
 
   // ── Dashboard (Server -> Desktop) ─────────────────────────────
 
-  async getDailySummary(date?: string): Promise<DailySummary | null> {
+  async getDailySummary(date?: string, endDate?: string): Promise<DailySummary | null> {
     try {
-      const params = date ? { date } : {};
+      const params: any = {};
+      if (date && endDate && date !== endDate) {
+        params.startDate = date;
+        params.endDate = endDate;
+        params.date = date;
+      } else if (date) {
+        params.date = date;
+      }
       const res = await this.client.get('/summary/me', { params });
       return res.data?.data ?? null;
     } catch {
@@ -160,9 +167,16 @@ class MonitorApiClient {
     }
   }
 
-  async getTeamOverview(date?: string): Promise<any[]> {
+  async getTeamOverview(date?: string, endDate?: string): Promise<any[]> {
     try {
-      const params = date ? { date } : {};
+      const params: any = {};
+      if (date && endDate && date !== endDate) {
+        params.startDate = date;
+        params.endDate = endDate;
+        params.date = date;
+      } else if (date) {
+        params.date = date;
+      }
       const res = await this.client.get('/team/overview', { params });
       return res.data?.data ?? [];
     } catch (err: any) {

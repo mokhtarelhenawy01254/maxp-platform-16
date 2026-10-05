@@ -13,7 +13,7 @@ declare global {
       resumeTracking: () => Promise<void>;
       endShift: () => Promise<{ success: boolean; error?: string; message?: string }>;
       startShift: () => Promise<{ success: boolean; error?: string }>;
-      getDailySummary: (date?: string) => Promise<any>;
+      getDailySummary: (date?: string, endDate?: string) => Promise<any>;
       getAppsSummary: (date?: string) => Promise<{ appName: string; durationSeconds: number; category: string }[]>;
       getWebsitesSummary: (date?: string) => Promise<{ domain: string; durationSeconds: number; category: string }[]>;
       getAllDailyStatsKeys: () => Promise<string[]>;
@@ -36,7 +36,7 @@ declare global {
       stopTaskTimer: (entryId: string) => Promise<{ success: boolean; result?: any; error?: string }>;
       getRunningTaskTimer: () => Promise<{ success: boolean; runningTimer?: any; runningTimers?: any[]; error?: string }>;
       getCompanyActiveTimers: () => Promise<{ success: boolean; activeTimers?: any[]; error?: string }>;
-      getTeamOverview: (date?: string) => Promise<{ success: boolean; data: any[]; error?: string }>;
+      getTeamOverview: (date?: string, endDate?: string) => Promise<{ success: boolean; data: any[]; error?: string }>;
       getAuthToken: () => Promise<{ token: string }>;
       uploadTaskAttachment: (data: {
         taskId: string;
