@@ -103,19 +103,19 @@ export function matchesUnifiedFilter(task: any, filters: UnifiedTaskFilters): bo
       const titleStr = String(task.title || task.taskTitle || '').toLowerCase();
       const descStr = String(task.description || '').toLowerCase();
 
-      // Assignee name
+      // Assignee name & email
       const assigneeName = String(
         task.assignedToName ||
-          (task.assignee ? `${task.assignee.firstName || ''} ${task.assignee.lastName || ''}` : '') ||
-          (task.assignedUser ? `${task.assignedUser.firstName || ''} ${task.assignedUser.lastName || ''}` : '') ||
+          (task.assignee ? `${task.assignee.firstName || ''} ${task.assignee.lastName || ''} ${task.assignee.name || ''} ${task.assignee.email || ''}` : '') ||
+          (task.assignedUser ? `${task.assignedUser.firstName || ''} ${task.assignedUser.lastName || ''} ${task.assignedUser.name || ''} ${task.assignedUser.email || ''}` : '') ||
           task.userName ||
           ''
       ).toLowerCase();
 
-      // Creator name
+      // Creator name & email
       const creatorName = String(
         task.createdByName ||
-          (task.creator ? `${task.creator.firstName || ''} ${task.creator.lastName || ''}` : '') ||
+          (task.creator ? `${task.creator.firstName || ''} ${task.creator.lastName || ''} ${task.creator.name || ''} ${task.creator.email || ''}` : '') ||
           ''
       ).toLowerCase();
 
