@@ -532,5 +532,62 @@ describe("AgentWorkspace", () => {
     fireEvent.click(editBtns[0]);
     expect(screen.getByText(/Edit Order Items|تعديل بنود وعروض الطلب/i)).toBeInTheDocument();
   });
+
+  it("renders the 5 quick filter tabs and switches filters on click", async () => {
+    setMockOrdersData([makeOrder({ id: "o1", orderNumber: "ORD-1" })]);
+    renderWorkspace();
+
+    // Verify all 5 quick tabs exist
+    const allTab = screen.getByRole("tab", { name: /All Orders|كل الطلبات/i });
+    const todayTab = screen.getByRole("tab", { name: /Today|اليوم/i });
+    const pendingTab = screen.getByRole("tab", { name: /Pending|قيد الانتظار/i });
+    const processingTab = screen.getByRole("tab", { name: /In Progress|قيد التنفيذ/i });
+    const cancelledTab = screen.getByRole("tab", { name: /Cancelled|ملغي/i });
+
+    expect(allTab).toBeInTheDocument();
+    expect(todayTab).toBeInTheDocument();
+    expect(pendingTab).toBeInTheDocument();
+    expect(processingTab).toBeInTheDocument();
+    expect(cancelledTab).toBeInTheDocument();
+
+    // Clicking Today triggers fetch with todayOnly: "true"
+    fireEvent.click(todayTab);
+    await waitFor(() => {
+      expect(mockGet).toHaveBeenCalledWith(
+        "/agent-workspace/my-orders",
+        expect.objectContaining({
+          params: expect.objectContaining({
+            todayOnly: "true",
+          }),
+        }),
+      );
+    });
+
+    // Clicking In Progress triggers fetch with status: "PROCESSING"
+    fireEvent.click(processingTab);
+    await waitFor(() => {
+      expect(mockGet).toHaveBeenCalledWith(
+        "/agent-workspace/my-orders",
+        expect.objectContaining({
+          params: expect.objectContaining({
+            status: "PROCESSING",
+          }),
+        }),
+      );
+    });
+
+    // Clicking Cancelled triggers fetch with status: "CANCELLED"
+    fireEvent.click(cancelledTab);
+    await waitFor(() => {
+      expect(mockGet).toHaveBeenCalledWith(
+        "/agent-workspace/my-orders",
+        expect.objectContaining({
+          params: expect.objectContaining({
+            status: "CANCELLED",
+          }),
+        }),
+      );
+    });
+  });
 });
 

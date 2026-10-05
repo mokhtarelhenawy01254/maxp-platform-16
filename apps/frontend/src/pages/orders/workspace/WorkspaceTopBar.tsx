@@ -5,7 +5,6 @@ import {
   MagnifyingGlassIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-import { Tabs, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 import { FilterTab, WorkspaceStats } from './types';
 
 interface WorkspaceTopBarProps {
@@ -53,45 +52,52 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
     return isArabic ? `حدث قبل ${hrs} س` : `${hrs}h old`;
   };
 
-  const pendingCount = (stats?.pending || 0) + (stats?.incomplete || 0);
-  const totalCount = (stats?.total || 0) + (stats?.incomplete || 0);
-
-  // طابور عمل فقط: الانتظار والمتابعة — «الكل» هو النشط فقط (بدون أرشيف المؤكد/الملغي
-  // الذي تديره صفحة الطلبات الرئيسية بفلاترها الكاملة)
-  const tabs: { key: FilterTab; label: string; count?: number }[] = [
-    { key: 'pending', label: t('orders.workspacePending'), count: pendingCount },
-    { key: 'followup', label: t('orders.workspaceFollowUpLater'), count: stats?.followup },
-    { key: 'all', label: t('orders.workspaceAll'), count: totalCount },
+  // تابات الفلتر السريع المطابقة تماماً لتصميم الكابينة المطلوب:
+  // سريع | كل الطلبات | اليوم | قيد الانتظار | قيد التنفيذ | ملغي
+  const tabs: { key: FilterTab; label: string }[] = [
+    { key: 'all', label: isArabic ? 'كل الطلبات' : 'All Orders' },
+    { key: 'today', label: isArabic ? 'اليوم' : 'Today' },
+    { key: 'pending', label: isArabic ? 'قيد الانتظار' : 'Pending' },
+    { key: 'processing', label: isArabic ? 'قيد التنفيذ' : 'In Progress' },
+    { key: 'cancelled', label: isArabic ? 'ملغي' : 'Cancelled' },
   ];
 
   return (
     <header className="border-b border-border/40 bg-card/95 px-3 py-2 backdrop-blur-sm sm:px-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        {/* Status Filter Tabs — مكوّن التابات القياسي للموقع (السايدبار كامل زي باقي الصفحات) */}
-        <Tabs
-          value={activeTab}
-          onValueChange={(v) => onSelectTab(v as FilterTab)}
+        {/* Quick Filter Tabs — شريط التابات السريع الفعلي */}
+        <div
+          role="tablist"
+          aria-label={isArabic ? 'فلترة سريعة للطلبات' : 'Quick order filters'}
+          className="flex items-center gap-2 overflow-x-auto py-0.5 scrollbar-none"
         >
-          <TabsList
-            className="justify-start overflow-x-auto rounded-2xl bg-muted/60 p-1"
-            aria-label={t('orders.workspaceFilters')}
-          >
-            {tabs.map((tab) => (
-              <TabsTrigger
-                key={tab.key}
-                value={tab.key}
-                className="gap-1.5 rounded-xl px-2.5 text-xs font-semibold"
-              >
-                <span className="whitespace-nowrap">{tab.label}</span>
-                {typeof tab.count === 'number' && (
-                  <span className="rounded-full bg-muted-foreground/15 px-1.5 py-0.5 text-[10px] font-mono tabular-nums text-foreground">
-                    {tab.count}
-                  </span>
-                )}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground shrink-0 select-none">
+            <span>{isArabic ? 'سريع' : 'Quick'}</span>
+            <span className="text-border/80">|</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => onSelectTab(tab.key)}
+                  className={`relative inline-flex items-center justify-center whitespace-nowrap rounded-full px-3.5 py-1 text-xs sm:text-sm font-medium transition-all active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    isActive
+                      ? 'bg-blue-600 text-white font-semibold shadow-sm hover:bg-blue-500'
+                      : 'border border-border/70 bg-card/60 text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* End (Left in RTL): Search + Sort + Freshness + Refresh */}
         <div className="flex items-center gap-2 shrink-0">
