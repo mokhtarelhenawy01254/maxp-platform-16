@@ -291,6 +291,80 @@ async function seedMissingDefaults(prisma, companyId) {
   }
 }
 
+// Helper: Ensure transaction dates preserve true creation time and eliminate midnight shifts
+function resolveTransactionDate(inputDate) {
+  if (!inputDate) return new Date();
+  
+  if (inputDate instanceof Date) {
+    return isNaN(inputDate.getTime()) ? new Date() : inputDate;
+  }
+  
+  const str = String(inputDate).trim();
+  if (!str) return new Date();
+
+  // If input contains time (ISO string with T or contains :)
+  if (str.includes('T') || str.includes(':')) {
+    const parsed = new Date(str);
+    if (!isNaN(parsed.getTime())) return parsed;
+  }
+
+  // If input is purely date format YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    
+    // If it's today's date, preserve current execution timestamp (hours, minutes, seconds, ms)
+    if (str === todayStr) {
+      return now;
+    }
+    
+    // If it's another date, preserve current time of day so transactions on that date retain exact execution order
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+  }
+
+  const parsed = new Date(str);
+  return isNaN(parsed.getTime()) ? new Date() : parsed;
+}
+
+// Self-healing migration: Align dates for past transactions created with midnight timestamps
+async function autoFixChronologyAndDates(prisma, companyId) {
+  try {
+    // 1. In treasury_transactions: if date was stored with midnight/timezone shift (minute=0 and second=0),
+    // and was created on roughly the same day, update date to match createdAt to restore real chronological time
+    await prisma.$executeRawUnsafe(`
+      UPDATE "treasury_transactions"
+      SET "date" = "createdAt"
+      WHERE "companyId" = $1
+        AND EXTRACT(MINUTE FROM "date") = 0
+        AND EXTRACT(SECOND FROM "date") = 0
+        AND (
+          DATE("date") = DATE("createdAt")
+          OR ABS(EXTRACT(EPOCH FROM ("createdAt" - "date"))) <= 86400
+        )
+    `, companyId).catch((err) => {
+      console.warn('[treasury] autoFixChronologyAndDates tt warning:', err.message);
+    });
+
+    // 2. In company_expenses: similarly restore paymentDate
+    await prisma.$executeRawUnsafe(`
+      UPDATE "company_expenses"
+      SET "paymentDate" = "createdAt"
+      WHERE "companyId" = $1
+        AND EXTRACT(MINUTE FROM "paymentDate") = 0
+        AND EXTRACT(SECOND FROM "paymentDate") = 0
+        AND (
+          DATE("paymentDate") = DATE("createdAt")
+          OR ABS(EXTRACT(EPOCH FROM ("createdAt" - "paymentDate"))) <= 86400
+        )
+    `, companyId).catch((err) => {
+      console.warn('[treasury] autoFixChronologyAndDates ce warning:', err.message);
+    });
+  } catch (err) {
+    console.warn('[treasury] autoFixChronologyAndDates notice:', err.message);
+  }
+}
+
 // Helper: Ensure default accounts and categories exist for tenant
 async function ensureDefaults(prisma, companyId) {
   if (!companyId) return;
@@ -301,6 +375,7 @@ async function ensureDefaults(prisma, companyId) {
   const promise = (async () => {
     await ensureTablesExist(prisma);
     await cleanupDuplicateAccountsAndCategories(prisma, companyId);
+    await autoFixChronologyAndDates(prisma, companyId);
     await seedMissingDefaults(prisma, companyId);
   })();
 
