@@ -7,7 +7,7 @@ const verifyToken = require("../utils/verifyToken");
 router.use(verifyToken.authenticateToken);
 
 const canManageAffiliateSettings = (userRole) =>
-    ['OWNER', 'COMPANY_ADMIN', 'SUPER_ADMIN'].includes(userRole);
+    ['OWNER', 'COMPANY_ADMIN', 'SUPER_ADMIN', 'ADMIN'].includes(userRole);
 
 const VALID_COMMISSION_TYPES = new Set(['PERCENTAGE', 'MARKUP', 'FIXED', 'FIXED_PER_ITEM']);
 const VALID_PLATFORM_MARGIN_TYPES = new Set(['FIXED', 'PERCENTAGE']);
@@ -63,44 +63,54 @@ const ensureAffiliateRequiredApps = async (prisma, companyId, isActive) => {
         return [];
     }
 
-    const apps = await prisma.marketplaceApp.findMany({
-        where: {
-            slug: {
-                in: AFFILIATE_REQUIRED_APP_SLUGS
-            }
-        },
-        select: {
-            id: true,
-            slug: true
-        }
-    });
-
-    await Promise.all(
-        apps.map((app) =>
-            prisma.companyApp.upsert({
-                where: {
-                    companyId_appId: {
-                        companyId,
-                        appId: app.id
-                    }
-                },
-                update: {
-                    status: 'ACTIVE'
-                },
-                create: {
-                    companyId,
-                    appId: app.id,
-                    status: 'ACTIVE',
-                    settings: {
-                        installedBy: 'affiliate-settings',
-                        reason: 'affiliate-program-core-tools'
-                    }
+    try {
+        const apps = await prisma.marketplaceApp.findMany({
+            where: {
+                slug: {
+                    in: AFFILIATE_REQUIRED_APP_SLUGS
                 }
-            })
-        )
-    );
+            },
+            select: {
+                id: true,
+                slug: true
+            }
+        });
 
-    return apps.map((app) => app.slug);
+        if (!apps || apps.length === 0) {
+            return [];
+        }
+
+        await Promise.all(
+            apps.map((app) =>
+                prisma.companyApp.upsert({
+                    where: {
+                        companyId_appId: {
+                            companyId,
+                            appId: app.id
+                        }
+                    },
+                    update: {
+                        status: 'ACTIVE'
+                    },
+                    create: {
+                        companyId,
+                        appId: app.id,
+                        status: 'ACTIVE',
+                        activePricingModel: 'SUBSCRIPTION',
+                        settings: {
+                            installedBy: 'affiliate-settings',
+                            reason: 'affiliate-program-core-tools'
+                        }
+                    }
+                })
+            )
+        );
+
+        return apps.map((app) => app.slug);
+    } catch (appError) {
+        console.error('⚠️ [AFFILIATE-SETTINGS] Failed to ensure required apps:', appError);
+        return [];
+    }
 };
 
 /**
@@ -117,7 +127,7 @@ router.get('/', async (req, res) => {
         }
 
         const prisma = getSharedPrismaClient();
-        const companyId = req.user.companyId;
+        const companyId = req.companyId || req.user?.companyId || req.headers['x-company-id'];
 
         if (!companyId) {
             return res.status(400).json({ success: false, message: 'User does not belong to a company' });
@@ -168,7 +178,7 @@ router.put('/', async (req, res) => {
         }
 
         const prisma = getSharedPrismaClient();
-        const companyId = req.user.companyId;
+        const companyId = req.companyId || req.user?.companyId || req.headers['x-company-id'];
         const {
             commissionType,
             commissionRate,
