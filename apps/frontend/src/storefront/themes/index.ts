@@ -724,11 +724,22 @@ export const STOREFRONT_THEME_PRESETS: Record<string, StorefrontTheme> = {
   ...ELESSI_PACK_THEME_PRESETS,
 };
 
+export const STOREFRONT_THEME_ID_ALIASES: Record<string, string> = {
+  allura: "allure",
+};
+
+export const resolveStorefrontThemeId = (themeId: string): string => {
+  const normalized = typeof themeId === "string" ? themeId.trim().toLowerCase() : "";
+  return STOREFRONT_THEME_ID_ALIASES[normalized] || normalized;
+};
+
 export const getStorefrontThemePresetIds = (): string[] =>
   Object.keys(STOREFRONT_THEME_PRESETS);
 
-export const hasStorefrontThemePreset = (themeId: string): boolean =>
-  Boolean(STOREFRONT_THEME_PRESETS[themeId]);
+export const hasStorefrontThemePreset = (themeId: string): boolean => {
+  const resolved = resolveStorefrontThemeId(themeId);
+  return Boolean(STOREFRONT_THEME_PRESETS[resolved] || STOREFRONT_THEME_PRESETS[themeId]);
+};
 
 export const cloneStorefrontTheme = (theme: StorefrontTheme): StorefrontTheme =>
   theme ? (JSON.parse(JSON.stringify(theme)) as StorefrontTheme) : ({} as StorefrontTheme);
@@ -2116,7 +2127,9 @@ export const getStorefrontThemePreset = (
     typeof themeId === "string" && themeId.trim().length > 0
       ? themeId.trim()
       : DEFAULT_STOREFRONT_THEME_ID;
+  const resolvedThemeId = resolveStorefrontThemeId(normalizedThemeId);
   const preset =
+    STOREFRONT_THEME_PRESETS[resolvedThemeId] ||
     STOREFRONT_THEME_PRESETS[normalizedThemeId] ||
     createUnregisteredThemePreset(normalizedThemeId);
 

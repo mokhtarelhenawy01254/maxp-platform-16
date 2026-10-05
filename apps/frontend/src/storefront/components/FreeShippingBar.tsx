@@ -155,7 +155,9 @@ export const FreeShippingBar: React.FC = () => {
         ? "border-b border-[#99f6e4] bg-[linear-gradient(135deg,#f7fffe_0%,#d8fbf4_100%)] text-slate-900"
         : isKhemetLuxe
           ? "border-b border-[#c5a470]/30 bg-[#183f31] text-[#fff8ee]"
-          : "border-b border-primary/10 bg-primary text-primary-foreground";
+          : isRedlineAuto
+            ? "border-b border-red-500/20 bg-[#0a0d10] text-white"
+            : "border-b border-primary/10 bg-primary text-primary-foreground";
 
   const progressTrackBg = isBiteRush || isCafeDemo
     ? "bg-white/10"
@@ -163,7 +165,9 @@ export const FreeShippingBar: React.FC = () => {
       ? "bg-[#0f766e]/12"
       : isKhemetLuxe
         ? "bg-black/25"
-        : "bg-white/20";
+        : isRedlineAuto
+          ? "bg-white/10"
+          : "bg-white/20";
 
   const progressFillBg = isBiteRush
     ? "bg-[linear-gradient(90deg,#f97316_0%,#facc15_100%)]"
@@ -173,7 +177,9 @@ export const FreeShippingBar: React.FC = () => {
         ? "bg-[linear-gradient(90deg,#14b8a6_0%,#0f766e_100%)]"
         : isKhemetLuxe
           ? "bg-[linear-gradient(90deg,#c5a470_0%,#f0dfc4_100%)]"
-          : "bg-white";
+          : isRedlineAuto
+            ? "bg-[linear-gradient(90deg,#e11d48_0%,#ef4444_100%)]"
+            : "bg-white";
 
   const badgeClasses = isBiteRush
     ? "bg-white/10 text-white"
@@ -183,7 +189,9 @@ export const FreeShippingBar: React.FC = () => {
         ? "bg-[#0f766e]/10 text-[#0f766e]"
         : isKhemetLuxe
           ? "bg-[#c5a470]/20 text-[#fff8ee] border border-[#c5a470]/30"
-          : "bg-white/15 text-white";
+          : isRedlineAuto
+            ? "bg-red-500/20 text-red-400 border border-red-500/30"
+            : "bg-white/15 text-white";
 
   const ctaClasses = isBiteRush
     ? "bg-[linear-gradient(135deg,#f97316_0%,#ef4444_100%)] text-white shadow-sm hover:brightness-110"
@@ -193,7 +201,9 @@ export const FreeShippingBar: React.FC = () => {
         ? "bg-[#0f766e] text-white shadow-sm hover:bg-[#0b5f59]"
         : isKhemetLuxe
           ? "bg-[#c5a470] text-[#183f31] font-black hover:bg-[#d6b785] transition-colors"
-          : "bg-white/20 text-white hover:bg-white/30";
+          : isRedlineAuto
+            ? "bg-red-600 text-white font-bold hover:bg-red-500 transition-colors shadow-[0_0_15px_rgba(225,29,72,0.4)]"
+            : "bg-white/20 text-white hover:bg-white/30";
 
   return (
     <div
