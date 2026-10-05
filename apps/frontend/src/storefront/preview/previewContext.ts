@@ -8,10 +8,17 @@ const getPreviewSearchParams = (search?: string): URLSearchParams => {
 
 const SAFE_PREVIEW_THEME_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,80}$/i;
 
+const THEME_ID_ALIASES: Record<string, string> = {
+  allura: 'allure',
+};
+
 export const resolvePreviewThemeId = (search?: string): string => {
   const params = getPreviewSearchParams(search);
-  const candidate = params.get('previewTheme')?.trim() || '';
-  return SAFE_PREVIEW_THEME_ID_PATTERN.test(candidate) ? candidate : '';
+  const candidate = params.get('previewTheme')?.trim().toLowerCase() || '';
+  if (!SAFE_PREVIEW_THEME_ID_PATTERN.test(candidate)) {
+    return '';
+  }
+  return THEME_ID_ALIASES[candidate] || candidate;
 };
 
 export const resolvePreviewSource = (search?: string): string => {
