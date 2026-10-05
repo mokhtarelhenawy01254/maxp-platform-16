@@ -232,6 +232,34 @@ describe('🛡️ Phase 1 (P0) Acceptance Tests: Monitor & Attendance Defects', 
       expect(summary.totalActiveSeconds).toBe(14700);
     });
 
+    test('clamps active seconds to totalClockSeconds + 300s even when checkOut is null', async () => {
+      const companyId = 'company-test-1';
+      const rawEmployeeId = 'user-raw-1';
+      const targetDate = new Date('2026-09-30T00:00:00.000Z');
+
+      // Clocked in 8:00 AM, missing checkOut on past day (calculateTotalClockSeconds caps at 9 hours = 32,400s)
+      mockPrisma.attendance.findFirst.mockResolvedValue({
+        checkIn: new Date('2026-09-30T08:00:00.000Z'),
+        checkOut: null,
+      });
+
+      // Raw activity logs report 50,000s
+      mockPrisma.monitorActivityLog.findMany.mockResolvedValue([
+        {
+          intervalStart: new Date('2026-09-30T08:00:00.000Z'),
+          intervalEnd: new Date('2026-09-30T08:05:00.000Z'),
+          activeSeconds: 50000,
+          activityScore: 80,
+        },
+      ]);
+
+      const summary = await monitorService.syncEmployeeDailySummary(companyId, rawEmployeeId, targetDate);
+
+      // totalClockSeconds = 32,400 -> active seconds must be clamped to 32,400 + 300 = 32,700
+      expect(summary.totalClockSeconds).toBe(32400);
+      expect(summary.totalActiveSeconds).toBe(32700);
+    });
+
     test('deletes rogue duplicate summaries created under non-canonical candidate IDs', async () => {
       const companyId = 'company-test-1';
       const rawEmployeeId = 'user-raw-1';

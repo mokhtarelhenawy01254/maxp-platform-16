@@ -52,11 +52,10 @@ async function run() {
     const activeExceedingClockRows = await prisma.$queryRaw`
       SELECT COUNT(*)::int as cnt
       FROM "public"."monitor_daily_summaries"
-      WHERE "clockOutTime" IS NOT NULL
-        AND "totalClockSeconds" > 0
+      WHERE "totalClockSeconds" > 0
         AND "totalActiveSeconds" > ("totalClockSeconds" + 300);
     `;
-    console.log(`- Summaries with active > clock + 300s (clocked out): ${activeExceedingClockRows[0]?.cnt || 0}`);
+    console.log(`- Summaries with active > clock + 300s: ${activeExceedingClockRows[0]?.cnt || 0}`);
 
     // D. Duplicate daily summaries across employee.id and employee.userId
     const duplicateSummaries = await prisma.$queryRaw`
@@ -102,17 +101,29 @@ async function run() {
     `;
     console.log(`✅ Clamped impossible active/idle daily summaries: ${clampedMaxDaily} rows updated`);
 
-    // Step C: Clamp clocked-out summaries to totalClockSeconds + 300
+    // Step C: Clamp summaries where totalActiveSeconds > totalClockSeconds + 300
     const clampedClockedOut = await prisma.$executeRaw`
       UPDATE "public"."monitor_daily_summaries"
       SET "totalActiveSeconds" = LEAST("totalActiveSeconds", "totalClockSeconds" + 300)
-      WHERE "clockOutTime" IS NOT NULL
-        AND "totalClockSeconds" > 0
+      WHERE "totalClockSeconds" > 0
         AND "totalActiveSeconds" > ("totalClockSeconds" + 300);
     `;
-    console.log(`✅ Clamped clocked-out active summaries: ${clampedClockedOut} rows updated`);
+    console.log(`✅ Clamped active daily summaries exceeding clock time: ${clampedClockedOut} rows updated`);
 
-    // Step D: Remove non-canonical duplicate summaries
+    // Step D: Migrate orphan summaries to canonical employee.id, then remove non-canonical duplicates
+    const migratedOrphanSummaries = await prisma.$executeRaw`
+      UPDATE "public"."monitor_daily_summaries" m
+      SET "employeeId" = e.id
+      FROM "public"."hr_employees" e
+      WHERE m."companyId" = e."companyId"
+        AND m."employeeId" = e."userId"
+        AND NOT EXISTS (
+          SELECT 1 FROM "public"."monitor_daily_summaries" c
+          WHERE c."companyId" = m."companyId"
+            AND c."employeeId" = e.id
+            AND c.date = m.date
+        );
+    `;
     const deletedDuplicateSummaries = await prisma.$executeRaw`
       DELETE FROM "public"."monitor_daily_summaries" m
       USING "public"."hr_employees" e
@@ -125,7 +136,7 @@ async function run() {
             AND c.date = m.date
         );
     `;
-    console.log(`✅ Removed non-canonical duplicate daily summaries: ${deletedDuplicateSummaries} rows deleted`);
+    console.log(`✅ Migrated ${migratedOrphanSummaries} orphan summaries and deleted ${deletedDuplicateSummaries} duplicate summaries`);
 
     // -------------------------------------------------------------
     // 3. AFTER AUDIT VERIFICATION
@@ -154,8 +165,7 @@ async function run() {
     const afterActiveExceedingClock = await prisma.$queryRaw`
       SELECT COUNT(*)::int as cnt
       FROM "public"."monitor_daily_summaries"
-      WHERE "clockOutTime" IS NOT NULL
-        AND "totalClockSeconds" > 0
+      WHERE "totalClockSeconds" > 0
         AND "totalActiveSeconds" > ("totalClockSeconds" + 300);
     `;
     const afterDuplicateSummaries = await prisma.$queryRaw`

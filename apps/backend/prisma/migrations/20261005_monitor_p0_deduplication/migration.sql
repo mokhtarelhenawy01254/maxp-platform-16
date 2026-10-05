@@ -33,14 +33,25 @@ SET "totalActiveSeconds" = LEAST("totalActiveSeconds", 86400),
     "totalIdleSeconds" = LEAST("totalIdleSeconds", 86400)
 WHERE "totalActiveSeconds" > 86400 OR "totalIdleSeconds" > 86400;
 
--- 5. Clamp active seconds when employee has clocked out
+-- 5. Clamp active seconds when employee has clocked time (+ 300s grace)
 UPDATE "public"."monitor_daily_summaries"
 SET "totalActiveSeconds" = LEAST("totalActiveSeconds", "totalClockSeconds" + 300)
-WHERE "clockOutTime" IS NOT NULL
-  AND "totalClockSeconds" > 0
+WHERE "totalClockSeconds" > 0
   AND "totalActiveSeconds" > ("totalClockSeconds" + 300);
 
--- 6. Remove non-canonical duplicate daily summaries where both employee.id and employee.userId exist for same day
+-- 6. Migrate and remove non-canonical duplicate daily summaries where both employee.id and employee.userId exist for same day
+UPDATE "public"."monitor_daily_summaries" m
+SET "employeeId" = e.id
+FROM "public"."hr_employees" e
+WHERE m."companyId" = e."companyId"
+  AND m."employeeId" = e."userId"
+  AND NOT EXISTS (
+    SELECT 1 FROM "public"."monitor_daily_summaries" c
+    WHERE c."companyId" = m."companyId"
+      AND c."employeeId" = e.id
+      AND c.date = m.date
+  );
+
 DELETE FROM "public"."monitor_daily_summaries" m
 USING "public"."hr_employees" e
 WHERE m."companyId" = e."companyId"
@@ -51,3 +62,4 @@ WHERE m."companyId" = e."companyId"
       AND c."employeeId" = e.id
       AND c.date = m.date
   );
+

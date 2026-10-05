@@ -961,8 +961,8 @@ class MonitorService {
       const lateStartSeconds = calculateLateStartSeconds(clockInTime, firstActivityTime, isToday);
       const totalClockSeconds = calculateTotalClockSeconds(clockInTime, clockOutTime, isToday);
 
-      // Bound active time when employee has clocked out: cannot exceed clocked time + 5min (300s grace)
-      if (clockOutTime && totalClockSeconds > 0 && totalActive > (totalClockSeconds + 300)) {
+      // Bound active time: cannot exceed clocked time + 5min (300s grace)
+      if (totalClockSeconds > 0 && totalActive > (totalClockSeconds + 300)) {
         totalActive = totalClockSeconds + 300;
       }
 
@@ -1623,9 +1623,9 @@ class MonitorService {
         weeklyAvgLateStartMinutes = Math.round(totalPastSec / (pastList.length + 1) / 60);
       }
 
-      // Bound active time if clocked out (active time cannot exceed clock time + 300s grace)
+      // Bound active time (active time cannot exceed clock time + 300s grace)
       let boundedActive = item.totalActiveSeconds || 0;
-      if (item.clockOutTime && totalClockSeconds > 0 && boundedActive > (totalClockSeconds + 300)) {
+      if (totalClockSeconds > 0 && boundedActive > (totalClockSeconds + 300)) {
         boundedActive = totalClockSeconds + 300;
       }
 

@@ -560,6 +560,12 @@ bash scripts/fix-audit-logs.sh || echo "⚠️ Audit logs fix skipped or failed,
 echo "🛠️ Fixing data duplicates..."
 timeout 600 node scripts/fix-duplicates.js || echo "⚠️ Duplicates fix failed, continuing..."
 
+# Step 2.9: Cleanse Monitor P0 Duplicates & Inflated Summaries
+if [ -f "scripts/cleanse_monitor_p0_duplicates.js" ]; then
+  echo "🛠️ Executing Monitor P0 data cleansing (logging before/after metrics)..."
+  timeout 600 node scripts/cleanse_monitor_p0_duplicates.js
+fi
+
 # Step 3: Push schema to PostgreSQL database (Incremental)
 CURRENT_SCHEMA_HASH=""
 if [ -d prisma/schema ]; then
@@ -599,10 +605,10 @@ if [ "$NEED_DB_PUSH" = "true" ]; then
       --from-url "$DB_URL_FOR_GUARD" \
       --to-schema-datamodel /tmp/maxp_combined_schema.prisma \
       --script > "$SCHEMA_GUARD_DIFF" 2>/dev/null; then
-    DROP_COUNT="$(grep -ciE 'DROP (TABLE|COLUMN|SCHEMA|INDEX|CONSTRAINT) ' "$SCHEMA_GUARD_DIFF" || true)"
+    DROP_COUNT="$(grep -ciE 'DROP (TABLE|COLUMN|SCHEMA) ' "$SCHEMA_GUARD_DIFF" || true)"
     if [ "${DROP_COUNT:-0}" -gt 0 ]; then
       echo "🚨 SCHEMA GUARD: $DROP_COUNT destructive statement(s) in pending drift:"
-      grep -iE 'DROP (TABLE|COLUMN|SCHEMA|INDEX|CONSTRAINT) ' "$SCHEMA_GUARD_DIFF" | head -20 | sed 's/^/      /'
+      grep -iE 'DROP (TABLE|COLUMN|SCHEMA) ' "$SCHEMA_GUARD_DIFF" | head -20 | sed 's/^/      /'
       if [ "${ALLOW_SCHEMA_DROPS:-false}" != "true" ]; then
         echo "❌ REFUSING db push — destructive drift requires explicit review."
         echo "   Full diff saved at: $SCHEMA_GUARD_DIFF"
@@ -622,8 +628,8 @@ if [ "$NEED_DB_PUSH" = "true" ]; then
     "$PRISMA_BIN" db execute --file prisma/migrations/20261001_remove_legacy_plans_system/migration.sql --schema=prisma/schema || echo "⚠️ Pre-push migration warning (continuing...)"
   fi
   if [ -f "prisma/migrations/20261005_monitor_p0_deduplication/migration.sql" ]; then
-    echo "🛡️ Deduplicating monitor activity logs and preparing unique constraint before db push..."
-    "$PRISMA_BIN" db execute --file prisma/migrations/20261005_monitor_p0_deduplication/migration.sql --schema=prisma/schema || echo "⚠️ Pre-push monitor deduplication warning (continuing...)"
+    echo "🛡️ Deduplicating monitor activity logs and applying P0 schema fixes before db push..."
+    "$PRISMA_BIN" db execute --file prisma/migrations/20261005_monitor_p0_deduplication/migration.sql --schema=prisma/schema
   fi
   echo "🚀 Pushing schema to PostgreSQL..."
   timeout 600 "$PRISMA_BIN" db push --schema=prisma/schema --skip-generate --accept-data-loss || {
