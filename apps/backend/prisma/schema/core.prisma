@@ -654,3 +654,8 @@ model Policy {
   @@index([isActive])
   @@map("policies")
 }
+
+model _archive_test_companies_20261005 {
+  id String @id
+  @@ignore
+}
