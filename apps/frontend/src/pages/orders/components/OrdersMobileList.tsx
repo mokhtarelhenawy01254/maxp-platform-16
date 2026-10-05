@@ -221,10 +221,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                           totalCancelled={(order as any).totalCancelled}
                           isDuplicate={order.status === "DUPLICATE_ORDER" || Boolean(order.metadata?.duplicate)}
                           orderStatus={order.status}
-                          interactive={true}
-                          onRatingChange={(newRating) =>
-                            onCustomerRatingChange?.(order.orderNumber, newRating)
-                          }
+                          interactive={false}
                           variant="badge"
                           size="xs"
                         />

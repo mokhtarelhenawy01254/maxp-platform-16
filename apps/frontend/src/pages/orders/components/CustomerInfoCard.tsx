@@ -293,16 +293,9 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
               deliveryRate={(order as any).deliveryRate ?? (order as any).customer?.deliveryRate}
               totalDelivered={(order as any).totalDelivered ?? (order as any).customer?.totalDelivered}
               totalAttempts={(order as any).totalAttempts ?? (order as any).customer?.totalOrdersCount}
-              interactive={true}
+              interactive={false}
               variant="badge"
               size="sm"
-              onRatingChange={(newRating) => {
-                if (setEditForm) {
-                  setEditForm((prev: any) => ({ ...prev, customerRating: newRating }));
-                }
-                onCustomerRatingChange?.(newRating);
-                onOrderUpdated?.();
-              }}
             />
           </h3>
 

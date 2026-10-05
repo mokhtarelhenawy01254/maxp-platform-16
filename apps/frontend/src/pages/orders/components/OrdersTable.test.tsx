@@ -133,8 +133,7 @@ describe("OrdersTable", () => {
     expect(screen.getByText("-30 EGP")).toBeInTheDocument();
   });
 
-  it("renders interactive customer rating badge in order row and triggers onCustomerRatingChange", () => {
-    const handleRatingChange = jest.fn();
+  it("renders automated customer rating badge in order row without interactive buttons", () => {
     const orderWithRating = makeOrder({
       id: "o4",
       orderNumber: "ORD-400",
@@ -149,13 +148,11 @@ describe("OrdersTable", () => {
         <OrdersTable
           {...baseProps}
           orders={[orderWithRating]}
-          onCustomerRatingChange={handleRatingChange}
         />
       </MemoryRouter>,
     );
 
-    // Find rating button
-    const ratingButton = screen.getByRole("button", { name: /تقييم العميل/i });
-    expect(ratingButton).toBeInTheDocument();
+    expect(screen.getByText("ممتاز")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /تقييم العميل/i })).not.toBeInTheDocument();
   });
 });
