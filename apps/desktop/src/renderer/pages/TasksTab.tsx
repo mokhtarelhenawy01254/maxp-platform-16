@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Flame,
   AlertCircle,
+  AlertTriangle,
   ClipboardCheck,
   RotateCcw,
 } from 'lucide-react';
@@ -25,6 +26,7 @@ import { CreateTaskModal } from '../components/tasks/CreateTaskModal';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { TaskItemCard } from '../components/tasks/TaskItemCard';
 import { TaskDetailDrawer } from '../components/tasks/TaskDetailDrawer';
+import { ApprovalGateModal } from '../components/tasks/ApprovalGateModal';
 import { TaskReportView } from '../components/tasks/reports/TaskReportView';
 import { TaskUnifiedFilterBar } from '../components/tasks/TaskUnifiedFilterBar';
 import {
@@ -71,6 +73,8 @@ export const TasksTab: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [undoToast, setUndoToast] = useState<{ taskId: string; from: string; to: string } | null>(null);
+  const [errorToast, setErrorToast] = useState<string | null>(null);
+  const [approvalGateTask, setApprovalGateTask] = useState<any | null>(null);
   const [listMode, setListMode] = useState<'list' | 'board'>(() => (localStorage.getItem('maxp_tasks_mode') as any) || 'list');
   const [groupByProject, setGroupByProject] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
@@ -528,6 +532,13 @@ export const TasksTab: React.FC = () => {
     return () => clearTimeout(t);
   }, [undoToast]);
 
+  // Error toast auto-dismiss
+  useEffect(() => {
+    if (!errorToast) return;
+    const t = setTimeout(() => setErrorToast(null), 7000);
+    return () => clearTimeout(t);
+  }, [errorToast]);
+
   const undoLastAction = async () => {
     if (!undoToast) return;
     try {
@@ -577,7 +588,12 @@ export const TasksTab: React.FC = () => {
   const userRole = String(currentUser?.role || '').toUpperCase();
   const isAdminOrManager = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER'].includes(userRole);
 
-  const handleUpdateStatus = async (taskId: string, targetStatus: string, revisionReason?: string) => {
+  const handleUpdateStatus = async (
+    taskId: string,
+    targetStatus: string,
+    revisionReason?: string,
+    options?: any
+  ) => {
     const currentTask = tasks.find((t) => t.id === taskId);
     const prevStatus = currentTask?.status || 'PENDING';
     const prevTags = currentTask?.tags;
@@ -658,7 +674,7 @@ export const TasksTab: React.FC = () => {
     }
 
     try {
-      const res = await window.electronAPI.updateTaskStatus(taskId, targetStatus, revisionReason);
+      const res = await window.electronAPI.updateTaskStatus(taskId, targetStatus, revisionReason, options);
       if (res && res.success === false) {
         throw new Error(res.error || 'فشل في تحديث حالة المهمة على السيرفر');
       }
@@ -671,12 +687,37 @@ export const TasksTab: React.FC = () => {
           setUndoToast({ taskId, from: String(prevStatus).toUpperCase(), to: targetStatus });
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('[TasksTab] Status update failed:', err);
       // Rollback on error
       setTasks((prev) =>
         prev.map((t) => (t.id === taskId ? { ...t, status: prevStatus, tags: prevTags } : t))
       );
+      setErrorToast(err?.message || 'فشل في تحديث حالة المهمة على السيرفر');
+    }
+  };
+
+  const handleApproveGate = async (options: {
+    ownerOverride?: boolean;
+    ownerOverrideReason?: string;
+    criteriaChecked?: boolean;
+  }) => {
+    if (!approvalGateTask) return;
+    try {
+      await handleUpdateStatus(approvalGateTask.id, 'COMPLETED', undefined, options);
+      setApprovalGateTask(null);
+    } catch (err: any) {
+      setErrorToast(err?.message || 'فشل في اعتماد المهمة');
+    }
+  };
+
+  const handleReturnGate = async (reason: string) => {
+    if (!approvalGateTask) return;
+    try {
+      await handleUpdateStatus(approvalGateTask.id, 'IN_PROGRESS', reason);
+      setApprovalGateTask(null);
+    } catch (err: any) {
+      setErrorToast(err?.message || 'فشل في إعادة المهمة للتعديل');
     }
   };
 
@@ -1312,8 +1353,9 @@ export const TasksTab: React.FC = () => {
               const groups = new Map<string, any[]>();
               sortedDisplayTasks.forEach((t) => {
                 const p = t.projectName || 'عام';
-                if (!groups.has(p)) groups.set(p, []);
-                groups.get(p).push(t);
+                const arr = groups.get(p);
+                if (arr) arr.push(t);
+                else groups.set(p, [t]);
               });
               return [...groups.entries()].map(([proj, list]) => (
                 <React.Fragment key={proj}>
@@ -1329,6 +1371,22 @@ export const TasksTab: React.FC = () => {
                       checked={selectedIds.has(t.id)}
                       onToggleCheck={toggleSelect}
                       onToggleStatus={handleToggleStatus}
+                      onUpdateStatus={handleUpdateStatus}
+                      onOpenImage={(img) => setPreviewImage(img)}
+                      onEdit={(taskToEdit) => setEditingTask(taskToEdit)}
+                      onSelect={handleSelectTask}
+                      isSelected={selectedTaskId === t.id}
+                      serverUrl={serverUrl}
+                      authToken={authToken}
+                      currentUserId={currentUser?.id || currentUser?.userId}
+                      isAdmin={isAdminOrManager}
+                      activeTaskId={activeTask?.id}
+                      activeTaskIds={elapsedMap}
+                      activeRunnerSeconds={runnerSeconds}
+                      onStartTask={handleStartTask}
+                      onStopTask={handleStopTask}
+                      viewType={activeView}
+                      onOpenApprovalGate={setApprovalGateTask}
                     />
                   ))}
                 </React.Fragment>
@@ -1351,15 +1409,14 @@ export const TasksTab: React.FC = () => {
               serverUrl={serverUrl}
               authToken={authToken}
               currentUserId={currentUser?.id || currentUser?.userId}
-              isAdmin={['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER'].includes(
-                String(currentUser?.role || '').toUpperCase()
-              )}
+              isAdmin={isAdminOrManager}
               activeTaskId={activeTask?.id}
               activeTaskIds={elapsedMap}
               activeRunnerSeconds={runnerSeconds}
               onStartTask={handleStartTask}
               onStopTask={handleStopTask}
               viewType={activeView}
+              onOpenApprovalGate={setApprovalGateTask}
             />
           ))
           )
@@ -1403,6 +1460,22 @@ export const TasksTab: React.FC = () => {
         <div style={styles.undoBar}>
           <span>تم: {undoToast.to === 'COMPLETED' ? 'إنجاز المهمة' : 'تغيير الحالة'}</span>
           <button onClick={undoLastAction} style={styles.undoBtn}>تراجع</button>
+        </div>
+      )}
+
+      {/* Error toast */}
+      {errorToast && (
+        <div style={{ ...styles.undoBar, backgroundColor: '#dc2626', color: '#ffffff', borderColor: '#ef4444' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <AlertTriangle size={14} color="#ffffff" />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>{errorToast}</span>
+          </div>
+          <button
+            onClick={() => setErrorToast(null)}
+            style={{ ...styles.undoBtn, color: '#ffffff', borderColor: 'rgba(255,255,255,0.4)', backgroundColor: 'rgba(0,0,0,0.2)' }}
+          >
+            إغلاق
+          </button>
         </div>
       )}
 
@@ -1455,7 +1528,20 @@ export const TasksTab: React.FC = () => {
         activeRunnerSeconds={runnerSeconds}
         onStartTask={handleStartTask}
         onStopTask={handleStopTask}
+        onOpenApprovalGate={setApprovalGateTask}
       />
+
+      {/* Approval Gate Modal */}
+      {approvalGateTask && (
+        <ApprovalGateModal
+          isOpen={Boolean(approvalGateTask)}
+          onClose={() => setApprovalGateTask(null)}
+          task={approvalGateTask}
+          isAdminOrManager={isAdminOrManager}
+          onApprove={handleApproveGate}
+          onReturn={handleReturnGate}
+        />
+      )}
 
       {/* Image Lightbox Modal */}
       {previewImage && (

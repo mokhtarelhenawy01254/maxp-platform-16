@@ -30,7 +30,7 @@ declare global {
       getCompanyUsers: () => Promise<{ success: boolean; users: any[]; error?: string }>;
       createTask: (taskData: any) => Promise<{ success: boolean; task?: any; error?: string }>;
       updateTask: (taskId: string, data: any) => Promise<{ success: boolean; task?: any; error?: string }>;
-      updateTaskStatus: (taskId: string, status: string, revisionReason?: string) => Promise<{ success: boolean; task?: any; error?: string }>;
+      updateTaskStatus: (taskId: string, status: string, revisionReason?: string, options?: any) => Promise<{ success: boolean; task?: any; error?: string }>;
       getTaskActivities: (taskId: string) => Promise<{ success: boolean; data?: any[]; error?: string }>;
       startTaskTimer: (taskId: string) => Promise<{ success: boolean; entry?: any; error?: string }>;
       stopTaskTimer: (entryId: string) => Promise<{ success: boolean; result?: any; error?: string }>;

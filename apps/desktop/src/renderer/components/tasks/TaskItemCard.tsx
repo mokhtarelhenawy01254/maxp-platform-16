@@ -44,6 +44,7 @@ interface TaskItemCardProps {
   checked?: boolean;
   onToggleCheck?: (taskId: string) => void;
   viewType?: 'my-tasks' | 'assigned-by-me' | 'all';
+  onOpenApprovalGate?: (task: any) => void;
 }
 
 export const TaskItemCard: React.FC<TaskItemCardProps> = ({
@@ -67,6 +68,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   checked,
   onToggleCheck,
   viewType = 'my-tasks',
+  onOpenApprovalGate,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -536,11 +538,15 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    audioAlerts.playTaskComplete();
-                    onUpdateStatus?.(task.id, 'COMPLETED');
+                    if (onOpenApprovalGate) {
+                      onOpenApprovalGate(task);
+                    } else {
+                      audioAlerts.playTaskComplete();
+                      onUpdateStatus?.(task.id, 'COMPLETED');
+                    }
                   }}
                   style={rowStyles.approveBtn}
-                  title="اعتماد وإنجاز"
+                  title="اعتماد وإنجاز المهمة"
                 >
                   <CheckCircle2 size={11} color="#ffffff" />
                   <span>اعتماد</span>

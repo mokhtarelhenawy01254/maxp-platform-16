@@ -168,7 +168,7 @@ function generateDeliveryComment(evidence = {}, user = {}) {
  */
 function validateApprovalGate(task = {}, user = {}, options = {}) {
   const userRole = String(user.role || '').toUpperCase();
-  const isOwnerOrSuper = ['OWNER', 'SUPER_ADMIN'].includes(userRole);
+  const isOwnerOrSuper = ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN'].includes(userRole);
   const { ownerOverride = false, ownerOverrideReason = '', criteriaChecked = false, checklistState = [] } = options;
 
   // If Owner Override is explicitly used
@@ -176,7 +176,7 @@ function validateApprovalGate(task = {}, user = {}, options = {}) {
     if (!isOwnerOrSuper) {
       return {
         isValid: false,
-        error: 'صلاحية تجاوز بوابة الاعتماد (Owner Override) مقتصرة حصرياً على مالك المنصة (OWNER)',
+        error: 'صلاحية تجاوز بوابة الاعتماد (Owner Override) مقتصرة حصرياً على مالك المنصة أو مدير الشركة (OWNER / COMPANY_ADMIN)',
         isOverride: false
       };
     }

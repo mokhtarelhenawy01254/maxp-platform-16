@@ -362,11 +362,11 @@ class MonitorApiClient {
     return this.authToken;
   }
 
-  async updateTaskStatus(taskId: string, status: string, revisionReason?: string): Promise<any> {
+  async updateTaskStatus(taskId: string, status: string, revisionReason?: string, options?: any): Promise<any> {
     const base = this.serverUrl;
     const res = await axios.put(
       `${base}/api/v1/tasks/${taskId}/status`,
-      { status: status.toUpperCase(), revisionReason },
+      { status: status.toUpperCase(), revisionReason, ...(options || {}) },
       {
         headers: this.getAuthHeaders(),
         timeout: 10_000,

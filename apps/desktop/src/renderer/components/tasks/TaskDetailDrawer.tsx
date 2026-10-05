@@ -50,6 +50,7 @@ interface TaskDetailDrawerProps {
   activeRunnerSeconds?: number;
   onStartTask?: (task: any) => void;
   onStopTask?: (taskId?: string) => void;
+  onOpenApprovalGate?: (task: any) => void;
 }
 
 export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
@@ -69,6 +70,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   activeRunnerSeconds = 0,
   onStartTask,
   onStopTask,
+  onOpenApprovalGate,
 }) => {
   const [commentText, setCommentText] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
@@ -521,8 +523,12 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        audioAlerts.playTaskComplete();
-                        onUpdateStatus ? onUpdateStatus(task.id, 'COMPLETED') : onToggleStatus?.(task.id, task.status);
+                        if (onOpenApprovalGate) {
+                          onOpenApprovalGate(task);
+                        } else {
+                          audioAlerts.playTaskComplete();
+                          onUpdateStatus ? onUpdateStatus(task.id, 'COMPLETED') : onToggleStatus?.(task.id, task.status);
+                        }
                       }}
                       style={drawerStyles.approveActionBtn}
                     >

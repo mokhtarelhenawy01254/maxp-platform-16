@@ -1179,16 +1179,21 @@ function registerIpcHandlers(): void {
     }
   });
 
-  ipcMain.handle('tasks:update-status', async (_, { taskId, status, revisionReason }) => {
+  ipcMain.handle('tasks:update-status', async (_, { taskId, status, revisionReason, options }) => {
     try {
-      const task = await apiClient.updateTaskStatus(taskId, status, revisionReason);
+      const task = await apiClient.updateTaskStatus(taskId, status, revisionReason, options);
       mainWindow?.webContents.send('tasks:refresh', { action: 'update-status', taskId, status, revisionReason });
       setTimeout(() => {
         pollTaskNotifications().catch(() => {});
       }, 500);
       return { success: true, task };
     } catch (err: any) {
-      return { success: false, error: err.message };
+      const errorMsg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message ||
+        'فشل في تحديث حالة المهمة';
+      return { success: false, error: errorMsg };
     }
   });
 
