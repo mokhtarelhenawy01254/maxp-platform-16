@@ -43,8 +43,14 @@ export function buildQueueParams({
   }
 
   switch (activeTab) {
+    case 'today':
+      params['todayOnly'] = 'true';
+      break;
     case 'pending':
       params['status'] = 'PENDING';
+      break;
+    case 'processing':
+      params['status'] = 'PROCESSING';
       break;
     case 'confirmed':
       params['status'] = 'CONFIRMED';

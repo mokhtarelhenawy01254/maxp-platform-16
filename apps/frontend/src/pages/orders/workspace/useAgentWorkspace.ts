@@ -22,13 +22,12 @@ import {
 } from './types';
 
 function normalizeWorkspaceTab(value: string | null): FilterTab {
-  // «مؤكد» و«ملغي» أرشيف — مساحته صفحة الطلبات الرئيسية؛ الروابط القديمة تُوجَّه للكل
-  if (value === 'confirmed' || value === 'cancelled') {
-    return 'all';
-  }
-  return WORKSPACE_TAB_KEYS.includes(value as FilterTab)
-    ? (value as FilterTab)
-    : 'pending';
+  if (!value) return 'all';
+  const val = value.toLowerCase();
+  if (val === 'confirmation') return 'pending';
+  return WORKSPACE_TAB_KEYS.includes(val as FilterTab)
+    ? (val as FilterTab)
+    : 'all';
 }
 
 function getHoursSince(dateStr: string | null): number {
@@ -155,7 +154,7 @@ export function useAgentWorkspace() {
       activeTabRef.current = nextTab;
 
       const nextParams = new URLSearchParams(searchParams);
-      if (nextTab === 'pending') {
+      if (nextTab === 'all') {
         nextParams.delete('tab');
       } else {
         nextParams.set('tab', nextTab);

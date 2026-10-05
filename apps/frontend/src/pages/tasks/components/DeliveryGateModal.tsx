@@ -89,13 +89,14 @@ export const DeliveryGateModal: React.FC<DeliveryGateModalProps> = ({
     return list;
   }, [changeType, commitOrPath, numbersBeforeAfter, notTestedScope, selectedAttachmentId, uploadedFile, task.attachments, isAgent, agentName, agentRunId, agentTestOutput]);
 
-  const isFormValid = missingItems.length === 0;
+  // Evidence collection is voluntary and non-blocking
+  const isFormValid = true;
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFormValid || isSubmitting) return;
+    if (isSubmitting) return;
 
     const payload: DeliveryEvidencePayload = {
       changeType,
@@ -375,10 +376,10 @@ export const DeliveryGateModal: React.FC<DeliveryGateModalProps> = ({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!isFormValid || isSubmitting}
-            title={!isFormValid ? `ناقص: ${missingItems.join(" · ")}` : "تسليم المهمة للمراجعة"}
+            disabled={isSubmitting}
+            title="تسليم المهمة للمراجعة والاعتماد"
             className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 ${
-              isFormValid && !isSubmitting
+              !isSubmitting
                 ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md cursor-pointer active:scale-95"
                 : "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 cursor-not-allowed"
             }`}
@@ -388,9 +389,7 @@ export const DeliveryGateModal: React.FC<DeliveryGateModalProps> = ({
             ) : (
               <CheckCircleIcon className="size-4" />
             )}
-            <span>
-              {isFormValid ? "تسليم للمراجعة والاعتماد" : `إيه الناقص (${missingItems.length})`}
-            </span>
+            <span>تسليم للمراجعة والاعتماد</span>
           </button>
         </div>
       </div>

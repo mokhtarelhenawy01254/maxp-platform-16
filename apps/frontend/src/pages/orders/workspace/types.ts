@@ -1,11 +1,13 @@
 export type OrderType = 'GUEST' | 'REGULAR';
 
 export const WORKSPACE_TAB_KEYS = [
+  'all',
+  'today',
   'pending',
+  'processing',
+  'cancelled',
   'followup',
   'confirmed',
-  'cancelled',
-  'all',
 ] as const;
 
 export type FilterTab = typeof WORKSPACE_TAB_KEYS[number];

@@ -66,7 +66,7 @@ const getCancellationReasonError = () => 'سبب إلغاء الطلب مطلو�
 
 const parseBooleanParam = (value) => value === true || value === 'true' || value === '1';
 
-const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUpOnly = false, assignedTo = '', isManager = false, search = '' } = {}) => {
+const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUpOnly = false, todayOnly = false, assignedTo = '', isManager = false, search = '' } = {}) => {
   const where = { companyId, isActive: true };
 
   if (isManager && assignedTo && assignedTo !== 'all' && assignedTo !== 'unassigned') {
@@ -107,26 +107,47 @@ const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUp
     };
   }
 
-  const cleanSearch = String(search || '').trim().replace(/^[#№]/, '').trim();
-  if (cleanSearch) {
-    const cleanDigits = cleanSearch.replace(/\D/g, '');
-    const searchCondition = {
+  let todayCondition = null;
+  if (todayOnly) {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    todayCondition = {
       OR: [
-        { order: { orderNumber: { contains: cleanSearch, mode: 'insensitive' } } },
-        { order: { customer: { firstName: { contains: cleanSearch, mode: 'insensitive' } } } },
-        { order: { customer: { lastName: { contains: cleanSearch, mode: 'insensitive' } } } },
-        { order: { customer: { phone: { contains: cleanDigits || cleanSearch, mode: 'insensitive' } } } },
-        { order: { shippingAddress: { contains: cleanSearch, mode: 'insensitive' } } },
-        { order: { notes: { contains: cleanSearch, mode: 'insensitive' } } },
-        { guestOrder: { orderNumber: { contains: cleanSearch, mode: 'insensitive' } } },
-        { guestOrder: { guestName: { contains: cleanSearch, mode: 'insensitive' } } },
-        { guestOrder: { guestPhone: { contains: cleanDigits || cleanSearch, mode: 'insensitive' } } },
-        { guestOrder: { shippingAddress: { contains: cleanSearch, mode: 'insensitive' } } },
-        { guestOrder: { notes: { contains: cleanSearch, mode: 'insensitive' } } }
+        { order: { createdAt: { gte: startOfToday } } },
+        { guestOrder: { createdAt: { gte: startOfToday } } }
       ]
     };
+  }
 
-    where.AND = [statusCondition, searchCondition];
+  const cleanSearch = String(search || '').trim().replace(/^[#№]/, '').trim();
+  const searchCondition = cleanSearch
+    ? {
+        OR: [
+          { order: { orderNumber: { contains: cleanSearch, mode: 'insensitive' } } },
+          { order: { customer: { firstName: { contains: cleanSearch, mode: 'insensitive' } } } },
+          { order: { customer: { lastName: { contains: cleanSearch, mode: 'insensitive' } } } },
+          { order: { customer: { phone: { contains: cleanSearch.replace(/\D/g, '') || cleanSearch, mode: 'insensitive' } } } },
+          { order: { shippingAddress: { contains: cleanSearch, mode: 'insensitive' } } },
+          { order: { notes: { contains: cleanSearch, mode: 'insensitive' } } },
+          { guestOrder: { orderNumber: { contains: cleanSearch, mode: 'insensitive' } } },
+          { guestOrder: { guestName: { contains: cleanSearch, mode: 'insensitive' } } },
+          { guestOrder: { guestPhone: { contains: cleanSearch.replace(/\D/g, '') || cleanSearch, mode: 'insensitive' } } },
+          { guestOrder: { shippingAddress: { contains: cleanSearch, mode: 'insensitive' } } },
+          { guestOrder: { notes: { contains: cleanSearch, mode: 'insensitive' } } }
+        ]
+      }
+    : null;
+
+  const andClauses = [statusCondition];
+  if (todayCondition) {
+    andClauses.push(todayCondition);
+  }
+  if (searchCondition) {
+    andClauses.push(searchCondition);
+  }
+
+  if (andClauses.length > 1) {
+    where.AND = andClauses;
   } else {
     where.OR = statusCondition.OR;
   }
@@ -433,6 +454,7 @@ const getMyOrders = async (req, res) => {
     const skip = (page - 1) * limit;
     const requestedStatus = normalizeWorkspaceStatus(req.query.status);
     const followUpOnly = parseBooleanParam(req.query.followUpOnly);
+    const todayOnly = parseBooleanParam(req.query.todayOnly);
     const withStats = parseBooleanParam(req.query.withStats);
     const sortParam = String(req.query.sort || '').toLowerCase();
     const sort = ['recent', 'oldest', 'attempts'].includes(sortParam) ? sortParam : 'recent';
@@ -468,6 +490,13 @@ const getMyOrders = async (req, res) => {
         status: { in: requestedStatus ? [requestedStatus.toLowerCase(), requestedStatus.toUpperCase()] : ['pending', 'PENDING'] },
         orderAssignments: { none: { isActive: true } }
       };
+
+      if (todayOnly) {
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        regularWhere.createdAt = { gte: startOfToday };
+        guestWhere.createdAt = { gte: startOfToday };
+      }
 
       if (cleanSearch) {
         regularWhere.AND = [
@@ -554,7 +583,7 @@ const getMyOrders = async (req, res) => {
       });
     }
 
-    const where = buildWorkspaceWhere(companyId, userId, { requestedStatus, followUpOnly, assignedTo, isManager, search });
+    const where = buildWorkspaceWhere(companyId, userId, { requestedStatus, followUpOnly, todayOnly, assignedTo, isManager, search });
 
     let orderBy = [{ assignedAt: 'desc' }];
     if (sort === 'oldest') {

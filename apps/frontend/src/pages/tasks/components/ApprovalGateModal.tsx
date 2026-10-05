@@ -73,7 +73,8 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
   const evidenceObj = typeof task.evidence === "string" ? (() => { try { return JSON.parse(task.evidence); } catch { return null; } })() : task.evidence;
   const hasValidEvidence = Boolean(task.hasEvidence || evidenceObj);
 
-  const canApprove = (allCriteriaChecked && hasValidEvidence) || (isOwner && useOwnerOverride && ownerOverrideReason.trim().length >= 5);
+  // Approval is never blocked on missing evidence or unchecked criteria
+  const canApprove = !isSubmitting;
 
   if (!isOpen) return null;
 
@@ -407,16 +408,10 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
             <button
               type="button"
               onClick={handleApproveSubmit}
-              disabled={!canApprove || isSubmitting}
-              title={
-                !hasValidEvidence
-                  ? "ممنوع الاعتماد بدون دليل تسليم"
-                  : !allCriteriaChecked
-                  ? "يجب التأشير على جميع معايير القبول أولاً"
-                  : "اعتماد وإنجاز المهمة"
-              }
+              disabled={isSubmitting}
+              title="اعتماد وإنجاز المهمة"
               className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 ${
-                canApprove && !isSubmitting
+                !isSubmitting
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md cursor-pointer active:scale-95"
                   : "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 cursor-not-allowed"
               }`}

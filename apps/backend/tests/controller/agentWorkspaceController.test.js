@@ -238,6 +238,19 @@ describe('agentWorkspaceController.getMyOrders', () => {
     ]);
   });
 
+  test('filters to today orders only when todayOnly is set', async () => {
+    const { findMany } = mockOrderAssignment({ assignments: [] });
+    const res = createResponse();
+    await agentWorkspaceController.getMyOrders({ ...baseReq, query: { todayOnly: 'true' } }, res);
+
+    expect(res.statusCode).toBe(200);
+    const findManyArg = findMany.mock.calls[0][0];
+    expect(findManyArg.where.AND).toBeDefined();
+    const todayClause = findManyArg.where.AND.find((clause) => clause.OR?.[0]?.order?.createdAt);
+    expect(todayClause).toBeDefined();
+    expect(todayClause.OR[0].order.createdAt.gte).toBeInstanceOf(Date);
+  });
+
   test('filters to follow-up orders only when followUpOnly is set', async () => {
     const { findMany } = mockOrderAssignment({
       assignments: [

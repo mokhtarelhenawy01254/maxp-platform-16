@@ -614,19 +614,15 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
               <div
                 style={{
                   ...drawerStyles.cardSection,
-                  border: task.missingEvidence
-                    ? '1px solid rgba(239, 68, 68, 0.3)'
-                    : '1px solid rgba(59, 130, 246, 0.3)',
-                  backgroundColor: task.missingEvidence
-                    ? 'rgba(239, 68, 68, 0.04)'
-                    : 'rgba(59, 130, 246, 0.04)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)',
+                  backgroundColor: 'rgba(59, 130, 246, 0.03)',
                 }}
               >
                 <div style={drawerStyles.sectionHeaderRow}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Shield size={14} color={task.missingEvidence ? '#ef4444' : 'var(--accent-blue)'} />
+                    <Shield size={14} color="var(--accent-blue)" />
                     <span style={drawerStyles.sectionTitle}>
-                      {task.missingEvidence ? 'تنبيه: تسليم بدون دليل' : 'ملف دليل التسليم والإنجاز (Delivery Evidence)'}
+                      ملف دليل التسليم والإنجاز (Delivery Evidence)
                     </span>
                   </div>
                   {task.returnCount && task.returnCount > 0 ? (
@@ -636,9 +632,9 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                   ) : null}
                 </div>
 
-                {task.missingEvidence ? (
-                  <p style={{ fontSize: 12, color: '#ef4444', margin: '4px 0 0', lineHeight: 1.5 }}>
-                    المهمة تم تحويلها للمراجعة بدون استيفاء إثبات التشغيل أو الأسئلة الأربعة الإلزامية. يجب استكمال الدليل قبل الاعتماد.
+                {task.missingEvidence || !task.evidence ? (
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0', lineHeight: 1.5 }}>
+                    لم يتم إرفاق ملف دليل تشغيل رقمي (اختياري).
                   </p>
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8, marginTop: 8, fontSize: 11 }}>

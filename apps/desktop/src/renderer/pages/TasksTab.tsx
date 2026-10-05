@@ -267,9 +267,9 @@ export const TasksTab: React.FC = () => {
 
     try {
       const timerRes = await window.electronAPI.startTaskTimer(task.id);
-      const entryObj = timerRes?.entry || timerRes?.data;
+      const entryObj = (timerRes as any)?.entry || (timerRes as any)?.data;
       if (entryObj?.id) {
-        setActiveTask((prev) => (prev?.id === task.id ? { ...prev, entryId: entryObj.id } : prev));
+        setActiveTask((prev) => (prev && prev.id === task.id ? { ...prev, entryId: entryObj.id } : prev));
         setActiveTasksMap((prev) => {
           if (prev[task.id]) {
             const updated = {
@@ -592,9 +592,9 @@ export const TasksTab: React.FC = () => {
     taskId: string,
     targetStatus: string,
     revisionReason?: string,
-    options?: any,
     returnReasonType?: string,
-    returnSeverity?: number
+    returnSeverity?: number,
+    options?: any
   ) => {
     const currentTask = tasks.find((t) => t.id === taskId);
     const prevStatus = currentTask?.status || 'PENDING';
@@ -707,7 +707,7 @@ export const TasksTab: React.FC = () => {
   }) => {
     if (!approvalGateTask) return;
     try {
-      await handleUpdateStatus(approvalGateTask.id, 'COMPLETED', undefined, options);
+      await handleUpdateStatus(approvalGateTask.id, 'COMPLETED', undefined, undefined, undefined, options);
       setApprovalGateTask(null);
     } catch (err: any) {
       setErrorToast(err?.message || 'فشل في اعتماد المهمة');

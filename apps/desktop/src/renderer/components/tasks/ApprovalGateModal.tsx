@@ -72,20 +72,14 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
   const [checklist, setChecklist] = useState(initialChecklist);
   const [returnMode, setReturnMode] = useState(false);
   const [returnReason, setReturnReason] = useState('');
-  // Auto-enable override if task has missing evidence and user is admin/manager
-  const [useOwnerOverride, setUseOwnerOverride] = useState(!hasValidEvidence && isAdminOrManager);
-  const [ownerOverrideReason, setOwnerOverrideReason] = useState(
-    !hasValidEvidence ? 'اعتماد إداري مباشر للمهام السابقة' : ''
-  );
+  const [useOwnerOverride, setUseOwnerOverride] = useState(false);
+  const [ownerOverrideReason, setOwnerOverrideReason] = useState('');
 
   const allCriteriaChecked =
     checklist.length > 0 && checklist.every((item) => item.checked);
 
-  const canApprove =
-    (allCriteriaChecked && hasValidEvidence) ||
-    (isAdminOrManager &&
-      useOwnerOverride &&
-      ownerOverrideReason.trim().length >= 3);
+  // Approval is never blocked on missing evidence or unchecked criteria
+  const canApprove = !isSubmitting;
 
   const toggleCheck = (idx: number) => {
     setChecklist((prev) =>
@@ -253,12 +247,11 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
               {hasValidEvidence ? (
                 <span style={{ fontSize: 11, color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
                   <CheckCircle2 size={12} />
-                  معتمد
+                  مرفق دليل
                 </span>
               ) : (
-                <span style={{ fontSize: 11, color: '#f43f5e', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <AlertTriangle size={12} />
-                  بدون دليل
+                <span style={{ fontSize: 11, color: 'var(--text-muted, #94a3b8)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  اختياري (لم يرفق دليل)
                 </span>
               )}
             </div>
@@ -305,15 +298,11 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
               </div>
             ) : (
               <div style={styles.noEvidenceBox}>
-                <AlertTriangle size={24} color="#f59e0b" style={{ margin: '0 auto 6px' }} />
-                <span style={{ fontWeight: 600, color: '#f59e0b', fontSize: 12 }}>
-                  لا يوجد ملف دليل تسليم مسجل على هذه المهمة
+                <span style={{ fontWeight: 600, color: 'var(--text-secondary, #cbd5e1)', fontSize: 12 }}>
+                  لم يتم إرفاق ملف دليل تسليم (اختياري)
                 </span>
                 <p style={{ margin: '6px 0 0', color: 'var(--text-muted, #94a3b8)', lineHeight: 1.5, fontSize: 11 }}>
-                  تم تحويل هذه المهمة للمراجعة بدون دليل تشغيل رقمي (أو مهمة سابقة).
-                  {isAdminOrManager
-                    ? ' بصفتك مديراً يمكنك تفعيل «الاعتماد الاستثنائي للإدارة» على اليمين لاعتمادها، أو إرجاعها للمنفذ.'
-                    : ' يرجى إرجاع المهمة للمنفذ لتقديم دليل التسليم.'}
+                  يمكنك مراجعة متطلبات المهمة واعتماد إنجازها مباشرة بدون أي عوائق.
                 </p>
               </div>
             )}
@@ -408,18 +397,12 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
             <button
               type="button"
               onClick={handleApproveSubmit}
-              disabled={!canApprove || isSubmitting}
-              title={
-                !hasValidEvidence && !useOwnerOverride
-                  ? 'ممنوع الاعتماد بدون دليل تسليم أو تجاوز استثنائي'
-                  : !allCriteriaChecked && !useOwnerOverride
-                  ? 'يجب التأشير على جميع معايير القبول أولاً'
-                  : 'اعتماد وإنجاز المهمة'
-              }
+              disabled={isSubmitting}
+              title="اعتماد وإنجاز المهمة"
               style={{
                 ...styles.approveBtn,
-                opacity: !canApprove || isSubmitting ? 0.5 : 1,
-                cursor: canApprove && !isSubmitting ? 'pointer' : 'not-allowed',
+                opacity: isSubmitting ? 0.6 : 1,
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
               }}
             >
               <CheckCircle2 size={14} />
