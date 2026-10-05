@@ -538,15 +538,11 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    if (onOpenApprovalGate) {
-                      onOpenApprovalGate(task);
-                    } else {
-                      audioAlerts.playTaskComplete();
-                      onUpdateStatus?.(task.id, 'COMPLETED');
-                    }
+                    audioAlerts.playTaskComplete();
+                    onUpdateStatus ? onUpdateStatus(task.id, 'COMPLETED') : onToggleStatus(task.id, 'COMPLETED');
                   }}
                   style={rowStyles.approveBtn}
-                  title="اعتماد وإنجاز المهمة"
+                  title="اعتماد وإنجاز المهمة مباشرة"
                 >
                   <CheckCircle2 size={11} color="#ffffff" />
                   <span>اعتماد</span>

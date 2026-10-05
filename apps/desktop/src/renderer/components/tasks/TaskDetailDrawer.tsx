@@ -523,14 +523,11 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        if (onOpenApprovalGate) {
-                          onOpenApprovalGate(task);
-                        } else {
-                          audioAlerts.playTaskComplete();
-                          onUpdateStatus ? onUpdateStatus(task.id, 'COMPLETED') : onToggleStatus?.(task.id, task.status);
-                        }
+                        audioAlerts.playTaskComplete();
+                        onUpdateStatus ? onUpdateStatus(task.id, 'COMPLETED') : onToggleStatus?.(task.id, 'COMPLETED');
                       }}
                       style={drawerStyles.approveActionBtn}
+                      title="اعتماد وإنجاز المهمة مباشرة"
                     >
                       <CheckCircle2 size={13} />
                       <span>اعتماد المهمة وإنجازها</span>

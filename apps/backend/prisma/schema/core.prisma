@@ -655,7 +655,8 @@ model Policy {
   @@map("policies")
 }
 
-model _archive_test_companies_20261005 {
+model ArchiveTestCompanies20261005 {
   id String @id
   @@ignore
+  @@map("_archive_test_companies_20261005")
 }

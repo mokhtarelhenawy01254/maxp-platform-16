@@ -322,23 +322,28 @@ const AffiliateSystemSettings: React.FC = () => {
                   <h3
                     className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
                   >
-                    حالة النظام
+                    حالة نظام المسوقين (تسجيل المسوقين)
                   </h3>
                   <p
                     className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
                   >
-                    تفعيل أو تعطيل تسجيل مسوقين جدد
+                    تفعيل واستقبال تسجيل مسوقين جدد عبر رابط المتجر
                   </p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
+                <label className="relative inline-flex items-center cursor-pointer" dir="ltr">
                   <input
                     type="checkbox"
-                    aria-label="حالة النظام"
+                    aria-label="حالة نظام المسوقين"
                     className="sr-only peer"
                     checked={settings.isActive}
-                    onChange={(e) =>
-                      setSettings({ ...settings, isActive: e.target.checked })
-                    }
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setSettings((prev) => ({
+                        ...prev,
+                        isActive: checked,
+                        autoApproveAffiliates: !checked ? false : prev.autoApproveAffiliates,
+                      }));
+                    }}
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                 </label>
@@ -349,26 +354,28 @@ const AffiliateSystemSettings: React.FC = () => {
                   <h3
                     className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
                   >
-                    تفعيل المسوقين الجدد
+                    الموافقة التلقائية على المسوقين الجدد
                   </h3>
                   <p
                     className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
                   >
-                    عند التفعيل التلقائي يصبح المسوق نشطًا فور التسجيل
+                    تفعيل حساب المسوق فور التسجيل مباشرة دون الحاجة لموافقة يدوية
                   </p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
+                <label className="relative inline-flex items-center cursor-pointer" dir="ltr">
                   <input
                     type="checkbox"
-                    aria-label="تفعيل المسوقين الجدد"
+                    aria-label="الموافقة التلقائية على المسوقين الجدد"
                     className="sr-only peer"
                     checked={settings.autoApproveAffiliates}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        autoApproveAffiliates: e.target.checked,
-                      })
-                    }
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setSettings((prev) => ({
+                        ...prev,
+                        autoApproveAffiliates: checked,
+                        isActive: checked ? true : prev.isActive,
+                      }));
+                    }}
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
                 </label>
@@ -871,7 +878,7 @@ const AffiliateSystemSettings: React.FC = () => {
               disabled={loading}
               className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-bold"
             >
-              {loading ? "جاري الحفظ..." : "حفظ الإعدادات"}
+              {loading ? "جاري الحفظ..." : "حفظ التغييرات"}
             </button>
           </div>
         </form>

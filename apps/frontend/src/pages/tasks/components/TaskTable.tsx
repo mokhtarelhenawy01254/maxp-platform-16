@@ -312,6 +312,33 @@ export const TaskTable: React.FC<TaskTableProps> = ({
     }
   };
 
+  const handleDirectApprove = async (taskToApprove: Task) => {
+    try {
+      setIsSubmittingGate(true);
+      const token = tokenManager.getAccessToken();
+      const res = await fetch(buildApiUrl(`tasks/${taskToApprove.id}/approve`), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("تم اعتماد المهمة بنجاح");
+        if (onReloadTasks) onReloadTasks();
+        else updateTaskStatus(taskToApprove.id, "completed");
+      } else {
+        toast.error(data.error || "فشل اعتماد المهمة");
+      }
+    } catch {
+      toast.error("حدث خطأ أثناء اعتماد المهمة");
+    } finally {
+      setIsSubmittingGate(false);
+    }
+  };
+
   const handleReturn = async (
     reason: string,
     options?: { returnReasonType?: string; returnSeverity?: number },
@@ -712,8 +739,8 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                           type="button"
                           size="sm"
                           className="h-8 rounded-full px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-                          onClick={() => setApprovalGateTask(task)}
-                          title="اعتماد وإنجاز المهمة"
+                          onClick={() => handleDirectApprove(task)}
+                          title="اعتماد وإنجاز المهمة مباشرة"
                         >
                           اعتماد
                         </Button>
@@ -1035,8 +1062,8 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                                 type="button"
                                 size="sm"
                                 className="h-8 rounded-full px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-                                onClick={() => setApprovalGateTask(task)}
-                                title="اعتماد وإنجاز المهمة"
+                                onClick={() => handleDirectApprove(task)}
+                                title="اعتماد وإنجاز المهمة مباشرة"
                               >
                                 اعتماد
                               </Button>
