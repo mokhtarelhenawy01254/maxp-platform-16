@@ -484,6 +484,7 @@ export default function StorefrontThemes() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const auth = useOptionalAuth();
+  const user = auth?.user;
   const rawHighlightedThemeId = searchParams.get("theme")?.trim() || "";
   const highlightedThemeId =
     resolveStorefrontThemeId(rawHighlightedThemeId) || rawHighlightedThemeId;

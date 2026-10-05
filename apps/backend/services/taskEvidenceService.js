@@ -37,92 +37,43 @@ function validateDeliveryEvidence(evidenceData = {}, existingAttachments = []) {
   const numbersBeforeAfter = String(raw.numbersBeforeAfter || nested.numbersBeforeAfter || '').trim();
   const notTestedScope = String(raw.notTestedScope || nested.notTestedScope || '').trim();
   
+  // Agent info extraction (optional)
+  const rawAgentInfo = raw.agentInfo || nested.agentInfo || {};
+  let sanitizedAgentInfo = null;
+  if (raw.isAgent || nested.isAgent || rawAgentInfo.isAgent || rawAgentInfo.agentName) {
+    sanitizedAgentInfo = {
+      isAgent: true,
+      agentName: String(rawAgentInfo.agentName || raw.agentName || '').trim(),
+      commitOrRunId: String(rawAgentInfo.commitOrRunId || rawAgentInfo.runId || raw.agentRunId || '').trim(),
+      testOutput: String(rawAgentInfo.testOutput || raw.agentTestOutput || '').trim()
+    };
+  }
+
   // Proof attachment check
   const proofAttachmentId = raw.proofAttachmentId || nested.proofAttachmentId || raw.attachmentId || nested.attachmentId;
   const proofAttachmentUrl = raw.proofAttachmentUrl || nested.proofAttachmentUrl || raw.attachmentUrl || nested.attachmentUrl;
   const hasProofAttachment = Boolean(proofAttachmentId || proofAttachmentUrl || (Array.isArray(existingAttachments) && existingAttachments.length > 0));
 
-  // 1. Question 1: نوع التغيير
-  if (!changeType) {
-    missingFields.push('نوع التغيير (Change Type)');
-  }
+  const hasAnyEvidence = Boolean(
+    changeType || commitOrPath || numbersBeforeAfter || notTestedScope || hasProofAttachment || sanitizedAgentInfo
+  );
 
-  // 2. Question 2: كوميت / مسار
-  if (!commitOrPath) {
-    missingFields.push('الكوميت / مسار التعديل (Commit / File Path)');
-  }
-
-  // 3. Question 3: الأرقام قبل / بعد
-  if (!numbersBeforeAfter) {
-    missingFields.push('الأرقام قبل / بعد (Numbers Before & After)');
-  }
-
-  // 4. Question 4: «إيه اللي ما اختبرتهوش»
-  if (!notTestedScope) {
-    missingFields.push('«إيه اللي ما اختبرتهوش» (What wasn\'t tested / Limitations)');
-  }
-
-  // 5. Proof Attachment
-  if (!hasProofAttachment) {
-    missingFields.push('إثبات تشغيل مرفق (Attached Proof of Run)');
-  }
-
-  // 6. Agent output verification
-  const rawAgentInfo = raw.agentInfo || nested.agentInfo || {};
-  const isAgent = Boolean(raw.isAgent || nested.isAgent || rawAgentInfo.isAgent || raw.agentName || nested.agentName || rawAgentInfo.agentName);
-
-  let sanitizedAgentInfo = null;
-
-  if (isAgent) {
-    const agentName = String(rawAgentInfo.agentName || raw.agentName || nested.agentName || '').trim();
-    const commitOrRunId = String(rawAgentInfo.commitOrRunId || rawAgentInfo.runId || raw.agentRunId || nested.agentRunId || '').trim();
-    const testOutput = String(rawAgentInfo.testOutput || raw.agentTestOutput || nested.agentTestOutput || '').trim();
-
-    if (!agentName) {
-      missingFields.push('اسم الوكيل (Agent Name)');
-    }
-    if (!commitOrRunId) {
-      missingFields.push('معرّف التشغيل أو الكوميت للوكيل (Agent Run ID / Commit)');
-    }
-    if (!testOutput) {
-      missingFields.push('ناتج الاختبارات للوكيل (Agent Test Output)');
-    } else {
-      const normalizedOutput = testOutput.toLowerCase().replace(/[\s\.\!؟_،-]/g, '');
-      if (BANNED_AGENT_TEST_OUTPUTS.has(normalizedOutput) || testOutput.length < 10) {
-        missingFields.push('ناتج اختبارات حقيقي للوكيل («تمّت» وحدها ليست دليلاً معتمداً)');
-      }
-    }
-
-    sanitizedAgentInfo = {
-      isAgent: true,
-      agentName,
-      commitOrRunId,
-      testOutput
+  let sanitizedEvidence = null;
+  if (hasAnyEvidence) {
+    sanitizedEvidence = {
+      changeType: changeType || 'عام',
+      commitOrPath: commitOrPath || null,
+      numbersBeforeAfter: numbersBeforeAfter || null,
+      notTestedScope: notTestedScope || null,
+      proofAttachmentId: proofAttachmentId || (existingAttachments[0] ? existingAttachments[0].id : null),
+      proofAttachmentUrl: proofAttachmentUrl || (existingAttachments[0] ? existingAttachments[0].filePath : null),
+      proofAttachmentName: existingAttachments[0] ? (existingAttachments[0].originalName || existingAttachments[0].fileName) : null,
+      agentInfo: sanitizedAgentInfo,
+      submittedAt: new Date().toISOString()
     };
   }
 
-  if (missingFields.length > 0) {
-    const errorSummary = `بوابة التسليم: لا يمكن تسليم المهمة للمراجعة قبل اكتمال الدليل. الحقول الناقصة: ${missingFields.join(' · ')}`;
-    return {
-      isValid: false,
-      missingFields,
-      errorSummary,
-      sanitizedEvidence: null
-    };
-  }
-
-  const sanitizedEvidence = {
-    changeType,
-    commitOrPath,
-    numbersBeforeAfter,
-    notTestedScope,
-    proofAttachmentId: proofAttachmentId || (existingAttachments[0] ? existingAttachments[0].id : null),
-    proofAttachmentUrl: proofAttachmentUrl || (existingAttachments[0] ? existingAttachments[0].filePath : null),
-    proofAttachmentName: existingAttachments[0] ? (existingAttachments[0].originalName || existingAttachments[0].fileName) : 'مرفق تشغيلي',
-    agentInfo: sanitizedAgentInfo,
-    submittedAt: new Date().toISOString()
-  };
-
+  // Delivery is flexible and voluntary — never block submission on missing fields or screenshots
   return {
     isValid: true,
     missingFields: [],
@@ -141,21 +92,35 @@ function validateDeliveryEvidence(evidenceData = {}, existingAttachments = []) {
 function generateDeliveryComment(evidence = {}, user = {}) {
   const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || user.email || 'المنفّذ' : 'المنفّذ';
   
+  if (!evidence || Object.keys(evidence).length === 0) {
+    return `📋 **تسليم المهمة للمراجعة والاعتماد**
+تم التسليم بواسطة: **${userName}** بتاريخ ${new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })}`;
+  }
+
   let agentSection = '';
   if (evidence.agentInfo && evidence.agentInfo.isAgent) {
     agentSection = `\n- 🤖 **دليل مخرج الوكيل:** ${evidence.agentInfo.agentName} (Run/Commit: \`${evidence.agentInfo.commitOrRunId}\`)\n  \`\`\`text\n  ${evidence.agentInfo.testOutput}\n  \`\`\``;
   }
 
-  const attachmentNote = evidence.proofAttachmentName ? `\`${evidence.proofAttachmentName}\`` : 'مرفق تشغيلي مسجّل في الملفات';
+  const lines = [
+    `📋 **توثيق تسليم المهمة للمراجعة والاعتماد (Delivery Gate)**`,
+    `تم التسليم بواسطة: **${userName}** بتاريخ ${new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })}`,
+    ''
+  ];
 
-  return `📋 **توثيق تسليم المهمة للمراجعة والاعتماد (Delivery Gate)**
-تم التسليم بواسطة: **${userName}** بتاريخ ${new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })}
+  if (evidence.changeType) lines.push(`1. **نوع التغيير:** ${evidence.changeType}`);
+  if (evidence.commitOrPath) lines.push(`2. **الكوميت / مسار التعديل:** \`${evidence.commitOrPath}\``);
+  if (evidence.numbersBeforeAfter) lines.push(`3. **الأرقام قبل / بعد:** ${evidence.numbersBeforeAfter}`);
+  if (evidence.notTestedScope) lines.push(`4. **«إيه اللي ما اختبرتهوش»:** ${evidence.notTestedScope}`);
+  if (evidence.proofAttachmentName || evidence.proofAttachmentUrl) {
+    const attachmentNote = evidence.proofAttachmentName ? `\`${evidence.proofAttachmentName}\`` : 'مرفق تشغيلي';
+    lines.push(`- 📎 **إثبات التشغيل المرفق:** ${attachmentNote}`);
+  }
+  if (agentSection) {
+    lines.push(agentSection);
+  }
 
-1. **نوع التغيير:** ${evidence.changeType}
-2. **الكوميت / مسار التعديل:** \`${evidence.commitOrPath}\`
-3. **الأرقام قبل / بعد:** ${evidence.numbersBeforeAfter}
-4. **«إيه اللي ما اختبرتهوش»:** ${evidence.notTestedScope}
-- 📎 **إثبات التشغيل المرفق:** ${attachmentNote}${agentSection}`;
+  return lines.join('\n');
 }
 
 /**
@@ -167,59 +132,11 @@ function generateDeliveryComment(evidence = {}, user = {}) {
  * @returns {{ isValid: boolean, error?: string, isOverride: boolean }}
  */
 function validateApprovalGate(task = {}, user = {}, options = {}) {
-  const userRole = String(user.role || '').toUpperCase();
-  const isOwnerOrSuper = ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN'].includes(userRole);
-  const { ownerOverride = false, ownerOverrideReason = '', criteriaChecked = false, checklistState = [] } = options;
-
-  // If Owner Override is explicitly used
-  if (ownerOverride) {
-    if (!isOwnerOrSuper) {
-      return {
-        isValid: false,
-        error: 'صلاحية تجاوز بوابة الاعتماد (Owner Override) مقتصرة حصرياً على مالك المنصة أو مدير الشركة (OWNER / COMPANY_ADMIN)',
-        isOverride: false
-      };
-    }
-    const reason = String(ownerOverrideReason || '').trim();
-    if (!reason || reason.length < 5) {
-      return {
-        isValid: false,
-        error: 'يجب كتابة سبب واضح وموثّق لتجاوز الاعتماد الاستثنائي (Owner Override Reason)',
-        isOverride: false
-      };
-    }
-    return {
-      isValid: true,
-      isOverride: true
-    };
-  }
-
-  // 1. Evidence must be verified (hasEvidence === true)
-  if (!task.hasEvidence && !task.evidence) {
-    return {
-      isValid: false,
-      error: 'بوابة الاعتماد: لا يمكن اعتماد المهمة بدون دليل تسليم معتمد (hasEvidence=true)',
-      isOverride: false
-    };
-  }
-
-  // 2. Acceptance criteria checkboxes must all be satisfied
-  const acceptanceCriteriaStr = String(task.acceptanceCriteria || '').trim();
-  
-  if (acceptanceCriteriaStr) {
-    // If criteria are defined, they must be checked
-    if (!criteriaChecked && (!Array.isArray(checklistState) || checklistState.length === 0 || checklistState.some(c => !c.checked))) {
-      return {
-        isValid: false,
-        error: 'بوابة الاعتماد: يجب التأشير على جميع معايير القبول والتحقق منها قبل الاعتماد',
-        isOverride: false
-      };
-    }
-  }
-
+  // Approval is always allowed for authorized roles — no blocking on missing evidence or screenshots
+  const isOverride = Boolean(options.ownerOverride);
   return {
     isValid: true,
-    isOverride: false
+    isOverride
   };
 }
 

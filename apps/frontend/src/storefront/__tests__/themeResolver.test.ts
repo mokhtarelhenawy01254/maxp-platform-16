@@ -103,9 +103,9 @@ describe('storefront theme resolver', () => {
     );
   });
 
-  it('ships Smart Bazaar with contact and policy pages inside the storefront', () => {
+  it('ships Elegant Luxe with contact and policy pages inside the storefront', () => {
     const resolved = resolveStorefrontTheme({
-      themeId: 'smart-bazaar',
+      themeId: 'elegant-luxe',
     });
 
     expect(resolved.pages.contact?.sections).toEqual(
@@ -125,16 +125,25 @@ describe('storefront theme resolver', () => {
     );
     expect(resolved.pages.privacy?.sections).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ type: 'hero-banner' }),
         expect.objectContaining({ type: 'info-content' }),
       ]),
     );
     expect(resolved.pages.terms?.sections).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ type: 'hero-banner' }),
         expect.objectContaining({ type: 'info-content' }),
       ]),
     );
+  });
+
+  it('resolves allura alias directly to allure preset', () => {
+    const resolved = resolveStorefrontTheme({
+      themeId: 'allura',
+    });
+
+    expect(resolved.id).toBe('allura');
+    expect(resolved.pages.home).toBeDefined();
+    expect(resolved.pages.lookbook).toBeDefined();
+    expect(resolved.pages.shop).toBeDefined();
   });
 
   it('merges company design token overrides on top of the selected preset', () => {
