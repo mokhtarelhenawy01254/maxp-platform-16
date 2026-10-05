@@ -11,6 +11,8 @@ import {
   DeviceTabletIcon,
   PaintBrushIcon,
   SparklesIcon,
+  Squares2X2Icon,
+  AdjustmentsHorizontalIcon,
 } from "@heroicons/react/24/outline";
 import { type StudioDeviceMode } from "./StudioTypes";
 import { StudioPageSelector } from "./StudioPageSelector";
@@ -25,6 +27,10 @@ interface StudioTopBarProps {
   canRedo: boolean;
   saving: boolean;
   previewUrl?: string;
+  isLayersOpen?: boolean;
+  isInspectorOpen?: boolean;
+  onToggleLayers?: () => void;
+  onToggleInspector?: () => void;
   onBack: () => void;
   onPageChange: (pageKey: string) => void;
   onDeviceChange: (mode: StudioDeviceMode) => void;
@@ -45,6 +51,10 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
   canRedo,
   saving,
   previewUrl,
+  isLayersOpen = true,
+  isInspectorOpen = false,
+  onToggleLayers,
+  onToggleInspector,
   onBack,
   onPageChange,
   onDeviceChange,
@@ -124,6 +134,41 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
           >
             <DevicePhoneMobileIcon className="h-4 w-4" />
           </button>
+        </div>
+
+        {/* Panel Toggles (Desktop only) */}
+        <div className="hidden md:flex items-center gap-1 border-s border-border ps-2 ms-0.5">
+          {onToggleLayers && (
+            <button
+              type="button"
+              onClick={onToggleLayers}
+              className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all ${
+                isLayersOpen
+                  ? "bg-primary/10 text-primary border border-primary/20"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
+              }`}
+              title={isLayersOpen ? "إخفاء شجرة الهيكل" : "إظهار شجرة الهيكل"}
+            >
+              <Squares2X2Icon className="h-4 w-4" />
+              <span className="hidden xl:inline">الهيكل</span>
+            </button>
+          )}
+
+          {onToggleInspector && (
+            <button
+              type="button"
+              onClick={onToggleInspector}
+              className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all ${
+                isInspectorOpen
+                  ? "bg-primary/10 text-primary border border-primary/20"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
+              }`}
+              title={isInspectorOpen ? "إخفاء لوحة الخصائص" : "إظهار لوحة الخصائص"}
+            >
+              <AdjustmentsHorizontalIcon className="h-4 w-4" />
+              <span className="hidden xl:inline">الخصائص</span>
+            </button>
+          )}
         </div>
       </div>
 

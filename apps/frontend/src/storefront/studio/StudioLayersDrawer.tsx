@@ -16,6 +16,7 @@ import {
   ShoppingBagIcon,
   CreditCardIcon,
   SparklesIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { getStorefrontSectionLabel } from "../sections/manifest";
 import type { StudioLeftPanelTab } from "./StudioTypes";
@@ -32,6 +33,7 @@ interface StudioLayersDrawerProps {
   onOpenSectionCatalog: () => void;
   onTabChange: (tab: StudioLeftPanelTab) => void;
   onUpdateThemeTokens?: (tokens: Record<string, unknown>) => void;
+  onCollapse?: () => void;
 }
 
 export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
@@ -46,6 +48,7 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
   onOpenSectionCatalog,
   onTabChange,
   onUpdateThemeTokens,
+  onCollapse,
 }) => {
   const primaryColor = (designTokens?.colors as any)?.primary || "#0f172a";
   const fontFamily = (designTokens?.typography as any)?.fontFamily || "Cairo";
@@ -134,31 +137,41 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
   return (
     <aside className="flex h-full w-full flex-col border-e border-border/80 bg-card/95 backdrop-blur-md">
       {/* Tab Switcher (Layers vs Theme) */}
-      <div className="flex border-b border-border/80 p-2">
+      <div className="flex items-center border-b border-border/80 p-2 gap-1">
         <button
           type="button"
           onClick={() => onTabChange("layers")}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold transition-all ${
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition-all ${
             leftPanelTab === "layers"
               ? "bg-secondary text-foreground shadow-sm ring-1 ring-border/50"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <Squares2X2Icon className="h-4 w-4" />
-          <span>هيكل الصفحة ({sections.length})</span>
+          <span>الهيكل ({sections.length})</span>
         </button>
         <button
           type="button"
           onClick={() => onTabChange("theme")}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold transition-all ${
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition-all ${
             leftPanelTab === "theme"
               ? "bg-secondary text-foreground shadow-sm ring-1 ring-border/50"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <PaintBrushIcon className="h-4 w-4" />
-          <span>أنماط وعناصر المتجر</span>
+          <span>الأنماط</span>
         </button>
+        {onCollapse && (
+          <button
+            type="button"
+            onClick={onCollapse}
+            className="rounded-xl p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            title="إخفاء لوحة الهيكل"
+          >
+            <XMarkIcon className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {/* Content Area */}

@@ -62,6 +62,13 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const [showCatalogModal, setShowCatalogModal] = useState<boolean>(false);
   const [showImagePickerModal, setShowImagePickerModal] = useState<boolean>(false);
   const [mobileStudioTab, setMobileStudioTab] = useState<"canvas" | "layers" | "inspector">("canvas");
+  const [isLayersOpen, setIsLayersOpen] = useState<boolean>(true);
+  const [isInspectorOpen, setIsInspectorOpen] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth >= 1280;
+    }
+    return false;
+  });
 
   // History State for Undo / Redo
   const {
@@ -297,7 +304,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex h-screen w-screen flex-col overflow-hidden bg-background text-foreground" dir="rtl">
+    <div className="fixed inset-0 z-[100] flex h-screen w-full flex-col overflow-hidden bg-background text-foreground" dir="rtl">
       {/* 1. Studio Top Bar */}
       <StudioTopBar
         storeName={storeName}
@@ -309,6 +316,15 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         canRedo={canRedo}
         saving={saving}
         previewUrl={previewUrl}
+        isLayersOpen={isLayersOpen}
+        isInspectorOpen={isInspectorOpen}
+        onToggleLayers={() => setIsLayersOpen((prev) => !prev)}
+        onToggleInspector={() => {
+          if (!isInspectorOpen && !selectedSectionKey && activeSections.length > 0) {
+            setSelectedSectionKey(getSectionKey(activeSections[0], 0));
+          }
+          setIsInspectorOpen((prev) => !prev);
+        }}
         onBack={onBack}
         onPageChange={(page) => {
           setActivePageKey(page);
@@ -324,11 +340,11 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
       {/* 2. Studio 3-Dock Workspace */}
       <div className="relative flex flex-1 h-[calc(100vh-4rem)] w-full overflow-hidden">
-        {/* Left Studio Dock (Layers / Catalog) */}
+        {/* Right Studio Dock (Layers / Catalog) */}
         <div
           className={`h-full shrink-0 border-e border-border/80 bg-card ${
             mobileStudioTab === "layers" ? "flex w-full" : "hidden"
-          } md:flex md:w-80 flex-col`}
+          } ${isLayersOpen ? "md:flex md:w-80" : "md:hidden"} flex-col transition-all duration-200`}
         >
           <StudioLayersDrawer
             sections={activeSections}
@@ -337,6 +353,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
             designTokens={currentDesignTokens}
             onSelectSection={(key) => {
               setSelectedSectionKey(key);
+              setIsInspectorOpen(true);
               setMobileStudioTab("inspector");
             }}
             onMoveSection={handleMoveSection}
@@ -345,6 +362,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
             onOpenSectionCatalog={() => setShowCatalogModal(true)}
             onTabChange={setLeftPanelTab}
             onUpdateThemeTokens={handleDesignTokensChange}
+            onCollapse={() => setIsLayersOpen(false)}
           />
         </div>
 
@@ -381,6 +399,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                         className="group relative cursor-pointer"
                         onClick={() => {
                           setSelectedSectionKey(stableSectionKey);
+                          setIsInspectorOpen(true);
                           setMobileStudioTab("inspector");
                         }}
                       >
@@ -450,7 +469,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
                 {/* Floating WhatsApp Live Button */}
                 {whatsapp.enabled && (
-                  <div className="fixed bottom-6 end-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white shadow-2xl hover:scale-105 transition-transform pointer-events-none">
+                  <div className="absolute bottom-6 end-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white shadow-2xl hover:scale-105 transition-transform pointer-events-none">
                     <ChatBubbleLeftRightIcon className="h-6 w-6" />
                   </div>
                 )}
@@ -459,16 +478,16 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
           </StudioCanvasStage>
         </div>
 
-        {/* Right Studio Dock (Property Inspector) */}
+        {/* Left Studio Dock (Property Inspector) */}
         <div
           className={`h-full shrink-0 border-s border-border/80 bg-card ${
             mobileStudioTab === "inspector" ? "flex w-full" : "hidden"
-          } md:flex md:w-80 lg:w-96 flex-col`}
+          } ${isInspectorOpen ? "md:flex md:w-80 lg:w-96" : "md:hidden"} flex-col transition-all duration-200`}
         >
           <StudioPropertyInspector
             selectedSectionKey={selectedSectionKey}
             sectionConfig={selectedSectionConfig}
-            onClose={() => setSelectedSectionKey("")}
+            onClose={() => setIsInspectorOpen(false)}
             onUpdateField={handleUpdateSectionField}
             onOpenImagePicker={() => setShowImagePickerModal(true)}
           />
@@ -499,7 +518,10 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         </button>
         <button
           type="button"
-          onClick={() => setMobileStudioTab("inspector")}
+          onClick={() => {
+            setMobileStudioTab("inspector");
+            setIsInspectorOpen(true);
+          }}
           className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1 text-[10px] font-bold ${
             mobileStudioTab === "inspector" ? "text-primary" : "text-muted-foreground"
           }`}

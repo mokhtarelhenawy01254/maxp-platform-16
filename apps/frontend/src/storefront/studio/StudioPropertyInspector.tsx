@@ -37,7 +37,15 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
 
   if (!selectedSectionKey || !sectionConfig) {
     return (
-      <aside className="flex h-full w-full flex-col items-center justify-center p-6 text-center border-s border-border/80 bg-card/95 backdrop-blur-md select-none">
+      <aside className="relative flex h-full w-full flex-col items-center justify-center p-6 text-center border-s border-border/80 bg-card/95 backdrop-blur-md select-none">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-3 end-3 rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          title="إغلاق اللوحة"
+        >
+          <XMarkIcon className="h-4 w-4" />
+        </button>
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-3">
           <AdjustmentsHorizontalIcon className="h-6 w-6" />
         </div>
