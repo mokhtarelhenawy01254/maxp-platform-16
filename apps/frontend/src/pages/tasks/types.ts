@@ -48,6 +48,7 @@ export interface Task {
   goalProgress?: number | null;
   title: string;
   description: string;
+  aiDescription?: string | null;
   status: TaskStatus;
   priority: TaskPriority;
   type: string;
@@ -152,6 +153,7 @@ export interface TaskDraft {
   metricTargetValue: number | null;
   metricCurrentValue: number;
   tags: string[];
+  aiDescription?: string;
   acceptanceCriteria?: string;
 }
 

@@ -147,6 +147,7 @@ const createInitialTaskDraft = (
   metricTargetValue: null,
   metricCurrentValue: 0,
   tags: [],
+  aiDescription: "",
 });
 
 interface TasksProps {

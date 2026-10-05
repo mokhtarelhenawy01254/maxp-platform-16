@@ -51,6 +51,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [aiDescription, setAiDescription] = useState('');
   const [acceptanceCriteria, setAcceptanceCriteria] = useState('');
   const [copiedDesc, setCopiedDesc] = useState(false);
   const [assignedTo, setAssignedTo] = useState('');
@@ -68,6 +69,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     if (!task) return;
     setTitle(task.title || '');
     setDescription(task.description || '');
+    setAiDescription(task.aiDescription || '');
     setAcceptanceCriteria(task.acceptanceCriteria || '');
     setAssignedTo(String(
       task.assignedTo ||
@@ -213,6 +215,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         title: title.trim(),
         description: description.trim() || title.trim(),
         acceptanceCriteria: acceptanceCriteria.trim() || undefined,
+        aiDescription: aiDescription.trim() || undefined,
         priority,
         assignedTo: assignedTo || undefined,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
@@ -323,6 +326,29 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               rows={3}
               style={{ ...modalStyles.input, resize: 'vertical' }}
             />
+            <span style={{ fontSize: 11, color: 'var(--text-dim)', display: 'block', marginTop: 3 }}>
+              وصف المهمة والتعليمات الموجهة للشخص الذي سينفّذها.
+            </span>
+          </div>
+
+          {/* AI Description (AI Brief) */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+              <label style={modalStyles.label}>وصف الذكاء الاصطناعي (AI Brief)</label>
+              <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(147, 51, 234, 0.15)', color: '#c084fc', border: '1px solid rgba(147, 51, 234, 0.3)' }}>
+                AI
+              </span>
+            </div>
+            <textarea
+              value={aiDescription}
+              onChange={(e) => setAiDescription(e.target.value)}
+              placeholder="تعليمات وسياق موجه للوكلاء والنماذج الذكية (البرومبت، المدخلات، المخرجات، القيود)..."
+              rows={3}
+              style={{ ...modalStyles.input, resize: 'vertical' }}
+            />
+            <span style={{ fontSize: 11, color: 'var(--text-dim)', display: 'block', marginTop: 3 }}>
+              سياق تقني أو برومبت لتنفيذ المهمة آلياً بواسطة وكيل ذكي.
+            </span>
           </div>
 
           {/* Acceptance Criteria */}

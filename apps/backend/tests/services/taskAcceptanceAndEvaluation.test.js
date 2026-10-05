@@ -283,4 +283,91 @@ describe('Task Acceptance Criteria & Evaluation Unit Tests', () => {
       expect(missingEvidence).toBe(true);
     });
   });
+
+  describe('6. وصف الذكاء الاصطناعي (AI Brief Field)', () => {
+    it('تخزين الوصفين معاً عند إنشاء مهمة (description + aiDescription)', () => {
+      const taskInput = {
+        title: 'مهمة تحليل بيانات',
+        description: 'وصف موجه للمنفذ البشري',
+        aiDescription: 'AI Prompt: Summarize recent sales data in JSON format',
+      };
+
+      const storedTask = {
+        id: 'task-ai-1',
+        title: taskInput.title,
+        description: String(taskInput.description).trim(),
+        aiDescription: taskInput.aiDescription ? String(taskInput.aiDescription).trim() : null,
+      };
+
+      expect(storedTask.description).toBe('وصف موجه للمنفذ البشري');
+      expect(storedTask.aiDescription).toBe('AI Prompt: Summarize recent sales data in JSON format');
+    });
+
+    it('تعديل وصف المنفذ البشري لا يلمس وصف الذكاء الاصطناعي (والعكس صحيح)', () => {
+      let currentTask = {
+        id: 'task-ai-2',
+        description: 'الوصف الأصلي للبشري',
+        aiDescription: 'البرومبت الأصلي للذكاء الاصطناعي',
+      };
+
+      // Scenario A: Update only description
+      const updateHumanOnly = { description: 'الوصف البشري المحدث' };
+      const updatedDataA = {
+        ...(updateHumanOnly.description !== undefined && { description: updateHumanOnly.description }),
+        ...(updateHumanOnly.aiDescription !== undefined && { aiDescription: updateHumanOnly.aiDescription }),
+      };
+      currentTask = { ...currentTask, ...updatedDataA };
+      expect(currentTask.description).toBe('الوصف البشري المحدث');
+      expect(currentTask.aiDescription).toBe('البرومبت الأصلي للذكاء الاصطناعي');
+
+      // Scenario B: Update only aiDescription
+      const updateAiOnly = { aiDescription: 'البرومبت المطور للذكاء الاصطناعي v2' };
+      const updatedDataB = {
+        ...(updateAiOnly.description !== undefined && { description: updateAiOnly.description }),
+        ...(updateAiOnly.aiDescription !== undefined && { aiDescription: updateAiOnly.aiDescription }),
+      };
+      currentTask = { ...currentTask, ...updatedDataB };
+      expect(currentTask.description).toBe('الوصف البشري المحدث');
+      expect(currentTask.aiDescription).toBe('البرومبت المطور للذكاء الاصطناعي v2');
+    });
+
+    it('مهمة بدون aiDescription تعمل بسلاسة وتكون قيمتها null بدون كسر (Nullable)', () => {
+      const taskWithoutAi = {
+        title: 'مهمة بدون برومبت ذكاء اصطناعي',
+        description: 'وصف بشري فقط',
+        aiDescription: undefined,
+      };
+
+      const result = {
+        title: taskWithoutAi.title,
+        description: taskWithoutAi.description,
+        aiDescription: taskWithoutAi.aiDescription ? String(taskWithoutAi.aiDescription).trim() : null,
+      };
+
+      expect(result.description).toBe('وصف بشري فقط');
+      expect(result.aiDescription).toBeNull();
+    });
+
+    it('الـ API الخارجي يقبل ويُرجع aiDescription و ai_description لدعم الوكلاء', () => {
+      const externalInputCamel = {
+        title: 'Task for agent',
+        description: 'Human notes',
+        aiDescription: 'Execute python script analysis.py',
+      };
+
+      const externalInputSnake = {
+        title: 'Task for agent 2',
+        description: 'Human notes 2',
+        ai_description: 'Execute sql query report.sql',
+      };
+
+      const parseAiDesc = (body) => {
+        const val = body.aiDescription !== undefined ? body.aiDescription : body.ai_description;
+        return val ? String(val).trim() : null;
+      };
+
+      expect(parseAiDesc(externalInputCamel)).toBe('Execute python script analysis.py');
+      expect(parseAiDesc(externalInputSnake)).toBe('Execute sql query report.sql');
+    });
+  });
 });

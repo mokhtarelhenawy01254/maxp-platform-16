@@ -405,6 +405,7 @@ class MonitorApiClient {
       id?: string;
       title: string;
       description?: string;
+      aiDescription?: string;
       priority?: string;
       assignedTo?: string;
       dueDate?: string;
@@ -429,6 +430,7 @@ class MonitorApiClient {
       recurringRule: taskData.recurringRule || null,
       watchers: taskData.watchers || [],
       acceptanceCriteria: taskData.acceptanceCriteria || undefined,
+      aiDescription: taskData.aiDescription !== undefined ? taskData.aiDescription : undefined,
     };
 
     const res = await axios.put(`${base}/api/v1/tasks/${id}`, payload, {
@@ -441,6 +443,7 @@ class MonitorApiClient {
   async createTask(taskData: {
     title: string;
     description?: string;
+    aiDescription?: string;
     priority?: string;
     assignedTo?: string;
     dueDate?: string;
@@ -462,6 +465,7 @@ class MonitorApiClient {
       recurringRule: taskData.recurringRule || null,
       watchers: taskData.watchers || [],
       acceptanceCriteria: taskData.acceptanceCriteria || undefined,
+      aiDescription: taskData.aiDescription || undefined,
     };
 
     const res = await axios.post(`${base}/api/v1/tasks`, payload, {

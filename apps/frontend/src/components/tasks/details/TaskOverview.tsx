@@ -126,13 +126,31 @@ const TaskOverview: React.FC<TaskOverviewProps> = ({
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
             <DocumentDuplicateIcon className="h-5 w-5 text-indigo-500" />
-            الوصف
+            الوصف (للمنفّذ البشري)
           </h3>
           <div className="prose max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
             {task.description}
           </div>
         </div>
       )}
+
+      {/* AI Description (AI Brief) */}
+      {task.aiDescription ? (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-purple-200 dark:border-purple-900/50 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <LightBulbIcon className="h-5 w-5 text-purple-600" />
+              وصف الذكاء الاصطناعي (AI Brief)
+            </h3>
+            <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+              AI
+            </span>
+          </div>
+          <div className="prose max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed font-mono text-sm bg-purple-50/40 dark:bg-purple-950/20 p-4 rounded-lg border border-purple-100 dark:border-purple-900/30">
+            {task.aiDescription}
+          </div>
+        </div>
+      ) : null}
 
       {/* Related Links */}
       {visibility.showRelatedLinks &&

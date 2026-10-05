@@ -188,7 +188,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               />
             </TaskModalField>
 
-            <TaskModalField label="الوصف" required>
+            <TaskModalField
+              label="وصف المهمة (للمنفّذ البشري)"
+              hint="وصف المهمة والتعليمات الموجهة للشخص الذي سينفّذها."
+              required
+            >
               <Textarea
                 data-testid="task-description-input"
                 value={newTask.description}
@@ -197,6 +201,22 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 }
                 className={taskModalTextareaClassName}
                 placeholder="اكتب ملخصًا عمليًا لما يجب تنفيذه، وما المتوقع تسليمه أو متابعته."
+              />
+            </TaskModalField>
+
+            <TaskModalField
+              label="وصف الذكاء الاصطناعي (AI Brief)"
+              hint="تعليمات وسياق موجه للوكلاء والنماذج الذكية (البرومبت، المدخلات، المخرجات، القيود)."
+            >
+              <Textarea
+                data-testid="task-ai-description-input"
+                value={newTask.aiDescription || ""}
+                onChange={(event) =>
+                  setNewTask({ ...newTask, aiDescription: event.target.value })
+                }
+                className={taskModalTextareaClassName}
+                placeholder="اكتب البرومبت أو السياق الفني للوكيل الذكي (المدخلات والمخرجات المطلوبة)..."
+                rows={3}
               />
             </TaskModalField>
 

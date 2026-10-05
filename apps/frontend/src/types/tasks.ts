@@ -35,6 +35,7 @@ export interface Task {
   currentMemberId?: string | null;
   businessValue?: string | null;
   acceptanceCriteria?: string | null;
+  aiDescription?: string | null;
 
   nextTaskId?: string | null;
   previousTaskId?: string | null;

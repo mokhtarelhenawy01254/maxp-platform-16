@@ -97,13 +97,32 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             />
           </TaskModalField>
 
-          <TaskModalField label="الوصف" required>
+          <TaskModalField
+            label="وصف المهمة (للمنفّذ البشري)"
+            hint="وصف المهمة والتعليمات الموجهة للشخص الذي سينفّذها."
+            required
+          >
             <Textarea
               value={task.description}
               onChange={(event) =>
                 setEditingTask({ ...task, description: event.target.value })
               }
               className={taskModalTextareaClassName}
+            />
+          </TaskModalField>
+
+          <TaskModalField
+            label="وصف الذكاء الاصطناعي (AI Brief)"
+            hint="تعليمات وسياق موجه للوكلاء والنماذج الذكية (البرومبت، المدخلات، المخرجات، القيود)."
+          >
+            <Textarea
+              value={task.aiDescription || ""}
+              onChange={(event) =>
+                setEditingTask({ ...task, aiDescription: event.target.value })
+              }
+              className={taskModalTextareaClassName}
+              placeholder="اكتب البرومبت أو السياق الفني للوكيل الذكي..."
+              rows={3}
             />
           </TaskModalField>
 

@@ -100,6 +100,8 @@ const formatTask = (task) => ({
   id: task.id,
   title: task.title,
   description: task.description,
+  aiDescription: task.aiDescription || null,
+  acceptanceCriteria: task.acceptanceCriteria || null,
   status: task.status,
   priority: task.priority,
   type: task.type,
@@ -386,6 +388,8 @@ const taskExternalController = {
         goalId,
         title,
         description,
+        aiDescription: rawAiDescription,
+        ai_description: rawAiDescriptionUnderscore,
         priority,
         type = 'general',
         assignedTo,
@@ -453,6 +457,8 @@ const taskExternalController = {
         });
       }
 
+      const finalAiDescription = rawAiDescription !== undefined ? rawAiDescription : rawAiDescriptionUnderscore;
+
       const createdTask = await prisma.task.create({
         data: {
           id: uuidv4(),
@@ -461,6 +467,7 @@ const taskExternalController = {
           goalId: goalId || null,
           title: String(title).trim(),
           description: String(description).trim(),
+          aiDescription: finalAiDescription ? String(finalAiDescription).trim() : null,
           acceptanceCriteria: acceptanceCriteria ? String(acceptanceCriteria).trim() : null,
           status: 'PENDING',
           priority: normalizePriority(priority),
@@ -781,6 +788,8 @@ const taskExternalController = {
       const { id } = req.params;
       const title = req.body.title;
       const description = req.body.description;
+      const aiDescription = req.body.aiDescription !== undefined ? req.body.aiDescription : req.body.ai_description;
+      const acceptanceCriteria = req.body.acceptanceCriteria !== undefined ? req.body.acceptanceCriteria : req.body.acceptance_criteria;
       const priority = req.body.priority;
       const dueDate = req.body.dueDate !== undefined ? req.body.dueDate : req.body.due_date;
       const tags = req.body.tags;
@@ -802,6 +811,8 @@ const taskExternalController = {
       const updatableFields = [
         title,
         description,
+        aiDescription,
+        acceptanceCriteria,
         priority,
         dueDate,
         tags,
@@ -906,6 +917,20 @@ const taskExternalController = {
         updateData.description = description.trim();
         if (updateData.description !== currentTask.description) {
           changeList.push('الوصف');
+        }
+      }
+
+      if (aiDescription !== undefined) {
+        updateData.aiDescription = aiDescription ? String(aiDescription).trim() : null;
+        if (updateData.aiDescription !== currentTask.aiDescription) {
+          changeList.push('وصف الذكاء الاصطناعي');
+        }
+      }
+
+      if (acceptanceCriteria !== undefined) {
+        updateData.acceptanceCriteria = acceptanceCriteria ? String(acceptanceCriteria).trim() : null;
+        if (updateData.acceptanceCriteria !== currentTask.acceptanceCriteria) {
+          changeList.push('معايير القبول');
         }
       }
 

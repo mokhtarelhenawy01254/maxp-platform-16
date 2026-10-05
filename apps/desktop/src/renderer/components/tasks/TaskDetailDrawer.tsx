@@ -686,6 +686,65 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
               <TaskDescriptionRenderer description={task.description || ''} />
             </div>
 
+            {/* AI BRIEF (وصف الذكاء الاصطناعي) */}
+            {task.aiDescription ? (
+              <div
+                style={{
+                  ...drawerStyles.cardSection,
+                  border: '1px solid rgba(168, 85, 247, 0.25)',
+                  background: 'rgba(168, 85, 247, 0.04)',
+                  borderRadius: 8,
+                  padding: '12px 14px',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: 8,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontWeight: 700,
+                      fontSize: 13,
+                      color: 'var(--text-primary)',
+                    }}
+                  >
+                    <span>وصف الذكاء الاصطناعي (AI Brief)</span>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: 12,
+                      background: 'rgba(168, 85, 247, 0.15)',
+                      color: '#c084fc',
+                      border: '1px solid rgba(168, 85, 247, 0.3)',
+                    }}
+                  >
+                    AI
+                  </span>
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    lineHeight: 1.6,
+                    color: 'var(--text-secondary)',
+                    whiteSpace: 'pre-wrap',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  {task.aiDescription}
+                </div>
+              </div>
+            ) : null}
+
             {/* SECTION 3: SUBTASKS */}
             <div style={drawerStyles.cardSection}>
               <TaskSubtasks taskId={task.id} canEdit={canEditTask} />
