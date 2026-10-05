@@ -71,7 +71,7 @@ export const LandingHeroCockpit: React.FC = () => {
           </h1>
 
           <p className="mt-6 text-base sm:text-xl text-zinc-400 max-w-3xl mx-auto leading-relaxed">
-            من أول <span className="text-white font-semibold">رد ذكي على واتساب</span> في ثانيتين،
+            من أول <span className="text-white font-semibold">رد ذكي على واتساب</span> فورًا،
             لخصم القطعة من <span className="text-white font-semibold">المخزن وكاشير الفرع</span>،
             لإصدار <span className="text-white font-semibold">بوليصة بوسطة بـ COD</span>،
             وحساب <span className="text-emerald-400 font-semibold">صافي أرباحك الحقيقية</span> بعد مصاريف الإعلانات.
