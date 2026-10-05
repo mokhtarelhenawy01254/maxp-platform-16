@@ -128,4 +128,20 @@ describe("enhancedOrders manual-access", () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data).toEqual({ subscription: "ACTIVE", installed: true });
   });
+
+  it("returns ACTIVE for AFFILIATE when affiliate-pro is active", async () => {
+    mockCurrentUser = { id: "aff-1", role: "AFFILIATE", companyId: "company-1", email: "aff@maxp.local" };
+    mockPrisma.companyApp.findMany.mockResolvedValue([
+      {
+        status: "ACTIVE",
+        app: { slug: "affiliate-pro", name: "نظام الأفليت" },
+      },
+    ]);
+
+    const res = await request(app).get("/orders-enhanced/manual-access").expect(200);
+
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.subscription).toBe("ACTIVE");
+    expect(res.body.data.installed).toBe(true);
+  });
 });
