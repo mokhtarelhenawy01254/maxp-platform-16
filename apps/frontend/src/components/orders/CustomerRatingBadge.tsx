@@ -547,6 +547,22 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
     md: "w-4 h-4",
   }[size];
 
+  // 4. Clean Non-Interactive Static Badge (Zero Click, Zero Popover)
+  if (!interactive) {
+    return (
+      <span
+        className={`inline-flex items-center font-semibold rounded-md border select-none transition-colors duration-150 cursor-default ${sizeClasses} ${healthInfo.badgeClass} ${className}`}
+        title={`مؤشر صحة العميل الآلي: ${currentOption.label} — ${healthInfo.formattedScore}/10 — ${healthInfo.diagnosis}`}
+        aria-label={`تقييم العميل الآلي: ${currentOption.label} (${healthInfo.formattedScore})`}
+      >
+        <span>{currentOption.shortLabel}</span>
+        <span className="tabular-nums font-mono text-[10px] opacity-75">
+          {healthInfo.formattedScore}
+        </span>
+      </span>
+    );
+  }
+
   return (
     <div
       ref={dropdownRef}
