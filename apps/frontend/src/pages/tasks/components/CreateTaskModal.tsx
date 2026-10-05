@@ -201,6 +201,22 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             </TaskModalField>
 
             <TaskModalField
+              label="معايير القبول (Acceptance Criteria)"
+              hint="اكتب كل معيار في سطر منفصل؛ ستُلزم المنفذ بها عند التسليم."
+            >
+              <Textarea
+                data-testid="task-acceptance-criteria-input"
+                value={newTask.acceptanceCriteria || ""}
+                onChange={(event) =>
+                  setNewTask({ ...newTask, acceptanceCriteria: event.target.value })
+                }
+                className={taskModalTextareaClassName}
+                placeholder={"مثال:\n- اكتمال إعداد التقرير بنسبة 100%\n- إرفاق لقطة شاشة لإثبات التشغيل"}
+                rows={3}
+              />
+            </TaskModalField>
+
+            <TaskModalField
               label="الساعات المقدرة"
               hint="اتركها 0 إذا كانت المهمة سريعة أو لا تحتاج تقديرًا زمنيًا."
             >

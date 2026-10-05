@@ -312,7 +312,10 @@ export const TaskTable: React.FC<TaskTableProps> = ({
     }
   };
 
-  const handleReturn = async (reason: string) => {
+  const handleReturn = async (
+    reason: string,
+    options?: { returnReasonType?: string; returnSeverity?: number },
+  ) => {
     if (!approvalGateTask) return;
     try {
       setIsSubmittingGate(true);
@@ -323,7 +326,12 @@ export const TaskTable: React.FC<TaskTableProps> = ({
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ reason }),
+        body: JSON.stringify({
+          reason,
+          revisionReason: reason,
+          returnReasonType: options?.returnReasonType,
+          returnSeverity: options?.returnSeverity,
+        }),
       });
       const data = await res.json();
       if (data.success) {

@@ -106,6 +106,21 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               className={taskModalTextareaClassName}
             />
           </TaskModalField>
+
+          <TaskModalField
+            label="معايير القبول (Acceptance Criteria)"
+            hint="اكتب كل معيار في سطر منفصل؛ سيتم فحصها عند طلب الاعتماد."
+          >
+            <Textarea
+              value={task.acceptanceCriteria || ""}
+              onChange={(event) =>
+                setEditingTask({ ...task, acceptanceCriteria: event.target.value })
+              }
+              className={taskModalTextareaClassName}
+              placeholder={"مثال:\n- إنجاز متطلبات المهمة\n- فحص النتيجة ورفع الإثبات"}
+              rows={3}
+            />
+          </TaskModalField>
         </TaskModalSection>
 
         <div className="space-y-4">

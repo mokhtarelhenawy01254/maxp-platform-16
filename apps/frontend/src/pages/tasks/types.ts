@@ -152,6 +152,7 @@ export interface TaskDraft {
   metricTargetValue: number | null;
   metricCurrentValue: number;
   tags: string[];
+  acceptanceCriteria?: string;
 }
 
 export interface GoalOption {

@@ -11,6 +11,11 @@ import {
   ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/outline";
 
+export interface ReturnOptions {
+  returnReasonType?: string;
+  returnSeverity?: number;
+}
+
 interface ApprovalGateModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -28,7 +33,7 @@ interface ApprovalGateModalProps {
   };
   currentUserRole?: string;
   onApprove: (options: { ownerOverride?: boolean; ownerOverrideReason?: string; criteriaChecked?: boolean }) => Promise<void>;
-  onReturn: (reason: string) => Promise<void>;
+  onReturn: (reason: string, options?: ReturnOptions) => Promise<void>;
   isSubmitting?: boolean;
 }
 
@@ -59,6 +64,8 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
   const [checklist, setChecklist] = useState(initialChecklist);
   const [returnMode, setReturnMode] = useState(false);
   const [returnReason, setReturnReason] = useState("");
+  const [returnReasonType, setReturnReasonType] = useState<string>("QUALITY");
+  const [returnSeverity, setReturnSeverity] = useState<number>(1);
   const [useOwnerOverride, setUseOwnerOverride] = useState(false);
   const [ownerOverrideReason, setOwnerOverrideReason] = useState("");
 
@@ -87,7 +94,10 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
 
   const handleReturnSubmit = async () => {
     if (!returnReason.trim() || isSubmitting) return;
-    await onReturn(returnReason.trim());
+    await onReturn(returnReason.trim(), {
+      returnReasonType,
+      returnSeverity,
+    });
   };
 
   return (
@@ -302,18 +312,55 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
 
         {/* Return Drawer (Collapsible) */}
         {returnMode && (
-          <div className="px-5 py-3.5 bg-amber-50 dark:bg-amber-950/30 border-t border-amber-200 dark:border-amber-900/40 text-xs animate-in slide-in-from-bottom duration-150">
-            <label className="block font-bold text-amber-900 dark:text-amber-300 mb-1.5">
-              سبب الإرجاع للتعديل والملاحظات المطلوبة <span className="text-rose-500">* (إلزامي)</span>
-            </label>
-            <textarea
-              rows={2}
-              value={returnReason}
-              onChange={(e) => setReturnReason(e.target.value)}
-              placeholder="اكتب بوضوح ما هو الناقص وما المطلوب من المنفذ تعديله أو إرفاقه قبل إعادة التسليم..."
-              className="w-full p-2.5 rounded-xl border border-amber-300 dark:border-amber-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40 resize-none text-xs"
-            />
-            <div className="flex justify-end gap-2 mt-2">
+          <div className="px-5 py-3.5 bg-amber-50 dark:bg-amber-950/30 border-t border-amber-200 dark:border-amber-900/40 text-xs animate-in slide-in-from-bottom duration-150 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-amber-900 dark:text-amber-300 mb-1">
+                  نوع سبب الإرجاع <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={returnReasonType}
+                  onChange={(e) => setReturnReasonType(e.target.value)}
+                  className="w-full p-2 rounded-lg border border-amber-300 dark:border-amber-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-xs focus:ring-2 focus:ring-amber-500/40"
+                >
+                  <option value="QUALITY">جودة ضعيفة أو غير مقبولة</option>
+                  <option value="CRITERIA_VIOLATION">مخالفة معايير القبول المحددة</option>
+                  <option value="WRONG_EXECUTION">خطأ في التنفيذ أو عدم مطابقة المطلوب</option>
+                  <option value="MISSING_EVIDENCE">نقص أدلة التسليم أو عدم كفايتها</option>
+                  <option value="LATE">تأخر في التسليم عن الموعد</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-amber-900 dark:text-amber-300 mb-1">
+                  مستوى شدة الملاحظة <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={returnSeverity}
+                  onChange={(e) => setReturnSeverity(Number(e.target.value))}
+                  className="w-full p-2 rounded-lg border border-amber-300 dark:border-amber-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-xs focus:ring-2 focus:ring-amber-500/40"
+                >
+                  <option value={1}>بسيط (تعديل طفيف / سكور -10)</option>
+                  <option value={2}>متوسط (خلل يحتاج تصحيح / سكور -25)</option>
+                  <option value={3}>جسيم (إخفاق جوهري / سكور -50)</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-bold text-amber-900 dark:text-amber-300 mb-1.5">
+                تفاصيل الملاحظات المطلوبة <span className="text-rose-500">* (إلزامي)</span>
+              </label>
+              <textarea
+                rows={2}
+                value={returnReason}
+                onChange={(e) => setReturnReason(e.target.value)}
+                placeholder="اكتب بوضوح ما هو المطلوب من المنفذ تعديله أو إرفاقه قبل إعادة التسليم..."
+                className="w-full p-2.5 rounded-xl border border-amber-300 dark:border-amber-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40 resize-none text-xs"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setReturnMode(false)}
