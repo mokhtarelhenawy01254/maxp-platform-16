@@ -2,6 +2,7 @@ const { v4: uuidv4 } = require('uuid');
 const sharedDatabase = require('../services/sharedDatabase');
 const getSharedPrismaClient = () => sharedDatabase.getSharedPrismaClient();
 const taskNotificationService = require('../services/taskNotificationService');
+const taskEvidenceService = require('../services/taskEvidenceService');
 const taskWebhookService = require('../services/taskWebhookService');
 const businessGoalService = require('../services/businessGoalService');
 const queueTaskWebhook = (...args) => taskWebhookService.queueTaskWebhook(...args);
@@ -390,6 +391,7 @@ const taskExternalController = {
         assignedTo,
         dueDate,
         startDate,
+        acceptanceCriteria,
         estimatedHours = 0,
         progress = 0,
         tags = [],
@@ -459,6 +461,7 @@ const taskExternalController = {
           goalId: goalId || null,
           title: String(title).trim(),
           description: String(description).trim(),
+          acceptanceCriteria: acceptanceCriteria ? String(acceptanceCriteria).trim() : null,
           status: 'PENDING',
           priority: normalizePriority(priority),
           type: String(type || 'general').trim() || 'general',
@@ -617,19 +620,89 @@ const taskExternalController = {
         effectiveStatus = 'IN_REVIEW';
       }
 
+      // سد الباب الخلفي: منع القفل المباشر إلى COMPLETED من أي حالة غير IN_REVIEW
+      if (normalizedStatus === 'COMPLETED' && currentTask.status !== 'IN_REVIEW') {
+        return res.status(400).json({
+          success: false,
+          error: 'لا يمكن إنهاء المهمة مباشرة دون تسليمها أولاً للمراجعة وتجاوز بوابة الاعتماد (يجب أن تكون في حالة IN_REVIEW)',
+          message: 'لا يمكن إنهاء المهمة مباشرة دون تسليمها أولاً للمراجعة وتجاوز بوابة الاعتماد (يجب أن تكون في حالة IN_REVIEW)'
+        });
+      }
+
+      let sanitizedEvidence = null;
+      if (effectiveStatus === 'IN_REVIEW' && currentTask.status !== 'IN_REVIEW') {
+        // 1. فحص معايير القبول (إلزامية عند التسليم للمراجعة)
+        const criteriaValidation = taskEvidenceService.validateAcceptanceCriteria(
+          req.body.acceptanceCriteria || currentTask.acceptanceCriteria
+        );
+        if (!criteriaValidation.isValid) {
+          return res.status(422).json({
+            success: false,
+            error: criteriaValidation.error,
+            message: criteriaValidation.error
+          });
+        }
+
+        const taskAttachments = await prisma.taskAttachment.findMany({
+          where: { taskId: id },
+          select: { id: true, fileName: true, originalName: true, filePath: true }
+        }).catch(() => []);
+
+        const validation = taskEvidenceService.validateDeliveryEvidence(req.body, taskAttachments);
+        if (!validation.isValid) {
+          return res.status(400).json({
+            success: false,
+            error: validation.errorSummary,
+            missingFields: validation.missingFields,
+            message: validation.errorSummary
+          });
+        }
+        sanitizedEvidence = validation.sanitizedEvidence;
+      } else if (effectiveStatus === 'COMPLETED' && currentTask.status === 'IN_REVIEW') {
+        const approvalValidation = taskEvidenceService.validateApprovalGate(currentTask, actingUser || {}, {
+          criteriaChecked: Boolean(req.body.criteriaChecked),
+          ownerOverride: Boolean(req.body.ownerOverride),
+          ownerOverrideReason: req.body.ownerOverrideReason,
+          checklistState: req.body.checklistState
+        });
+        if (!approvalValidation.isValid) {
+          return res.status(400).json({
+            success: false,
+            error: approvalValidation.error,
+            message: approvalValidation.error
+          });
+        }
+      }
+
       const nextProgress = progress !== undefined
         ? Number(progress) || 0
         : effectiveStatus === 'COMPLETED' || effectiveStatus === 'IN_REVIEW'
           ? 100
           : currentTask.progress;
 
+      const externalUpdateData = {
+        status: effectiveStatus,
+        progress: nextProgress,
+        completedDate: effectiveStatus === 'COMPLETED' ? new Date() : null,
+      };
+
+      if (sanitizedEvidence) {
+        externalUpdateData.hasEvidence = true;
+        externalUpdateData.missingEvidence = false;
+        externalUpdateData.evidence = sanitizedEvidence;
+        externalUpdateData.submittedForReviewAt = new Date();
+      }
+      if (req.body.acceptanceCriteria) {
+        externalUpdateData.acceptanceCriteria = String(req.body.acceptanceCriteria).trim();
+      }
+      if (effectiveStatus === 'COMPLETED') {
+        externalUpdateData.approvedAt = new Date();
+        externalUpdateData.approvedBy = actorUserId;
+      }
+
       const updatedTask = await prisma.task.update({
         where: { id },
-        data: {
-          status: effectiveStatus,
-          progress: nextProgress,
-          completedDate: effectiveStatus === 'COMPLETED' ? new Date() : null
-        },
+        data: externalUpdateData,
         include: {
           project: {
             select: { id: true, name: true }

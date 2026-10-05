@@ -461,11 +461,14 @@ const taskNotificationService = {
         let updateData = {};
 
         if (response === 'done') {
-            nextStatus = 'COMPLETED';
+            // سد الباب الخلفي: تحويل إلى IN_REVIEW بدلاً من COMPLETED المباشر للحفاظ على بوابات التسليم والاعتماد
+            nextStatus = 'IN_REVIEW';
+            const hasEvidenceAlready = Boolean(task.hasEvidence || task.evidence);
             updateData = {
                 status: nextStatus,
                 progress: 100,
-                completedDate: new Date()
+                submittedForReviewAt: new Date(),
+                missingEvidence: !hasEvidenceAlready
             };
         } else if (response === 'blocked') {
             nextStatus = 'ON_HOLD';

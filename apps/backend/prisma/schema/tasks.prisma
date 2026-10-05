@@ -545,6 +545,8 @@ model Task {
   criteriaChecklist                                      Json?
   returnCount                                            Int              @default(0)
   lastReturnReason                                       String?
+  returnReasonType                                       String?
+  returnSeverity                                         Int?
   submittedForReviewAt                                   DateTime?
   approvedAt                                             DateTime?
   approvedBy                                             String?

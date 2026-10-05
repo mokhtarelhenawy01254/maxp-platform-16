@@ -165,6 +165,7 @@ router.delete(
 
 // ==================== Compliance & Quality Reports (MUST be before /:id) ====================
 router.get("/reports/compliance", taskController.getComplianceReport);
+router.get("/reports/time-evaluation", taskController.getTimeEvaluationReport);
 
 // ==================== Backlog & Continuous Improvement (MUST be before /:id) ====================
 router.get("/backlog/daily-quota", taskController.getDailyImprovementQuota);

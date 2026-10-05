@@ -47,6 +47,8 @@ async function computeTaskComplianceReport(companyId, options = {}) {
       evidence: true,
       returnCount: true,
       lastReturnReason: true,
+      returnReasonType: true,
+      returnSeverity: true,
       submittedForReviewAt: true,
       approvedAt: true,
       completedDate: true,
@@ -86,6 +88,9 @@ async function computeTaskComplianceReport(companyId, options = {}) {
         totalDeliveries: 0,
         deliveriesWithoutEvidence: 0,
         totalReturns: 0,
+        returnsMinorCount: 0,
+        returnsMediumCount: 0,
+        returnsSevereCount: 0,
         tasksWithReturnsCount: 0,
         approvalDurationsHours: [],
         blockedReviewTasks: [],
@@ -117,11 +122,19 @@ async function computeTaskComplianceReport(companyId, options = {}) {
       }
     }
 
-    // 2. Returns
+    // 2. Returns & Severities
     const retCount = Number(t.returnCount || 0);
     if (retCount > 0) {
       bucket.totalReturns += retCount;
       bucket.tasksWithReturnsCount += 1;
+      const sev = Number(t.returnSeverity || 1);
+      if (sev === 3) {
+        bucket.returnsSevereCount += retCount;
+      } else if (sev === 2) {
+        bucket.returnsMediumCount += retCount;
+      } else {
+        bucket.returnsMinorCount += retCount;
+      }
     }
 
     // 3. Approval Time
@@ -208,9 +221,13 @@ async function computeTaskComplianceReport(companyId, options = {}) {
     const shiftTotalHours = shiftHoursByUser.get(m.userId) || 0;
     const activeTimeWithoutTaskHours = Math.max(0, Math.round((shiftTotalHours - m.totalTrackedHours) * 10) / 10);
 
-    // Quality Score (0-100): starts at 100, penalized by no-evidence deliveries and returns
+    // Quality Score (0-100): 100 − (10×بسيط + 25×متوسط + 50×جسيم)
+    const qualityDeductions = (m.returnsMinorCount * 10) + (m.returnsMediumCount * 25) + (m.returnsSevereCount * 50);
+    const qualityScore = Math.max(0, 100 - qualityDeductions);
+
+    // Overall Compliance Score (0-100): starts at 100, penalized by no-evidence deliveries, quality score, and SLA
     const complianceScore = Math.max(0, Math.min(100, Math.round(
-      100 - (deliveriesWithoutEvidenceRate * 0.5) - (returnRate * 0.3) - (m.blockedReviewTasks.length * 5)
+      100 - (deliveriesWithoutEvidenceRate * 0.4) - ((100 - qualityScore) * 0.4) - (m.blockedReviewTasks.length * 5)
     )));
 
     return {
@@ -225,6 +242,10 @@ async function computeTaskComplianceReport(companyId, options = {}) {
       deliveriesWithoutEvidence: m.deliveriesWithoutEvidence,
       deliveriesWithoutEvidenceRate,
       totalReturns: m.totalReturns,
+      returnsMinorCount: m.returnsMinorCount,
+      returnsMediumCount: m.returnsMediumCount,
+      returnsSevereCount: m.returnsSevereCount,
+      qualityScore,
       returnRate,
       avgApprovalTimeHours,
       blockedReviewCount: m.blockedReviewTasks.length,
@@ -248,6 +269,10 @@ async function computeTaskComplianceReport(companyId, options = {}) {
     ? Math.round((allDurations.reduce((a, b) => a + b, 0) / allDurations.length) * 10) / 10
     : 0;
 
+  const overallQualityScore = members.length > 0
+    ? Math.round(members.reduce((acc, m) => acc + m.qualityScore, 0) / members.length)
+    : 100;
+
   return {
     periodDays,
     generatedAt: now.toISOString(),
@@ -257,6 +282,7 @@ async function computeTaskComplianceReport(companyId, options = {}) {
       deliveriesWithoutEvidence: allWithoutEvidence,
       deliveriesWithoutEvidenceRate: allDeliveries > 0 ? Math.round((allWithoutEvidence / allDeliveries) * 100) : 0,
       totalReturns: allReturns,
+      overallQualityScore,
       avgApprovalTimeHours: overallAvgApprovalHours,
       blockedReviewCount: allBlockedTasks.length,
       blockedReviewTasks: allBlockedTasks.slice(0, 50),
@@ -266,6 +292,212 @@ async function computeTaskComplianceReport(companyId, options = {}) {
   };
 }
 
+/**
+ * Computes time evaluation report for tasks:
+ * estimatedHours, actualHours (from TimeEntry in minutes), diffPct,
+ * sessionsCount, firstSession, lastSession, reworkMinutes (tracked time after first review/return).
+ *
+ * @param {string} companyId
+ * @param {Object} options - { from, to, assignedTo }
+ * @returns {Promise<Object>}
+ */
+async function computeTimeEvaluationReport(companyIdOrPrisma, optionsOrCompanyId = {}, maybeOptions = {}) {
+  let prisma, companyId, options;
+  if (companyIdOrPrisma && typeof companyIdOrPrisma === 'object' && (companyIdOrPrisma.task || companyIdOrPrisma.$queryRaw)) {
+    prisma = companyIdOrPrisma;
+    companyId = optionsOrCompanyId;
+    options = maybeOptions || {};
+  } else {
+    prisma = getSharedPrismaClient();
+    companyId = companyIdOrPrisma;
+    options = optionsOrCompanyId || {};
+  }
+
+  const { from = null, to = null, assignedTo = null } = options;
+
+  const where = {
+    companyId,
+    ...(assignedTo ? { assignedTo } : {}),
+  };
+
+  if (from || to) {
+    where.createdAt = {};
+    if (from) where.createdAt.gte = new Date(from);
+    if (to) where.createdAt.lte = new Date(to);
+  }
+
+  const tasks = await prisma.task.findMany({
+    where,
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      priority: true,
+      estimatedHours: true,
+      actualHours: true,
+      returnCount: true,
+      returnReasonType: true,
+      returnSeverity: true,
+      submittedForReviewAt: true,
+      createdAt: true,
+      updatedAt: true,
+      assignee: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        }
+      },
+      project: {
+        select: {
+          id: true,
+          name: true,
+        }
+      },
+      time_entries: {
+        select: {
+          id: true,
+          startTime: true,
+          endTime: true,
+          duration: true,
+          isRunning: true,
+        },
+        orderBy: { startTime: 'asc' }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  let totalEstimatedHours = 0;
+  let totalActualMinutes = 0;
+  let totalReworkMinutes = 0;
+  let tasksWithTimerCount = 0;
+
+  const items = tasks.map((t) => {
+    const rawEstimated = t.estimatedHours !== undefined && t.estimatedHours !== null
+      ? Number(t.estimatedHours)
+      : (t.estimatedMinutes ? Number(t.estimatedMinutes) / 60 : 0);
+    const estimatedHours = Math.round(rawEstimated * 10) / 10;
+    totalEstimatedHours += estimatedHours;
+
+    const entries = Array.isArray(t.timeEntries) ? t.timeEntries : (Array.isArray(t.time_entries) ? t.time_entries : []);
+    const sessionsCount = entries.length;
+
+    if (sessionsCount === 0) {
+      return {
+        id: t.id,
+        title: t.title,
+        status: t.status,
+        priority: t.priority,
+        projectName: t.project?.name || '—',
+        assignedToName: t.assignee
+          ? `${t.assignee.firstName || ''} ${t.assignee.lastName || ''}`.trim() || t.assignee.email
+          : '—',
+        estimatedHours: estimatedHours > 0 ? estimatedHours : '—',
+        actualHours: '—',
+        actualMinutes: '—',
+        diffPct: '—',
+        diffMinutes: 0,
+        accuracyPct: estimatedHours === 0 ? 100 : '—',
+        sessionsCount: 0,
+        firstSession: '—',
+        lastSession: '—',
+        reworkMinutes: Number(t.returnCount || 0) > 0 ? 0 : '—',
+        returnCount: Number(t.returnCount || 0),
+        returnReasonType: t.returnReasonType || '—',
+        returnSeverity: t.returnSeverity || '—',
+      };
+    }
+
+    tasksWithTimerCount += 1;
+    let taskDurationMinutes = 0;
+    let reworkMins = 0;
+
+    let reviewDate = t.submittedForReviewAt ? new Date(t.submittedForReviewAt).getTime() : null;
+    const activities = Array.isArray(t.taskActivities) ? t.taskActivities : [];
+    if (!reviewDate && activities.length > 0) {
+      const returnAct = activities.find(a => String(a.details || '').includes('IN_REVIEW') || String(a.action || '').includes('RETURN') || String(a.action || '').includes('REVISION'));
+      if (returnAct) {
+        reviewDate = new Date(returnAct.createdAt).getTime();
+      }
+    }
+
+    for (const entry of entries) {
+      const dur = Number(entry.duration || 0);
+      taskDurationMinutes += dur;
+
+      const entryTime = entry.startTime ? new Date(entry.startTime).getTime() : (entry.createdAt ? new Date(entry.createdAt).getTime() : 0);
+      if (reviewDate && entryTime >= reviewDate) {
+        reworkMins += dur;
+      }
+    }
+
+    totalActualMinutes += taskDurationMinutes;
+    totalReworkMinutes += reworkMins;
+
+    const actualHours = Math.round((taskDurationMinutes / 60) * 10) / 10;
+    let diffPct = '—';
+    let diffMinutes = 0;
+    let accuracyPct = 100;
+
+    if (estimatedHours > 0) {
+      const actualH = taskDurationMinutes / 60;
+      diffPct = Math.round(((actualH - estimatedHours) / estimatedHours) * 100);
+      diffMinutes = taskDurationMinutes - Math.round(estimatedHours * 60);
+      accuracyPct = Math.max(0, 100 - Math.abs(diffPct));
+    } else if (taskDurationMinutes > 0) {
+      accuracyPct = 0;
+    }
+
+    return {
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      priority: t.priority,
+      projectName: t.project?.name || '—',
+      assignedToName: t.assignee
+        ? `${t.assignee.firstName || ''} ${t.assignee.lastName || ''}`.trim() || t.assignee.email
+        : '—',
+      estimatedHours: estimatedHours > 0 ? estimatedHours : '—',
+      actualHours,
+      actualMinutes: taskDurationMinutes,
+      diffPct,
+      diffMinutes,
+      accuracyPct,
+      sessionsCount,
+      firstSession: entries[0]?.startTime ? new Date(entries[0].startTime).toISOString() : '—',
+      lastSession: entries[entries.length - 1]?.startTime ? new Date(entries[entries.length - 1].startTime).toISOString() : '—',
+      reworkMinutes: reworkMins,
+      returnCount: Number(t.returnCount || 0),
+      returnReasonType: t.returnReasonType || '—',
+      returnSeverity: t.returnSeverity || '—',
+    };
+  });
+
+  const validAccuracyItems = items.filter(i => typeof i.accuracyPct === 'number');
+  const overallAccuracyPct = validAccuracyItems.length > 0
+    ? Math.round(validAccuracyItems.reduce((acc, i) => acc + i.accuracyPct, 0) / validAccuracyItems.length)
+    : 100;
+
+  const kpisData = {
+    totalTasks: tasks.length,
+    tasksWithTimer: tasksWithTimerCount,
+    totalEstimatedHours: Math.round(totalEstimatedHours * 10) / 10,
+    totalActualHours: Math.round((totalActualMinutes / 60) * 10) / 10,
+    totalReworkMinutes,
+    totalReworkHours: Math.round((totalReworkMinutes / 60) * 10) / 10,
+    overallAccuracyPct,
+  };
+
+  return {
+    kpis: kpisData,
+    summary: kpisData,
+    tasks: items
+  };
+}
+
 module.exports = {
-  computeTaskComplianceReport
+  computeTaskComplianceReport,
+  computeTimeEvaluationReport
 };

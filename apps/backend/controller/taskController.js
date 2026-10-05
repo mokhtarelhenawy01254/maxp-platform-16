@@ -1113,6 +1113,7 @@ const taskController = {
         assignedTo,
         dueDate,
         startDate,
+        acceptanceCriteria,
         estimatedHours = 0,
         tags = [],
         measurementType = "TIME",
@@ -1231,6 +1232,7 @@ const taskController = {
           dependencies: null,
           isRecurring: isRecurringBool,
           recurringRule: serializedRecurringRule,
+          acceptanceCriteria: acceptanceCriteria ? String(acceptanceCriteria).trim() : null,
           completedDate: null,
           updatedAt: new Date(),
           createdAt: new Date(),
@@ -1268,6 +1270,7 @@ const taskController = {
             goalId: goalId || null,
             title,
             description,
+            acceptanceCriteria: acceptanceCriteria ? String(acceptanceCriteria).trim() : null,
             status: "PENDING",
             priority: taskPriority,
             type,
@@ -1424,6 +1427,7 @@ const taskController = {
         projectId,
         title,
         description,
+        acceptanceCriteria,
         priority,
         type,
         assignedTo,
@@ -1523,6 +1527,9 @@ const taskController = {
           ...(projectId !== undefined ? { projectId: projectId || null } : {}),
           ...(title && { title }),
           ...(description && { description }),
+          ...(acceptanceCriteria !== undefined && {
+            acceptanceCriteria: acceptanceCriteria ? String(acceptanceCriteria).trim() : null,
+          }),
           ...(priority && { priority: normalizePriority(priority) }),
           ...(type && { type }),
           ...(assignedTo && { assignedTo }),
@@ -1741,6 +1748,15 @@ const taskController = {
           normalizedStatus = "IN_REVIEW";
         }
 
+        // سد الباب الخلفي: منع القفل المباشر إلى COMPLETED من أي حالة غير IN_REVIEW
+        if (normalizedStatus === "COMPLETED" && existingTask.status !== "IN_REVIEW") {
+          return res.status(400).json({
+            success: false,
+            error: "لا يمكن إنهاء المهمة مباشرة دون تسليمها أولاً للمراجعة وتجاوز بوابة الاعتماد (يجب أن تكون في حالة IN_REVIEW)",
+            message: "لا يمكن إنهاء المهمة مباشرة دون تسليمها أولاً للمراجعة وتجاوز بوابة الاعتماد (يجب أن تكون في حالة IN_REVIEW)",
+          });
+        }
+
         const isReopening = existingTask.status === "COMPLETED" && normalizedStatus !== "COMPLETED";
         const isSubmittingForReview = normalizedStatus === "IN_REVIEW" && existingTask.status !== "IN_REVIEW";
         const isApproving = existingTask.status === "IN_REVIEW" && normalizedStatus === "COMPLETED";
@@ -1750,6 +1766,18 @@ const taskController = {
         let revisionInfo = null;
 
         if (isSubmittingForReview) {
+          // 1. فحص معايير القبول (إلزامية عند التسليم للمراجعة)
+          const criteriaValidation = taskEvidenceService.validateAcceptanceCriteria(
+            req.body.acceptanceCriteria || existingTask.acceptanceCriteria
+          );
+          if (!criteriaValidation.isValid) {
+            return res.status(422).json({
+              success: false,
+              error: criteriaValidation.error,
+              message: criteriaValidation.error,
+            });
+          }
+
           const taskAttachments = await getSharedPrismaClient().taskAttachment.findMany({
             where: { taskId: id },
             select: { id: true, fileName: true, originalName: true, filePath: true }
@@ -1784,7 +1812,11 @@ const taskController = {
           revisionInfo = taskEvidenceService.validateRevisionRequest(
             req.body.revisionReason,
             existingTask.returnCount || 0,
-            req.user
+            req.user,
+            {
+              returnReasonType: req.body.returnReasonType,
+              returnSeverity: req.body.returnSeverity,
+            }
           );
           if (!revisionInfo.isValid) {
             return res.status(400).json({
@@ -1824,6 +1856,14 @@ const taskController = {
           missEvVal = false;
           evidenceVal = JSON.stringify(sanitizedEvidence);
           subRevVal = new Date();
+          if (req.body.acceptanceCriteria) {
+            await getSharedPrismaClient().$executeRawUnsafe(
+              `UPDATE "Task" SET "acceptanceCriteria" = $1 WHERE "id" = $2 AND "companyId" = $3`,
+              String(req.body.acceptanceCriteria).trim(),
+              id,
+              companyId
+            ).catch(() => {});
+          }
         } else if (isApproving) {
           appAtVal = new Date();
           appByVal = currentUserId;
@@ -1834,6 +1874,27 @@ const taskController = {
         } else if (isReturning && revisionInfo) {
           retCountVal = revisionInfo.nextReturnCount;
           lastRetVal = req.body.revisionReason;
+          if (revisionInfo.returnReasonType || revisionInfo.returnSeverity) {
+            await getSharedPrismaClient().$executeRawUnsafe(
+              `UPDATE "Task" SET "returnReasonType" = $1, "returnSeverity" = $2 WHERE "id" = $3 AND "companyId" = $4`,
+              revisionInfo.returnReasonType,
+              revisionInfo.returnSeverity,
+              id,
+              companyId
+            ).catch(() => {});
+          }
+          await getSharedPrismaClient().taskActivity.create({
+            data: {
+              taskId: id,
+              companyId,
+              userId: currentUserId,
+              action: "RETURNED_FOR_REVISION",
+              field: "status",
+              oldValue: existingTask.status,
+              newValue: normalizedStatus,
+              description: `إعادة المهمة للتعديل: ${revisionInfo.returnReasonType || "ملاحظات"} (شدة ${revisionInfo.returnSeverity || 1}) - ${req.body.revisionReason}`
+            }
+          }).catch((err) => console.warn("[taskController] return activity err:", err.message));
         }
 
         const updatedCount = await getSharedPrismaClient().$executeRawUnsafe(
@@ -2044,6 +2105,15 @@ const taskController = {
         normalizedStatus = "IN_REVIEW";
       }
 
+      // سد الباب الخلفي: منع القفل المباشر إلى COMPLETED من أي حالة غير IN_REVIEW
+      if (normalizedStatus === "COMPLETED" && existingTask.status !== "IN_REVIEW") {
+        return res.status(400).json({
+          success: false,
+          error: "لا يمكن إنهاء المهمة مباشرة دون تسليمها أولاً للمراجعة وتجاوز بوابة الاعتماد (يجب أن تكون في حالة IN_REVIEW)",
+          message: "لا يمكن إنهاء المهمة مباشرة دون تسليمها أولاً للمراجعة وتجاوز بوابة الاعتماد (يجب أن تكون في حالة IN_REVIEW)",
+        });
+      }
+
       const isReopening = existingTask.status === "COMPLETED" && normalizedStatus !== "COMPLETED";
       const isSubmittingForReview = normalizedStatus === "IN_REVIEW" && existingTask.status !== "IN_REVIEW";
       const isApproving = existingTask.status === "IN_REVIEW" && normalizedStatus === "COMPLETED";
@@ -2053,6 +2123,18 @@ const taskController = {
       let revisionInfo = null;
 
       if (isSubmittingForReview) {
+        // 1. فحص معايير القبول (إلزامية عند التسليم للمراجعة)
+        const criteriaValidation = taskEvidenceService.validateAcceptanceCriteria(
+          req.body.acceptanceCriteria || existingTask.acceptanceCriteria
+        );
+        if (!criteriaValidation.isValid) {
+          return res.status(422).json({
+            success: false,
+            error: criteriaValidation.error,
+            message: criteriaValidation.error,
+          });
+        }
+
         const taskAttachments = await getSharedPrismaClient().taskAttachment.findMany({
           where: { taskId: id },
           select: { id: true, fileName: true, originalName: true, filePath: true }
@@ -2087,7 +2169,11 @@ const taskController = {
         revisionInfo = taskEvidenceService.validateRevisionRequest(
           req.body.revisionReason,
           existingTask.returnCount || 0,
-          req.user
+          req.user,
+          {
+            returnReasonType: req.body.returnReasonType,
+            returnSeverity: req.body.returnSeverity,
+          }
         );
         if (!revisionInfo.isValid) {
           return res.status(400).json({
@@ -2131,6 +2217,9 @@ const taskController = {
         updateData.missingEvidence = false;
         updateData.evidence = sanitizedEvidence;
         updateData.submittedForReviewAt = new Date();
+        if (req.body.acceptanceCriteria) {
+          updateData.acceptanceCriteria = String(req.body.acceptanceCriteria).trim();
+        }
       }
 
       if (isApproving) {
@@ -2145,6 +2234,8 @@ const taskController = {
       if (isReturning && revisionInfo) {
         updateData.returnCount = revisionInfo.nextReturnCount;
         updateData.lastReturnReason = req.body.revisionReason;
+        if (revisionInfo.returnReasonType) updateData.returnReasonType = revisionInfo.returnReasonType;
+        if (revisionInfo.returnSeverity) updateData.returnSeverity = revisionInfo.returnSeverity;
       }
 
       const updatedTask = await getSharedPrismaClient().task.updateMany({
@@ -2180,6 +2271,19 @@ const taskController = {
             content: revisionInfo.comment
           }
         }).catch((err) => console.warn("[taskController] return comment err:", err.message));
+
+        await getSharedPrismaClient().taskActivity.create({
+          data: {
+            taskId: id,
+            companyId,
+            userId: currentUserId,
+            action: 'RETURNED_FOR_REVISION',
+            field: 'status',
+            oldValue: existingTask.status,
+            newValue: normalizedStatus,
+            description: `إعادة المهمة للتعديل: ${revisionInfo.returnReasonType || "ملاحظات"} (شدة ${revisionInfo.returnSeverity || 1}) - ${req.body.revisionReason}`
+          }
+        }).catch((err) => console.warn("[taskController] return activity err:", err.message));
       } else if (isApproving && req.body.ownerOverride) {
         await getSharedPrismaClient().taskComment.create({
           data: {
@@ -5435,6 +5539,22 @@ const taskController = {
     } catch (error) {
       console.error("[taskController] getComplianceReport error:", error);
       res.status(500).json({ success: false, error: "فشل في توليد تقرير الالتزام" });
+    }
+  },
+
+  getTimeEvaluationReport: async (req, res) => {
+    try {
+      const companyId = await resolveCompanyContext(req);
+      const { from, to, assignedTo } = req.query;
+      const report = await taskComplianceService.computeTimeEvaluationReport(companyId, {
+        from: from || null,
+        to: to || null,
+        assignedTo: assignedTo || null,
+      });
+      res.json({ success: true, data: report });
+    } catch (error) {
+      console.error("[taskController] getTimeEvaluationReport error:", error);
+      res.status(500).json({ success: false, error: "فشل في توليد تقرير تقييم الوقت" });
     }
   },
 
