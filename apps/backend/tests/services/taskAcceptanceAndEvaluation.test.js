@@ -18,24 +18,24 @@ const {
 
 describe('Task Acceptance Criteria & Evaluation Unit Tests', () => {
   describe('1. validateAcceptanceCriteria (معايير القبول)', () => {
-    it('يرفض التسليم إذا كانت معايير القبول فارغة بالكامل مع رسالة باللغة العربية', () => {
+    it('يقبل التسليم بسلاسة إذا كانت معايير القبول فارغة دون حظر', () => {
       const res1 = validateAcceptanceCriteria('');
-      expect(res1.isValid).toBe(false);
-      expect(res1.error).toBe('ممنوع التسليم بدون كتابة معايير القبول');
+      expect(res1.isValid).toBe(true);
+      expect(res1.count).toBe(0);
 
       const res2 = validateAcceptanceCriteria('   \n  \t  ');
-      expect(res2.isValid).toBe(false);
-      expect(res2.error).toBe('ممنوع التسليم بدون كتابة معايير القبول');
+      expect(res2.isValid).toBe(true);
+      expect(res2.count).toBe(0);
 
       const res3 = validateAcceptanceCriteria(null);
-      expect(res3.isValid).toBe(false);
-      expect(res3.error).toBe('ممنوع التسليم بدون كتابة معايير القبول');
+      expect(res3.isValid).toBe(true);
+      expect(res3.count).toBe(0);
     });
 
-    it('يرفض إذا كانت المعايير مصفوفة فارغة أو تحتوي على أسطر بيضاء فقط', () => {
+    it('يقبل إذا كانت المعايير مصفوفة فارغة أو تحتوي على أسطر بيضاء دون أخطاء', () => {
       const res = validateAcceptanceCriteria(['', '   ']);
-      expect(res.isValid).toBe(false);
-      expect(res.error).toBe('ممنوع التسليم بدون كتابة معايير القبول');
+      expect(res.isValid).toBe(true);
+      expect(res.count).toBe(0);
     });
 
     it('يقبل إذا كان هناك سطر واحد على الأقل صالح وينظف الأسطر الفارغة', () => {
@@ -265,14 +265,14 @@ describe('Task Acceptance Criteria & Evaluation Unit Tests', () => {
       expect(errorMessage).toContain('يجب تسليمها للمراجعة');
     });
 
-    it('منع التسليم للمراجعة بدون معايير القبول من أي منفذ (الويب / الديسكتوب / الـ API الخارجي)', () => {
+    it('السماح بالتسليم للمراجعة والاعتماد بدون معايير القبول من أي منفذ (الويب / الديسكتوب / الـ API الخارجي)', () => {
       const taskWithoutCriteria = {
         acceptanceCriteria: null,
       };
 
       const validation = validateAcceptanceCriteria(taskWithoutCriteria.acceptanceCriteria);
-      expect(validation.isValid).toBe(false);
-      expect(validation.error).toBe('ممنوع التسليم بدون كتابة معايير القبول');
+      expect(validation.isValid).toBe(true);
+      expect(validation.count).toBe(0);
     });
 
     it('رد واتساب "تم" يوجّه إلى IN_REVIEW مع تنبيه لنقص الأدلة ولا يقفل المهمة مباشرة', () => {

@@ -354,7 +354,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
           {/* Acceptance Criteria */}
           <div>
             <label style={modalStyles.label}>
-              معايير القبول (سطر لكل معيار — إلزامي عند تسليم المهمة للمراجعة)
+              معايير القبول (سطر لكل معيار — اختياري)
             </label>
             <textarea
               value={acceptanceCriteria}

@@ -375,7 +375,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           {/* Acceptance Criteria */}
           <div>
             <label style={modalStyles.label}>
-              معايير القبول (سطر لكل معيار — إلزامي عند تسليم المهمة للمراجعة)
+              معايير القبول (سطر لكل معيار — اختياري)
             </label>
             <textarea
               value={acceptanceCriteria}

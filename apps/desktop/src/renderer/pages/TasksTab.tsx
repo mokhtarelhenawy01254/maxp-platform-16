@@ -691,7 +691,6 @@ export const TasksTab: React.FC = () => {
       }
     } catch (err: any) {
       console.warn('[TasksTab] Status update failed:', err);
-      alert(err?.message || 'فشل في تحديث حالة المهمة');
       // Rollback on error
       setTasks((prev) =>
         prev.map((t) => (t.id === taskId ? { ...t, status: prevStatus, tags: prevTags } : t))

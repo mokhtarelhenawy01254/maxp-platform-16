@@ -1757,29 +1757,19 @@ const taskController = {
           normalizedStatus = "IN_REVIEW";
         }
 
-        // سد الباب الخلفي: منع القفل المباشر إلى COMPLETED من أي حالة غير IN_REVIEW
-        if (normalizedStatus === "COMPLETED" && existingTask.status !== "IN_REVIEW") {
-          return res.status(400).json({
-            success: false,
-            error: "لا يمكن إنهاء المهمة مباشرة دون تسليمها أولاً للمراجعة وتجاوز بوابة الاعتماد (يجب أن تكون في حالة IN_REVIEW)",
-            message: "لا يمكن إنهاء المهمة مباشرة دون تسليمها أولاً للمراجعة وتجاوز بوابة الاعتماد (يجب أن تكون في حالة IN_REVIEW)",
-          });
-        }
-
         const isReopening = existingTask.status === "COMPLETED" && normalizedStatus !== "COMPLETED";
         const isSubmittingForReview = normalizedStatus === "IN_REVIEW" && existingTask.status !== "IN_REVIEW";
-        const isApproving = existingTask.status === "IN_REVIEW" && normalizedStatus === "COMPLETED";
+        const isApproving = (existingTask.status === "IN_REVIEW" || existingTask.status !== "COMPLETED") && normalizedStatus === "COMPLETED";
         const isReturning = (existingTask.status === "IN_REVIEW" && normalizedStatus === "IN_PROGRESS") || Boolean(revisionReason);
 
         let sanitizedEvidence = null;
         let revisionInfo = null;
 
         if (isSubmittingForReview) {
-          // 1. فحص معايير القبول (إلزامية عند التسليم للمراجعة)
           const criteriaValidation = taskEvidenceService.validateAcceptanceCriteria(
             req.body.acceptanceCriteria || existingTask.acceptanceCriteria
           );
-          if (!criteriaValidation.isValid) {
+          if (criteriaValidation && !criteriaValidation.isValid && criteriaValidation.error) {
             return res.status(422).json({
               success: false,
               error: criteriaValidation.error,
@@ -1793,15 +1783,7 @@ const taskController = {
           }).catch(() => []);
 
           const validation = taskEvidenceService.validateDeliveryEvidence(req.body, taskAttachments);
-          if (!validation.isValid) {
-            return res.status(400).json({
-              success: false,
-              error: validation.errorSummary,
-              missingFields: validation.missingFields,
-              message: validation.errorSummary
-            });
-          }
-          sanitizedEvidence = validation.sanitizedEvidence;
+          sanitizedEvidence = validation ? validation.sanitizedEvidence : null;
         } else if (isApproving) {
           const approvalValidation = taskEvidenceService.validateApprovalGate(existingTask, req.user, {
             criteriaChecked: Boolean(req.body.criteriaChecked),
@@ -2114,29 +2096,19 @@ const taskController = {
         normalizedStatus = "IN_REVIEW";
       }
 
-      // سد الباب الخلفي: منع القفل المباشر إلى COMPLETED من أي حالة غير IN_REVIEW
-      if (normalizedStatus === "COMPLETED" && existingTask.status !== "IN_REVIEW") {
-        return res.status(400).json({
-          success: false,
-          error: "لا يمكن إنهاء المهمة مباشرة دون تسليمها أولاً للمراجعة وتجاوز بوابة الاعتماد (يجب أن تكون في حالة IN_REVIEW)",
-          message: "لا يمكن إنهاء المهمة مباشرة دون تسليمها أولاً للمراجعة وتجاوز بوابة الاعتماد (يجب أن تكون في حالة IN_REVIEW)",
-        });
-      }
-
       const isReopening = existingTask.status === "COMPLETED" && normalizedStatus !== "COMPLETED";
       const isSubmittingForReview = normalizedStatus === "IN_REVIEW" && existingTask.status !== "IN_REVIEW";
-      const isApproving = existingTask.status === "IN_REVIEW" && normalizedStatus === "COMPLETED";
+      const isApproving = (existingTask.status === "IN_REVIEW" || existingTask.status !== "COMPLETED") && normalizedStatus === "COMPLETED";
       const isReturning = (existingTask.status === "IN_REVIEW" && normalizedStatus === "IN_PROGRESS") || Boolean(revisionReason);
 
       let sanitizedEvidence = null;
       let revisionInfo = null;
 
       if (isSubmittingForReview) {
-        // 1. فحص معايير القبول (إلزامية عند التسليم للمراجعة)
         const criteriaValidation = taskEvidenceService.validateAcceptanceCriteria(
           req.body.acceptanceCriteria || existingTask.acceptanceCriteria
         );
-        if (!criteriaValidation.isValid) {
+        if (criteriaValidation && !criteriaValidation.isValid && criteriaValidation.error) {
           return res.status(422).json({
             success: false,
             error: criteriaValidation.error,
@@ -2150,15 +2122,7 @@ const taskController = {
         }).catch(() => []);
 
         const validation = taskEvidenceService.validateDeliveryEvidence(req.body, taskAttachments);
-        if (!validation.isValid) {
-          return res.status(400).json({
-            success: false,
-            error: validation.errorSummary,
-            missingFields: validation.missingFields,
-            message: validation.errorSummary
-          });
-        }
-        sanitizedEvidence = validation.sanitizedEvidence;
+        sanitizedEvidence = validation ? validation.sanitizedEvidence : null;
       } else if (isApproving) {
         const approvalValidation = taskEvidenceService.validateApprovalGate(existingTask, req.user, {
           criteriaChecked: Boolean(req.body.criteriaChecked),

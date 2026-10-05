@@ -627,22 +627,12 @@ const taskExternalController = {
         effectiveStatus = 'IN_REVIEW';
       }
 
-      // سد الباب الخلفي: منع القفل المباشر إلى COMPLETED من أي حالة غير IN_REVIEW
-      if (normalizedStatus === 'COMPLETED' && currentTask.status !== 'IN_REVIEW') {
-        return res.status(400).json({
-          success: false,
-          error: 'لا يمكن إنهاء المهمة مباشرة دون تسليمها أولاً للمراجعة وتجاوز بوابة الاعتماد (يجب أن تكون في حالة IN_REVIEW)',
-          message: 'لا يمكن إنهاء المهمة مباشرة دون تسليمها أولاً للمراجعة وتجاوز بوابة الاعتماد (يجب أن تكون في حالة IN_REVIEW)'
-        });
-      }
-
       let sanitizedEvidence = null;
       if (effectiveStatus === 'IN_REVIEW' && currentTask.status !== 'IN_REVIEW') {
-        // 1. فحص معايير القبول (إلزامية عند التسليم للمراجعة)
         const criteriaValidation = taskEvidenceService.validateAcceptanceCriteria(
           req.body.acceptanceCriteria || currentTask.acceptanceCriteria
         );
-        if (!criteriaValidation.isValid) {
+        if (criteriaValidation && !criteriaValidation.isValid && criteriaValidation.error) {
           return res.status(422).json({
             success: false,
             error: criteriaValidation.error,
@@ -656,15 +646,7 @@ const taskExternalController = {
         }).catch(() => []);
 
         const validation = taskEvidenceService.validateDeliveryEvidence(req.body, taskAttachments);
-        if (!validation.isValid) {
-          return res.status(400).json({
-            success: false,
-            error: validation.errorSummary,
-            missingFields: validation.missingFields,
-            message: validation.errorSummary
-          });
-        }
-        sanitizedEvidence = validation.sanitizedEvidence;
+        sanitizedEvidence = validation ? validation.sanitizedEvidence : null;
       } else if (effectiveStatus === 'COMPLETED' && currentTask.status === 'IN_REVIEW') {
         const approvalValidation = taskEvidenceService.validateApprovalGate(currentTask, actingUser || {}, {
           criteriaChecked: Boolean(req.body.criteriaChecked),

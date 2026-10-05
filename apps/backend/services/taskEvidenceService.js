@@ -177,9 +177,10 @@ function validateAcceptanceCriteria(acceptanceCriteria) {
   }
   if (!raw) {
     return {
-      isValid: false,
-      error: 'ممنوع التسليم بدون كتابة معايير القبول',
-      count: 0
+      isValid: true,
+      count: 0,
+      criteriaList: [],
+      formattedText: ''
     };
   }
 
@@ -187,14 +188,6 @@ function validateAcceptanceCriteria(acceptanceCriteria) {
     .split('\n')
     .map(line => line.replace(/^[-*•✓☐☑\d\.\s]+/, '').trim())
     .filter(Boolean);
-
-  if (lines.length === 0) {
-    return {
-      isValid: false,
-      error: 'ممنوع التسليم بدون كتابة معايير القبول',
-      count: 0
-    };
-  }
 
   return {
     isValid: true,
