@@ -37,7 +37,7 @@ interface TaskDetailDrawerProps {
   task: any | null;
   isOpen: boolean;
   onClose: () => void;
-  onUpdateStatus?: (taskId: string, newStatus: string, revisionReason?: string) => void;
+  onUpdateStatus?: (taskId: string, newStatus: string, revisionReason?: string, returnReasonType?: string, returnSeverity?: number) => void;
   onToggleStatus?: (taskId: string, currentStatus: string) => void;
   onEdit?: (task: any) => void;
   onOpenImage?: (imgUrl: string) => void;
@@ -895,9 +895,9 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
         <ReturnForRevisionModal
           isOpen={isRevisionModalOpen}
           onClose={() => setIsRevisionModalOpen(false)}
-          onConfirm={async (reason: string) => {
+          onConfirm={async (reason: string, returnReasonType?: string, returnSeverity?: number) => {
             if (onUpdateStatus) {
-              await onUpdateStatus(task.id, 'IN_PROGRESS', reason);
+              await onUpdateStatus(task.id, 'IN_PROGRESS', reason, returnReasonType, returnSeverity);
             }
           }}
           task={task}

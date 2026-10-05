@@ -95,18 +95,19 @@ export const TaskReportLedger: React.FC<TaskReportLedgerProps> = ({
       <table style={styles.table}>
         <thead>
           <tr style={styles.thRow}>
-            <th style={{ ...styles.th, width: '38%' }}>المهمة والمشروع</th>
+            <th style={{ ...styles.th, width: '30%' }}>المهمة والمشروع</th>
             <th style={{ ...styles.th, width: '15%' }}>المكلّف</th>
-            <th style={{ ...styles.th, width: '11%' }}>الأولوية</th>
-            <th style={{ ...styles.th, width: '11%' }}>الحالة</th>
-            <th style={{ ...styles.th, width: '12%', textAlign: 'left' }}>التقديري</th>
-            <th style={{ ...styles.th, width: '13%', textAlign: 'left' }}>الفعلي (التايمر)</th>
+            <th style={{ ...styles.th, width: '10%' }}>الأولوية</th>
+            <th style={{ ...styles.th, width: '10%' }}>الحالة</th>
+            <th style={{ ...styles.th, width: '11%', textAlign: 'left' }}>التقديري</th>
+            <th style={{ ...styles.th, width: '12%', textAlign: 'left' }}>الفعلي (التايمر)</th>
+            <th style={{ ...styles.th, width: '12%', textAlign: 'left' }}>إعادة العمل</th>
           </tr>
         </thead>
         <tbody>
           {filtered.length === 0 ? (
             <tr>
-              <td colSpan={6} style={styles.emptyTd}>
+              <td colSpan={7} style={styles.emptyTd}>
                 لا توجد مهام تطابق معايير الفلترة الحالية
               </td>
             </tr>
@@ -185,6 +186,20 @@ export const TaskReportLedger: React.FC<TaskReportLedgerProps> = ({
                         (كلي: {formatMinToH(t.totalLifetimeMinutes)})
                       </span>
                     )}
+                  </td>
+
+                  {/* Rework Duration */}
+                  <td style={{ ...styles.td, textAlign: 'left' }}>
+                    <span
+                      style={{
+                        ...styles.tabularDuration,
+                        color: (t.reworkMinutes && t.reworkMinutes > 0) ? 'var(--accent-yellow)' : 'var(--text-muted)',
+                        fontWeight: (t.reworkMinutes && t.reworkMinutes > 0) ? 700 : 400,
+                      }}
+                      title={t.reworkMinutes && t.reworkMinutes > 0 ? `${t.reworkMinutes} دقيقة بعد أول مراجعة` : 'لا توجد إعادة عمل'}
+                    >
+                      {formatMinToH(t.reworkMinutes || 0)}
+                    </span>
                   </td>
                 </tr>
               );

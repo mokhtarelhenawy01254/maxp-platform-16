@@ -1179,10 +1179,10 @@ function registerIpcHandlers(): void {
     }
   });
 
-  ipcMain.handle('tasks:update-status', async (_, { taskId, status, revisionReason, options }) => {
+  ipcMain.handle('tasks:update-status', async (_, { taskId, status, revisionReason, options, returnReasonType, returnSeverity }) => {
     try {
-      const task = await apiClient.updateTaskStatus(taskId, status, revisionReason, options);
-      mainWindow?.webContents.send('tasks:refresh', { action: 'update-status', taskId, status, revisionReason });
+      const task = await apiClient.updateTaskStatus(taskId, status, revisionReason, options, returnReasonType, returnSeverity);
+      mainWindow?.webContents.send('tasks:refresh', { action: 'update-status', taskId, status, revisionReason, returnReasonType, returnSeverity });
       setTimeout(() => {
         pollTaskNotifications().catch(() => {});
       }, 500);

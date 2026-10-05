@@ -362,11 +362,24 @@ class MonitorApiClient {
     return this.authToken;
   }
 
-  async updateTaskStatus(taskId: string, status: string, revisionReason?: string, options?: any): Promise<any> {
+  async updateTaskStatus(
+    taskId: string,
+    status: string,
+    revisionReason?: string,
+    options?: any,
+    returnReasonType?: string,
+    returnSeverity?: number
+  ): Promise<any> {
     const base = this.serverUrl;
     const res = await axios.put(
       `${base}/api/v1/tasks/${taskId}/status`,
-      { status: status.toUpperCase(), revisionReason, ...(options || {}) },
+      {
+        status: status.toUpperCase(),
+        revisionReason,
+        ...(options || {}),
+        ...(returnReasonType !== undefined ? { returnReasonType } : {}),
+        ...(returnSeverity !== undefined ? { returnSeverity } : {}),
+      },
       {
         headers: this.getAuthHeaders(),
         timeout: 10_000,
@@ -399,6 +412,7 @@ class MonitorApiClient {
       isRecurring?: boolean;
       recurringRule?: string;
       watchers?: string[];
+      acceptanceCriteria?: string;
     },
     taskId?: string
   ): Promise<any> {
@@ -414,6 +428,7 @@ class MonitorApiClient {
       isRecurring: taskData.isRecurring || false,
       recurringRule: taskData.recurringRule || null,
       watchers: taskData.watchers || [],
+      acceptanceCriteria: taskData.acceptanceCriteria || undefined,
     };
 
     const res = await axios.put(`${base}/api/v1/tasks/${id}`, payload, {
@@ -433,6 +448,7 @@ class MonitorApiClient {
     isRecurring?: boolean;
     recurringRule?: string;
     watchers?: string[];
+    acceptanceCriteria?: string;
   }): Promise<any> {
     const base = this.serverUrl;
     const payload = {
@@ -445,6 +461,7 @@ class MonitorApiClient {
       isRecurring: taskData.isRecurring || false,
       recurringRule: taskData.recurringRule || null,
       watchers: taskData.watchers || [],
+      acceptanceCriteria: taskData.acceptanceCriteria || undefined,
     };
 
     const res = await axios.post(`${base}/api/v1/tasks`, payload, {

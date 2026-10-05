@@ -592,7 +592,9 @@ export const TasksTab: React.FC = () => {
     taskId: string,
     targetStatus: string,
     revisionReason?: string,
-    options?: any
+    options?: any,
+    returnReasonType?: string,
+    returnSeverity?: number
   ) => {
     const currentTask = tasks.find((t) => t.id === taskId);
     const prevStatus = currentTask?.status || 'PENDING';
@@ -674,7 +676,7 @@ export const TasksTab: React.FC = () => {
     }
 
     try {
-      const res = await window.electronAPI.updateTaskStatus(taskId, targetStatus, revisionReason, options);
+      const res = await window.electronAPI.updateTaskStatus(taskId, targetStatus, revisionReason, options, returnReasonType, returnSeverity);
       if (res && res.success === false) {
         throw new Error(res.error || 'فشل في تحديث حالة المهمة على السيرفر');
       }
@@ -689,6 +691,7 @@ export const TasksTab: React.FC = () => {
       }
     } catch (err: any) {
       console.warn('[TasksTab] Status update failed:', err);
+      alert(err?.message || 'فشل في تحديث حالة المهمة');
       // Rollback on error
       setTasks((prev) =>
         prev.map((t) => (t.id === taskId ? { ...t, status: prevStatus, tags: prevTags } : t))

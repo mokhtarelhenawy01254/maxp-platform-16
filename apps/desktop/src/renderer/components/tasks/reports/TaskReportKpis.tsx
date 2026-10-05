@@ -6,6 +6,7 @@ import {
   Layers,
   PauseCircle,
   TrendingUp,
+  RotateCcw,
 } from 'lucide-react';
 import { TaskReportKpiData, TaskExceptionFilter, TaskDateRange } from './TaskReportTypes';
 
@@ -186,6 +187,30 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
         <span style={styles.hintSubtext}>
           {kpis.overdueCount > 0 ? 'تتطلب تسريعاً فورياً' : 'جميع المواعيد منضبطة'}
         </span>
+      </div>
+
+      {/* 6. Rework Time & Estimation Accuracy */}
+      <div style={styles.card} title="إجمالي وقت إعادة العمل بعد طلب التعديلات ونسبة دقة التقدير الزمني">
+        <div style={styles.cardHeader}>
+          <span style={styles.cardLabel}>إعادة العمل والدقة</span>
+          <RotateCcw size={13} style={{ color: 'var(--accent-yellow)' }} />
+        </div>
+        <div style={styles.cardBody}>
+          <span style={styles.primaryNum}>{formatHours((kpis.totalReworkMinutes || 0) * 60)}</span>
+          <span style={{ ...styles.secondaryBadge, color: 'var(--accent-green)' }}>
+            <TrendingUp size={11} style={{ marginRight: 3 }} />
+            {kpis.focusAccuracyRate}% دقة
+          </span>
+        </div>
+        <div style={styles.progressBarBg}>
+          <div
+            style={{
+              ...styles.progressBarFill,
+              width: `${Math.min(100, kpis.focusAccuracyRate)}%`,
+              background: 'var(--accent-green)',
+            }}
+          />
+        </div>
       </div>
     </div>
   );

@@ -18,6 +18,7 @@ export interface TaskReportItem {
   isOverdue: boolean;
   isTimeLeak: boolean; // actual > estimated * 1.3
   isReviewBlocked: boolean; // IN_REVIEW for > 24h
+  reworkMinutes?: number; // وقت إعادة العمل بعد أول رجوع/مراجعة
 }
 
 export interface TaskReportKpiData {
@@ -33,6 +34,7 @@ export interface TaskReportKpiData {
   timeLeakCount: number;
   reviewBlockedCount: number;
   focusAccuracyRate: number; // estimation accuracy
+  totalReworkMinutes?: number; // إجمالي دقائق إعادة العمل
 }
 
 export type TaskDateRange =

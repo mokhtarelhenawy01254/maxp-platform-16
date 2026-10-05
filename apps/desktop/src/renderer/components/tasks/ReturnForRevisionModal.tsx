@@ -13,7 +13,7 @@ import { audioAlerts } from '../../utils/audioAlerts';
 interface ReturnForRevisionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (reason: string) => Promise<void> | void;
+  onConfirm: (reason: string, returnReasonType?: string, returnSeverity?: number) => Promise<void> | void;
   task: any;
 }
 
@@ -32,6 +32,8 @@ export const ReturnForRevisionModal: React.FC<ReturnForRevisionModalProps> = ({
   task,
 }) => {
   const [reason, setReason] = useState('');
+  const [returnReasonType, setReturnReasonType] = useState('WRONG_EXECUTION');
+  const [returnSeverity, setReturnSeverity] = useState<number>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -63,7 +65,7 @@ export const ReturnForRevisionModal: React.FC<ReturnForRevisionModalProps> = ({
     setError('');
     try {
       audioAlerts.playTaskReopen();
-      await onConfirm(reason.trim());
+      await onConfirm(reason.trim(), returnReasonType, returnSeverity);
       setReason('');
       onClose();
     } catch (err: any) {
@@ -111,6 +113,42 @@ export const ReturnForRevisionModal: React.FC<ReturnForRevisionModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} style={styles.form}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>
+                <span>نوع سبب الإرجاع</span>
+                <span style={styles.requiredStar}>*</span>
+              </label>
+              <select
+                value={returnReasonType}
+                onChange={(e) => setReturnReasonType(e.target.value)}
+                style={styles.select}
+              >
+                <option value="WRONG_EXECUTION">خطأ في التنفيذ</option>
+                <option value="MISSING_EVIDENCE">نقص في أدلة الإنجاز</option>
+                <option value="CRITERIA_VIOLATION">مخالفة معايير القبول</option>
+                <option value="QUALITY">جودة دون المستوى</option>
+                <option value="LATE">تأخير في التسليم</option>
+              </select>
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>
+                <span>درجة الشدة</span>
+                <span style={styles.requiredStar}>*</span>
+              </label>
+              <select
+                value={returnSeverity}
+                onChange={(e) => setReturnSeverity(Number(e.target.value))}
+                style={styles.select}
+              >
+                <option value={1}>بسيط (تعديلات طفيفة)</option>
+                <option value={2}>متوسط (نواقص مؤثرة)</option>
+                <option value={3}>جسيم (إعادة عمل كاملة)</option>
+              </select>
+            </div>
+          </div>
+
           <div style={styles.fieldGroup}>
             <label style={styles.label}>
               <span>ملاحظات التعديل والتوجيهات المطلوبة</span>
@@ -366,6 +404,17 @@ const styles: Record<string, React.CSSProperties> = {
     resize: 'vertical',
     minHeight: 90,
     lineHeight: 1.5,
+  },
+  select: {
+    backgroundColor: 'var(--bg-page)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: 6,
+    padding: '8px 10px',
+    fontSize: 12,
+    color: 'var(--text-primary)',
+    outline: 'none',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
   },
   footer: {
     display: 'flex',

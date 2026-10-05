@@ -346,6 +346,25 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       const projName = t.project?.name || t.projectName || 'عام';
       const completedDate = t.completedDate || t.completedAt || t.completed_date || t.completed_at;
 
+      // Rework minutes: time logged after task was returned/reopened for revision
+      let reworkMin = Number(t.reworkMinutes || 0);
+      if (!reworkMin && Array.isArray(t.timeEntries)) {
+        const returnActivity = (t.taskActivities || t.activities || []).find((a: any) =>
+          a.action === 'REOPENED' || a.action === 'RETURNED' ||
+          (a.details && (String(a.details).includes('REOPENED') || String(a.details).includes('إرجاع') || String(a.details).includes('IN_REVIEW -> IN_PROGRESS')))
+        );
+        if (returnActivity) {
+          const returnDate = new Date(returnActivity.createdAt).getTime();
+          reworkMin = (t.timeEntries || []).reduce((sum: number, e: any) => {
+            const eStart = new Date(e.startTime || e.createdAt).getTime();
+            if (eStart >= returnDate) {
+              return sum + Math.round(Number(e.duration || 0));
+            }
+            return sum;
+          }, 0);
+        }
+      }
+
       return {
         id: t.id,
         title: t.title || 'مهمة بدون عنوان',
@@ -366,6 +385,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         isOverdue,
         isTimeLeak,
         isReviewBlocked: isReview,
+        reworkMinutes: reworkMin,
       };
     });
   }, [tasks, users, filters.dateRange, activePeriod]);
@@ -452,6 +472,8 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       ? teamOverview.reduce((s: number, r: any) => s + Number(r.activeSeconds || 0), 0)
       : myDayActiveSeconds;
 
+    const totalRework = filteredItems.reduce((acc, t) => acc + (t.reworkMinutes || 0), 0);
+
     return {
       totalTasks: total,
       completedCount: completed,
@@ -465,6 +487,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       timeLeakCount: timeLeaks,
       reviewBlockedCount: reviewBlocked,
       focusAccuracyRate: realAccuracy,
+      totalReworkMinutes: totalRework,
     };
   }, [filteredItems, teamOverview, myDayActiveSeconds]);
 

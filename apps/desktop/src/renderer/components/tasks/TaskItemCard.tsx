@@ -26,7 +26,7 @@ import { ReturnForRevisionModal } from './ReturnForRevisionModal';
 interface TaskItemCardProps {
   task: any;
   onToggleStatus: (taskId: string, currentStatus: string) => void;
-  onUpdateStatus?: (taskId: string, newStatus: string, revisionReason?: string) => void;
+  onUpdateStatus?: (taskId: string, newStatus: string, revisionReason?: string, returnReasonType?: string, returnSeverity?: number) => void;
   onOpenImage: (imgUrl: string) => void;
   onEdit?: (task: any) => void;
   onSelect?: (task: any) => void;
@@ -637,9 +637,9 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
         <ReturnForRevisionModal
           isOpen={isRevisionModalOpen}
           onClose={() => setIsRevisionModalOpen(false)}
-          onConfirm={async (reason: string) => {
+          onConfirm={async (reason: string, returnReasonType?: string, returnSeverity?: number) => {
             if (onUpdateStatus) {
-              await onUpdateStatus(task.id, 'IN_PROGRESS', reason);
+              await onUpdateStatus(task.id, 'IN_PROGRESS', reason, returnReasonType, returnSeverity);
             }
           }}
           task={task}

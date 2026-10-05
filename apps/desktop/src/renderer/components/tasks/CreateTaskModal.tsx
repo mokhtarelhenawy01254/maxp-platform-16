@@ -52,6 +52,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [acceptanceCriteria, setAcceptanceCriteria] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
   const [watchers, setWatchers] = useState<string[]>([]);
@@ -221,6 +222,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         dueDate: finalDue ? new Date(finalDue).toISOString() : undefined,
         estimatedMinutes: Number(estimatedMinutes) || 60,
         projectName: projectName.trim() || undefined,
+        acceptanceCriteria: acceptanceCriteria.trim() || undefined,
         isRecurring,
         recurringRule: isRecurring ? recurringRule : undefined,
         watchers,
@@ -340,6 +342,20 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="اكتب تعليمات أو ملاحظات توضيحية لزميلك…"
+              rows={3}
+              style={{ ...modalStyles.input, resize: 'vertical' }}
+            />
+          </div>
+
+          {/* Acceptance Criteria */}
+          <div>
+            <label style={modalStyles.label}>
+              معايير القبول (سطر لكل معيار — إلزامي عند تسليم المهمة للمراجعة)
+            </label>
+            <textarea
+              value={acceptanceCriteria}
+              onChange={(e) => setAcceptanceCriteria(e.target.value)}
+              placeholder="اكتب معايير القبول المطلوب استيفاؤها لإتمام المهمة (معيار في كل سطر)..."
               rows={3}
               style={{ ...modalStyles.input, resize: 'vertical' }}
             />

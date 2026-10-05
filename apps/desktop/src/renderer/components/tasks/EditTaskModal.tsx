@@ -51,6 +51,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [acceptanceCriteria, setAcceptanceCriteria] = useState('');
   const [copiedDesc, setCopiedDesc] = useState(false);
   const [assignedTo, setAssignedTo] = useState('');
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
@@ -67,6 +68,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     if (!task) return;
     setTitle(task.title || '');
     setDescription(task.description || '');
+    setAcceptanceCriteria(task.acceptanceCriteria || '');
     setAssignedTo(String(
       task.assignedTo ||
       task.assignedToId ||
@@ -210,6 +212,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       const res = await window.electronAPI.updateTask(task.id, {
         title: title.trim(),
         description: description.trim() || title.trim(),
+        acceptanceCriteria: acceptanceCriteria.trim() || undefined,
         priority,
         assignedTo: assignedTo || undefined,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
@@ -317,6 +320,20 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="اكتب تعليمات أو تفاصيل توضيحية للمهمة…"
+              rows={3}
+              style={{ ...modalStyles.input, resize: 'vertical' }}
+            />
+          </div>
+
+          {/* Acceptance Criteria */}
+          <div>
+            <label style={modalStyles.label}>
+              معايير القبول (سطر لكل معيار — إلزامي عند تسليم المهمة للمراجعة)
+            </label>
+            <textarea
+              value={acceptanceCriteria}
+              onChange={(e) => setAcceptanceCriteria(e.target.value)}
+              placeholder="اكتب معايير القبول المطلوب استيفاؤها لإتمام المهمة (معيار في كل سطر)..."
               rows={3}
               style={{ ...modalStyles.input, resize: 'vertical' }}
             />

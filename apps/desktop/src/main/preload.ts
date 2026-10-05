@@ -68,8 +68,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('tasks:get-users'),
   createTask: (taskData: any) =>
     ipcRenderer.invoke('tasks:create', taskData),
-  updateTaskStatus: (taskId: string, status: string, revisionReason?: string, options?: any) =>
-    ipcRenderer.invoke('tasks:update-status', { taskId, status, revisionReason, options }),
+  updateTaskStatus: (taskId: string, status: string, revisionReason?: string, options?: any, returnReasonType?: string, returnSeverity?: number) =>
+    ipcRenderer.invoke('tasks:update-status', { taskId, status, revisionReason, options, returnReasonType, returnSeverity }),
   getTaskActivities: (taskId: string) =>
     ipcRenderer.invoke('tasks:get-activities', { taskId }),
   updateTask: (taskId: string, data: any) =>
