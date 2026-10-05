@@ -12683,6 +12683,9 @@ declare module 'react-i18next' {
           orders: {
             description: string;
           };
+          treasuryExpenses: {
+            description: string;
+          };
           codDeposit: {
             description: string;
           };

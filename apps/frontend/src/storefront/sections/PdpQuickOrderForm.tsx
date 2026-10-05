@@ -1025,7 +1025,13 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
         return null;
       }
 
-      return builtOfferItems.items;
+      return builtOfferItems.items.map((item) => ({
+        ...item,
+        attributes: {
+          ...(item.attributes || {}),
+          ...customAttributeValues,
+        },
+      }));
     }
 
     if (!trackingItem) {
@@ -1037,7 +1043,15 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       return null;
     }
 
-    return [trackingItem];
+    return [
+      {
+        ...trackingItem,
+        attributes: {
+          ...(trackingItem.attributes || {}),
+          ...customAttributeValues,
+        },
+      },
+    ];
   };
 
   const validateForm = () => {

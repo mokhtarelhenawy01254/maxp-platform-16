@@ -7,6 +7,21 @@ export interface ExtractOrderCustomFieldsOptions {
   defaultLabel?: string;
 }
 
+const CAR_BRAND_KEYWORDS = [
+  "سيار", "موديل", "عربيه", "عربية", "ماركة", "طراز",
+  "هيونداي", "تويوتا", "كيا", "سيراتو", "النترا", "توسان", "نيسان", "صني", "سنترا", "قشقاي",
+  "شيفروليه", "شيفرولي", "اوبترا", "افيو", "كروز", "رينو", "ميجان", "لوجان", "داستر", "ستيب واي",
+  "مرسيدس", "بي ام", "بي إم", "bmw", "شيري", "تيجو", "اريزو", "ام جي", "mg", "جيلى", "جيلي",
+  "امجراند", "ميتسوبيشي", "لانسر", "اكليبس", "سوزوكي", "سويفت", "ديزاير", "فورد", "فوكاس", "فيستا",
+  "فيات", "تيبو", "بونتو", "سكودا", "اوكتافيا", "فولكس", "فولكسفاجن", "باسات", "جولف", "بيجو",
+  "اوبل", "استرا", "كورسا", "انسيجنيا", "هوندا", "سيفيك", "جيب", "شيروكي", "رينيجيد", "سوبارو"
+];
+
+const matchesCarSpec = (line: string): boolean => {
+  const lower = line.toLowerCase();
+  return CAR_BRAND_KEYWORDS.some((kw) => lower.includes(kw));
+};
+
 export function extractOrderCustomFields(
   source: any,
   options?: ExtractOrderCustomFieldsOptions | string,
@@ -88,8 +103,42 @@ export function extractOrderCustomFields(
     }
   }
 
-  // 2. Check notes (order.notes or invoice.notes or source.notes)
-  const notesStr = String(source.notes || source.order?.notes || "").trim();
+  // 2. Check items attributes/metadata
+  const items = Array.isArray(source.order?.orderItems)
+    ? source.order.orderItems
+    : Array.isArray(source.orderItems)
+    ? source.orderItems
+    : Array.isArray(source.items)
+    ? source.items
+    : [];
+  for (const item of items) {
+    if (!item) continue;
+    const itemAttrs = item.attributes || item.customAttributes || item.customFields;
+    if (Array.isArray(itemAttrs)) {
+      for (const attr of itemAttrs) {
+        if (attr && typeof attr === "object") {
+          const lbl = attr.label || attr.name || attr.key;
+          const val = attr.value || attr.val;
+          if (lbl && val) addEntry(lbl, val);
+        }
+      }
+    } else if (itemAttrs && typeof itemAttrs === "object") {
+      Object.entries(itemAttrs).forEach(([k, v]) => {
+        if (v && typeof v === "string") addEntry(k, v);
+      });
+    }
+    if (item.carModel) addEntry(defaultFallbackLabel, String(item.carModel));
+    if (item.car_model) addEntry(defaultFallbackLabel, String(item.car_model));
+  }
+
+  // 3. Check notes (both source.notes AND source.order.notes, preserving all candidates)
+  const notesPool = [
+    typeof source.notes === "string" ? source.notes : "",
+    typeof source.order?.notes === "string" ? source.order.notes : "",
+    typeof source.customerNotes === "string" ? source.customerNotes : "",
+  ].filter((n) => Boolean(n && n.trim()));
+
+  const notesStr = Array.from(new Set(notesPool)).join("\n").trim();
   if (notesStr) {
     const lines = notesStr.split(/\r?\n/);
     for (const rawLine of lines) {
@@ -97,8 +146,8 @@ export function extractOrderCustomFields(
       if (!line) continue;
 
       // Match "تفاصيل الطلب: <label>: <val>" or "تفاصيل الطلب: <content>"
-      if (line.startsWith("تفاصيل الطلب:")) {
-        const afterPrefix = line.replace(/^تفاصيل الطلب:\s*/, "").trim();
+      if (line.startsWith("تفاصيل الطلب:") || line.startsWith("تفاصيل الطلب")) {
+        const afterPrefix = line.replace(/^تفاصيل الطلب:?\s*/, "").trim();
         if (afterPrefix.includes(":")) {
           const parts = afterPrefix.split(":");
           const label = parts[0].trim();
@@ -112,11 +161,7 @@ export function extractOrderCustomFields(
         } else {
           addEntry(configuredFallbackLabel || "مواصفات وتفاصيل الطلب", afterPrefix);
         }
-      } else if (
-        line.includes("سيار") ||
-        line.includes("موديل") ||
-        line.startsWith("نوع وموديل")
-      ) {
+      } else if (matchesCarSpec(line)) {
         if (line.includes(":")) {
           const [lbl, ...val] = line.split(":");
           addEntry(lbl.trim(), val.join(":").trim());
@@ -150,11 +195,7 @@ export function cleanNotesWithoutCustomFields(
     if (line.startsWith("تفاصيل الطلب:") || line.startsWith("تفاصيل الطلب")) return false;
 
     // Filter out lines mentioning car specs
-    if (
-      line.includes("سيار") ||
-      line.includes("موديل") ||
-      line.startsWith("نوع وموديل")
-    ) {
+    if (matchesCarSpec(line)) {
       return false;
     }
 
@@ -190,7 +231,11 @@ export function resolveCustomFieldsForDisplay(
   },
 ): OrderCustomFieldsDisplayResult {
   const isEnabled = options?.showCustomFields === true;
-  const rawNotes = String(source?.notes || source?.order?.notes || "").trim();
+  const rawNotesPool = [
+    typeof source?.notes === "string" ? source.notes : "",
+    typeof source?.order?.notes === "string" ? source.order.notes : "",
+  ].filter((n) => Boolean(n && n.trim()));
+  const rawNotes = Array.from(new Set(rawNotesPool)).join("\n").trim();
 
   if (!isEnabled) {
     return {

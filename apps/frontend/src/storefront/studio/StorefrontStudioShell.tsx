@@ -22,6 +22,8 @@ import { STOREFRONT_THEME_PRESETS } from "../themes";
 import { getStorefrontSectionLabel, getStorefrontSectionManifest } from "../sections/manifest";
 import StorefrontImagePickerModal from "../../components/store/StorefrontImagePickerModal";
 import { useStudioHistory } from "./hooks/useStudioHistory";
+import { useCartStore } from "../store/useCartStore";
+import { getMarketplacePreviewCartItems } from "../preview/marketplacePreviewCart";
 
 interface StorefrontStudioShellProps {
   themeId: string;
@@ -35,6 +37,7 @@ interface StorefrontStudioShellProps {
   onBack: () => void;
   onOpenPreview: () => void;
   onChange: (nextTokens: Record<string, unknown>) => void;
+  companyId?: string;
 }
 
 const getSectionKey = (section: any, index: number): string => {
@@ -54,10 +57,22 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   onBack,
   onOpenPreview,
   onChange,
+  companyId,
 }) => {
   const [activePageKey, setActivePageKey] = useState<string>("home");
   const [deviceMode, setDeviceMode] = useState<StudioDeviceMode>("desktop");
   const [leftPanelTab, setLeftPanelTab] = useState<StudioLeftPanelTab>("layers");
+
+  // Seed sample cart items in visual editor mode so Cart and Checkout pages render preview data
+  useEffect(() => {
+    const currentItems = useCartStore.getState().items;
+    if (currentItems.length > 0) return;
+
+    const previewItems = getMarketplacePreviewCartItems(themeId);
+    if (previewItems && previewItems.length > 0) {
+      useCartStore.setState({ items: previewItems, isOpen: false });
+    }
+  }, [themeId]);
   const [selectedSectionKey, setSelectedSectionKey] = useState<string>("");
   const [showCatalogModal, setShowCatalogModal] = useState<boolean>(false);
   const [showImagePickerModal, setShowImagePickerModal] = useState<boolean>(false);

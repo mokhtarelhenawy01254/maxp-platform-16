@@ -112,24 +112,53 @@ const rememberCartId = (cartId: string) => {
   setStoredValue("cart_id", cartId);
 };
 
+const PLATFORM_APP_HOSTS = new Set([
+  "maxp.online",
+  "www.maxp.online",
+  "app.maxp.online",
+  "admin.maxp.online",
+  "dashboard.maxp.online",
+  "api.maxp.online",
+]);
+
 const hasStableStorefrontHost = (hostname: string): boolean => {
   if (!hostname) {
     return false;
   }
 
-  if (hostname.endsWith(".localhost") || hostname.endsWith(".lvh.me")) {
+  // Dashboard & settings routes are NEVER storefront hosts
+  if (hasWindow) {
+    const pathname = window.location.pathname || "";
+    if (
+      pathname.startsWith("/settings") ||
+      pathname.startsWith("/home-builder") ||
+      pathname.startsWith("/admin") ||
+      pathname.startsWith("/marketplace")
+    ) {
+      return false;
+    }
+  }
+
+  const normalized = hostname.toLowerCase();
+
+  // Root platform domains and dashboard subdomains are NOT storefront hosts
+  if (PLATFORM_APP_HOSTS.has(normalized)) {
+    return false;
+  }
+
+  if (normalized.endsWith(".localhost") || normalized.endsWith(".lvh.me")) {
     return true;
   }
 
-  if (LOCAL_STORE_HOSTNAMES.has(hostname)) {
+  if (LOCAL_STORE_HOSTNAMES.has(normalized)) {
     return false;
   }
 
   if (
-    hostname.startsWith("192.168.") ||
-    hostname.startsWith("10.") ||
-    hostname.startsWith("172.") ||
-    hostname.endsWith(".local")
+    normalized.startsWith("192.168.") ||
+    normalized.startsWith("10.") ||
+    normalized.startsWith("172.") ||
+    normalized.endsWith(".local")
   ) {
     return false;
   }

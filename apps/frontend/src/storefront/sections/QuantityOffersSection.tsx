@@ -4,6 +4,7 @@ import QuantityOffersPanel, {
   type QuantityOffersVariant,
 } from "../components/QuantityOffersPanel";
 import { useProduct } from "../hooks/useProduct";
+import { useStorefrontTheme } from "../engine/ThemeProvider";
 import { useStorefrontSettings } from "../hooks/useStorefrontSettings";
 import { usePdpSelectionStore } from "../store/usePdpSelectionStore";
 import { resolveSectionVariant } from "../variants";
@@ -98,7 +99,9 @@ const QuantityOffersSection: React.FC<QuantityOffersSectionProps> = ({
 }) => {
   if (!isOpen) return null;
   const { id } = useParams<{ id: string }>();
-  const { product } = useProduct(id);
+  const { theme } = useStorefrontTheme();
+  const effectiveId = id || (theme.id ? `preview:${theme.id}` : undefined);
+  const { product } = useProduct(effectiveId);
   const { settings: storefrontSettings } = useStorefrontSettings();
   const selectedAttributes = usePdpSelectionStore(
     (state) => state.selection?.attributes,

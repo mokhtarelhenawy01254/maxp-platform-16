@@ -19,15 +19,23 @@ export const getStorefrontCategoriesQueryKey = (
   previewKey = resolveThemeCatalogPreviewKey(),
 ) => ['storefront', 'categories', storefrontScope, previewKey] as const;
 
+const getActivePreviewThemeId = (): string => {
+  if (typeof window === 'undefined') return '';
+  const searchParams = new URLSearchParams(window.location.search);
+  const fromTheme = searchParams.get('theme')?.trim();
+  const fromPreviewTheme = searchParams.get('previewTheme')?.trim();
+  const fromMarketplace = resolvePreviewSource() === 'marketplace' ? resolvePreviewThemeId() : '';
+  return fromTheme || fromPreviewTheme || fromMarketplace || '';
+};
+
 const resolveStorefrontCategoriesPreviewKey = (): string => {
   const themePreviewKey = resolveThemeCatalogPreviewKey();
   if (themePreviewKey) {
     return themePreviewKey;
   }
 
-  const marketplacePreviewThemeId =
-    resolvePreviewSource() === 'marketplace' ? resolvePreviewThemeId() : '';
-  return marketplacePreviewThemeId ? `marketplace:${marketplacePreviewThemeId}` : '';
+  const activeThemeId = getActivePreviewThemeId();
+  return activeThemeId ? `preview:${activeThemeId}` : '';
 };
 
 export const fetchStorefrontCategories = async (
@@ -38,27 +46,34 @@ export const fetchStorefrontCategories = async (
     return previewDataset.categories;
   }
 
-  const marketplacePreviewThemeId =
-    resolvePreviewSource() === 'marketplace' ? resolvePreviewThemeId() : '';
-  if (marketplacePreviewThemeId) {
+  const activeThemeId = getActivePreviewThemeId();
+
+  // 1. Try fetching real categories from API
+  try {
+    const response = await storefrontFetch('/products/categories', {
+      companyId: companyIdOverride,
+    });
+    if (response.success && Array.isArray(response.data) && response.data.length > 0) {
+      return response.data;
+    }
+  } catch (error) {
+    if (!activeThemeId) {
+      throw error;
+    }
+  }
+
+  // 2. Fallback to marketplace preview categories if in editor or theme preview
+  if (activeThemeId) {
     const { getMarketplacePreviewCategories } = await import(
       '../preview/marketplaceSampleData'
     );
-    const previewCategories = getMarketplacePreviewCategories(
-      marketplacePreviewThemeId,
-    );
-    if (previewCategories) {
+    const previewCategories = getMarketplacePreviewCategories(activeThemeId);
+    if (previewCategories && previewCategories.length > 0) {
       return previewCategories;
     }
   }
 
-  const response = await storefrontFetch('/products/categories', {
-    companyId: companyIdOverride,
-  });
-  if (response.success) {
-    return response.data;
-  }
-  throw new Error(response.message || 'Failed to fetch categories');
+  return [];
 };
 
 export const useCategories = (

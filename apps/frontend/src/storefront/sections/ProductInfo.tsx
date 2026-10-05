@@ -534,14 +534,15 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const { id } = useParams<{ id: string }>();
   const variant = section?.variant || 'standard';
   const location = useLocation();
-  const { product, isLoading, error, refetch } = useProduct(id);
+  const { theme } = useStorefrontTheme();
+  const effectiveId = id || (theme.id ? `preview:${theme.id}` : undefined);
+  const { product, isLoading, error, refetch } = useProduct(effectiveId);
   const { reviews: reviewsForRating, averageRating: reviewsAverageRating } = useProductReviews(
     product?.id,
     { enabled: Boolean(product?.id) },
   );
   const { settings: storefrontSettings } = useStorefrontSettings();
   const { trackAddToCartEvent, trackViewContentEvent } = useStorefrontFacebookTracking();
-  const { theme } = useStorefrontTheme();
   const isAirlume = theme.id === 'airlume-ai';
   const isNovaMobile = theme.id === 'nova-mobile';
   const isCairoStride = theme.id === 'cairo-stride';

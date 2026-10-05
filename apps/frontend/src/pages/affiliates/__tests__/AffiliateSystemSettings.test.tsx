@@ -5,11 +5,22 @@ import AffiliateSystemSettings from "../AffiliateSystemSettings";
 const mockGet = jest.fn();
 const mockPut = jest.fn();
 
-jest.mock("sonner", () => ({
-  __esModule: true,
-  default: {
+jest.mock("sonner", () => {
+  const toastMock = {
     error: jest.fn(),
     success: jest.fn(),
+  };
+  return {
+    __esModule: true,
+    toast: toastMock,
+    default: toastMock,
+  };
+});
+
+jest.mock("../../../utils/i18n-toast", () => ({
+  tToast: {
+    success: jest.fn(),
+    error: jest.fn(),
   },
 }));
 
@@ -93,7 +104,7 @@ describe("AffiliateSystemSettings", () => {
 
     expect(await screen.findByText("إعدادات نظام المسوقين")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText("تفعيل المسوقين الجدد"));
+    fireEvent.click(screen.getByLabelText("الموافقة التلقائية على المسوقين الجدد"));
     fireEvent.change(screen.getByLabelText("الحد الأدنى الافتراضي للسحب"), {
       target: { value: "150" },
     });
@@ -106,7 +117,7 @@ describe("AffiliateSystemSettings", () => {
     fireEvent.change(screen.getByLabelText("مدة معالجة السحب"), {
       target: { value: "5" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "حفظ الإعدادات" }));
+    fireEvent.click(screen.getByRole("button", { name: "حفظ التغييرات" }));
 
     await waitFor(() => {
       expect(mockPut).toHaveBeenCalledWith("/affiliate-settings", {
@@ -124,6 +135,7 @@ describe("AffiliateSystemSettings", () => {
         payoutSlaDays: 5,
         platformMarginType: "FIXED",
         platformMarginValue: 0,
+        commissionOnStatus: "CONFIRMED",
       });
     });
   });

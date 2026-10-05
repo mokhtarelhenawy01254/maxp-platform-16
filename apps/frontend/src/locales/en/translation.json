@@ -12690,6 +12690,9 @@
       "orders": {
         "description": "Order management and analytics"
       },
+      "treasuryExpenses": {
+        "description": "Record and track treasury expenses and their financial movements"
+      },
       "codDeposit": {
         "description": "COD deposit management"
       },

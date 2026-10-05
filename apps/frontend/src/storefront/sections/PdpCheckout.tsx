@@ -19,8 +19,9 @@ interface PdpCheckoutProps {
 
 const PdpCheckout: React.FC<PdpCheckoutProps> = ({ section }) => {
   const { id } = useParams<{ id: string }>();
-  const { product } = useProduct(id);
   const { theme } = useStorefrontTheme();
+  const effectiveId = id || (theme.id ? `preview:${theme.id}` : undefined);
+  const { product } = useProduct(effectiveId);
   const { settings: storefrontSettings } = useStorefrontSettings();
   const pdpQuickOrderSettings = getPdpQuickOrderSettingsFromDesignTokens(
     storefrontSettings?.storefrontSettings?.designTokens,

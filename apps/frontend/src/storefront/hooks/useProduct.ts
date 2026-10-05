@@ -231,6 +231,15 @@ const resolveStorefrontProductPreviewKey = (): string => {
   return marketplacePreviewThemeId ? `marketplace:${marketplacePreviewThemeId}` : '';
 };
 
+const getActivePreviewThemeId = (): string => {
+  if (typeof window === 'undefined') return '';
+  const searchParams = new URLSearchParams(window.location.search);
+  const fromTheme = searchParams.get('theme')?.trim();
+  const fromPreviewTheme = searchParams.get('previewTheme')?.trim();
+  const fromMarketplace = resolvePreviewSource() === 'marketplace' ? resolvePreviewThemeId() : '';
+  return fromTheme || fromPreviewTheme || fromMarketplace || '';
+};
+
 export const fetchStorefrontProduct = async (
   idOrSlug: string,
   isPreviewMode = resolveStorefrontProductPreviewMode(),
@@ -239,6 +248,26 @@ export const fetchStorefrontProduct = async (
   const resolvedPresentationSlug = presentationSlug || getGlobalPresentationSlug();
   if (!idOrSlug) {
     throw new Error('Product ID or Slug is required');
+  }
+
+  const activeThemeId = getActivePreviewThemeId();
+  const isExplicitPreview = idOrSlug.startsWith('preview:');
+  const previewThemeFromSlug = isExplicitPreview
+    ? idOrSlug.replace('preview:', '').trim()
+    : '';
+  const effectivePreviewThemeId = previewThemeFromSlug || activeThemeId;
+
+  if (isExplicitPreview && effectivePreviewThemeId) {
+    const { getMarketplacePreviewProducts } = await import(
+      '../preview/marketplaceSampleData'
+    );
+    const sampleProducts = getMarketplacePreviewProducts(
+      { limit: 1 },
+      effectivePreviewThemeId,
+    );
+    if (sampleProducts?.data?.[0]) {
+      return sampleProducts.data[0];
+    }
   }
 
   const requestIdOrSlug = resolveProductSlugForStorefrontRequest(idOrSlug) || idOrSlug;
@@ -254,15 +283,13 @@ export const fetchStorefrontProduct = async (
     }
   }
 
-  const marketplacePreviewThemeId =
-    resolvePreviewSource() === 'marketplace' ? resolvePreviewThemeId() : '';
-  if (marketplacePreviewThemeId) {
+  if (effectivePreviewThemeId) {
     const { getMarketplacePreviewProduct } = await import(
       '../preview/marketplaceSampleData'
     );
     const previewMarketplaceProduct =
-      getMarketplacePreviewProduct(requestIdOrSlug, marketplacePreviewThemeId) ||
-      getMarketplacePreviewProduct(idOrSlug, marketplacePreviewThemeId);
+      getMarketplacePreviewProduct(requestIdOrSlug, effectivePreviewThemeId) ||
+      getMarketplacePreviewProduct(idOrSlug, effectivePreviewThemeId);
     if (previewMarketplaceProduct) {
       return previewMarketplaceProduct;
     }
@@ -276,10 +303,42 @@ export const fetchStorefrontProduct = async (
       return previewProduct;
     }
 
-    return fetchPublicStorefrontProduct(requestIdOrSlug, resolvedPresentationSlug);
+    try {
+      return await fetchPublicStorefrontProduct(requestIdOrSlug, resolvedPresentationSlug);
+    } catch (err) {
+      if (effectivePreviewThemeId) {
+        const { getMarketplacePreviewProducts } = await import(
+          '../preview/marketplaceSampleData'
+        );
+        const sampleProducts = getMarketplacePreviewProducts(
+          { limit: 1 },
+          effectivePreviewThemeId,
+        );
+        if (sampleProducts?.data?.[0]) {
+          return sampleProducts.data[0];
+        }
+      }
+      throw err;
+    }
   }
 
-  return fetchPublicStorefrontProduct(requestIdOrSlug, resolvedPresentationSlug);
+  try {
+    return await fetchPublicStorefrontProduct(requestIdOrSlug, resolvedPresentationSlug);
+  } catch (err) {
+    if (effectivePreviewThemeId) {
+      const { getMarketplacePreviewProducts } = await import(
+        '../preview/marketplaceSampleData'
+      );
+      const sampleProducts = getMarketplacePreviewProducts(
+        { limit: 1 },
+        effectivePreviewThemeId,
+      );
+      if (sampleProducts?.data?.[0]) {
+        return sampleProducts.data[0];
+      }
+    }
+    throw err;
+  }
 };
 
 interface UseProductOptions {
@@ -291,13 +350,17 @@ export const useProduct = (
   idOrSlug: string | undefined,
   options: UseProductOptions = {},
 ) => {
+  const activeThemeId = getActivePreviewThemeId();
+  const effectiveRawId = idOrSlug?.trim() || (activeThemeId ? `preview:${activeThemeId}` : undefined);
   const isPreviewMode = resolveStorefrontProductPreviewMode();
   const storefrontScope = getStorefrontScope();
   const previewKey = resolveStorefrontProductPreviewKey();
-  const requestIdOrSlug = resolveProductSlugForStorefrontRequest(
-    idOrSlug,
-    storefrontScope,
-  );
+  const requestIdOrSlug = effectiveRawId?.startsWith('preview:')
+    ? effectiveRawId
+    : resolveProductSlugForStorefrontRequest(
+        effectiveRawId,
+        storefrontScope,
+      );
   const presentationSlug = options.presentationSlug || getGlobalPresentationSlug();
   const queryClient = useQueryClient();
 

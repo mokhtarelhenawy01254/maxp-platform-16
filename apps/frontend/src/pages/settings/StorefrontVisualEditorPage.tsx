@@ -192,6 +192,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
   return (
     <StorefrontStudioShell
       themeId={activeStorefrontThemeId}
+      companyId={storefrontSettings?.companyId}
       designTokens={(storefrontSettings?.designTokens as Record<string, unknown>) || {}}
       storeName={storefrontSettings?.storeName || "متجري"}
       hasPendingChanges={hasPendingChanges}

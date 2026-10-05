@@ -1831,10 +1831,11 @@ class OrderService {
           where: { id: order.id },
           data: {
             status: status,
-            // 🛡️ PRODUCTION-FIX (custom-status-persist): الكود المخصص بيتخزن جنب الـ enum،
-            // وبيتمسح لما التاجر يرجّع لحالة نظامية مباشرة (مش مخصصة).
-            customStatusCode: isRequestedCustom ? originalRequestedStatus : null,
-            notes: notes || undefined,
+            // 🛡️ PRODUCTION-FIX (notes-preservation): لا يتم مسح أو استبدال ملاحظات العميل ومواصفات طلبه
+            // (مثل نوع وموديل وسنة صنع السيارة) بسبب نصوص تحديث الحالة (مثل تأكيد الواتساب أو التحديث الجماعي).
+            notes: (order.notes && String(order.notes).trim().length > 0 && !options?.overwriteNotes)
+              ? order.notes
+              : (notes || undefined),
             ...((status === 'RETURNED' || status === 'PARTIALLY_RETURNED' || String(originalRequestedStatus || '').toUpperCase().includes('RETURN')) && notes ? { turboReturnReason: notes } : {}),
             ...(nextMetadata ? { metadata: nextMetadata } : {}),
             ...confirmationData,
@@ -2361,7 +2362,9 @@ class OrderService {
           where: { id: guestOrder.id },
           data: {
             status,
-            notes: notes || undefined,
+            notes: (guestOrder.notes && String(guestOrder.notes).trim().length > 0)
+              ? guestOrder.notes
+              : (notes || undefined),
             ...((status === 'RETURNED' || status === 'PARTIALLY_RETURNED' || String(status || '').toUpperCase().includes('RETURN')) && notes ? { turboReturnReason: notes } : {}),
             ...(nextGuestMetadata ? { metadata: nextGuestMetadata } : {}),
             OrderStatusHistory: {
@@ -2389,7 +2392,6 @@ class OrderService {
             },
             data: {
               status: status,
-              notes: notes || undefined,
               ...((status === 'RETURNED' || status === 'PARTIALLY_RETURNED' || String(status || '').toUpperCase().includes('RETURN')) && notes ? { turboReturnReason: notes } : {}),
               updatedAt: new Date()
             }

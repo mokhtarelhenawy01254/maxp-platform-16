@@ -2175,8 +2175,8 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
   const isWomenFashionEg = theme.id === "women-fashion-eg";
   const prefersArabicCopy = theme.direction === "rtl";
   const variant = normalizeProductGalleryVariant(section?.variant);
-  const isGracefulGallery = theme.id === "soft-graceful";
-  const { product, isLoading } = useProduct(id);
+  const effectiveId = id || (theme.id ? `preview:${theme.id}` : undefined);
+  const { product, isLoading } = useProduct(effectiveId);
   const galleryDiscountPct =
     product &&
     typeof product.comparePrice === "number" &&

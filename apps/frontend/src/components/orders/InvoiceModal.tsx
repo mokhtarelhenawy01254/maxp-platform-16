@@ -68,6 +68,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
         <div className="p-3 print:p-2">
           <InvoiceContent
             invoice={{
+              ...invoice,
               companyName: invoice.companyName as string,
               companyPhone: invoice.companyPhone as string | null,
               companyLogo: invoice.companyLogo as string | null,
@@ -76,6 +77,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
               customerEmail: invoice.customerEmail as string | null,
               customerAddress: invoice.customerAddress as string | null,
               city: invoice.city as string | null,
+              governorate: (invoice.governorate || (invoice.order as any)?.governorate) as string | null,
               paymentMethod: invoice.paymentMethod as string | null,
               paymentStatus: invoice.paymentStatus as string,
               currency: invoice.currency as string,
@@ -83,17 +85,23 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
               tax: invoice.tax as number,
               shipping: invoice.shipping as number,
               discount: invoice.discount as number,
+              discountReason: (invoice as any).discountReason as string | null,
               totalAmount: invoice.totalAmount as number,
               invoiceNumber: invoice.invoiceNumber as string,
+              notes: (invoice.notes || (invoice.order as any)?.notes) as string | null,
+              metadata: invoice.metadata || (invoice.order as any)?.metadata,
               order: {
+                ...((invoice.order as any) || {}),
                 orderNumber: (invoice.order as any)?.orderNumber as string,
                 total: (invoice.order as any)?.total,
                 subtotal: (invoice.order as any)?.subtotal,
                 shipping: (invoice.order as any)?.shipping,
                 discount: (invoice.order as any)?.discount,
                 tax: (invoice.order as any)?.tax,
+                notes: ((invoice.order as any)?.notes || invoice.notes) as string | null,
+                metadata: (invoice.order as any)?.metadata || invoice.metadata,
                 turboTrackingNumber: (invoice.order as any)?.turboTrackingNumber as string | null,
-                orderItems: invoice.order?.orderItems as Array<{
+                orderItems: ((invoice.order as any)?.orderItems || (invoice as any).items || []) as Array<{
                   productName: string;
                   quantity: number;
                   price: number;

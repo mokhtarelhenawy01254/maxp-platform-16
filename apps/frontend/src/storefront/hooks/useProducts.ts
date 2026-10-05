@@ -28,15 +28,23 @@ interface UseProductsOptions {
   enabled?: boolean;
 }
 
+const getActivePreviewThemeId = (): string => {
+  if (typeof window === 'undefined') return '';
+  const searchParams = new URLSearchParams(window.location.search);
+  const fromTheme = searchParams.get('theme')?.trim();
+  const fromPreviewTheme = searchParams.get('previewTheme')?.trim();
+  const fromMarketplace = resolvePreviewSource() === 'marketplace' ? resolvePreviewThemeId() : '';
+  return fromTheme || fromPreviewTheme || fromMarketplace || '';
+};
+
 export const resolveStorefrontProductsPreviewKey = (): string => {
   const themePreviewKey = resolveThemeCatalogPreviewKey();
   if (themePreviewKey) {
     return themePreviewKey;
   }
 
-  const marketplacePreviewThemeId =
-    resolvePreviewSource() === 'marketplace' ? resolvePreviewThemeId() : '';
-  return marketplacePreviewThemeId ? `marketplace:${marketplacePreviewThemeId}` : '';
+  const activeThemeId = getActivePreviewThemeId();
+  return activeThemeId ? `preview:${activeThemeId}` : '';
 };
 
 export const fetchStorefrontProducts = async (
@@ -48,22 +56,38 @@ export const fetchStorefrontProducts = async (
     return filterThemePreviewProducts(previewDataset, params);
   }
 
-  const marketplacePreviewThemeId =
-    resolvePreviewSource() === 'marketplace' ? resolvePreviewThemeId() : '';
-  if (marketplacePreviewThemeId) {
+  const activeThemeId = getActivePreviewThemeId();
+
+  // 1. Try fetching real products from API
+  try {
+    const apiResult = await fetchStorefrontProductsFromApi(params, companyIdOverride);
+    if (apiResult.data && apiResult.data.length > 0) {
+      return apiResult;
+    }
+  } catch (error) {
+    if (!activeThemeId) {
+      throw error;
+    }
+  }
+
+  // 2. Fallback to marketplace preview products if in editor or theme preview
+  if (activeThemeId) {
     const { getMarketplacePreviewProducts } = await import(
       '../preview/marketplaceSampleData'
     );
     const previewData = getMarketplacePreviewProducts(
       params,
-      marketplacePreviewThemeId,
+      activeThemeId,
     );
-    if (previewData) {
+    if (previewData && previewData.data.length > 0) {
       return previewData;
     }
   }
 
-  return fetchStorefrontProductsFromApi(params, companyIdOverride);
+  return {
+    data: [],
+    pagination: { total: 0, page: 1, limit: 12, pages: 0 },
+  };
 };
 
 export const useProducts = (
