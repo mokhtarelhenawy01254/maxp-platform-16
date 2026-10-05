@@ -249,22 +249,38 @@ class MonitorService {
 
   async processActivityBatch(companyId, employeeId, activities) {
     if (!activities || !activities.length) return { count: 0 };
+
+    // Deduplicate in-memory by intervalStart keeping maximum activeSeconds
+    const deduplicatedMap = new Map();
+    for (const a of activities) {
+      if (!a || !a.intervalStart) continue;
+      const key = new Date(a.intervalStart).toISOString();
+      const existing = deduplicatedMap.get(key);
+      const curActive = Math.min(300, Math.max(0, Number(a.activeSeconds || 0)));
+      if (!existing || curActive > (Number(existing.activeSeconds) || 0)) {
+        deduplicatedMap.set(key, { ...a, activeSeconds: curActive });
+      }
+    }
+    const safeActivities = Array.from(deduplicatedMap.values());
+
     const res = await this.prisma.monitorActivityLog.createMany({
-      data: activities.map(a => ({
+      data: safeActivities.map(a => ({
         companyId,
         employeeId,
         intervalStart: new Date(a.intervalStart),
         intervalEnd: new Date(a.intervalEnd),
         mouseEvents: Number(a.mouseEvents || 0),
         keyboardEvents: Number(a.keyboardEvents || 0),
-        activeSeconds: Number(a.activeSeconds || 0),
+        activeSeconds: Math.min(300, Math.max(0, Number(a.activeSeconds || 0))),
         activityScore: Number(a.activityScore || 0),
         status: a.status || 'active',
-      }))
+        deviceId: a.deviceId || null,
+      })),
+      skipDuplicates: true
     });
 
     try {
-      await this.updateDailySummaryFromActivity(companyId, employeeId, activities);
+      await this.updateDailySummaryFromActivity(companyId, employeeId, safeActivities);
     } catch (e) {
       console.error('[MonitorService] Failed to update daily summary:', e.message);
     }
@@ -276,229 +292,9 @@ class MonitorService {
     if (!activities || !activities.length) return;
 
     try {
-      // Use the actual interval timestamp rather than server's current arrival time
       const firstIntervalStart = activities[0].intervalStart ? new Date(activities[0].intervalStart) : new Date();
-      const dateStr = (isNaN(firstIntervalStart.getTime()) ? new Date() : firstIntervalStart).toISOString().split('T')[0];
-      const targetDate = new Date(`${dateStr}T00:00:00.000Z`);
-      const isToday = dateStr === new Date().toISOString().split('T')[0];
-
-      // 1. Resolve candidate IDs
-      const [emp, usr] = await Promise.all([
-        this.prisma.employee.findFirst({
-          where: { companyId, OR: [{ id: employeeId }, { userId: employeeId }] },
-          select: { id: true, userId: true, firstName: true, lastName: true }
-        }).catch(() => null),
-        this.prisma.user.findFirst({
-          where: { companyId, id: employeeId },
-          select: { id: true, firstName: true, lastName: true }
-        }).catch(() => null)
-      ]);
-
-      const canonicalEmployeeId = emp?.id || employeeId;
-      const candidateIds = Array.from(new Set([employeeId, canonicalEmployeeId, emp?.userId, usr?.id].filter(Boolean)));
-
-      // 2. Fetch attendance, app usages, web usages, and tasks
-      const [attendance, existing, appUsages, webUsages, tasks, customCategories] = await Promise.all([
-        this.prisma.attendance.findFirst({
-          where: {
-            companyId,
-            OR: [{ userId: { in: candidateIds } }, { employeeRelId: { in: candidateIds } }],
-            date: { gte: targetDate, lte: new Date(`${dateStr}T23:59:59.999Z`) }
-          },
-          orderBy: { checkIn: 'asc' }
-        }).catch(() => null),
-        this.prisma.monitorDailySummary.findUnique({
-          where: {
-            companyId_employeeId_date: {
-              companyId,
-              employeeId: canonicalEmployeeId,
-              date: targetDate,
-            },
-          },
-        }).catch(() => null),
-        this.prisma.monitorAppUsage.findMany({
-          where: {
-            companyId,
-            employeeId: { in: candidateIds },
-            OR: [
-              { date: { gte: targetDate, lte: new Date(`${dateStr}T23:59:59.999Z`) } },
-              { startedAt: { gte: targetDate, lte: new Date(`${dateStr}T23:59:59.999Z`) } }
-            ]
-          },
-          select: { appName: true, category: true, durationSeconds: true }
-        }).catch(() => []),
-        this.prisma.monitorWebUsage.findMany({
-          where: {
-            companyId,
-            employeeId: { in: candidateIds },
-            OR: [
-              { date: { gte: targetDate, lte: new Date(`${dateStr}T23:59:59.999Z`) } },
-              { startedAt: { gte: targetDate, lte: new Date(`${dateStr}T23:59:59.999Z`) } }
-            ]
-          },
-          select: { domain: true, url: true, category: true, durationSeconds: true }
-        }).catch(() => []),
-        this.prisma.task.findMany({
-          where: { companyId, assignedTo: { in: candidateIds } },
-          select: { id: true, status: true, dueDate: true, completedDate: true, updatedAt: true }
-        }).catch(() => []),
-        this.prisma.monitorAppCategory.findMany({ where: { companyId } }).catch(() => [])
-      ]);
-
-      const totalActive = activities.reduce((sum, a) => sum + (Number(a.activeSeconds) || 0), 0);
-
-      // Calculate total idle seconds for this batch (clamped to max 300s per interval)
-      const totalIdle = activities.reduce((sum, a) => {
-        const startMs = a.intervalStart ? new Date(a.intervalStart).getTime() : 0;
-        const endMs = a.intervalEnd ? new Date(a.intervalEnd).getTime() : 0;
-        const active = Number(a.activeSeconds) || 0;
-        if (startMs && endMs && endMs > startMs) {
-          const intervalSec = Math.min(300, Math.max(1, Math.floor((endMs - startMs) / 1000)));
-          return sum + Math.max(0, intervalSec - active);
-        }
-        return sum;
-      }, 0);
-
-      const avgScore = activities.reduce((sum, a) => sum + (Number(a.activityScore) || 0), 0) / activities.length;
-
-      let runningAvg = Math.round(avgScore);
-      if (existing && existing.totalActiveSeconds > 0) {
-        const prevWeight = existing.totalActiveSeconds;
-        const newWeight = Math.max(1, totalActive);
-        runningAvg = Math.round(((existing.avgActivityScore * prevWeight) + (avgScore * newWeight)) / (prevWeight + newWeight));
-      }
-
-      // Timing calculations
-      const firstActivityTime = existing?.firstActivityTime || firstIntervalStart;
-      const lastActivityTime = new Date();
-      const clockInTime = attendance?.checkIn || existing?.clockInTime || null;
-      const clockOutTime = attendance?.checkOut || existing?.clockOutTime || null;
-
-      const lateStartSeconds = calculateLateStartSeconds(clockInTime, firstActivityTime, isToday);
-      const totalClockSeconds = calculateTotalClockSeconds(clockInTime, clockOutTime, isToday);
-
-      // Categorize apps and web duration
-      let prodSec = 0;
-      let unprodSec = 0;
-      for (const a of appUsages) {
-        const cat = (a.category && a.category !== 'unrated')
-          ? a.category
-          : classifyItemCategory(a.appName, 'app', customCategories);
-        const dur = Number(a.durationSeconds) || 0;
-        if (cat === 'productive') prodSec += dur;
-        else if (cat === 'unproductive') unprodSec += dur;
-      }
-      for (const w of webUsages) {
-        const cat = (w.category && w.category !== 'unrated')
-          ? w.category
-          : classifyItemCategory(w.domain || w.url, 'web', customCategories);
-        const dur = Number(w.durationSeconds) || 0;
-        if (cat === 'productive') prodSec += dur;
-        else if (cat === 'unproductive') unprodSec += dur;
-      }
-
-      const totalActiveTotal = (existing?.totalActiveSeconds || 0) + totalActive;
-      const totalIdleTotal = (existing?.totalIdleSeconds || 0) + totalIdle;
-      const maxPossibleSession = totalClockSeconds > 0 ? totalClockSeconds : Math.max(totalActiveTotal + totalIdleTotal, 8 * 3600);
-      const totalProductiveSeconds = Math.min(maxPossibleSession, Math.max(existing?.totalProductiveSeconds || 0, prodSec));
-      const totalUnproductiveSeconds = Math.min(maxPossibleSession, Math.max(existing?.totalUnproductiveSeconds || 0, unprodSec));
-
-      // Task metrics
-      let completedTasksCount = 0;
-      let openTasksCount = 0;
-      let overdueTasksCount = 0;
-      for (const t of tasks) {
-        if (['COMPLETED', 'IN_REVIEW'].includes(t.status)) {
-          const compDate = t.completedDate ? new Date(t.completedDate) : (t.updatedAt ? new Date(t.updatedAt) : null);
-          if (compDate && compDate >= targetDate && compDate <= new Date(`${dateStr}T23:59:59.999Z`)) {
-            completedTasksCount++;
-          }
-        } else if (t.status !== 'CANCELLED') {
-          openTasksCount++;
-          if (t.dueDate && new Date(t.dueDate) < new Date(`${dateStr}T23:59:59.999Z`)) {
-            overdueTasksCount++;
-          }
-        }
-      }
-
-      // New balanced productivity score
-      const newProdScore = computeProductivityScore({
-        totalActiveSeconds: totalActiveTotal,
-        totalClockSeconds,
-        totalProductiveSeconds,
-        totalUnproductiveSeconds,
-        avgActivityScore: runningAvg,
-        completedTasksCount,
-        openTasksCount,
-        overdueTasksCount,
-      });
-
-      const activeRatio = totalClockSeconds > 0
-        ? Math.min(100, Math.round((totalActiveTotal / totalClockSeconds) * 100))
-        : (totalActiveTotal > 0 ? 100 : 0);
-
-      const operationalSignal = evaluateOperationalSignal({
-        totalActiveSeconds: totalActiveTotal,
-        totalClockSeconds,
-        completedTasksCount,
-        openTasksCount,
-        overdueTasksCount,
-        activeRatio,
-      });
-
-      await this.prisma.monitorDailySummary.upsert({
-        where: {
-          companyId_employeeId_date: {
-            companyId,
-            employeeId: canonicalEmployeeId,
-            date: targetDate,
-          },
-        },
-        update: {
-          totalActiveSeconds: { increment: totalActive },
-          totalIdleSeconds: { increment: totalIdle },
-          clockInTime,
-          clockOutTime,
-          firstActivityTime,
-          lastActivityTime,
-          lateStartSeconds,
-          totalClockSeconds,
-          totalProductiveSeconds,
-          totalUnproductiveSeconds,
-          avgActivityScore: runningAvg,
-          productivityScore: newProdScore,
-        },
-        create: {
-          companyId,
-          employeeId: canonicalEmployeeId,
-          date: targetDate,
-          clockInTime,
-          clockOutTime,
-          firstActivityTime,
-          lastActivityTime,
-          lateStartSeconds,
-          totalClockSeconds,
-          totalProductiveSeconds,
-          totalUnproductiveSeconds,
-          totalActiveSeconds: totalActive,
-          totalIdleSeconds: totalIdle,
-          productivityScore: newProdScore,
-          avgActivityScore: runningAvg,
-        },
-      });
-
-      // Operational Alert generation
-      const empName = emp ? [emp.firstName, emp.lastName].filter(Boolean).join(' ') : (usr?.firstName || canonicalEmployeeId);
-      await this.ensureOperationalAlerts(companyId, canonicalEmployeeId, {
-        empName,
-        clockInTime,
-        firstActivityTime,
-        lateStartSeconds,
-        operationalSignal,
-        overdueTasksCount,
-        completedTasksCount,
-        dateStr
-      });
+      const targetDate = isNaN(firstIntervalStart.getTime()) ? new Date() : firstIntervalStart;
+      return await this.syncEmployeeDailySummary(companyId, employeeId, targetDate);
     } catch (err) {
       console.error('[MonitorService] Failed to update daily summary from activity:', err.message);
     }
@@ -1121,9 +917,21 @@ class MonitorService {
         }).catch(() => [])
       ]);
 
-      // 3. Compute Active & Idle time
-      let totalActive = activityLogs.reduce((sum, a) => sum + (Number(a.activeSeconds) || 0), 0);
-      let totalIdle = activityLogs.reduce((sum, a) => {
+      // 3. Compute Active & Idle time from deduplicated logs
+      const uniqueActivityLogs = [];
+      const seenIntervals = new Set();
+      for (const log of activityLogs) {
+        const timeKey = log.intervalStart ? new Date(log.intervalStart).getTime() : null;
+        if (timeKey && !seenIntervals.has(timeKey)) {
+          seenIntervals.add(timeKey);
+          uniqueActivityLogs.push(log);
+        } else if (!timeKey) {
+          uniqueActivityLogs.push(log);
+        }
+      }
+
+      let totalActive = uniqueActivityLogs.reduce((sum, a) => sum + (Number(a.activeSeconds) || 0), 0);
+      let totalIdle = uniqueActivityLogs.reduce((sum, a) => {
         const startMs = a.intervalStart ? new Date(a.intervalStart).getTime() : 0;
         const endMs = a.intervalEnd ? new Date(a.intervalEnd).getTime() : 0;
         const active = Number(a.activeSeconds) || 0;
@@ -1134,20 +942,17 @@ class MonitorService {
         return sum;
       }, 0);
 
-      if (existingSummary && existingSummary.totalActiveSeconds > totalActive) {
-        totalActive = existingSummary.totalActiveSeconds;
-      }
-      if (existingSummary && existingSummary.totalIdleSeconds > totalIdle) {
-        totalIdle = existingSummary.totalIdleSeconds;
-      }
+      // Clamp to maximum 86,400s (24h) per day
+      totalActive = Math.min(86400, Math.max(0, totalActive));
+      totalIdle = Math.min(86400, Math.max(0, totalIdle));
 
-      const avgActivityScore = activityLogs.length > 0
-        ? Math.round(activityLogs.reduce((sum, a) => sum + (Number(a.activityScore) || 0), 0) / activityLogs.length)
+      const avgActivityScore = uniqueActivityLogs.length > 0
+        ? Math.round(uniqueActivityLogs.reduce((sum, a) => sum + (Number(a.activityScore) || 0), 0) / uniqueActivityLogs.length)
         : (existingSummary?.avgActivityScore || (totalActive > 0 ? 70 : 0));
 
       const firstActivityTime = existingSummary?.firstActivityTime ||
-        (activityLogs.length > 0 ? activityLogs[0].intervalStart : null);
-      const lastActivityTime = (activityLogs.length > 0 ? activityLogs[activityLogs.length - 1].intervalEnd : null) ||
+        (uniqueActivityLogs.length > 0 ? uniqueActivityLogs[0].intervalStart : null);
+      const lastActivityTime = (uniqueActivityLogs.length > 0 ? uniqueActivityLogs[uniqueActivityLogs.length - 1].intervalEnd : null) ||
         existingSummary?.lastActivityTime || null;
 
       // 4. Attendance & Late Start & Total Clock Seconds
@@ -1155,6 +960,11 @@ class MonitorService {
       const clockOutTime = attendance?.checkOut || existingSummary?.clockOutTime || null;
       const lateStartSeconds = calculateLateStartSeconds(clockInTime, firstActivityTime, isToday);
       const totalClockSeconds = calculateTotalClockSeconds(clockInTime, clockOutTime, isToday);
+
+      // Bound active time when employee has clocked out: cannot exceed clocked time + 5min (300s grace)
+      if (clockOutTime && totalClockSeconds > 0 && totalActive > (totalClockSeconds + 300)) {
+        totalActive = totalClockSeconds + 300;
+      }
 
       const lateMinutesToday = Math.round(lateStartSeconds / 60);
       let weeklyAvgLateStartMinutes = lateMinutesToday;
@@ -1289,6 +1099,20 @@ class MonitorService {
           ...summaryPayload
         }
       });
+
+      // Clean up any non-canonical duplicate summary rows for this company/date
+      if (candidateIds.length > 1) {
+        const nonCanonicalIds = candidateIds.filter(id => id !== canonicalEmployeeId);
+        if (nonCanonicalIds.length > 0) {
+          await this.prisma.monitorDailySummary.deleteMany({
+            where: {
+              companyId,
+              employeeId: { in: nonCanonicalIds },
+              date: startOfDay,
+            }
+          }).catch(e => console.warn('[MonitorService] Could not clean duplicate summaries:', e.message));
+        }
+      }
 
       const empName = emp ? [emp.firstName, emp.lastName].filter(Boolean).join(' ') : (usr?.firstName || canonicalEmployeeId);
       await this.ensureOperationalAlerts(companyId, canonicalEmployeeId, {
@@ -1592,10 +1416,13 @@ class MonitorService {
     const grouped = new Map();
 
     // 1. Process summaries
+    const seenSummaryDates = new Set();
     for (const s of summaries) {
       const empObj = empMap.get(s.employeeId) || { id: s.employeeId, firstName: s.employeeId };
       const canonicalKey = empObj.id || empObj.userId || s.employeeId;
       const att = attendanceMap.get(canonicalKey) || attendanceMap.get(empObj.userId) || attendanceMap.get(s.employeeId);
+      const sDateStr = s.date ? new Date(s.date).toISOString().split('T')[0] : 'unknown';
+      const summaryDateKey = `${canonicalKey}_${sDateStr}`;
 
       if (!grouped.has(canonicalKey)) {
         grouped.set(canonicalKey, {
@@ -1618,8 +1445,11 @@ class MonitorService {
       }
 
       const item = grouped.get(canonicalKey);
-      item.totalActiveSeconds += (s.totalActiveSeconds || 0);
-      item.totalIdleSeconds += (s.totalIdleSeconds || 0);
+      if (!seenSummaryDates.has(summaryDateKey)) {
+        seenSummaryDates.add(summaryDateKey);
+        item.totalActiveSeconds += Math.min(86400, (s.totalActiveSeconds || 0));
+        item.totalIdleSeconds += Math.min(86400, (s.totalIdleSeconds || 0));
+      }
       if (s.totalProductiveSeconds > 0) item.totalProductiveSeconds = Math.max(item.totalProductiveSeconds, s.totalProductiveSeconds);
       if (s.totalUnproductiveSeconds > 0) item.totalUnproductiveSeconds = Math.max(item.totalUnproductiveSeconds, s.totalUnproductiveSeconds);
       if (s.avgActivityScore > 0) item.productivityScores.push(s.avgActivityScore);
@@ -1793,15 +1623,21 @@ class MonitorService {
         weeklyAvgLateStartMinutes = Math.round(totalPastSec / (pastList.length + 1) / 60);
       }
 
+      // Bound active time if clocked out (active time cannot exceed clock time + 300s grace)
+      let boundedActive = item.totalActiveSeconds || 0;
+      if (item.clockOutTime && totalClockSeconds > 0 && boundedActive > (totalClockSeconds + 300)) {
+        boundedActive = totalClockSeconds + 300;
+      }
+
       const activeRatio = totalClockSeconds > 0
-        ? Math.min(100, Math.round((item.totalActiveSeconds / totalClockSeconds) * 100))
-        : (item.totalActiveSeconds > 0 ? 100 : 0);
+        ? Math.min(100, Math.round((boundedActive / totalClockSeconds) * 100))
+        : (boundedActive > 0 ? 100 : 0);
 
       // Layer 2: Productive vs Unproductive Duration
       const prodSec = empProdMap.get(item.employeeId) || empProdMap.get(item.employee?.userId) || empProdMap.get(item.employee?.id) || item.totalProductiveSeconds || 0;
       const unprodSec = empUnprodMap.get(item.employeeId) || empUnprodMap.get(item.employee?.userId) || empUnprodMap.get(item.employee?.id) || item.totalUnproductiveSeconds || 0;
 
-      const maxSession = totalClockSeconds > 0 ? totalClockSeconds : Math.max(item.totalActiveSeconds + item.totalIdleSeconds, 8 * 3600);
+      const maxSession = totalClockSeconds > 0 ? totalClockSeconds : Math.max(boundedActive + item.totalIdleSeconds, 8 * 3600);
       const totalProductiveSeconds = Math.min(maxSession, prodSec);
       const totalUnproductiveSeconds = Math.min(maxSession, unprodSec);
 
@@ -1810,14 +1646,14 @@ class MonitorService {
       const openTasksCount = empOpenTasks.get(item.employeeId) || empOpenTasks.get(item.employee?.userId) || empOpenTasks.get(item.employee?.id) || 0;
       const overdueTasksCount = empOverdueTasks.get(item.employeeId) || empOverdueTasks.get(item.employee?.userId) || empOverdueTasks.get(item.employee?.id) || 0;
 
-      const activeHours = item.totalActiveSeconds / 3600;
-      const tasksPerHour = item.totalActiveSeconds >= 1800
+      const activeHours = boundedActive / 3600;
+      const tasksPerHour = boundedActive >= 1800
         ? Number((completedTasksCount / activeHours).toFixed(2))
         : (completedTasksCount > 0 ? completedTasksCount : 0);
 
       // Balanced weighted productivity score
       const productivityScore = computeProductivityScore({
-        totalActiveSeconds: item.totalActiveSeconds,
+        totalActiveSeconds: boundedActive,
         totalClockSeconds,
         totalProductiveSeconds,
         totalUnproductiveSeconds,
@@ -1829,7 +1665,7 @@ class MonitorService {
 
       // Layer 3: Operational Signal
       const operationalSignal = evaluateOperationalSignal({
-        totalActiveSeconds: item.totalActiveSeconds,
+        totalActiveSeconds: boundedActive,
         totalClockSeconds,
         completedTasksCount,
         openTasksCount,

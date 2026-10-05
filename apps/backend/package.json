@@ -38,6 +38,7 @@
     "fix:xp": "node scripts/backfill_completed_tasks_xp.js",
     "fix:xp-recalc": "node scripts/recalculate_xp.js",
     "fix:levels": "node scripts/fix_leaderboard_levels.js",
+    "cleanse:monitor:p0": "node scripts/cleanse_monitor_p0_duplicates.js",
     "auth:reset-local-smoke": "node scripts/reset_local_auth_smoke_user.js",
     "sync:prod": "node scripts/sync_prod_rules.js",
     "check:rewards": "node scripts/check_reward_table.js",

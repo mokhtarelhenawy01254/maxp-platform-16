@@ -1764,11 +1764,40 @@ class AttendanceService {
       updateData.earlyLeaveMinutes = metrics.earlyLeaveMinutes;
       updateData.workHours = metrics.workHours;
       updateData.overtimeHours = metrics.overtimeHours;
+      if (data.updatedById || data.actorId) {
+        updateData.updatedById = data.updatedById || data.actorId;
+      }
+      if (data.changeReason || data.notes) {
+        updateData.changeReason = data.changeReason || data.notes;
+      }
 
       const updated = await this.prisma.attendance.update({
         where: { id: attendanceId },
         data: updateData,
       });
+
+      // 📝 Audit Log
+      try {
+        const auditService = require("./auditService");
+        const actorId = data.actorId || data.updatedById || existing.userId;
+        await auditService.logAction(
+          companyId,
+          actorId,
+          "UPDATE",
+          "ATTENDANCE",
+          updated.id,
+          {
+            date: (attendanceDate ? new Date(attendanceDate) : new Date()).toISOString().split("T")[0],
+            status: updateData.status || updated.status,
+            lateMinutes: updateData.lateMinutes !== undefined ? updateData.lateMinutes : updated.lateMinutes,
+            workHours: updateData.workHours !== undefined ? updateData.workHours : updated.workHours,
+            changeReason: data.changeReason || data.notes || "تعديل حضور يدوي",
+          },
+          data.actorName || null,
+        );
+      } catch (auditErr) {
+        console.warn("⚠️ Failed to write attendance update audit log:", auditErr.message);
+      }
 
       // إلغاء الخصومات التلقائية المربوطة بالسجل في حالة تصفير التأخير أو الانصراف المبكر
       try {
@@ -1980,8 +2009,35 @@ class AttendanceService {
             checkOutMethod: checkOutDateTime
               ? "manual"
               : existing.checkOutMethod,
+            updatedById: data.updatedById || data.actorId || null,
+            changeReason: data.changeReason || data.notes || "تعديل حضور يدوي عبر شاشة التسجيل",
           },
         });
+
+        // 📝 Audit Log
+        try {
+          const auditService = require("./auditService");
+          const actorId = data.actorId || data.updatedById || attendance.userId;
+          await auditService.logAction(
+            companyId,
+            actorId,
+            "UPDATE",
+            "ATTENDANCE",
+            attendance.id,
+            {
+              date: attendanceDate.toISOString().split("T")[0],
+              checkIn: data.checkIn || null,
+              checkOut: data.checkOut || null,
+              status: metrics.status,
+              method: "manual",
+              changeReason: data.changeReason || data.notes || "تعديل حضور يدوي عبر شاشة التسجيل",
+            },
+            data.actorName || null,
+          );
+        } catch (auditErr) {
+          console.warn("⚠️ Failed to write attendance update audit log:", auditErr.message);
+        }
+
         console.log("✅ [SERVICE] Attendance record updated successfully");
         return attendance;
       }
@@ -2005,8 +2061,35 @@ class AttendanceService {
           overtimeHours: metrics.overtimeHours,
           checkInMethod: "manual",
           checkOutMethod: "manual",
+          createdById: data.createdById || data.actorId || null,
+          updatedById: data.updatedById || data.actorId || null,
+          changeReason: data.changeReason || data.notes || "تسجيل حضور يدوي",
         },
       });
+
+      // 📝 Audit Log
+      try {
+        const auditService = require("./auditService");
+        const actorId = data.actorId || data.createdById || attendance.userId;
+        await auditService.logAction(
+          companyId,
+          actorId,
+          "CREATE",
+          "ATTENDANCE",
+          attendance.id,
+          {
+            date: attendanceDate.toISOString().split("T")[0],
+            checkIn: data.checkIn || null,
+            checkOut: data.checkOut || null,
+            status: metrics.status,
+            method: "manual",
+            changeReason: data.changeReason || data.notes || "تسجيل حضور يدوي",
+          },
+          data.actorName || null,
+        );
+      } catch (auditErr) {
+        console.warn("⚠️ Failed to write attendance create audit log:", auditErr.message);
+      }
       console.log(
         "✅ [SERVICE] Attendance record created successfully:",
         attendance.id,

@@ -4672,7 +4672,15 @@ const updateAttendanceRecord = async (req, res) => {
     }
 
     // Call panel attendanceService.updateAttendance
-    const updated = await attendanceService.updateAttendance(companyId, id, req.body);
+    const externalActorId = req.user?.id || req.apiKey?.id || 'EXTERNAL_API';
+    const externalActorName = req.user ? [req.user.firstName, req.user.lastName].filter(Boolean).join(' ') : 'External API';
+    const updated = await attendanceService.updateAttendance(companyId, id, {
+      ...req.body,
+      updatedById: externalActorId,
+      actorId: externalActorId,
+      actorName: externalActorName,
+      changeReason: req.body.changeReason || 'تعديل عبر API خارجي',
+    });
 
     await logExternalApiAction({
       req,

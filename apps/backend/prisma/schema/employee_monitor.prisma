@@ -9,12 +9,14 @@ model MonitorActivityLog {
   activeSeconds   Int      @default(0)
   activityScore   Float    @default(0)
   status          String   @default("active")
+  deviceId        String?
   createdAt       DateTime @default(now())
 
   @@index([companyId])
   @@index([employeeId])
   @@index([intervalStart])
-  @@index([companyId, employeeId, intervalStart])
+  @@index([deviceId])
+  @@unique([companyId, employeeId, intervalStart])
   @@map("monitor_activity_logs")
 }
 

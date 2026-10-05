@@ -621,6 +621,10 @@ if [ "$NEED_DB_PUSH" = "true" ]; then
     echo "🛡️ Backing up platform_subscriptions and cleaning legacy plan types before db push..."
     "$PRISMA_BIN" db execute --file prisma/migrations/20261001_remove_legacy_plans_system/migration.sql --schema=prisma/schema || echo "⚠️ Pre-push migration warning (continuing...)"
   fi
+  if [ -f "prisma/migrations/20261005_monitor_p0_deduplication/migration.sql" ]; then
+    echo "🛡️ Deduplicating monitor activity logs and preparing unique constraint before db push..."
+    "$PRISMA_BIN" db execute --file prisma/migrations/20261005_monitor_p0_deduplication/migration.sql --schema=prisma/schema || echo "⚠️ Pre-push monitor deduplication warning (continuing...)"
+  fi
   echo "🚀 Pushing schema to PostgreSQL..."
   timeout 600 "$PRISMA_BIN" db push --schema=prisma/schema --skip-generate --accept-data-loss || {
       echo "❌ Database synchronization failed"

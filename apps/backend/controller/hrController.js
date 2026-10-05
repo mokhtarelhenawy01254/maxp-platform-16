@@ -2196,11 +2196,18 @@ async function getTodayAttendance(req, res) {
  */
 async function updateAttendance(req, res) {
   try {
-    const { companyId } = req.user;
+    const { companyId, id: actorId, firstName, lastName } = req.user;
+    const actorName = [firstName, lastName].filter(Boolean).join(" ") || req.user.name || "مستخدم النظام";
     const attendance = await attendanceService.updateAttendance(
       companyId,
       req.params.id,
-      req.body,
+      {
+        ...req.body,
+        updatedById: actorId,
+        actorId,
+        actorName,
+        changeReason: req.body.changeReason || req.body.notes || "تعديل حضور يدوي",
+      },
     );
     res.json({ success: true, attendance });
   } catch (error) {
@@ -2286,9 +2293,19 @@ async function createManualAttendance(req, res) {
     console.log(
       "✅ [CREATE-MANUAL-ATTENDANCE] Validation passed, calling service...",
     );
+    const { id: actorId, firstName, lastName } = req.user;
+    const actorName = [firstName, lastName].filter(Boolean).join(" ") || req.user.name || "مستخدم النظام";
+
     const attendance = await attendanceService.createManualAttendance(
       companyId,
-      req.body,
+      {
+        ...req.body,
+        createdById: actorId,
+        updatedById: actorId,
+        actorId,
+        actorName,
+        changeReason: req.body.changeReason || req.body.notes || "تسجيل حضور يدوي",
+      },
     );
     console.log("✅ [CREATE-MANUAL-ATTENDANCE] Success:", attendance.id);
     res.status(201).json({ success: true, attendance });
