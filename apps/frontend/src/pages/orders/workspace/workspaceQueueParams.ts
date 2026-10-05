@@ -48,15 +48,19 @@ export function buildQueueParams({
       break;
     case 'pending':
       params['status'] = 'PENDING';
+      params['todayOnly'] = 'true';
       break;
     case 'processing':
       params['status'] = 'PROCESSING';
+      params['todayOnly'] = 'true';
       break;
     case 'confirmed':
       params['status'] = 'CONFIRMED';
+      params['todayOnly'] = 'true';
       break;
     case 'cancelled':
       params['status'] = 'CANCELLED';
+      params['todayOnly'] = 'true';
       break;
     case 'followup':
       params['followUpOnly'] = 'true';

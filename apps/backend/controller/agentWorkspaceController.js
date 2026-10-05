@@ -286,13 +286,21 @@ const getWorkspaceStats = async (prisma, companyId, userId, { assignedTo = '', i
     ]
   };
 
+  const todayStatusWhere = (status) => ({
+    ...base,
+    OR: [
+      { order: { status, createdAt: { gte: startOfToday } } },
+      { guestOrder: { status: { in: [status.toUpperCase(), status.toLowerCase()] }, createdAt: { gte: startOfToday } } }
+    ]
+  });
+
   const [total, today, pending, processing, confirmed, cancelled, followup] = await Promise.all([
     prisma.orderAssignment.count({ where: excludedWhere }),
     prisma.orderAssignment.count({ where: todayWhere }),
-    prisma.orderAssignment.count({ where: statusWhere('PENDING') }),
-    prisma.orderAssignment.count({ where: statusWhere('PROCESSING') }),
-    prisma.orderAssignment.count({ where: statusWhere('CONFIRMED') }),
-    prisma.orderAssignment.count({ where: statusWhere('CANCELLED') }),
+    prisma.orderAssignment.count({ where: todayStatusWhere('PENDING') }),
+    prisma.orderAssignment.count({ where: todayStatusWhere('PROCESSING') }),
+    prisma.orderAssignment.count({ where: todayStatusWhere('CONFIRMED') }),
+    prisma.orderAssignment.count({ where: todayStatusWhere('CANCELLED') }),
     prisma.orderAssignment.count({ where: followupWhere })
   ]);
 
@@ -1457,6 +1465,522 @@ const updateOrderCustomer = async (req, res) => {
   }
 };
 
+/**
+ * Helper to resolve date range and comparison period
+ */
+const resolveDateRange = (range = 'today', startDateStr, endDateStr) => {
+  const now = new Date();
+  let start, end, prevStart, prevEnd;
+
+  if (range === 'today') {
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    prevStart = new Date(start);
+    prevStart.setDate(prevStart.getDate() - 1);
+    prevEnd = new Date(end);
+    prevEnd.setDate(prevEnd.getDate() - 1);
+  } else if (range === 'yesterday') {
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0);
+    end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
+    prevStart = new Date(start);
+    prevStart.setDate(prevStart.getDate() - 1);
+    prevEnd = new Date(end);
+    prevEnd.setDate(prevEnd.getDate() - 1);
+  } else if (range === '7d') {
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6, 0, 0, 0, 0);
+    end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const durationMs = end.getTime() - start.getTime();
+    prevEnd = new Date(start.getTime() - 1);
+    prevStart = new Date(prevEnd.getTime() - durationMs + 1);
+  } else if (range === '30d') {
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29, 0, 0, 0, 0);
+    end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const durationMs = end.getTime() - start.getTime();
+    prevEnd = new Date(start.getTime() - 1);
+    prevStart = new Date(prevEnd.getTime() - durationMs + 1);
+  } else if (range === 'custom' && startDateStr && endDateStr) {
+    const s = new Date(startDateStr);
+    const e = new Date(endDateStr);
+    start = new Date(s.getFullYear(), s.getMonth(), s.getDate(), 0, 0, 0, 0);
+    end = new Date(e.getFullYear(), e.getMonth(), e.getDate(), 23, 59, 59, 999);
+    const durationMs = Math.max(86400000, end.getTime() - start.getTime());
+    prevEnd = new Date(start.getTime() - 1);
+    prevStart = new Date(prevEnd.getTime() - durationMs + 1);
+  } else {
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    prevStart = new Date(start);
+    prevStart.setDate(prevStart.getDate() - 1);
+    prevEnd = new Date(end);
+    prevEnd.setDate(prevEnd.getDate() - 1);
+  }
+
+  return { start, end, prevStart, prevEnd };
+};
+
+/**
+ * Parse duration seconds from log notes if recorded (e.g. "duration: 45s" or similar)
+ */
+const parseDurationSeconds = (notes) => {
+  if (!notes || typeof notes !== 'string') return 0;
+  const match = notes.match(/(?:duration|المدة|مدّة|مدة)[:\s]*(\d+)(?:\s*(?:s|sec|ثانية|ثواني))?/i);
+  if (match && match[1]) {
+    return parseInt(match[1], 10) || 0;
+  }
+  return 0;
+};
+
+/**
+ * @route GET /api/v1/agent-workspace/reports
+ * @desc Get real-time operational confirmation performance metrics and reports
+ * @access Private (Agent views self, Manager views team/agents)
+ */
+const getWorkspaceReports = async (req, res) => {
+  try {
+    const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
+    const currentUserId = req.user?.id;
+
+    if (!companyId || !currentUserId) {
+      return res.status(403).json({ success: false, error: 'معرف الشركة أو المستخدم مطلوب' });
+    }
+
+    const isManager = isManagerUser(req.user);
+    const { range = 'today', startDate, endDate, agentId } = req.query;
+
+    // Permissions: Regular agents can ONLY view their own individual performance
+    const targetAgentId = isManager ? (agentId || 'all') : currentUserId;
+
+    const prisma = getSharedPrismaClient();
+    const { start, end, prevStart, prevEnd } = resolveDateRange(range, startDate, endDate);
+
+    // 1. Fetch eligible agents
+    let eligibleAgents = [];
+    if (isManager) {
+      try {
+        const orderConfirmationService = require('../services/orderConfirmationService');
+        const settings = orderConfirmationService.normalizeSettings(await orderConfirmationService.getSettings(companyId));
+        const users = await orderConfirmationService.getEligibleUsers(companyId, settings, { ignoreUserFilter: true });
+        eligibleAgents = users.map((u) => ({
+          id: u.id,
+          name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'وكيل',
+          email: u.email,
+          role: u.role || 'AGENT'
+        }));
+      } catch (err) {
+        console.warn('⚠️ [AGENT-WORKSPACE] Could not load eligible users:', err.message);
+      }
+    } else {
+      eligibleAgents = [{
+        id: currentUserId,
+        name: `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || req.user?.email || 'وكيل',
+        email: req.user?.email,
+        role: req.user?.role || 'AGENT'
+      }];
+    }
+
+    // Helper to calculate metrics for a specific time range and agent filter
+    const aggregateMetrics = async (periodStart, periodEnd, agentFilter) => {
+      // 1. Call attempt logs
+      const callLogWhere = {
+        createdAt: { gte: periodStart, lte: periodEnd },
+        OR: [
+          { order: { companyId } },
+          { guestOrder: { companyId } },
+          { user: { companyId } }
+        ]
+      };
+      if (agentFilter && agentFilter !== 'all') {
+        callLogWhere.userId = agentFilter;
+      }
+
+      const callLogs = await prisma.callAttemptLog.findMany({
+        where: callLogWhere,
+        select: {
+          id: true,
+          orderId: true,
+          guestOrderId: true,
+          userId: true,
+          result: true,
+          notes: true,
+          createdAt: true
+        }
+      });
+
+      const totalCalls = callLogs.length;
+      let totalDurationSeconds = 0;
+      const contactedOrderIds = new Set();
+      const callbackOrderIds = new Set();
+
+      for (const log of callLogs) {
+        totalDurationSeconds += parseDurationSeconds(log.notes);
+        const orderIdentifier = log.orderId || log.guestOrderId;
+        if (orderIdentifier) {
+          contactedOrderIds.add(orderIdentifier);
+          if (log.result === 'callback') {
+            callbackOrderIds.add(orderIdentifier);
+          }
+        }
+      }
+
+      const contactedOrdersCount = contactedOrderIds.size;
+      const avgAttemptsPerOrder = contactedOrdersCount > 0
+        ? Number((totalCalls / contactedOrdersCount).toFixed(1))
+        : 0;
+
+      // 2. Confirmed orders
+      const orderConfirmedWhere = {
+        companyId,
+        status: 'CONFIRMED',
+        OR: [
+          { confirmedAt: { gte: periodStart, lte: periodEnd } },
+          { confirmedAt: null, updatedAt: { gte: periodStart, lte: periodEnd } }
+        ]
+      };
+      if (agentFilter && agentFilter !== 'all') {
+        orderConfirmedWhere.OR = [
+          { confirmedBy: agentFilter, confirmedAt: { gte: periodStart, lte: periodEnd } },
+          { assignedTo: agentFilter, confirmedAt: { gte: periodStart, lte: periodEnd } },
+          { confirmedBy: agentFilter, confirmedAt: null, updatedAt: { gte: periodStart, lte: periodEnd } },
+          { assignedTo: agentFilter, confirmedAt: null, updatedAt: { gte: periodStart, lte: periodEnd } }
+        ];
+      }
+
+      const [confirmedRegular, confirmedGuest] = await Promise.all([
+        prisma.order.findMany({
+          where: orderConfirmedWhere,
+          select: {
+            id: true,
+            createdAt: true,
+            assignedAt: true,
+            confirmedAt: true,
+            updatedAt: true,
+            confirmedBy: true,
+            assignedTo: true,
+            callAttempts: true
+          }
+        }),
+        prisma.guestOrder.findMany({
+          where: {
+            companyId,
+            status: { in: ['CONFIRMED', 'confirmed'] },
+            updatedAt: { gte: periodStart, lte: periodEnd }
+          },
+          select: {
+            id: true,
+            createdAt: true,
+            updatedAt: true,
+            callAttempts: true,
+            orderAssignments: {
+              where: { isActive: false },
+              select: { assignedTo: true, assignedAt: true },
+              take: 1
+            }
+          }
+        })
+      ]);
+
+      const filteredGuestConfirmed = (agentFilter && agentFilter !== 'all')
+        ? confirmedGuest.filter((g) => g.orderAssignments?.[0]?.assignedTo === agentFilter)
+        : confirmedGuest;
+
+      const confirmedOrdersCount = confirmedRegular.length + filteredGuestConfirmed.length;
+
+      // Handling time calculation (minutes from assignment or creation to confirmation)
+      let totalHandlingMinutes = 0;
+      let ordersWithHandlingTime = 0;
+
+      for (const ord of confirmedRegular) {
+        const startT = ord.assignedAt ? new Date(ord.assignedAt).getTime() : new Date(ord.createdAt).getTime();
+        const endT = ord.confirmedAt ? new Date(ord.confirmedAt).getTime() : new Date(ord.updatedAt).getTime();
+        if (endT >= startT) {
+          totalHandlingMinutes += Math.round((endT - startT) / 60000);
+          ordersWithHandlingTime++;
+        }
+      }
+      for (const g of filteredGuestConfirmed) {
+        const startT = g.orderAssignments?.[0]?.assignedAt
+          ? new Date(g.orderAssignments[0].assignedAt).getTime()
+          : new Date(g.createdAt).getTime();
+        const endT = new Date(g.updatedAt).getTime();
+        if (endT >= startT) {
+          totalHandlingMinutes += Math.round((endT - startT) / 60000);
+          ordersWithHandlingTime++;
+        }
+      }
+
+      const avgHandlingTimeMinutes = ordersWithHandlingTime > 0
+        ? Math.round(totalHandlingMinutes / ordersWithHandlingTime)
+        : 0;
+
+      // 3. Cancelled orders
+      const orderCancelledWhere = {
+        companyId,
+        status: 'CANCELLED',
+        updatedAt: { gte: periodStart, lte: periodEnd }
+      };
+      if (agentFilter && agentFilter !== 'all') {
+        orderCancelledWhere.assignedTo = agentFilter;
+      }
+      const [cancelledRegular, cancelledGuest] = await Promise.all([
+        prisma.order.findMany({
+          where: orderCancelledWhere,
+          select: { id: true, assignedTo: true, updatedAt: true }
+        }),
+        prisma.guestOrder.findMany({
+          where: {
+            companyId,
+            status: { in: ['CANCELLED', 'cancelled'] },
+            updatedAt: { gte: periodStart, lte: periodEnd }
+          },
+          select: {
+            id: true,
+            updatedAt: true,
+            orderAssignments: { select: { assignedTo: true }, take: 1 }
+          }
+        })
+      ]);
+
+      const filteredGuestCancelled = (agentFilter && agentFilter !== 'all')
+        ? cancelledGuest.filter((g) => g.orderAssignments?.[0]?.assignedTo === agentFilter)
+        : cancelledGuest;
+
+      const cancelledOrdersCount = cancelledRegular.length + filteredGuestCancelled.length;
+
+      // 4. Follow-up scheduled orders
+      const followUpOrdersWhere = {
+        companyId,
+        followUpDate: { gte: periodStart, lte: periodEnd },
+        status: { notIn: ['CONFIRMED', 'CANCELLED', 'SHIPPED', 'DELIVERED', 'TRASH'] }
+      };
+      if (agentFilter && agentFilter !== 'all') {
+        followUpOrdersWhere.assignedTo = agentFilter;
+      }
+      const [followUpRegular, followUpGuest] = await Promise.all([
+        prisma.order.findMany({
+          where: followUpOrdersWhere,
+          select: { id: true }
+        }),
+        prisma.guestOrder.findMany({
+          where: {
+            companyId,
+            followUpDate: { gte: periodStart, lte: periodEnd },
+            status: { notIn: ['CONFIRMED', 'confirmed', 'CANCELLED', 'cancelled', 'SHIPPED', 'DELIVERED', 'TRASH'] }
+          },
+          select: { id: true }
+        })
+      ]);
+
+      const allFollowUpIds = new Set([
+        ...callbackOrderIds,
+        ...followUpRegular.map((o) => o.id),
+        ...followUpGuest.map((g) => g.id)
+      ]);
+      const followUpOrdersCount = allFollowUpIds.size;
+
+      // 5. Currently open orders (Pending / Processing in workspace)
+      const openRegularWhere = {
+        companyId,
+        status: { in: ['PENDING', 'PROCESSING'] }
+      };
+      if (agentFilter && agentFilter !== 'all') {
+        openRegularWhere.assignedTo = agentFilter;
+      }
+      const openGuestWhere = {
+        companyId,
+        status: { in: ['pending', 'PENDING', 'processing', 'PROCESSING'] }
+      };
+      if (agentFilter && agentFilter !== 'all') {
+        openGuestWhere.orderAssignments = { some: { assignedTo: agentFilter, isActive: true } };
+      }
+      const [openRegularCount, openGuestCount] = await Promise.all([
+        prisma.order.count({ where: openRegularWhere }),
+        prisma.guestOrder.count({ where: openGuestWhere })
+      ]);
+      const openOrdersCount = openRegularCount + openGuestCount;
+
+      return {
+        contactedOrdersCount,
+        confirmedOrdersCount,
+        followUpOrdersCount,
+        cancelledOrdersCount,
+        openOrdersCount,
+        totalCalls,
+        totalDurationSeconds,
+        avgAttemptsPerOrder,
+        avgHandlingTimeMinutes,
+        callLogs,
+        confirmedRegular,
+        filteredGuestConfirmed,
+        cancelledRegular,
+        filteredGuestCancelled
+      };
+    };
+
+    // Calculate current and previous period metrics
+    const currentData = await aggregateMetrics(start, end, targetAgentId);
+    const prevData = await aggregateMetrics(prevStart, prevEnd, targetAgentId);
+
+    const calcDelta = (curr, prev) => {
+      if (prev === 0) return curr > 0 ? 100 : 0;
+      return Math.round(((curr - prev) / prev) * 100);
+    };
+
+    // 2. Generate daily trend array
+    const dailyTrend = [];
+    const stepDate = new Date(start);
+    while (stepDate <= end) {
+      const dayStart = new Date(stepDate.getFullYear(), stepDate.getMonth(), stepDate.getDate(), 0, 0, 0, 0);
+      const dayEnd = new Date(stepDate.getFullYear(), stepDate.getMonth(), stepDate.getDate(), 23, 59, 59, 999);
+      const dateKey = `${dayStart.getFullYear()}-${String(dayStart.getMonth() + 1).padStart(2, '0')}-${String(dayStart.getDate()).padStart(2, '0')}`;
+
+      const dayCalls = currentData.callLogs.filter((l) => {
+        const t = new Date(l.createdAt).getTime();
+        return t >= dayStart.getTime() && t <= dayEnd.getTime();
+      });
+      const dayContacted = new Set(dayCalls.map((l) => l.orderId || l.guestOrderId).filter(Boolean)).size;
+
+      const dayConfirmed = currentData.confirmedRegular.filter((o) => {
+        const t = new Date(o.confirmedAt || o.updatedAt).getTime();
+        return t >= dayStart.getTime() && t <= dayEnd.getTime();
+      }).length + currentData.filteredGuestConfirmed.filter((g) => {
+        const t = new Date(g.updatedAt).getTime();
+        return t >= dayStart.getTime() && t <= dayEnd.getTime();
+      }).length;
+
+      const dayCancelled = currentData.cancelledRegular.filter((o) => {
+        const t = new Date(o.updatedAt).getTime();
+        return t >= dayStart.getTime() && t <= dayEnd.getTime();
+      }).length + currentData.filteredGuestCancelled.filter((g) => {
+        const t = new Date(g.updatedAt).getTime();
+        return t >= dayStart.getTime() && t <= dayEnd.getTime();
+      }).length;
+
+      dailyTrend.push({
+        date: dateKey,
+        dayName: dayStart.toLocaleDateString('ar-EG', { weekday: 'short' }),
+        calls: dayCalls.length,
+        contacted: dayContacted,
+        confirmed: dayConfirmed,
+        cancelled: dayCancelled
+      });
+
+      stepDate.setDate(stepDate.getDate() + 1);
+    }
+
+    // 3. Per-Agent Breakdown Table
+    const agentBreakdown = [];
+    for (const agent of eligibleAgents) {
+      const agentMetrics = await aggregateMetrics(start, end, agent.id);
+      const confirmationRate = agentMetrics.contactedOrdersCount > 0
+        ? Number(((agentMetrics.confirmedOrdersCount / agentMetrics.contactedOrdersCount) * 100).toFixed(1))
+        : 0;
+
+      agentBreakdown.push({
+        agentId: agent.id,
+        agentName: agent.name,
+        email: agent.email,
+        role: agent.role,
+        contactedOrders: agentMetrics.contactedOrdersCount,
+        confirmedOrders: agentMetrics.confirmedOrdersCount,
+        followUpOrders: agentMetrics.followUpOrdersCount,
+        cancelledOrders: agentMetrics.cancelledOrdersCount,
+        openOrders: agentMetrics.openOrdersCount,
+        totalCalls: agentMetrics.totalCalls,
+        totalDurationSeconds: agentMetrics.totalDurationSeconds,
+        avgAttemptsPerOrder: agentMetrics.avgAttemptsPerOrder,
+        avgHandlingTimeMinutes: agentMetrics.avgHandlingTimeMinutes,
+        confirmationRate
+      });
+    }
+
+    agentBreakdown.sort((a, b) => b.confirmedOrders - a.confirmedOrders);
+
+    const overallConfirmationRate = currentData.contactedOrdersCount > 0
+      ? Number(((currentData.confirmedOrdersCount / currentData.contactedOrdersCount) * 100).toFixed(1))
+      : 0;
+
+    return res.json({
+      success: true,
+      data: {
+        isManager,
+        range,
+        period: {
+          start: start.toISOString(),
+          end: end.toISOString(),
+          prevStart: prevStart.toISOString(),
+          prevEnd: prevEnd.toISOString()
+        },
+        kpis: {
+          contactedOrders: {
+            value: currentData.contactedOrdersCount,
+            prevValue: prevData.contactedOrdersCount,
+            deltaPercent: calcDelta(currentData.contactedOrdersCount, prevData.contactedOrdersCount),
+            source: 'call_attempt_logs'
+          },
+          confirmedOrders: {
+            value: currentData.confirmedOrdersCount,
+            prevValue: prevData.confirmedOrdersCount,
+            deltaPercent: calcDelta(currentData.confirmedOrdersCount, prevData.confirmedOrdersCount),
+            source: 'orders / guest_orders (CONFIRMED)'
+          },
+          followUpOrders: {
+            value: currentData.followUpOrdersCount,
+            prevValue: prevData.followUpOrdersCount,
+            deltaPercent: calcDelta(currentData.followUpOrdersCount, prevData.followUpOrdersCount),
+            source: 'call_attempt_logs / followUpDate'
+          },
+          cancelledOrders: {
+            value: currentData.cancelledOrdersCount,
+            prevValue: prevData.cancelledOrdersCount,
+            deltaPercent: calcDelta(currentData.cancelledOrdersCount, prevData.cancelledOrdersCount),
+            source: 'orders / guest_orders (CANCELLED)'
+          },
+          openOrders: {
+            value: currentData.openOrdersCount,
+            prevValue: prevData.openOrdersCount,
+            deltaPercent: calcDelta(currentData.openOrdersCount, prevData.openOrdersCount),
+            source: 'order_assignments / status PENDING'
+          },
+          totalCalls: {
+            value: currentData.totalCalls,
+            prevValue: prevData.totalCalls,
+            deltaPercent: calcDelta(currentData.totalCalls, prevData.totalCalls),
+            source: 'call_attempt_logs.id'
+          },
+          totalDurationSeconds: {
+            value: currentData.totalDurationSeconds,
+            prevValue: prevData.totalDurationSeconds,
+            deltaPercent: calcDelta(currentData.totalDurationSeconds, prevData.totalDurationSeconds),
+            source: 'call_attempt_logs.durationSeconds'
+          },
+          avgAttemptsPerOrder: {
+            value: currentData.avgAttemptsPerOrder,
+            prevValue: prevData.avgAttemptsPerOrder,
+            deltaPercent: calcDelta(currentData.avgAttemptsPerOrder, prevData.avgAttemptsPerOrder),
+            source: 'calls ÷ contacted orders'
+          },
+          avgHandlingTimeMinutes: {
+            value: currentData.avgHandlingTimeMinutes,
+            prevValue: prevData.avgHandlingTimeMinutes,
+            deltaPercent: calcDelta(currentData.avgHandlingTimeMinutes, prevData.avgHandlingTimeMinutes),
+            source: 'orders (confirmedAt - createdAt)'
+          },
+          confirmationRate: {
+            value: overallConfirmationRate,
+            source: 'confirmed ÷ contacted orders'
+          }
+        },
+        dailyTrend,
+        agents: eligibleAgents,
+        agentBreakdown
+      }
+    });
+  } catch (error) {
+    console.error('❌ [AGENT-WORKSPACE] Error in getWorkspaceReports:', error);
+    res.status(500).json({ success: false, error: 'خطأ في جلب تقارير أداء مساحة العمل' });
+  }
+};
+
 module.exports = {
   getMyOrders,
   logCallAttempt,
@@ -1467,5 +1991,6 @@ module.exports = {
   assignOrder,
   updateOrderItems,
   updateOrderCustomer,
+  getWorkspaceReports,
   requireManager
 };

@@ -340,11 +340,12 @@ describe('agentWorkspaceController.getMyOrders', () => {
   });
 
   test('computes workspace stats from count queries when withStats is requested', async () => {
+    const today = new Date();
     const { count } = mockOrderAssignment({
       assignments: [
-        createAssignment({ order: createOrder('a', 'PENDING') }),
-        createAssignment({ order: createOrder('b', 'CANCELLED') }),
-        createAssignment({ order: createOrder('c', 'CONFIRMED') })
+        createAssignment({ order: createOrder('a', 'PENDING', { createdAt: today }) }),
+        createAssignment({ order: createOrder('b', 'CANCELLED', { createdAt: today }) }),
+        createAssignment({ order: createOrder('c', 'CONFIRMED', { createdAt: today }) })
       ]
     });
 
@@ -354,7 +355,7 @@ describe('agentWorkspaceController.getMyOrders', () => {
     expect(res.payload.stats).toEqual({
       total: 3,
       all: 3,
-      today: 0,
+      today: 3,
       pending: 1,
       processing: 0,
       confirmed: 1,

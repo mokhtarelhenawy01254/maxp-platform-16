@@ -8,6 +8,7 @@ export const WORKSPACE_TAB_KEYS = [
   'cancelled',
   'followup',
   'confirmed',
+  'reports',
 ] as const;
 
 export type FilterTab = typeof WORKSPACE_TAB_KEYS[number];
@@ -117,4 +118,66 @@ export interface AgentWorkload {
 export interface TeamWorkloadData {
   unassignedCount: number;
   agents: AgentWorkload[];
+}
+
+export interface ReportKpiMetric {
+  value: number;
+  prevValue?: number;
+  deltaPercent?: number;
+  source: string;
+}
+
+export interface WorkspaceDailyTrendPoint {
+  date: string;
+  dayName: string;
+  calls: number;
+  contacted: number;
+  confirmed: number;
+  cancelled: number;
+}
+
+export interface WorkspaceAgentBreakdownRow {
+  agentId: string;
+  agentName: string;
+  email?: string;
+  role?: string;
+  contactedOrders: number;
+  confirmedOrders: number;
+  followUpOrders: number;
+  cancelledOrders: number;
+  openOrders: number;
+  totalCalls: number;
+  totalDurationSeconds: number;
+  avgAttemptsPerOrder: number;
+  avgHandlingTimeMinutes: number;
+  confirmationRate: number;
+}
+
+export interface WorkspaceReportsData {
+  isManager: boolean;
+  range: 'today' | 'yesterday' | '7d' | '30d' | 'custom';
+  period: {
+    start: string;
+    end: string;
+    prevStart: string;
+    prevEnd: string;
+  };
+  kpis: {
+    contactedOrders: ReportKpiMetric;
+    confirmedOrders: ReportKpiMetric;
+    followUpOrders: ReportKpiMetric;
+    cancelledOrders: ReportKpiMetric;
+    openOrders: ReportKpiMetric;
+    totalCalls: ReportKpiMetric;
+    totalDurationSeconds: ReportKpiMetric;
+    avgAttemptsPerOrder: ReportKpiMetric;
+    avgHandlingTimeMinutes: ReportKpiMetric;
+    confirmationRate: {
+      value: number;
+      source: string;
+    };
+  };
+  dailyTrend: WorkspaceDailyTrendPoint[];
+  agents: { id: string; name: string; email?: string; role?: string }[];
+  agentBreakdown: WorkspaceAgentBreakdownRow[];
 }

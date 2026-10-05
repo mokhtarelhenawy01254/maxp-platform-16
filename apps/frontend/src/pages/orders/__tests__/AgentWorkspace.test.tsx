@@ -563,7 +563,7 @@ describe("AgentWorkspace", () => {
       );
     });
 
-    // Clicking In Progress triggers fetch with status: "PROCESSING"
+    // Clicking In Progress triggers fetch with status: "PROCESSING" and todayOnly: "true"
     fireEvent.click(processingTab);
     await waitFor(() => {
       expect(mockGet).toHaveBeenCalledWith(
@@ -571,12 +571,13 @@ describe("AgentWorkspace", () => {
         expect.objectContaining({
           params: expect.objectContaining({
             status: "PROCESSING",
+            todayOnly: "true",
           }),
         }),
       );
     });
 
-    // Clicking Cancelled triggers fetch with status: "CANCELLED"
+    // Clicking Cancelled triggers fetch with status: "CANCELLED" and todayOnly: "true"
     fireEvent.click(cancelledTab);
     await waitFor(() => {
       expect(mockGet).toHaveBeenCalledWith(
@@ -584,6 +585,7 @@ describe("AgentWorkspace", () => {
         expect.objectContaining({
           params: expect.objectContaining({
             status: "CANCELLED",
+            todayOnly: "true",
           }),
         }),
       );

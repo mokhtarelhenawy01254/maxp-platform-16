@@ -37,6 +37,13 @@ router.post('/orders/:id/follow-up', createEndpointRateLimiter('AGENT_ACTIONS'),
 router.post('/orders/:id/quick-action', createEndpointRateLimiter('AGENT_ACTIONS'), agentWorkspaceController.quickAction);
 
 /**
+ * @route GET /api/v1/agent-workspace/reports
+ * @desc Get real-time operational confirmation performance metrics and reports
+ * @access Private
+ */
+router.get('/reports', agentWorkspaceController.getWorkspaceReports);
+
+/**
  * @route GET /api/v1/agent-workspace/team-workload
  * @desc Get confirmation team capacity and unassigned pool telemetry for managers
  * @access Private (Managerial)

@@ -74,23 +74,29 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
       case 'cancelled':
         count = stats?.cancelled;
         break;
+      case 'followup':
+        count = stats?.followup;
+        break;
+      case 'reports':
+        count = undefined;
+        break;
       default:
         count = undefined;
     }
-    if (count === undefined && activeTab === tabKey && typeof totalOrdersCount === 'number') {
+    if (count === undefined && activeTab === tabKey && typeof totalOrdersCount === 'number' && tabKey !== 'reports') {
       return totalOrdersCount;
     }
     return count;
   };
 
-  // تابات الفلتر السريع المطابقة تماماً لتصميم الكابينة مع العداد الفعلي:
-  // سريع | كل الطلبات (X) | اليوم (X) | قيد الانتظار (X) | قيد التنفيذ (X) | ملغي (X)
+  // تابات الفلتر السريع والتقارير المطابقة لتصميم الكابينة مع العداد الفعلي:
   const tabs: { key: FilterTab; label: string; count?: number }[] = [
     { key: 'all', label: isArabic ? 'كل الطلبات' : 'All Orders', count: getTabCount('all') },
     { key: 'today', label: isArabic ? 'اليوم' : 'Today', count: getTabCount('today') },
     { key: 'pending', label: isArabic ? 'قيد الانتظار' : 'Pending', count: getTabCount('pending') },
     { key: 'processing', label: isArabic ? 'قيد التنفيذ' : 'In Progress', count: getTabCount('processing') },
     { key: 'cancelled', label: isArabic ? 'ملغي' : 'Cancelled', count: getTabCount('cancelled') },
+    { key: 'reports', label: isArabic ? 'تقارير' : 'Reports' },
   ];
 
   return (

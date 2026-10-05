@@ -8,6 +8,7 @@ import { WorkspaceIntelligenceRail } from './workspace/WorkspaceIntelligenceRail
 import { WorkspaceCancelModal } from './workspace/WorkspaceCancelModal';
 import { WorkspaceFollowUpModal } from './workspace/WorkspaceFollowUpModal';
 import { WorkspaceOrder } from './workspace/types';
+import { WorkspaceReportsTab } from './workspace/WorkspaceReportsTab';
 
 const EnhancedOrderModal = React.lazy(
   () => import('../../components/orders/EnhancedOrderModal'),
@@ -117,76 +118,82 @@ export const AgentWorkspace: React.FC = () => {
 
       {/* 3. Main Operational Cockpit Chassis */}
       <main className="flex min-h-0 flex-1 overflow-hidden">
-        {/* Stream Pane (Queue) */}
-        <div
-          className={`h-full w-full border-e border-border/40 overflow-hidden md:w-[280px] lg:w-[320px] xl:w-[380px] shrink-0 ${
-            mobileView === 'inspector' ? 'hidden md:block' : 'block'
-          }`}
-        >
-          <WorkspaceOrderQueue
-            orders={orders}
-            selectedOrderId={selectedOrderId}
-            onSelectOrder={handleSelectOrder}
-            loading={loading}
-            loadingMore={loadingMore}
-            onLoadMore={() => void fetchOrders({ silent: true, page: page + 1, append: true })}
-            pagination={pagination}
-            page={page}
-            fetchError={fetchError}
-            onRetry={() => void fetchOrders()}
-            activeTab={activeTab}
-          />
-        </div>
-
-        {/* Center Execution Stage */}
-        <div
-          className={`h-full min-w-0 flex-1 overflow-hidden ${
-            mobileView === 'queue' ? 'hidden md:block' : 'block'
-          }`}
-        >
-          {/* Mobile back to queue button */}
-          {mobileView === 'inspector' && (
-            <div className="border-b border-border/40 bg-card p-2 md:hidden">
-              <button
-                type="button"
-                onClick={() => setMobileView('queue')}
-                className="flex items-center gap-1.5 text-xs font-bold text-primary"
-              >
-                <span>←</span>
-                <span>{t('orders.workspaceSection')}</span>
-              </button>
+        {activeTab === 'reports' ? (
+          <WorkspaceReportsTab isManager={isManager} />
+        ) : (
+          <>
+            {/* Stream Pane (Queue) */}
+            <div
+              className={`h-full w-full border-e border-border/40 overflow-hidden md:w-[280px] lg:w-[320px] xl:w-[380px] shrink-0 ${
+                mobileView === 'inspector' ? 'hidden md:block' : 'block'
+              }`}
+            >
+              <WorkspaceOrderQueue
+                orders={orders}
+                selectedOrderId={selectedOrderId}
+                onSelectOrder={handleSelectOrder}
+                loading={loading}
+                loadingMore={loadingMore}
+                onLoadMore={() => void fetchOrders({ silent: true, page: page + 1, append: true })}
+                pagination={pagination}
+                page={page}
+                fetchError={fetchError}
+                onRetry={() => void fetchOrders()}
+                activeTab={activeTab}
+              />
             </div>
-          )}
-          <WorkspaceInspector
-            order={selectedOrder}
-            busyAction={selectedOrder ? busyOrders[selectedOrder.id] : undefined}
-            onConfirm={(o) => void handleQuickAction(o, 'confirm')}
-            onCancel={(o) => setCancellingOrder(o)}
-            onLogCall={(o, result) => void handleLogCall(o, result)}
-            onOpenFollowUp={(o) => {
-              setFollowUpDateValue(o.followUpDate ? o.followUpDate.slice(0, 10) : '');
-              setFollowUpOrder(o);
-            }}
-            onOpenDetailsModal={handleOpenDetailsModal}
-            isManager={isManager}
-            agents={teamWorkload.agents}
-            onAssignOrder={handleAssignOrder}
-            onConvertIncomplete={handleConvertIncomplete}
-            onSaveItems={handleUpdateOrderItems}
-            onSaveCustomer={handleUpdateCustomer}
-            onRefreshOrder={() => void fetchOrders({ silent: true })}
-          />
-        </div>
 
-        {/* Right Intelligence Rail — من lg فقط: عند md كان يأكل 260px من مركز
-            التنفيذ فيتبقى له ~205px وتتكسر شبكة الأزرار */}
-        <div className="hidden h-full w-[280px] xl:w-[320px] shrink-0 overflow-hidden lg:block">
-          <WorkspaceIntelligenceRail
-            order={selectedOrder}
-            perspective={perspective}
-            stats={stats}
-          />
-        </div>
+            {/* Center Execution Stage */}
+            <div
+              className={`h-full min-w-0 flex-1 overflow-hidden ${
+                mobileView === 'queue' ? 'hidden md:block' : 'block'
+              }`}
+            >
+              {/* Mobile back to queue button */}
+              {mobileView === 'inspector' && (
+                <div className="border-b border-border/40 bg-card p-2 md:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setMobileView('queue')}
+                    className="flex items-center gap-1.5 text-xs font-bold text-primary"
+                  >
+                    <span>←</span>
+                    <span>{t('orders.workspaceSection')}</span>
+                  </button>
+                </div>
+              )}
+              <WorkspaceInspector
+                order={selectedOrder}
+                busyAction={selectedOrder ? busyOrders[selectedOrder.id] : undefined}
+                onConfirm={(o) => void handleQuickAction(o, 'confirm')}
+                onCancel={(o) => setCancellingOrder(o)}
+                onLogCall={(o, result) => void handleLogCall(o, result)}
+                onOpenFollowUp={(o) => {
+                  setFollowUpDateValue(o.followUpDate ? o.followUpDate.slice(0, 10) : '');
+                  setFollowUpOrder(o);
+                }}
+                onOpenDetailsModal={handleOpenDetailsModal}
+                isManager={isManager}
+                agents={teamWorkload.agents}
+                onAssignOrder={handleAssignOrder}
+                onConvertIncomplete={handleConvertIncomplete}
+                onSaveItems={handleUpdateOrderItems}
+                onSaveCustomer={handleUpdateCustomer}
+                onRefreshOrder={() => void fetchOrders({ silent: true })}
+              />
+            </div>
+
+            {/* Right Intelligence Rail — من lg فقط: عند md كان يأكل 260px من مركز
+                التنفيذ فيتبقى له ~205px وتتكسر شبكة الأزرار */}
+            <div className="hidden h-full w-[280px] xl:w-[320px] shrink-0 overflow-hidden lg:block">
+              <WorkspaceIntelligenceRail
+                order={selectedOrder}
+                perspective={perspective}
+                stats={stats}
+              />
+            </div>
+          </>
+        )}
       </main>
 
       {/* 4. Accessible Modals */}
