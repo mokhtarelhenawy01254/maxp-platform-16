@@ -328,11 +328,16 @@ router.put('/', async (req, res) => {
             }
         });
 
-        const enabledCoreApps = await ensureAffiliateRequiredApps(
-            prisma,
-            companyId,
-            normalizedIsActive,
-        );
+        let enabledCoreApps = [];
+        try {
+            enabledCoreApps = await ensureAffiliateRequiredApps(
+                prisma,
+                companyId,
+                normalizedIsActive,
+            );
+        } catch (appErr) {
+            console.error('⚠️ [AFFILIATE-SETTINGS] ensureAffiliateRequiredApps error:', appErr);
+        }
 
         let recalculatedProducts = 0;
         if (prisma.merchantProduct?.findMany) {
