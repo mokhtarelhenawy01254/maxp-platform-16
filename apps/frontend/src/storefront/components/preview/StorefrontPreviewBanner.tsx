@@ -110,6 +110,39 @@ const StorefrontPreviewBanner: React.FC<{ previewThemeId: string }> = ({
     );
   }
 
+  if (theme.id === "redline-auto") {
+    return (
+      <div className="pointer-events-none fixed bottom-20 md:bottom-4 start-4 z-[76]">
+        <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-[#0a0d10]/95 p-1.5 pe-4 shadow-[0_20px_45px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+          <Link
+            to={marketplaceThemesUrl}
+            aria-label="العودة إلى القوالب"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white transition-transform hover:-translate-y-0.5 hover:bg-red-500 shadow-md"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="rtl:rotate-180"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </Link>
+          <div className="flex flex-col text-start">
+            <span className="text-[11px] font-bold text-white">معاينة Red Line Auto</span>
+            <span className="text-[9px] text-white/50">اضغط للعودة إلى القوالب</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isMobileViewport) {
     const mobileDockClassName = isBiteRush
       ? "border-[#f8c08c]/55 bg-[#111111]/92"
@@ -296,39 +329,6 @@ const StorefrontPreviewBanner: React.FC<{ previewThemeId: string }> = ({
               <path d="m15.53 8.47 2.83-2.83" />
             </svg>
           </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (theme.id === "redline-auto") {
-    return (
-      <div className="pointer-events-none fixed bottom-4 start-4 z-[76]">
-        <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-[#0a0d10]/95 p-1.5 pe-4 shadow-[0_20px_45px_rgba(0,0,0,0.8)] backdrop-blur-xl">
-          <Link
-            to={marketplaceThemesUrl}
-            aria-label="العودة إلى القوالب"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white transition-transform hover:-translate-y-0.5 hover:bg-red-500 shadow-md"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="rtl:rotate-180"
-            >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-          </Link>
-          <div className="flex flex-col text-start">
-            <span className="text-[11px] font-bold text-white">معاينة Red Line Auto</span>
-            <span className="text-[9px] text-white/50">اضغط للعودة إلى القوالب</span>
-          </div>
         </div>
       </div>
     );
