@@ -86,11 +86,11 @@ export const ReportsTrendChart: React.FC<ReportsTrendChartProps> = ({ data, isAr
                       {point.date} ({point.dayName})
                     </div>
                     <div className="flex items-center gap-2 tabular-nums">
-                      <span className="text-blue-500 font-bold">{point.contacted} تواصل</span>
+                      <span className="text-blue-500 font-bold">{point.contacted} {isArabic ? 'تواصل' : 'Contacted'}</span>
                       <span>•</span>
-                      <span className="text-emerald-500 font-bold">{point.confirmed} مؤكد</span>
+                      <span className="text-emerald-500 font-bold">{point.confirmed} {isArabic ? 'مؤكد' : 'Confirmed'}</span>
                       <span>•</span>
-                      <span className="text-rose-500 font-bold">{point.cancelled} ملغي</span>
+                      <span className="text-rose-500 font-bold">{point.cancelled} {isArabic ? 'ملغي' : 'Cancelled'}</span>
                     </div>
                   </div>
                 )}

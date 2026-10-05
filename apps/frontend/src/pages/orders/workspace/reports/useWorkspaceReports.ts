@@ -155,11 +155,11 @@ export function useWorkspaceReports(isManager: boolean) {
       ];
 
       const rows = data.agentBreakdown.map((row) => [
-        `"${row.agentName.replace(/"/g, '""')}"`,
-        `"${row.role || 'AGENT'}"`,
+        `"${String(row.agentName || '').replace(/"/g, '""')}"`,
+        `"${String(row.role || 'AGENT').replace(/"/g, '""')}"`,
         row.contactedOrders,
         row.confirmedOrders,
-        `${row.confirmationRate}%`,
+        `"${row.confirmationRate}%"`,
         row.followUpOrders,
         row.cancelledOrders,
         row.openOrders,
