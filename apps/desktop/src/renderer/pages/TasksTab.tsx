@@ -730,8 +730,13 @@ export const TasksTab: React.FC = () => {
       String(currentStatus || '').toUpperCase() === 'IN_REVIEW' ||
       String(currentStatus || '').toUpperCase() === 'PENDING_REVIEW';
 
-    if (isCompleted || isReview) {
+    if (isCompleted) {
       handleUpdateStatus(taskId, 'PENDING');
+      return;
+    }
+
+    if (isReview) {
+      handleUpdateStatus(taskId, 'COMPLETED');
       return;
     }
 
