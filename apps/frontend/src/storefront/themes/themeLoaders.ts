@@ -1,5 +1,5 @@
 import type { StorefrontTheme } from "../types/theme.types";
-import { getStorefrontThemePreset, DEFAULT_STOREFRONT_THEME_ID } from "./index";
+import { getStorefrontThemePreset, DEFAULT_STOREFRONT_THEME_ID, resolveStorefrontThemeId } from "./index";
 
 export type ThemeLoaderFn = () => Promise<{ default: unknown }>;
 
@@ -58,6 +58,7 @@ export const DYNAMIC_THEME_REGISTRY: Record<string, ThemeLoaderFn> = {
   "mens-grooming-pro": () => import("./mens-grooming-pro.json"),
   "soft-graceful": () => import("./soft-graceful.json"),
   "allure": () => import("./allure.json"),
+  "allura": () => import("./allure.json"),
   "anjella-boutique": () => import("./anjella-boutique.json"),
   "dental-lab-elite": () => import("./dental-lab-elite.json"),
   "redline-auto": () => import("./redline-auto.json"),
@@ -69,22 +70,26 @@ export const loadStorefrontThemeAsync = async (
   themeId: string = DEFAULT_STOREFRONT_THEME_ID,
 ): Promise<StorefrontTheme> => {
   const normalizedId = (themeId || DEFAULT_STOREFRONT_THEME_ID).trim();
+  const canonicalId = resolveStorefrontThemeId(normalizedId);
 
-  if (THEME_CACHE.has(normalizedId)) {
-    return THEME_CACHE.get(normalizedId)!;
+  if (THEME_CACHE.has(canonicalId)) {
+    return THEME_CACHE.get(canonicalId)!;
   }
 
-  const loader = DYNAMIC_THEME_REGISTRY[normalizedId];
+  const loader = DYNAMIC_THEME_REGISTRY[canonicalId] || DYNAMIC_THEME_REGISTRY[normalizedId];
   if (loader) {
     try {
       await loader();
     } catch (err) {
-      console.warn(`[ThemeLoader] Dynamic load failed for ${normalizedId}, falling back to preset`, err);
+      console.warn(`[ThemeLoader] Dynamic load failed for ${canonicalId}, falling back to preset`, err);
     }
   }
 
-  const resolved = getStorefrontThemePreset(normalizedId);
-  THEME_CACHE.set(normalizedId, resolved);
+  const resolved = getStorefrontThemePreset(canonicalId);
+  THEME_CACHE.set(canonicalId, resolved);
+  if (normalizedId !== canonicalId) {
+    THEME_CACHE.set(normalizedId, resolved);
+  }
   return resolved;
 };
 

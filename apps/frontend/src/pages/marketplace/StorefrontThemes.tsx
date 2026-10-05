@@ -28,6 +28,7 @@ import {
   StorefrontThemeCatalogItem,
 } from "../../services/storefrontThemeCatalogService";
 import { buildStorefrontPreviewPath } from "../../storefront/utils/paths";
+import { resolveStorefrontThemeId } from "../../storefront/themes";
 import { openUrlInNewTab } from "../../utils/openUrlInNewTab";
 import { formatCurrency } from "../../utils/currency";
 import { handleInsufficientWalletBalance } from "../../utils/marketplaceWalletHelper";
@@ -484,7 +485,9 @@ export default function StorefrontThemes() {
   const [searchParams, setSearchParams] = useSearchParams();
   const auth = useOptionalAuth();
   const user = auth?.user;
-  const highlightedThemeId = searchParams.get("theme")?.trim() || "";
+  const rawHighlightedThemeId = searchParams.get("theme")?.trim() || "";
+  const highlightedThemeId =
+    resolveStorefrontThemeId(rawHighlightedThemeId) || rawHighlightedThemeId;
   const rawSelectedPrimaryCategoryId =
     searchParams.get("category")?.trim() || "all";
   const rawSelectedSecondaryCategoryId =
@@ -984,18 +987,20 @@ export default function StorefrontThemes() {
   };
 
   const buildPreviewUrl = (themeId: string): string => {
+    const canonicalThemeId = resolveStorefrontThemeId(themeId) || themeId;
+
     if (
-      themeId.endsWith("-demo") &&
-      !STOREFRONT_READY_MARKETPLACE_PREVIEWS.has(themeId)
+      canonicalThemeId.endsWith("-demo") &&
+      !STOREFRONT_READY_MARKETPLACE_PREVIEWS.has(canonicalThemeId)
     ) {
-      return `${window.location.origin}/theme-demo/${themeId.replace("-demo", "")}`;
+      return `${window.location.origin}/theme-demo/${canonicalThemeId.replace("-demo", "")}`;
     }
 
     return buildStorefrontPreviewPath("/", {
       companyId: previewStoreTarget.companyId,
       companySlug: previewStoreTarget.companySlug,
       customDomain: previewStoreTarget.customDomain,
-      previewTheme: themeId,
+      previewTheme: canonicalThemeId,
       previewSource: "marketplace",
       previewAdminOrigin: window.location.origin,
     });

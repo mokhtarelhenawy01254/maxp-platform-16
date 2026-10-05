@@ -11,6 +11,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
+import i18n from "../../i18n";
 
 const mockGetCompanyCatalog = vi.fn();
 const mockGetPurchaseHistory = vi.fn();
@@ -205,6 +206,7 @@ describe("StorefrontThemes marketplace page", () => {
 
   beforeEach(() => {
     installMockStorage();
+    void i18n.changeLanguage("ar");
     vi.clearAllMocks();
     mockPreviewLocationReplace = vi.fn();
     vi.stubGlobal(

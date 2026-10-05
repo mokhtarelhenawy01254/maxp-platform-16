@@ -55,11 +55,21 @@
     ]
   },
   "header": {
-    "variant": "floating-dark",
-    "transparentOnHome": true,
+    "variant": "automotive-chassis",
+    "transparentOnHome": false,
     "brandName": "RED LINE",
-    "showSearch": false,
+    "announcementText": "عزل حراري 98% تفصيل فابريقة بالمللي • معاينة وتجربة على باب سيارتك قبل الدفع • ضمان 14 يوم استبدال",
+    "announcementLink": "/shipping",
+    "announcementLinkText": "تفاصيل الضمان",
+    "showSearch": true,
     "showCart": true,
+    "actions": [
+      {
+        "label": "اطلب ستارتك",
+        "to": "/shop",
+        "style": "primary"
+      }
+    ],
     "navigation": [
       {
         "label": "الرئيسية",

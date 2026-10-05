@@ -1,6 +1,6 @@
 {
   "id": "allure",
-  "name": "Allure",
+  "name": "Allure (ألورا)",
   "direction": "rtl",
   "tokens": {
     "colors": {
@@ -65,7 +65,7 @@
   },
   "footer": {
     "variant": "fashion-retail",
-    "description": "Allure — ثيم أزياء عصري يجمع بين الرقي والبساطة: عرض بصري قوي بخطوط Serif فخمة، واجهة نظيفة، وتجربة شراء تزيد المبيعات.",
+    "description": "Allure / Allura (ألورا) — ثيم أزياء عصري يجمع بين الرقي والبساطة: عرض بصري قوي بخطوط Serif فخمة، واجهة نظيفة، وتجربة شراء تزيد المبيعات.",
     "copyrightText": "© 2026 Allure. جميع الحقوق محفوظة.",
     "socialLinks": {"instagram": "https://instagram.com/", "facebook": "https://facebook.com/", "tiktok": "https://tiktok.com/", "youtube": "https://youtube.com/"},
     "navigation": [
@@ -74,7 +74,7 @@
       {"title": "الشركة", "links": [{"label": "من نحن", "to": "/about"}, {"label": "المدونة", "to": "/journal"}, {"label": "تواصل معنا", "to": "/contact"}]}
     ]
   },
-  "seo": {"titleTemplate": "%s | ALLURE", "description": "Allure — ثيم أزياء عصري وفاخر بخطوط Serif فخمة وواجهة نظيفة، مصمم لزيادة المبيعات.", "defaultOgImage": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600"},
+  "seo": {"titleTemplate": "%s | ALLURE", "description": "Allure / Allura (ألورا) — ثيم أزياء عصري وفاخر بخطوط Serif فخمة وواجهة نظيفة، مصمم لزيادة المبيعات.", "defaultOgImage": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600"},
   "preview": {"imageUrl": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600", "colors": ["24 9% 8%", "22 42% 38%", "0 0% 100%"]},
   "pages": {
     "home": {"layoutHint": "stack", "pageGoal": "conversion", "sections": [

@@ -8,6 +8,7 @@ import {
 
 export type { StorefrontThemeInput } from './themeResolverCore';
 export { extractStorefrontThemePresetId } from './themeResolverCore';
+import { resolveStorefrontThemeId } from '../themes';
 
 const RUNTIME_THEME_ASSET_LOADERS: Record<string, () => Promise<string>> = {
   [DEFAULT_STOREFRONT_THEME_ID]: () =>
@@ -55,12 +56,13 @@ const resolveThemeAssetLoader = (
     typeof themeId === 'string' && themeId.trim()
       ? themeId.trim()
       : DEFAULT_STOREFRONT_THEME_ID;
+  const canonicalThemeId = resolveStorefrontThemeId(normalizedThemeId);
 
-  if (RUNTIME_THEME_ASSET_LOADERS[normalizedThemeId]) {
-    return RUNTIME_THEME_ASSET_LOADERS[normalizedThemeId];
+  if (RUNTIME_THEME_ASSET_LOADERS[canonicalThemeId]) {
+    return RUNTIME_THEME_ASSET_LOADERS[canonicalThemeId];
   }
 
-  const globKey = `../themes/${normalizedThemeId}.json`;
+  const globKey = `../themes/${canonicalThemeId}.json`;
   if (ALL_THEME_URL_LOADERS[globKey]) {
     return ALL_THEME_URL_LOADERS[globKey];
   }

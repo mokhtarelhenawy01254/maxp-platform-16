@@ -59,4 +59,22 @@ export const resolveSectionVariant = <TVariant extends string>(
   section: string,
   rawVariant: unknown,
   defaultVariant: TVariant,
-): TVariant => requireRegisteredVariant(section, rawVariant, defaultVariant);
+): TVariant => {
+  const original = String(rawVariant ?? '').trim();
+
+  if (!original) {
+    return defaultVariant;
+  }
+
+  const normalized = resolveVariantAlias(section, original.toLowerCase());
+  if (hasRegisteredVariant(section, normalized)) {
+    return normalized as TVariant;
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn(
+      `[VariantRegistry] Unknown variant "${original}" for section family "${section}". Falling back to default "${defaultVariant}".`,
+    );
+  }
+  return defaultVariant;
+};

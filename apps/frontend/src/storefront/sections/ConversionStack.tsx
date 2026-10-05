@@ -1158,7 +1158,7 @@ const ConversionStack: React.FC<ConversionStackProps> = ({
   const visiblePrimaryBlocks = showConfidenceGrid ? primaryBlocks : [];
   const standaloneSectionNode =
     standaloneBlockId === "bulk-savings"
-      ? modules["bulkSavings"]
+      ? modules["bulkSavings"] && product?.id
         ? <VolumeDiscountBadge productId={product.id} quantity={1} />
         : null
       : primaryBlocks.find((block) => block.id === standaloneBlockId)?.node ||
@@ -1326,7 +1326,7 @@ const ConversionStack: React.FC<ConversionStackProps> = ({
           )}
         </div>
 
-        {modules["bulkSavings"] ? (
+        {modules["bulkSavings"] && product?.id ? (
           <div
             aria-label={prefersArabicCopy ? "إضافة ختامية" : "Footer add-on"}
             className={cx(

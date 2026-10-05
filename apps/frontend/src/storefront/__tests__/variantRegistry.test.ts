@@ -111,5 +111,13 @@ describe('storefront variant registry', () => {
     expect(resolveSectionVariant('RelatedProducts', 'editorial-card', 'standard')).toBe('editorial');
     expect(resolveSectionVariant('RelatedProducts', 'luxury-card', 'standard')).toBe('luxury');
     expect(resolveSectionVariant('RelatedProducts', 'overlay-card', 'standard')).toBe('overlay');
+    expect(resolveSectionVariant('LookbookShowcase', 'masonry', 'standard')).toBe('masonry');
+    expect(resolveSectionVariant('JournalStrip', 'carousel', 'editorial-cards')).toBe('carousel');
+    expect(resolveSectionVariant('JournalStrip', 'grid', 'editorial-cards')).toBe('grid');
+  });
+
+  it('safely falls back to defaultVariant when resolveSectionVariant encounters an unknown variant', () => {
+    expect(resolveSectionVariant('LookbookShowcase', 'completely-unknown-variant', 'standard')).toBe('standard');
+    expect(resolveSectionVariant('JournalStrip', 'invalid-variant', 'editorial-cards')).toBe('editorial-cards');
   });
 });

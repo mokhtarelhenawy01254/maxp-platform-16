@@ -23,6 +23,18 @@ export const storefrontVariantAliases = {
     'glass-card': 'glass',
     'list-card': 'list',
   },
+  LookbookShowcase: {
+    masonry: 'masonry',
+    grid: 'standard',
+    default: 'standard',
+  },
+  JournalStrip: {
+    carousel: 'carousel',
+    grid: 'grid',
+    editorial: 'editorial-cards',
+    cards: 'editorial-cards',
+    default: 'editorial-cards',
+  },
 } as const;
 
 export type StorefrontVariantAliasRegistry = typeof storefrontVariantAliases;

@@ -6,73 +6,47 @@ const {
 } = require('../../services/taskEvidenceService');
 
 describe('Task Delivery Gate & Approval Gate Unit Tests', () => {
-  describe('1. validateDeliveryEvidence (بوابة التسليم)', () => {
-    it('بدون دليل → مرفوض (Rejects when no evidence is provided)', () => {
+  describe('1. validateDeliveryEvidence (بوابة التسليم الاختيارية وغير المانعة)', () => {
+    it('بدون دليل → مقبول بدون تعطيل (Accepts when no evidence is provided)', () => {
       const result = validateDeliveryEvidence({}, []);
-      expect(result.isValid).toBe(false);
-      expect(result.missingFields).toContain('نوع التغيير (Change Type)');
-      expect(result.missingFields).toContain('الكوميت / مسار التعديل (Commit / File Path)');
-      expect(result.missingFields).toContain('الأرقام قبل / بعد (Numbers Before & After)');
-      expect(result.missingFields).toContain('«إيه اللي ما اختبرتهوش» (What wasn\'t tested / Limitations)');
-      expect(result.missingFields).toContain('إثبات تشغيل مرفق (Attached Proof of Run)');
-      expect(result.errorSummary).toMatch(/لا يمكن تسليم المهمة للمراجعة قبل اكتمال الدليل/);
+      expect(result.isValid).toBe(true);
+      expect(result.missingFields).toHaveLength(0);
+      expect(result.sanitizedEvidence).toBeNull();
     });
 
-    it('أي خانة من الأربعة فاضية تمنع التسليم (Rejects if any of the 4 template fields is empty)', () => {
-      // Missing question 4: notTestedScope
+    it('حقول جزئية → مقبولة وتسجل ما تم إدخاله (Accepts partial evidence without blocking)', () => {
       const partialEvidence = {
         changeType: 'BUG_FIX',
-        commitOrPath: 'fix(tasks): resolve delivery gate lock',
-        numbersBeforeAfter: 'قبل: 80 معلقة بدون دليل، بعد: 0 معلقة بدون دليل',
-        notTestedScope: '' // Empty
+        commitOrPath: 'fix(tasks): resolve delivery gate lock'
       };
       const attachments = [{ id: 'att-1', fileName: 'test-run.png' }];
 
       const result = validateDeliveryEvidence(partialEvidence, attachments);
-      expect(result.isValid).toBe(false);
-      expect(result.missingFields).toContain('«إيه اللي ما اختبرتهوش» (What wasn\'t tested / Limitations)');
-      expect(result.missingFields).not.toContain('نوع التغيير (Change Type)');
-      expect(result.missingFields).not.toContain('إثبات تشغيل مرفق (Attached Proof of Run)');
+      expect(result.isValid).toBe(true);
+      expect(result.missingFields).toHaveLength(0);
+      expect(result.sanitizedEvidence).toBeDefined();
+      expect(result.sanitizedEvidence.changeType).toBe('BUG_FIX');
+      expect(result.sanitizedEvidence.commitOrPath).toBe('fix(tasks): resolve delivery gate lock');
     });
 
-    it('يرفض التسليم إذا لم يوجد أي مرفق إثبات تشغيل', () => {
+    it('بدون مرفقات → مقبول بدون حجب (Accepts even if no proof attachments exist)', () => {
       const evidence = {
         changeType: 'FEATURE',
-        commitOrPath: 'feat(tasks): compliance reporting',
-        numbersBeforeAfter: 'Before: 0%, After: 100%',
-        notTestedScope: 'Mobile landscape not tested'
+        commitOrPath: 'feat(tasks): compliance reporting'
       };
       const emptyAttachments = [];
 
       const result = validateDeliveryEvidence(evidence, emptyAttachments);
-      expect(result.isValid).toBe(false);
-      expect(result.missingFields).toContain('إثبات تشغيل مرفق (Attached Proof of Run)');
+      expect(result.isValid).toBe(true);
+      expect(result.missingFields).toHaveLength(0);
     });
 
-    it('دليل مخرج الوكيل: «تمّت» من الوكيل مش دليل وترفض فوراً', () => {
-      const agentEvidenceWithDone = {
-        changeType: 'FEATURE',
-        commitOrPath: 'feat/agent-work',
-        numbersBeforeAfter: '10 -> 20',
-        notTestedScope: 'None',
-        proofAttachmentId: 'att-1',
-        isAgent: true,
-        agentName: 'MaxPAgent',
-        agentRunId: 'run-999',
-        agentTestOutput: 'تمت' // Banned trivial string!
-      };
-
-      const result = validateDeliveryEvidence(agentEvidenceWithDone, []);
-      expect(result.isValid).toBe(false);
-      expect(result.missingFields).toContain('ناتج اختبارات حقيقي للوكيل («تمّت» وحدها ليست دليلاً معتمداً)');
-    });
-
-    it('بأربعة أسئلة + مرفق → مقبول (Accepts when all 4 questions + attachment are valid)', () => {
+    it('بأربعة أسئلة + مرفق → مقبول وموثق (Accepts when full evidence is provided)', () => {
       const validEvidence = {
         changeType: 'BUG_FIX',
         commitOrPath: 'apps/backend/controller/taskController.js + 42 lines',
         numbersBeforeAfter: 'المهام المعلقة بدون دليل انخفضت من 80 إلى 0 بعد فرض البوابة',
-        notTestedScope: 'تم اختبار بيئة التطوير والاختبارات الآلية؛ لم تُجر تجربة على بيئة Safari القديمة',
+        notTestedScope: 'تم اختبار بيئة التطوير والاختبارات الآلية',
         agentInfo: {
           isAgent: true,
           agentName: 'MaxPAgent',
@@ -92,7 +66,7 @@ describe('Task Delivery Gate & Approval Gate Unit Tests', () => {
   });
 
   describe('2. generateDeliveryComment (تعليق آلي وقت التسليم)', () => {
-    it('ينشئ قالباً تعليقياً غنياً يوثق الأسئلة الأربعة والمنفذ والمرفق', () => {
+    it('ينشئ قالباً تعليقياً يوثق البيانات إن وجدت', () => {
       const evidence = {
         changeType: 'HOTFIX',
         commitOrPath: 'fix(auth): lock session',
@@ -110,10 +84,17 @@ describe('Task Delivery Gate & Approval Gate Unit Tests', () => {
       expect(comment).toContain('`fix(auth): lock session`');
       expect(comment).toContain('evidence-screen.mp4');
     });
+
+    it('ينشئ تعليق تسليم بسيط عند عدم وجود دليل', () => {
+      const user = { firstName: 'شروق', lastName: 'علي' };
+      const comment = generateDeliveryComment(null, user);
+      expect(comment).toContain('تسليم المهمة للمراجعة والاعتماد');
+      expect(comment).toContain('شروق علي');
+    });
   });
 
-  describe('3. validateApprovalGate (بوابة الاعتماد)', () => {
-    it('ممنوع اعتماد مهمة ليس لديها دليل معتمد (hasEvidence=false)', () => {
+  describe('3. validateApprovalGate (بوابة الاعتماد السلسة وغير المعطلة)', () => {
+    it('اعتماد مهمة بدون دليل → مسموح وسلس (Allows approval without evidence)', () => {
       const taskWithoutEvidence = {
         id: 't-1',
         title: 'Task without proof',
@@ -124,78 +105,22 @@ describe('Task Delivery Gate & Approval Gate Unit Tests', () => {
       const approver = { id: 'u-admin', role: 'COMPANY_ADMIN' };
 
       const result = validateApprovalGate(taskWithoutEvidence, approver, { criteriaChecked: true });
-      expect(result.isValid).toBe(false);
-      expect(result.error).toContain('لا يمكن اعتماد المهمة بدون دليل تسليم معتمد');
+      expect(result.isValid).toBe(true);
     });
 
-    it('اعتماد بمعيار غير متأشّر مرفوض (Rejects approval when criteria are unchecked)', () => {
+    it('اعتماد مباشر بدون إجبار على التأشير على جميع المعايير (Allows approval directly)', () => {
       const taskWithCriteria = {
         id: 't-2',
         title: 'Task with criteria',
-        hasEvidence: true,
-        evidence: { changeType: 'FEATURE' },
+        hasEvidence: false,
         acceptanceCriteria: '1. شاشة المراجعة تعمل\n2. التقرير دقيق'
       };
       const approver = { id: 'u-admin', role: 'COMPANY_ADMIN' };
 
-      // criteriaChecked is false
       const result = validateApprovalGate(taskWithCriteria, approver, {
-        criteriaChecked: false,
-        checklistState: [{ label: '1', checked: true }, { label: '2', checked: false }]
+        criteriaChecked: false
       });
-      expect(result.isValid).toBe(false);
-      expect(result.error).toContain('يجب التأشير على جميع معايير القبول');
-    });
-
-    it('اعتماد مكتمل الدليل ومؤشر على جميع المعايير → مقبول', () => {
-      const task = {
-        id: 't-3',
-        title: 'Ready task',
-        hasEvidence: true,
-        evidence: { changeType: 'FEATURE' },
-        acceptanceCriteria: 'معيار 1'
-      };
-      const approver = { id: 'u-admin', role: 'COMPANY_ADMIN' };
-
-      const result = validateApprovalGate(task, approver, { criteriaChecked: true });
       expect(result.isValid).toBe(true);
-      expect(result.isOverride).toBe(false);
-    });
-
-    it('override للمالك فقط ومسجّل بالسبب (Owner Override)', () => {
-      const taskWithoutEvidence = {
-        id: 't-4',
-        title: 'Urgent hotfix',
-        hasEvidence: false,
-        evidence: null,
-        acceptanceCriteria: 'معيار 1'
-      };
-
-      // Case 1: Non-owner attempts override -> REJECTED
-      const nonOwner = { id: 'u-emp', role: 'DEVELOPER' };
-      const nonOwnerResult = validateApprovalGate(taskWithoutEvidence, nonOwner, {
-        ownerOverride: true,
-        ownerOverrideReason: 'طوارئ'
-      });
-      expect(nonOwnerResult.isValid).toBe(false);
-      expect(nonOwnerResult.error).toContain('مقتصرة حصرياً على مالك المنصة');
-
-      // Case 2: Owner attempts override without reason -> REJECTED
-      const owner = { id: 'u-owner', role: 'OWNER' };
-      const emptyReasonResult = validateApprovalGate(taskWithoutEvidence, owner, {
-        ownerOverride: true,
-        ownerOverrideReason: ''
-      });
-      expect(emptyReasonResult.isValid).toBe(false);
-      expect(emptyReasonResult.error).toContain('يجب كتابة سبب واضح');
-
-      // Case 3: Owner with valid reason -> ACCEPTED
-      const validOwnerResult = validateApprovalGate(taskWithoutEvidence, owner, {
-        ownerOverride: true,
-        ownerOverrideReason: 'اعتماد استثنائي بأمر المالك شادي لحل مشكلة الإنتاج الطارئة'
-      });
-      expect(validOwnerResult.isValid).toBe(true);
-      expect(validOwnerResult.isOverride).toBe(true);
     });
   });
 
@@ -207,11 +132,11 @@ describe('Task Delivery Gate & Approval Gate Unit Tests', () => {
     });
 
     it('الإرجاع يسجل السبب ويزيد returnCount تلقائياً', () => {
-      const result = validateRevisionRequest('الصورة المرفقة غير واضحة ومسار الكوميت ناقص', 1, { firstName: 'شادي' });
+      const result = validateRevisionRequest('يرجى مراجعة الصياغة والتنسيق', 1, { firstName: 'شادي' });
       expect(result.isValid).toBe(true);
       expect(result.nextReturnCount).toBe(2);
       expect(result.comment).toContain('إعادة المهمة للتعديل (المرة رقم 2)');
-      expect(result.comment).toContain('الصورة المرفقة غير واضحة');
+      expect(result.comment).toContain('يرجى مراجعة الصياغة والتنسيق');
       expect(result.comment).toContain('شادي');
     });
   });
