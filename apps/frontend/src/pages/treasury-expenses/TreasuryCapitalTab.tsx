@@ -17,6 +17,7 @@ import {
   Download,
   Calendar,
   Receipt,
+  ArrowUpDown,
 } from "lucide-react";
 import {
   TreasuryAccount,
@@ -59,6 +60,7 @@ export default function TreasuryCapitalTab({
   const [datePreset, setDatePreset] = useState<"all" | "today" | "this_week" | "this_month" | "custom">("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -106,6 +108,7 @@ export default function TreasuryCapitalTab({
           type: typeFilter || undefined,
           startDate: startDate || undefined,
           endDate: endDate || undefined,
+          sortOrder,
           page,
           limit: 25,
         }),
@@ -120,7 +123,7 @@ export default function TreasuryCapitalTab({
     } finally {
       setLoading(false);
     }
-  }, [selectedAccountId, typeFilter, startDate, endDate, page]);
+  }, [selectedAccountId, typeFilter, startDate, endDate, sortOrder, page]);
 
   useEffect(() => {
     loadData();
@@ -507,6 +510,24 @@ export default function TreasuryCapitalTab({
               </div>
             )}
 
+            {/* Sort Direction Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"));
+                setPage(1);
+              }}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors shadow-xs"
+              title={
+                sortOrder === "desc"
+                  ? "الترتيب حالياً: من الأحدث للأقدم (اضغط للتبديل للأقدم أولاً)"
+                  : "الترتيب حالياً: من الأقدم للأحدث (اضغط للتبديل للأحدث أولاً)"
+              }
+            >
+              <ArrowUpDown className="w-3.5 h-3.5 text-zinc-500" />
+              <span>{sortOrder === "desc" ? "الأحدث أولاً" : "الأقدم أولاً"}</span>
+            </button>
+
             <button
               onClick={handleExportCsv}
               disabled={ledger.length === 0}
@@ -567,6 +588,7 @@ export default function TreasuryCapitalTab({
                                 day: "numeric",
                                 hour: "2-digit",
                                 minute: "2-digit",
+                                second: "2-digit",
                               })
                             : "—"}
                         </td>

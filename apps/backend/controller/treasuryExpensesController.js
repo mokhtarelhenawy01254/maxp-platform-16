@@ -1002,7 +1002,7 @@ exports.createExpense = async (req, res) => {
       // 2. Generate expense number (Overdraft permitted: balance may become negative)
       const expenseNumber = await generateExpenseNumber(tx, companyId);
       const newBalance = isPaid ? Number(account.balance) - expenseAmount : Number(account.balance);
-      const txDate = paymentDate ? new Date(paymentDate) : new Date();
+      const txDate = resolveTransactionDate(paymentDate);
 
       // Determine OPEX vs CAPEX
       let resolvedType = type || 'OPEX';
@@ -1159,7 +1159,7 @@ exports.updateExpense = async (req, res) => {
             referenceType: 'EXPENSE',
             referenceId: existing.id,
             description: `تعديل نفقة [${existing.expenseNumber}]: ${(title || existing.title).trim()}`,
-            date: paymentDate ? new Date(paymentDate) : existing.paymentDate,
+            date: paymentDate ? resolveTransactionDate(paymentDate) : existing.paymentDate,
             createdById: userId,
           }
         });
@@ -1176,7 +1176,7 @@ exports.updateExpense = async (req, res) => {
           beneficiary: beneficiary !== undefined ? (beneficiary ? beneficiary.trim() : null) : existing.beneficiary,
           invoiceNumber: invoiceNumber !== undefined ? (invoiceNumber ? invoiceNumber.trim() : null) : existing.invoiceNumber,
           receiptUrl: receiptUrl !== undefined ? (receiptUrl || null) : existing.receiptUrl,
-          paymentDate: paymentDate ? new Date(paymentDate) : existing.paymentDate,
+          paymentDate: paymentDate ? resolveTransactionDate(paymentDate) : existing.paymentDate,
           isRecurring: isRecurring !== undefined ? Boolean(isRecurring) : existing.isRecurring,
           recurringInterval: isRecurring ? (recurringInterval || existing.recurringInterval || 'MONTHLY') : null,
           nextDueDate: isRecurring && nextDueDate ? new Date(nextDueDate) : existing.nextDueDate,
@@ -1248,6 +1248,7 @@ exports.deleteExpense = async (req, res) => {
               referenceType: 'EXPENSE',
               referenceId: expense.id,
               description: `استرداد وإلغاء نفقة محذوفة [${expense.expenseNumber}]: ${expense.title}`,
+              date: new Date(),
               createdById: userId,
             }
           });
@@ -1358,7 +1359,7 @@ exports.getExpenseStats = async (req, res) => {
 exports.getLedger = async (req, res) => {
   try {
     const { companyId } = req.user;
-    const { treasuryAccountId, type, startDate, endDate, page = 1, limit = 50 } = req.query;
+    const { treasuryAccountId, type, startDate, endDate, sortOrder = 'desc', page = 1, limit = 50 } = req.query;
 
     const prisma = getSharedPrismaClient();
     await ensureDefaults(prisma, companyId);
@@ -1379,6 +1380,7 @@ exports.getLedger = async (req, res) => {
 
     const skip = (Math.max(1, parseInt(page, 10)) - 1) * Math.max(1, parseInt(limit, 10));
     const take = Math.max(1, parseInt(limit, 10));
+    const orderDirection = sortOrder === 'asc' ? 'asc' : 'desc';
 
     const [transactions, totalCount] = await Promise.all([
       safeQuery(() =>
@@ -1387,7 +1389,11 @@ exports.getLedger = async (req, res) => {
           include: {
             treasuryAccount: { select: { id: true, name: true, type: true, currency: true } }
           },
-          orderBy: { date: 'desc' },
+          orderBy: [
+            { date: orderDirection },
+            { createdAt: orderDirection },
+            { id: orderDirection },
+          ],
           skip,
           take,
         })

@@ -19,6 +19,7 @@ export function DepositCapitalModal({ isOpen, onClose, onSuccess, accounts }: De
   const [type, setType] = useState("CAPITAL_INJECTION");
   const [investorName, setInvestorName] = useState("");
   const [referenceNumber, setReferenceNumber] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +50,7 @@ export function DepositCapitalModal({ isOpen, onClose, onSuccess, accounts }: De
         type,
         investorName: investorName.trim() || undefined,
         referenceNumber: referenceNumber.trim() || undefined,
+        date: date || undefined,
         notes: notes.trim() || undefined,
       });
       onSuccess();
@@ -142,15 +144,28 @@ export function DepositCapitalModal({ isOpen, onClose, onSuccess, accounts }: De
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">رقم الإشعار البنكي / المرجع (اختياري)</label>
-            <input
-              type="text"
-              value={referenceNumber}
-              onChange={(e) => setReferenceNumber(e.target.value)}
-              placeholder="مثال: REF-987654"
-              className="w-full px-3 py-2 text-sm font-mono bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">تاريخ الإيداع *</label>
+              <input
+                type="date"
+                required
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">رقم الإشعار البنكي / المرجع (اختياري)</label>
+              <input
+                type="text"
+                value={referenceNumber}
+                onChange={(e) => setReferenceNumber(e.target.value)}
+                placeholder="مثال: REF-987654"
+                className="w-full px-3 py-2 text-sm font-mono bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none"
+              />
+            </div>
           </div>
 
           <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-zinc-100 dark:border-zinc-800">

@@ -294,6 +294,7 @@ export async function fetchLedger(params?: {
   type?: string;
   startDate?: string;
   endDate?: string;
+  sortOrder?: "asc" | "desc";
   page?: number;
   limit?: number;
 }): Promise<{
