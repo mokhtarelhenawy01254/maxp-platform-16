@@ -222,7 +222,7 @@ export default function Bundles() {
                         {savings > 0 && (
                           <div className="flex items-center gap-2">
                             <span className="text-gray-400 line-through">{originalPrice.toFixed(0)} {t("billing.bundles.currencySymbol")}</span>
-                            <span className="text-green-600 font-semibold">{t("billing.bundles.saveAmount", { amount: savings.toFixed(0) })}</span>
+                            <span className="text-green-600 font-semibold">{t("billing.bundles.saveAmount", { amount: savings.toFixed(0), pct: originalPrice > 0 ? Math.round((savings / originalPrice) * 100) : 0 })}</span>
                           </div>
                         )}
                       </div>

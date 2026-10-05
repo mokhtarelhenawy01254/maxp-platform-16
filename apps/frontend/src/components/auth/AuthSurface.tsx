@@ -93,7 +93,7 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
           </h1>
           <p className="visual-description">
             {visualDescription ||
-              "منصة تشغيل متكاملة تجمع المبيعات، المحادثات، المخازن، الموارد البشرية، والتسويق — باشتراك واحد."}
+              "منصة تشغيل متكاملة تجمع المبيعات، المحادثات، المخازن، الموارد البشرية، والتسويق — في مساحة عمل واحدة."}
           </p>
 
           {visualStats && visualStats.length > 0 ? (

@@ -75,6 +75,9 @@
     "orders": {
       "description": "إدارة الطلبات والإحصائيات"
     },
+    "treasuryExpenses": {
+      "description": "تسجيل ومتابعة مصروفات الخزينة وحركاتها المالية"
+    },
     "codDeposit": {
       "description": "إدارة الدفعة المقدمة COD"
     },

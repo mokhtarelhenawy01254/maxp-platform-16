@@ -6,7 +6,8 @@ import { trackPlatformSiteLead } from "../../../utils/platformSiteMetaPixel";
 /**
  * Documented figures only (cases-numbers.md / offers-pricing.md):
  * 4,500–8,000 EGP = cost of the separate tools MaxP replaces;
- * 299 EGP = MaxP subscription; 4,200–7,700 = net monthly saving (5–8 substitutions);
+ * Subscription displayed as per-app sum (B1 policy 2026-10-05 — no unified 299 figure);
+ * 4,200–7,700 EGP = frozen net monthly saving range (5–8 substitutions);
  * 1,000+ monthly chats = processing capacity; 999 EGP = specialized plans.
  * No computed/estimated figures are allowed here.
  */
@@ -53,9 +54,8 @@ export const LandingRoiCalculator: React.FC = () => {
               <span className="font-mono font-bold text-white" dir="ltr">4,500–8,000 ج.م</span>
             </div>
 
-            <div className="flex items-center justify-between text-sm border-b border-white/[0.06] pb-3">
-              <span className="text-zinc-400">اشتراك MaxP الشهري:</span>
-              <span className="font-mono font-bold text-emerald-400" dir="ltr">299 ج.م</span>
+            <div className="text-sm text-zinc-400 border-b border-white/[0.06] pb-3">
+              اشتراكك الشهري = مجموع التطبيقات اللي بفعّلها — وفي تطبيقات مجانية تبدأ بيها فورًا.
             </div>
 
             <div className="flex items-center justify-between text-sm border-b border-white/[0.06] pb-3">

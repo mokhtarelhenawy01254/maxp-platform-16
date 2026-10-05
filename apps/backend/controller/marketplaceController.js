@@ -2432,7 +2432,8 @@ exports.getMarketplaceLogs = async (req, res) => {
           user: {
             select: {
               id: true,
-              name: true,
+              firstName: true,
+              lastName: true,
               email: true,
               role: true,
               avatar: true
@@ -2464,7 +2465,12 @@ exports.getMarketplaceLogs = async (req, res) => {
         targetName: log.targetName,
         targetId: log.targetId,
         createdAt: log.createdAt,
-        user: log.user || { name: 'مدير النظام', email: '', role: 'ADMIN', avatar: null },
+        user: log.user
+          ? {
+              ...log.user,
+              name: [log.user.firstName, log.user.lastName].filter(Boolean).join(' ') || log.user.email
+            }
+          : { name: 'مدير النظام', email: '', role: 'ADMIN', avatar: null },
         metadata: parsedMeta
       };
     });
