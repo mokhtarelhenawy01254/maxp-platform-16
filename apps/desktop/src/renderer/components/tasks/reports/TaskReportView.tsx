@@ -25,13 +25,6 @@ import { TaskReportKpis } from './TaskReportKpis';
 import { TaskReportExceptions } from './TaskReportExceptions';
 import { TaskReportLedger } from './TaskReportLedger';
 import { TaskReportTeamMatrix } from './TaskReportTeamMatrix';
-import { TaskUnifiedFilterBar } from '../TaskUnifiedFilterBar';
-import {
-  UnifiedTaskFilters,
-  defaultUnifiedTaskFilters,
-  matchesUnifiedFilter,
-  parseUnifiedFiltersFromUrl,
-} from '../taskFilterEngine';
 
 const getTodayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -87,10 +80,6 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
   const [users, setUsers] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isCopied, setIsCopied] = useState(false);
-
-  const [unifiedFilters, setUnifiedFilters] = useState<UnifiedTaskFilters>(() =>
-    parseUnifiedFiltersFromUrl(typeof window !== 'undefined' ? (window.location.hash || window.location.search) : '')
-  );
 
   const [filters, setFilters] = useState<TaskReportFilterState>({
     dateRange: 'today',
@@ -385,16 +374,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
   const filteredItems = useMemo(() => {
     const todayStr = getTodayStr();
     return reportItems.filter((t) => {
-      // 1. Unified filter engine match (omnisearch tokens, user, priority, status, dates, tags)
-      if (!matchesUnifiedFilter(t, unifiedFilters)) {
-        return false;
-      }
-
-      const effectiveUser =
-        unifiedFilters.assignedTo && unifiedFilters.assignedTo !== 'all'
-          ? unifiedFilters.assignedTo
-          : filters.selectedUserId;
-      if (effectiveUser !== 'all' && t.assignedToId !== effectiveUser) {
+      if (filters.selectedUserId !== 'all' && t.assignedToId !== filters.selectedUserId) {
         return false;
       }
       if (filters.selectedProject !== 'all' && t.projectName !== filters.selectedProject) {
@@ -418,47 +398,33 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
 
       const compDate = (t.completedAt || '').slice(0, 10);
 
-      // If unified date filters are provided, they take precedence
-      if (unifiedFilters.dueDateFrom && (t.dueDate || t.createdAt)) {
-        const d = String(t.dueDate || t.createdAt).slice(0, 10);
-        if (d < unifiedFilters.dueDateFrom) return false;
-      }
-      if (unifiedFilters.dueDateTo && (t.dueDate || t.createdAt)) {
-        const d = String(t.dueDate || t.createdAt).slice(0, 10);
-        if (d > unifiedFilters.dueDateTo) return false;
+      if (filters.dateRange === 'all') {
+        return true;
       }
 
-      if (!unifiedFilters.dueDateFrom && !unifiedFilters.dueDateTo) {
-        if (filters.dateRange === 'all') {
-          return true;
-        }
+      const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
 
-        const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
-
-        if (activePeriod.isSingle) {
-          const targetDay = activePeriod.start;
-          const isCompletedOnDay = t.status === 'COMPLETED' && compDate === targetDay;
-          const isWorkedOnDay = (t.timeEntries || []).some(
-            (e: any) => (e.startTime || e.createdAt || '').slice(0, 10) === targetDay
-          );
-          const isCreatedOnDay = (t.createdAt || '').slice(0, 10) === targetDay;
-          const isCurrentActive = targetDay === todayStr && isActive;
-          return isCompletedOnDay || isWorkedOnDay || isCreatedOnDay || isCurrentActive;
-        }
-
-        // Date range
-        const isCompletedInRange = t.status === 'COMPLETED' && compDate >= activePeriod.start && compDate <= activePeriod.end;
-        const isWorkedInRange = (t.timeEntries || []).some((e: any) => {
-          const d = (e.startTime || e.createdAt || '').slice(0, 10);
-          return d >= activePeriod.start && d <= activePeriod.end;
-        });
-        const isCreatedInRange = (t.createdAt || '').slice(0, 10) >= activePeriod.start && (t.createdAt || '').slice(0, 10) <= activePeriod.end;
-        return isCompletedInRange || isWorkedInRange || isCreatedInRange || isActive;
+      if (activePeriod.isSingle) {
+        const targetDay = activePeriod.start;
+        const isCompletedOnDay = t.status === 'COMPLETED' && compDate === targetDay;
+        const isWorkedOnDay = (t.timeEntries || []).some(
+          (e: any) => (e.startTime || e.createdAt || '').slice(0, 10) === targetDay
+        );
+        const isCreatedOnDay = (t.createdAt || '').slice(0, 10) === targetDay;
+        const isCurrentActive = targetDay === todayStr && isActive;
+        return isCompletedOnDay || isWorkedOnDay || isCreatedOnDay || isCurrentActive;
       }
 
-      return true;
+      // Date range
+      const isCompletedInRange = t.status === 'COMPLETED' && compDate >= activePeriod.start && compDate <= activePeriod.end;
+      const isWorkedInRange = (t.timeEntries || []).some((e: any) => {
+        const d = (e.startTime || e.createdAt || '').slice(0, 10);
+        return d >= activePeriod.start && d <= activePeriod.end;
+      });
+      const isCreatedInRange = (t.createdAt || '').slice(0, 10) >= activePeriod.start && (t.createdAt || '').slice(0, 10) <= activePeriod.end;
+      return isCompletedInRange || isWorkedInRange || isCreatedInRange || isActive;
     });
-  }, [reportItems, filters, unifiedFilters, activePeriod]);
+  }, [reportItems, filters, activePeriod]);
 
   // Aggregate KPIs
   const kpis: TaskReportKpiData = useMemo(() => {
@@ -677,18 +643,6 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
 
   return (
     <div style={styles.chassis}>
-      {/* Unified Task Omnisearch & Filter Bar (Shared Across All 7 Screens) */}
-      <TaskUnifiedFilterBar
-        filters={unifiedFilters}
-        onFiltersChange={setUnifiedFilters}
-        users={users}
-        onRefresh={() => loadData(true)}
-        isLoading={loading}
-        totalCount={reportItems.length}
-        filteredCount={filteredItems.length}
-        className="mb-3"
-      />
-
       {/* Top Controls Toolbar */}
       <div style={styles.topToolbar}>
         <div style={styles.toolbarLeft}>

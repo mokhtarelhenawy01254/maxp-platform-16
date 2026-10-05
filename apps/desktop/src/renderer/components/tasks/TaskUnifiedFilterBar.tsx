@@ -122,193 +122,325 @@ export const TaskUnifiedFilterBar: React.FC<TaskUnifiedFilterBarProps> = ({
 
   return (
     <div
-      className={`rounded-xl border border-white/10 bg-black/40 p-2.5 shadow-sm backdrop-blur-md transition-all ${className}`}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 8,
+        padding: '8px 12px',
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border-default)',
+        borderRadius: 10,
+        marginBottom: 8,
+        width: '100%',
+        boxSizing: 'border-box',
+      }}
       dir="rtl"
     >
-      <div className="flex flex-wrap items-center gap-2">
-        {/* 1. Fast Omnisearch Text Input */}
-        <div className="relative min-w-[200px] flex-1">
-          <Search className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            value={filters.search}
-            onChange={(e) => updateFilter('search', e.target.value)}
-            placeholder="بحث بالعنوان، الوصف، المكلف، كود المهمة #id..."
-            className="h-8 w-full rounded-lg border border-white/10 bg-white/5 pr-8 pl-7 text-xs text-white placeholder:text-gray-500 focus:border-indigo-500 focus:bg-white/10 focus:outline-none"
-          />
-          {filters.search && (
-            <button
-              type="button"
-              onClick={() => updateFilter('search', '')}
-              className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-              title="مسح البحث"
-            >
-              <X className="size-3.5" />
-            </button>
-          )}
-        </div>
-
-        {/* 2. Team Member (Assigned User) Filter Dropdown */}
-        <div className="flex items-center gap-1">
-          <Users className="size-4 text-gray-400" />
-          <select
-            value={filters.assignedTo}
-            onChange={(e) => updateFilter('assignedTo', e.target.value)}
-            className="h-8 rounded-lg border border-white/10 bg-white/5 px-2 text-xs font-medium text-white focus:border-indigo-500 focus:outline-none"
-            title="تصفية حسب المسؤول"
+      {/* 1. Fast Omnisearch Text Input */}
+      <div style={{ position: 'relative', minWidth: 200, flex: 1, display: 'flex', alignItems: 'center' }}>
+        <Search
+          size={14}
+          color="var(--text-muted)"
+          style={{ position: 'absolute', right: 10, pointerEvents: 'none' }}
+        />
+        <input
+          type="text"
+          value={filters.search}
+          onChange={(e) => updateFilter('search', e.target.value)}
+          placeholder="بحث بالعنوان، الوصف، المكلف، كود المهمة #id..."
+          style={{
+            width: '100%',
+            height: 32,
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 7,
+            padding: '4px 30px 4px 10px',
+            fontSize: 11.5,
+            color: 'var(--text-primary)',
+            fontFamily: 'inherit',
+            outline: 'none',
+          }}
+        />
+        {filters.search && (
+          <button
+            type="button"
+            onClick={() => updateFilter('search', '')}
+            style={{
+              position: 'absolute',
+              left: 8,
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+            title="مسح البحث"
           >
-            <option value="all" className="bg-gray-900 text-white">كافة أعضاء الفريق</option>
-            {users.map((u) => {
-              const displayName =
-                u.name ||
-                `${u.firstName || ''} ${u.lastName || ''}`.trim() ||
-                u.id;
-              return (
-                <option key={u.id} value={u.id} className="bg-gray-900 text-white">
-                  {displayName}
-                </option>
-              );
-            })}
-          </select>
-        </div>
+            <X size={13} />
+          </button>
+        )}
+      </div>
 
-        {/* 3. Status Filter Dropdown */}
+      {/* 2. Team Member (Assigned User) Filter Dropdown */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <Users size={14} color="var(--text-muted)" />
         <select
-          value={filters.status}
-          onChange={(e) => updateFilter('status', e.target.value)}
-          className="h-8 rounded-lg border border-white/10 bg-white/5 px-2 text-xs font-medium text-white focus:border-indigo-500 focus:outline-none"
-          title="تصفية حسب الحالة"
+          value={filters.assignedTo}
+          onChange={(e) => updateFilter('assignedTo', e.target.value)}
+          style={{
+            height: 32,
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 7,
+            padding: '4px 8px',
+            fontSize: 11.5,
+            color: 'var(--text-primary)',
+            fontFamily: 'inherit',
+            outline: 'none',
+            cursor: 'pointer',
+          }}
+          title="تصفية حسب المسؤول"
         >
-          <option value="all" className="bg-gray-900 text-white">كافة الحالات</option>
-          <option value="pending" className="bg-gray-900 text-white">في الانتظار</option>
-          <option value="in_progress" className="bg-gray-900 text-white">قيد التنفيذ</option>
-          <option value="in_review" className="bg-gray-900 text-white">بانتظار المراجعة</option>
-          <option value="revision" className="bg-gray-900 text-white">تحتاج مراجعة</option>
-          <option value="completed" className="bg-gray-900 text-white">مكتملة</option>
-          <option value="cancelled" className="bg-gray-900 text-white">ملغاة</option>
+          <option value="all">كافة أعضاء الفريق</option>
+          {users.map((u) => {
+            const displayName =
+              u.name ||
+              `${u.firstName || ''} ${u.lastName || ''}`.trim() ||
+              u.id;
+            return (
+              <option key={u.id} value={u.id}>
+                {displayName}
+              </option>
+            );
+          })}
         </select>
+      </div>
 
-        {/* 4. Priority Filter Dropdown */}
+      {/* 3. Status Filter Dropdown */}
+      <select
+        value={filters.status}
+        onChange={(e) => updateFilter('status', e.target.value)}
+        style={{
+          height: 32,
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border-default)',
+          borderRadius: 7,
+          padding: '4px 8px',
+          fontSize: 11.5,
+          color: 'var(--text-primary)',
+          fontFamily: 'inherit',
+          outline: 'none',
+          cursor: 'pointer',
+        }}
+        title="تصفية حسب الحالة"
+      >
+        <option value="all">كافة الحالات</option>
+        <option value="pending">في الانتظار</option>
+        <option value="in_progress">قيد التنفيذ</option>
+        <option value="in_review">بانتظار المراجعة</option>
+        <option value="revision">تحتاج مراجعة</option>
+        <option value="completed">مكتملة</option>
+        <option value="cancelled">ملغاة</option>
+      </select>
+
+      {/* 4. Priority Filter Dropdown */}
+      <select
+        value={filters.priority}
+        onChange={(e) => updateFilter('priority', e.target.value)}
+        style={{
+          height: 32,
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border-default)',
+          borderRadius: 7,
+          padding: '4px 8px',
+          fontSize: 11.5,
+          color: 'var(--text-primary)',
+          fontFamily: 'inherit',
+          outline: 'none',
+          cursor: 'pointer',
+        }}
+        title="تصفية حسب الأولوية"
+      >
+        <option value="all">كافة الأولويات</option>
+        <option value="urgent">عاجل</option>
+        <option value="high">عالي</option>
+        <option value="medium">متوسط</option>
+        <option value="low">منخفض</option>
+      </select>
+
+      {/* 5. Date Filter */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <Calendar size={14} color="var(--text-muted)" />
         <select
-          value={filters.priority}
-          onChange={(e) => updateFilter('priority', e.target.value)}
-          className="h-8 rounded-lg border border-white/10 bg-white/5 px-2 text-xs font-medium text-white focus:border-indigo-500 focus:outline-none"
-          title="تصفية حسب الأولوية"
-        >
-          <option value="all" className="bg-gray-900 text-white">كافة الأولويات</option>
-          <option value="urgent" className="bg-gray-900 text-white">عاجل 🚨</option>
-          <option value="high" className="bg-gray-900 text-white">عالي ⚡</option>
-          <option value="medium" className="bg-gray-900 text-white">متوسط</option>
-          <option value="low" className="bg-gray-900 text-white">منخفض</option>
-        </select>
-
-        {/* 5. Date Filter */}
-        <div className="flex items-center gap-1">
-          <Calendar className="size-4 text-gray-400" />
-          <select
-            value={
-              !filters.dueDateFrom && !filters.dueDateTo
-                ? 'all'
-                : filters.dueDateFrom === filters.dueDateTo && filters.dueDateFrom === new Date().toISOString().slice(0, 10)
-                ? 'today'
-                : 'custom'
+          value={
+            !filters.dueDateFrom && !filters.dueDateTo
+              ? 'all'
+              : filters.dueDateFrom === filters.dueDateTo && filters.dueDateFrom === new Date().toISOString().slice(0, 10)
+              ? 'today'
+              : 'custom'
+          }
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === 'all' || val === 'today') {
+              handleDatePreset(val);
             }
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === 'all' || val === 'today') {
-                handleDatePreset(val);
-              }
-            }}
-            className="h-8 rounded-lg border border-white/10 bg-white/5 px-2 text-xs font-medium text-white focus:border-indigo-500 focus:outline-none"
-            title="تصفية حسب الموعد"
-          >
-            <option value="all" className="bg-gray-900 text-white">كافة المواعيد</option>
-            <option value="today" className="bg-gray-900 text-white">اليوم</option>
-            <option value="custom" className="bg-gray-900 text-white">مخصص...</option>
-          </select>
+          }}
+          style={{
+            height: 32,
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 7,
+            padding: '4px 8px',
+            fontSize: 11.5,
+            color: 'var(--text-primary)',
+            fontFamily: 'inherit',
+            outline: 'none',
+            cursor: 'pointer',
+          }}
+          title="تصفية حسب الموعد"
+        >
+          <option value="all">كافة المواعيد</option>
+          <option value="today">اليوم</option>
+          <option value="custom">مخصص...</option>
+        </select>
 
-          {/* Quick Date Inputs if custom */}
-          {(filters.dueDateFrom || filters.dueDateTo) && (
-            <div className="flex items-center gap-1 text-xs">
-              <input
-                type="date"
-                value={filters.dueDateFrom}
-                onChange={(e) => updateFilter('dueDateFrom', e.target.value)}
-                className="h-8 rounded-lg border border-white/10 bg-white/5 px-1 text-[11px] text-white focus:outline-none"
-                title="من تاريخ"
-              />
-              <span className="text-gray-400">-</span>
-              <input
-                type="date"
-                value={filters.dueDateTo}
-                onChange={(e) => updateFilter('dueDateTo', e.target.value)}
-                className="h-8 rounded-lg border border-white/10 bg-white/5 px-1 text-[11px] text-white focus:outline-none"
-                title="إلى تاريخ"
-              />
-            </div>
-          )}
-        </div>
-
-        {/* 6. Tag Filter */}
-        <div className="relative flex items-center">
-          <Tag className="pointer-events-none absolute right-2 size-3.5 text-gray-400" />
-          <input
-            type="text"
-            value={tagInput}
-            onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                updateFilter('tag', tagInput.trim() || 'all');
-              }
-            }}
-            onBlur={() => {
-              if (tagInput.trim() !== (filters.tag === 'all' ? '' : filters.tag)) {
-                updateFilter('tag', tagInput.trim() || 'all');
-              }
-            }}
-            placeholder="التاجات..."
-            className="h-8 w-24 rounded-lg border border-white/10 bg-white/5 pr-6 pl-2 text-xs text-white placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none sm:w-28"
-            title="اضغط Enter للتطبيق"
-          />
-        </div>
-
-        {/* 7. Reset Button */}
-        {activeFiltersCount > 0 && (
-          <button
-            type="button"
-            onClick={handleReset}
-            className="inline-flex h-8 items-center gap-1 rounded-lg border border-rose-500/20 bg-rose-500/10 px-2 text-xs font-medium text-rose-300 transition-colors hover:bg-rose-500/20"
-            title="تصفير كل الفلاتر"
-          >
-            <X className="size-3.5" />
-            <span>تصفير</span>
-          </button>
-        )}
-
-        {/* 8. Refresh Button */}
-        {onRefresh && (
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={isLoading}
-            className="inline-flex size-8 items-center justify-center rounded-lg border border-white/10 text-gray-400 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-50"
-            title="تحديث البيانات"
-          >
-            <RotateCw className={`size-3.5 ${isLoading ? 'animate-spin text-indigo-400' : ''}`} />
-          </button>
-        )}
-
-        {/* 9. Result Count Badge */}
-        {filteredCount !== undefined && (
-          <div className="mr-auto flex items-center gap-1 text-xs text-gray-400">
-            <span className="font-semibold text-white tabular-nums">{filteredCount}</span>
-            {totalCount !== undefined && totalCount !== filteredCount && (
-              <span>من أصل <span className="tabular-nums">{totalCount}</span></span>
-            )}
-            <span>مهمة</span>
+        {/* Quick Date Inputs if custom */}
+        {(filters.dueDateFrom || filters.dueDateTo) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <input
+              type="date"
+              value={filters.dueDateFrom}
+              onChange={(e) => updateFilter('dueDateFrom', e.target.value)}
+              style={{
+                height: 32,
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border-default)',
+                borderRadius: 7,
+                padding: '2px 6px',
+                fontSize: 11,
+                color: 'var(--text-primary)',
+                outline: 'none',
+              }}
+              title="من تاريخ"
+            />
+            <span style={{ color: 'var(--text-muted)' }}>-</span>
+            <input
+              type="date"
+              value={filters.dueDateTo}
+              onChange={(e) => updateFilter('dueDateTo', e.target.value)}
+              style={{
+                height: 32,
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border-default)',
+                borderRadius: 7,
+                padding: '2px 6px',
+                fontSize: 11,
+                color: 'var(--text-primary)',
+                outline: 'none',
+              }}
+              title="إلى تاريخ"
+            />
           </div>
         )}
       </div>
+
+      {/* 6. Tag Filter */}
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        <Tag size={13} color="var(--text-muted)" style={{ position: 'absolute', right: 8, pointerEvents: 'none' }} />
+        <input
+          type="text"
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              updateFilter('tag', tagInput.trim() || 'all');
+            }
+          }}
+          onBlur={() => {
+            if (tagInput.trim() !== (filters.tag === 'all' ? '' : filters.tag)) {
+              updateFilter('tag', tagInput.trim() || 'all');
+            }
+          }}
+          placeholder="التاجات..."
+          style={{
+            height: 32,
+            width: 100,
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 7,
+            padding: '4px 26px 4px 8px',
+            fontSize: 11.5,
+            color: 'var(--text-primary)',
+            fontFamily: 'inherit',
+            outline: 'none',
+          }}
+          title="اضغط Enter للتطبيق"
+        />
+      </div>
+
+      {/* 7. Reset Button */}
+      {activeFiltersCount > 0 && (
+        <button
+          type="button"
+          onClick={handleReset}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            height: 32,
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.25)',
+            borderRadius: 7,
+            padding: '0 10px',
+            fontSize: 11,
+            color: '#f87171',
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+          title="تصفير كل الفلاتر"
+        >
+          <X size={13} />
+          <span>تصفير</span>
+        </button>
+      )}
+
+      {/* 8. Refresh Button */}
+      {onRefresh && (
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={isLoading}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 32,
+            height: 32,
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 7,
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
+          }}
+          title="تحديث البيانات"
+        >
+          <RotateCw size={13} className={isLoading ? 'animate-spin' : ''} />
+        </button>
+      )}
+
+      {/* 9. Result Count Badge */}
+      {filteredCount !== undefined && (
+        <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--text-muted)' }}>
+          <strong style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{filteredCount}</strong>
+          {totalCount !== undefined && totalCount !== filteredCount && (
+            <span>من أصل <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{totalCount}</strong></span>
+          )}
+          <span>مهمة</span>
+        </div>
+      )}
     </div>
   );
 };
