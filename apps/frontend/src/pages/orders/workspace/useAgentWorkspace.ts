@@ -321,7 +321,10 @@ export function useAgentWorkspace() {
       if (payload?.stats && typeof payload.stats === 'object') {
         setStats({
           total: Number(payload.stats.total) || 0,
+          all: Number(payload.stats.all ?? payload.stats.total) || 0,
+          today: Number(payload.stats.today) || 0,
           pending: Number(payload.stats.pending) || 0,
+          processing: Number(payload.stats.processing) || 0,
           confirmed: Number(payload.stats.confirmed) || 0,
           cancelled: Number(payload.stats.cancelled) || 0,
           followup: Number(payload.stats.followup) || 0,

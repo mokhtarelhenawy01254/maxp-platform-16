@@ -88,6 +88,7 @@ export const AgentWorkspace: React.FC = () => {
         activeTab={activeTab}
         onSelectTab={selectTab}
         stats={stats}
+        totalOrdersCount={pagination.total}
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
         refreshing={refreshing}

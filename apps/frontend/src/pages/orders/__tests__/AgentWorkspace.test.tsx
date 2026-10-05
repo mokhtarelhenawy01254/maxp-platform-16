@@ -589,5 +589,38 @@ describe("AgentWorkspace", () => {
       );
     });
   });
+
+  it("renders live count badges in each quick tab from stats payload", async () => {
+    setMockOrdersData(
+      [makeOrder({ id: "1", status: "PENDING", orderNumber: "ORD-1" })],
+      {
+        total: 42,
+        all: 42,
+        today: 7,
+        pending: 15,
+        processing: 12,
+        cancelled: 8,
+        confirmed: 0,
+        followup: 0,
+      },
+      { total: 42, page: 1, limit: 50, pages: 1 },
+    );
+
+    render(
+      <MemoryRouter initialEntries={["/orders/workspace"]}>
+        <AgentWorkspace />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("42")).toBeInTheDocument();
+    });
+
+    // Check count numbers are visible inside the tabs
+    expect(screen.getByText("7")).toBeInTheDocument();
+    expect(screen.getByText("15")).toBeInTheDocument();
+    expect(screen.getByText("12")).toBeInTheDocument();
+    expect(screen.getByText("8")).toBeInTheDocument();
+  });
 });
 

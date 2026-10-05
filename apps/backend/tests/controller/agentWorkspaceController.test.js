@@ -96,6 +96,9 @@ const matchOrderCondition = (order, cond) => {
     const isNull = order.followUpDate === null || order.followUpDate === undefined;
     if (notIsNull ? isNull : !isNull) return false;
   }
+  if (cond.createdAt && cond.createdAt.gte) {
+    if (new Date(order.createdAt) < new Date(cond.createdAt.gte)) return false;
+  }
   return true;
 };
 
@@ -350,14 +353,17 @@ describe('agentWorkspaceController.getMyOrders', () => {
 
     expect(res.payload.stats).toEqual({
       total: 3,
+      all: 3,
+      today: 0,
       pending: 1,
+      processing: 0,
       confirmed: 1,
       cancelled: 1,
       followup: 0,
       incomplete: 0
     });
-    // 1 pagination total + 5 stats counts
-    expect(count).toHaveBeenCalledTimes(6);
+    // 1 pagination total + 7 stats counts
+    expect(count).toHaveBeenCalledTimes(8);
   });
 
   it('applies search condition to query when search parameter is provided', async () => {
@@ -992,7 +998,10 @@ describe('agentWorkspaceController manager fleet operations', () => {
     expect(res.statusCode).toBe(200);
     expect(res.payload.stats).toEqual({
       total: 3,
+      all: 3,
+      today: 3,
       pending: 3,
+      processing: 0,
       confirmed: 0,
       cancelled: 0,
       followup: 0,

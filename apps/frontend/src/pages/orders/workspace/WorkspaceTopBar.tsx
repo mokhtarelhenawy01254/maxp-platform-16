@@ -19,6 +19,8 @@ interface WorkspaceTopBarProps {
   onSortChange: (sort: 'recent' | 'oldest' | 'attempts') => void;
   /** آخر نجاح جلب — لشارة «حدث قبل X» بجانب زر التحديث */
   lastFetchedAt: number | null;
+  isManager?: boolean;
+  totalOrdersCount?: number;
 }
 
 export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
@@ -32,6 +34,8 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
   sortOption,
   onSortChange,
   lastFetchedAt,
+  isManager,
+  totalOrdersCount,
 }) => {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
@@ -52,14 +56,41 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
     return isArabic ? `حدث قبل ${hrs} س` : `${hrs}h old`;
   };
 
-  // تابات الفلتر السريع المطابقة تماماً لتصميم الكابينة المطلوب:
-  // سريع | كل الطلبات | اليوم | قيد الانتظار | قيد التنفيذ | ملغي
-  const tabs: { key: FilterTab; label: string }[] = [
-    { key: 'all', label: isArabic ? 'كل الطلبات' : 'All Orders' },
-    { key: 'today', label: isArabic ? 'اليوم' : 'Today' },
-    { key: 'pending', label: isArabic ? 'قيد الانتظار' : 'Pending' },
-    { key: 'processing', label: isArabic ? 'قيد التنفيذ' : 'In Progress' },
-    { key: 'cancelled', label: isArabic ? 'ملغي' : 'Cancelled' },
+  const getTabCount = (tabKey: FilterTab): number | undefined => {
+    let count: number | undefined;
+    switch (tabKey) {
+      case 'all':
+        count = stats?.all ?? stats?.total;
+        break;
+      case 'today':
+        count = stats?.today;
+        break;
+      case 'pending':
+        count = stats?.pending;
+        break;
+      case 'processing':
+        count = stats?.processing;
+        break;
+      case 'cancelled':
+        count = stats?.cancelled;
+        break;
+      default:
+        count = undefined;
+    }
+    if (count === undefined && activeTab === tabKey && typeof totalOrdersCount === 'number') {
+      return totalOrdersCount;
+    }
+    return count;
+  };
+
+  // تابات الفلتر السريع المطابقة تماماً لتصميم الكابينة مع العداد الفعلي:
+  // سريع | كل الطلبات (X) | اليوم (X) | قيد الانتظار (X) | قيد التنفيذ (X) | ملغي (X)
+  const tabs: { key: FilterTab; label: string; count?: number }[] = [
+    { key: 'all', label: isArabic ? 'كل الطلبات' : 'All Orders', count: getTabCount('all') },
+    { key: 'today', label: isArabic ? 'اليوم' : 'Today', count: getTabCount('today') },
+    { key: 'pending', label: isArabic ? 'قيد الانتظار' : 'Pending', count: getTabCount('pending') },
+    { key: 'processing', label: isArabic ? 'قيد التنفيذ' : 'In Progress', count: getTabCount('processing') },
+    { key: 'cancelled', label: isArabic ? 'ملغي' : 'Cancelled', count: getTabCount('cancelled') },
   ];
 
   return (
@@ -79,6 +110,7 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
           <div className="flex items-center gap-1.5 sm:gap-2">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.key;
+              const hasCount = typeof tab.count === 'number';
               return (
                 <button
                   key={tab.key}
@@ -86,13 +118,24 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
                   role="tab"
                   aria-selected={isActive}
                   onClick={() => onSelectTab(tab.key)}
-                  className={`relative inline-flex items-center justify-center whitespace-nowrap rounded-full px-3.5 py-1 text-xs sm:text-sm font-medium transition-all active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                  className={`relative inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 sm:px-3.5 py-1 text-xs sm:text-sm font-medium transition-all active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                     isActive
                       ? 'bg-blue-600 text-white font-semibold shadow-sm hover:bg-blue-500'
                       : 'border border-border/70 bg-card/60 text-muted-foreground hover:bg-muted/80 hover:text-foreground'
                   }`}
                 >
                   <span>{tab.label}</span>
+                  {hasCount && (
+                    <span
+                      className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.2 text-[10px] sm:text-[11px] font-bold tabular-nums min-w-[18px] leading-tight ${
+                        isActive
+                          ? 'bg-white/25 text-white'
+                          : 'bg-muted text-foreground/80 border border-border/50'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
                 </button>
               );
             })}

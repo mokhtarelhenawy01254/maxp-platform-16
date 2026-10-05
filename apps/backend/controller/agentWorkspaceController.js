@@ -201,15 +201,32 @@ const getWorkspaceStats = async (prisma, companyId, userId, { assignedTo = '', i
   // عدادات شاشة «غير الموزع» تعكس نفس بركة الطلبات المعروضة (pending بلا إسناد نشط)
   // بدل عدّ الطلبات لكل الفريق — كانت العدادات العلوية لا تطابق محتوى الشاشة
   if (isManager && assignedTo === 'unassigned') {
-    const [unassignedRegular, unassignedGuest, incomplete] = await Promise.all([
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const [unassignedRegular, unassignedGuest, unassignedTodayRegular, unassignedTodayGuest, incomplete] = await Promise.all([
       prisma.order.count({ where: { companyId, assignedTo: null, confirmedAt: null, status: 'PENDING' } }),
       prisma.guestOrder.count({
         where: { companyId, status: { in: ['pending', 'PENDING'] }, orderAssignments: { none: { isActive: true } } }
       }),
+      prisma.order.count({ where: { companyId, assignedTo: null, confirmedAt: null, createdAt: { gte: startOfToday }, status: 'PENDING' } }),
+      prisma.guestOrder.count({
+        where: { companyId, createdAt: { gte: startOfToday }, status: { in: ['pending', 'PENDING'] }, orderAssignments: { none: { isActive: true } } }
+      }),
       countWorkspaceIncompleteCarts(prisma, companyId)
     ]);
     const poolTotal = unassignedRegular + unassignedGuest;
-    return { total: poolTotal, pending: poolTotal, confirmed: 0, cancelled: 0, followup: 0, incomplete };
+    const poolToday = unassignedTodayRegular + unassignedTodayGuest;
+    return {
+      total: poolTotal,
+      all: poolTotal,
+      today: poolToday,
+      pending: poolTotal,
+      processing: 0,
+      confirmed: 0,
+      cancelled: 0,
+      followup: 0,
+      incomplete
+    };
   }
 
   if (isManager && assignedTo && assignedTo !== 'all' && assignedTo !== 'unassigned') {
@@ -231,6 +248,16 @@ const getWorkspaceStats = async (prisma, companyId, userId, { assignedTo = '', i
     OR: [
       { order: { status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES] } } },
       { guestOrder: { status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES, ...Array.from(WORKSPACE_EXCLUDED_STATUSES).map((s) => s.toLowerCase())] } } }
+    ]
+  };
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const todayWhere = {
+    ...base,
+    OR: [
+      { order: { createdAt: { gte: startOfToday }, status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES] } } },
+      { guestOrder: { createdAt: { gte: startOfToday }, status: { notIn: [...WORKSPACE_EXCLUDED_STATUSES, ...Array.from(WORKSPACE_EXCLUDED_STATUSES).map((s) => s.toLowerCase())] } } }
     ]
   };
 
@@ -259,9 +286,11 @@ const getWorkspaceStats = async (prisma, companyId, userId, { assignedTo = '', i
     ]
   };
 
-  const [total, pending, confirmed, cancelled, followup] = await Promise.all([
+  const [total, today, pending, processing, confirmed, cancelled, followup] = await Promise.all([
     prisma.orderAssignment.count({ where: excludedWhere }),
+    prisma.orderAssignment.count({ where: todayWhere }),
     prisma.orderAssignment.count({ where: statusWhere('PENDING') }),
+    prisma.orderAssignment.count({ where: statusWhere('PROCESSING') }),
     prisma.orderAssignment.count({ where: statusWhere('CONFIRMED') }),
     prisma.orderAssignment.count({ where: statusWhere('CANCELLED') }),
     prisma.orderAssignment.count({ where: followupWhere })
@@ -269,7 +298,7 @@ const getWorkspaceStats = async (prisma, companyId, userId, { assignedTo = '', i
 
   const incomplete = await countWorkspaceIncompleteCarts(prisma, companyId);
 
-  return { total, pending, confirmed, cancelled, followup, incomplete };
+  return { total, all: total, today, pending, processing, confirmed, cancelled, followup, incomplete };
 };
 
 const assertWorkspaceOrderOwnership = async (prisma, companyId, userId, id, isManager = false) => {

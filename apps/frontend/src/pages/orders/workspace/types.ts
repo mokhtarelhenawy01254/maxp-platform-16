@@ -87,7 +87,10 @@ export interface WorkspaceOrder {
 
 export interface WorkspaceStats {
   total: number;
+  all?: number;
+  today?: number;
   pending: number;
+  processing?: number;
   confirmed: number;
   cancelled: number;
   followup: number;
