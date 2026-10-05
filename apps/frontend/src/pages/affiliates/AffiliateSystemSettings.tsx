@@ -56,19 +56,32 @@ const AffiliateSystemSettings: React.FC = () => {
     commissionOnStatus: "CONFIRMED",
   });
 
+  const toBoolean = (val: any, fallback: boolean): boolean => {
+    if (val === true || val === "true" || val === 1 || val === "1") return true;
+    if (val === false || val === "false" || val === 0 || val === "0") return false;
+    return fallback;
+  };
+
   const normalizeSettings = (incoming: Partial<typeof settings> = {}) => ({
     commissionType: incoming.commissionType || "PERCENTAGE",
     commissionRate: Number(incoming.commissionRate ?? 5),
     cookieDuration: Number(incoming.cookieDuration ?? 30),
     termsAndConditions: incoming.termsAndConditions || "",
-    isActive: incoming.isActive ?? true,
-    autoApproveAffiliates: incoming.autoApproveAffiliates ?? false,
+    isActive: toBoolean(incoming.isActive, true),
+    autoApproveAffiliates: toBoolean(incoming.autoApproveAffiliates, false),
     defaultMinPayout: Number(incoming.defaultMinPayout ?? 100),
-    defaultCanCreateOrdersForOthers:
-      incoming.defaultCanCreateOrdersForOthers ?? true,
-    defaultCanViewCustomerData:
-      incoming.defaultCanViewCustomerData ?? true,
-    requireIdentityDocument: incoming.requireIdentityDocument ?? false,
+    defaultCanCreateOrdersForOthers: toBoolean(
+      incoming.defaultCanCreateOrdersForOthers,
+      true,
+    ),
+    defaultCanViewCustomerData: toBoolean(
+      incoming.defaultCanViewCustomerData,
+      true,
+    ),
+    requireIdentityDocument: toBoolean(
+      incoming.requireIdentityDocument,
+      false,
+    ),
     identityDocumentLabel:
       incoming.identityDocumentLabel || "مستند إثبات الهوية",
     payoutSlaDays: Number(incoming.payoutSlaDays ?? 3),
