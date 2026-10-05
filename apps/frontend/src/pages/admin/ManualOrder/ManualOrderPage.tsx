@@ -17,6 +17,30 @@ import { useAuth } from "../../../hooks/useAuthSimple";
 
 type MobilePanel = "products" | "cart" | "checkout";
 
+interface ProductInput {
+  id: string;
+  name: string;
+  price: number | string;
+  image?: string;
+  stock?: number;
+  sku?: string;
+  baseMarkup?: number;
+}
+
+interface VariantInput {
+  id: string;
+  sku?: string;
+  price?: number | string;
+  stock?: number;
+  name?: string;
+  image?: string;
+  type?: string;
+  color?: string;
+  size?: string;
+  metadata?: string;
+  attributeValues?: Record<string, string>;
+}
+
 type ManualAccessState = {
   subscription: "ACTIVE" | "EXPIRED" | "NONE";
   installed: boolean;
@@ -36,6 +60,12 @@ const ManualOrderPage = () => {
 
   // فحص وصول اشتراك الطلبات اليدوية (NONE مقفول / EXPIRED يكتب وأوردراته تتعلق)
   useEffect(() => {
+    if (isAffiliate) {
+      setAccess({ subscription: "ACTIVE", installed: true });
+      setAccessLoading(false);
+      return;
+    }
+
     let cancelled = false;
     apiClient
       .get("/orders-enhanced/manual-access")
@@ -52,7 +82,7 @@ const ManualOrderPage = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isAffiliate]);
 
   // منع scroll من main
   useEffect(() => {
@@ -114,7 +144,7 @@ const ManualOrderPage = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [cartItems, t]);
 
-  const handleAddToCart = (product: any, variant?: any) => {
+  const handleAddToCart = (product: ProductInput, variant?: VariantInput) => {
     const itemId = variant
       ? `${product.id}-${variant.id}`
       : product.id;

@@ -16,7 +16,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { SearchableSelect } from "../../../../components/ui/SearchableSelect";
 import { GovernorateAreaSearch } from "../../../../components/ui/GovernorateAreaSearch";
-import { apiClient } from "../../../../services/apiClient";
+import { apiClient, type ApiRequestConfig } from "../../../../services/apiClient";
 import {
   lookupCustomerByPhone,
   EligiblePreviousOrder,
@@ -30,6 +30,36 @@ import { toast } from "sonner";
 import { CartItem } from "../types";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../../hooks/useAuthSimple";
+
+const EGYPTIAN_GOVERNORATES = [
+  "القاهرة",
+  "الجيزة",
+  "الإسكندرية",
+  "الدقهلية",
+  "البحر الأحمر",
+  "البحيرة",
+  "الفيوم",
+  "الغربية",
+  "الإسماعيلية",
+  "المنوفية",
+  "المنيا",
+  "القليوبية",
+  "الوادي الجديد",
+  "السويس",
+  "أسوان",
+  "أسيوط",
+  "بني سويف",
+  "بورسعيد",
+  "دمياط",
+  "الشرقية",
+  "جنوب سيناء",
+  "كفر الشيخ",
+  "مطروح",
+  "الأقصر",
+  "قنا",
+  "شمال سيناء",
+  "سوهاج",
+];
 
 const normalizeLocationLabel = (value: string | null | undefined) =>
   String(value || "").replace(/^\d+:/, "").trim();
@@ -165,11 +195,12 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
     }
   }, [searchParams]);
 
-  // Preload order policy on mount
+  // Preload order policy on mount (skip for affiliates, and silence error toast for background load)
   useEffect(() => {
+    if (isAffiliate) return;
     let active = true;
     apiClient
-      .get("/order-settings")
+      .get("/order-settings", { _skipErrorToast: true } as ApiRequestConfig)
       .then((res) => {
         if (active && res.data?.data?.exchangeReturnPolicy) {
           setExchangeReturnPolicy(res.data.data.exchangeReturnPolicy);
@@ -179,7 +210,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
     return () => {
       active = false;
     };
-  }, []);
+  }, [isAffiliate]);
 
   // Shipping State
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo | null>(null);
@@ -577,10 +608,12 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         notes: notes,
         status: isScheduledOrder ? "SCHEDULED" : status,
         paymentMethod: paymentMethod,
-        extractionMethod: "manual_admin",
+        extractionMethod: isAffiliate ? "affiliate_manual" : "manual_admin",
         conversationId: "manual",
-        platform: "manual",
-        source: "manual_entry",
+        platform: isAffiliate ? "affiliate" : "manual",
+        source: isAffiliate ? "affiliate_direct" : "manual_entry",
+        orderSource: isAffiliate ? "AFFILIATE_DIRECT" : "manual",
+        createAsAffiliate: isAffiliate,
         requestType: requestType,
         returnAmount: returnAmount ? parseFloat(returnAmount) : undefined,
         ...(isExchangeOrReturn ? {
@@ -761,19 +794,34 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
               {t('manualOrder.k_95')} <span className="text-red-500 dark:text-red-400">*</span>
             </label>
-            <GovernorateAreaSearch
-              value={{ governorate, area }}
-              onChange={(next) => {
-                setGovernorate(normalizeLocationLabel(next.governorate));
-                setArea(normalizeLocationLabel(next.area));
-              }}
-              placeholder={t('manualOrder.k_1')}
-              searchPlaceholder={t('manualOrder.k_2')}
-              emptyText={t('manualOrder.k_3')}
-              loadingText={t('manualOrder.k_4')}
-              disabled={!canUseTurboLocationLookups}
-              autoSearchText={address || ""}
-            />
+            {canUseTurboLocationLookups ? (
+              <GovernorateAreaSearch
+                value={{ governorate, area }}
+                onChange={(next) => {
+                  setGovernorate(normalizeLocationLabel(next.governorate));
+                  setArea(normalizeLocationLabel(next.area));
+                }}
+                placeholder={t('manualOrder.k_1')}
+                searchPlaceholder={t('manualOrder.k_2')}
+                emptyText={t('manualOrder.k_3')}
+                loadingText={t('manualOrder.k_4')}
+                autoSearchText={address || ""}
+              />
+            ) : (
+              <SearchableSelect
+                options={EGYPTIAN_GOVERNORATES.map((gov) => ({
+                  value: gov,
+                  label: gov,
+                }))}
+                value={governorate}
+                onChange={(val) => {
+                  setGovernorate(normalizeLocationLabel(val));
+                }}
+                placeholder={t('manualOrder.k_1', 'اختر المحافظة...')}
+                searchPlaceholder={t('manualOrder.k_2', 'ابحث عن المحافظة...')}
+                emptyText={t('manualOrder.k_3', 'لا توجد نتائج')}
+              />
+            )}
             {loadingGovernments && (
               <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
                 {t('manualOrder.k_96')}

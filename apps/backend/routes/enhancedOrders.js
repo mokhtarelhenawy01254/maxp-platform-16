@@ -55,7 +55,31 @@ const manualOrderAccess = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'غير مصرح بالوصول' });
     }
 
-    const installed = await getSharedPrismaClient().companyApp.findMany({
+    const prisma = getSharedPrismaClient();
+
+    // 🌟 For AFFILIATE users: Order creation is governed by the Affiliate program (affiliate-pro or manual-orders-pro)
+    if (req.user?.role === 'AFFILIATE') {
+      if (!prisma?.companyApp?.findMany) return next();
+
+      const installed = await prisma.companyApp.findMany({
+        where: { companyId, app: { slug: { in: ['affiliate-pro', ...MANUAL_ORDER_APP_SLUGS] } } },
+        select: { status: true },
+      });
+
+      const active = installed.some((r) => MANUAL_ORDER_ACTIVE_STATUSES.includes(r.status));
+      if (installed.length > 0 && !active) {
+        return res.status(403).json({
+          success: false,
+          message: 'نظام التسويق بالعمولة غير مفعّل أو منتهي لدى هذا التاجر',
+          code: 'AFFILIATE_APP_INACTIVE'
+        });
+      }
+      return next();
+    }
+
+    if (!prisma?.companyApp?.findMany) return next();
+
+    const installed = await prisma.companyApp.findMany({
       where: { companyId, app: { slug: { in: MANUAL_ORDER_APP_SLUGS } } },
       select: { status: true },
     });
@@ -129,50 +153,35 @@ router.get('/manual-access', async (req, res) => {
       return res.status(401).json({ success: false, message: 'غير مصرح بالوصول' });
     }
 
-    const installed = await getSharedPrismaClient().companyApp.findMany({
-      where: { companyId, app: { slug: { in: MANUAL_ORDER_APP_SLUGS } } },
-      select: { status: true, app: { select: { slug: true, name: true } } },
-    });
+    const prisma = getSharedPrismaClient();
 
-    if (installed.length === 0) {
+    if (req.user?.role === 'AFFILIATE') {
+      if (!prisma?.companyApp?.findMany) {
+        return res.json({ success: true, data: { subscription: 'ACTIVE', installed: true } });
+      }
+
+      const installed = await prisma.companyApp.findMany({
+        where: { companyId, app: { slug: { in: ['affiliate-pro', ...MANUAL_ORDER_APP_SLUGS] } } },
+        select: { status: true, app: { select: { slug: true, name: true } } },
+      });
+
+      const active = installed.length === 0 || installed.some((r) => MANUAL_ORDER_ACTIVE_STATUSES.includes(r.status));
+      return res.json({
+        success: true,
+        data: {
+          subscription: active ? 'ACTIVE' : 'NONE',
+          installed: installed.length > 0,
+          status: active ? 'ACTIVE' : 'EXPIRED',
+          app: installed[0]?.app || { slug: 'affiliate-pro', name: 'نظام الأفليت' },
+        },
+      });
+    }
+
+    if (!prisma?.companyApp?.findMany) {
       return res.json({ success: true, data: { subscription: 'NONE', installed: false } });
     }
 
-    const active = installed.some((r) => MANUAL_ORDER_ACTIVE_STATUSES.includes(r.status));
-    res.json({
-      success: true,
-      data: {
-        subscription: active ? 'ACTIVE' : 'EXPIRED',
-        installed: true,
-        status: active ? 'ACTIVE' : installed[0].status,
-        app: installed[0].app,
-      },
-    });
-  } catch (error) {
-    console.error('❌ [MANUAL-ACCESS] Error:', error.message);
-    res.status(500).json({ success: false, message: 'خطأ في التحقق من وصول الطلب اليدوي' });
-  }
-});
-
-/**
- * حالة اشتراك الطلب اليدوي للشركة
- * GET /api/v1/orders-enhanced/manual-access
- * - NONE    → مفيش سجل اشتراك → مقفول
- * - ACTIVE  → TRIAL/ACTIVE → عادي
- * - EXPIRED → موجود لكن منتهي → يكتب أوردرات لكنها بتتعلق
- */
-router.get('/manual-access', async (req, res) => {
-  try {
-    if (req.user?.role === 'SUPER_ADMIN') {
-      return res.json({ success: true, data: { subscription: 'ACTIVE', installed: true } });
-    }
-
-    const companyId = req.user?.companyId;
-    if (!companyId) {
-      return res.status(401).json({ success: false, message: 'غير مصرح بالوصول' });
-    }
-
-    const installed = await getSharedPrismaClient().companyApp.findMany({
+    const installed = await prisma.companyApp.findMany({
       where: { companyId, app: { slug: { in: MANUAL_ORDER_APP_SLUGS } } },
       select: { status: true, app: { select: { slug: true, name: true } } },
     });

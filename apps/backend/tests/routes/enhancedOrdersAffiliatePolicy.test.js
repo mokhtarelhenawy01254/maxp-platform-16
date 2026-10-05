@@ -68,7 +68,7 @@ describe("enhancedOrders affiliate policy", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    global.__ENHANCED_ORDER_TEST_USER__ = {
+    mockCurrentUser = {
       id: "affiliate-user-1",
       email: "affiliate@test.local",
       role: "AFFILIATE",
@@ -76,6 +76,7 @@ describe("enhancedOrders affiliate policy", () => {
       firstName: "Aff",
       lastName: "User",
     };
+    global.__ENHANCED_ORDER_TEST_USER__ = mockCurrentUser;
     app = express();
     app.use(express.json());
     app.use("/orders-enhanced", enhancedOrdersRoutes);
