@@ -1102,5 +1102,76 @@ describe('agentWorkspaceController.assignOrder', () => {
     const createCall = prismaMock.orderAssignment.create.mock.invocationCallOrder[0];
     expect(calls).toBeLessThan(createCall);
   });
+
+  describe('agentWorkspaceController.getWorkspaceReports', () => {
+    test('returns telemetry metrics matching raw call logs and orders for manager', async () => {
+      const prismaMock = {
+        callAttemptLog: {
+          findMany: jest.fn().mockResolvedValue([
+            { id: 'call-1', orderId: 'ord-1', guestOrderId: null, userId: 'user-1', result: 'reached', notes: 'duration: 45s', createdAt: new Date() },
+            { id: 'call-2', orderId: 'ord-2', guestOrderId: null, userId: 'user-1', result: 'callback', notes: 'duration: 30s', createdAt: new Date() }
+          ])
+        },
+        order: {
+          findMany: jest.fn().mockResolvedValue([
+            { id: 'ord-1', createdAt: new Date(Date.now() - 3600000), assignedAt: new Date(Date.now() - 3600000), confirmedAt: new Date(), updatedAt: new Date(), confirmedBy: 'user-1', assignedTo: 'user-1', callAttempts: 1 }
+          ]),
+          count: jest.fn().mockResolvedValue(1)
+        },
+        guestOrder: {
+          findMany: jest.fn().mockResolvedValue([]),
+          count: jest.fn().mockResolvedValue(0)
+        }
+      };
+      getSharedPrismaClient.mockReturnValue(prismaMock);
+
+      const res = createResponse();
+      await agentWorkspaceController.getWorkspaceReports({
+        user: { id: 'user-manager', role: 'OWNER', companyId: 'company-1', effectiveCompanyId: 'company-1' },
+        query: { range: 'today' }
+      }, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(res.payload.data.isManager).toBe(true);
+      expect(res.payload.data.kpis.totalCalls.value).toBe(2);
+      expect(res.payload.data.kpis.contactedOrders.value).toBe(2);
+      expect(res.payload.data.kpis.confirmedOrders.value).toBe(1);
+      expect(res.payload.data.kpis.totalDurationSeconds.value).toBe(75);
+      expect(res.payload.data.kpis.avgAttemptsPerOrder.value).toBe(1);
+    });
+
+    test('enforces agent isolation: regular agent only sees their own breakdown', async () => {
+      const prismaMock = {
+        callAttemptLog: {
+          findMany: jest.fn().mockResolvedValue([])
+        },
+        order: {
+          findMany: jest.fn().mockResolvedValue([]),
+          count: jest.fn().mockResolvedValue(0)
+        },
+        guestOrder: {
+          findMany: jest.fn().mockResolvedValue([]),
+          count: jest.fn().mockResolvedValue(0)
+        }
+      };
+      getSharedPrismaClient.mockReturnValue(prismaMock);
+
+      const res = createResponse();
+      await agentWorkspaceController.getWorkspaceReports({
+        user: { id: 'agent-1', role: 'EMPLOYEE', companyId: 'company-1', effectiveCompanyId: 'company-1' },
+        query: { range: '7d' }
+      }, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(res.payload.data.isManager).toBe(false);
+      expect(res.payload.data.agents).toHaveLength(1);
+      expect(res.payload.data.agents[0].id).toBe('agent-1');
+      expect(res.payload.data.agentBreakdown).toHaveLength(1);
+      expect(res.payload.data.agentBreakdown[0].agentId).toBe('agent-1');
+    });
+  });
 });
+
 
