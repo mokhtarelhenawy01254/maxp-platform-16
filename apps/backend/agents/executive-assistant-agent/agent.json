@@ -79,7 +79,10 @@
     "hr_shifts_list",
     "hr_leaves_list",
     "team_monitor_overview",
-    "employee_monitor_summary"
+    "employee_monitor_summary",
+    "bridge_get_treasury_expenses",
+    "bridge_get_treasury_expenses_stats",
+    "bridge_get_treasury_categories"
   ],
   "allowedSkills": [
     "read-company-state",

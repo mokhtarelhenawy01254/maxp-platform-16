@@ -1119,7 +1119,81 @@ CURATED_CAPABILITIES: list[dict] = [
         "roles": ["STORE_MANAGER", "EXECUTIVE_ASSISTANT"],
         "source": "curated",
     },
-
+    # ── Treasury & Expenses ────────────────────────────────────────────
+    {
+        "name": "bridge_get_treasury_expenses",
+        "domain": "treasury",
+        "description_en": (
+            "List and search company treasury expenses and outflows with date range filtering (startDate, endDate in YYYY-MM-DD), "
+            "categoryId, type (OPEX/CAPEX), status (PAID/PENDING), and keyword search. "
+            "Returns expenses list with details, totalCount, and totalAmount. READ-ONLY."
+        ),
+        "usage_hint_ar": "استعلام وبحث في سجل نفقات ومصروفات الشركة وتفاصيلها وفلترتها بالفترة والتصنيف والحالة (قراءة فقط)",
+        "endpoint": "/api/v1/treasury/expenses",
+        "http_method": "GET",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "startDate": {"type": "string", "description": "Filter expenses on or after date (YYYY-MM-DD, e.g. '2026-09-01')"},
+                "endDate": {"type": "string", "description": "Filter expenses on or before date (YYYY-MM-DD, e.g. '2026-09-30')"},
+                "categoryId": {"type": "string", "description": "Filter by expense category ID"},
+                "type": {"type": "string", "description": "Filter by expense type: OPEX or CAPEX"},
+                "status": {"type": "string", "description": "Filter by status: PAID or PENDING"},
+                "search": {"type": "string", "description": "Search keyword matching title, expenseNumber, beneficiary, or invoiceNumber"},
+                "page": {"type": "integer", "description": "Page number (default 1)"},
+                "limit": {"type": "integer", "description": "Max results per page (default 30, max 100)"},
+            },
+        },
+        "permission_key": "treasury.view",
+        "app_slug": "treasury-expenses",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["EXECUTIVE_ASSISTANT"],
+        "source": "curated",
+    },
+    {
+        "name": "bridge_get_treasury_expenses_stats",
+        "domain": "treasury",
+        "description_en": (
+            "Get aggregate statistics for company expenses: current month total expenses, last month expenses, "
+            "month-over-month delta percentage, OPEX vs CAPEX breakdown, and breakdown by expense category. READ-ONLY."
+        ),
+        "usage_hint_ar": "استعراض إحصائيات ومؤشرات النفقات الشهرية وتوزيعها حسب التصنيفات ومقارنتها بالشهر السابق (قراءة فقط)",
+        "endpoint": "/api/v1/treasury/expenses/stats",
+        "http_method": "GET",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+        },
+        "permission_key": "treasury.view",
+        "app_slug": "treasury-expenses",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["EXECUTIVE_ASSISTANT"],
+        "source": "curated",
+    },
+    {
+        "name": "bridge_get_treasury_categories",
+        "domain": "treasury",
+        "description_en": (
+            "List all treasury expense categories (e.g. Marketing & Ads, Salaries, Utilities, Rent) with their IDs, names, types (OPEX/CAPEX), colors, and icons. READ-ONLY."
+        ),
+        "usage_hint_ar": "استعراض قائمة تصنيفات النفقات المعتمدة في الخزينة لمعرفة معرفات التصنيفات (قراءة فقط)",
+        "endpoint": "/api/v1/treasury/categories",
+        "http_method": "GET",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "type": {"type": "string", "description": "Filter by category type: OPEX or CAPEX"}
+            },
+        },
+        "permission_key": "treasury.view",
+        "app_slug": "treasury-expenses",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["EXECUTIVE_ASSISTANT"],
+        "source": "curated",
+    },
 ]
 
 

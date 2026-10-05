@@ -75,6 +75,34 @@
         "تواصل مع شركة الشحن"
       ],
       "assertHonesty": true
+    },
+    {
+      "id": "scenario_treasury_expenses_total",
+      "name": "استعلام إجمالي النفقات الشهرية",
+      "userMessage": "إجمالي النفقات الشهر ده كام؟",
+      "expectedTools": [
+        "bridge_get_treasury_expenses",
+        "bridge_get_treasury_expenses_stats"
+      ],
+      "assertHonesty": true
+    },
+    {
+      "id": "scenario_treasury_ads_expenses",
+      "name": "استعلام نفقات الإعلانات والتسويق",
+      "userMessage": "اعلانات الشهر ده كام؟",
+      "expectedTools": [
+        "bridge_get_treasury_expenses"
+      ],
+      "assertHonesty": true
+    },
+    {
+      "id": "scenario_treasury_recent_expenses",
+      "name": "استعلام آخر ٥ نفقات",
+      "userMessage": "آخر ٥ نفقات إيه؟",
+      "expectedTools": [
+        "bridge_get_treasury_expenses"
+      ],
+      "assertHonesty": true
     }
   ]
 }

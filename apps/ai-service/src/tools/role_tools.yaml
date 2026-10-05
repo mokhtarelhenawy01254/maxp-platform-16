@@ -57,6 +57,9 @@ roles:
     - hr_leaves_list
     - team_monitor_overview
     - employee_monitor_summary
+    - bridge_get_treasury_expenses
+    - bridge_get_treasury_expenses_stats
+    - bridge_get_treasury_categories
 
   BROWSER_COPILOT:
     - product_search
