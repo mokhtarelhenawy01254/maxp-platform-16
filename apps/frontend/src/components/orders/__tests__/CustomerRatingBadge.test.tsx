@@ -95,7 +95,7 @@ describe("CustomerRatingBadge - 2026 Customer Health Score Standards", () => {
     expect(screen.getByText("7.5")).toBeInTheDocument();
   });
 
-  it("renders interactive badge button and allows editing customer rating in popover", () => {
+  it("renders interactive badge button showing automated telemetry popover without manual override buttons", () => {
     const handleRatingChange = jest.fn();
 
     render(
@@ -111,7 +111,8 @@ describe("CustomerRatingBadge - 2026 Customer Health Score Standards", () => {
       />
     );
 
-    // Badge button should be clickable
+    // Badge button should show classification label and score
+    expect(screen.getByText("متوسط")).toBeInTheDocument();
     const trigger = screen.getByRole("button", { name: /تقييم العميل/i });
     expect(trigger).toBeInTheDocument();
 
@@ -119,16 +120,14 @@ describe("CustomerRatingBadge - 2026 Customer Health Score Standards", () => {
     fireEvent.click(trigger);
 
     // Health Score modal header and telemetry should be displayed
-    expect(screen.getByText("تقييم العملاء")).toBeInTheDocument();
+    expect(screen.getByText("تقييم العميل الآلي")).toBeInTheDocument();
     expect(screen.getByText("HEALTH SCORE")).toBeInTheDocument();
-    expect(screen.getByText("ممتاز")).toBeInTheDocument();
-    expect(screen.getByText("جيد")).toBeInTheDocument();
+    expect(screen.getByText("مستلم")).toBeInTheDocument();
+    expect(screen.getByText("مرتجع")).toBeInTheDocument();
+    expect(screen.getByText("الإجمالي")).toBeInTheDocument();
 
-    // Select excellent
-    const excellentOption = screen.getByText("ممتاز");
-    fireEvent.click(excellentOption);
-
-    expect(handleRatingChange).toHaveBeenCalledWith("EXCELLENT");
+    // ZERO manual override section or buttons
+    expect(screen.queryByText("تعديل يدوي للتصنيف:")).not.toBeInTheDocument();
   });
 
   it("renders recalculate option when orderNumber is provided", () => {

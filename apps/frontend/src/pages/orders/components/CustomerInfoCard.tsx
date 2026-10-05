@@ -20,8 +20,6 @@ import { validateEgyptianPhone, toStandardDigits } from "../../../utils/validati
 import { useAuth } from "../../../hooks/useAuthSimple";
 import {
   CustomerRatingBadge,
-  CUSTOMER_RATING_OPTIONS,
-  normalizeRatingLevel,
 } from "../../../components/orders/CustomerRatingBadge";
 import {
   customerBlocklistService,
@@ -387,60 +385,6 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
         )}
 
         <div className="space-y-3">
-        {isEditing ? (
-          <div>
-            <label className="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-1">
-              تقييم العميل
-            </label>
-            <select
-              value={
-                editForm.customerRating ||
-                normalizeRatingLevel(
-                  order.customerRating || (order as any).customer?.customerRating
-                )
-              }
-              onChange={(e) =>
-                setEditForm({ ...editForm, customerRating: e.target.value })
-              }
-              className="w-full border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-100 py-2 px-3 focus:ring-primary focus:border-primary"
-            >
-              {CUSTOMER_RATING_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : (
-          <div>
-            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">
-              تقييم العميل
-            </label>
-            <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40">
-              <CustomerRatingBadge
-                rating={order.customerRating || (order as any).customer?.customerRating}
-                orderNumber={order.orderNumber}
-                customerId={order.customerId || (order as any).customer?.id}
-                deliveryRate={(order as any).customer?.deliveryRate}
-                totalDelivered={(order as any).customer?.totalDelivered}
-                totalAttempts={(order as any).customer?.totalOrdersCount}
-                interactive={true}
-                variant="badge"
-                size="sm"
-                onRatingChange={(newRating) => {
-                  if (setEditForm) {
-                    setEditForm((prev: any) => ({ ...prev, customerRating: newRating }));
-                  }
-                  onCustomerRatingChange?.(newRating);
-                  onOrderUpdated?.();
-                }}
-              />
-              <span className="text-xs text-slate-400 dark:text-slate-500">
-                انقر لتعديل التقييم
-              </span>
-            </div>
-          </div>
-        )}
         <div>
           <label className="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-1">
             {t("orderDetails.nameLabel")}

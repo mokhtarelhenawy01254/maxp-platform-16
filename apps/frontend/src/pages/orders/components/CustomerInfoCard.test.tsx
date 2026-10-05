@@ -284,7 +284,7 @@ describe("CustomerInfoCard notes and custom fields behavior", () => {
     expect(apiClient.get).toHaveBeenCalledTimes(1);
   });
 
-  it("renders interactive customer rating in card view mode and allows triggering change callback", () => {
+  it("renders automated customer rating badge in card header", () => {
     const onRatingChange = jest.fn();
     render(
       <MemoryRouter>
@@ -296,8 +296,8 @@ describe("CustomerInfoCard notes and custom fields behavior", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText("تقييم العميل")).toBeInTheDocument();
     const ratingButtons = screen.getAllByRole("button", { name: /تقييم العميل/i });
     expect(ratingButtons.length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("جيد")).toBeInTheDocument();
   });
 });

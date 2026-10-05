@@ -561,11 +561,12 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
         }}
         disabled={isUpdating || isRecalculating}
         className={`group inline-flex items-center font-semibold rounded-md border select-none transition-all duration-150 active:scale-97 cursor-pointer hover:shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 ${sizeClasses} ${healthInfo.badgeClass}`}
-        title={`مؤشر صحة العميل: ${healthInfo.formattedScore}/10 — ${healthInfo.diagnosis} (انقر للتفاصيل)`}
-        aria-label={`تقييم العميل: ${healthInfo.formattedScore}`}
+        title={`مؤشر صحة العميل الآلي: ${currentOption.label} — ${healthInfo.formattedScore}/10 — ${healthInfo.diagnosis} (انقر لعرض التحليل)`}
+        aria-label={`تقييم العميل الآلي: ${currentOption.label} (${healthInfo.formattedScore})`}
         aria-expanded={isMenuOpen}
       >
-        <span className="tabular-nums font-semibold tracking-tight">
+        <span>{currentOption.shortLabel}</span>
+        <span className="tabular-nums font-mono text-[10px] opacity-75">
           {healthInfo.formattedScore}
         </span>
         <InfoOutlineIcon
@@ -585,7 +586,7 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
           <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
             <div className="min-w-0">
               <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <span>تقييم العملاء</span>
+                <span>تقييم العميل الآلي</span>
                 <span className="text-[10px] font-mono font-medium text-slate-400">HEALTH SCORE</span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
@@ -648,37 +649,9 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
             </div>
           </div>
 
-          {/* Quick Manual Override Options */}
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
-            <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 px-1">
-              تعديل يدوي للتصنيف:
-            </div>
-            <div className="grid grid-cols-2 gap-1">
-              {CUSTOMER_RATING_OPTIONS.slice(0, 4).map((opt) => {
-                const isSelected = opt.value === currentRating;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    disabled={isUpdating || isRecalculating}
-                    onClick={(e) => handleRatingSelect(e, opt.value)}
-                    className={`flex items-center justify-between px-2 py-1 text-[11px] font-medium rounded-md border transition-colors cursor-pointer ${
-                      isSelected
-                        ? "bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900"
-                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
-                    }`}
-                  >
-                    <span>{opt.shortLabel}</span>
-                    {isSelected && <CheckIcon className="w-3 h-3" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Recalculate Trigger */}
           {orderNumber && (
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 mt-2">
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 disabled={isUpdating || isRecalculating}
