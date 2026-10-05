@@ -899,6 +899,15 @@ const AiInboxLanding = React.lazy(
 const MedicalLanding = React.lazy(
   () => import("./pages/landing/MedicalLanding"),
 );
+const ClothingBundleDraftA = React.lazy(
+  () => import("./pages/landing/ClothingBundleDraftLanding").then((m) => ({ default: m.ClothingBundleDraftA })),
+);
+const ClothingBundleDraftB = React.lazy(
+  () => import("./pages/landing/ClothingBundleDraftLanding").then((m) => ({ default: m.ClothingBundleDraftB })),
+);
+const ClothingBundleDraftC = React.lazy(
+  () => import("./pages/landing/ClothingBundleDraftLanding").then((m) => ({ default: m.ClothingBundleDraftC })),
+);
 const PlatformLandingPreviewPage = React.lazy(
   () => import("./pages/landing/PlatformLandingPreviewPage"),
 );
@@ -2310,6 +2319,9 @@ const AppContent = () => {
             {activeLpSlugs && !activeLpSlugs.has("messaging") ? <Route path="/lp/messaging" element={<Navigate to="/" replace />} /> : <Route path="/lp/messaging" element={<MessagingLanding />} />}
             {activeLpSlugs && !activeLpSlugs.has("ai-inbox") ? <Route path="/lp/ai-inbox" element={<Navigate to="/" replace />} /> : <Route path="/lp/ai-inbox" element={<AiInboxLanding />} />}
             {activeLpSlugs && !activeLpSlugs.has("medical") ? <Route path="/lp/medical" element={<Navigate to="/" replace />} /> : <Route path="/lp/medical" element={<MedicalLanding />} />}
+            {activeLpSlugs && !activeLpSlugs.has("clothing-bundle-a") ? <Route path="/lp/clothing-bundle-a" element={<Navigate to="/" replace />} /> : <Route path="/lp/clothing-bundle-a" element={<ClothingBundleDraftA />} />}
+            {activeLpSlugs && !activeLpSlugs.has("clothing-bundle-b") ? <Route path="/lp/clothing-bundle-b" element={<Navigate to="/" replace />} /> : <Route path="/lp/clothing-bundle-b" element={<ClothingBundleDraftB />} />}
+            {activeLpSlugs && !activeLpSlugs.has("clothing-bundle-c") ? <Route path="/lp/clothing-bundle-c" element={<Navigate to="/" replace />} /> : <Route path="/lp/clothing-bundle-c" element={<ClothingBundleDraftC />} />}
             <Route
               path="/preview/platform-home/:variantId"
               element={<PlatformLandingPreviewPage />}
