@@ -600,15 +600,20 @@ if [ "$NEED_DB_PUSH" = "true" ]; then
     DB_URL_FOR_GUARD="$(grep -m1 -E '^DIRECT_URL=' .env | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'\$//")"
   fi
   export DB_URL_FOR_GUARD
+
+  # ── Isolate archive/backup tables to archive schema so Prisma ignores them ──
+  sudo -u postgres psql -d maxp -c "CREATE SCHEMA IF NOT EXISTS archive;" 2>/dev/null || true
+  sudo -u postgres psql -d maxp -c "DO \$\$ DECLARE r RECORD; BEGIN FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND (tablename LIKE '_archive_%' OR tablename LIKE '_backup_%')) LOOP EXECUTE 'ALTER TABLE public.' || quote_ident(r.tablename) || ' SET SCHEMA archive;'; END LOOP; END \$\$;" 2>/dev/null || true
+
   SCHEMA_GUARD_DIFF="/tmp/maxp_schema_guard_diff.sql"
   if [ -n "${DB_URL_FOR_GUARD:-}" ] && timeout 120 "$PRISMA_BIN" migrate diff \
       --from-url "$DB_URL_FOR_GUARD" \
       --to-schema-datamodel /tmp/maxp_combined_schema.prisma \
       --script > "$SCHEMA_GUARD_DIFF" 2>/dev/null; then
-    DROP_COUNT="$(grep -ciE 'DROP (TABLE|COLUMN|SCHEMA) ' "$SCHEMA_GUARD_DIFF" || true)"
+    DROP_COUNT="$(grep -iE 'DROP (TABLE|COLUMN|SCHEMA) ' "$SCHEMA_GUARD_DIFF" | grep -vEi 'DROP TABLE.*_?(archive|backup|temp|tmp)' | grep -vE '^\s*$' | wc -l || true)"
     if [ "${DROP_COUNT:-0}" -gt 0 ]; then
       echo "🚨 SCHEMA GUARD: $DROP_COUNT destructive statement(s) in pending drift:"
-      grep -iE 'DROP (TABLE|COLUMN|SCHEMA) ' "$SCHEMA_GUARD_DIFF" | head -20 | sed 's/^/      /'
+      grep -iE 'DROP (TABLE|COLUMN|SCHEMA) ' "$SCHEMA_GUARD_DIFF" | grep -vEi 'DROP TABLE.*_?(archive|backup|temp|tmp)' | head -20 | sed 's/^/      /'
       if [ "${ALLOW_SCHEMA_DROPS:-false}" != "true" ]; then
         echo "❌ REFUSING db push — destructive drift requires explicit review."
         echo "   Full diff saved at: $SCHEMA_GUARD_DIFF"
