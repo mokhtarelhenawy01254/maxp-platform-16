@@ -119,7 +119,7 @@ describe("CustomerRatingBadge - 2026 Customer Health Score Standards", () => {
     fireEvent.click(trigger);
 
     // Health Score modal header and telemetry should be displayed
-    expect(screen.getByText("مؤشر صحة العميل")).toBeInTheDocument();
+    expect(screen.getByText("تقييم العملاء")).toBeInTheDocument();
     expect(screen.getByText("HEALTH SCORE")).toBeInTheDocument();
     expect(screen.getByText("ممتاز")).toBeInTheDocument();
     expect(screen.getByText("جيد")).toBeInTheDocument();

@@ -168,7 +168,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
               )}
               {columns.includes("customerRating") && (
                 <th className={`${headerPadding} whitespace-nowrap text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
-                  HEALTH SCORE
+                  {t("orders.customerRating", "تقييم العملاء")}
                 </th>
               )}
               {columns.includes("amount") && (

@@ -585,7 +585,7 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
           <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
             <div className="min-w-0">
               <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <span>مؤشر صحة العميل</span>
+                <span>تقييم العملاء</span>
                 <span className="text-[10px] font-mono font-medium text-slate-400">HEALTH SCORE</span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">

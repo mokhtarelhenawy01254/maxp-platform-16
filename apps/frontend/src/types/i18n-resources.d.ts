@@ -14168,6 +14168,7 @@ declare module 'react-i18next' {
         deleteSelectedPermanently: string;
         processing2: string;
         customer: string;
+        customerRating: string;
         amount: string;
         status: string;
         payment: string;
