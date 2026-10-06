@@ -3656,6 +3656,14 @@ const taskController = {
         });
       }
     } catch (error) {
+      if (error && error.name === "TimerStopError" && [403, 404].includes(error.statusCode)) {
+        if (!res.headersSent) {
+          return res
+            .status(error.statusCode)
+            .json({ success: false, error: error.message, code: error.code });
+        }
+        return;
+      }
       console.error("Error stopping time tracking:", error);
       if (!res.headersSent) {
         res

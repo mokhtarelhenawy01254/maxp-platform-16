@@ -1,6 +1,15 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const socketService = require('./socketService');
 
+class TimerStopError extends Error {
+  constructor(message, statusCode, code) {
+    super(message);
+    this.name = 'TimerStopError';
+    this.statusCode = statusCode;
+    this.code = code;
+  }
+}
+
 /**
  * ⏱️ TaskTimerService
  * خدمة إدارة مؤقتات مهام العمل والربط الحتمي مع الحضور والانصراف ومواعيد الورديات.
@@ -143,17 +152,22 @@ class TaskTimerService {
       String(actingUserRole || '').toUpperCase()
     );
 
-    const where = isManagerOrAdmin
-      ? { id: entryId, companyId, isRunning: true }
-      : { id: entryId, userId: actingUserId, companyId, isRunning: true };
-
+    // Look up by id+company only, then decide 404 vs 403 explicitly
     const entry = await prisma.timeEntry.findFirst({
-      where,
+      where: { id: entryId, companyId },
       include: { task: { select: { id: true, title: true } } },
     });
 
-    if (!entry) {
-      throw new Error('سجل الوقت غير موجود أو متوقف بالفعل أو غير مصرح لك بإيقافه');
+    if (!entry || !entry.isRunning) {
+      throw new TimerStopError(
+        !entry ? 'سجل الوقت غير موجود' : 'سجل الوقت متوقف بالفعل',
+        404,
+        !entry ? 'TIME_ENTRY_NOT_FOUND' : 'TIME_ENTRY_ALREADY_STOPPED'
+      );
+    }
+
+    if (!isManagerOrAdmin && entry.userId !== actingUserId) {
+      throw new TimerStopError('غير مصرح لك بإيقاف هذا المؤقت', 403, 'TIME_ENTRY_FORBIDDEN');
     }
 
     const stopTime = customEndTime ? new Date(customEndTime) : new Date();
@@ -257,3 +271,4 @@ class TaskTimerService {
 }
 
 module.exports = new TaskTimerService();
+module.exports.TimerStopError = TimerStopError;

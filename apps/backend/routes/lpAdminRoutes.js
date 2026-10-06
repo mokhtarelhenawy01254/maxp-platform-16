@@ -14,6 +14,35 @@ const SEED_PAGES = [
   { slug: 'medical', title: 'النظام الطبي — الباقة الطبية الشاملة', componentName: 'MedicalLanding', sortOrder: 5, bundleSlug: 'medical-bundle', activationType: 'both' },
 ];
 
+// "updatedAt"/"createdAt" are passed explicitly: when lp_pages is (re)created by
+// `prisma db push`, `@updatedAt` has NO database default, so omitting it raises
+// 23502 NOT NULL violations. Same for activationType (nullable in Prisma, but
+// we never want null there).
+function buildSeedUpsertSql() {
+  return `INSERT INTO "lp_pages" ("id","slug","title","componentName","sortOrder","isActive","bundleSlug","activationType","createdAt","updatedAt")
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+           ON CONFLICT ("slug") DO UPDATE SET
+             "title" = EXCLUDED."title",
+             "componentName" = EXCLUDED."componentName",
+             "sortOrder" = EXCLUDED."sortOrder",
+             "bundleSlug" = EXCLUDED."bundleSlug",
+             "activationType" = EXCLUDED."activationType",
+             "updatedAt" = CURRENT_TIMESTAMP`;
+}
+
+function buildSeedUpsertParams(p) {
+  return [
+    `lp-seed-${p.slug}`,
+    p.slug,
+    p.title,
+    p.componentName,
+    Number.isFinite(p.sortOrder) ? p.sortOrder : 0,
+    true,
+    p.bundleSlug ?? null,
+    p.activationType || 'both',
+  ];
+}
+
 let ensureTablePromise = null;
 
 async function ensureLpPagesTable(prisma) {
@@ -41,17 +70,7 @@ async function ensureLpPagesTable(prisma) {
       `);
 
       for (const p of SEED_PAGES) {
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO "lp_pages" ("id","slug","title","componentName","sortOrder","isActive","bundleSlug","activationType")
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-           ON CONFLICT ("slug") DO UPDATE SET
-             "title" = EXCLUDED."title",
-             "componentName" = EXCLUDED."componentName",
-             "sortOrder" = EXCLUDED."sortOrder",
-             "bundleSlug" = EXCLUDED."bundleSlug",
-             "activationType" = EXCLUDED."activationType"`,
-          `lp-seed-${p.slug}`, p.slug, p.title, p.componentName, p.sortOrder, true, p.bundleSlug, p.activationType,
-        );
+        await prisma.$executeRawUnsafe(buildSeedUpsertSql(), ...buildSeedUpsertParams(p));
       }
     })().catch((err) => {
       ensureTablePromise = null;
@@ -189,4 +208,8 @@ adminRouter.patch('/:id', authenticateToken, requireRole(['SUPER_ADMIN']), async
   }
 });
 
-module.exports = { publicRouter, adminRouter };
+module.exports = {
+  publicRouter,
+  adminRouter,
+  __test__: { SEED_PAGES, buildSeedUpsertSql, buildSeedUpsertParams, ensureLpPagesTable },
+};
