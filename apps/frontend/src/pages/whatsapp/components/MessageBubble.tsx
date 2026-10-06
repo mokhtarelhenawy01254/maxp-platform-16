@@ -318,7 +318,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
               ) : (
                 <div
                   key={btn.id || i}
-                  className="flex items-center justify-center rounded-lg border border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] bg-[var(--whatsapp-surface-muted)] px-3 py-2 text-center text-sm font-semibold text-[color:var(--color-foreground)]"
+                  title="زر تفاعلي مخصص للعميل للضغط عليه داخل تطبيق واتساب على هاتفه"
+                  className="flex items-center justify-center rounded-lg border border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] bg-[var(--whatsapp-surface-muted)] px-3 py-2 text-center text-sm font-semibold text-[color:var(--color-foreground)] select-none opacity-90 cursor-default"
                 >
                   {btn.text}
                 </div>

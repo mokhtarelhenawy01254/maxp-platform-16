@@ -107,9 +107,94 @@ const WhatsAppInteractionService = {
         }
 
         // 4. 🚨 PRODUCTION-FIX: أزرار QUICK_REPLY من قوالب الميتا ترسل الـ payload نصياً
+        // 4. 🚨 PRODUCTION-FIX: أزرار استعلام وتفاصيل الطلب ("تفاصيل الطلب" / "تتبع الطلب")
+        if (this._isOrderDetailsRequest(id)) {
+            const prisma = getSharedPrismaClient();
+            let order = null;
+
+            if (contextMessageId) {
+                try {
+                    const originalMsg = await prisma.whatsAppMessage.findFirst({
+                        where: { messageId: contextMessageId, remoteJid, sessionId },
+                        select: { interactiveData: true, content: true }
+                    });
+                    if (originalMsg) {
+                        const parsed = typeof originalMsg.interactiveData === 'string'
+                            ? JSON.parse(originalMsg.interactiveData)
+                            : originalMsg.interactiveData;
+                        const tplBody = parsed?.templateBody || parsed?.content || originalMsg.content || '';
+                        const orderMatch = String(tplBody).match(/ORD-\d{6}-\d{3}/) || String(tplBody).match(/ORD-[A-Za-z0-9-]+/);
+                        if (orderMatch) {
+                            order = await prisma.order.findFirst({
+                                where: { orderNumber: orderMatch[0], companyId },
+                                include: { orderItems: { include: { product: true } } }
+                            });
+                        }
+                    }
+                } catch (ctxErr) {
+                    console.error(`⚠️ [INTERACTION] Failed to resolve order details from context: ${ctxErr.message}`);
+                }
+            }
+
+            if (!order) {
+                const rawDigits = remoteJid.split('@')[0].replace(/\D/g, '');
+                const phoneCandidates = [rawDigits];
+                if (rawDigits.startsWith('20') && rawDigits.length === 12) {
+                    phoneCandidates.push('0' + rawDigits.slice(2));
+                    phoneCandidates.push(rawDigits.slice(2));
+                    phoneCandidates.push('+' + rawDigits);
+                } else if (rawDigits.startsWith('0') && rawDigits.length === 11) {
+                    phoneCandidates.push('2' + rawDigits);
+                    phoneCandidates.push('+2' + rawDigits);
+                }
+                order = await prisma.order.findFirst({
+                    where: { companyId, customerPhone: { in: phoneCandidates } },
+                    orderBy: { createdAt: 'desc' },
+                    include: { orderItems: { include: { product: true } } }
+                });
+            }
+
+            if (order) {
+                const statusMapAr = {
+                    PENDING: 'قيد الانتظار',
+                    CONFIRMED: 'مؤكد وجاري التجهيز ✅',
+                    PROCESSING: 'قيد التجهيز في المخزن 📦',
+                    SHIPPED: 'تم الشحن وهو في الطريق إليك 🚚',
+                    OUT_FOR_DELIVERY: 'مع المندوب للتسليم اليوم 🛵',
+                    DELIVERED: 'تم التسليم بنجاح ✨',
+                    CANCELLED: 'ملغي ❌'
+                };
+                const statusLabel = statusMapAr[order.status] || order.status;
+                let itemsSummary = '';
+                if (Array.isArray(order.orderItems) && order.orderItems.length > 0) {
+                    itemsSummary = order.orderItems.map((it, idx) => {
+                        const color = it.productColor || it.color || '';
+                        const size = it.productSize || it.size || '';
+                        let itemDesc = `${idx + 1}. ${it.product?.name || it.productName || 'منتج'}`;
+                        if (color) itemDesc += ` | اللون: ${color}`;
+                        if (size) itemDesc += ` | المقاس: ${size}`;
+                        itemDesc += ` | الكمية: ${it.quantity || 1}`;
+                        return itemDesc;
+                    }).join('\n');
+                }
+
+                const replyText = `أهلاً بحضرتك يا ${order.customerName || 'عميلنا العزيز'} 👋\n\n📦 تفاصيل طلبك رقم ${order.orderNumber}:\n• الحالة: ${statusLabel}\n• الإجمالي: ${order.total} ${order.currency || 'EGP'}${itemsSummary ? '\n\n📋 محتويات الطلب:\n' + itemsSummary : ''}\n\nنحن بخدمتك دائماً لأي استفسار 🙏`;
+
+                try {
+                    const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
+                    await WhatsAppMessageHandler.sendText(sessionId, remoteJid, replyText);
+                    console.log(`✅ [INTERACTION] Sent order details response for ${order.orderNumber} to ${remoteJid}`);
+                    return { success: true, orderNumber: order.orderNumber };
+                } catch (sendErr) {
+                    console.error(`❌ [INTERACTION] Failed to send order details text: ${sendErr.message}`);
+                }
+            }
+        }
+
+        // 5. 🚨 PRODUCTION-FIX: أزرار QUICK_REPLY من قوالب الميتا ترسل الـ payload نصياً
         // (مثل "تأكيد الأوردر" / "إلغاء الأوردر") بدون ID وظيفي.
         // نحدد الطلب من الرسالة الأصلية (contextMessageId = wamid القالب) أو من
-        // أحدث طلب غير مؤكد مرسل لهذا الرقم.
+        // أحدث طلب مرسل لهذا الرقم.
         if (this._isQuickReplyText(id)) {
             const action = this._mapQuickReplyAction(id);
             if (!action) return null;
@@ -133,7 +218,7 @@ const WhatsAppInteractionService = {
                             ? JSON.parse(originalMsg.interactiveData)
                             : originalMsg.interactiveData;
                         const tplBody = parsed?.templateBody || parsed?.content || originalMsg.content || '';
-                        const orderMatch = String(tplBody).match(/ORD-\d{6}-\d{3}/);
+                        const orderMatch = String(tplBody).match(/ORD-\d{6}-\d{3}/) || String(tplBody).match(/ORD-[A-Za-z0-9-]+/);
                         if (orderMatch) {
                             order = await prisma.order.findFirst({
                                 where: { orderNumber: orderMatch[0], companyId }
@@ -145,7 +230,7 @@ const WhatsAppInteractionService = {
                 }
             }
 
-            // محاولة 2: أحدث طلب نشط (غير مؤكد/غير ملغي) لهذا الرقم
+            // محاولة 2: أحدث طلب لهذا الرقم (نشط أولاً ثم مؤكد)
             if (!order) {
                 const rawDigits = remoteJid.split('@')[0].replace(/\D/g, '');
                 const phoneCandidates = [rawDigits];
@@ -161,7 +246,7 @@ const WhatsAppInteractionService = {
                     where: {
                         companyId,
                         customerPhone: { in: phoneCandidates },
-                        status: { in: ['PENDING', 'CREATED', 'NEW'] }
+                        status: { in: ['PENDING', 'CREATED', 'NEW', 'CONFIRMED'] }
                     },
                     orderBy: { createdAt: 'desc' }
                 });
@@ -172,10 +257,38 @@ const WhatsAppInteractionService = {
                 return null;
             }
 
+            // إذا كان الطلب مؤكداً بالفعل وضغط العميل "تأكيد الطلب" مرة أخرى — نرسل طمأنة فورية
+            if (action.status === 'CONFIRMED' && order.status === 'CONFIRMED') {
+                const replyText = `أهلاً بحضرتك يا ${order.customerName || 'عميلنا العزيز'} ✨\nطلبك رقم ${order.orderNumber} مؤكد بالفعل وقيد التجهيز حالياً للبدء في الشحن فوراً! نسعد بخدمتك دائماً 🙏`;
+                try {
+                    const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
+                    await WhatsAppMessageHandler.sendText(sessionId, remoteJid, replyText);
+                    console.log(`✅ [INTERACTION] Re-assured customer for already confirmed order ${order.orderNumber}`);
+                } catch (sendErr) {
+                    console.error(`❌ [INTERACTION] Failed to send already-confirmed text: ${sendErr.message}`);
+                }
+                return { success: true, alreadyConfirmed: true };
+            }
+
             return await this.updateOrderStatus(order.id, companyId, action.status, action.note);
         }
 
         return null;
+    },
+
+    _isOrderDetailsRequest(id) {
+        const normalized = String(id || '').trim();
+        const detailWords = [
+            'تفاصيل الطلب',
+            'تفاصيل الاوردر',
+            'تتبع الطلب',
+            'تتبع الشحنة',
+            'حالة الطلب',
+            'order details',
+            'track order',
+            'track shipment'
+        ];
+        return detailWords.some(w => normalized === w || normalized.includes(w));
     },
 
     _isQuickReplyText(id) {
