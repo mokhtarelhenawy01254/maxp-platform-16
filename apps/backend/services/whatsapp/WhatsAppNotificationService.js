@@ -1227,9 +1227,12 @@ async function sendNotification(options) {
     }
 
     // 3. التحقق من ساعات الهدوء
-    // استثناء: الطلبات الحرجة ورسائل onboarding / الاشتراك الخاصة بالشركات تُرسل فوراً.
+    // استثناء: الطلبات الحرجة وتأكيدات الطلب الفورية ورسائل onboarding / الاشتراك الخاصة بالشركات تُرسل فوراً.
     const bypassQuietHours =
-      eventType === 'ORDER_CREATED' || COMPANY_LIFECYCLE_EVENT_TYPES.has(eventType);
+      eventType === 'ORDER_CREATED' ||
+      eventType === 'ORDER_CONFIRMED' ||
+      eventType === 'CONFIRMED' ||
+      COMPANY_LIFECYCLE_EVENT_TYPES.has(eventType);
 
     if (isQuietHours(settings) && !scheduleAt && !bypassQuietHours) {
       const nextAllowedSendAt = new Date();

@@ -147,10 +147,20 @@ const WhatsAppInteractionService = {
 
             // محاولة 2: أحدث طلب نشط (غير مؤكد/غير ملغي) لهذا الرقم
             if (!order) {
+                const rawDigits = remoteJid.split('@')[0].replace(/\D/g, '');
+                const phoneCandidates = [rawDigits];
+                if (rawDigits.startsWith('20') && rawDigits.length === 12) {
+                    phoneCandidates.push('0' + rawDigits.slice(2)); // e.g. 01151398486
+                    phoneCandidates.push(rawDigits.slice(2));       // e.g. 1151398486
+                    phoneCandidates.push('+' + rawDigits);
+                } else if (rawDigits.startsWith('0') && rawDigits.length === 11) {
+                    phoneCandidates.push('2' + rawDigits);
+                    phoneCandidates.push('+2' + rawDigits);
+                }
                 order = await prisma.order.findFirst({
                     where: {
                         companyId,
-                        customerPhone: remoteJid.split('@')[0],
+                        customerPhone: { in: phoneCandidates },
                         status: { in: ['PENDING', 'CREATED', 'NEW'] }
                     },
                     orderBy: { createdAt: 'desc' }
