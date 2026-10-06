@@ -35,6 +35,7 @@ import type { CartItem } from "../store/useCartStore";
 import type { Product } from "../hooks/useProducts";
 import { resolvePreviewThemeId } from "../preview/previewContext";
 import { isValidStorefrontPhone } from "../utils/phoneValidation";
+import { getVariantAttributeLabel } from "../utils/variants";
 
 interface PdpQuickOrderFormProps {
   product: Product & {
@@ -65,7 +66,7 @@ const translateAttributeKey = (key: string, prefersArabicCopy: boolean) => {
   const normalized = key.trim().toLowerCase();
 
   if (!prefersArabicCopy) {
-    return key;
+    return getVariantAttributeLabel(key, false) || key;
   }
 
   if (
@@ -80,7 +81,7 @@ const translateAttributeKey = (key: string, prefersArabicCopy: boolean) => {
     return "اللون";
   }
 
-  return key;
+  return getVariantAttributeLabel(key, true) || key;
 };
 
 const buildQuickOrderNote = ({

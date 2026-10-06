@@ -16,6 +16,7 @@ import {
   groupOrderQuantityOfferItems,
   type OrderQuantityOfferItem,
 } from '../utils/orderQuantityOffers';
+import { getVariantAttributeLabel } from '../utils/variants';
 import {
   localizeBiteRushAttributeRecord,
   localizeBiteRushName,
@@ -1502,7 +1503,7 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ section, settings
                                 key={`${group.groupId}-${item.id}-${key}`}
                                 className={orderAttributeChipClassName}
                               >
-                                {key}: {value}
+                                {getVariantAttributeLabel(key, prefersArabicCopy)}: {value}
                               </span>
                             ))}
                           </div>
@@ -1551,7 +1552,7 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ section, settings
                                 key={`single-${item.id}-${key}`}
                                 className={orderAttributeChipClassName}
                               >
-                                {key}: {value}
+                                {getVariantAttributeLabel(key, prefersArabicCopy)}: {value}
                               </span>
                             ))}
                           </div>
