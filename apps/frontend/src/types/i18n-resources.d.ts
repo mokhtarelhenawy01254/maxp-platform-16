@@ -14091,6 +14091,8 @@ declare module 'react-i18next' {
         orderList: string;
         orderDetails: string;
         orderNumber: string;
+        creator: string;
+        assignedTo: string;
         orderDate: string;
         orderStatus: string;
         orderTotal: string;

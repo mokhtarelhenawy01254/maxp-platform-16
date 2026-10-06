@@ -337,14 +337,33 @@ export function getVariantAttributes(
   const directAttributes = normalizeVariantAttributes(
     variant?.attributes ?? variant?.attributeValues,
   );
-  if (Object.keys(directAttributes).length > 0) {
-    return directAttributes;
-  }
-
   const metadataAttributes = parseVariantMetadata(variant?.metadata);
-  if (Object.keys(metadataAttributes).length > 0) {
-    return metadataAttributes;
+  const baseAttributes =
+    Object.keys(directAttributes).length > 0
+      ? directAttributes
+      : metadataAttributes;
+
+  if (variant?.name) {
+    const nameAttributes = parseVariantName(variant.name, variant.type);
+    if (Object.keys(baseAttributes).length > 0) {
+      if (Object.keys(nameAttributes).length > 0) {
+        const reconciled = { ...baseAttributes };
+        const nameParts = variant.name.split(/\s*[\/\-|–]\s*/).map((p) => p.trim());
+        for (const [key, val] of Object.entries(reconciled)) {
+          if (!nameParts.includes(val) && nameAttributes[key] && nameParts.includes(nameAttributes[key])) {
+            reconciled[key] = nameAttributes[key];
+          }
+        }
+        return reconciled;
+      }
+      return baseAttributes;
+    }
+    return nameAttributes;
   }
 
-  return parseVariantName(variant?.name, variant?.type);
+  if (Object.keys(baseAttributes).length > 0) {
+    return baseAttributes;
+  }
+
+  return {};
 }

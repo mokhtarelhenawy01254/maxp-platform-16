@@ -1267,6 +1267,14 @@ const OrderDetails: React.FC = () => {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500 dark:text-gray-400">
+                  منشئ الطلب
+                </span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  {order.createdByName || (order.createdBy ? "موظف" : (order.sourceType === "storefront" ? "متجر إلكتروني" : "—"))}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500 dark:text-gray-400">
                   {t("orderDetails.confirmedBy")}
                 </span>
                 <span>{confirmedByName || "—"}</span>

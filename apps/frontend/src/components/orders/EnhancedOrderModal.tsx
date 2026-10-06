@@ -608,6 +608,41 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                   </div>
                 </div>
 
+                {/* Team & Responsibility Info */}
+                <div className="p-3">
+                  <div className="flex items-center gap-1.5 pb-2 text-xs font-semibold text-foreground">
+                    <UserCircleIcon className="h-4 w-4 text-emerald-500" />
+                    <span>فريق العمل والمسؤولية</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
+                        منشئ الطلب
+                      </span>
+                      <span className="text-sm text-foreground font-semibold leading-tight inline-flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                        {order.createdByName || (order.createdBy ? "موظف" : (order.sourceType === "storefront" ? "متجر إلكتروني" : "غير محدد"))}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
+                        الموظف المسؤول
+                      </span>
+                      <div className="inline-flex items-center gap-1.5 flex-wrap">
+                        <span className="text-sm text-foreground font-semibold leading-tight inline-flex items-center gap-1.5">
+                          <span className={`h-2 w-2 rounded-full shrink-0 ${order.assignedTo ? "bg-blue-500" : "bg-slate-300 dark:bg-slate-600"}`} />
+                          {order.assignedToName || (order.assignedTo ? "موظف" : "غير موزع")}
+                        </span>
+                        {order.assignmentStrategy === "round_robin" && (
+                          <span className="text-[10px] font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.2 rounded border border-blue-200 dark:border-blue-800">
+                            توزيع آلي
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Order Items */}
                 <div className="p-3">
                   <div className="flex items-center gap-1.5 pb-2 text-xs font-semibold text-foreground">

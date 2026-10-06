@@ -171,6 +171,16 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                   {t("orders.customerRating", "تقييم العملاء")}
                 </th>
               )}
+              {columns.includes("creator") && (
+                <th className={`${headerPadding} whitespace-nowrap text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
+                  {t("orders.creator", "منشئ الطلب")}
+                </th>
+              )}
+              {columns.includes("assignedTo") && (
+                <th className={`${headerPadding} whitespace-nowrap text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
+                  {t("orders.assignedTo", "الموظف المسؤول")}
+                </th>
+              )}
               {columns.includes("amount") && (
                 <th className={`${headerPadding} whitespace-nowrap text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
                   {t("orders.amount")}
@@ -359,6 +369,20 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                               {toStandardDigits(order.customerPhone)}
                             </span>
                           )}
+                          <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex-wrap">
+                            <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300" title={`منشئ الطلب: ${order.createdByName || (order.createdBy ? 'موظف' : (order.sourceType === 'storefront' ? 'متجر إلكتروني' : '—'))}`}>
+                              <span className="font-normal text-slate-400 dark:text-slate-500">المنشئ:</span>
+                              <span className="font-medium text-slate-700 dark:text-slate-200">{order.createdByName || (order.createdBy ? "موظف" : (order.sourceType === "storefront" ? "متجر" : "—"))}</span>
+                            </span>
+                            <span className="text-slate-300 dark:text-slate-700">•</span>
+                            <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300" title={`الموظف المسؤول: ${order.assignedToName || (order.assignedTo ? 'موظف' : 'غير موزع')}`}>
+                              <span className="font-normal text-slate-400 dark:text-slate-500">المسؤول:</span>
+                              <span className="font-medium text-slate-700 dark:text-slate-200">{order.assignedToName || (order.assignedTo ? "موظف" : "غير موزع")}</span>
+                              {order.assignmentStrategy === "round_robin" && (
+                                <span className="text-[9px] text-blue-600 dark:text-blue-400 font-normal">(آلي)</span>
+                              )}
+                            </span>
+                          </div>
                         </div>
                       </td>
                     )}
@@ -381,6 +405,43 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                           variant="badge"
                           size="sm"
                         />
+                      </td>
+                    )}
+                    {columns.includes("creator") && (
+                      <td className={cellPadding}>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[150px]"
+                            title={order.createdByName || (order.createdBy ? "موظف" : (order.sourceType === "storefront" ? "متجر إلكتروني" : "—"))}
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                            <span className="truncate">
+                              {order.createdByName || (order.createdBy ? "موظف" : (order.sourceType === "storefront" ? "متجر إلكتروني" : "—"))}
+                            </span>
+                          </span>
+                        </div>
+                      </td>
+                    )}
+                    {columns.includes("assignedTo") && (
+                      <td className={cellPadding}>
+                        <div className="flex flex-col gap-0.5 items-start min-w-0">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[150px]"
+                              title={order.assignedToName || (order.assignedTo ? "موظف" : "غير موزع")}
+                            >
+                              <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${order.assignedTo ? "bg-blue-500" : "bg-slate-300 dark:bg-slate-600"}`} />
+                              <span className="truncate">
+                                {order.assignedToName || (order.assignedTo ? "موظف" : "غير موزع")}
+                              </span>
+                            </span>
+                          </div>
+                          {order.assignmentStrategy === "round_robin" && (
+                            <span className="inline-flex items-center text-[10px] font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.2 rounded border border-blue-200 dark:border-blue-800">
+                              توزيع آلي
+                            </span>
+                          )}
+                        </div>
                       </td>
                     )}
                     {columns.includes("amount") && (

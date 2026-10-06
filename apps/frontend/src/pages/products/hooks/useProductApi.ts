@@ -27,7 +27,7 @@ export const useProductApi = () => {
 
   const cleanVariantData = (
     variant: ProductVariant,
-    { canEditStock = true }: { canEditStock?: boolean } = {},
+    { canEditStock = true, attributes }: { canEditStock?: boolean; attributes?: ProductAttribute[] } = {},
   ): any => {
     let imagesStr = null;
     if (variant.images && Array.isArray(variant.images) && variant.images.length > 0) {
@@ -54,8 +54,36 @@ export const useProductApi = () => {
         variant.trackInventory !== undefined ? variant.trackInventory : true;
     }
 
+    const resolvedAttributeValues: Record<string, string> = {
+      ...(typeof variant.attributeValues === "object" && variant.attributeValues !== null
+        ? variant.attributeValues
+        : {}),
+    };
+
+    if (attributes && Array.isArray(attributes) && attributes.length > 0 && variant.name) {
+      const parts = variant.name
+        .split(/\s*[\/\-|–]\s*/)
+        .map((p) => p.trim())
+        .filter(Boolean);
+
+      for (const attr of attributes) {
+        const attrKey = attr.slug || attr.name;
+        if (!attrKey || !Array.isArray(attr.values)) continue;
+
+        for (const part of parts) {
+          const matchedVal = attr.values.find(
+            (v) => String(v).trim().toLowerCase() === part.toLowerCase(),
+          );
+          if (matchedVal !== undefined) {
+            resolvedAttributeValues[attrKey] = String(matchedVal).trim();
+            break;
+          }
+        }
+      }
+    }
+
     variantData.metadata = JSON.stringify({
-      attributeValues: variant.attributeValues || null,
+      attributeValues: Object.keys(resolvedAttributeValues).length > 0 ? resolvedAttributeValues : (variant.attributeValues || null),
       description: variant.description || null,
       dimensions: variant.dimensions || null,
       weight: variant.weight || null,
@@ -232,7 +260,7 @@ export const useProductApi = () => {
           if (variants.length > 0) {
             await Promise.all(
               variants.map(async (variant) => {
-                const cleanedVariant = cleanVariantData(variant, { canEditStock });
+                const cleanedVariant = cleanVariantData(variant, { canEditStock, attributes });
                 try {
                   if (variant.id) {
                     await apiClient.put(`/products/${id}/variants/${variant.id}`, cleanedVariant);
@@ -285,7 +313,7 @@ export const useProductApi = () => {
             await Promise.all(
               variants.map(async (variant) => {
                 try {
-                  const variantData = cleanVariantData(variant, { canEditStock });
+                  const variantData = cleanVariantData(variant, { canEditStock, attributes });
                   await productApi.createVariant(productId, variantData);
                 } catch (err) {
                   console.error(`Error creating variant:`, err);
