@@ -617,22 +617,10 @@ class OrderWorkflowService {
                 return;
             }
 
-            // 📦 Format order items (Enhanced logic)
-            let orderItemsText = '';
+            // 📦 Format order items (Enhanced logic with car model and custom specs)
+            const { formatOrderItemsText } = require('./whatsapp/orderItemFormatter');
             const items = order.items || order.orderItems || [];
-            if (items.length > 0) {
-                orderItemsText = '\n📋 تفاصيل الطلب:\n';
-                items.forEach((item, index) => {
-                    const color = item.productColor || item.color || (item.attributes ? item.attributes.color : '');
-                    const size = item.productSize || item.size || (item.attributes ? item.attributes.size : '');
-                    let itemDetails = `${index + 1}. ${item.productName || item.name}`;
-                    if (color) itemDetails += ` | اللون: ${color}`;
-                    if (size) itemDetails += ` | المقاس: ${size}`;
-                    itemDetails += ` | الكمية: ${item.quantity || 1}`;
-                    orderItemsText += itemDetails + '\n';
-                });
-                orderItemsText += '------------------------------\n';
-            }
+            const orderItemsText = formatOrderItemsText(order, items);
 
             // Prepare dynamic variables
             // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.2): نطاق التتبع من

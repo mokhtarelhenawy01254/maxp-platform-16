@@ -167,15 +167,11 @@ const WhatsAppInteractionService = {
                 const statusLabel = statusMapAr[order.status] || order.status;
                 let itemsSummary = '';
                 if (Array.isArray(order.orderItems) && order.orderItems.length > 0) {
+                    const { formatSingleOrderItem, extractCarModelFromNotes } = require('./orderItemFormatter');
+                    const notesCarModel = extractCarModelFromNotes(order.notes || order.customerNotes);
                     itemsSummary = order.orderItems.map((it, idx) => {
-                        const color = it.productColor || it.color || '';
-                        const size = it.productSize || it.size || '';
-                        let itemDesc = `${idx + 1}. ${it.product?.name || it.productName || 'منتج'}`;
-                        if (color) itemDesc += ` | اللون: ${color}`;
-                        if (size) itemDesc += ` | المقاس: ${size}`;
-                        itemDesc += ` | الكمية: ${it.quantity || 1}`;
-                        return itemDesc;
-                    }).join('\n');
+                        return formatSingleOrderItem(it, idx, order, notesCarModel);
+                    }).filter(Boolean).join('\n');
                 }
 
                 const replyText = `أهلاً بحضرتك يا ${order.customerName || 'عميلنا العزيز'} 👋\n\n📦 تفاصيل طلبك رقم ${order.orderNumber}:\n• الحالة: ${statusLabel}\n• الإجمالي: ${order.total} ${order.currency || 'EGP'}${itemsSummary ? '\n\n📋 محتويات الطلب:\n' + itemsSummary : ''}\n\nنحن بخدمتك دائماً لأي استفسار 🙏`;

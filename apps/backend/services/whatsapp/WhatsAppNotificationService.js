@@ -8,6 +8,7 @@ const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
 const WhatsAppManager = require('./WhatsAppManager');
 const axios = require('axios');
 const { isNonNotifiableStatus } = require('../../utils/orderStatusMeta');
+const { formatOrderItemsText } = require('./orderItemFormatter');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📋 القوالب الافتراضية (مستخرجة إلى templates/defaultTemplates.js — §5.1)
@@ -2358,31 +2359,11 @@ async function sendOrderCreatedNotification(order) {
   console.log(`[WHATSAPP-DEBUG] Phone: ${phone}`);
   if (!phone) return { success: false, reason: 'no_phone' };
 
-  // Format order items with color and size
-  // 🚨 PRODUCTION-FIX (131008): نقرأ order.orderItems (Prisma relation) أو order.items —
-  // مش items بس — وإلا رسالة "طلب جديد" تطلع بمتغير orderItems فاضي والقالب يفشل بـ 131008.
+  // Format order items with car model, curtain type, pieces, color, and size
   const createdItemsSource = Array.isArray(order.orderItems) && order.orderItems.length > 0
     ? order.orderItems
     : (Array.isArray(order.items) ? order.items : []);
-  let orderItemsText = '';
-  if (createdItemsSource.length > 0) {
-    orderItemsText = '\n📋 تفاصيل الطلب:\n';
-    createdItemsSource.forEach((item, index) => {
-      const color = item.productColor || item.color || item.attributes?.color;
-      const size = item.productSize || item.size || item.attributes?.size;
-      let itemDetails = `${index + 1}. ${item.productName || item.name || item.product?.name || 'منتج'}`;
-      if (color) itemDetails += ` | اللون: ${color}`;
-      if (size) itemDetails += ` | المقاس: ${size}`;
-      itemDetails += ` | الكمية: ${item.quantity || 1}`;
-      orderItemsText += itemDetails + '\n';
-    });
-    // Add separator line after items
-    orderItemsText += '------------------------------\n';
-  } else {
-    // 🚨 PRODUCTION-FIX (131008): قيمة غير فاضية لمتغير orderItems في قالب "طلب جديد"
-    // — وإلا Meta Cloud بترفض بـ 131008 "Required parameter is missing".
-    orderItemsText = 'لا يوجد';
-  }
+  const orderItemsText = formatOrderItemsText(order, createdItemsSource);
 
   // Build tracking link
   // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.2): استخدم getCompanyBranding —
@@ -2555,35 +2536,11 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
   const phone = order.customerPhone || order.customer?.phone;
   if (!phone) return { success: false, reason: 'no_phone' };
 
-  // Format order items with color and size (Always include if available)
-  // 🚨 PRODUCTION-FIX: الطلب قد يأتي بــ order.orderItems (Prisma relation من
-  // updateOrderStatus) أو order.items (من مسارات أخرى). كان الكود يقرأ order.items
-  // فقط → الـ orderItemsText يبقى فاضي → قوالب بvariable إلزامي (orderItems) تفشل
-  // بـ Meta 131008 "Required parameter is missing".
+  // Format order items with car model, curtain type, pieces, color, and size
   const orderItemsSource = Array.isArray(order.orderItems) && order.orderItems.length > 0
     ? order.orderItems
     : (Array.isArray(order.items) ? order.items : []);
-
-  let orderItemsText = '';
-  if (orderItemsSource.length > 0) {
-    orderItemsText = '\n📋 تفاصيل الطلب:\n';
-    orderItemsSource.forEach((item, index) => {
-      const color = item.productColor || item.color || item.attributes?.color;
-      const size = item.productSize || item.size || item.attributes?.size;
-      let itemDetails = `${index + 1}. ${item.productName || item.name || item.product?.name || 'منتج'}`;
-      if (color) itemDetails += ` | اللون: ${color}`;
-      if (size) itemDetails += ` | المقاس: ${size}`;
-      itemDetails += ` | الكمية: ${item.quantity || 1}`;
-      orderItemsText += itemDetails + '\n';
-    });
-    // Add separator line after items
-    orderItemsText += '------------------------------\n';
-  } else {
-    // 🚨 PRODUCTION-FIX (131008): لو الأوردر مفيش فيه منتجات (أو items مش متعمّرة)،
-    // لازم نبعث قيمة غير فاضية لمتغير orderItems — وإلا Meta Cloud بترفض القالب
-    // بـ 131008 "Required parameter is missing" (القالب بيطلب orderItems إلزامي).
-    orderItemsText = 'لا يوجد';
-  }
+  const orderItemsText = formatOrderItemsText(order, orderItemsSource);
 
   console.log(`[WHATSAPP-STATUS] Phone: ${phone}`);
   console.log(`[WHATSAPP-STATUS] About to call sendNotification with event: ${statusConfig.event}`);
