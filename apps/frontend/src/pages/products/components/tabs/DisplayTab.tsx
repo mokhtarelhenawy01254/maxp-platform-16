@@ -191,14 +191,7 @@ export const DisplayTab: React.FC<DisplayTabProps> = ({
                               getVariantSettingKey(prev?.attributeColors, attr) || null;
 
                             const nextAttributeImages = { ...(prev?.attributeImages || {}) };
-                            if (val !== "thumbnails" && attributeImagesKey) {
-                              delete nextAttributeImages[attributeImagesKey];
-                            }
-
                             const nextAttributeColors = { ...(prev?.attributeColors || {}) };
-                            if (val !== "circles" && attributeColorsKey) {
-                              delete nextAttributeColors[attributeColorsKey];
-                            }
 
                             const nextStyles = { ...(prev?.styles || {}) };
                             if (val) {

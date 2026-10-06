@@ -2208,11 +2208,22 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
       return null;
     }
 
+    const normAttr = (val: unknown) =>
+      String(val || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[أإآ]/g, "ا")
+        .replace(/ة/g, "ه")
+        .replace(/ى/g, "ي")
+        .replace(/\s+/g, " ");
+
     return (
       product.productVariants.find((variantOption) => {
         const variantAttributes = getVariantAttributes(variantOption);
         return selectionEntries.every(
-          ([key, value]) => variantAttributes[key] === value,
+          ([key, value]) =>
+            variantAttributes[key] === value ||
+            normAttr(variantAttributes[key]) === normAttr(value),
         );
       }) || null
     );
@@ -2220,14 +2231,66 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
 
   const prevImagesRef = useRef<string[]>([]);
   const images = useMemo(() => {
+    const normAttr = (val: unknown) =>
+      String(val || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[أإآ]/g, "ا")
+        .replace(/ة/g, "ه")
+        .replace(/ى/g, "ي")
+        .replace(/\s+/g, " ");
+
+    const rawMeta = product?.metadata;
+    let parsedMeta: Record<string, any> | null = null;
+    if (typeof rawMeta === "string") {
+      try {
+        parsedMeta = JSON.parse(rawMeta);
+      } catch {
+        parsedMeta = null;
+      }
+    } else if (rawMeta && typeof rawMeta === "object") {
+      parsedMeta = rawMeta as Record<string, any>;
+    }
+
+    const attributeImages = parsedMeta?.variantSettings?.attributeImages;
+    const selectedAttributeImages: string[] = [];
+    if (
+      attributeImages &&
+      typeof attributeImages === "object" &&
+      selectionProductId === product?.id
+    ) {
+      const activeAttrValues = [
+        ...Object.values(selectionAttributes || {}),
+        ...Object.values(selectedVariant ? getVariantAttributes(selectedVariant) : {}),
+      ].filter(Boolean);
+
+      for (const imageMap of Object.values(attributeImages)) {
+        if (!imageMap || typeof imageMap !== "object") continue;
+        for (const val of activeAttrValues) {
+          const direct = (imageMap as Record<string, unknown>)[val];
+          if (typeof direct === "string" && direct.trim()) {
+            selectedAttributeImages.push(direct.trim());
+            continue;
+          }
+          const normVal = normAttr(val);
+          for (const [mapKey, mapUrl] of Object.entries(imageMap)) {
+            if (typeof mapUrl === "string" && mapUrl.trim() && normAttr(mapKey) === normVal) {
+              selectedAttributeImages.push(mapUrl.trim());
+            }
+          }
+        }
+      }
+    }
+
     const selectedVariantImages = selectedVariant
       ? buildStorefrontImageCandidates(
           (selectedVariant as { images?: unknown }).images,
           (selectedVariant as { galleryImages?: unknown }).galleryImages,
           selectedVariant.imageUrl,
           selectedVariant.image,
+          selectedAttributeImages,
         )
-      : [];
+      : buildStorefrontImageCandidates(selectedAttributeImages);
 
     const nextImages = buildStorefrontImageCandidates(
       selectedVariantImages,
@@ -2244,7 +2307,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
 
     prevImagesRef.current = nextImages;
     return nextImages;
-  }, [product?.images, selectedVariant]);
+  }, [product?.id, product?.images, product?.metadata, selectedVariant, selectionAttributes, selectionProductId]);
 
   const currency =
     storefrontSettings?.storefront?.settings?.currency ||

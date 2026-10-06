@@ -277,10 +277,23 @@ function parseVariantName(
     }
   }
 
-  const parts = trimmedName
+  let parts = trimmedName
     .split(/\s*\/\s*|\s*\|\s*|\s+[–-]\s+/)
     .map((part) => part.trim())
     .filter(Boolean);
+
+  if (parts.length === 1 && /[–-]/.test(parts[0])) {
+    const hyphenParts = parts[0]
+      .split(/\s*[–-]\s*/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    if (
+      hyphenParts.length === 2 &&
+      looksLikeSize(hyphenParts[0]) !== looksLikeSize(hyphenParts[1])
+    ) {
+      parts = hyphenParts;
+    }
+  }
 
   if (parts.length === 0) {
     return {};
@@ -360,6 +373,11 @@ export function getVariantAttributes(
             } else if (nameAttributes[key] && nameParts.includes(nameAttributes[key])) {
               reconciled[key] = nameAttributes[key];
             }
+          }
+        });
+        Object.entries(nameAttributes).forEach(([nKey, nVal]) => {
+          if (!reconciled[nKey] && nameParts.includes(nVal)) {
+            reconciled[nKey] = nVal;
           }
         });
         return reconciled;

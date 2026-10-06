@@ -40,7 +40,13 @@ export const useProductApi = () => {
       canEditStock = true,
       attributes,
       fallbackSortOrder = 0,
-    }: { canEditStock?: boolean; attributes?: ProductAttribute[]; fallbackSortOrder?: number } = {},
+      variantSettings,
+    }: {
+      canEditStock?: boolean;
+      attributes?: ProductAttribute[];
+      fallbackSortOrder?: number;
+      variantSettings?: any;
+    } = {},
   ): any => {
     let imagesStr = null;
     if (variant.images && Array.isArray(variant.images) && variant.images.length > 0) {
@@ -130,6 +136,34 @@ export const useProductApi = () => {
       }
     }
 
+    let resolvedVariantImage = variant.image || null;
+    if (!resolvedVariantImage && variantSettings?.attributeImages && typeof variantSettings.attributeImages === "object") {
+      const attrVals = Object.values(resolvedAttributeValues).filter(Boolean);
+      for (const imageMap of Object.values(variantSettings.attributeImages)) {
+        if (!imageMap || typeof imageMap !== "object") continue;
+        for (const val of attrVals) {
+          const direct = (imageMap as Record<string, any>)[val];
+          if (typeof direct === "string" && direct.trim()) {
+            resolvedVariantImage = direct.trim();
+            break;
+          }
+          const normVal = normalizeArabicValue(val);
+          for (const [mapKey, mapUrl] of Object.entries(imageMap)) {
+            if (typeof mapUrl === "string" && mapUrl.trim() && normalizeArabicValue(mapKey) === normVal) {
+              resolvedVariantImage = mapUrl.trim();
+              break;
+            }
+          }
+          if (resolvedVariantImage) break;
+        }
+        if (resolvedVariantImage) break;
+      }
+    }
+
+    if (!variantData.images && resolvedVariantImage) {
+      variantData.images = JSON.stringify([resolvedVariantImage]);
+    }
+
     variantData.metadata = JSON.stringify({
       attributeValues: Object.keys(resolvedAttributeValues).length > 0 ? resolvedAttributeValues : (variant.attributeValues || null),
       description: variant.description || null,
@@ -138,7 +172,7 @@ export const useProductApi = () => {
       shippingClass: variant.shippingClass || null,
       allowBackorders: variant.allowBackorders || null,
       lowStockThreshold: variant.lowStockThreshold || null,
-      image: variant.image || null,
+      image: resolvedVariantImage,
     });
 
     return variantData;
@@ -308,7 +342,12 @@ export const useProductApi = () => {
           if (variants.length > 0) {
             await Promise.all(
               variants.map(async (variant, idx) => {
-                const cleanedVariant = cleanVariantData(variant, { canEditStock, attributes, fallbackSortOrder: idx });
+                const cleanedVariant = cleanVariantData(variant, {
+                  canEditStock,
+                  attributes,
+                  fallbackSortOrder: idx,
+                  variantSettings,
+                });
                 try {
                   if (variant.id) {
                     await apiClient.put(`/products/${id}/variants/${variant.id}`, cleanedVariant);
@@ -361,7 +400,12 @@ export const useProductApi = () => {
             await Promise.all(
               variants.map(async (variant, idx) => {
                 try {
-                  const variantData = cleanVariantData(variant, { canEditStock, attributes, fallbackSortOrder: idx });
+                  const variantData = cleanVariantData(variant, {
+                    canEditStock,
+                    attributes,
+                    fallbackSortOrder: idx,
+                    variantSettings,
+                  });
                   await productApi.createVariant(productId, variantData);
                 } catch (err) {
                   console.error(`Error creating variant:`, err);

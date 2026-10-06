@@ -737,10 +737,23 @@ function parseVariantName(name, variantType) {
     }
   }
 
-  const parts = trimmedName
+  let parts = trimmedName
     .split(/\s*\/\s*|\s*\|\s*|\s+[–-]\s+/)
     .map((part) => part.trim())
     .filter(Boolean);
+
+  if (parts.length === 1 && /[–-]/.test(parts[0])) {
+    const hyphenParts = parts[0]
+      .split(/\s*[–-]\s*/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    if (
+      hyphenParts.length === 2 &&
+      looksLikeSize(hyphenParts[0]) !== looksLikeSize(hyphenParts[1])
+    ) {
+      parts = hyphenParts;
+    }
+  }
 
   if (parts.length === 0) {
     return {};
@@ -821,6 +834,11 @@ function resolveVariantAttributes(variant) {
             }
           }
         });
+        Object.entries(nameAttributes).forEach(([nKey, nVal]) => {
+          if (!reconciled[nKey] && nameParts.includes(nVal)) {
+            reconciled[nKey] = nVal;
+          }
+        });
         return reconciled;
       }
       return baseAttributes;
@@ -835,7 +853,50 @@ function resolveVariantAttributes(variant) {
   return {};
 }
 
-function formatPublicVariantResponse(variant, wooCommerceUrl) {
+function normalizeArabicLookupValue(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/\s+/g, ' ');
+}
+
+function resolveAttributeImageForVariant(attributes, productMetadata) {
+  const attributeImages = productMetadata?.variantSettings?.attributeImages;
+  if (!attributeImages || typeof attributeImages !== 'object') {
+    return null;
+  }
+
+  const attrValues = Object.values(attributes || {}).filter(Boolean);
+  if (attrValues.length === 0) {
+    return null;
+  }
+
+  for (const imageMap of Object.values(attributeImages)) {
+    if (!imageMap || typeof imageMap !== 'object') continue;
+    for (const val of attrValues) {
+      if (typeof imageMap[val] === 'string' && imageMap[val].trim()) {
+        return imageMap[val].trim();
+      }
+      const normVal = normalizeArabicLookupValue(val);
+      for (const [mapKey, mapUrl] of Object.entries(imageMap)) {
+        if (
+          typeof mapUrl === 'string' &&
+          mapUrl.trim() &&
+          normalizeArabicLookupValue(mapKey) === normVal
+        ) {
+          return mapUrl.trim();
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+function formatPublicVariantResponse(variant, wooCommerceUrl, productMetadata) {
   const variantMetadata = parseJsonRecord(variant.metadata);
   const attributes = resolveVariantAttributes(variant);
   const firstVariantImage =
@@ -850,8 +911,11 @@ function formatPublicVariantResponse(variant, wooCommerceUrl) {
           }
         })()
       : null);
+  const attributeImageFallback = resolveAttributeImageForVariant(attributes, productMetadata);
   const normalizedVariantImage = restoreWooMediaUrl(
-    sanitizePublicAssetUrl(variant.image || variantMetadata.image || firstVariantImage),
+    sanitizePublicAssetUrl(
+      variant.image || variantMetadata.image || firstVariantImage || attributeImageFallback,
+    ),
     wooCommerceUrl,
   );
 
@@ -904,13 +968,13 @@ function formatProductResponse(product, options = {}) {
     activeOnly: true,
     basePrice: parseFloat(product.price) || 0,
   });
+  const productMetadata = parseJsonRecord(product.metadata);
   const variants = (product.productVariants || []).map((variant) =>
-    formatPublicVariantResponse(variant, product.wooCommerceUrl),
+    formatPublicVariantResponse(variant, product.wooCommerceUrl, productMetadata),
   );
   const description = isSummary
     ? truncateProductDescription(product.description)
     : (product.description || '');
-  const productMetadata = parseJsonRecord(product.metadata);
   const allowBackorders = Boolean(product.allowBackorders || productMetadata.allowBackorders);
 
   const response = {

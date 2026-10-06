@@ -884,15 +884,68 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       }) || null
     );
   }, [product?.productVariants, selectedAttributes]);
+  const selectedAttributeImages = useMemo(() => {
+    const rawMeta = product?.metadata;
+    let parsedMeta: Record<string, any> | null = null;
+    if (typeof rawMeta === 'string') {
+      try {
+        parsedMeta = JSON.parse(rawMeta);
+      } catch {
+        parsedMeta = null;
+      }
+    } else if (rawMeta && typeof rawMeta === 'object') {
+      parsedMeta = rawMeta as Record<string, any>;
+    }
+
+    const attributeImages = parsedMeta?.variantSettings?.attributeImages;
+    if (!attributeImages || typeof attributeImages !== 'object') {
+      return [];
+    }
+
+    const normAttr = (val: unknown) =>
+      String(val || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي')
+        .replace(/\s+/g, ' ');
+
+    const activeAttrValues = [
+      ...Object.values(selectedAttributes || {}),
+      ...Object.values(selectedVariant ? getVariantAttributes(selectedVariant) : {}),
+    ].filter(Boolean);
+
+    const matches: string[] = [];
+    for (const imageMap of Object.values(attributeImages)) {
+      if (!imageMap || typeof imageMap !== 'object') continue;
+      for (const val of activeAttrValues) {
+        const direct = (imageMap as Record<string, unknown>)[val];
+        if (typeof direct === 'string' && direct.trim()) {
+          matches.push(direct.trim());
+          continue;
+        }
+        const normVal = normAttr(val);
+        for (const [mapKey, mapUrl] of Object.entries(imageMap)) {
+          if (typeof mapUrl === 'string' && mapUrl.trim() && normAttr(mapKey) === normVal) {
+            matches.push(mapUrl.trim());
+          }
+        }
+      }
+    }
+    return matches;
+  }, [product?.metadata, selectedAttributes, selectedVariant]);
+
   const selectedVariantGalleryImages = selectedVariant
     ? buildStorefrontImageCandidates(
         (selectedVariant as { images?: unknown }).images,
         (selectedVariant as { galleryImages?: unknown }).galleryImages,
         selectedVariant.imageUrl,
         selectedVariant.image,
+        selectedAttributeImages,
         product?.images,
       )
-    : [];
+    : buildStorefrontImageCandidates(selectedAttributeImages);
   const selectedPrimaryImage =
     selectedVariantGalleryImages[0] ||
     getPrimaryProductImage(selectedVariant as any) ||
