@@ -859,6 +859,15 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       return null;
     }
 
+    const normAttr = (val: unknown) =>
+      String(val || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي')
+        .replace(/\s+/g, ' ');
+
     return (
       variants.find((variant) => {
         const variantAttributes = getVariantAttributes(variant);
@@ -866,7 +875,11 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
 
         return (
           variantEntries.length === Object.keys(selectedAttributes).length &&
-          variantEntries.every(([key, value]) => selectedAttributes[key] === value)
+          variantEntries.every(
+            ([key, value]) =>
+              selectedAttributes[key] === value ||
+              normAttr(selectedAttributes[key]) === normAttr(value),
+          )
         );
       }) || null
     );

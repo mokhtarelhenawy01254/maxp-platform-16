@@ -458,6 +458,21 @@ const resolveColorValue = (option: string): string | null => {
   return partialMatch?.[1] ? applyToneModifier(partialMatch[1], normalized) : null;
 };
 
+const normalizeOptionKey = (value: string): string =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/\s+/g, ' ');
+
+const isOptionSelected = (selectedValue: string | undefined, option: string): boolean => {
+  if (!selectedValue) return false;
+  if (selectedValue === option) return true;
+  return normalizeOptionKey(selectedValue) === normalizeOptionKey(option);
+};
+
 const getOptionMatch = <T,>(
   source: Record<string, T> | undefined,
   option: string,
@@ -470,13 +485,22 @@ const getOptionMatch = <T,>(
     return source[option];
   }
 
-  const normalizedOption = option.trim().toLowerCase();
+  const directNormalizedOption = option.trim().toLowerCase();
+  const directMatch = Object.entries(source).find(
+    ([candidate]) => candidate.trim().toLowerCase() === directNormalizedOption,
+  );
+  if (directMatch !== undefined) {
+    return directMatch[1];
+  }
+
+  const arabicNormalizedOption = normalizeOptionKey(option);
   const matchedEntry = Object.entries(source).find(
-    ([candidate]) => candidate.trim().toLowerCase() === normalizedOption,
+    ([candidate]) => normalizeOptionKey(candidate) === arabicNormalizedOption,
   );
 
   return matchedEntry?.[1];
 };
+
 
 const VariantSelector: React.FC<VariantSelectorProps> = ({
   variants = [],
@@ -618,6 +642,11 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
         if (!acc[normalizedKey][value]) {
           acc[normalizedKey][value] = primaryVariantImage;
         }
+
+        const normalizedVal = normalizeOptionKey(value);
+        if (normalizedVal && !acc[normalizedKey][normalizedVal]) {
+          acc[normalizedKey][normalizedVal] = primaryVariantImage;
+        }
       });
 
       return acc;
@@ -650,14 +679,22 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
   }, [attributeKeys.length, variants.length]);
 
   const getOptionsForKey = (key: string) => {
-    const values = new Set<string>();
+    const seenNormalized = new Set<string>();
+    const options: string[] = [];
+
     variants.forEach((variant) => {
       const option = getVariantAttributes(variant)[key];
-      if (typeof option === 'string' && option.length > 0) {
-        values.add(option);
+      if (typeof option === 'string' && option.trim().length > 0) {
+        const trimmed = option.trim();
+        const normalized = normalizeOptionKey(trimmed);
+        if (!seenNormalized.has(normalized)) {
+          seenNormalized.add(normalized);
+          options.push(trimmed);
+        }
       }
     });
-    return Array.from(values);
+
+    return options;
   };
 
   const getOptionImage = (key: string, option: string) => {
@@ -799,7 +836,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                 aria-label={
                   prefersArabicCopy ? `اختر ${displayKey}` : `Select ${displayKey}`
                 }
-                value={selectedAttributes[key] || ''}
+                value={options.find((opt) => isOptionSelected(selectedAttributes[key], opt)) || selectedAttributes[key] || ''}
                 onChange={(event) => handleSelect(key, event.target.value)}
                 className={`w-full rounded-[var(--radius)] border border-border bg-background text-foreground shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 ${
                   isInlineCompact
@@ -825,7 +862,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                   className="flex w-full flex-wrap gap-2.5"
                 >
                   {options.map((option) => {
-                    const isSelected = selectedAttributes[key] === option;
+                    const isSelected = isOptionSelected(selectedAttributes[key], option);
                     return (
                       <button
                         key={option}
@@ -854,7 +891,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                   }`}
                 >
                   {options.map((option) => {
-                    const isSelected = selectedAttributes[key] === option;
+                    const isSelected = isOptionSelected(selectedAttributes[key], option);
                     return (
                       <label
                         key={option}
@@ -926,7 +963,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                 }
               >
                 {options.map((option) => {
-                  const isSelected = selectedAttributes[key] === option;
+                  const isSelected = isOptionSelected(selectedAttributes[key], option);
                   const thumbnailImage =
                     displayStyle === 'thumbnails' ? optionImages[option] || '' : '';
                   const resolvedColor = isColor ? getOptionColor(key, option) : null;

@@ -830,8 +830,20 @@ function resolveVariantAttributes(variant) {
 function formatPublicVariantResponse(variant, wooCommerceUrl) {
   const variantMetadata = parseJsonRecord(variant.metadata);
   const attributes = resolveVariantAttributes(variant);
+  const firstVariantImage =
+    (Array.isArray(variant.images) ? variant.images[0] : null) ||
+    (typeof variant.images === 'string'
+      ? (() => {
+          try {
+            const parsed = JSON.parse(variant.images);
+            return Array.isArray(parsed) ? parsed[0] : null;
+          } catch {
+            return null;
+          }
+        })()
+      : null);
   const normalizedVariantImage = restoreWooMediaUrl(
-    sanitizePublicAssetUrl(variant.image || variantMetadata.image),
+    sanitizePublicAssetUrl(variant.image || variantMetadata.image || firstVariantImage),
     wooCommerceUrl,
   );
 

@@ -39,19 +39,28 @@ interface ProductCardProps {
   imageFetchPriority?: 'high' | 'low' | 'auto';
 }
 
+const normalizeColorString = (str: string) =>
+  String(str || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/\s+/g, " ");
+
 const resolveNamedColorSwatch = (value: string) => {
-  const normalizedValue = value.trim().toLowerCase();
+  const normalizedValue = normalizeColorString(value);
 
   if (!normalizedValue) return "#f6ddd7";
-  if (normalizedValue.includes("أسود") || normalizedValue.includes("black")) return "#2f232d";
-  if (normalizedValue.includes("أبيض") || normalizedValue.includes("white")) return "#fff8f6";
-  if (normalizedValue.includes("أوف") || normalizedValue.includes("off")) return "#f7efe8";
+  if (normalizedValue.includes("اسود") || normalizedValue.includes("black")) return "#2f232d";
+  if (normalizedValue.includes("ابيض") || normalizedValue.includes("white")) return "#fff8f6";
+  if (normalizedValue.includes("اوف") || normalizedValue.includes("off")) return "#f7efe8";
   if (normalizedValue.includes("عنابي") || normalizedValue.includes("burgundy")) return "#7d3d4b";
   if (normalizedValue.includes("وردي") || normalizedValue.includes("pink")) return "#eaa3ae";
   if (normalizedValue.includes("بيج") || normalizedValue.includes("beige")) return "#d6b59a";
   if (normalizedValue.includes("بني") || normalizedValue.includes("brown")) return "#8b5e52";
-  if (normalizedValue.includes("أزرق") || normalizedValue.includes("blue")) return "#7f9cc7";
-  if (normalizedValue.includes("أخضر") || normalizedValue.includes("green")) return "#8cab8a";
+  if (normalizedValue.includes("ازرق") || normalizedValue.includes("blue")) return "#7f9cc7";
+  if (normalizedValue.includes("اخضر") || normalizedValue.includes("green")) return "#8cab8a";
 
   return "#f2d5cf";
 };
@@ -601,21 +610,49 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
       : isRtl
         ? 'قطعة هادئة تخدم أكثر من يوم من غير ما تفقد وضوحها.'
         : 'A calm piece built to work across more than one day.';
-  const carryColorOptions = Array.from(
-    new Set(
-      (product.productVariants || [])
-        .map((productVariant) =>
-          String(
-            productVariant.attributes?.['اللون'] ||
-              productVariant.attributes?.color ||
-              productVariant.attributes?.Color ||
-              productVariant.name ||
-              '',
-          ).trim(),
-        )
-        .filter(Boolean),
-    ),
-  ).slice(0, 3);
+  const carryColorOptions = (() => {
+    const seen = new Set<string>();
+    const options: string[] = [];
+
+    (product.productVariants || []).forEach((productVariant) => {
+      const attrValues = (productVariant as any).attributeValues;
+      const rawColor =
+        productVariant.attributes?.['اللون'] ||
+        productVariant.attributes?.color ||
+        productVariant.attributes?.Color ||
+        attrValues?.['اللون'] ||
+        attrValues?.color ||
+        attrValues?.Color ||
+        productVariant.name ||
+        '';
+
+      const colorStr = String(rawColor).trim();
+      if (!colorStr) return;
+
+      const parts = colorStr.split(/\s*[-/|,]\s*/).map((p) => p.trim()).filter(Boolean);
+      let detectedColor = colorStr;
+      if (parts.length > 1) {
+        const knownColors = ['ابيض', 'اسود', 'بيج', 'احمر', 'ازرق', 'اخضر', 'بني', 'رمادي', 'وردي', 'كحلي', 'اوف', 'عنابي', 'white', 'black', 'beige', 'red', 'blue', 'green', 'brown', 'gray', 'grey', 'pink', 'navy'];
+        const found = parts.find((p) => {
+          const norm = normalizeColorString(p);
+          return knownColors.some((kc) => norm.includes(kc));
+        });
+        if (found) {
+          detectedColor = found;
+        } else if (!/^\d+$/.test(parts[0])) {
+          detectedColor = parts[0];
+        }
+      }
+
+      const norm = normalizeColorString(detectedColor);
+      if (norm && !seen.has(norm)) {
+        seen.add(norm);
+        options.push(detectedColor);
+      }
+    });
+
+    return options.slice(0, 3);
+  })();
   const carrySizeOptions = Array.from(
     new Set(
       (product.productVariants || [])

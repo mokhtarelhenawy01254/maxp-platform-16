@@ -25,9 +25,22 @@ export const useProductApi = () => {
   const [success, setSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const normalizeArabicValue = (str: string) =>
+    String(str || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[أإآ]/g, "ا")
+      .replace(/ة/g, "ه")
+      .replace(/ى/g, "ي")
+      .replace(/\s+/g, " ");
+
   const cleanVariantData = (
     variant: ProductVariant,
-    { canEditStock = true, attributes }: { canEditStock?: boolean; attributes?: ProductAttribute[] } = {},
+    {
+      canEditStock = true,
+      attributes,
+      fallbackSortOrder = 0,
+    }: { canEditStock?: boolean; attributes?: ProductAttribute[]; fallbackSortOrder?: number } = {},
   ): any => {
     let imagesStr = null;
     if (variant.images && Array.isArray(variant.images) && variant.images.length > 0) {
@@ -45,7 +58,7 @@ export const useProductApi = () => {
       cost: variant.cost !== undefined ? variant.cost : null,
       images: imagesStr,
       isActive: variant.isActive !== undefined ? variant.isActive : true,
-      sortOrder: variant.sortOrder !== undefined ? variant.sortOrder : 0,
+      sortOrder: variant.sortOrder !== undefined ? variant.sortOrder : fallbackSortOrder,
     };
 
     if (canEditStock) {
@@ -71,8 +84,11 @@ export const useProductApi = () => {
         if (!attrKey || !Array.isArray(attr.values)) continue;
 
         for (const part of parts) {
+          const normalizedPart = normalizeArabicValue(part);
           const matchedVal = attr.values.find(
-            (v) => String(v).trim().toLowerCase() === part.toLowerCase(),
+            (v) =>
+              String(v).trim().toLowerCase() === part.toLowerCase() ||
+              normalizeArabicValue(String(v)) === normalizedPart,
           );
           if (matchedVal !== undefined) {
             resolvedAttributeValues[attrKey] = String(matchedVal).trim();
@@ -259,8 +275,8 @@ export const useProductApi = () => {
           // Update/Create variants in parallel
           if (variants.length > 0) {
             await Promise.all(
-              variants.map(async (variant) => {
-                const cleanedVariant = cleanVariantData(variant, { canEditStock, attributes });
+              variants.map(async (variant, idx) => {
+                const cleanedVariant = cleanVariantData(variant, { canEditStock, attributes, fallbackSortOrder: idx });
                 try {
                   if (variant.id) {
                     await apiClient.put(`/products/${id}/variants/${variant.id}`, cleanedVariant);
@@ -311,9 +327,9 @@ export const useProductApi = () => {
           const savedProduct = result.data || null;
           if (variants.length > 0 && productId) {
             await Promise.all(
-              variants.map(async (variant) => {
+              variants.map(async (variant, idx) => {
                 try {
-                  const variantData = cleanVariantData(variant, { canEditStock, attributes });
+                  const variantData = cleanVariantData(variant, { canEditStock, attributes, fallbackSortOrder: idx });
                   await productApi.createVariant(productId, variantData);
                 } catch (err) {
                   console.error(`Error creating variant:`, err);

@@ -446,5 +446,74 @@ describe('VariantSelector', () => {
     expect(container).toHaveClass('grid');
     expect(container).toHaveClass('grid-cols-5');
   });
+
+  it('deduplicates 3 sneaker colors (أبيض, أسود, بيج) with Arabic Alef variations and links each color to its exact image in saved order', () => {
+    const sneakerVariants = [
+      {
+        id: 'sneaker-white-41',
+        name: 'أبيض - 41',
+        image: '/uploads/products/sneaker-white.jpg',
+        attributeValues: { Color: 'أبيض', Size: '41' },
+      },
+      {
+        id: 'sneaker-white-42',
+        name: 'ابيض - 42',
+        image: '/uploads/products/sneaker-white.jpg',
+        attributeValues: { Color: 'ابيض', Size: '42' },
+      },
+      {
+        id: 'sneaker-black-41',
+        name: 'اسود - 41',
+        image: '/uploads/products/sneaker-black.jpg',
+        attributeValues: { Color: 'اسود', Size: '41' },
+      },
+      {
+        id: 'sneaker-beige-41',
+        name: 'بيج - 41',
+        image: '/uploads/products/sneaker-beige.jpg',
+        attributeValues: { Color: 'بيج', Size: '41' },
+      },
+    ];
+
+    render(
+      <StorefrontThemeProvider initialTheme={{ direction: 'rtl' }}>
+        <VariantSelector
+          variants={sneakerVariants as any}
+          selectedAttributes={{ Color: 'أبيض', Size: '41' }}
+          onChange={vi.fn()}
+          variantSettings={{
+            styles: { Color: 'thumbnails' },
+            attributeImages: {
+              اللون: {
+                أبيض: '/uploads/products/sneaker-white.jpg',
+                أسود: '/uploads/products/sneaker-black.jpg',
+                بيج: '/uploads/products/sneaker-beige.jpg',
+              },
+            },
+          }}
+        />
+      </StorefrontThemeProvider>,
+    );
+
+    const colorButtons = screen
+      .getAllByRole('button')
+      .filter((btn) => btn.getAttribute('aria-label')?.startsWith('اختر اللون '));
+
+    expect(colorButtons).toHaveLength(3);
+    expect(colorButtons.map((btn) => btn.getAttribute('aria-label'))).toEqual([
+      'اختر اللون أبيض',
+      'اختر اللون اسود',
+      'اختر اللون بيج',
+    ]);
+
+    const whiteImg = screen.getByRole('img', { name: 'اللون أبيض' });
+    const blackImg = screen.getByRole('img', { name: 'اللون اسود' });
+    const beigeImg = screen.getByRole('img', { name: 'اللون بيج' });
+
+    expect(whiteImg).toHaveAttribute('src', expect.stringContaining('/uploads/products/sneaker-white.jpg'));
+    expect(blackImg).toHaveAttribute('src', expect.stringContaining('/uploads/products/sneaker-black.jpg'));
+    expect(beigeImg).toHaveAttribute('src', expect.stringContaining('/uploads/products/sneaker-beige.jpg'));
+  });
 });
+
 
