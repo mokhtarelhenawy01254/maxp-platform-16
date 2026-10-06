@@ -124,6 +124,8 @@ const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUp
     ? {
         OR: [
           { order: { orderNumber: { contains: cleanSearch, mode: 'insensitive' } } },
+          { order: { customerName: { contains: cleanSearch, mode: 'insensitive' } } },
+          { order: { customerPhone: { contains: cleanSearch.replace(/\D/g, '') || cleanSearch, mode: 'insensitive' } } },
           { order: { customer: { firstName: { contains: cleanSearch, mode: 'insensitive' } } } },
           { order: { customer: { lastName: { contains: cleanSearch, mode: 'insensitive' } } } },
           { order: { customer: { phone: { contains: cleanSearch.replace(/\D/g, '') || cleanSearch, mode: 'insensitive' } } } },
@@ -462,6 +464,8 @@ const formatWorkspaceOrderRecord = (order, isGuest, assignedAt, assignedTo = nul
     discount: parseFloat((isGuest ? order.discountAmount : order.discount) || 0),
     status: order.status,
     createdAt: order.createdAt,
+    createdBy: order.createdBy || null,
+    createdByName: order.createdByName || null,
     assignedAt: assignedAt || order.assignedAt || null,
     assignedTo: assignedTo || order.assignedTo || null,
     assignedToName: assignedToName || null,
@@ -540,6 +544,8 @@ const getMyOrders = async (req, res) => {
           {
             OR: [
               { orderNumber: { contains: cleanSearch, mode: 'insensitive' } },
+              { customerName: { contains: cleanSearch, mode: 'insensitive' } },
+              { customerPhone: { contains: cleanDigits || cleanSearch, mode: 'insensitive' } },
               { customer: { firstName: { contains: cleanSearch, mode: 'insensitive' } } },
               { customer: { lastName: { contains: cleanSearch, mode: 'insensitive' } } },
               { customer: { phone: { contains: cleanDigits || cleanSearch, mode: 'insensitive' } } },

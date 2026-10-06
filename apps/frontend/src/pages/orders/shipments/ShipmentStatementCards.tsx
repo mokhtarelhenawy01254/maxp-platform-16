@@ -65,8 +65,8 @@ export const ShipmentStatementCards: React.FC<ShipmentStatementCardsProps> = ({
         const isTurbo = (s.shippingCompany?.providerKey || s.carrierType || "").toUpperCase() === "TURBO";
         const tracking = s.trackingNumber || s.externalShipmentId;
         const trackUrl = getCarrierTrackUrl(s.carrierType, tracking);
-        const customerName = s.order?.customer?.name || s.order?.customerName || "عميل غير محدد";
-        const customerPhone = s.order?.customer?.phone || s.order?.customerPhone;
+        const customerName = s.order?.customerName || s.order?.customer?.name || "عميل غير محدد";
+        const customerPhone = s.order?.customerPhone || s.order?.customer?.phone;
         const badge = getStatusBadge(s.status, s);
 
         return (

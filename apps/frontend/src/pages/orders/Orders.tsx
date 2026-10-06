@@ -2065,27 +2065,30 @@ const Orders: React.FC = () => {
   fetchOrdersRef.current = fetchOrders;
 
   const getCustomerDisplayName = (order: Order) => {
-    if (order.customer) {
-      const fullName =
-        `${order.customer.firstName} ${order.customer.lastName}`.trim();
-      if (
-        fullName !== "New Customer" &&
-        fullName !== "Customer Not Specified" &&
-        fullName !== "Customer"
-      ) {
-        return fullName;
-      }
+    const isPlaceholderName = (name?: string | null) => {
+      if (!name) return true;
+      const trimmed = name.trim();
+      return (
+        trimmed.length <= 1 ||
+        /^\d+$/.test(trimmed) ||
+        trimmed === "New Customer" ||
+        trimmed === "Customer Not Specified" ||
+        trimmed === "Customer" ||
+        trimmed === "عميل غير محدد" ||
+        trimmed === "غير محدد"
+      );
+    };
+
+    if (order.customerName && !isPlaceholderName(order.customerName)) {
+      return order.customerName.trim();
     }
 
-    if (
-      order.customerName &&
-      !order.customerName.match(/^\d+/) &&
-      order.customerName !== "New Customer" &&
-      order.customerName !== "Customer Not Specified" &&
-      order.customerName !== "Customer" &&
-      order.customerName.length > 2
-    ) {
-      return order.customerName;
+    if (order.customer) {
+      const fullName =
+        `${order.customer.firstName || ""} ${order.customer.lastName || ""}`.trim();
+      if (!isPlaceholderName(fullName)) {
+        return fullName;
+      }
     }
 
     if (order.customerName && order.customerName.match(/^\d+/)) {
