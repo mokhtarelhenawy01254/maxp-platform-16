@@ -780,6 +780,9 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
 
         const getButtonContainerClass = () => {
           if (isInlineCompact) {
+            if (!isNumericOrShortButtonOption && options.length >= 4) {
+              return 'flex flex-wrap gap-1.5 sm:gap-2';
+            }
             return `grid w-full ${inlineCompactOptionGridClass} max-w-[360px] gap-1.5 sm:gap-2`;
           }
           if (isNumericOrShortButtonOption) {

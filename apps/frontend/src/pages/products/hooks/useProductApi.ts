@@ -73,28 +73,60 @@ export const useProductApi = () => {
         : {}),
     };
 
-    if (attributes && Array.isArray(attributes) && attributes.length > 0 && variant.name) {
+    if (variant.name) {
       const parts = variant.name
         .split(/\s*[\/\-|–]\s*/)
         .map((p) => p.trim())
         .filter(Boolean);
 
-      for (const attr of attributes) {
-        const attrKey = attr.slug || attr.name;
-        if (!attrKey || !Array.isArray(attr.values)) continue;
+      if (attributes && Array.isArray(attributes) && attributes.length > 0) {
+        const variationAttrs = attributes.filter((a) => a.forVariations !== false);
+        for (const attr of attributes) {
+          const attrKey = attr.slug || attr.name;
+          if (!attrKey || !Array.isArray(attr.values)) continue;
 
-        for (const part of parts) {
-          const normalizedPart = normalizeArabicValue(part);
-          const matchedVal = attr.values.find(
-            (v) =>
-              String(v).trim().toLowerCase() === part.toLowerCase() ||
-              normalizeArabicValue(String(v)) === normalizedPart,
-          );
-          if (matchedVal !== undefined) {
-            resolvedAttributeValues[attrKey] = String(matchedVal).trim();
-            break;
+          for (const part of parts) {
+            const normalizedPart = normalizeArabicValue(part);
+            const matchedVal = attr.values.find(
+              (v) =>
+                String(v).trim().toLowerCase() === part.toLowerCase() ||
+                normalizeArabicValue(String(v)) === normalizedPart,
+            );
+            if (matchedVal !== undefined) {
+              resolvedAttributeValues[attrKey] = String(matchedVal).trim();
+              break;
+            }
           }
         }
+
+        if (parts.length === variationAttrs.length && parts.length > 0) {
+          variationAttrs.forEach((attr, idx) => {
+            const attrKey = attr.slug || attr.name;
+            if (!attrKey || !parts[idx]) return;
+            const currentVal = resolvedAttributeValues[attrKey];
+            if (!currentVal || !parts.includes(currentVal)) {
+              const normalizedPart = normalizeArabicValue(parts[idx]);
+              const matchedVal = (attr.values || []).find(
+                (v) =>
+                  String(v).trim().toLowerCase() === parts[idx].toLowerCase() ||
+                  normalizeArabicValue(String(v)) === normalizedPart,
+              );
+              resolvedAttributeValues[attrKey] = matchedVal !== undefined
+                ? String(matchedVal).trim()
+                : parts[idx];
+            }
+          });
+        }
+      }
+
+      const existingKeys = Object.keys(resolvedAttributeValues);
+      if (existingKeys.length > 0 && parts.length === existingKeys.length) {
+        existingKeys.forEach((key, idx) => {
+          const val = resolvedAttributeValues[key];
+          if (parts[idx] && (!val || !parts.includes(val))) {
+            resolvedAttributeValues[key] = parts[idx];
+          }
+        });
       }
     }
 

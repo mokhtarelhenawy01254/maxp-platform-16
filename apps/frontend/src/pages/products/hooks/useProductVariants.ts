@@ -112,7 +112,30 @@ export const useProductVariants = (
 
   const updateVariant = (index: number, field: keyof ProductVariant, value: any) => {
     setVariants((prev) =>
-      prev.map((variant, i) => (i === index ? { ...variant, [field]: value } : variant))
+      prev.map((variant, i) => {
+        if (i !== index) return variant;
+        const updated: ProductVariant = { ...variant, [field]: value };
+        if (field === "name" && typeof value === "string") {
+          const parts = value
+            .split(/\s*[\/\-|–]\s*/)
+            .map((p) => p.trim())
+            .filter(Boolean);
+          const currentAttrValues =
+            variant.attributeValues && typeof variant.attributeValues === "object"
+              ? { ...variant.attributeValues }
+              : {};
+          const attrKeys = Object.keys(currentAttrValues);
+          if (attrKeys.length > 0 && parts.length === attrKeys.length) {
+            attrKeys.forEach((key, idx) => {
+              if (parts[idx]) {
+                currentAttrValues[key] = parts[idx];
+              }
+            });
+            updated.attributeValues = currentAttrValues;
+          }
+        }
+        return updated;
+      })
     );
   };
 

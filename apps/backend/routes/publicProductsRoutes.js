@@ -807,12 +807,20 @@ function resolveVariantAttributes(variant) {
     if (Object.keys(baseAttributes).length > 0) {
       if (Object.keys(nameAttributes).length > 0) {
         const reconciled = { ...baseAttributes };
-        const nameParts = variant.name.split(/\s*[\/\-|–]\s*/).map((p) => p.trim());
-        for (const [key, val] of Object.entries(reconciled)) {
-          if (!nameParts.includes(val) && nameAttributes[key] && nameParts.includes(nameAttributes[key])) {
-            reconciled[key] = nameAttributes[key];
+        const nameParts = variant.name
+          .split(/\s*[\/\-|–]\s*/)
+          .map((p) => p.trim())
+          .filter(Boolean);
+        const entries = Object.entries(reconciled);
+        entries.forEach(([key, val], idx) => {
+          if (!nameParts.includes(val)) {
+            if (nameParts.length === entries.length && nameParts[idx]) {
+              reconciled[key] = nameParts[idx];
+            } else if (nameAttributes[key] && nameParts.includes(nameAttributes[key])) {
+              reconciled[key] = nameAttributes[key];
+            }
           }
-        }
+        });
         return reconciled;
       }
       return baseAttributes;
