@@ -28,6 +28,8 @@ interface RegisterData {
   promoCode?: string;
   businessSpecialtyId?: string;
   businessSpecialtySlug?: string;
+  landingBundle?: string;
+  utm?: Record<string, string>;
 }
 
 interface AuthResponse {

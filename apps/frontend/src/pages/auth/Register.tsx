@@ -244,6 +244,15 @@ const Register: React.FC = () => {
   const [searchParams] = useSearchParams();
   const partnerCode = searchParams.get("partner") || undefined;
   const theme = searchParams.get("theme") || undefined;
+  const landingBundle = searchParams.get("landingBundle") || undefined;
+  // utm_* captured by the server-level middleware (maxp_utm cookie) — sent
+  // back explicitly so the attribution survives even without cookies.
+  const utmKeys = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
+  const utm: Record<string, string> = {};
+  utmKeys.forEach((k) => {
+    const v = searchParams.get(k);
+    if (v) utm[k] = v;
+  });
 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -316,6 +325,8 @@ const Register: React.FC = () => {
         phone: formData.phone || undefined,
         partnerCode,
         businessSpecialtyId: formData.businessSpecialtyId || undefined,
+        landingBundle,
+        utm: Object.keys(utm).length > 0 ? utm : undefined,
       });
       const urlParams = new URLSearchParams(window.location.search);
       const redirectParam = urlParams.get("redirect");
