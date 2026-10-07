@@ -392,25 +392,6 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                         </span>
                       </div>
                     </div>
-
-                    {/* Row 3: Creator & Assigned Employee Attribution */}
-                    <div className="flex items-center justify-between gap-2 text-[10px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800/80 w-full min-w-0">
-                      <div className="flex items-center gap-1 min-w-0 truncate">
-                        <span className="text-slate-400 dark:text-slate-500 shrink-0">المنشئ:</span>
-                        <span className="font-medium text-slate-700 dark:text-slate-300 truncate">
-                          {order.createdByName || (order.createdBy ? "موظف" : (order.sourceType === "storefront" ? "متجر" : "—"))}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <span className="text-slate-400 dark:text-slate-500">المسؤول:</span>
-                        <span className="font-medium text-slate-700 dark:text-slate-300">
-                          {order.assignedToName || (order.assignedTo ? "موظف" : "غير موزع")}
-                        </span>
-                        {order.assignmentStrategy === "round_robin" && (
-                          <span className="text-[9px] text-blue-600 dark:text-blue-400 font-normal">(آلي)</span>
-                        )}
-                      </div>
-                    </div>
                   </>
                 )}
               </article>

@@ -14098,8 +14098,6 @@
     "orderList": "Order List",
     "orderDetails": "Order Details",
     "orderNumber": "Order Number",
-    "creator": "Order Creator",
-    "assignedTo": "Assigned Employee",
     "orderDate": "Order Date",
     "orderStatus": "Order Status",
     "orderTotal": "Order Total",

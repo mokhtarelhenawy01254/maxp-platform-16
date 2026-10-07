@@ -152,25 +152,6 @@ export interface Order {
   affiliateId?: string;
   affiliate?: AffiliateFilterOption;
   merchantOrder?: MerchantOrderScope;
-  createdBy?: string | null;
-  createdByName?: string | null;
-  createdByUser?: {
-    id: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    avatar?: string;
-  } | null;
-  assignedTo?: string | null;
-  assignedToName?: string | null;
-  assignedToUser?: {
-    id: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    avatar?: string;
-  } | null;
-  assignmentStrategy?: string | null;
 }
 
 type OrderStatus = string;
@@ -232,13 +213,6 @@ type RawOrder = {
   affiliateId?: string;
   affiliate?: AffiliateFilterOption;
   merchantOrder?: MerchantOrderScope;
-  createdBy?: string | null;
-  createdByName?: string | null;
-  createdByUser?: Order["createdByUser"];
-  assignedTo?: string | null;
-  assignedToName?: string | null;
-  assignedToUser?: Order["assignedToUser"];
-  assignmentStrategy?: string | null;
 };
 
 type SocketOrderUpdate = Partial<Order> & {
@@ -681,23 +655,6 @@ const transformOrder = (order: RawOrder): Order => {
     merchantOrder: order.merchantOrder,
     turboShipmentStatus: order.turboShipmentStatus || order.metadata?.turboShipmentStatus || undefined,
     turboTrackingNumber: order.turboTrackingNumber || order.metadata?.turboTrackingNumber || undefined,
-    createdBy: order.createdBy || order.createdByUser?.id || null,
-    createdByName:
-      order.createdByName ||
-      (order.createdByUser
-        ? `${order.createdByUser.firstName || ""}`.trim() + (order.createdByUser.lastName ? ` ${order.createdByUser.lastName}` : "") || order.createdByUser.email
-        : null) ||
-      null,
-    createdByUser: order.createdByUser || null,
-    assignedTo: order.assignedTo || order.assignedToUser?.id || null,
-    assignedToName:
-      order.assignedToName ||
-      (order.assignedToUser
-        ? `${order.assignedToUser.firstName || ""}`.trim() + (order.assignedToUser.lastName ? ` ${order.assignedToUser.lastName}` : "") || order.assignedToUser.email
-        : null) ||
-      null,
-    assignedToUser: order.assignedToUser || null,
-    assignmentStrategy: order.assignmentStrategy || null,
   };
 };
 
@@ -705,8 +662,6 @@ const ORDER_TABLE_COLUMNS = [
   "orderNumber",
   "customer",
   "customerRating",
-  "creator",
-  "assignedTo",
   "amount",
   "status",
   "payment",

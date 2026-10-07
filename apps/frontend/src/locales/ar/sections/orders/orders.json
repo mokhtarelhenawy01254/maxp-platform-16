@@ -4,8 +4,6 @@
   "orderList": "قائمة الطلبات",
   "orderDetails": "تفاصيل الطلب",
   "orderNumber": "رقم الطلب",
-  "creator": "منشئ الطلب",
-  "assignedTo": "الموظف المسؤول",
   "orderDate": "تاريخ الطلب",
   "orderStatus": "حالة الطلب",
   "orderTotal": "إجمالي الطلب",
