@@ -1018,6 +1018,24 @@ function registerIpcHandlers(): void {
     }
   });
 
+  ipcMain.handle('hr:get-my-advances', async () => {
+    try {
+      const result = await apiClient.getMyAdvances();
+      return { success: true, ...result };
+    } catch (err: any) {
+      return { success: false, error: err?.message };
+    }
+  });
+
+  ipcMain.handle('hr:create-advance-request', async (_, payload: any) => {
+    try {
+      const result = await apiClient.createAdvanceRequest(payload);
+      return result;
+    } catch (err: any) {
+      return { success: false, error: err?.message };
+    }
+  });
+
   ipcMain.handle('hr:my-performance-score', async () => {
     try {
       const result = await apiClient.getMyPerformanceScore();

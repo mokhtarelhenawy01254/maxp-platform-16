@@ -1068,6 +1068,53 @@ class MonitorApiClient {
     }
   }
 
+  async getMyAdvances(): Promise<{
+    requests: any[];
+    config?: any;
+    error?: string;
+  }> {
+    const base = this.serverUrl;
+    try {
+      const [resMy, resCfg] = await Promise.all([
+        axios.get(`${base}/api/v1/hr/advances/my`, {
+          headers: this.getAuthHeaders(),
+          timeout: 10_000,
+        }).catch(() => null),
+        axios.get(`${base}/api/v1/hr/advances/my-config`, {
+          headers: this.getAuthHeaders(),
+          timeout: 10_000,
+        }).catch(() => null),
+      ]);
+      return {
+        requests: resMy?.data?.requests ?? resMy?.data?.data ?? [],
+        config: resCfg?.data?.config ?? resCfg?.data?.data ?? null,
+      };
+    } catch (err: any) {
+      return { requests: [], error: err.message };
+    }
+  }
+
+  async createAdvanceRequest(data: {
+    amount: number;
+    reason: string;
+    repaymentType: string;
+    installmentsCount: number;
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    const base = this.serverUrl;
+    try {
+      const res = await axios.post(`${base}/api/v1/hr/advances`, data, {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      return { success: true, data: res.data?.request ?? res.data };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.response?.data?.error || err.response?.data?.message || err.message,
+      };
+    }
+  }
+
   async getMyPerformanceScore(): Promise<{
     success: boolean;
     data?: {

@@ -321,6 +321,7 @@ router.delete('/permissions/:requestId', verifyToken.authenticateToken, permissi
 // ═══════════════════════════════════════════════════════════════════════════════
 
 router.get('/performance/my-score', verifyToken.authenticateToken, hrController.getMyPerformanceScore);
+router.get('/performance/team-leaderboard', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'HR_MANAGER']), hrController.getTeamPerformanceLeaderboard);
 router.get('/performance-reviews/stats', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.getPerformanceStats);
 router.get('/performance-reviews', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.getPerformanceReviews);
 router.get('/performance-reviews/employee/:employeeId', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.getEmployeeReviews);

@@ -89,6 +89,8 @@ declare global {
       getMyPayrollSummary: () => Promise<{ success: boolean; payroll?: any; projection?: any; error?: string }>;
       getMyPermissionsSummary: () => Promise<{ success: boolean; stats?: any; requests?: any[]; leavesConfig?: any; error?: string }>;
       createPermissionRequest: (data: { type: string; date: string; durationMinutes: number; reason: string }) => Promise<{ success: boolean; data?: any; error?: string }>;
+      getMyAdvances: () => Promise<{ success: boolean; requests?: any[]; config?: any; error?: string }>;
+      createAdvanceRequest: (data: { amount: number; reason: string; repaymentType: string; installmentsCount: number }) => Promise<{ success: boolean; data?: any; error?: string }>;
       getMyPerformanceScore: () => Promise<{
         success: boolean;
         data?: {

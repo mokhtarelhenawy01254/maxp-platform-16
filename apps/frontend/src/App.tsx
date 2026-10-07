@@ -1591,6 +1591,9 @@ const SalaryHistory = React.lazy(() =>
 const PerformanceReviews = React.lazy(() =>
   import("./pages/hr").then((m) => ({ default: m.PerformanceReviews })),
 );
+const TeamPerformance360Page = React.lazy(
+  () => import("./pages/hr/TeamPerformance360Page"),
+);
 const Training = React.lazy(() =>
   import("./pages/hr").then((m) => ({ default: m.Training })),
 );
@@ -7596,6 +7599,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <PerformanceReviews />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/performance-360"
+                  element={
+                    <Layout>
+                      <TeamPerformance360Page />
                     </Layout>
                   }
                 />

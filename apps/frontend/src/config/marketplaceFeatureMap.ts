@@ -602,6 +602,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     routes: [
       { path: "/hr/assets", label: "العهد والأصول" },
       { path: "/hr/performance-reviews", label: "تقييم الأداء" },
+      { path: "/hr/performance-360", label: "لوحة تقييم الفريق 360°" },
       { path: "/hr/training", label: "التدريب" },
       { path: "/hr/rewards", label: "المكافآت" },
       { path: "/hr/warnings", label: "الإنذارات" },

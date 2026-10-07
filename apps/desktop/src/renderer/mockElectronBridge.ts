@@ -359,6 +359,35 @@ export function initMockElectronBridge() {
       },
     }),
 
+    getMyAdvances: async () => ({
+      success: true,
+      requests: [
+        {
+          id: 'adv-1',
+          amount: 1500,
+          reason: 'ظرف أسري طارئ',
+          repaymentType: 'INSTALLMENTS',
+          installmentsCount: 2,
+          status: 'APPROVED',
+          createdAt: '2026-10-01T10:00:00Z',
+        },
+      ],
+      config: {
+        maxAdvanceAmount: 3000,
+        maxInstallments: 6,
+      },
+    }),
+
+    createAdvanceRequest: async (data: any) => ({
+      success: true,
+      data: {
+        id: `adv-${Date.now()}`,
+        ...data,
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+      },
+    }),
+
     getMyPerformanceScore: async () => ({
       success: true,
       data: {

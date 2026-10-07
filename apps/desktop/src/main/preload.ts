@@ -161,6 +161,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('hr:my-permissions-summary'),
   createPermissionRequest: (data: any) =>
     ipcRenderer.invoke('hr:create-permission-request', data),
+  getMyAdvances: () =>
+    ipcRenderer.invoke('hr:get-my-advances'),
+  createAdvanceRequest: (data: any) =>
+    ipcRenderer.invoke('hr:create-advance-request', data),
   getMyPerformanceScore: () =>
     ipcRenderer.invoke('hr:my-performance-score'),
 

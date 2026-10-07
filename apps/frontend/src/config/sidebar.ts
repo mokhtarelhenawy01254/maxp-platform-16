@@ -1338,6 +1338,7 @@ export const getSidebarConfig = (
                 { to: '/hr/deductions', icon: Banknote, label: t('sidebar.deductions') },
                 { to: '/hr/benefits', icon: Banknote, label: t('sidebar.benefits') },
                 { to: '/hr/performance-reviews', icon: BarChart3, label: t('sidebar.performanceReviews') },
+                { to: '/hr/performance-360', icon: Trophy, label: 'لوحة تقييم الفريق 360°' },
                 { to: '/hr/training', icon: CheckCircle2, label: t('sidebar.training') },
                 { to: '/hr/feedback', icon: FileText, label: t('sidebar.feedback') },
                 { to: '/hr/warnings', icon: FileText, label: t('sidebar.warnings') },

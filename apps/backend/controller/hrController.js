@@ -4253,11 +4253,48 @@ async function getMyPerformanceScore(req, res) {
     const punctualityRate = totalDays > 0 ? ((totalDays - lateDays) / totalDays) * 100 : 100;
     const attendanceScore = Math.max(30, Math.min(100, Math.round(punctualityRate)));
 
+    // جلب ملف الموظف للربط مع الأهداف والمراقبة
+    const employee = await dbClient.employee.findFirst({
+      where: {
+        OR: [
+          { userId },
+          ...(companyId ? [{ companyId, userId }] : [])
+        ]
+      },
+      select: { id: true }
+    });
+
     // 4. المحور الرابع: التركيز والنشاط الرقمي (Desktop Focus & Productivity) - 20%
-    const focusScore = 88;
+    let focusScore = 88;
+    const monitorSummaries = await dbClient.monitorDailySummary.findMany({
+      where: {
+        ...(companyId ? { companyId } : {}),
+        employeeId: { in: [employee?.id, userId].filter(Boolean) },
+        date: { gte: thirtyDaysAgo }
+      },
+      select: { productivityScore: true, avgActivityScore: true }
+    });
+    if (monitorSummaries.length > 0) {
+      const avgProd = monitorSummaries.reduce((sum, m) => sum + (m.productivityScore || m.avgActivityScore || 0), 0) / monitorSummaries.length;
+      focusScore = Math.max(30, Math.min(100, Math.round(avgProd > 0 ? avgProd : 85)));
+    }
 
     // 5. المحور الخامس: الأهداف ومؤشرات النتائج (OKRs & Goals) - 10%
-    const goalsScore = 85;
+    let goalsScore = 85;
+    const goals = await dbClient.goal.findMany({
+      where: {
+        ...(companyId ? { companyId } : {}),
+        OR: [
+          { userId },
+          ...(employee?.id ? [{ employeeRelId: employee.id }] : [])
+        ]
+      },
+      select: { progress: true, status: true }
+    });
+    if (goals.length > 0) {
+      const avgProgress = goals.reduce((sum, g) => sum + (g.progress || 0), 0) / goals.length;
+      goalsScore = Math.max(30, Math.min(100, Math.round(avgProgress)));
+    }
 
     // النتيجة الإجمالية الموحدة: 25% + 25% + 20% + 20% + 10%
     const compositeScore = Math.round(
@@ -4275,6 +4312,8 @@ async function getMyPerformanceScore(req, res) {
     if (qualityScore < 80) recommendations.push('احرص على مراجعة معايير القبول وإرفاق أدلة الإنجاز لتقليل عدد مرات إرجاع المهام.');
     if (attendanceScore < 85) recommendations.push('الالتزام بموعد بصمة الحضور الصباحية يرفع نقاط الانضباط مباشرة.');
     if (deliveryScore < 85) recommendations.push('تسليم المهام قبل موعد الاستحقاق يعزز من مؤشر الإنجاز وسرعة التسليم.');
+    if (focusScore < 80) recommendations.push('زيادة فترات النشاط المركز وتقليل أوقات الخمول يرفع مؤشر التركيز الرقمي.');
+    if (goalsScore < 80) recommendations.push('تحديث نسب إنجاز الأهداف المسندة إليك يرفع مؤشر النتائج.');
     if (recommendations.length === 0) recommendations.push('أداؤك استثنائي ومتزن عبر كافة المحاور، استمر على هذا المستوى الممتاز!');
 
     res.json({
@@ -4287,8 +4326,8 @@ async function getMyPerformanceScore(req, res) {
           delivery: { score: deliveryScore, weight: 25, label: 'سرعة ومعدل الإنجاز', details: `${completedTasks}/${totalTasks} مهمة مكتملة` },
           quality: { score: qualityScore, weight: 25, label: 'جودة المخرجات والاعتماد', details: `${totalReturns} إرجاعات مسجلة` },
           punctuality: { score: attendanceScore, weight: 20, label: 'الانضباط والحضور', details: `${lateDays} أيام تأخير من ${totalDays} يوم` },
-          focus: { score: focusScore, weight: 20, label: 'التركيز والنشاط الرقمي', details: 'معدل نشاط فعال وموثق' },
-          goals: { score: goalsScore, weight: 10, label: 'الأهداف ومؤشرات النتائج', details: 'تحقيق مستهدفات الشهر' },
+          focus: { score: focusScore, weight: 20, label: 'التركيز والنشاط الرقمي', details: monitorSummaries.length > 0 ? `${monitorSummaries.length} أيام موثقة` : 'معدل نشاط قياسي' },
+          goals: { score: goalsScore, weight: 10, label: 'الأهداف ومؤشرات النتائج', details: goals.length > 0 ? `${goals.length} أهداف متابعة` : 'مستهدفات قياسية' },
         },
         recommendations,
         period: 'آخر 30 يوماً'
@@ -4297,6 +4336,219 @@ async function getMyPerformanceScore(req, res) {
   } catch (error) {
     console.error("❌ Error computing my performance score:", error);
     res.status(500).json({ success: false, error: error.message || "حدث خطأ أثناء حساب تقييم الأداء" });
+  }
+}
+
+/**
+ * لوحة تصنيف وتقييم الفريق 360° للمديرين
+ * GET /api/v1/hr/performance/team-leaderboard
+ */
+async function getTeamPerformanceLeaderboard(req, res) {
+  try {
+    const { companyId } = req.user;
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: "يجب تحديد الشركة لعرض تقييم الفريق" });
+    }
+
+    const dbClient = getSharedPrismaClient();
+
+    // 1. جلب الموظفين النشطين في الشركة مع الأقسام والمسميات الوظيفية
+    const employees = await dbClient.employee.findMany({
+      where: {
+        companyId,
+        status: 'ACTIVE'
+      },
+      include: {
+        department: { select: { id: true, name: true } },
+        position: { select: { id: true, title: true } },
+        user: { select: { id: true, avatar: true, email: true, firstName: true, lastName: true } }
+      },
+      take: 100
+    });
+
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+
+    // 2. احتساب تقييم الـ 360 لكل موظف
+    const leaderboard = await Promise.all(
+      employees.map(async (emp) => {
+        const uId = emp.userId || emp.user?.id;
+        const eId = emp.id;
+
+        // المهام
+        let deliveryScore = 80;
+        let qualityScore = 85;
+        let completedTasks = 0;
+        let totalTasks = 0;
+        let totalReturns = 0;
+
+        if (uId) {
+          const tasks = await dbClient.task.findMany({
+            where: { companyId, assignedTo: uId, createdAt: { gte: thirtyDaysAgo } },
+            select: { id: true, status: true, dueDate: true, completedDate: true, returnCount: true, missingEvidence: true }
+          });
+          totalTasks = tasks.length;
+          completedTasks = tasks.filter(t => t.status === 'COMPLETED').length;
+          const onTimeTasks = tasks.filter(t => {
+            if (t.status !== 'COMPLETED') return false;
+            if (!t.dueDate) return true;
+            return (t.completedDate ? new Date(t.completedDate) : new Date()) <= new Date(t.dueDate);
+          }).length;
+          const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 100;
+          const onTimeRate = completedTasks > 0 ? (onTimeTasks / completedTasks) * 100 : 100;
+          deliveryScore = Math.max(30, Math.min(100, Math.round(0.6 * completionRate + 0.4 * onTimeRate)));
+
+          totalReturns = tasks.reduce((sum, t) => sum + (t.returnCount || 0), 0);
+          const missingEvidenceCount = tasks.filter(t => t.missingEvidence).length;
+          qualityScore = Math.max(25, Math.min(100, Math.round(100 - (totalReturns * 5) - (missingEvidenceCount * 5))));
+        }
+
+        // الحضور والانضباط
+        let attendanceScore = 85;
+        let lateDays = 0;
+        let totalDays = 0;
+        if (uId) {
+          const attendances = await dbClient.attendance.findMany({
+            where: { companyId, userId: uId, date: { gte: thirtyDaysAgo } },
+            select: { status: true, lateMinutes: true }
+          });
+          totalDays = attendances.length;
+          lateDays = attendances.filter(a => a.status === 'LATE' || Number(a.lateMinutes) > 0).length;
+          const punctualityRate = totalDays > 0 ? ((totalDays - lateDays) / totalDays) * 100 : 100;
+          attendanceScore = Math.max(30, Math.min(100, Math.round(punctualityRate)));
+        }
+
+        // التركيز والنشاط الرقمي الحي
+        let focusScore = 88;
+        const monitorSummaries = await dbClient.monitorDailySummary.findMany({
+          where: {
+            companyId,
+            employeeId: { in: [eId, uId].filter(Boolean) },
+            date: { gte: thirtyDaysAgo }
+          },
+          select: { productivityScore: true, avgActivityScore: true }
+        });
+        if (monitorSummaries.length > 0) {
+          const avgProd = monitorSummaries.reduce((sum, m) => sum + (m.productivityScore || m.avgActivityScore || 0), 0) / monitorSummaries.length;
+          focusScore = Math.max(30, Math.min(100, Math.round(avgProd > 0 ? avgProd : 85)));
+        }
+
+        // الأهداف ومؤشرات النتائج الحية
+        let goalsScore = 85;
+        const goals = await dbClient.goal.findMany({
+          where: {
+            companyId,
+            OR: [
+              ...(uId ? [{ userId: uId }] : []),
+              { employeeRelId: eId }
+            ]
+          },
+          select: { progress: true, status: true }
+        });
+        if (goals.length > 0) {
+          const avgProgress = goals.reduce((sum, g) => sum + (g.progress || 0), 0) / goals.length;
+          goalsScore = Math.max(30, Math.min(100, Math.round(avgProgress)));
+        }
+
+        // النتيجة الإجمالية الموحدة
+        const compositeScore = Math.round(
+          0.25 * deliveryScore +
+          0.25 * qualityScore +
+          0.20 * attendanceScore +
+          0.20 * focusScore +
+          0.10 * goalsScore
+        );
+
+        const tier = compositeScore >= 90 ? 'TIER_S' : compositeScore >= 80 ? 'TIER_A' : compositeScore >= 70 ? 'TIER_B' : compositeScore >= 60 ? 'TIER_C' : 'TIER_D';
+        const tierLabel = compositeScore >= 90 ? 'متميز (Tier S)' : compositeScore >= 80 ? 'ممتاز (Tier A)' : compositeScore >= 70 ? 'مطابق للتوقعات (Tier B)' : compositeScore >= 60 ? 'يحتاج تحسين (Tier C)' : 'حرج ومخاطرة أداء (Tier D)';
+
+        const riskFlags = [];
+        if (qualityScore < 70) riskFlags.push('ارتفاع معدل إرجاع المهام');
+        if (attendanceScore < 75) riskFlags.push('تكرار التأخير الصباحي');
+        if (deliveryScore < 70) riskFlags.push('تأخر تسليم المهام');
+        if (focusScore < 70) riskFlags.push('انخفاض النشاط الرقمي المسجل');
+
+        return {
+          id: emp.id,
+          userId: uId,
+          employeeNumber: emp.employeeNumber,
+          name: `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || emp.user?.firstName || 'موظف',
+          avatar: emp.avatar || emp.user?.avatar,
+          departmentName: emp.department?.name || 'عام',
+          positionTitle: emp.position?.title || 'موظف',
+          compositeScore,
+          tier,
+          tierLabel,
+          isAtRisk: compositeScore < 70 || riskFlags.length >= 2,
+          riskFlags,
+          pillars: {
+            delivery: { score: deliveryScore, weight: 25 },
+            quality: { score: qualityScore, weight: 25 },
+            punctuality: { score: attendanceScore, weight: 20 },
+            focus: { score: focusScore, weight: 20 },
+            goals: { score: goalsScore, weight: 10 }
+          },
+          telemetryStats: {
+            tasksCompleted: completedTasks,
+            totalTasks,
+            returns: totalReturns,
+            lateDays,
+            monitoredDays: monitorSummaries.length,
+            activeGoals: goals.length
+          }
+        };
+      })
+    );
+
+    // ترتيب الموظفين تنازلياً حسب الدرجة الإجمالية
+    leaderboard.sort((a, b) => b.compositeScore - a.compositeScore);
+
+    // حساب إحصائيات الشركة
+    const totalCount = leaderboard.length;
+    const avgScore = totalCount > 0 ? Math.round(leaderboard.reduce((s, e) => s + e.compositeScore, 0) / totalCount) : 0;
+    const tierCounts = {
+      TIER_S: leaderboard.filter(e => e.tier === 'TIER_S').length,
+      TIER_A: leaderboard.filter(e => e.tier === 'TIER_A').length,
+      TIER_B: leaderboard.filter(e => e.tier === 'TIER_B').length,
+      TIER_C: leaderboard.filter(e => e.tier === 'TIER_C').length,
+      TIER_D: leaderboard.filter(e => e.tier === 'TIER_D').length,
+    };
+
+    const atRiskCount = leaderboard.filter(e => e.isAtRisk).length;
+
+    // تجميع متوسطات الأقسام
+    const deptMap = {};
+    leaderboard.forEach(e => {
+      const d = e.departmentName;
+      if (!deptMap[d]) deptMap[d] = { count: 0, totalScore: 0 };
+      deptMap[d].count += 1;
+      deptMap[d].totalScore += e.compositeScore;
+    });
+
+    const departmentStats = Object.keys(deptMap).map(d => ({
+      department: d,
+      employeeCount: deptMap[d].count,
+      averageScore: Math.round(deptMap[d].totalScore / deptMap[d].count)
+    })).sort((a, b) => b.averageScore - a.averageScore);
+
+    res.json({
+      success: true,
+      data: {
+        summary: {
+          totalEmployees: totalCount,
+          averageScore: avgScore,
+          tierCounts,
+          atRiskCount,
+          bestDepartment: departmentStats[0]?.department || 'لا يوجد',
+          needsSupportDepartment: departmentStats[departmentStats.length - 1]?.department || 'لا يوجد'
+        },
+        departmentStats,
+        leaderboard,
+        period: 'آخر 30 يوماً'
+      }
+    });
+  } catch (error) {
+    console.error("❌ Error fetching team performance leaderboard:", error);
+    res.status(500).json({ success: false, error: error.message || "حدث خطأ أثناء حساب تصنيف أداء الفريق" });
   }
 }
 
@@ -7541,6 +7793,7 @@ module.exports = {
   deleteReview,
   getPerformanceStats,
   getMyPerformanceScore,
+  getTeamPerformanceLeaderboard,
 
   // Training
   getMyTrainings,

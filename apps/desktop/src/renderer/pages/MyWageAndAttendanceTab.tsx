@@ -15,10 +15,12 @@ import {
   HelpCircle,
   FileText,
   Award,
+  Banknote,
 } from 'lucide-react';
 import { InlineErrorBanner } from '../components/InlineErrorBanner';
 import { PermissionRequestModal } from '../components/hr/PermissionRequestModal';
 import { DeductionsBreakdownModal } from '../components/hr/DeductionsBreakdownModal';
+import { AdvanceRequestModal } from '../components/hr/AdvanceRequestModal';
 
 interface MyWageAndAttendanceTabProps {
   user?: any;
@@ -127,6 +129,7 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = () 
 
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [showDeductionsModal, setShowDeductionsModal] = useState(false);
+  const [showAdvanceModal, setShowAdvanceModal] = useState(false);
 
   const loadData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -243,6 +246,16 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = () 
             <Clock size={13} />
             <span>طلب إذن جديد</span>
           </button>
+          <button
+            style={styles.requestAdvanceBtn}
+            onClick={() => setShowAdvanceModal(true)}
+            onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+            onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+            title="تقديم طلب سلفة مالية على الراتب"
+          >
+            <Banknote size={13} color="var(--accent-green)" />
+            <span>طلب سلفة</span>
+          </button>
           <div style={styles.monthBadge}>
             <Calendar size={13} color="var(--text-muted)" />
             <span>{currentMonthLabel}</span>
@@ -339,7 +352,7 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = () 
             <span style={styles.bentoUnit}>دقيقة إذن</span>
           </div>
           <div style={styles.bentoSubtext}>
-            <span>سنوي: {annualLeavesLeft} يوم متبقي</span>
+            <span>سنوي: {annualLeavesLeft} يوم | مرضي: {perms?.leavesConfig?.sickLeaveBalance ?? 15} يوم</span>
           </div>
         </div>
       </div>
@@ -511,6 +524,13 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = () 
         totalDeductions={projection?.deductionAmount ?? 0}
         currency={payroll?.currency || 'ج.م'}
       />
+
+      <AdvanceRequestModal
+        isOpen={showAdvanceModal}
+        onClose={() => setShowAdvanceModal(false)}
+        onSuccess={() => loadData(true)}
+        baseSalary={projection?.baseSalary || payroll?.baseSalary || 5000}
+      />
     </div>
   );
 };
@@ -587,6 +607,20 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'rgba(56, 189, 248, 0.12)',
     border: '1px solid rgba(56, 189, 248, 0.3)',
     color: 'var(--accent-blue)',
+    borderRadius: 6,
+    padding: '5px 12px',
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: 'pointer',
+    transition: 'transform 140ms ease-out',
+  },
+  requestAdvanceBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    background: 'rgba(16, 185, 129, 0.12)',
+    border: '1px solid rgba(16, 185, 129, 0.3)',
+    color: 'var(--accent-green)',
     borderRadius: 6,
     padding: '5px 12px',
     fontSize: 12,
