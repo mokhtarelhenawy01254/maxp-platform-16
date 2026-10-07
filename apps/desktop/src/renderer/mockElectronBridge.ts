@@ -392,6 +392,7 @@ export function initMockElectronBridge() {
       success: true,
       data: {
         compositeScore: 88,
+        isEvaluated: true,
         tier: 'TIER_A',
         tierLabel: 'ممتاز (Tier A)',
         pillars: {
@@ -405,7 +406,25 @@ export function initMockElectronBridge() {
           'تسليم المهام المتبقية قبل موعد الاستحقاق يعزز من مؤشر الإنجاز إلى Tier S.',
           'الحفاظ على وتيرة الحضور الصباحي المبكر يرفع نقاط الانضباط مباشرة.'
         ],
-        period: 'آخر 30 يوماً'
+        period: 'آخر 30 يوماً',
+        telemetryStats: {
+          tasksCompleted: 12,
+          totalTasks: 14,
+          onTimeTasks: 12,
+          lateTasksCount: 0,
+          returns: 0,
+          missingEvidenceCount: 0,
+          presentDays: 22,
+          lateDays: 1,
+          absentDays: 0,
+          workDaysScheduled: 22,
+          monitoredDays: 20,
+          activeGoals: 2
+        },
+        drilldownDetails: {
+          lateTasks: [],
+          returnedTasks: []
+        }
       }
     }),
 

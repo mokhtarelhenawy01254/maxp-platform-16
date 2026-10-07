@@ -19,6 +19,10 @@ import {
   Download,
   FileText,
   Sliders,
+  Calendar,
+  X,
+  ShieldCheck,
+  Check,
 } from "lucide-react";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -36,21 +40,55 @@ import api from "../../services/api";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
+interface PillarInfo {
+  score: number;
+  weight: number;
+  baseWeight?: number;
+  label?: string;
+  details?: string;
+  isApplicable?: boolean;
+}
+
 interface PillarScores {
-  delivery: { score: number; weight: number };
-  quality: { score: number; weight: number };
-  punctuality: { score: number; weight: number };
-  focus: { score: number; weight: number };
-  goals: { score: number; weight: number };
+  delivery: PillarInfo;
+  quality: PillarInfo;
+  punctuality: PillarInfo;
+  focus: PillarInfo;
+  goals: PillarInfo;
 }
 
 interface TelemetryStats {
   tasksCompleted: number;
   totalTasks: number;
+  onTimeTasks?: number;
+  lateTasksCount?: number;
   returns: number;
+  missingEvidenceCount?: number;
+  presentDays?: number;
   lateDays: number;
+  absentDays?: number;
+  workDaysScheduled?: number;
   monitoredDays: number;
   activeGoals: number;
+}
+
+interface LateTaskItem {
+  id: string;
+  title: string;
+  dueDate?: string;
+  status: string;
+}
+
+interface ReturnedTaskItem {
+  id: string;
+  title: string;
+  returnCount: number;
+  lastReturnReason?: string;
+}
+
+interface DrilldownDetails {
+  lateTasks: LateTaskItem[];
+  returnedTasks: ReturnedTaskItem[];
 }
 
 interface LeaderboardEmployee {
@@ -62,12 +100,14 @@ interface LeaderboardEmployee {
   departmentName: string;
   positionTitle: string;
   compositeScore: number;
-  tier: "TIER_S" | "TIER_A" | "TIER_B" | "TIER_C" | "TIER_D";
+  isEvaluated?: boolean;
+  tier: "TIER_S" | "TIER_A" | "TIER_B" | "TIER_C" | "TIER_D" | "PENDING_EVALUATION";
   tierLabel: string;
   isAtRisk: boolean;
   riskFlags: string[];
   pillars: PillarScores;
   telemetryStats: TelemetryStats;
+  drilldownDetails?: DrilldownDetails;
 }
 
 interface DepartmentStat {
@@ -79,6 +119,7 @@ interface DepartmentStat {
 interface LeaderboardData {
   summary: {
     totalEmployees: number;
+    evaluatedEmployees?: number;
     averageScore: number;
     tierCounts: {
       TIER_S: number;
@@ -86,6 +127,7 @@ interface LeaderboardData {
       TIER_B: number;
       TIER_C: number;
       TIER_D: number;
+      PENDING_EVALUATION?: number;
     };
     atRiskCount: number;
     bestDepartment: string;
@@ -94,6 +136,7 @@ interface LeaderboardData {
   departmentStats: DepartmentStat[];
   leaderboard: LeaderboardEmployee[];
   period: string;
+  isMonthSpecific?: boolean;
 }
 
 export const TeamPerformance360Page: React.FC = () => {
@@ -102,12 +145,25 @@ export const TeamPerformance360Page: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedTier, setSelectedTier] = useState<string>("ALL");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("ALL");
+  const [selectedPeriodMode, setSelectedPeriodMode] = useState<"SLIDING_30" | "CURRENT_MONTH" | "PREVIOUS_MONTH">("SLIDING_30");
+  
+  // Modals state
   const [selectedEmployeeForPIP, setSelectedEmployeeForPIP] = useState<LeaderboardEmployee | null>(null);
+  const [selectedEmployeeForDrilldown, setSelectedEmployeeForDrilldown] = useState<LeaderboardEmployee | null>(null);
 
   const fetchLeaderboard = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get("/hr/performance/team-leaderboard");
+      let queryParams = "";
+      const now = new Date();
+      if (selectedPeriodMode === "CURRENT_MONTH") {
+        queryParams = `?month=${now.getMonth() + 1}&year=${now.getFullYear()}`;
+      } else if (selectedPeriodMode === "PREVIOUS_MONTH") {
+        const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        queryParams = `?month=${prevMonthDate.getMonth() + 1}&year=${prevMonthDate.getFullYear()}`;
+      }
+
+      const res = await api.get(`/hr/performance/team-leaderboard${queryParams}`);
       if (res.data?.success && res.data?.data) {
         setData(res.data.data);
       } else {
@@ -119,8 +175,9 @@ export const TeamPerformance360Page: React.FC = () => {
       setData({
         summary: {
           totalEmployees: 6,
+          evaluatedEmployees: 6,
           averageScore: 82,
-          tierCounts: { TIER_S: 1, TIER_A: 3, TIER_B: 1, TIER_C: 1, TIER_D: 0 },
+          tierCounts: { TIER_S: 1, TIER_A: 3, TIER_B: 1, TIER_C: 1, TIER_D: 0, PENDING_EVALUATION: 0 },
           atRiskCount: 1,
           bestDepartment: "التطوير البرمجي",
           needsSupportDepartment: "خدمة العملاء",
@@ -138,86 +195,27 @@ export const TeamPerformance360Page: React.FC = () => {
             departmentName: "التطوير البرمجي",
             positionTitle: "مطور برمجيات أول",
             compositeScore: 94,
+            isEvaluated: true,
             tier: "TIER_S",
             tierLabel: "متميز (Tier S)",
             isAtRisk: false,
             riskFlags: [],
             pillars: {
-              delivery: { score: 96, weight: 25 },
-              quality: { score: 95, weight: 25 },
-              punctuality: { score: 90, weight: 20 },
-              focus: { score: 92, weight: 20 },
-              goals: { score: 95, weight: 10 },
+              delivery: { score: 96, weight: 25, label: "سرعة ومعدل الإنجاز", details: "24/25 منجزة" },
+              quality: { score: 95, weight: 25, label: "جودة المخرجات والاعتماد", details: "اعتماد 100%" },
+              punctuality: { score: 90, weight: 20, label: "الانضباط والحضور", details: "22 حضور (1 تأخير)" },
+              focus: { score: 92, weight: 20, label: "التركيز والنشاط الرقمي", details: "22 أيام موثقة" },
+              goals: { score: 95, weight: 10, label: "الأهداف ومؤشرات النتائج", details: "3 أهداف متابعة" },
             },
-            telemetryStats: { tasksCompleted: 24, totalTasks: 25, returns: 0, lateDays: 1, monitoredDays: 22, activeGoals: 3 },
-          },
-          {
-            id: "emp-2",
-            employeeNumber: "EMP-102",
-            name: "سارة أحمد",
-            departmentName: "المبيعات والتسويق",
-            positionTitle: "أخصائي مبيعات",
-            compositeScore: 88,
-            tier: "TIER_A",
-            tierLabel: "ممتاز (Tier A)",
-            isAtRisk: false,
-            riskFlags: [],
-            pillars: {
-              delivery: { score: 90, weight: 25 },
-              quality: { score: 88, weight: 25 },
-              punctuality: { score: 85, weight: 20 },
-              focus: { score: 88, weight: 20 },
-              goals: { score: 85, weight: 10 },
-            },
-            telemetryStats: { tasksCompleted: 18, totalTasks: 20, returns: 1, lateDays: 2, monitoredDays: 21, activeGoals: 2 },
-          },
-          {
-            id: "emp-3",
-            employeeNumber: "EMP-103",
-            name: "محمد كمال",
-            departmentName: "التطوير البرمجي",
-            positionTitle: "مهندس واجهات",
-            compositeScore: 84,
-            tier: "TIER_A",
-            tierLabel: "ممتاز (Tier A)",
-            isAtRisk: false,
-            riskFlags: [],
-            pillars: {
-              delivery: { score: 85, weight: 25 },
-              quality: { score: 86, weight: 25 },
-              punctuality: { score: 80, weight: 20 },
-              focus: { score: 85, weight: 20 },
-              goals: { score: 85, weight: 10 },
-            },
-            telemetryStats: { tasksCompleted: 15, totalTasks: 18, returns: 1, lateDays: 3, monitoredDays: 20, activeGoals: 2 },
-          },
-          {
-            id: "emp-4",
-            employeeNumber: "EMP-104",
-            name: "أحمد فريد",
-            departmentName: "خدمة العملاء",
-            positionTitle: "أخصائي دعم فني",
-            compositeScore: 68,
-            tier: "TIER_C",
-            tierLabel: "يحتاج تحسين (Tier C)",
-            isAtRisk: true,
-            riskFlags: ["ارتفاع معدل إرجاع المهام", "تكرار التأخير الصباحي"],
-            pillars: {
-              delivery: { score: 65, weight: 25 },
-              quality: { score: 62, weight: 25 },
-              punctuality: { score: 70, weight: 20 },
-              focus: { score: 75, weight: 20 },
-              goals: { score: 70, weight: 10 },
-            },
-            telemetryStats: { tasksCompleted: 9, totalTasks: 16, returns: 5, lateDays: 5, monitoredDays: 19, activeGoals: 1 },
+            telemetryStats: { tasksCompleted: 24, totalTasks: 25, onTimeTasks: 24, lateTasksCount: 0, returns: 0, lateDays: 1, monitoredDays: 22, activeGoals: 3 },
           },
         ],
-        period: "آخر 30 يوماً",
+        period: selectedPeriodMode === "SLIDING_30" ? "آخر 30 يوماً" : "الشهر الحالي",
       });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedPeriodMode]);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -244,6 +242,8 @@ export const TeamPerformance360Page: React.FC = () => {
           ? true
           : selectedTier === "AT_RISK"
           ? e.isAtRisk
+          : selectedTier === "PENDING"
+          ? e.tier === "PENDING_EVALUATION"
           : e.tier === selectedTier;
       const matchDept =
         selectedDepartment === "ALL" ? true : e.departmentName === selectedDepartment;
@@ -261,42 +261,24 @@ export const TeamPerformance360Page: React.FC = () => {
         return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20";
       case "TIER_C":
         return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
-      default:
+      case "TIER_D":
         return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20";
+      default:
+        return "bg-slate-500/10 text-slate-500 dark:text-slate-400 border-slate-500/20";
     }
   };
 
-  const getRankBadge = (index: number) => {
-    if (index === 0) {
-      return (
-        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/20 text-amber-500 font-bold text-xs ring-1 ring-amber-500/30">
-          1
-        </span>
-      );
-    }
-    if (index === 1) {
-      return (
-        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-300/20 text-slate-300 font-bold text-xs ring-1 ring-slate-400/30">
-          2
-        </span>
-      );
-    }
-    if (index === 2) {
-      return (
-        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-700/20 text-amber-600 font-bold text-xs ring-1 ring-amber-700/30">
-          3
-        </span>
-      );
-    }
-    return (
-      <span className="flex items-center justify-center w-6 h-6 rounded-full text-muted-foreground font-semibold text-xs tabular-nums">
-        {index + 1}
-      </span>
-    );
+  const getScoreColor = (score: number, isEvaluated = true) => {
+    if (!isEvaluated) return "text-muted-foreground";
+    if (score >= 90) return "text-purple-600 dark:text-purple-400";
+    if (score >= 80) return "text-emerald-600 dark:text-emerald-400";
+    if (score >= 70) return "text-blue-600 dark:text-blue-400";
+    if (score >= 60) return "text-amber-600 dark:text-amber-400";
+    return "text-rose-600 dark:text-rose-400";
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-6" dir="rtl">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6" dir="rtl">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-border/40">
         <div>
@@ -309,15 +291,49 @@ export const TeamPerformance360Page: React.FC = () => {
                 لوحة تقييم الفريق التلقائية 360°
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                تصنيف مؤتمت 100% مبني على مخرجات المهام، الجودة، انضباط الحضور، التركيز، والأهداف
+                محرك احتساب عادل وموضوعي مبني على مخرجات المهام، الجودة التناسبية، انضباط الحضور، والتركيز
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Period Selector & Refresh */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center bg-card rounded-lg border border-border/50 p-1">
+            <button
+              onClick={() => setSelectedPeriodMode("SLIDING_30")}
+              className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all ${
+                selectedPeriodMode === "SLIDING_30"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              آخر 30 يوماً
+            </button>
+            <button
+              onClick={() => setSelectedPeriodMode("CURRENT_MONTH")}
+              className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all ${
+                selectedPeriodMode === "CURRENT_MONTH"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              الشهر الحالي
+            </button>
+            <button
+              onClick={() => setSelectedPeriodMode("PREVIOUS_MONTH")}
+              className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all ${
+                selectedPeriodMode === "PREVIOUS_MONTH"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              الشهر السابق
+            </button>
+          </div>
+
           <Badge variant="outline" className="px-3 py-1 font-mono text-xs tabular-nums bg-card">
-            {data?.period || "آخر 30 يوماً"}
+            {data?.period || "الفترة النشطة"}
           </Badge>
           <Button
             variant="outline"
@@ -327,7 +343,7 @@ export const TeamPerformance360Page: React.FC = () => {
             className="gap-1.5 text-xs h-9"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-            تحديث المؤشرات
+            تحديث
           </Button>
         </div>
       </div>
@@ -348,8 +364,11 @@ export const TeamPerformance360Page: React.FC = () => {
               <span className="text-xs text-muted-foreground">/ 100</span>
             </div>
             <div className="text-[11px] text-muted-foreground mt-2 flex items-center gap-1">
-              <span>إجمالي الموظفين:</span>
-              <strong className="text-foreground tabular-nums">{data?.summary.totalEmployees ?? 0}</strong>
+              <span>المقيمون:</span>
+              <strong className="text-foreground tabular-nums">
+                {data?.summary.evaluatedEmployees ?? data?.summary.totalEmployees ?? 0}
+              </strong>
+              <span>من {data?.summary.totalEmployees ?? 0} موظف</span>
             </div>
           </CardContent>
         </Card>
@@ -418,103 +437,134 @@ export const TeamPerformance360Page: React.FC = () => {
             placeholder="بحث باسم الموظف، الرقم الوظيفي، أو المسمى..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pr-9 text-xs h-9 bg-background/50"
+            className="pr-9 text-xs h-9"
           />
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-          <span className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1">
-            <Filter className="h-3 w-3" /> الرتبة:
-          </span>
-          {["ALL", "TIER_S", "TIER_A", "TIER_B", "TIER_C", "AT_RISK"].map((tier) => (
-            <button
-              key={tier}
-              onClick={() => setSelectedTier(tier)}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
-                selectedTier === tier
-                  ? "bg-primary text-primary-foreground font-semibold"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {tier === "ALL" && "الكل"}
-              {tier === "TIER_S" && "Tier S"}
-              {tier === "TIER_A" && "Tier A"}
-              {tier === "TIER_B" && "Tier B"}
-              {tier === "TIER_C" && "Tier C"}
-              {tier === "AT_RISK" && "في دائرة الخطر ⚠️"}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Tier Filter */}
+          <select
+            value={selectedTier}
+            onChange={(e) => setSelectedTier(e.target.value)}
+            className="h-9 px-3 py-1 bg-background border border-border/50 rounded-lg text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <option value="ALL">جميع المستويات</option>
+            <option value="TIER_S">Tier S (متميز)</option>
+            <option value="TIER_A">Tier A (ممتاز)</option>
+            <option value="TIER_B">Tier B (مطابق للتوقعات)</option>
+            <option value="TIER_C">Tier C (يحتاج تحسين)</option>
+            <option value="TIER_D">Tier D (حرج)</option>
+            <option value="PENDING">قيد التقييم</option>
+            <option value="AT_RISK">في دائرة الخطر فقط</option>
+          </select>
+
+          {/* Department Filter */}
+          <select
+            value={selectedDepartment}
+            onChange={(e) => setSelectedDepartment(e.target.value)}
+            className="h-9 px-3 py-1 bg-background border border-border/50 rounded-lg text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <option value="ALL">جميع الأقسام</option>
+            {departments.map((dept) => (
+              <option key={dept} value={dept}>
+                {dept}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Main Leaderboard Table */}
+      {/* Leaderboard Table Card */}
       <Card className="bg-card border-border/50 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-border/40 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-bold text-foreground">
+              تصنيف موظفي الفريق حسب مؤشر الأداء التراكمي
+            </h2>
+          </div>
+          <span className="text-xs text-muted-foreground">
+            عرض {filteredEmployees.length} من {data?.leaderboard.length ?? 0} موظف
+          </span>
+        </div>
+
         <div className="overflow-x-auto">
-          <table className="w-full text-right text-xs">
-            <thead className="bg-muted/40 border-b border-border/50 text-muted-foreground">
-              <tr>
-                <th className="py-3 px-4 font-semibold w-12 text-center">#</th>
-                <th className="py-3 px-4 font-semibold">الموظف والقسم</th>
-                <th className="py-3 px-4 font-semibold text-center">الرتبة</th>
-                <th className="py-3 px-4 font-semibold text-center">الدرجة التراكمية</th>
-                <th className="py-3 px-4 font-semibold text-center">محاور الأداء (25% | 25% | 20% | 20% | 10%)</th>
-                <th className="py-3 px-4 font-semibold text-center">مؤشرات النشاط الحي</th>
-                <th className="py-3 px-4 font-semibold text-center">الإجراء الإداري</th>
+          <table className="w-full text-right border-collapse">
+            <thead>
+              <tr className="border-b border-border/40 bg-muted/20 text-[11px] font-semibold text-muted-foreground">
+                <th className="py-3 px-4 w-12 text-center">#</th>
+                <th className="py-3 px-4">الموظف</th>
+                <th className="py-3 px-4">القسم والمسمى</th>
+                <th className="py-3 px-4 text-center">الدرجة التراكمية</th>
+                <th className="py-3 px-4 text-center">المستوى التشغيلي</th>
+                <th className="py-3 px-4 text-center">المحاور الخمسة</th>
+                <th className="py-3 px-4 text-center">الوقائع الموثقة</th>
+                <th className="py-3 px-4 text-center">الإجراءات</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/30">
+            <tbody className="divide-y divide-border/20 text-xs">
               {filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-muted-foreground">
-                    لا توجد بيانات مطابقة لخيارات البحث أو الفلترة المحددة.
+                  <td colSpan={8} className="py-12 text-center text-muted-foreground text-xs">
+                    لا يوجد موظفون مطابقون لمعايير البحث الحالية.
                   </td>
                 </tr>
               ) : (
-                filteredEmployees.map((emp, idx) => (
+                filteredEmployees.map((emp, index) => (
                   <tr
                     key={emp.id}
-                    className={`hover:bg-muted/20 transition-colors ${
-                      emp.isAtRisk ? "bg-rose-500/[0.02]" : ""
-                    }`}
+                    className="hover:bg-muted/30 transition-colors group cursor-pointer"
+                    onClick={() => setSelectedEmployeeForDrilldown(emp)}
                   >
                     {/* Rank */}
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex justify-center">{getRankBadge(idx)}</div>
+                    <td className="py-3 px-4 text-center font-bold text-muted-foreground">
+                      {emp.isEvaluated ? index + 1 : "—"}
                     </td>
 
                     {/* Employee Profile */}
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-primary text-xs uppercase">
-                          {emp.name.slice(0, 1)}
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                          {emp.name.slice(0, 2)}
                         </div>
                         <div>
-                          <div className="font-bold text-foreground text-sm flex items-center gap-2">
+                          <div className="font-bold text-foreground flex items-center gap-1.5">
                             <span>{emp.name}</span>
                             {emp.isAtRisk && (
-                              <Badge
-                                variant="destructive"
-                                className="text-[10px] px-1.5 py-0 h-4 font-normal"
-                              >
-                                تحذير أداء
-                              </Badge>
+                              <span title="مخاطرة أداء" className="text-rose-500">
+                                <AlertTriangle className="h-3 w-3 inline" />
+                              </span>
                             )}
                           </div>
-                          <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
-                            <span className="font-mono tabular-nums">{emp.employeeNumber}</span>
-                            <span>•</span>
-                            <span>{emp.positionTitle}</span>
-                            <span>•</span>
-                            <span className="text-primary/80">{emp.departmentName}</span>
+                          <div className="text-[10px] text-muted-foreground font-mono">
+                            {emp.employeeNumber}
                           </div>
                         </div>
                       </div>
                     </td>
 
+                    {/* Department & Position */}
+                    <td className="py-3 px-4">
+                      <div className="text-foreground font-medium">{emp.positionTitle}</div>
+                      <div className="text-[10px] text-muted-foreground">{emp.departmentName}</div>
+                    </td>
+
+                    {/* Composite Score */}
+                    <td className="py-3 px-4 text-center">
+                      <span
+                        className={`text-lg font-black tabular-nums ${getScoreColor(
+                          emp.compositeScore,
+                          emp.isEvaluated
+                        )}`}
+                      >
+                        {emp.isEvaluated ? emp.compositeScore : "—"}
+                      </span>
+                    </td>
+
                     {/* Tier Badge */}
                     <td className="py-3 px-4 text-center">
                       <span
-                        className={`inline-block px-2.5 py-1 rounded-md text-[11px] font-bold border ${getTierColorClass(
+                        className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${getTierColorClass(
                           emp.tier
                         )}`}
                       >
@@ -522,35 +572,27 @@ export const TeamPerformance360Page: React.FC = () => {
                       </span>
                     </td>
 
-                    {/* Composite Score */}
+                    {/* 5 Pillars Summary */}
                     <td className="py-3 px-4 text-center">
-                      <div className="text-base font-black tabular-nums text-foreground">
-                        {emp.compositeScore}
-                        <span className="text-xs font-normal text-muted-foreground mr-0.5">/ 100</span>
-                      </div>
-                    </td>
-
-                    {/* Pillars mini breakdown */}
-                    <td className="py-3 px-4">
-                      <div className="flex items-center justify-center gap-1.5 font-mono text-[11px] tabular-nums">
-                        <span title="سرعة ومعدل الإنجاز (25%)" className="px-1.5 py-0.5 rounded bg-muted/60 text-foreground">
-                          {emp.pillars.delivery.score}
+                      <div className="flex items-center justify-center gap-1 text-[10px] font-mono tabular-nums">
+                        <span title="إنجاز المهام" className="px-1.5 py-0.5 rounded bg-muted/60 text-foreground">
+                          {emp.pillars.delivery.isApplicable !== false ? emp.pillars.delivery.score : "—"}
                         </span>
                         <span className="text-muted-foreground/40">|</span>
-                        <span title="جودة المخرجات والاعتماد (25%)" className="px-1.5 py-0.5 rounded bg-muted/60 text-foreground">
-                          {emp.pillars.quality.score}
+                        <span title="الجودة والاعتماد" className="px-1.5 py-0.5 rounded bg-muted/60 text-foreground">
+                          {emp.pillars.quality.isApplicable !== false ? emp.pillars.quality.score : "—"}
                         </span>
                         <span className="text-muted-foreground/40">|</span>
-                        <span title="الانضباط والحضور (20%)" className="px-1.5 py-0.5 rounded bg-muted/60 text-foreground">
-                          {emp.pillars.punctuality.score}
+                        <span title="الانضباط والحضور" className="px-1.5 py-0.5 rounded bg-muted/60 text-foreground">
+                          {emp.pillars.punctuality.isApplicable !== false ? emp.pillars.punctuality.score : "—"}
                         </span>
                         <span className="text-muted-foreground/40">|</span>
-                        <span title="التركيز والنشاط الرقمي (20%)" className="px-1.5 py-0.5 rounded bg-muted/60 text-foreground">
-                          {emp.pillars.focus.score}
+                        <span title="النشاط الرقمي" className="px-1.5 py-0.5 rounded bg-muted/60 text-foreground">
+                          {emp.pillars.focus.isApplicable !== false ? emp.pillars.focus.score : "—"}
                         </span>
                         <span className="text-muted-foreground/40">|</span>
-                        <span title="الأهداف ومؤشرات النتائج (10%)" className="px-1.5 py-0.5 rounded bg-muted/60 text-foreground">
-                          {emp.pillars.goals.score}
+                        <span title="الأهداف OKRs" className="px-1.5 py-0.5 rounded bg-muted/60 text-foreground">
+                          {emp.pillars.goals.isApplicable !== false ? emp.pillars.goals.score : "—"}
                         </span>
                       </div>
                     </td>
@@ -568,7 +610,7 @@ export const TeamPerformance360Page: React.FC = () => {
                     </td>
 
                     {/* Action Button */}
-                    <td className="py-3 px-4 text-center">
+                    <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                       {emp.isAtRisk ? (
                         <Button
                           variant="destructive"
@@ -577,13 +619,13 @@ export const TeamPerformance360Page: React.FC = () => {
                           className="h-7 text-[11px] gap-1 px-2.5 font-medium"
                         >
                           <ShieldAlert className="h-3 w-3" />
-                          إصدار خطة تحسين (PIP)
+                          خطة تحسين (PIP)
                         </Button>
                       ) : (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => toast.info(`سجل أداء ${emp.name} مكتمل ومستقر.`)}
+                          onClick={() => setSelectedEmployeeForDrilldown(emp)}
                           className="h-7 text-[11px] text-muted-foreground hover:text-foreground"
                         >
                           عرض التدقيق
@@ -597,6 +639,110 @@ export const TeamPerformance360Page: React.FC = () => {
           </table>
         </div>
       </Card>
+
+      {/* Drill-down Audit Dialog for Manager */}
+      <Dialog open={!!selectedEmployeeForDrilldown} onOpenChange={(open) => !open && setSelectedEmployeeForDrilldown(null)}>
+        <DialogContent className="max-w-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-foreground text-base">
+              <FileText className="h-5 w-5 text-primary" />
+              سجل التدقيق والمطابقة التشغيلية الشامل
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+              تفاصيل الوقائع وسجلات المهام والبصمة للموظف: <strong>{selectedEmployeeForDrilldown?.name}</strong>
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedEmployeeForDrilldown && (
+            <div className="space-y-4 py-2 text-xs">
+              {/* Employee Overview Card */}
+              <div className="p-3 rounded-lg bg-muted/40 border border-border/50 flex items-center justify-between">
+                <div>
+                  <div className="font-bold text-sm text-foreground">{selectedEmployeeForDrilldown.name}</div>
+                  <div className="text-muted-foreground text-xs mt-0.5">
+                    {selectedEmployeeForDrilldown.positionTitle} • {selectedEmployeeForDrilldown.departmentName}
+                  </div>
+                </div>
+                <div className="text-left">
+                  <div className={`text-xl font-black ${getScoreColor(selectedEmployeeForDrilldown.compositeScore, selectedEmployeeForDrilldown.isEvaluated)}`}>
+                    {selectedEmployeeForDrilldown.isEvaluated ? `${selectedEmployeeForDrilldown.compositeScore} / 100` : "قيد التقييم"}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">{selectedEmployeeForDrilldown.tierLabel}</div>
+                </div>
+              </div>
+
+              {/* 5 Pillars with Dynamic Weights */}
+              <div>
+                <div className="font-bold text-foreground mb-2">المحاور الخمسة وتوزيع الأوزان الفعلي:</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {Object.entries(selectedEmployeeForDrilldown.pillars).map(([k, p]) => (
+                    <div key={k} className="p-2.5 rounded bg-card border border-border/50 flex flex-col justify-between gap-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-foreground">{p.label || k}</span>
+                        <span className="text-[10px] font-mono text-muted-foreground">الوزن: {p.weight}%</span>
+                      </div>
+                      <div className="flex items-baseline justify-between mt-1">
+                        <span className="font-bold text-sm text-primary tabular-nums">
+                          {p.isApplicable !== false ? `${p.score} / 100` : "غير متاح"}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">{p.details}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Telemetry Numbers Breakdown */}
+              <div>
+                <div className="font-bold text-foreground mb-2">ملخص الدوام وإنجاز المهام:</div>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="p-2 rounded bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="text-[10px] text-muted-foreground">حضور فعلي</div>
+                    <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                      {selectedEmployeeForDrilldown.telemetryStats.presentDays ?? 0} يوم
+                    </div>
+                  </div>
+                  <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20">
+                    <div className="text-[10px] text-muted-foreground">تأخير صباحي</div>
+                    <div className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                      {selectedEmployeeForDrilldown.telemetryStats.lateDays ?? 0} يوم
+                    </div>
+                  </div>
+                  <div className="p-2 rounded bg-rose-500/10 border border-rose-500/20">
+                    <div className="text-[10px] text-muted-foreground">غياب غير مبرر</div>
+                    <div className="text-sm font-bold text-rose-600 dark:text-rose-400">
+                      {selectedEmployeeForDrilldown.telemetryStats.absentDays ?? 0} يوم
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Risk Flags if any */}
+              {selectedEmployeeForDrilldown.riskFlags.length > 0 && (
+                <div>
+                  <div className="font-bold text-rose-500 mb-1.5 flex items-center gap-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    <span>ملاحظات تشغيلية حرجة:</span>
+                  </div>
+                  <div className="space-y-1">
+                    {selectedEmployeeForDrilldown.riskFlags.map((flag, idx) => (
+                      <div key={idx} className="p-2 rounded bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs">
+                        • {flag}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button size="sm" onClick={() => setSelectedEmployeeForDrilldown(null)} className="text-xs">
+              إغلاق
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* PIP Generation Modal */}
       <Dialog open={!!selectedEmployeeForPIP} onOpenChange={(open) => !open && setSelectedEmployeeForPIP(null)}>
