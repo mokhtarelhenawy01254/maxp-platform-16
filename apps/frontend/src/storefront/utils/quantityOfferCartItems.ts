@@ -14,6 +14,15 @@ const resolveVariantFromAttributes = (
     return null;
   }
 
+  const normAttr = (val: unknown) =>
+    String(val || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[أإآ]/g, "ا")
+      .replace(/ة/g, "ه")
+      .replace(/ى/g, "ي")
+      .replace(/\s+/g, " ");
+
   return (
     variants.find((variant) => {
       const variantAttributes = getVariantAttributes(variant);
@@ -21,7 +30,11 @@ const resolveVariantFromAttributes = (
 
       return (
         variantEntries.length === Object.keys(attributes).length &&
-        variantEntries.every(([key, value]) => attributes[key] === value)
+        variantEntries.every(
+          ([key, value]) =>
+            attributes[key] === value ||
+            normAttr(attributes[key]) === normAttr(value),
+        )
       );
     }) || null
   );
