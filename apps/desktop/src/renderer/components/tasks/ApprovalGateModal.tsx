@@ -22,7 +22,7 @@ interface ApprovalGateModalProps {
     ownerOverrideReason?: string;
     criteriaChecked?: boolean;
   }) => Promise<void>;
-  onReturn: (reason: string) => Promise<void>;
+  onReturn: (reason: string, returnReasonType?: string, returnSeverity?: number) => Promise<void>;
   isSubmitting?: boolean;
 }
 
@@ -72,14 +72,22 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
   const [checklist, setChecklist] = useState(initialChecklist);
   const [returnMode, setReturnMode] = useState(false);
   const [returnReason, setReturnReason] = useState('');
-  const [useOwnerOverride, setUseOwnerOverride] = useState(false);
-  const [ownerOverrideReason, setOwnerOverrideReason] = useState('');
+  const [returnReasonType, setReturnReasonType] = useState('WRONG_EXECUTION');
+  const [returnSeverity, setReturnSeverity] = useState<number>(1);
+  // Auto-enable override if task has missing evidence and user is admin/manager
+  const [useOwnerOverride, setUseOwnerOverride] = useState(!hasValidEvidence && isAdminOrManager);
+  const [ownerOverrideReason, setOwnerOverrideReason] = useState(
+    !hasValidEvidence ? 'اعتماد إداري مباشر للمهام السابقة' : ''
+  );
 
   const allCriteriaChecked =
     checklist.length > 0 && checklist.every((item) => item.checked);
 
-  // Approval is never blocked on missing evidence or unchecked criteria
-  const canApprove = !isSubmitting;
+  const canApprove =
+    (allCriteriaChecked && hasValidEvidence) ||
+    (isAdminOrManager &&
+      useOwnerOverride &&
+      ownerOverrideReason.trim().length >= 3);
 
   const toggleCheck = (idx: number) => {
     setChecklist((prev) =>
@@ -100,7 +108,7 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
 
   const handleReturnSubmit = async () => {
     if (!returnReason.trim() || isSubmitting) return;
-    await onReturn(returnReason.trim());
+    await onReturn(returnReason.trim(), returnReasonType, returnSeverity);
   };
 
   return (
@@ -247,11 +255,12 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
               {hasValidEvidence ? (
                 <span style={{ fontSize: 11, color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
                   <CheckCircle2 size={12} />
-                  مرفق دليل
+                  معتمد
                 </span>
               ) : (
-                <span style={{ fontSize: 11, color: 'var(--text-muted, #94a3b8)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  اختياري (لم يرفق دليل)
+                <span style={{ fontSize: 11, color: '#f43f5e', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <AlertTriangle size={12} />
+                  بدون دليل
                 </span>
               )}
             </div>
@@ -298,11 +307,15 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
               </div>
             ) : (
               <div style={styles.noEvidenceBox}>
-                <span style={{ fontWeight: 600, color: 'var(--text-secondary, #cbd5e1)', fontSize: 12 }}>
-                  لم يتم إرفاق ملف دليل تسليم (اختياري)
+                <AlertTriangle size={24} color="#f59e0b" style={{ margin: '0 auto 6px' }} />
+                <span style={{ fontWeight: 600, color: '#f59e0b', fontSize: 12 }}>
+                  لا يوجد ملف دليل تسليم مسجل على هذه المهمة
                 </span>
                 <p style={{ margin: '6px 0 0', color: 'var(--text-muted, #94a3b8)', lineHeight: 1.5, fontSize: 11 }}>
-                  يمكنك مراجعة متطلبات المهمة واعتماد إنجازها مباشرة بدون أي عوائق.
+                  تم تحويل هذه المهمة للمراجعة بدون دليل تشغيل رقمي (أو مهمة سابقة).
+                  {isAdminOrManager
+                    ? ' بصفتك مديراً يمكنك تفعيل «الاعتماد الاستثنائي للإدارة» على اليمين لاعتمادها، أو إرجاعها للمنفذ.'
+                    : ' يرجى إرجاع المهمة للمنفذ لتقديم دليل التسليم.'}
                 </p>
               </div>
             )}
@@ -337,6 +350,39 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
         {/* Collapsible Return Drawer */}
         {returnMode && (
           <div style={styles.returnDrawer}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 8 }}>
+              <div>
+                <label style={styles.returnLabel}>
+                  نوع سبب الإرجاع <span style={{ color: '#f43f5e' }}>*</span>
+                </label>
+                <select
+                  value={returnReasonType}
+                  onChange={(e) => setReturnReasonType(e.target.value)}
+                  style={styles.returnSelect}
+                >
+                  <option value="WRONG_EXECUTION">خطأ في التنفيذ</option>
+                  <option value="MISSING_EVIDENCE">نقص في أدلة الإنجاز</option>
+                  <option value="CRITERIA_VIOLATION">مخالفة معايير القبول</option>
+                  <option value="QUALITY">جودة دون المستوى</option>
+                  <option value="LATE">تأخير في التسليم</option>
+                </select>
+              </div>
+              <div>
+                <label style={styles.returnLabel}>
+                  درجة الشدة <span style={{ color: '#f43f5e' }}>*</span>
+                </label>
+                <select
+                  value={returnSeverity}
+                  onChange={(e) => setReturnSeverity(Number(e.target.value))}
+                  style={styles.returnSelect}
+                >
+                  <option value={1}>بسيط (تعديلات طفيفة)</option>
+                  <option value={2}>متوسط (نواقص مؤثرة)</option>
+                  <option value={3}>جسيم (إعادة عمل كاملة)</option>
+                </select>
+              </div>
+            </div>
+
             <label style={styles.returnLabel}>
               سبب الإرجاع للتعديل والملاحظات المطلوبة <span style={{ color: '#f43f5e' }}>* (إلزامي)</span>
             </label>
@@ -397,12 +443,18 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
             <button
               type="button"
               onClick={handleApproveSubmit}
-              disabled={isSubmitting}
-              title="اعتماد وإنجاز المهمة"
+              disabled={!canApprove || isSubmitting}
+              title={
+                !hasValidEvidence && !useOwnerOverride
+                  ? 'ممنوع الاعتماد بدون دليل تسليم أو تجاوز استثنائي'
+                  : !allCriteriaChecked && !useOwnerOverride
+                  ? 'يجب التأشير على جميع معايير القبول أولاً'
+                  : 'اعتماد وإنجاز المهمة'
+              }
               style={{
                 ...styles.approveBtn,
-                opacity: isSubmitting ? 0.6 : 1,
-                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                opacity: !canApprove || isSubmitting ? 0.5 : 1,
+                cursor: canApprove && !isSubmitting ? 'pointer' : 'not-allowed',
               }}
             >
               <CheckCircle2 size={14} />
@@ -680,6 +732,16 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     color: '#f59e0b',
     marginBottom: 6,
+  },
+  returnSelect: {
+    width: '100%',
+    padding: '6px 8px',
+    borderRadius: 6,
+    fontSize: 11,
+    backgroundColor: '#1e293b',
+    border: '1px solid rgba(245, 158, 11, 0.3)',
+    color: '#ffffff',
+    outline: 'none',
   },
   returnTextarea: {
     width: '100%',

@@ -24,6 +24,7 @@ import {
   Link as LinkIcon,
   Eye,
   EyeOff,
+  Maximize2,
 } from 'lucide-react';
 import { TaskDescriptionRenderer } from './TaskDescriptionRenderer';
 import { AcceptanceCriteriaChecklist } from './AcceptanceCriteriaChecklist';
@@ -52,6 +53,7 @@ interface TaskDetailDrawerProps {
   onStartTask?: (task: any) => void;
   onStopTask?: (taskId?: string) => void;
   onOpenApprovalGate?: (task: any) => void;
+  onOpenFullPage?: (task: any) => void;
 }
 
 export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
@@ -72,6 +74,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   onStartTask,
   onStopTask,
   onOpenApprovalGate,
+  onOpenFullPage,
 }) => {
   const [commentText, setCommentText] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
@@ -368,6 +371,18 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                   >
                     <Edit3 size={12} />
                     <span style={{ fontSize: 10.5 }}>تعديل</span>
+                  </button>
+                )}
+
+                {onOpenFullPage && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenFullPage(task)}
+                    style={drawerStyles.iconToolBtn}
+                    title="فتح كصفحة مستقلة كاملة (Full Cockpit Page)"
+                  >
+                    <Maximize2 size={12} color="var(--accent-blue)" />
+                    <span style={{ fontSize: 10.5 }}>صفحة كاملة</span>
                   </button>
                 )}
 

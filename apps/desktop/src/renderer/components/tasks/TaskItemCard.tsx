@@ -20,6 +20,7 @@ import {
   Copy,
   CheckCheck,
   ListChecks,
+  Maximize2,
 } from 'lucide-react';
 import { audioAlerts } from '../../utils/audioAlerts';
 import { ReturnForRevisionModal } from './ReturnForRevisionModal';
@@ -46,6 +47,7 @@ interface TaskItemCardProps {
   onToggleCheck?: (taskId: string) => void;
   viewType?: 'my-tasks' | 'assigned-by-me' | 'all';
   onOpenApprovalGate?: (task: any) => void;
+  onOpenFullPage?: (task: any) => void;
 }
 
 export const TaskItemCard: React.FC<TaskItemCardProps> = ({
@@ -70,6 +72,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   onToggleCheck,
   viewType = 'my-tasks',
   onOpenApprovalGate,
+  onOpenFullPage,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -672,6 +675,23 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             >
               <Lock size={10} color="var(--text-muted)" />
             </span>
+          )}
+
+          {onOpenFullPage && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenFullPage(task);
+              }}
+              style={{
+                ...rowStyles.expandBtn,
+                color: 'var(--text-dim)',
+              }}
+              title="فتح كصفحة مستقلة كاملة (Full Cockpit)"
+            >
+              <Maximize2 size={11} />
+            </button>
           )}
 
           {/* Open Details Drawer Chevron Button */}

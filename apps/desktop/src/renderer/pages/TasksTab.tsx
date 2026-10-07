@@ -21,11 +21,13 @@ import {
   AlertTriangle,
   ClipboardCheck,
   RotateCcw,
+  Loader2,
 } from 'lucide-react';
 import { CreateTaskModal } from '../components/tasks/CreateTaskModal';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { TaskItemCard } from '../components/tasks/TaskItemCard';
 import { TaskDetailDrawer } from '../components/tasks/TaskDetailDrawer';
+import { TaskCockpitPage } from '../components/tasks/cockpit/TaskCockpitPage';
 import { ApprovalGateModal } from '../components/tasks/ApprovalGateModal';
 import { TaskReportView } from '../components/tasks/reports/TaskReportView';
 import { TaskUnifiedFilterBar } from '../components/tasks/TaskUnifiedFilterBar';
@@ -82,14 +84,26 @@ export const TasksTab: React.FC = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [fullScreenTaskId, setFullScreenTaskId] = useState<string | null>(() => {
+    const hash = window.location.hash || '';
+    const match = hash.match(/^#\/tasks\/([a-zA-Z0-9_-]+)\/full/);
+    return match ? match[1] : null;
+  });
 
-  // Deep-linking: sync selected task from URL hash #/tasks/<id>
+  // Deep-linking: sync selected task from URL hash #/tasks/<id> or #/tasks/<id>/full
   useEffect(() => {
     const syncFromHash = () => {
       const hash = window.location.hash || '';
+      const fullMatch = hash.match(/^#\/tasks\/([a-zA-Z0-9_-]+)\/full/);
+      if (fullMatch && fullMatch[1]) {
+        setFullScreenTaskId(fullMatch[1]);
+        setSelectedTaskId(fullMatch[1]);
+        return;
+      }
       const match = hash.match(/^#\/tasks\/([a-zA-Z0-9_-]+)/);
       if (match && match[1]) {
         setSelectedTaskId(match[1]);
+        setFullScreenTaskId(null);
       }
     };
     syncFromHash();
@@ -713,10 +727,10 @@ export const TasksTab: React.FC = () => {
     }
   };
 
-  const handleReturnGate = async (reason: string) => {
+  const handleReturnGate = async (reason: string, returnReasonType?: string, returnSeverity?: number) => {
     if (!approvalGateTask) return;
     try {
-      await handleUpdateStatus(approvalGateTask.id, 'IN_PROGRESS', reason);
+      await handleUpdateStatus(approvalGateTask.id, 'IN_PROGRESS', reason, returnReasonType, returnSeverity);
       setApprovalGateTask(null);
     } catch (err: any) {
       setErrorToast(err?.message || 'فشل في إعادة المهمة للتعديل');
@@ -913,6 +927,20 @@ export const TasksTab: React.FC = () => {
     }
   }, []);
 
+  const handleOpenFullPage = useCallback((task: any) => {
+    if (!task) return;
+    setFullScreenTaskId(task.id);
+    setSelectedTaskId(task.id);
+    window.location.hash = `#/tasks/${task.id}/full`;
+  }, []);
+
+  const handleCloseFullPage = useCallback(() => {
+    setFullScreenTaskId(null);
+    if (window.location.hash.includes('/full')) {
+      window.location.hash = selectedTaskId ? `#/tasks/${selectedTaskId}` : '#/tasks';
+    }
+  }, [selectedTaskId]);
+
 
   // Command palette deep actions: open task in drawer / spawn create modal
   useEffect(() => {
@@ -974,6 +1002,84 @@ export const TasksTab: React.FC = () => {
     window.addEventListener('keydown', handleDrawerKeyDown);
     return () => window.removeEventListener('keydown', handleDrawerKeyDown);
   }, [selectedTaskId, sortedDisplayTasks, handleCloseDrawer, handleSelectTask]);
+
+  const fullScreenTask = fullScreenTaskId
+    ? tasks.find((t) => t.id === fullScreenTaskId) || (selectedTask?.id === fullScreenTaskId ? selectedTask : null)
+    : null;
+
+  // Dedicated Full-Screen Cockpit Page Mode
+  if (fullScreenTaskId) {
+    if (!fullScreenTask) {
+      return (
+        <div style={{ ...styles.container, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <Loader2 size={24} className="animate-spin" color="var(--accent-blue)" />
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>جاري تحميل تفاصيل المهمة…</span>
+            <button
+              type="button"
+              onClick={handleCloseFullPage}
+              style={{
+                padding: '5px 12px',
+                borderRadius: 6,
+                border: '1px solid var(--border-default)',
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                fontSize: 12,
+              }}
+            >
+              العودة لقائمة المهام
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div style={styles.container}>
+        <TaskCockpitPage
+          task={fullScreenTask}
+          onBack={handleCloseFullPage}
+          onUpdateStatus={handleUpdateStatus}
+          onToggleStatus={handleToggleStatus}
+          onEdit={(taskToEdit) => setEditingTask(taskToEdit)}
+          onOpenImage={(img) => setPreviewImage(img)}
+          serverUrl={serverUrl}
+          authToken={authToken}
+          currentUserId={currentUser?.id || currentUser?.userId}
+          isAdmin={isAdminOrManager}
+          activeTaskId={activeTask?.id}
+          activeTaskIds={elapsedMap}
+          activeRunnerSeconds={runnerSeconds}
+          onStartTask={handleStartTask}
+          onStopTask={handleStopTask}
+          onOpenApprovalGate={setApprovalGateTask}
+        />
+
+        {/* Edit Task Modal */}
+        <EditTaskModal
+          isOpen={Boolean(editingTask)}
+          onClose={() => setEditingTask(null)}
+          task={editingTask}
+          onUpdated={() => loadData(false)}
+          users={users}
+          serverUrl={serverUrl}
+        />
+
+        {/* Approval Gate Modal */}
+        {approvalGateTask && (
+          <ApprovalGateModal
+            isOpen={Boolean(approvalGateTask)}
+            onClose={() => setApprovalGateTask(null)}
+            task={approvalGateTask}
+            isAdminOrManager={isAdminOrManager}
+            onApprove={handleApproveGate}
+            onReturn={handleReturnGate}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
@@ -1424,6 +1530,7 @@ export const TasksTab: React.FC = () => {
               onStopTask={handleStopTask}
               viewType={activeView}
               onOpenApprovalGate={setApprovalGateTask}
+              onOpenFullPage={handleOpenFullPage}
             />
           ))
           )
@@ -1536,6 +1643,7 @@ export const TasksTab: React.FC = () => {
         onStartTask={handleStartTask}
         onStopTask={handleStopTask}
         onOpenApprovalGate={setApprovalGateTask}
+        onOpenFullPage={handleOpenFullPage}
       />
 
       {/* Approval Gate Modal */}
