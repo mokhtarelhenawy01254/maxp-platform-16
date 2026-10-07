@@ -490,7 +490,7 @@ class ProductQuantityTierInput(BaseModel):
 
 class ProductConfigureConversionInput(BaseModel):
     product_id: str = Field(
-        description="Target product CUID, SKU, or product name to configure conversion/advanced settings for."
+        description="Target product CUID, SKU, or product name to configure conversion/advanced settings for. Pass 'all' or 'الكل' when clearing quantity offers across all products in the store."
     )
     cross_sell_products: list[str] | None = Field(
         default=None,
@@ -506,7 +506,11 @@ class ProductConfigureConversionInput(BaseModel):
     )
     quantity_tiers: list[ProductQuantityTierInput] | None = Field(
         default=None,
-        description="Optional list of per-product quantity discount tiers (شرائح عروض الكمية في تبويب عروض الكميات), e.g. [{'quantity': 2, 'discount_percent': 10}, {'quantity': 3, 'discount_percent': 15}].",
+        description="Optional list of per-product quantity discount tiers (شرائح عروض الكمية في تبويب عروض الكميات), e.g. [{'quantity': 2, 'discount_percent': 10}, {'quantity': 3, 'discount_percent': 15}]. Pass [] or set clear_quantity_offers=True to remove all quantity offers.",
+    )
+    clear_quantity_offers: bool | None = Field(
+        default=None,
+        description="Set to True to completely clear/remove/delete all quantity discount tiers and bundle offers from this product (or from all products if product_id='all').",
     )
     show_fake_stock: bool | None = Field(
         default=None,
@@ -557,6 +561,8 @@ async def product_configure_conversion(input_data: ProductConfigureConversionInp
         updates["related_products"] = input_data.related_products
     if input_data.quantity_tiers is not None:
         updates["quantity_tiers"] = [t.model_dump() for t in input_data.quantity_tiers]
+    if input_data.clear_quantity_offers is not None:
+        updates["clear_quantity_offers"] = input_data.clear_quantity_offers
     if input_data.show_fake_stock is not None:
         updates["show_fake_stock"] = input_data.show_fake_stock
     if input_data.exclude_from_free_shipping is not None:
@@ -625,8 +631,9 @@ product_read_conversion_tool = FunctionTool(
 product_configure_conversion_tool = FunctionTool(
     name="product_configure_conversion",
     description=(
-        "Configure per-product conversion, bundle, cross-sell, upsell, related products, quantity discount tiers (شرائح عروض الكميات), "
-        "fake stock urgency counter, or checkout settings for a single specific product (persisted in the product's 'متقدم' Advanced tab and 'عروض الكميات' Quantity Offers tab). "
+        "Configure or clear per-product conversion, bundle, cross-sell, upsell, related products, quantity discount tiers (شرائح عروض الكميات), "
+        "fake stock urgency counter, or checkout settings for a single specific product (or pass product_id='all' with clear_quantity_offers=True to clear quantity offers across all products in the store). "
+        "Use clear_quantity_offers=True (or quantity_tiers=[]) whenever the merchant asks to remove/delete/cancel quantity offers on a product or all products. "
         "Requires merchant approval."
     ),
     func=product_configure_conversion,

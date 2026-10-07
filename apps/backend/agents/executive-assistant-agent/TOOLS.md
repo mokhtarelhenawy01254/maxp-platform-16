@@ -33,9 +33,9 @@
   - **مثال سؤال:** «إيه تصنيفات المصروفات المتاحة؟» · «معرف تصنيف التسويق إيه؟».
 
 ## 2. أدوات التعديل والتحكم التشغيلي (Write & Action Tools)
-- `conversion.tool.toggle`: تفعيل أو إيقاف أداة تحويل عامة محددة (مثل شريط الشحن المجاني). **يتطلب كارت اعتماد مسبق**.
-- `conversion.tool.set.threshold`: تعديل الحد الأدنى العام للشحن المجاني أو الخصم. **يتطلب كارت اعتماد مسبق**.
-- `product.configure.conversion`: تخصيص وضبط إعدادات التحويل لمنتج واحد بعينه (الـ Cross-Sell `cross_sell_queries`، الـ Upsell `upsell_queries`، المنتجات المشابهة `related_queries`، شرائح خصم الكميات `quantity_tiers`، العداد الوهمي `show_fake_stock`، وسعر الشطب `compare_price`). **يتطلب كارت اعتماد مسبق**.
+- `conversion.tool.toggle` / `conversion_tool_toggle`: تفعيل أو إيقاف أداة تحويل عامة محددة (مثل `freeShippingBar` أو `bulkSavings` أو `renderOnProductPage`). **استدعِها فوراً عند طلب التاجر ليظهر كارت الاعتماد**.
+- `conversion.tool.set.threshold` / `conversion_tool_set_threshold`: تعديل الحد الأدنى العام للشحن المجاني أو الخصم. **يتطلب كارت اعتماد مسبق**.
+- `product.configure.conversion` / `product_configure_conversion`: تخصيص وضبط أو مسح إعدادات التحويل والعروض لمنتج واحد بعينه أو لجميع المنتجات (`product_id` اسم المنتج أو الـ ID أو `"all"` لكل المنتجات، `clear_quantity_offers=True` لمسح وحذف عروض وخصومات الكميات، `quantity_tiers` لإضافة شرائح خصم الكميات، `cross_sell_products`، `upsell_products`، `related_products`، `show_fake_stock`، وسعر الشطب `compare_price`). **استدعِها فوراً عند طلب التاجر إضافة أو حذف عروض منتج أو كل المنتجات ليظهر كارت الاعتماد مباشرة**.
 - `inventory.adjust`: تعديل يدوي لمخزون منتج أو متغير في المخزن عند الجرد. **يتطلب اعتماد مسبق**.
 - `manage.todo`: تنظيم قائمة المهام التنفيذية المشتركة ومتابعة نسب إنجازها.
 - `record_learned_rule`: حفظ قاعدة عمل جديدة أو توجيه تنفيذي أصدره التاجر لضمان استمراريته في الذاكرة الدائمة.

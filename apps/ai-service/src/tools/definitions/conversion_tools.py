@@ -262,9 +262,33 @@ async def conversion_tool_toggle(input_data: ConversionToolToggleInput) -> dict[
 
     current_settings = app.get("settings") or {}
     next_settings = apply_module_toggle(current_settings, tool_key, bool(input_data.enable))
+    if tool_key == "renderOnProductPage" and not input_data.enable:
+        next_settings = _deep_merge(next_settings, {"modules": {"mixAndMatch": False}})
 
     try:
         await backend.update_company_app_settings(company_id, app["id"], next_settings)
+        # Keep quantity-offers-pro and conversion-suite.bulkSavings synchronized so disabling
+        # quantity offers from either key actually hides quantity offer panels on the storefront.
+        if tool_key == "bulkSavings":
+            qty_app = _find_managed_app(apps, "quantity-offers-pro")
+            if _is_operational(qty_app):
+                qty_updates: dict[str, Any] = {
+                    "modules": {
+                        "renderOnProductPage": bool(input_data.enable),
+                        **({"mixAndMatch": False} if not input_data.enable else {}),
+                    }
+                }
+                if input_data.enable:
+                    qty_updates["general"] = {"enabled": True}
+                merged_qty = _deep_merge(qty_app.get("settings") or {}, qty_updates)
+                await backend.update_company_app_settings(company_id, qty_app["id"], merged_qty)
+        elif tool_key == "renderOnProductPage":
+            conv_app = _find_managed_app(apps, "conversion-suite")
+            if _is_operational(conv_app):
+                merged_conv = apply_module_toggle(
+                    conv_app.get("settings") or {}, "bulkSavings", bool(input_data.enable)
+                )
+                await backend.update_company_app_settings(company_id, conv_app["id"], merged_conv)
     except Exception as exc:
         logger.error("conversion_tool_toggle save failed", error=str(exc))
         return {"success": False, "error": "تعذر حفظ التغيير على السيرفر، حاول تاني بعد شوية."}

@@ -154,6 +154,62 @@ class ProductRepository(BaseRepository):
     ) -> dict[str, Any]:
         import json
 
+        norm_pid = str(product_id or "").strip().lower()
+        if norm_pid in ("all", "الكل", "جميع المنتجات", "كل المنتجات", "*"):
+            if updates.get("clear_quantity_offers") or updates.get("quantity_tiers") == []:
+                rows = await self._session.execute(
+                    text('SELECT id, name, metadata FROM products WHERE "companyId" = :cid'),
+                    {"cid": company_id},
+                )
+                cleared_count = 0
+                for row in rows.mappings().all():
+                    p_meta = self._parse_metadata(row.get("metadata"))
+                    had_offers = bool(
+                        p_meta.get("quantityOffers")
+                        or p_meta.get("volumeDiscounts")
+                        or p_meta.get("multiPackOffers")
+                    )
+                    p_meta["quantityOffers"] = []
+                    p_meta["volumeDiscounts"] = []
+                    p_meta.pop("multiPackOffers", None)
+                    await self._session.execute(
+                        text('UPDATE products SET metadata = :meta, "updatedAt" = NOW() WHERE id = :pid AND "companyId" = :cid'),
+                        {"meta": json.dumps(p_meta, ensure_ascii=False), "pid": row["id"], "cid": company_id},
+                    )
+                    if had_offers:
+                        cleared_count += 1
+                await self._session.commit()
+                try:
+                    from src.tools.backend_client import get_backend_client
+                    from src.tools.definitions.conversion_tools import _deep_merge, _find_managed_app, _is_operational
+
+                    backend = get_backend_client()
+                    apps = await backend.list_company_apps(company_id)
+                    qty_app = _find_managed_app(apps, "quantity-offers-pro")
+                    if _is_operational(qty_app):
+                        merged_qty = _deep_merge(
+                            qty_app.get("settings") or {},
+                            {"modules": {"renderOnProductPage": False, "mixAndMatch": False}},
+                        )
+                        await backend.update_company_app_settings(company_id, qty_app["id"], merged_qty)
+                    conv_app = _find_managed_app(apps, "conversion-suite")
+                    if _is_operational(conv_app):
+                        merged_conv = _deep_merge(
+                            conv_app.get("settings") or {},
+                            {"modules": {"bulkSavings": False}},
+                        )
+                        await backend.update_company_app_settings(company_id, conv_app["id"], merged_conv)
+                except Exception:
+                    pass
+                return {
+                    "success": True,
+                    "clearedProductsCount": cleared_count,
+                    "changesApplied": [
+                        f"تم مسح وإلغاء شرائح عروض الكمية من جميع المنتجات ({cleared_count} منتج كان عليه عروض) وإيقاف عرض عروض الكميات على واجهة المتجر"
+                    ],
+                    "message": f"تم مسح وإلغاء شرائح عروض الكمية من جميع منتجات المتجر بنجاح ({cleared_count} منتج) وإيقاف ودجت عروض الكميات.",
+                }
+
         product = await self.resolve_product_by_identifier(company_id, product_id)
         if not product:
             return {"success": False, "error": f"لم يتم العثور على المنتج '{product_id}'"}
@@ -184,7 +240,12 @@ class ProductRepository(BaseRepository):
             names = "، ".join(item["name"] for item in resolved_rel if item["id"] != pid) or "بدون"
             changes_applied.append(f"ربط المنتجات المشابهة (Related): {names}")
 
-        if updates.get("quantity_tiers") is not None:
+        if updates.get("clear_quantity_offers"):
+            meta["quantityOffers"] = []
+            meta["volumeDiscounts"] = []
+            meta.pop("multiPackOffers", None)
+            changes_applied.append("تم حذف وإلغاء جميع عروض وخصومات الكمية من المنتج")
+        elif updates.get("quantity_tiers") is not None:
             raw_tiers = updates["quantity_tiers"] or []
             quantity_offers = []
             volume_discounts = []
@@ -228,6 +289,8 @@ class ProductRepository(BaseRepository):
 
             meta["quantityOffers"] = quantity_offers
             meta["volumeDiscounts"] = volume_discounts
+            if not quantity_offers:
+                meta.pop("multiPackOffers", None)
             changes_applied.append(f"ضبط شرائح عروض الكمية: {' · '.join(tier_summaries) if tier_summaries else 'تم المسح'}")
 
         if updates.get("exclude_from_free_shipping") is not None:

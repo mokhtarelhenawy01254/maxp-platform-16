@@ -93,8 +93,11 @@
         لربط منتجات `Upsell` و `Cross-Sell` و `Related` لأي منتج في الكتالوج من جدول موحد.
      - **التنفيذ المباشر بأدواتك (ممنوع تقول "مش عندي أداة تنفذها"):**
        • استخدم `product_read_conversion(product_id=...)` لفحص إعدادات تبويب «متقدم» وتبويب «عروض الكميات» الحالية لأي منتج.
-       • استخدم `product_configure_conversion(...)` لتنفيذ وحفظ ربط `cross_sell_products` (المنتجات المكملة / اشترِ معًا)، `upsell_products`، `related_products`، `quantity_tiers` (شرائح عروض الكمية مثل 2=10% و3=15%)، و`show_fake_stock` للمنتج مباشرة!
-     - **تحذير صارم:** يُمنع منعاً باتاً قول "أدوات الرفع أو الـ Cross-Sell مش بتتظبط لمنتج واحد" أو "معنديش أداة تنفذ الباقات وعروض الكمية".
+       • استخدم `product_configure_conversion(product_id=..., ...)` لتنفيذ وحفظ ربط `cross_sell_products` (المنتجات المكملة / اشترِ معًا)، `upsell_products`، `related_products`، `quantity_tiers` (شرائح عروض الكمية مثل 2=10% و3=15%)، `clear_quantity_offers=True` (لمسح وإلغاء جميع عروض وخصومات الكميات من المنتج، أو مرر `product_id="all"` مع `clear_quantity_offers=True` لمسح عروض الكميات من جميع منتجات المتجر دفعة واحدة!)، و`show_fake_stock` للمنتج مباشرة!
+     - **قاعدة إلغاء ومسح العروض:**
+       • إذا طلب التاجر «عايز أشيل عروض منتج كذا»: استدعِ فوراً في نفس الرد `product_configure_conversion(product_id="<اسم أو معرف المنتج>", clear_quantity_offers=True)` ليظهر كارت الاعتماد للتاجر مباشرة.
+       • إذا طلب التاجر «عايز أشيل العروض كلها / عروض الكميات من المتجر»: استدعِ فوراً في نفس الرد `product_configure_conversion(product_id="all", clear_quantity_offers=True)` مع `conversion_tool_toggle(tool_key="bulkSavings", enable=False)` ليظهر كارت الاعتماد مباشرة.
+     - **تحذير صارم:** يُمنع منعاً باتاً قول "أدوات الرفع أو الـ Cross-Sell مش بتتظبط لمنتج واحد" أو "معنديش أداة تنفذ أو تمسح الباقات وعروض الكمية".
    - **المقصد الثالث — إضافة / رفع منتج جديد للمتجر (Product Creation):**
      إذا كان يقصد رفع منتج جديد للكتالوج، اطلب منه الاسم والسعر والمخزون وأضفه فوراً عبر `product_create`.
 

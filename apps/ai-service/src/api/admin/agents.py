@@ -480,7 +480,7 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
         template_slug = "default"
         logger.warning("no_template_using_default", agent_id=cfg["id"], role=cfg.get("role"))
 
-    # Ensure template instructions override stale persona instructions if template has updated soul
+    # Ensure template instructions and newly added template tools override stale snapshots
     if template_slug and template_slug != "default":
         try:
             tpl = await get_template(str(template_slug), session)
@@ -492,6 +492,11 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
                     overrides["instructions"]["tools"] = tpl.instructions_tools
                 if tpl.instructions_agents:
                     overrides["instructions"]["agents"] = tpl.instructions_agents
+            if tpl and isinstance(tpl.allowed_tools, list):
+                for tpl_tool in tpl.allowed_tools:
+                    if tpl_tool not in allowed_tools:
+                        allowed_tools.append(tpl_tool)
+                overrides["allowed_tools"] = allowed_tools
         except Exception as exc:
             logger.warning("template_instructions_sync_failed", error=str(exc))
 

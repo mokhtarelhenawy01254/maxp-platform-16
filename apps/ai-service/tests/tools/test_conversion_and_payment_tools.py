@@ -382,3 +382,57 @@ def test_payment_read_formatter_lists_methods_in_arabic():
     assert "طرق الدفع" in formatted
     assert "الدفع عند الاستلام" in formatted
     assert "Kashier" in formatted
+
+
+@pytest.mark.asyncio
+async def test_toggle_bulk_savings_off_syncs_quantity_offers_pro(monkeypatch):
+    saved_by_app: dict[str, dict] = {}
+
+    class FakeBackend:
+        async def list_company_apps(self, company_id):
+            return [
+                {
+                    "id": "app_conv",
+                    "status": "ACTIVE",
+                    "app": {"slug": "conversion-suite"},
+                    "settings": {"general": {"enabled": True}, "modules": {"bulkSavings": True}},
+                },
+                {
+                    "id": "app_qty",
+                    "status": "ACTIVE",
+                    "app": {"slug": "quantity-offers-pro"},
+                    "settings": {
+                        "general": {"enabled": True},
+                        "modules": {"renderOnProductPage": True, "mixAndMatch": True},
+                    },
+                },
+            ]
+
+        async def update_company_app_settings(self, company_id, app_id, settings):
+            saved_by_app[app_id] = settings
+            return {"success": True}
+
+    monkeypatch.setattr("src.tools.backend_client.get_backend_client", lambda: FakeBackend())
+    result = await conversion_tool_toggle(
+        ConversionToolToggleInput(tool_key="bulkSavings", enable=False, company_id="c1")
+    )
+    assert result["success"] is True
+    assert saved_by_app["app_conv"]["modules"]["bulkSavings"] is False
+    assert saved_by_app["app_qty"]["modules"]["renderOnProductPage"] is False
+    assert saved_by_app["app_qty"]["modules"]["mixAndMatch"] is False
+
+
+def test_parse_quantity_offers_does_not_fabricate_fake_offers():
+    from src.tools.product_tools import _parse_quantity_offers
+
+    assert _parse_quantity_offers({"id": "p1", "price": 500, "metadata": {}}) == []
+    assert _parse_quantity_offers({"id": "p1", "price": 500, "metadata": {"quantityOffers": []}}) == []
+
+
+def test_product_configure_conversion_input_accepts_clear_quantity_offers():
+    from src.tools.definitions.product import ProductConfigureConversionInput
+
+    inp = ProductConfigureConversionInput(product_id="all", clear_quantity_offers=True)
+    assert inp.product_id == "all"
+    assert inp.clear_quantity_offers is True
+

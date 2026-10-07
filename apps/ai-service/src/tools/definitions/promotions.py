@@ -215,7 +215,7 @@ async def offers_list_active(input_data: OffersListActiveInput) -> dict[str, Any
             "labelAr": "العد التنازلي للعروض (Sale Countdown)",
         },
         "quantityOffersApp": {
-            "enabled": qty_app_enabled,
+            "enabled": qty_app_enabled and (bool(qty_modules.get("renderOnProductPage", False)) or bool(qty_modules.get("mixAndMatch", False))),
             "renderOnProductPage": bool(qty_modules.get("renderOnProductPage", False)),
             "mixAndMatch": bool(qty_modules.get("mixAndMatch", False)),
             "title": qty_copy.get("title") or "عروض الكميات",
