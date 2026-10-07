@@ -3934,13 +3934,18 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       if (total === 0 && customer?.totalOrdersCount > 0) {
         total = customer.totalOrdersCount;
         delivered = customer.totalDelivered || 0;
-        returned = Math.max(0, total - delivered);
+        if (delivered > 0 && customer.deliveryRate > 0 && customer.deliveryRate <= 100) {
+          const estAttempts = Math.round((delivered * 100) / customer.deliveryRate);
+          returned = Math.max(0, estAttempts - delivered);
+        } else {
+          returned = 0;
+        }
       }
 
       const attempts = delivered + returned;
       let deliveryRate = null;
-      let score = 7.5;
-      let diagnosis = 'عميل جديد — رصيد أولي موثوق (7.5/10)';
+      let score = null;
+      let diagnosis = 'عميل جديد — لم تكتمل له شحنات سابقة بعد';
       let ratingTier = 'UNKNOWN';
 
       if (isDuplicate) {
@@ -3962,10 +3967,6 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           s = base - penalty;
         }
 
-        if (cancelled > 0) {
-          s -= Math.min(cancelled * 0.3, 1.0);
-        }
-
         score = Math.min(9.9, Math.max(1.0, Math.round(s * 10) / 10));
 
         if (score >= 8.0) {
@@ -3981,14 +3982,6 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           ratingTier = 'POOR';
           diagnosis = `تحذير: مخاطرة مرتفعة (${Math.round(deliveryRate)}%) — ${returned} مرتجع سابق`;
         }
-      } else if (cancelled > 0) {
-        score = Math.max(2.5, Math.round((7.5 - cancelled * 1.5) * 10) / 10);
-        ratingTier = score >= 5.0 ? 'AVERAGE' : 'POOR';
-        diagnosis = `عميل لديه ${cancelled} طلب ملغي سابقاً`;
-      } else if (order.status === 'CANCELLED') {
-        score = 4.7;
-        ratingTier = 'POOR';
-        diagnosis = 'تم إلغاء هذا الطلب';
       }
 
       return {
@@ -7449,6 +7442,80 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
     formattedOrder.sessionDetails = orderSessionDetails;
     formattedOrder.firstOrderInfo = firstOrderInfo;
     formattedOrder.customerHistory = customerHistory;
+
+    // 🏷️ توحيد حسبة تقييم العميل في صفحة تفاصيل الطلب مع جدول الطلبات بناءً على الشحنات المنتهية فعلياً
+    const histStats = customerHistory?.stats;
+    if (histStats) {
+      const isDuplicate =
+        String(formattedOrder.status || '').toUpperCase() === 'DUPLICATE_ORDER' ||
+        Boolean(formattedOrder.metadata?.duplicate);
+      const delivered = histStats.deliveredCount || 0;
+      const returned = histStats.returnedCount || 0;
+      const cancelled = histStats.cancelledCount || 0;
+      const attempts = delivered + returned;
+      const total = Math.max(1, histStats.totalOrders || 1);
+
+      let deliveryRate = null;
+      let score = null;
+      let diagnosis = 'عميل جديد — لم تكتمل له شحنات سابقة بعد';
+      let ratingTier = 'UNKNOWN';
+
+      if (isDuplicate) {
+        score = 3.3;
+        ratingTier = 'POOR';
+        diagnosis = 'تحذير: طلب مكرر لنفس العميل — نسبة مخاطرة مرتفعة';
+      } else if (attempts > 0) {
+        const rate = delivered / attempts;
+        deliveryRate = Math.round(rate * 1000) / 10;
+
+        let s;
+        if (delivered === 0) {
+          s = Math.max(1.5, 2.8 - returned * 0.5);
+        } else if (returned === 0) {
+          s = ((delivered + 1.125) / (attempts + 1.5)) * 10;
+        } else {
+          const base = ((delivered + 1.125) / (attempts + 1.5)) * 10;
+          const penalty = (1 - rate) * 1.8;
+          s = base - penalty;
+        }
+
+        score = Math.min(9.9, Math.max(1.0, Math.round(s * 10) / 10));
+
+        if (score >= 8.0) {
+          ratingTier = 'EXCELLENT';
+          diagnosis = `سجل استلام ممتاز (${Math.round(deliveryRate)}%) — ${Math.floor(delivered)} من ${Math.round(attempts)} طلب`;
+        } else if (score >= 7.0) {
+          ratingTier = 'GOOD';
+          diagnosis = `سجل استلام جيد (${Math.round(deliveryRate)}%) — ${Math.floor(delivered)} من ${Math.round(attempts)} طلب`;
+        } else if (score >= 5.0) {
+          ratingTier = 'AVERAGE';
+          diagnosis = `سجل استلام متوسط (${Math.round(deliveryRate)}%) — ${returned > 0 ? `${returned} مرتجع سابق` : ''}`;
+        } else {
+          ratingTier = 'POOR';
+          diagnosis = `تحذير: مخاطرة مرتفعة (${Math.round(deliveryRate)}%) — ${returned} مرتجع سابق`;
+        }
+      }
+
+      formattedOrder.customerRating = ratingTier;
+      formattedOrder.customerSuccessScore = score;
+      formattedOrder.customerDeliveryRate = deliveryRate;
+      formattedOrder.healthScore = score;
+      formattedOrder.healthDiagnosis = diagnosis;
+      formattedOrder.deliveryRate = deliveryRate;
+      formattedOrder.totalDelivered = Math.floor(delivered);
+      formattedOrder.totalFailed = Math.ceil(returned);
+      formattedOrder.totalCancelled = cancelled;
+      formattedOrder.totalAttempts = Math.round(attempts);
+      formattedOrder.totalOrdersCount = total;
+
+      if (formattedOrder.customer) {
+        formattedOrder.customer.customerRating = ratingTier;
+        formattedOrder.customer.healthScore = score;
+        formattedOrder.customer.deliveryRate = deliveryRate;
+        formattedOrder.customer.totalDelivered = Math.floor(delivered);
+        formattedOrder.customer.totalOrdersCount = total;
+      }
+    }
 
     const responseOrder = applyOrderDetailFeatureAccess(
       formattedOrder,

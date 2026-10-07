@@ -79,20 +79,41 @@ describe("CustomerRatingBadge - 2026 Customer Health Score Standards", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
-  it("displays neutral trust score (7.5) for new customers with 0 completed orders", () => {
+  it("displays clean neutral badge for new customers with 0 completed orders without misleading low score", () => {
     render(
       <CustomerRatingBadge
         rating="UNKNOWN"
         deliveryRate={0}
         totalDelivered={0}
         totalAttempts={0}
+        totalOrdersCount={1}
+        orderStatus="CONFIRMED"
         variant="badge"
         interactive={false}
       />
     );
 
-    // Renders neutral baseline 7.5
-    expect(screen.getByText("7.5")).toBeInTheDocument();
+    expect(screen.getByText("جديد")).toBeInTheDocument();
+    expect(screen.queryByText("7.5")).not.toBeInTheDocument();
+    expect(screen.queryByText("2.3")).not.toBeInTheDocument();
+  });
+
+  it("does not penalize new customer when an order is cancelled before shipment", () => {
+    render(
+      <CustomerRatingBadge
+        rating="UNKNOWN"
+        deliveryRate={null}
+        totalDelivered={0}
+        totalAttempts={0}
+        totalCancelled={1}
+        orderStatus="CANCELLED"
+        variant="badge"
+        interactive={false}
+      />
+    );
+
+    expect(screen.getByText("جديد")).toBeInTheDocument();
+    expect(screen.queryByText("4.7")).not.toBeInTheDocument();
   });
 
   it("renders interactive badge button showing automated telemetry popover without manual override buttons", () => {
