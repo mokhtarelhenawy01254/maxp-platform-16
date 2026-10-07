@@ -51,6 +51,7 @@ const SYSTEM_STATUS_DEFS: Record<string, { label: string; labelKey: string; colo
   SHORTAGE_FAILED:      { label: 'عجز نهائي',            labelKey: 'orders.shortageFailed',    colorClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400' },
   WOO_TAGHEZ:           { label: 'Woo Taghez',           labelKey: 'orders.wooTaghez',         colorClass: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' },
   PENDING_CANCELLATION: { label: 'بانتظار الإلغاء',      labelKey: 'orders.pendingCancellation',colorClass: 'bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400' },
+  BDONKODTERBO:         { label: 'بدون كود تيربو',       labelKey: 'orders.bdonkodterbo',      colorClass: 'bg-zinc-100 text-zinc-800 border border-zinc-300 dark:bg-zinc-800/40 dark:text-zinc-300 dark:border-zinc-700' },
 };
 
 /** Canonical turbo statuses with display info */
@@ -102,11 +103,26 @@ export interface OrderLike {
   turboShipmentId?: string | null;
 }
 
+const CUSTOM_STATUS_DEFS: Record<string, { label: string; labelKey: string; colorClass: string }> = {};
+
+export function registerCustomStatuses(configs: Array<{ code?: string; name?: string; color?: string }>) {
+  if (!Array.isArray(configs)) return;
+  configs.forEach((cfg) => {
+    if (!cfg || !cfg.code) return;
+    const key = cfg.code.toUpperCase().trim().replace(/\s+/g, '_');
+    CUSTOM_STATUS_DEFS[key] = {
+      label: cfg.name || key.replace(/_/g, ' '),
+      labelKey: '',
+      colorClass: 'bg-zinc-100 text-zinc-800 border border-zinc-300 dark:bg-zinc-800/40 dark:text-zinc-300 dark:border-zinc-700',
+    };
+  });
+}
+
 function getSystemDef(code: string): { label: string; labelKey: string; colorClass: string } {
   let key = (code || 'PENDING').toUpperCase().trim();
   // Normalize: spaces → underscores, lowercase → uppercase (e.g. "Stock Shortage" → "STOCK_SHORTAGE")
   key = key.replace(/\s+/g, '_');
-  return SYSTEM_STATUS_DEFS[key] || {
+  return SYSTEM_STATUS_DEFS[key] || CUSTOM_STATUS_DEFS[key] || {
     label: key.replace(/_/g, ' '),
     labelKey: '',
     colorClass: 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400',

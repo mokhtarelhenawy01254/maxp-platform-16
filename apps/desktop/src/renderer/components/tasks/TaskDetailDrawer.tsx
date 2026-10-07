@@ -54,6 +54,7 @@ interface TaskDetailDrawerProps {
   onStopTask?: (taskId?: string) => void;
   onOpenApprovalGate?: (task: any) => void;
   onOpenFullPage?: (task: any) => void;
+  onUpdateCriteria?: (taskId: string, items: any[], allCompleted: boolean) => Promise<void>;
 }
 
 export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
@@ -75,6 +76,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   onStopTask,
   onOpenApprovalGate,
   onOpenFullPage,
+  onUpdateCriteria,
 }) => {
   const [commentText, setCommentText] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
@@ -696,13 +698,19 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
             </div>
 
             {/* ACCEPTANCE CRITERIA CHECKLIST (معايير القبول والتسليم) */}
-            {task.acceptanceCriteria && (
+            {(task.acceptanceCriteria || task.criteriaChecklist || canEditTask) && (
               <div style={drawerStyles.cardSection}>
                 <AcceptanceCriteriaChecklist
-                  value={task.acceptanceCriteria || ''}
+                  value={task.criteriaChecklist || task.acceptanceCriteria || ''}
                   readOnly={true}
                   interactive={true}
                   taskId={task.id}
+                  canEdit={canEditTask}
+                  onCriteriaChange={
+                    onUpdateCriteria
+                      ? (items, allCompleted) => onUpdateCriteria(task.id, items, allCompleted)
+                      : undefined
+                  }
                 />
               </div>
             )}

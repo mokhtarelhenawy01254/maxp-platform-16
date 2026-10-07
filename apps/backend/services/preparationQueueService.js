@@ -158,6 +158,7 @@ const updatePreparationOrderStatus = async ({
       where: { id: order.id },
       data: {
         status: mappedStatus,
+        customStatusCode: PREPARATION_ONLY_STATUSES.has(normalizedStatus) ? null : undefined,
         notes: notes || undefined,
         metadata: JSON.stringify(nextMetadata),
         statusHistory: {
@@ -362,7 +363,7 @@ const getOrderHoldDetails = (order) => {
   return { reason: '', state: 'released' };
 };
 
-const getEffectivePreparationStatus = (status, metadata) => {
+const getEffectivePreparationStatus = (status, metadata, customStatusCode = null) => {
   const normalizedStatus = toPreparationUpper(status);
   if (PREPARATION_TERMINAL_STATUSES.has(normalizedStatus)) {
     return normalizedStatus;
@@ -373,10 +374,21 @@ const getEffectivePreparationStatus = (status, metadata) => {
     metadataObject[PREPARATION_STATUS_METADATA_KEY]
   );
 
+  if (metadataStatus && !PREPARATION_TERMINAL_STATUSES.has(metadataStatus)) {
+    return metadataStatus;
+  }
+
+  if (customStatusCode) {
+    const customUpper = toPreparationUpper(customStatusCode);
+    if (customUpper && !PREPARATION_TERMINAL_STATUSES.has(customUpper)) {
+      return customUpper;
+    }
+  }
+
   return metadataStatus || normalizedStatus;
 };
 
-const normalizePreparationStage = (status) => {
+const normalizePreparationStage = (status, customStatusMap = null) => {
   const normalized = toPreparationUpper(status);
   if (['PENDING', 'CONFIRMED', 'PENDING_PREPARATION'].includes(normalized)) {
     return 'WAITING';
@@ -402,6 +414,25 @@ const normalizePreparationStage = (status) => {
   if (normalized === 'ON_HOLD_PREP') {
     return 'ON_HOLD_PREP';
   }
+
+  if (normalized === 'BDONKODTERBO') {
+    return 'WAITING';
+  }
+
+  if (customStatusMap) {
+    const customConfig = customStatusMap.get?.(normalized) || customStatusMap[normalized];
+    if (customConfig) {
+      if (customConfig.statusType === 'preparation') {
+        return 'WAITING';
+      }
+      if (customConfig.mapsToSystem) {
+        const sysMapped = normalizePreparationStage(customConfig.mapsToSystem);
+        if (sysMapped) return sysMapped;
+      }
+      return 'WAITING';
+    }
+  }
+
   return null;
 };
 
@@ -708,6 +739,7 @@ const mapRegularOrderToSimple = (order, { merchantScope = null } = {}) => {
         : {})
     },
     isViewed: order.isViewed ?? false,
+    customStatusCode: order.customStatusCode || null,
     sourceType: order.sourceType || 'unknown',
     extractionMethod: order.extractionMethod || 'unknown',
     orderSource: order.orderSource || 'REGULAR',
@@ -763,6 +795,7 @@ const mapGuestOrderToSimple = (order) => {
     tax: 0,
     shipping: order.shippingCost || 0,
     status: order.status?.toLowerCase() || 'pending',
+    customStatusCode: order.customStatusCode || (order.status && order.status.toUpperCase() === 'BDONKODTERBO' ? order.status.toUpperCase() : null),
     paymentStatus: 'pending',
     paymentMethod: order.paymentMethod?.toLowerCase() || 'cash_on_delivery',
     shippingAddress,
@@ -799,10 +832,15 @@ const mapGuestOrderToSimple = (order) => {
 const buildPreparationOrderSummary = (
   order,
   inventorySummaryByProduct,
-  selectedWarehouseId
+  selectedWarehouseId,
+  customStatusMap = null
 ) => {
-  const normalizedStatus = getEffectivePreparationStatus(order.status, order.metadata);
-  const stage = normalizePreparationStage(normalizedStatus);
+  const normalizedStatus = getEffectivePreparationStatus(
+    order.status,
+    order.metadata,
+    order.customStatusCode
+  );
+  const stage = normalizePreparationStage(normalizedStatus, customStatusMap);
   if (!stage) {
     return null;
   }
@@ -858,9 +896,14 @@ const buildPreparationOrderSummary = (
 
   const totalUnits = itemInsights.reduce((sum, item) => sum + item.quantityNumber, 0);
   const totalValue = toPreparationNumber(order.total);
+  const effectiveCustomStatusCode =
+    order.customStatusCode ||
+    (customStatusMap?.has?.(normalizedStatus) ? normalizedStatus : null) ||
+    (normalizedStatus === 'BDONKODTERBO' ? 'BDONKODTERBO' : null);
 
   return {
     ...order,
+    customStatusCode: effectiveCustomStatusCode,
     normalizedStatus,
     stage,
     shortageHoldDetails,
@@ -1131,11 +1174,15 @@ const STAGE_EFFECTIVE_STATUS_MAP = {
   PENDING_CANCELLATION: ['PENDING_CANCELLATION'],
 };
 
-const buildStageSqlCondition = (builder, stage, tableAlias, useMetadata) => {
-  const statuses = STAGE_EFFECTIVE_STATUS_MAP[stage];
+const buildStageSqlCondition = (builder, stage, tableAlias, useMetadata, customStageMap = null) => {
+  let statuses = STAGE_EFFECTIVE_STATUS_MAP[stage] ? [...STAGE_EFFECTIVE_STATUS_MAP[stage]] : null;
+  if (customStageMap && customStageMap[stage]) {
+    statuses = (statuses || []).concat(customStageMap[stage]);
+  }
+
   if (!statuses) {
     if (useMetadata) {
-      const effectiveStatus = `COALESCE(NULLIF(${tableAlias}."metadata"::jsonb->>'preparationStatus', ''), ${tableAlias}."status"::text)`;
+      const effectiveStatus = `COALESCE(NULLIF(${tableAlias}."metadata"::jsonb->>'preparationStatus', ''), NULLIF(${tableAlias}."customStatusCode", ''), ${tableAlias}."status"::text)`;
       const placeholder = builder.pushValue(stage);
       return `UPPER(${effectiveStatus}) = ${placeholder}`;
     }
@@ -1144,13 +1191,55 @@ const buildStageSqlCondition = (builder, stage, tableAlias, useMetadata) => {
   }
 
   if (useMetadata) {
-    const effectiveStatus = `COALESCE(NULLIF(${tableAlias}."metadata"::jsonb->>'preparationStatus', ''), ${tableAlias}."status"::text)`;
+    const effectiveStatus = `COALESCE(NULLIF(${tableAlias}."metadata"::jsonb->>'preparationStatus', ''), NULLIF(${tableAlias}."customStatusCode", ''), ${tableAlias}."status"::text)`;
     const placeholders = statuses.map((s) => builder.pushValue(s));
     return `${effectiveStatus} IN (${placeholders.join(', ')})`;
   }
 
   const placeholders = statuses.map((s) => builder.pushValue(s));
   return `UPPER(${tableAlias}."status") IN (${placeholders.join(', ')})`;
+};
+
+const loadPreparationCustomStatusContext = async (companyId) => {
+  let includeCustomStatuses = true;
+  try {
+    const companyRecord = await getSharedPrismaClient().company.findUnique({
+      where: { id: companyId },
+      select: { settings: true }
+    });
+    if (companyRecord) {
+      const parsedSettings = parsePreparationJsonObject(companyRecord.settings);
+      if (parsedSettings?.orderPreparation?.includeCustomStatuses === false) {
+        includeCustomStatuses = false;
+      }
+    }
+  } catch (_e) {}
+
+  const customStatusMap = new Map();
+  const customPrepCodes = [];
+  const customStageMap = {};
+
+  if (includeCustomStatuses) {
+    try {
+      const configs = await getSharedPrismaClient().orderStatusConfig.findMany({
+        where: { companyId, isActive: true }
+      });
+      configs.forEach((cfg) => {
+        if (!cfg.code) return;
+        const upperCode = toPreparationUpper(cfg.code);
+        customStatusMap.set(upperCode, cfg);
+
+        const stage = normalizePreparationStage(upperCode, customStatusMap);
+        if (stage) {
+          customPrepCodes.push(upperCode);
+          if (!customStageMap[stage]) customStageMap[stage] = [];
+          customStageMap[stage].push(upperCode);
+        }
+      });
+    } catch (_e) {}
+  }
+
+  return { includeCustomStatuses, customStatusMap, customPrepCodes, customStageMap };
 };
 
 const buildSearchSqlCondition = (builder, search, tableAlias, isRegular) => {
@@ -1184,6 +1273,8 @@ const fetchPreparationCandidateRows = async ({
   limit,
   activeStage,
   search,
+  customPrepCodes = [],
+  customStageMap = null,
 }) => {
   const createBuilder = () => {
     const values = [];
@@ -1219,7 +1310,17 @@ const fetchPreparationCandidateRows = async ({
     const lowerSearch = search ? search.toLowerCase() : '';
 
     builder.add(builder.equals('o."companyId"', companyId));
-    builder.add(builder.notInList('o."status"::text', PREPARATION_DB_TERMINAL_STATUSES));
+
+    if (customPrepCodes && customPrepCodes.length > 0) {
+      const customPlaceholders = customPrepCodes.map((c) => builder.pushValue(c));
+      const termPlaceholders = PREPARATION_DB_TERMINAL_STATUSES.map((s) => builder.pushValue(s));
+      const absPlaceholders = [...PREPARATION_TERMINAL_STATUSES].map((s) => builder.pushValue(s));
+      builder.add(
+        `((o."status"::text NOT IN (${termPlaceholders.join(', ')}) OR o."customStatusCode" IN (${customPlaceholders.join(', ')})) AND o."status"::text NOT IN (${absPlaceholders.join(', ')}))`
+      );
+    } else {
+      builder.add(builder.notInList('o."status"::text', PREPARATION_DB_TERMINAL_STATUSES));
+    }
 
     if (affiliateId) {
       builder.add(builder.equals('o."affiliateId"', affiliateId));
@@ -1235,7 +1336,7 @@ const fetchPreparationCandidateRows = async ({
     }
 
     if (activeStage && activeStage !== 'ALL') {
-      builder.add(buildStageSqlCondition(builder, activeStage, 'o', true));
+      builder.add(buildStageSqlCondition(builder, activeStage, 'o', true, customStageMap));
     }
 
     if (lowerSearch) {
@@ -1267,7 +1368,7 @@ const fetchPreparationCandidateRows = async ({
     }
 
     if (activeStage && activeStage !== 'ALL') {
-      builder.add(buildStageSqlCondition(builder, activeStage, 'g', false));
+      builder.add(buildStageSqlCondition(builder, activeStage, 'g', false, customStageMap));
     }
 
     if (lowerSearch) {
@@ -1498,6 +1599,12 @@ const getPreparationQueue = async ({ user, query }) => {
   let allOverdueProblemFollowUpCount = 0;
   let candidateOffset = 0;
 
+  const {
+    customStatusMap,
+    customPrepCodes,
+    customStageMap,
+  } = await loadPreparationCustomStatusContext(companyId);
+
   while (true) {
     const candidateRows = await fetchPreparationCandidateRows({
       companyId,
@@ -1507,6 +1614,8 @@ const getPreparationQueue = async ({ user, query }) => {
       limit: batchSize,
       activeStage: 'ALL',
       search: searchQuery,
+      customPrepCodes,
+      customStageMap,
     });
 
     if (!candidateRows.length) {
@@ -1550,7 +1659,12 @@ const getPreparationQueue = async ({ user, query }) => {
     const inventorySummaryByProduct = buildPreparationInventorySummary(inventoryRecords);
     const batchPreparationOrders = batchOrders
       .map((order) =>
-        buildPreparationOrderSummary(order, inventorySummaryByProduct, selectedWarehouseId)
+        buildPreparationOrderSummary(
+          order,
+          inventorySummaryByProduct,
+          selectedWarehouseId,
+          customStatusMap
+        )
       )
       .filter(Boolean);
 
@@ -1627,7 +1741,12 @@ const getPreparationQueue = async ({ user, query }) => {
         readyToShipCount += 1;
       }
 
-      if (resolvedStage === 'ALL' || order.stage === resolvedStage) {
+      if (
+        resolvedStage === 'ALL' ||
+        order.stage === resolvedStage ||
+        order.stage === activeStage ||
+        (order.normalizedStatus && order.normalizedStatus === activeStage)
+      ) {
         visibleTotal += 1;
         collectTopPreparationOrders({
           buffer: topVisibleOrders,
@@ -1747,6 +1866,12 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
   let candidateOffset = 0;
   const matchingOrderNumbers = [];
 
+  const {
+    customStatusMap,
+    customPrepCodes,
+    customStageMap,
+  } = await loadPreparationCustomStatusContext(companyId);
+
   while (true) {
     const candidateRows = await fetchPreparationCandidateRows({
       companyId,
@@ -1756,6 +1881,8 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
       limit: batchSize,
       activeStage: 'ALL',
       search: searchQuery,
+      customPrepCodes,
+      customStageMap,
     });
 
     if (!candidateRows.length) {
@@ -1795,7 +1922,12 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
     const inventorySummaryByProduct = buildPreparationInventorySummary(inventoryRecords);
     const batchPreparationOrders = batchOrders
       .map((order) =>
-        buildPreparationOrderSummary(order, inventorySummaryByProduct, selectedWarehouseId)
+        buildPreparationOrderSummary(
+          order,
+          inventorySummaryByProduct,
+          selectedWarehouseId,
+          customStatusMap
+        )
       )
       .filter(Boolean);
 
@@ -1819,7 +1951,12 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
 
       if (!matchesFilters) return;
 
-      if (resolvedStage === 'ALL' || order.stage === resolvedStage) {
+      if (
+        resolvedStage === 'ALL' ||
+        order.stage === resolvedStage ||
+        order.stage === activeStage ||
+        (order.normalizedStatus && order.normalizedStatus === activeStage)
+      ) {
         matchingOrderNumbers.push(order.orderNumber);
       }
     });

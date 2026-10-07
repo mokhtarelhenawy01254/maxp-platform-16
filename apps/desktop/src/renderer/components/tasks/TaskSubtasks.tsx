@@ -13,12 +13,14 @@ interface SubtaskItem {
 interface TaskSubtasksProps {
   taskId: string;
   canEdit?: boolean;
+  flat?: boolean;
   onSubtasksCountChange?: (completed: number, total: number) => void;
 }
 
 export const TaskSubtasks: React.FC<TaskSubtasksProps> = ({
   taskId,
   canEdit = true,
+  flat = false,
   onSubtasksCountChange,
 }) => {
   const [subtasks, setSubtasks] = useState<SubtaskItem[]>([]);
@@ -122,11 +124,11 @@ export const TaskSubtasks: React.FC<TaskSubtasksProps> = ({
   return (
     <div
       style={{
-        marginTop: 10,
-        padding: '10px 12px',
-        borderRadius: 8,
-        backgroundColor: 'var(--bg-elevated)',
-        border: '1px solid var(--border-subtle)',
+        marginTop: flat ? 0 : 10,
+        padding: flat ? 0 : '10px 12px',
+        borderRadius: flat ? 0 : 8,
+        backgroundColor: flat ? 'transparent' : 'var(--bg-elevated)',
+        border: flat ? 'none' : '1px solid var(--border-subtle)',
       }}
       onClick={(e) => e.stopPropagation()}
     >

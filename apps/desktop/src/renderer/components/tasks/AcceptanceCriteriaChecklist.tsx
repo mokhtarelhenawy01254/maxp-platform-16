@@ -21,6 +21,8 @@ interface AcceptanceCriteriaChecklistProps {
   readOnly?: boolean;
   interactive?: boolean;
   taskId?: string;
+  canEdit?: boolean;
+  onCriteriaChange?: (updatedItems: CriteriaItem[], allCompleted: boolean) => void;
 }
 
 export const parseCriteriaItems = (raw: any): CriteriaItem[] => {
@@ -29,8 +31,9 @@ export const parseCriteriaItems = (raw: any): CriteriaItem[] => {
   if (Array.isArray(raw)) {
     raw.forEach((item, idx) => {
       if (typeof item === 'string') {
-        const clean = item.replace(/^[-*•\d.\s]+/, '').trim();
-        if (clean) results.push({ id: `crit-${idx}`, text: clean, completed: false });
+        const isCompleted = /^[-*•\s]*\[(x|X|✓|✔)\]/i.test(item);
+        const clean = item.replace(/^[-*•\d.\s]+(\[(x|X|✓|✔|\s)\])?\s*/i, '').trim();
+        if (clean) results.push({ id: `crit-${idx}`, text: clean, completed: isCompleted });
       } else if (typeof item === 'object' && item !== null) {
         const text = (item.text || item.title || item.label || '').trim();
         if (text) {
@@ -56,8 +59,9 @@ export const parseCriteriaItems = (raw: any): CriteriaItem[] => {
       } catch {}
     }
     trimmed.split('\n').forEach((l, idx) => {
-      const clean = l.replace(/^[-*•\d.\s]+/, '').trim();
-      if (clean) results.push({ id: `crit-${idx}`, text: clean, completed: false });
+      const isCompleted = /^[-*•\s]*\[(x|X|✓|✔)\]/i.test(l);
+      const clean = l.replace(/^[-*•\d.\s]+(\[(x|X|✓|✔|\s)\])?\s*/i, '').trim();
+      if (clean) results.push({ id: `crit-${idx}`, text: clean, completed: isCompleted });
     });
     return results;
   }
@@ -73,6 +77,8 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
   readOnly = false,
   interactive = false,
   taskId,
+  canEdit = false,
+  onCriteriaChange,
 }) => {
   const parsedItems = parseCriteriaItems(value);
   // In readOnly mode, use cleanly parsed item texts. In editing mode, split raw string if possible.
@@ -83,6 +89,7 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
     : parsedItems.map((i) => i.text);
 
   const [draft, setDraft] = useState('');
+  const [inlineDraft, setInlineDraft] = useState('');
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
 
@@ -132,6 +139,23 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
     inputRef.current?.focus();
   };
 
+  const handleInlineAdd = () => {
+    const text = inlineDraft.trim();
+    if (!text) return;
+    const newItem: CriteriaItem = {
+      id: `crit-${Date.now()}`,
+      text,
+      completed: false,
+    };
+    const nextParsed = [...parsedItems, newItem];
+    setInlineDraft('');
+    if (onChange) {
+      commit([...items, text]);
+    }
+    const allDone = nextParsed.length > 0 && nextParsed.every((i) => i.completed);
+    onCriteriaChange?.(nextParsed, allDone);
+  };
+
   const updateItem = (idx: number, text: string) => {
     if (readOnly || !onChange) return;
     const next = [...items];
@@ -156,6 +180,12 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
           localStorage.setItem(`maxp_task_criteria_${taskId}`, JSON.stringify(updated));
         } catch {}
       }
+      const updatedItems = parsedItems.map((item, i) => ({
+        ...item,
+        completed: Boolean(updated[i]),
+      }));
+      const allCompleted = updatedItems.length > 0 && updatedItems.every((item) => item.completed);
+      onCriteriaChange?.(updatedItems, allCompleted);
       return updated;
     });
   };
@@ -235,14 +265,43 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
       return (
         <div>
           <div style={s.headerRow}>
-            <label style={s.label}>
-              <ListChecks size={13} style={{ verticalAlign: '-2px', marginInlineEnd: 4 }} />
-              معايير القبول
-            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <ListChecks size={13} color="var(--accent-blue)" />
+              <label style={{ ...s.label, color: 'var(--text-primary)', fontWeight: 600 }}>
+                معايير القبول والتسليم
+              </label>
+            </div>
           </div>
           <div style={s.emptyState}>
-            <span>لم يتم تحديد معايير قبول لهذه المهمة.</span>
+            <span>لم يتم تحديد معايير قبول لهذه المهمة بعد.</span>
           </div>
+          {canEdit && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+              <input
+                type="text"
+                placeholder="+ إضافة معيار قبول سريع… (Enter للحفظ)"
+                value={inlineDraft}
+                onChange={(e) => setInlineDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleInlineAdd();
+                  }
+                }}
+                style={s.inlineAddInput}
+              />
+              {inlineDraft.trim() && (
+                <button
+                  type="button"
+                  onClick={handleInlineAdd}
+                  style={s.inlineAddBtn}
+                >
+                  <Plus size={12} />
+                  <span>إضافة</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       );
     }
@@ -337,6 +396,33 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
             );
           })}
         </div>
+        {canEdit && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+            <input
+              type="text"
+              placeholder="+ إضافة معيار قبول إضافي… (Enter للحفظ)"
+              value={inlineDraft}
+              onChange={(e) => setInlineDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleInlineAdd();
+                }
+              }}
+              style={s.inlineAddInput}
+            />
+            {inlineDraft.trim() && (
+              <button
+                type="button"
+                onClick={handleInlineAdd}
+                style={s.inlineAddBtn}
+              >
+                <Plus size={12} />
+                <span>إضافة</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -561,6 +647,32 @@ const s: Record<string, React.CSSProperties> = {
     borderRadius: 5,
     padding: '2px 9px',
     cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  inlineAddInput: {
+    flex: 1,
+    padding: '6px 10px',
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.08))',
+    color: 'var(--text-primary, #ffffff)',
+    fontSize: 12,
+    outline: 'none',
+    fontFamily: 'inherit',
+  },
+  inlineAddBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    padding: '6px 10px',
+    borderRadius: 6,
+    backgroundColor: 'var(--accent-blue, #3b82f6)',
+    border: 'none',
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+    flexShrink: 0,
     fontFamily: 'inherit',
   },
 };

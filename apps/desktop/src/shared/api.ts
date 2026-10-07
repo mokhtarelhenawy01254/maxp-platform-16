@@ -343,6 +343,21 @@ class MonitorApiClient {
     }
   }
 
+  async getTaskById(taskId: string): Promise<any> {
+    try {
+      const base = this.serverUrl;
+      const headers = this.getAuthHeaders();
+      const res = await axios.get(`${base}/api/v1/tasks/${taskId}`, {
+        headers,
+        timeout: 10_000,
+      });
+      return res.data?.data ?? res.data?.task ?? res.data;
+    } catch (err: any) {
+      console.warn(`[API] getTaskById(${taskId}) failed:`, err?.message);
+      throw err;
+    }
+  }
+
   async getCompanyUsers(): Promise<any[]> {
     try {
       const base = this.serverUrl;

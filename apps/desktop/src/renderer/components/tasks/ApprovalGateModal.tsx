@@ -39,7 +39,8 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
   if (!isOpen || !task) return null;
 
   const initialChecklist = useMemo(() => {
-    const parsed = parseCriteriaItems(task.acceptanceCriteria);
+    const rawChecklist = task.criteriaChecklist || task.acceptanceCriteria;
+    const parsed = parseCriteriaItems(rawChecklist);
     if (parsed.length === 0) {
       return [
         {
@@ -58,9 +59,14 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
     return parsed.map((item, idx) => ({
       id: idx,
       text: item.text,
-      checked: storedChecked[idx] !== undefined ? storedChecked[idx] : Boolean(item.completed),
+      checked:
+        item.completed !== undefined
+          ? item.completed
+          : storedChecked[idx] !== undefined
+          ? storedChecked[idx]
+          : false,
     }));
-  }, [task.acceptanceCriteria, task.id]);
+  }, [task.criteriaChecklist, task.acceptanceCriteria, task.id]);
 
   const evidenceObj = useMemo(() => {
     if (!task.evidence) return null;
@@ -100,6 +106,11 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
     setChecklist((prev) =>
       prev.map((c, i) => (i === idx ? { ...c, checked: !c.checked } : c))
     );
+  };
+
+  const handleToggleAll = () => {
+    const nextVal = !allCriteriaChecked;
+    setChecklist((prev) => prev.map((c) => ({ ...c, checked: nextVal })));
   };
 
   const handleApproveSubmit = async () => {
@@ -150,17 +161,37 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
                 <FileCheck2 size={15} color="var(--accent-blue, #3b82f6)" />
                 <span style={styles.sectionTitle}>معايير القبول (مطلوب التأشير عليها)</span>
               </div>
-              <span
-                style={{
-                  ...styles.counterBadge,
-                  backgroundColor: allCriteriaChecked
-                    ? 'rgba(16, 185, 129, 0.15)'
-                    : 'rgba(245, 158, 11, 0.15)',
-                  color: allCriteriaChecked ? '#10b981' : '#f59e0b',
-                }}
-              >
-                {checklist.filter((c) => c.checked).length} / {checklist.length}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {checklist.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={handleToggleAll}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid rgba(255, 255, 255, 0.14)',
+                      borderRadius: 4,
+                      padding: '2px 8px',
+                      color: 'var(--text-secondary, #cbd5e1)',
+                      fontSize: 11,
+                      cursor: 'pointer',
+                      transition: 'all 120ms ease',
+                    }}
+                  >
+                    {allCriteriaChecked ? 'إلغاء تحديد الكل' : 'تحديد الكل كمعتمد'}
+                  </button>
+                )}
+                <span
+                  style={{
+                    ...styles.counterBadge,
+                    backgroundColor: allCriteriaChecked
+                      ? 'rgba(16, 185, 129, 0.15)'
+                      : 'rgba(245, 158, 11, 0.15)',
+                    color: allCriteriaChecked ? '#10b981' : '#f59e0b',
+                  }}
+                >
+                  {checklist.filter((c) => c.checked).length} / {checklist.length}
+                </span>
+              </div>
             </div>
 
             <div style={styles.checklistWrap}>

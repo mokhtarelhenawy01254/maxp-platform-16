@@ -21,6 +21,7 @@ interface TaskCockpitPageProps {
   onStopTask?: (taskId?: string) => void;
   onOpenApprovalGate?: (task: any) => void;
   onOpenImage?: (imgUrl: string) => void;
+  onUpdateCriteria?: (taskId: string, items: any[], allCompleted: boolean) => Promise<void>;
   serverUrl?: string;
   authToken?: string;
   currentUserId?: string;
@@ -40,6 +41,7 @@ export const TaskCockpitPage: React.FC<TaskCockpitPageProps> = ({
   onStopTask,
   onOpenApprovalGate,
   onOpenImage,
+  onUpdateCriteria,
   serverUrl = 'https://maxp.online',
   currentUserId = '',
   isAdmin = false,
@@ -128,6 +130,11 @@ export const TaskCockpitPage: React.FC<TaskCockpitPageProps> = ({
           canEditTask={canEditTask}
           serverUrl={serverUrl}
           onOpenImage={onOpenImage}
+          onUpdateCriteria={
+            onUpdateCriteria
+              ? (items, allCompleted) => onUpdateCriteria(task.id, items, allCompleted)
+              : undefined
+          }
         />
 
         {/* 30% Metadata Sidebar */}

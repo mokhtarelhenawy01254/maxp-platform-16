@@ -1157,6 +1157,16 @@ function registerIpcHandlers(): void {
     }
   });
 
+  ipcMain.handle('tasks:get-by-id', async (_, taskId: string) => {
+    try {
+      const task = await apiClient.getTaskById(taskId);
+      return { success: true, task };
+    } catch (err: any) {
+      console.warn(`[main] Failed to fetch task (${taskId}):`, err.message);
+      return { success: false, error: err.message };
+    }
+  });
+
   ipcMain.handle('tasks:get-users', async () => {
     try {
       const users = await apiClient.getCompanyUsers();

@@ -27,6 +27,7 @@ declare global {
       getSettings: () => Promise<any>;
       updateSettings: (settings: Record<string, any>) => Promise<boolean>;
       getTasks: (type?: 'my-tasks' | 'assigned-by-me' | 'all') => Promise<{ success: boolean; tasks: any[]; fromCache?: boolean; isOffline?: boolean; error?: string }>;
+      getTask: (taskId: string) => Promise<{ success: boolean; task?: any; error?: string }>;
       getCompanyUsers: () => Promise<{ success: boolean; users: any[]; error?: string }>;
       createTask: (taskData: any) => Promise<{ success: boolean; task?: any; error?: string }>;
       updateTask: (taskId: string, data: any) => Promise<{ success: boolean; task?: any; error?: string }>;

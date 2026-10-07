@@ -64,6 +64,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Tasks Engine
   getTasks: (type?: 'my-tasks' | 'assigned-by-me' | 'all') =>
     ipcRenderer.invoke('tasks:get', type),
+  getTask: (taskId: string) =>
+    ipcRenderer.invoke('tasks:get-by-id', taskId),
   getCompanyUsers: () =>
     ipcRenderer.invoke('tasks:get-users'),
   createTask: (taskData: any) =>

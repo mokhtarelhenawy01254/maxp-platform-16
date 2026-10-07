@@ -92,6 +92,10 @@ export function initMockElectronBridge() {
         { id: 'usr-2', firstName: 'أحمد', lastName: 'علي', email: 'ahmed@maxp.online' },
       ],
     }),
+    getTask: async (taskId: string) => {
+      const task = tasksState.find((t) => t.id === taskId);
+      return { success: Boolean(task), task: task || null };
+    },
     createTask: async (taskData: any) => {
       const newTask = {
         id: `task-${Date.now()}`,

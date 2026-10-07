@@ -23,6 +23,7 @@ interface TaskCockpitMainContentProps {
   canEditTask?: boolean;
   serverUrl?: string;
   onOpenImage?: (imgUrl: string) => void;
+  onUpdateCriteria?: (updatedItems: any[], allCompleted: boolean) => Promise<void>;
 }
 
 export const TaskCockpitMainContent: React.FC<TaskCockpitMainContentProps> = ({
@@ -32,6 +33,7 @@ export const TaskCockpitMainContent: React.FC<TaskCockpitMainContentProps> = ({
   canEditTask = false,
   serverUrl = 'https://maxp.online',
   onOpenImage,
+  onUpdateCriteria,
 }) => {
   const [activeBottomTab, setActiveBottomTab] = useState<'comments' | 'activity'>('comments');
   const [copiedTitle, setCopiedTitle] = useState(false);
@@ -154,13 +156,15 @@ export const TaskCockpitMainContent: React.FC<TaskCockpitMainContentProps> = ({
       </div>
 
       {/* 5. Acceptance Criteria & Quality Gate (بوابة معايير القبول والتسليم) */}
-      {task.acceptanceCriteria && (
+      {(task.acceptanceCriteria || task.criteriaChecklist || canEditTask) && (
         <div style={styles.criteriaCard}>
           <AcceptanceCriteriaChecklist
-            value={task.acceptanceCriteria || ''}
+            value={task.criteriaChecklist || task.acceptanceCriteria || ''}
             readOnly={true}
             interactive={true}
             taskId={task.id}
+            canEdit={canEditTask}
+            onCriteriaChange={onUpdateCriteria}
           />
         </div>
       )}
@@ -180,7 +184,7 @@ export const TaskCockpitMainContent: React.FC<TaskCockpitMainContentProps> = ({
 
       {/* 7. Subtasks */}
       <div style={styles.sectionCard}>
-        <TaskSubtasks taskId={task.id} canEdit={canEditTask} />
+        <TaskSubtasks taskId={task.id} canEdit={canEditTask} flat={true} />
       </div>
 
       {/* 8. Attachments Gallery */}

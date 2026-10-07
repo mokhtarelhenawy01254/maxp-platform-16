@@ -302,21 +302,39 @@ async function computeTaskComplianceReport(companyId, options = {}) {
  * @returns {Promise<Object>}
  */
 async function computeTimeEvaluationReport(companyIdOrPrisma, optionsOrCompanyId = {}, maybeOptions = {}) {
-  let prisma, companyId, options;
-  if (companyIdOrPrisma && typeof companyIdOrPrisma === 'object' && (companyIdOrPrisma.task || companyIdOrPrisma.$queryRaw)) {
+  let prisma = getSharedPrismaClient();
+  let companyId = null;
+  let options = {};
+
+  if (companyIdOrPrisma && typeof companyIdOrPrisma === 'object' && (companyIdOrPrisma.task || companyIdOrPrisma.$queryRaw || typeof companyIdOrPrisma.findMany === 'function')) {
     prisma = companyIdOrPrisma;
-    companyId = optionsOrCompanyId;
-    options = maybeOptions || {};
-  } else {
-    prisma = getSharedPrismaClient();
+    if (typeof optionsOrCompanyId === 'string') {
+      companyId = optionsOrCompanyId;
+      options = maybeOptions || {};
+    } else if (optionsOrCompanyId && typeof optionsOrCompanyId === 'object') {
+      companyId = optionsOrCompanyId.companyId;
+      options = optionsOrCompanyId;
+    }
+  } else if (typeof companyIdOrPrisma === 'string') {
     companyId = companyIdOrPrisma;
     options = optionsOrCompanyId || {};
+  } else if (companyIdOrPrisma && typeof companyIdOrPrisma === 'object') {
+    companyId = companyIdOrPrisma.companyId;
+    options = companyIdOrPrisma;
   }
 
-  const { from = null, to = null, assignedTo = null } = options;
+  if (!companyId && options && options.companyId) {
+    companyId = options.companyId;
+  }
+
+  if (companyId && typeof companyId === 'object' && companyId.companyId) {
+    companyId = companyId.companyId;
+  }
+
+  const { from = null, to = null, assignedTo = null } = options || {};
 
   const where = {
-    companyId,
+    companyId: typeof companyId === 'string' ? companyId : (options?.companyId || ''),
     ...(assignedTo ? { assignedTo } : {}),
   };
 

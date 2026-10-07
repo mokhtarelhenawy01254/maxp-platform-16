@@ -159,7 +159,10 @@ const RETURN_REASON_LABELS = {
 const RETURN_SEVERITY_LABELS = {
   1: 'بسيط',
   2: 'متوسط',
-  3: 'جسيم'
+  3: 'جسيم',
+  '1': 'بسيط',
+  '2': 'متوسط',
+  '3': 'جسيم'
 };
 
 /**

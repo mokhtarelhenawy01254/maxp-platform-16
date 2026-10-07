@@ -89,6 +89,9 @@ export const TasksTab: React.FC = () => {
     const match = hash.match(/^#\/tasks\/([a-zA-Z0-9_-]+)\/full/);
     return match ? match[1] : null;
   });
+  const [directTask, setDirectTask] = useState<any | null>(null);
+  const [isDirectLoading, setIsDirectLoading] = useState(false);
+  const [directFetchError, setDirectFetchError] = useState<string | null>(null);
 
   // Deep-linking: sync selected task from URL hash #/tasks/<id> or #/tasks/<id>/full
   useEffect(() => {
@@ -110,6 +113,46 @@ export const TasksTab: React.FC = () => {
     window.addEventListener('hashchange', syncFromHash);
     return () => window.removeEventListener('hashchange', syncFromHash);
   }, []);
+
+  // Direct fetch fallback for full-page task link if not in local cache
+  useEffect(() => {
+    if (!fullScreenTaskId) {
+      setDirectTask(null);
+      setDirectFetchError(null);
+      return;
+    }
+    const found = tasks.find((t) => t.id === fullScreenTaskId);
+    if (found) {
+      return;
+    }
+
+    let isMounted = true;
+    setIsDirectLoading(true);
+    setDirectFetchError(null);
+
+    const fetchDirect = async () => {
+      try {
+        if (window.electronAPI?.getTask) {
+          const res = await window.electronAPI.getTask(fullScreenTaskId);
+          if (isMounted && res?.success && res.task) {
+            setDirectTask(res.task);
+            return;
+          }
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          setDirectFetchError(err?.message || 'تعذر تحميل بيانات المهمة');
+        }
+      } finally {
+        if (isMounted) setIsDirectLoading(false);
+      }
+    };
+
+    fetchDirect();
+    return () => {
+      isMounted = false;
+    };
+  }, [fullScreenTaskId, tasks]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [lightboxBlobUrl, setLightboxBlobUrl] = useState<string | null>(null);
   const [lightboxImgError, setLightboxImgError] = useState(false);
@@ -768,6 +811,45 @@ export const TasksTab: React.FC = () => {
     }
   };
 
+  const handleUpdateCriteria = async (
+    taskId: string,
+    items: any[],
+    allCompleted: boolean
+  ) => {
+    const textLines = items.map((i: any) => i.text).join('\n');
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              criteriaChecklist: items,
+              acceptanceCriteria: textLines,
+              acceptanceCriteriaMet: allCompleted,
+            }
+          : t
+      )
+    );
+    if (directTask?.id === taskId) {
+      setDirectTask((prev: any) => ({
+        ...prev,
+        criteriaChecklist: items,
+        acceptanceCriteria: textLines,
+        acceptanceCriteriaMet: allCompleted,
+      }));
+    }
+    try {
+      if (window.electronAPI?.updateTask) {
+        await window.electronAPI.updateTask(taskId, {
+          criteriaChecklist: items,
+          acceptanceCriteria: textLines,
+          acceptanceCriteriaMet: allCompleted,
+        });
+      }
+    } catch (err: any) {
+      console.warn('[TasksTab] Failed to sync criteria to server:', err);
+    }
+  };
+
   const isTaskReturned = (t: any) => {
     const rawStatus = String(t.status || '').toUpperCase();
     if (rawStatus === 'REVISION') return true;
@@ -1004,7 +1086,9 @@ export const TasksTab: React.FC = () => {
   }, [selectedTaskId, sortedDisplayTasks, handleCloseDrawer, handleSelectTask]);
 
   const fullScreenTask = fullScreenTaskId
-    ? tasks.find((t) => t.id === fullScreenTaskId) || (selectedTask?.id === fullScreenTaskId ? selectedTask : null)
+    ? tasks.find((t) => t.id === fullScreenTaskId) ||
+      (selectedTask?.id === fullScreenTaskId ? selectedTask : null) ||
+      (directTask?.id === fullScreenTaskId ? directTask : null)
     : null;
 
   // Dedicated Full-Screen Cockpit Page Mode
@@ -1012,17 +1096,36 @@ export const TasksTab: React.FC = () => {
     if (!fullScreenTask) {
       return (
         <div style={{ ...styles.container, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-            <Loader2 size={24} className="animate-spin" color="var(--accent-blue)" />
-            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>جاري تحميل تفاصيل المهمة…</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, maxWidth: 360, textAlign: 'center' }}>
+            {isDirectLoading ? (
+              <>
+                <Loader2 size={24} className="animate-spin" color="var(--accent-blue)" />
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>جاري جلب تفاصيل المهمة المباشرة…</span>
+                <span style={{ fontSize: 11, color: 'var(--text-dim)', fontVariantNumeric: 'tabular-nums' }}>
+                  #{String(fullScreenTaskId || '').slice(0, 10)}
+                </span>
+              </>
+            ) : directFetchError ? (
+              <>
+                <AlertCircle size={28} color="#f43f5e" />
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#f43f5e' }}>{directFetchError}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>تأكد من صحة معرف المهمة أو توفر الصلاحيات للمتابعة</span>
+              </>
+            ) : (
+              <>
+                <Loader2 size={24} className="animate-spin" color="var(--accent-blue)" />
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>جاري تهيئة بيئة العمل…</span>
+              </>
+            )}
             <button
               type="button"
               onClick={handleCloseFullPage}
               style={{
-                padding: '5px 12px',
+                marginTop: 6,
+                padding: '5px 14px',
                 borderRadius: 6,
                 border: '1px solid var(--border-default)',
-                background: 'transparent',
+                background: 'rgba(255, 255, 255, 0.04)',
                 color: 'var(--text-secondary)',
                 cursor: 'pointer',
                 fontSize: 12,
@@ -1044,6 +1147,7 @@ export const TasksTab: React.FC = () => {
           onToggleStatus={handleToggleStatus}
           onEdit={(taskToEdit) => setEditingTask(taskToEdit)}
           onOpenImage={(img) => setPreviewImage(img)}
+          onUpdateCriteria={handleUpdateCriteria}
           serverUrl={serverUrl}
           authToken={authToken}
           currentUserId={currentUser?.id || currentUser?.userId}
@@ -1644,6 +1748,7 @@ export const TasksTab: React.FC = () => {
         onStopTask={handleStopTask}
         onOpenApprovalGate={setApprovalGateTask}
         onOpenFullPage={handleOpenFullPage}
+        onUpdateCriteria={handleUpdateCriteria}
       />
 
       {/* Approval Gate Modal */}

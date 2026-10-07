@@ -1539,6 +1539,12 @@ const taskController = {
           ...(acceptanceCriteria !== undefined && {
             acceptanceCriteria: acceptanceCriteria ? String(acceptanceCriteria).trim() : null,
           }),
+          ...(req.body.criteriaChecklist !== undefined && {
+            criteriaChecklist: req.body.criteriaChecklist,
+          }),
+          ...(req.body.acceptanceCriteriaMet !== undefined && {
+            acceptanceCriteriaMet: Boolean(req.body.acceptanceCriteriaMet),
+          }),
           ...(priority && { priority: normalizePriority(priority) }),
           ...(type && { type }),
           ...(assignedTo && { assignedTo }),
@@ -2192,6 +2198,12 @@ const taskController = {
         updateData.submittedForReviewAt = new Date();
         if (req.body.acceptanceCriteria) {
           updateData.acceptanceCriteria = String(req.body.acceptanceCriteria).trim();
+        }
+        if (req.body.criteriaChecklist !== undefined) {
+          updateData.criteriaChecklist = req.body.criteriaChecklist;
+        }
+        if (req.body.acceptanceCriteriaMet !== undefined) {
+          updateData.acceptanceCriteriaMet = Boolean(req.body.acceptanceCriteriaMet);
         }
       }
 
