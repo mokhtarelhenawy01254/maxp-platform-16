@@ -16,10 +16,11 @@ import {
   Timer,
   Users,
   CalendarDays,
+  Wallet,
 } from 'lucide-react';
 import { useTheme } from '../theme/ThemeContext';
 
-export type TabId = 'tasks' | 'timers' | 'goals' | 'reports' | 'team' | 'cockpit' | 'apps' | 'attendance' | 'daily';
+export type TabId = 'tasks' | 'timers' | 'goals' | 'wage' | 'reports' | 'team' | 'cockpit' | 'apps' | 'attendance' | 'daily';
 
 interface SidebarProps {
   activeTab: TabId;
@@ -51,6 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             { id: 'tasks', label: 'المهام والإنتاجية', icon: <CheckSquare size={17} /> },
             { id: 'timers', label: 'المؤقتات الحية', icon: <Timer size={17} /> },
             { id: 'goals', label: 'الأهداف ومؤشرات الأداء', icon: <Target size={17} /> },
+            { id: 'wage', label: 'حضوري ومستحقاتي', icon: <Wallet size={17} /> },
           ],
         },
         {
@@ -77,6 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             { id: 'tasks', label: 'المهام والإنتاجية', icon: <CheckSquare size={17} /> },
             { id: 'timers', label: 'المؤقتات الحية', icon: <Timer size={17} /> },
             { id: 'goals', label: 'الأهداف ومؤشرات الأداء', icon: <Target size={17} /> },
+            { id: 'wage', label: 'حضوري ومستحقاتي', icon: <Wallet size={17} /> },
             { id: 'reports', label: 'تقارير الأداء', icon: <FileText size={17} /> },
           ],
         },

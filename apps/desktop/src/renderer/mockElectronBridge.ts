@@ -239,6 +239,69 @@ export function initMockElectronBridge() {
     updateGoalProgress: async () => ({ success: true }),
     getTaskDashboardStats: async () => ({ success: true, stats: {} }),
 
+    getMyAttendanceSummary: async () => ({
+      success: true,
+      stats: {
+        presentDays: 22,
+        absentDays: 1,
+        lateDays: 2,
+        totalWorkHours: 176,
+        overtimeHours: 12.5,
+      },
+      recent: [
+        {
+          id: 'att-1',
+          date: new Date().toISOString(),
+          clockIn: new Date(Date.now() - 5 * 3600000).toISOString(),
+          clockOut: null,
+          method: 'desktop_workspace',
+          status: 'PRESENT',
+          workHours: 5.0,
+          overtimeHours: 0,
+        },
+        {
+          id: 'att-2',
+          date: new Date(Date.now() - 86400000).toISOString(),
+          clockIn: new Date(Date.now() - 86400000 - 8 * 3600000).toISOString(),
+          clockOut: new Date(Date.now() - 86400000).toISOString(),
+          method: 'desktop_workspace',
+          status: 'PRESENT',
+          workHours: 8.0,
+          overtimeHours: 1.5,
+        },
+        {
+          id: 'att-3',
+          date: new Date(Date.now() - 2 * 86400000).toISOString(),
+          clockIn: new Date(Date.now() - 2 * 86400000 - 8 * 3600000).toISOString(),
+          clockOut: new Date(Date.now() - 2 * 86400000).toISOString(),
+          method: 'desktop_workspace',
+          status: 'PRESENT',
+          workHours: 8.0,
+          overtimeHours: 0,
+        },
+      ],
+    }),
+
+    getMyPayrollSummary: async () => ({
+      success: true,
+      payroll: {
+        month: '2026-10',
+        basicSalary: 12000,
+        hourlyRate: 65,
+        currency: 'EGP',
+        salaryType: 'MONTHLY',
+      },
+      projection: {
+        baseSalary: 12000,
+        overtimeAmount: 1250,
+        bonusAmount: 500,
+        deductionAmount: 200,
+        netEstimated: 13550,
+        currency: 'EGP',
+        totalHoursLogged: 188.5,
+      },
+    }),
+
     openExternal: async () => ({ success: true }),
     copyToClipboard: async (text: string) => {
       try {

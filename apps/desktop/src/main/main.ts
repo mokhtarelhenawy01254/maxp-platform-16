@@ -978,6 +978,28 @@ function registerIpcHandlers(): void {
     }
   });
 
+  ipcMain.handle('hr:my-attendance-summary', async () => {
+    try {
+      const [today, stats, recent] = await Promise.all([
+        apiClient.checkTodayAttendance().catch(() => null),
+        apiClient.getMyAttendanceStats().catch(() => null),
+        apiClient.getMyRecentAttendance().catch(() => []),
+      ]);
+      return { success: true, today, stats, recent: recent || [] };
+    } catch (err: any) {
+      return { success: false, error: err?.message };
+    }
+  });
+
+  ipcMain.handle('hr:my-payroll-summary', async () => {
+    try {
+      const data = await apiClient.getMyPayrollInfo();
+      return { success: true, ...data };
+    } catch (err: any) {
+      return { success: false, error: err?.message };
+    }
+  });
+
   ipcMain.handle(IPC_CHANNELS.GET_DAILY_SUMMARY, async (_, targetDate?: string, endDate?: string) => {
     const today = getLocalDateString();
     const dateToQuery = targetDate || today;

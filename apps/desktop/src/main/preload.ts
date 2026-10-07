@@ -152,6 +152,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getTaskDashboardStats: () =>
     ipcRenderer.invoke('tasks:get-dashboard-stats'),
 
+  // HR & Self-Service
+  getMyAttendanceSummary: () =>
+    ipcRenderer.invoke('hr:my-attendance-summary'),
+  getMyPayrollSummary: () =>
+    ipcRenderer.invoke('hr:my-payroll-summary'),
+
   openExternal: (url: string) =>
     ipcRenderer.invoke('shell:open-external', url),
 

@@ -938,6 +938,78 @@ class MonitorApiClient {
     }
   }
 
+  async getMyAttendanceStats(): Promise<any> {
+    const base = this.serverUrl;
+    try {
+      const res = await axios.get(`${base}/api/v1/hr/attendance/my-stats`, {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      return res.data?.stats ?? res.data?.data ?? null;
+    } catch {
+      try {
+        const res2 = await axios.get(`${base}/api/hr/attendance/my-stats`, {
+          headers: this.getAuthHeaders(),
+          timeout: 10_000,
+        });
+        return res2.data?.stats ?? res2.data?.data ?? null;
+      } catch (err: any) {
+        console.warn('[API] getMyAttendanceStats failed:', err?.message);
+        return null;
+      }
+    }
+  }
+
+  async getMyRecentAttendance(): Promise<any[]> {
+    const base = this.serverUrl;
+    try {
+      const res = await axios.get(`${base}/api/v1/hr/attendance/my-recent`, {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      return res.data?.attendances ?? res.data?.data ?? [];
+    } catch {
+      try {
+        const res2 = await axios.get(`${base}/api/hr/attendance/my-recent`, {
+          headers: this.getAuthHeaders(),
+          timeout: 10_000,
+        });
+        return res2.data?.attendances ?? res2.data?.data ?? [];
+      } catch (err: any) {
+        console.warn('[API] getMyRecentAttendance failed:', err?.message);
+        return [];
+      }
+    }
+  }
+
+  async getMyPayrollInfo(): Promise<any> {
+    const base = this.serverUrl;
+    try {
+      let payroll = null;
+      let projection = null;
+      try {
+        const resLast = await axios.get(`${base}/api/v1/hr/payroll/my-last`, {
+          headers: this.getAuthHeaders(),
+          timeout: 10_000,
+        });
+        payroll = resLast.data?.payroll ?? resLast.data?.data ?? null;
+      } catch {}
+
+      try {
+        const resProj = await axios.get(`${base}/api/v1/hr/payroll/my-projection`, {
+          headers: this.getAuthHeaders(),
+          timeout: 10_000,
+        });
+        projection = resProj.data?.projection ?? resProj.data?.data ?? null;
+      } catch {}
+
+      return { payroll, projection };
+    } catch (err: any) {
+      console.warn('[API] getMyPayrollInfo failed:', err?.message);
+      return { payroll: null, projection: null };
+    }
+  }
+
   // ── Shift Close & Overtime Engine ─────────────────────────────
   async closeShiftWithHandover(data: {
     handoverNotes?: string;

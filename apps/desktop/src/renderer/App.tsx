@@ -84,6 +84,10 @@ declare global {
       // Performance Report & Stats
       getTaskDashboardStats: () => Promise<{ success: boolean; stats: any; error?: string }>;
 
+      // HR & Self-Service
+      getMyAttendanceSummary: () => Promise<{ success: boolean; stats?: any; recent?: any[]; error?: string }>;
+      getMyPayrollSummary: () => Promise<{ success: boolean; payroll?: any; projection?: any; error?: string }>;
+
       openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
       copyToClipboard: (text: string) => Promise<{ success: boolean; error?: string }>;
       readClipboardText: () => Promise<{ success: boolean; text: string; error?: string }>;
