@@ -258,7 +258,6 @@ const ClothingStoreLanding: React.FC = () => {
       root.removeEventListener("click", demoHandler);
       cleanupReveal();
       window.removeEventListener("scroll", syncSticky);
-      if (meta.parentNode) meta.parentNode.removeChild(meta);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
