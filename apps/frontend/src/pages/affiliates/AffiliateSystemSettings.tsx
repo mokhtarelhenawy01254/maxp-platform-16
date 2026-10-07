@@ -173,14 +173,25 @@ const AffiliateSystemSettings: React.FC = () => {
     return null;
   };
 
+  const currentCompanyId = user?.companyId || (user as any)?.company?.id;
+
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [currentCompanyId]);
 
   const fetchSettings = async () => {
     try {
       const response = await apiClient.get<ApiSuccess<typeof settings>>(
         "/affiliate-settings",
+        {
+          headers: {
+            "Cache-Control": "no-cache, no-store",
+            Pragma: "no-cache",
+          },
+          params: {
+            _t: Date.now(),
+          },
+        },
       );
       if (response.data.success) {
         setSettings(normalizeSettings(response.data.data));
@@ -232,20 +243,30 @@ const AffiliateSystemSettings: React.FC = () => {
       <div
         className={`w-full ${isDark ? "bg-gray-800" : "bg-white"} rounded-lg shadow-lg p-8`}
       >
-        <div className="flex items-center mb-6">
-          <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30 mr-4">
-            <Cog6ToothIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-6 border-b dark:border-gray-700">
+          <div className="flex items-center">
+            <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30 ml-4">
+              <Cog6ToothIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h1
+                className={`text-2xl sm:text-3xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
+              >
+                إعدادات نظام المسوقين
+              </h1>
+              <p className={`${isDark ? "text-gray-300" : "text-gray-600"} mt-1 text-sm`}>
+                تحكم في عمولات المسوقين، الشروط والأحكام، وروابط التسجيل
+              </p>
+            </div>
           </div>
-          <div>
-            <h1
-              className={`text-3xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
-            >
-              إعدادات نظام المسوقين
-            </h1>
-            <p className={`${isDark ? "text-gray-300" : "text-gray-600"} mt-1`}>
-              تحكم في عمولات المسوقين، الشروط والأحكام، وروابط التسجيل
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={handleSubmit as any}
+            disabled={loading}
+            className="inline-flex items-center justify-center px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors text-sm self-start sm:self-auto"
+          >
+            {loading ? "جاري الحفظ..." : "حفظ التغييرات"}
+          </button>
         </div>
 
         {/* Invitation Link Section */}

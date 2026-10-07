@@ -127,11 +127,17 @@ router.get('/', async (req, res) => {
         }
 
         const prisma = getSharedPrismaClient();
-        const companyId = req.companyId || req.user?.companyId || req.headers['x-company-id'];
+        const companyId = req.user?.companyId || req.companyId || req.headers['x-company-id'];
 
         if (!companyId) {
             return res.status(400).json({ success: false, message: 'User does not belong to a company' });
         }
+
+        // Prevent browser/proxy caching of settings
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        res.setHeader('Surrogate-Control', 'no-store');
 
         let settings = await prisma.affiliateSetting.findUnique({
             where: { companyId }
@@ -178,7 +184,14 @@ router.put('/', async (req, res) => {
         }
 
         const prisma = getSharedPrismaClient();
-        const companyId = req.companyId || req.user?.companyId || req.headers['x-company-id'];
+        const companyId = req.user?.companyId || req.companyId || req.headers['x-company-id'];
+        req.companyId = companyId;
+
+        // Prevent browser/proxy caching of settings
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        res.setHeader('Surrogate-Control', 'no-store');
         const {
             commissionType,
             commissionRate,
@@ -365,20 +378,22 @@ router.put('/', async (req, res) => {
         }
 
         // مزامنة الإعدادات الجديدة مع المسوقين الحاليين (نوع + قيمة)
-        try {
-            await prisma.affiliate.updateMany({
-                where: {
-                    companyId,
-                    commissionType: { not: normalizedCommissionType }
-                },
-                data: { commissionType: normalizedCommissionType }
-            });
-            const syncedCount = await prisma.affiliate.count({
-                where: { companyId }
-            });
-            console.log(`✅ [AFFILIATE-SYNC] Synced ${syncedCount} affiliates to type: ${normalizedCommissionType}`);
-        } catch (syncError) {
-            console.error('⚠️ [AFFILIATE-SYNC] Failed to sync commission type to existing affiliates:', syncError);
+        if (prisma.affiliate?.updateMany) {
+            try {
+                await prisma.affiliate.updateMany({
+                    where: {
+                        companyId,
+                        commissionType: { not: normalizedCommissionType }
+                    },
+                    data: { commissionType: normalizedCommissionType }
+                });
+                const syncedCount = await prisma.affiliate.count({
+                    where: { companyId }
+                });
+                console.log(`✅ [AFFILIATE-SYNC] Synced ${syncedCount} affiliates to type: ${normalizedCommissionType}`);
+            } catch (syncError) {
+                console.error('⚠️ [AFFILIATE-SYNC] Failed to sync commission type to existing affiliates:', syncError);
+            }
         }
 
         res.json({

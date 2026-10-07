@@ -117,7 +117,7 @@ describe("AffiliateSystemSettings", () => {
     fireEvent.change(screen.getByLabelText("مدة معالجة السحب"), {
       target: { value: "5" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "حفظ التغييرات" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "حفظ التغييرات" })[0]);
 
     await waitFor(() => {
       expect(mockPut).toHaveBeenCalledWith("/affiliate-settings", {
