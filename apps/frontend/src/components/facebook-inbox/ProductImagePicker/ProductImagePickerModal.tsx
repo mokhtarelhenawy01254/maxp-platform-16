@@ -66,6 +66,30 @@ const buildProductImages = (product: any): ProductImage[] => {
     product.images,
   );
 
+  let productMetadata: any = {};
+  if (typeof product.metadata === "string") {
+    try {
+      productMetadata = JSON.parse(product.metadata);
+    } catch (_) {}
+  } else if (product.metadata && typeof product.metadata === "object") {
+    productMetadata = product.metadata;
+  }
+
+  const attributeImageUrls: string[] = [];
+  const attributeImagesMap = productMetadata?.variantSettings?.attributeImages;
+  if (attributeImagesMap && typeof attributeImagesMap === "object") {
+    for (const attrGroup of Object.values(attributeImagesMap)) {
+      if (attrGroup && typeof attrGroup === "object") {
+        for (const rawImgUrl of Object.values(attrGroup as Record<string, unknown>)) {
+          const resolvedUrl = getPrimaryImageUrl(rawImgUrl);
+          if (typeof resolvedUrl === "string" && resolvedUrl.length > 0) {
+            attributeImageUrls.push(resolvedUrl);
+          }
+        }
+      }
+    }
+  }
+
   const variantImages = (product.variants || product.productVariants || [])
     .map((variant: any) => {
       let parsedMetadata: any = {};
@@ -89,7 +113,9 @@ const buildProductImages = (product: any): ProductImage[] => {
     })
     .filter((url: string) => typeof url === "string" && url.length > 0);
 
-  const allUrls = Array.from(new Set([...candidates, ...variantImages]));
+  const allUrls = Array.from(
+    new Set([...candidates, ...attributeImageUrls, ...variantImages]),
+  );
 
   const baseName =
     (product.name || "منتج")

@@ -808,9 +808,14 @@ async function handlePageReply(webhookEvent, pageId = null) {
     let statMessageContent = messageContent;
 
     // 🔍 CRITICAL: Check if message already exists (instant save or broadcast)
-    const existingMessage = await safeQuery(async () => {
+    const candidateExistingMessages = await safeQuery(async () => {
       const prisma = getPrisma();
-      return await prisma.message.findFirst({
+      const trimmedText = (messageText || '').trim();
+      const contentFilter = hasAttachments
+        ? (trimmedText ? { contains: trimmedText } : messageContent)
+        : messageText;
+
+      return await prisma.message.findMany({
         where: {
           conversationId: conversation.id,
           OR: [
@@ -819,22 +824,38 @@ async function handlePageReply(webhookEvent, pageId = null) {
                 contains: messageId // Check if facebookMessageId exists in metadata
               }
             },
-            {
-              // Check if this is an instant-saved message matching content and timestamp
-              isFromCustomer: false,
-              content: hasAttachments ? { contains: messageText || '' } : messageText,
-              type: hasAttachments ? webhookEvent.message.attachments[0].type.toUpperCase() : 'TEXT',
-              createdAt: {
-                // Match messages within 10 seconds
-                gte: new Date(webhookEvent.timestamp - 10000),
-                lte: new Date(webhookEvent.timestamp + 10000)
-              }
-            }
+            ...(contentFilter
+              ? [
+                  {
+                    // Check if this is an instant-saved message matching content and timestamp
+                    isFromCustomer: false,
+                    content: contentFilter,
+                    type: hasAttachments ? webhookEvent.message.attachments[0].type.toUpperCase() : 'TEXT',
+                    createdAt: {
+                      // Match messages within 10 seconds
+                      gte: new Date(webhookEvent.timestamp - 10000),
+                      lte: new Date(webhookEvent.timestamp + 10000)
+                    }
+                  }
+                ]
+              : [])
           ]
         },
         orderBy: { createdAt: 'desc' }
       });
     }, 3);
+
+    const existingMessage = (candidateExistingMessages || []).find(msg => {
+      try {
+        const meta = typeof msg.metadata === 'string' ? JSON.parse(msg.metadata || '{}') : (msg.metadata || {});
+        if (meta.facebookMessageId) {
+          return meta.facebookMessageId === messageId;
+        }
+        return true;
+      } catch (e) {
+        return true;
+      }
+    });
 
     if (existingMessage) {
 
@@ -942,37 +963,31 @@ async function handlePageReply(webhookEvent, pageId = null) {
 
       // Dedup logic: Find message from PAGE (senderId=employeeId/pageId) with same content created in last 60 seconds
       // ⚡ Wide window (60s) to handle slow webhooks or clock skew
-      const existingMessage = await prisma.message.findFirst({
+      const recentMessages = await prisma.message.findMany({
         where: {
           conversationId: conversation.id,
           isFromCustomer: false,
-          content: messageContent, // Prisma exact match
-          createdAt: {
-            gt: new Date(Date.now() - 60000) // 60 seconds window
-          }
+          createdAt: { gt: new Date(Date.now() - 60000) }
         },
         orderBy: { createdAt: 'desc' }
       });
 
-      // Fallback: If no exact match, try partial match for slightly changed whitespace.
-      let matchedMessage = existingMessage;
-
-      if (!matchedMessage) {
-        const recentMessages = await prisma.message.findMany({
-          where: {
-            conversationId: conversation.id,
-            isFromCustomer: false,
-            createdAt: { gt: new Date(Date.now() - 60000) }
+      const cleanNew = (messageContent || '').trim();
+      const matchedMessage = recentMessages.find(m => {
+        try {
+          const meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata || '{}') : (m.metadata || {});
+          if (meta.facebookMessageId && meta.facebookMessageId === messageId) {
+            return true;
           }
-        });
-
-        // Fuzzy match: content includes or is included by messageContent (ignoring whitespace)
-        const cleanNew = messageContent.trim();
-        matchedMessage = recentMessages.find(m => {
-          const cleanOld = (m.content || '').trim();
-          return cleanOld === cleanNew || (cleanOld.length > 10 && cleanNew.includes(cleanOld));
-        });
-      }
+          if (meta.facebookMessageId && meta.facebookMessageId !== messageId) {
+            return false;
+          }
+        } catch (e) {
+          // ignore parse error
+        }
+        const cleanOld = (m.content || '').trim();
+        return cleanOld === cleanNew || (cleanOld.length > 10 && cleanNew.includes(cleanOld));
+      });
 
       if (matchedMessage) {
         console.log(`♻️ [WEBHOOK] Duplicate Echo detected. Updating Msg ID ${matchedMessage.id}`);
