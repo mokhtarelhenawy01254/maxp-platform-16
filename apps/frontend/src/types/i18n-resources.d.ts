@@ -14645,6 +14645,7 @@ declare module 'react-i18next' {
         shortageFailed: string;
         wooTaghez: string;
         pendingCancellation: string;
+        bdonkodterbo: string;
         turboSaved: string;
         turboSent: string;
         turboProcessing: string;

@@ -136,8 +136,19 @@ const GENERIC_ATTACHMENT_LABELS = new Set([
 const normalizeAttachmentType = (type?: string): string =>
   (type || "").trim().toLowerCase();
 
-const isPotentialMediaPath = (value: string): boolean =>
-  /^(https?:\/\/|\/|uploads\/|assets\/|data:|blob:)/i.test(value.trim());
+const isPotentialMediaPath = (value: string): boolean => {
+  if (!value || typeof value !== "string") return false;
+  const trimmed = value.trim();
+  return (
+    /^(https?:\/\/|\/|uploads\/|assets\/|data:|blob:|api\/)/i.test(trimmed) ||
+    /proxy-image/i.test(trimmed) ||
+    /scontent.*?\.fbcdn\.net/i.test(trimmed) ||
+    /cdn\.fbsbx\.com/i.test(trimmed) ||
+    /cdninstagram\.com/i.test(trimmed) ||
+    /^\/?uploads\/chat-media\//i.test(trimmed) ||
+    /\.(jpg|jpeg|png|webp|gif|svg|avif|bmp|mp4|mov|webm|m4a|mp3|ogg|opus|wav|pdf)(\?.*)?$/i.test(trimmed)
+  );
+};
 
 const extractMediaTokenUrl = (
   value: string | null | undefined,
@@ -294,9 +305,19 @@ const getDisplayTextContent = (
     return "";
   }
 
+  // Never display internal proxy-image URLs as text under any circumstances
+  if (
+    withoutAttachmentPrefix.includes("proxy-image") ||
+    /^\/?api\/v1\/proxy-image/i.test(withoutAttachmentPrefix)
+  ) {
+    return "";
+  }
+
   if (
     options.hasRenderedMedia &&
     (isPotentialMediaPath(withoutAttachmentPrefix) ||
+      withoutAttachmentPrefix.includes("proxy-image") ||
+      /^\/?api\//i.test(withoutAttachmentPrefix) ||
       GENERIC_ATTACHMENT_LABELS.has(withoutAttachmentPrefix.toLowerCase()))
   ) {
     return "";
@@ -609,8 +630,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
       Boolean(videoMediaUrl) ||
       Boolean(audioMediaUrl) ||
       Boolean(fileMediaUrl);
+    const isAnyMediaMessage =
+      isImageMessage || isVideoMessage || isAudioMessage || isFileMessage;
     const displayTextContent = getDisplayTextContent(message.content, {
-      hasRenderedMedia,
+      hasRenderedMedia: hasRenderedMedia || isAnyMediaMessage,
     });
     const hasVideoMessage = isVideoMessage || Boolean(videoMediaUrl);
     const hasAudioMessage = isAudioMessage || Boolean(audioMediaUrl);
@@ -1120,12 +1143,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
               )}
 
             {/* Text content */}
-            {displayTextContent && (
-              <LinkifiedText
-                text={displayTextContent}
-                className="block text-sm whitespace-pre-wrap break-words"
-              />
-            )}
+            {displayTextContent &&
+              !isPotentialMediaPath(displayTextContent) &&
+              !displayTextContent.includes("proxy-image") && (
+                <LinkifiedText
+                  text={displayTextContent}
+                  className="block text-sm whitespace-pre-wrap break-words"
+                />
+              )}
 
             {/* Reactions Display */}
             {Object.keys(reactionCounts).length > 0 && (

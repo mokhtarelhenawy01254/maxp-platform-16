@@ -992,21 +992,83 @@ const getApiError = (error: unknown): ApiErrorLike => {
       try {
         await sendFileMessage(selectedConversation.id, file, companyId);
 
-        // ðŸ†• Update conversation state - message is now from us (not customer)
+        // 🆕 Update conversation state - message is now from us (not customer)
         updateSelectedConversation({
           lastMessageIsFromCustomer: false,
-          lastMessage: `ðŸ“Ž ${file.name}`,
+          lastMessage: `📎 ${file.name}`,
           lastMessageTime: new Date(),
         });
 
-        // ðŸ”§ OPTIMIZED: Don't reload messages if socket will handle it
+        // 🔧 OPTIMIZED: Don't reload messages if socket will handle it
         if (!isConnected) {
           loadMessages(selectedConversation.id);
         }
 
-        // ðŸ†• If in unreplied tab, reload conversations to get fresh data
+        // 🆕 If in unreplied tab, reload conversations to get fresh data
         if (activeTab === "unreplied") {
           debouncedLoadConversations("unreplied");
+        }
+      } catch (error) {
+        alert(t("conversations.fileSendFailed"));
+      }
+    },
+    [
+      selectedConversation,
+      companyId,
+      sendFileMessage,
+      loadMessages,
+      updateSelectedConversation,
+      activeTab,
+      isConnected,
+      debouncedLoadConversations,
+      t,
+    ],
+  );
+
+  const handleSendFiles = useCallback(
+    async (files: File[]) => {
+      if (!selectedConversation || !companyId || files.length === 0) return;
+      try {
+        let successCount = 0;
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          let sent = false;
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              await sendFileMessage(selectedConversation.id, file, companyId);
+              sent = true;
+              successCount++;
+              break;
+            } catch (err) {
+              console.error(`Error sending file ${file.name} (attempt ${attempt + 1}):`, err);
+              if (attempt === 0) {
+                await new Promise((resolve) => setTimeout(resolve, 1500));
+              }
+            }
+          }
+
+          if (sent && i < files.length - 1) {
+            await new Promise((resolve) => setTimeout(resolve, 1200));
+          }
+        }
+
+        if (successCount > 0) {
+          updateSelectedConversation({
+            lastMessageIsFromCustomer: false,
+            lastMessage:
+              files.length === 1
+                ? `📎 ${files[0].name}`
+                : `📎 ${successCount} ملفات`,
+            lastMessageTime: new Date(),
+          });
+
+          if (!isConnected) {
+            loadMessages(selectedConversation.id);
+          }
+
+          if (activeTab === "unreplied") {
+            debouncedLoadConversations("unreplied");
+          }
         }
       } catch (error) {
         alert(t("conversations.fileSendFailed"));
@@ -1079,24 +1141,32 @@ const getApiError = (error: unknown): ApiErrorLike => {
         if (imageUrls.length > 0) {
           let successCount = 0;
           for (const imageUrl of imageUrls) {
-            try {
-              const urlParts = imageUrl.split("/");
-              const filename = urlParts[urlParts.length - 1] || "image.jpg";
+            const urlParts = imageUrl.split("/");
+            const filename = urlParts[urlParts.length - 1] || "image.jpg";
 
-              await apiClient.post(
-                `/conversations/${selectedConversation.id}/send-existing-image`,
-                {
-                  imageUrl,
-                  filename,
-                },
-              );
-              successCount++;
-
-              if (successCount < imageUrls.length) {
-                await new Promise((resolve) => setTimeout(resolve, 500));
+            let sent = false;
+            for (let attempt = 0; attempt < 2; attempt++) {
+              try {
+                await apiClient.post(
+                  `/conversations/${selectedConversation.id}/send-existing-image`,
+                  {
+                    imageUrl,
+                    filename,
+                  },
+                );
+                sent = true;
+                successCount++;
+                break;
+              } catch (error) {
+                console.error(`Error sending image (attempt ${attempt + 1}):`, error);
+                if (attempt === 0) {
+                  await new Promise((resolve) => setTimeout(resolve, 1500));
+                }
               }
-            } catch (error) {
-              console.error("Error sending image:", error);
+            }
+
+            if (sent && successCount < imageUrls.length) {
+              await new Promise((resolve) => setTimeout(resolve, 1200));
             }
           }
         }
@@ -1214,21 +1284,29 @@ const getApiError = (error: unknown): ApiErrorLike => {
       try {
         let successCount = 0;
         for (const image of images) {
-          try {
-            await apiClient.post(
-              `/conversations/${selectedConversation.id}/send-existing-image`,
-              {
-                imageUrl: image.url,
-                filename: image.filename,
-              },
-            );
-            successCount++;
-
-            if (successCount < images.length) {
-              await new Promise((resolve) => setTimeout(resolve, 500));
+          let sent = false;
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              await apiClient.post(
+                `/conversations/${selectedConversation.id}/send-existing-image`,
+                {
+                  imageUrl: image.url,
+                  filename: image.filename,
+                },
+              );
+              sent = true;
+              successCount++;
+              break;
+            } catch (error) {
+              console.error(`Error sending gallery image (attempt ${attempt + 1}):`, error);
+              if (attempt === 0) {
+                await new Promise((resolve) => setTimeout(resolve, 1500));
+              }
             }
-          } catch (error) {
-            console.error("Error sending image:", error);
+          }
+
+          if (sent && successCount < images.length) {
+            await new Promise((resolve) => setTimeout(resolve, 1200));
           }
         }
 
@@ -1297,21 +1375,29 @@ const getApiError = (error: unknown): ApiErrorLike => {
         // Send images
         let successCount = 0;
         for (const image of images) {
-          try {
-            await apiClient.post(
-              `/conversations/${selectedConversation.id}/send-existing-image`,
-              {
-                imageUrl: image.url,
-                filename: image.filename,
-              },
-            );
-            successCount++;
-
-            if (successCount < images.length) {
-              await new Promise((resolve) => setTimeout(resolve, 500));
+          let sent = false;
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              await apiClient.post(
+                `/conversations/${selectedConversation.id}/send-existing-image`,
+                {
+                  imageUrl: image.url,
+                  filename: image.filename,
+                },
+              );
+              sent = true;
+              successCount++;
+              break;
+            } catch (error) {
+              console.error(`Error sending product image (attempt ${attempt + 1}):`, error);
+              if (attempt === 0) {
+                await new Promise((resolve) => setTimeout(resolve, 1500));
+              }
             }
-          } catch (error) {
-            console.error("Error sending product image:", error);
+          }
+
+          if (sent && successCount < images.length) {
+            await new Promise((resolve) => setTimeout(resolve, 1200));
           }
         }
 
@@ -3341,6 +3427,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                 <MessageInput
                   onSendMessage={handleSendMessage}
                   onSendFile={handleSendFile}
+                  onSendFiles={handleSendFiles}
                   onSendQuickReply={handleSendQuickReply}
                   sending={sending}
                   uploadingFile={uploadingFile}

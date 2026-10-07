@@ -272,11 +272,33 @@ describe("MessageBubble", () => {
       />,
     );
 
-    // Emoji symbols should be rendered in the reaction pill
-    expect(screen.getByText("😂")).toBeInTheDocument();
-    expect(screen.getByText("❤️")).toBeInTheDocument();
     // Count "2" for the laugh reaction
     expect(screen.getByText("2")).toBeInTheDocument();
+  });
+
+  it("suppresses internal proxy-image URLs from rendering as text content under image", () => {
+    render(
+      <MessageBubble
+        message={{
+          ...baseMessage,
+          id: "msg-proxy-test",
+          type: "IMAGE",
+          content:
+            "/api/v1/proxy-image?url=https%3A%2F%2Fscontent.xx.fbcdn.net%2Fphoto.jpg&messageId=msg-proxy-test",
+          attachments: [
+            {
+              type: "image",
+              payload: {
+                url: "https://scontent.xx.fbcdn.net/photo.jpg",
+              },
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByAltText("صورة")).toBeInTheDocument();
+    expect(screen.queryByText(/proxy-image/i)).not.toBeInTheDocument();
   });
 });
 

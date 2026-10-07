@@ -24,6 +24,7 @@ import {
 interface MessageInputProps {
   onSendMessage?: (content: string) => void;
   onSendFile?: (file: File) => void;
+  onSendFiles?: (files: File[]) => void;
   sending?: boolean;
   uploadingFile?: boolean;
   conversation?: any;
@@ -45,6 +46,7 @@ interface MessageInputProps {
 const MessageInput: React.FC<MessageInputProps> = ({
   onSendMessage,
   onSendFile,
+  onSendFiles,
   sending = false,
   uploadingFile = false,
   conversation,
@@ -347,9 +349,14 @@ const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && !uploadingFile && onSendFile) {
-      onSendFile(file);
+    const files = e.target.files;
+    if (files && files.length > 0 && !uploadingFile) {
+      const fileList = Array.from(files);
+      if (onSendFiles) {
+        onSendFiles(fileList);
+      } else if (onSendFile && fileList[0]) {
+        onSendFile(fileList[0]);
+      }
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -417,6 +424,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         <input
           ref={fileInputRef}
           type="file"
+          multiple
           className="hidden"
           onChange={handleFileSelect}
           accept="image/*,audio/*,.pdf,.doc,.docx,.txt"

@@ -68,9 +68,16 @@ const buildProductImages = (product: any): ProductImage[] => {
 
   const variantImages = (product.variants || product.productVariants || [])
     .map((variant: any) =>
-      getPrimaryImageUrl(variant.image, variant.images, variant.mainImage),
+      getPrimaryImageUrl(
+        variant.image,
+        variant.imageUrl,
+        variant.image_url,
+        variant.images,
+        variant.mainImage,
+        variant.metadata?.image,
+      ),
     )
-    .filter((url: string) => url.length > 0);
+    .filter((url: string) => typeof url === "string" && url.length > 0);
 
   const allUrls = Array.from(new Set([...candidates, ...variantImages]));
 

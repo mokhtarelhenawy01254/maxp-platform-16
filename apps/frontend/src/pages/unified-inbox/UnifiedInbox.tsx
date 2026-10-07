@@ -117,6 +117,23 @@ interface CustomerProfile {
   ratingLabel?: string;
 }
 
+const isMediaOrProxyUrl = (text?: string | null): boolean => {
+  if (!text || typeof text !== "string") return false;
+  const trimmed = text.trim();
+  return (
+    /proxy-image/i.test(trimmed) ||
+    /^\/?api\/v1\/proxy-image/i.test(trimmed) ||
+    /^\/?uploads\/chat-media\//i.test(trimmed) ||
+    /scontent.*?\.fbcdn\.net/i.test(trimmed) ||
+    /cdn\.fbsbx\.com/i.test(trimmed) ||
+    /cdninstagram\.com/i.test(trimmed) ||
+    (/^(https?:\/\/|\/|uploads\/|assets\/)/i.test(trimmed) &&
+      /\.(jpg|jpeg|png|gif|webp|svg|bmp|mp4|mov|webm|m4a|mp3|ogg|opus|wav|pdf)(\?|$)/i.test(
+        trimmed.split(/[\s\n]/)[0] || "",
+      ))
+  );
+};
+
 interface PlatformCounts {
   all: number;
   facebook: number;
@@ -804,6 +821,10 @@ const UnifiedInbox: React.FC = () => {
 
         if (response.data?.success) {
           sentMessages.push(response.data.data);
+        }
+
+        if (i < payloads.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 1200));
         }
       }
 
@@ -2126,8 +2147,14 @@ const UnifiedInbox: React.FC = () => {
                                 return null;
                               })()}
 
-                              {/* Text content (hide if it's a media URL shown above) */}
-                              {msg.content && !(msg.content.startsWith("http") && (msg.content.includes("fbcdn") || msg.content.includes("cdninstagram") || /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(msg.content.split(/[\s\n]/)[0] || ""))) && (
+                              {/* Text content (hide if it's a media URL or proxy URL) */}
+                              {msg.content &&
+                                !isMediaOrProxyUrl(msg.content) &&
+                                !(
+                                  (msg.attachments?.length || msg.mediaUrl) &&
+                                  (msg.content === msg.mediaUrl ||
+                                    msg.attachments?.some((a) => a.url === msg.content))
+                                ) && (
                                 <p
                                   className="text-sm leading-relaxed whitespace-pre-wrap"
                                   style={{
