@@ -671,6 +671,41 @@ app.use((req, res, next) => {
   next();
 });
 
+// ─────────────────────────────────────────────────────────────────────────
+// UTM attribution capture — mirrors the partner-code pattern above.
+// First touch stores utm_* in a 30-day cookie (maxp_utm); req.utm is read
+// at registration (AUTH activity log) and at bundle checkout (metadata).
+// ─────────────────────────────────────────────────────────────────────────
+const UTM_ATTR_COOKIE = "maxp_utm";
+const UTM_ATTR_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+app.use((req, res, next) => {
+  try {
+    const utmKeys = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+    const hasQueryUtm = utmKeys.some((k) => req.query?.[k]);
+    const stored = req.cookies?.[UTM_ATTR_COOKIE];
+
+    if (hasQueryUtm) {
+      const payload = {};
+      utmKeys.forEach((k) => {
+        if (req.query[k]) payload[k] = String(req.query[k]).slice(0, 200);
+      });
+      res.cookie(UTM_ATTR_COOKIE, JSON.stringify(payload), {
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: UTM_ATTR_MAX_AGE,
+        path: "/",
+      });
+      req.utm = payload;
+    } else if (stored) {
+      try { req.utm = JSON.parse(stored); } catch (_) { req.utm = null; }
+    }
+  } catch (_) {
+    /* never break requests because of attribution */
+  }
+  next();
+});
+
 app.use(sanitizeInput);
 
 // Tenant Context Extraction

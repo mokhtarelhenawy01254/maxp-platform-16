@@ -306,6 +306,49 @@ const register = async (req, res) => {
       themeId: selectedSpecialty?.themeId || null,
     });
 
+    // Integrated landing («باقة متجر الملابس»): auto-install the free tier
+    // (store + order workflow) for signups coming from that landing page.
+    const landingBundle = String(req.body?.landingBundle || '').trim();
+    if (landingBundle === 'clothing-store-bundle') {
+      try {
+        const { initializeDefaultApps } = require('../utils/initializeCompanyDefaults');
+        await initializeDefaultApps(company.id, {
+          specialtyAppSlugs: ['store', 'order-workflow'],
+          source: 'clothing-landing-free-tier'
+        });
+        console.log(`[REGISTER] Free-tier apps (store, order-workflow) activated for landing signup: ${company.id}`);
+      } catch (landingErr) {
+        console.error('[REGISTER] Free-tier app activation failed:', landingErr?.message);
+      }
+    }
+
+    // Landing attribution: persist utm_* + landing source captured by the
+    // server-level utm middleware (maxp_utm cookie) into an AUTH activity log.
+    try {
+      const landingUtm = req.utm || null;
+      await prisma.activityLog.create({
+        data: {
+          userId: user.id,
+          companyId: company.id,
+          category: 'AUTH',
+          action: 'REGISTER',
+          description: `تسجيل جديد${landingBundle ? ' من صفحة هبوط باقة المتجر' : ''}${landingUtm?.utm_source ? ` — utm_source: ${landingUtm.utm_source}` : ''}`,
+          targetType: 'COMPANY',
+          targetId: company.id,
+          targetName: company.name,
+          metadata: JSON.stringify({
+            landingBundle: landingBundle || null,
+            utm: landingUtm,
+            registeredAt: new Date().toISOString()
+          }),
+          severity: 'LOW',
+          isSuccess: true
+        }
+      });
+    } catch (attributionLogErr) {
+      console.error('[REGISTER] Attribution log failed:', attributionLogErr?.message);
+    }
+
     // Attribution window: prefer the cookie/session code captured by the
     // server-level middleware, fall back to an explicit code in the body.
     const partnerCode = req.partnerCode || req.body?.partnerCode || req.query?.partner || undefined;

@@ -2375,6 +2375,260 @@ exports.subscribeToBundle = async (req, res) => {
   }
 };
 
+// ── Integrated landing (Phase 2): bundle checkout via Kashier + webhook activation ──
+
+/**
+ * Activates every app in `bundle` for `companyId` (upsert + bundle settings + installCount),
+ * mirroring the wallet subscribe path but without any wallet movement. Used by the
+ * Kashier webhook after a successful bundle payment.
+ */
+async function activatePaidBundleApps(prisma, bundle, bundleAppIds, companyId) {
+  const nextBillingAt = new Date();
+  nextBillingAt.setDate(nextBillingAt.getDate() + 30);
+  const bundleApps = await prisma.marketplaceApp.findMany({
+    where: { id: { in: bundleAppIds } },
+    select: { id: true, slug: true }
+  });
+  const bundleAppById = new Map(bundleApps.map((a) => [a.id, a]));
+  const existingInstallations = await prisma.companyApp.findMany({
+    where: { companyId, appId: { in: bundleAppIds } },
+    select: { id: true, appId: true, settings: true }
+  });
+  const installationByAppId = new Map(existingInstallations.map((i) => [i.appId, i]));
+
+  for (const appId of bundleAppIds) {
+    const bundleApp = bundleAppById.get(appId);
+    const existingInstallation = installationByAppId.get(appId);
+    const mergedSettings = buildInstalledMarketplaceAppSettings(
+      bundleApp?.slug || '',
+      existingInstallation?.settings,
+      {
+        general: { enabled: true },
+        bundleInstallation: {
+          isBundle: true,
+          bundleSlug: bundle.slug,
+          activatedAt: new Date().toISOString()
+        }
+      }
+    );
+
+    if (existingInstallation) {
+      await prisma.companyApp.update({
+        where: { id: existingInstallation.id },
+        data: { status: 'ACTIVE', validUntil: nextBillingAt, settings: mergedSettings }
+      });
+    } else {
+      await prisma.companyApp.create({
+        data: {
+          id: uuidv4(),
+          companyId,
+          appId,
+          status: 'ACTIVE',
+          validUntil: nextBillingAt,
+          settings: mergedSettings
+        }
+      });
+    }
+
+    await prisma.marketplaceApp.update({
+      where: { id: appId },
+      data: { installCount: { increment: 1 } }
+    });
+  }
+  return nextBillingAt;
+}
+
+/**
+ * @route POST /api/v1/marketplace/bundles/:slug/checkout
+ * @desc Create a Kashier payment session for a bundle subscription (integrated landing).
+ *       Activation happens ONLY from the signed Kashier webhook (pending intent logged here).
+ * @access Protected
+ */
+exports.createBundleCheckout = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { companyId } = req.user;
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'يجب تحديد الشركة' });
+    }
+
+    const bundleResolution = await resolveBundleForWrite(slug);
+    const bundle = bundleResolution.bundle;
+    if (!bundle) {
+      return res.status(404).json({ success: false, message: 'Bundle not found' });
+    }
+    if (bundleResolution.missingAppSlugs.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'This bundle includes apps that are not available for installation.',
+        missingApps: bundleResolution.missingAppSlugs
+      });
+    }
+    if (!bundle.isActive) {
+      return res.status(400).json({ success: false, message: 'هذه الباقة غير مفعلة حالياً' });
+    }
+
+    const bundleAppIds = normalizeStringArray(bundle.appIds);
+    if (bundleAppIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'This bundle has no installable apps' });
+    }
+
+    const orderId = `BND-${companyId.slice(-8)}-${bundle.slug}-${Date.now()}`;
+    const utm = req.body?.utm || {};
+    const userDisplayName = req.user?.name || req.user?.email || 'مستخدم النظام';
+
+    const client = getSharedPrismaClient();
+    if (client?.activityLog?.create) {
+      await client.activityLog.create({
+        data: {
+          userId: req.user?.id || null,
+          companyId,
+          category: 'MARKETPLACE',
+          action: 'BUNDLE_CHECKOUT_CREATED',
+          description: `بدأ ${userDisplayName} الدفع لكاشير لاشتراك باقة "${bundle.name}"`,
+          targetType: 'BUNDLE',
+          targetId: bundle.id || bundle.slug,
+          targetName: bundle.name,
+          metadata: JSON.stringify({
+            bundleSlug: bundle.slug,
+            orderId,
+            amount: Number(bundle.monthlyPrice),
+            utm,
+            pendingActivation: true,
+            createdAt: new Date().toISOString()
+          }),
+          severity: 'LOW',
+          isSuccess: true
+        }
+      });
+    }
+
+    const KashierServiceModule = require('../services/kashierService');
+    const KashierService = KashierServiceModule.KashierService || KashierServiceModule;
+    const session = await KashierService.createPaymentSession(
+      {
+        amount: Number(bundle.monthlyPrice),
+        currency: 'EGP',
+        orderId,
+        customer: {
+          name: req.user?.name || userDisplayName,
+          email: req.user?.email || '',
+          phone: req.user?.phone || '',
+          reference: `bundle:${companyId}:${bundle.slug}`
+        },
+        description: `اشتراك شهري: ${bundle.name}`,
+        redirectUrl: req.body?.redirectUrl || `${req.headers.origin || 'https://maxp.online'}/lp/clothing-store-bundle?payment=success`,
+        webhookUrl: `${process.env.PUBLIC_BASE_URL || 'https://maxp.online'}/api/v1/kashier/webhook`
+      },
+      companyId
+    );
+
+    if (!session?.success || !session?.sessionUrl) {
+      return res.status(502).json({
+        success: false,
+        message: 'تعذر إنشاء جلسة الدفع، حاول مرة أخرى',
+        details: session?.error || null
+      });
+    }
+
+    res.json({
+      success: true,
+      sessionUrl: session.sessionUrl,
+      sessionId: session.sessionId,
+      orderId
+    });
+  } catch (error) {
+    console.error('Error creating bundle checkout:', error);
+    res.status(500).json({ success: false, message: 'خطأ في بدء الدفع' });
+  }
+};
+
+/**
+ * Called by the Kashier webhook (kashierRoutes) when a BND-* bundle payment succeeds.
+ * Requires a pre-recorded BUNDLE_CHECKOUT_CREATED intent (blocks fabricated webhooks)
+ * and is idempotent (skips if the apps are already ACTIVE with a future validUntil).
+ */
+exports.activateBundleFromWebhook = async ({ orderNumber, companyIdHint } = {}) => {
+  const prisma = getSharedPrismaClient();
+  if (!orderNumber) {
+    return { success: false, reason: 'missing_order_number' };
+  }
+
+  const intent = await prisma.activityLog.findFirst({
+    where: {
+      category: 'MARKETPLACE',
+      action: 'BUNDLE_CHECKOUT_CREATED',
+      metadata: { contains: orderNumber }
+    },
+    orderBy: { createdAt: 'desc' }
+  }).catch(() => null);
+
+  if (!intent) {
+    return { success: false, reason: 'no_pending_intent' };
+  }
+
+  let intentMeta = {};
+  try { intentMeta = JSON.parse(intent.metadata || '{}'); } catch (_) { intentMeta = {}; }
+  const bundleSlug = intentMeta.bundleSlug;
+  const companyId = companyIdHint || intent.companyId;
+  if (!bundleSlug || !companyId) {
+    return { success: false, reason: 'incomplete_intent' };
+  }
+
+  const bundleResolution = await resolveBundleForWrite(bundleSlug);
+  const bundle = bundleResolution.bundle;
+  if (!bundle) {
+    return { success: false, reason: 'bundle_not_found' };
+  }
+  const bundleAppIds = normalizeStringArray(bundle.appIds);
+  if (bundleAppIds.length === 0) {
+    return { success: false, reason: 'no_apps' };
+  }
+
+  const alreadyActive = await prisma.companyApp.count({
+    where: {
+      companyId,
+      appId: { in: bundleAppIds },
+      status: 'ACTIVE',
+      validUntil: { gte: new Date() }
+    }
+  });
+  if (alreadyActive >= bundleAppIds.length) {
+    return { success: true, alreadyActivated: true, activated: 0 };
+  }
+
+  await activatePaidBundleApps(prisma, bundle, bundleAppIds, companyId);
+
+  try {
+    await prisma.activityLog.create({
+      data: {
+        userId: null,
+        companyId,
+        category: 'MARKETPLACE',
+        action: 'INSTALL_APP',
+        description: `تم تفعيل باقة "${bundle.name}" (${bundleAppIds.length} أداة) بعد تأكيد الدفع عبر كاشير`,
+        targetType: 'BUNDLE',
+        targetId: bundle.id || bundle.slug,
+        targetName: bundle.name,
+        metadata: JSON.stringify({
+          bundleSlug: bundle.slug,
+          orderId: orderNumber,
+          source: 'kashier_webhook',
+          appCount: bundleAppIds.length,
+          activatedAt: new Date().toISOString()
+        }),
+        severity: 'LOW',
+        isSuccess: true
+      }
+    });
+  } catch (logErr) {
+    console.warn('[marketplace] failed to log bundle activation from webhook:', logErr.message);
+  }
+
+  return { success: true, activated: bundleAppIds.length, companyId, bundleSlug };
+};
+
+
 /**
  * @route GET /api/v1/marketplace/logs
  * @desc Get application activity / audit logs for the company (who installed or uninstalled apps)

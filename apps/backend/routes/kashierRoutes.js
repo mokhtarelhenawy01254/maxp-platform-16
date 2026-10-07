@@ -326,8 +326,7 @@ router.post('/kashier/webhook', async (req, res) => {
       }
 
       // Strategy D: Lookup pre-recorded transaction in DB by referenceId = orderNumber
-      if (!walletCompanyId && orderNumber) {
-        const pendingTx = await prisma.transaction.findFirst({
+      if (!walletCompanyId && orderNumber) {        const pendingTx = await prisma.transaction.findFirst({
           where: { referenceId: orderNumber, type: 'DEPOSIT' },
           include: { wallet: true },
         }).catch(() => null);
@@ -424,6 +423,27 @@ router.post('/kashier/webhook', async (req, res) => {
       }
 
       return res.json({ success: true, message: 'Wallet recharge processed' });
+    }
+    // 1.5 Bundle subscription payments (integrated landing): metaData.type = BUNDLE_SUBSCRIPTION
+    //     or orderNumber prefix BND-<companyIdTail>-<slug>-<ts>. Activation requires the
+    //     pending BUNDLE_CHECKOUT_CREATED intent recorded at checkout time (blocks
+    //     fabricated webhooks) and is idempotent.
+    const isBundleSubscription =
+      metaData.type === 'BUNDLE_SUBSCRIPTION' ||
+      (orderNumber && orderNumber.startsWith('BND-'));
+
+    if (isBundleSubscription) {
+      const marketplaceController = require('../controller/marketplaceController');
+      if (!isSuccess) {
+        console.warn('[KASHIER-WEBHOOK] Bundle payment not successful for order:', orderNumber);
+        return res.json({ success: true, message: 'Bundle payment failure acknowledged' });
+      }
+      const activation = await marketplaceController.activateBundleFromWebhook({
+        orderNumber,
+        companyIdHint: metaData.companyId || null
+      });
+      console.log('[KASHIER-WEBHOOK] Bundle activation result:', JSON.stringify(activation));
+      return res.json({ success: true, ...activation });
     }
 
     // 2. Order flow: Find order by orderNumber, or sessionId in metadata

@@ -23,6 +23,7 @@ router.post('/apps/:slug/install', verifyToken.authenticateToken, marketplaceCon
 router.post('/apps/:slug/uninstall', verifyToken.authenticateToken, marketplaceController.uninstallApp);
 router.post('/apps/:appId/review', verifyToken.authenticateToken, marketplaceController.addReview);
 router.post('/bundles/:slug/subscribe', verifyToken.authenticateToken, marketplaceController.subscribeToBundle);
+router.post('/bundles/:slug/checkout', verifyToken.authenticateToken, marketplaceController.createBundleCheckout);
 
 
 module.exports = router;
