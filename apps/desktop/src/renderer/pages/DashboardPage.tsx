@@ -13,6 +13,7 @@ import AppsTimelineTab from './AppsTimelineTab';
 import AttendanceAuditTab from './AttendanceAuditTab';
 import { TeamDailyReportTab } from './TeamDailyReportTab';
 import MyWageAndAttendanceTab from './MyWageAndAttendanceTab';
+import EmployeeScoreTab from './EmployeeScoreTab';
 import SettingsModal from '../components/SettingsModal';
 import { BreakReasonModal } from '../components/BreakReasonModal';
 import { ShiftHandoverModal } from '../components/ShiftHandoverModal';
@@ -328,6 +329,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
         return 'يومية الفريق — الإنجاز والزمن والإنتاجية';
       case 'goals':
         return 'الأهداف ومؤشرات الأداء (OKRs)';
+      case 'wage':
+        return 'حضوري ومستحقاتي المالية';
+      case 'score':
+        return 'تقييم أدائي التلقائي 360°';
       case 'reports':
         return 'التقرير اليومي وملخص الإنتاجية';
       case 'apps':
@@ -571,6 +576,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
           {activeTab === 'wage' && (
             <TabErrorBoundary key="wage" tabName="حضوري ومستحقاتي">
               <MyWageAndAttendanceTab user={user} />
+            </TabErrorBoundary>
+          )}
+          {activeTab === 'score' && (
+            <TabErrorBoundary key="score" tabName="تقييم أدائي">
+              <EmployeeScoreTab user={user} />
             </TabErrorBoundary>
           )}
           {activeTab === 'reports' && <TabErrorBoundary key="reports" tabName="تقارير الأداء"><TaskReportView isExecutiveMode={false} /></TabErrorBoundary>}

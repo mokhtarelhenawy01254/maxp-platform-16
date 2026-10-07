@@ -89,6 +89,24 @@ declare global {
       getMyPayrollSummary: () => Promise<{ success: boolean; payroll?: any; projection?: any; error?: string }>;
       getMyPermissionsSummary: () => Promise<{ success: boolean; stats?: any; requests?: any[]; leavesConfig?: any; error?: string }>;
       createPermissionRequest: (data: { type: string; date: string; durationMinutes: number; reason: string }) => Promise<{ success: boolean; data?: any; error?: string }>;
+      getMyPerformanceScore: () => Promise<{
+        success: boolean;
+        data?: {
+          compositeScore: number;
+          tier: string;
+          tierLabel: string;
+          pillars: {
+            delivery: { score: number; weight: number; label: string; details: string };
+            quality: { score: number; weight: number; label: string; details: string };
+            punctuality: { score: number; weight: number; label: string; details: string };
+            focus: { score: number; weight: number; label: string; details: string };
+            goals: { score: number; weight: number; label: string; details: string };
+          };
+          recommendations: string[];
+          period: string;
+        };
+        error?: string;
+      }>;
 
       openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
       copyToClipboard: (text: string) => Promise<{ success: boolean; error?: string }>;

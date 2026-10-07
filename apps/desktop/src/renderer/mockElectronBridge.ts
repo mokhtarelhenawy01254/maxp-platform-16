@@ -359,6 +359,27 @@ export function initMockElectronBridge() {
       },
     }),
 
+    getMyPerformanceScore: async () => ({
+      success: true,
+      data: {
+        compositeScore: 88,
+        tier: 'TIER_A',
+        tierLabel: 'ممتاز (Tier A)',
+        pillars: {
+          delivery: { score: 92, weight: 25, label: 'سرعة ومعدل الإنجاز', details: '12/14 مهمة مكتملة في الموعد' },
+          quality: { score: 90, weight: 25, label: 'جودة المخرجات والاعتماد', details: 'صفر إرجاعات مسجلة، مخرجات موثقة' },
+          punctuality: { score: 85, weight: 20, label: 'الانضباط والحضور', details: '1 تأخير طفيف من 22 وردية حضور' },
+          focus: { score: 88, weight: 20, label: 'التركيز والنشاط الرقمي', details: '88% معدل نشاط حقيقي وموثق' },
+          goals: { score: 85, weight: 10, label: 'الأهداف ومؤشرات النتائج', details: 'تحقيق مستهدفات الشهر بنسبة 85%' },
+        },
+        recommendations: [
+          'تسليم المهام المتبقية قبل موعد الاستحقاق يعزز من مؤشر الإنجاز إلى Tier S.',
+          'الحفاظ على وتيرة الحضور الصباحي المبكر يرفع نقاط الانضباط مباشرة.'
+        ],
+        period: 'آخر 30 يوماً'
+      }
+    }),
+
     openExternal: async () => ({ success: true }),
     copyToClipboard: async (text: string) => {
       try {

@@ -158,6 +158,58 @@ class AttendanceService {
     return restDays.includes(dow);
   }
 
+  /**
+   * توحيد مصدر إعدادات بداية العمل والتأخير
+   * @param {Object|null} shift
+   * @param {Object|null} latenessRules
+   * @param {Object|null} settings
+   */
+  resolveShiftAndLatenessRules(shift = null, latenessRules = null, settings = null) {
+    const workStartTime =
+      shift?.startTime ||
+      latenessRules?.workStartTime ||
+      settings?.workStartTime ||
+      "10:00";
+
+    let allowanceMinutes = 10;
+    const hasExplicitRules = Boolean(latenessRules);
+
+    if (latenessRules?.latestAllowedTime && latenessRules?.workStartTime) {
+      const [latH, latM] = latenessRules.latestAllowedTime.split(":").map(Number);
+      const [wH, wM] = latenessRules.workStartTime.split(":").map(Number);
+      const diff = (latH * 60 + latM) - (wH * 60 + wM);
+      if (!isNaN(diff) && diff >= 0) {
+        allowanceMinutes = diff;
+      }
+    } else if (settings?.lateGracePeriod !== undefined || settings?.lateThresholdMinutes !== undefined) {
+      const parsed = Number(settings.lateGracePeriod ?? settings.lateThresholdMinutes);
+      if (!isNaN(parsed) && parsed >= 0) {
+        allowanceMinutes = parsed;
+      }
+    } else if (settings?.lateThreshold !== undefined) {
+      const parsed = Number(settings.lateThreshold);
+      if (!isNaN(parsed) && parsed >= 0) {
+        allowanceMinutes = parsed;
+      }
+    }
+
+    let latestAllowedTime = latenessRules?.latestAllowedTime || "10:10";
+    if (shift?.startTime && shift.startTime !== (latenessRules?.workStartTime || "10:00")) {
+      const [sH, sM] = shift.startTime.split(":").map(Number);
+      const totalAllowedM = sH * 60 + sM + allowanceMinutes;
+      const allowedH = Math.floor(totalAllowedM / 60) % 24;
+      const allowedM = totalAllowedM % 60;
+      latestAllowedTime = `${String(allowedH).padStart(2, "0")}:${String(allowedM).padStart(2, "0")}`;
+    }
+
+    return {
+      workStartTime,
+      latestAllowedTime,
+      allowanceMinutes,
+      hasExplicitRules,
+    };
+  }
+
   classifyAttendanceRecord({
     recordDate,
     checkIn,
@@ -165,6 +217,7 @@ class AttendanceService {
     settings = null,
     timezone = "Africa/Cairo",
     shift = null,
+    latenessRules = null,
   }) {
     const isRest = this.isRestDay(recordDate || checkIn, settings, timezone);
 
@@ -194,8 +247,8 @@ class AttendanceService {
     let status = "PRESENT";
 
     if (checkIn) {
-      const workStartTime = shift?.startTime || settings?.workStartTime || "09:00";
-      const [h, m] = workStartTime.split(":").map(Number);
+      const config = this.resolveShiftAndLatenessRules(shift, latenessRules, settings);
+      const [h, m] = config.workStartTime.split(":").map(Number);
       const checkInParts = new Intl.DateTimeFormat("en-US", {
         timeZone: timezone,
         hour: "2-digit",
@@ -208,12 +261,23 @@ class AttendanceService {
       const actualMinutesOfDay = actualH * 60 + actualM;
       const scheduledMinutesOfDay = h * 60 + m;
 
-      if (actualMinutesOfDay > scheduledMinutesOfDay) {
-        const diffMinutes = actualMinutesOfDay - scheduledMinutesOfDay;
-        const grace = Number(settings?.lateGracePeriod || settings?.lateThreshold || 15);
-        if (diffMinutes > grace) {
-          lateMinutes = diffMinutes;
+      if (latenessRules || config.hasExplicitRules) {
+        const latestAllowedMinutesOfDay = scheduledMinutesOfDay + config.allowanceMinutes;
+        if (actualMinutesOfDay > latestAllowedMinutesOfDay) {
+          lateMinutes = actualMinutesOfDay - latestAllowedMinutesOfDay;
           status = "LATE";
+        } else {
+          lateMinutes = 0;
+          status = "PRESENT";
+        }
+      } else {
+        if (actualMinutesOfDay > scheduledMinutesOfDay) {
+          const diffMinutes = actualMinutesOfDay - scheduledMinutesOfDay;
+          const grace = Number(config.allowanceMinutes);
+          if (diffMinutes > grace) {
+            lateMinutes = diffMinutes;
+            status = "LATE";
+          }
         }
       }
     }
@@ -625,14 +689,21 @@ class AttendanceService {
         timezone,
       );
 
-      // جلب إعدادات HR
+      // جلب إعدادات HR وقواعد التأخير
       const settings = await this.prisma.hRSettings.findUnique({
         where: { companyId },
       });
+      const latenessRules = await this.prisma.latenessRules.findUnique({
+        where: { companyId },
+      });
 
-      // استخدام وقت المناوبة أو وقت افتراضي
-      const workStartTime =
-        shift?.startTime || settings?.workStartTime || "09:00";
+      // توحيد وقت المناوبة وقواعد التأخير
+      const config = this.resolveShiftAndLatenessRules(
+        shift,
+        latenessRules,
+        settings,
+      );
+      const workStartTime = config.workStartTime;
 
       // Calculate Work Start Time relative to THIS DAY in COMPANY TIMEZONE
       // Use todayForCalc (actual midnight UTC for timezone) for time arithmetic
@@ -645,7 +716,7 @@ class AttendanceService {
       // التحقق مما إذا كان اليوم يوم راحة أسبوعية
       const isTodayRestDay = this.isRestDay(todayForCalc, settings, timezone);
 
-      // حساب دقائق التأخير والحالة
+      // حساب دقائق التأخير والحالة بالنسبة لـ latestAllowedTime / graceTime
       let lateMinutes = 0;
       let status = "PRESENT";
 
@@ -653,11 +724,14 @@ class AttendanceService {
         status = "OVERTIME";
         lateMinutes = 0;
       } else {
-        const gracePeriod = settings?.lateGracePeriod || settings?.lateThresholdMinutes || 15;
-        const graceTime = new Date(workStart.getTime() + gracePeriod * 60000);
+        const graceTime = new Date(
+          workStart.getTime() + config.allowanceMinutes * 60000,
+        );
 
         if (now > graceTime) {
-          lateMinutes = Math.floor((now - workStart) / 60000);
+          lateMinutes = Math.floor(
+            (now.getTime() - graceTime.getTime()) / 60000,
+          );
           status = "LATE";
         }
       }
@@ -693,13 +767,16 @@ class AttendanceService {
       // TODO: تفعيل بعد تحويل autoDeductionService لاستخدام Prisma
       if (lateMinutes > 0) {
         try {
+          const graceTime = new Date(
+            workStart.getTime() + config.allowanceMinutes * 60000,
+          );
           const deductionResult =
             await autoDeductionService.processLateAttendance(
               companyId,
               employeeId,
               attendance.id,
               now,
-              workStart,
+              graceTime,
             );
 
           console.log(
@@ -999,14 +1076,23 @@ class AttendanceService {
         timezone,
       );
 
-      // جلب إعدادات HR
+      // جلب إعدادات HR وقواعد التأخير
       const settings = await this.prisma.hRSettings.findUnique({
         where: { companyId },
       });
+      const latenessRules = await this.prisma.latenessRules.findUnique({
+        where: { companyId },
+      });
+
+      const config = this.resolveShiftAndLatenessRules(
+        shift,
+        latenessRules,
+        settings,
+      );
 
       // استخدام وقت المناوبة أو وقت افتراضي
-      const workEndTime = shift?.endTime || settings?.workEndTime || "17:00";
-      const [startHour, startMinute] = (shift?.startTime || "09:00")
+      const workEndTime = shift?.endTime || settings?.workEndTime || "18:00";
+      const [startHour, startMinute] = config.workStartTime
         .split(":")
         .map(Number);
       const [endHour, endMinute] = workEndTime.split(":").map(Number);
@@ -2137,6 +2223,9 @@ class AttendanceService {
     const settings = await this.prisma.hRSettings.findUnique({
       where: { companyId },
     });
+    const latenessRules = await this.prisma.latenessRules.findUnique({
+      where: { companyId },
+    });
 
     const isRest = this.isRestDay(date, settings, timezone) || originalData.status === "OVERTIME";
     if (isRest) {
@@ -2154,16 +2243,20 @@ class AttendanceService {
       };
     }
 
-    const workStartTime =
-      shift?.startTime || settings?.workStartTime || "09:00";
-    const workEndTime = shift?.endTime || settings?.workEndTime || "17:00";
+    const config = this.resolveShiftAndLatenessRules(
+      shift,
+      latenessRules,
+      settings,
+    );
+    const workStartTime = config.workStartTime;
+    const workEndTime = shift?.endTime || settings?.workEndTime || "18:00";
     const workStart = combineDateAndTime(date, workStartTime, timezone);
     const workEnd = combineDateAndTime(date, workEndTime, timezone);
 
     console.log(
       `📝 [METRICS] workStartTime: ${workStartTime}, workStartObj: ${workStart?.toISOString()}`,
     );
-    console.log(`📝 [METRICS] checkIn: ${checkIn?.toISOString()}`);
+    console.log(`📝 [METRICS] checkIn: ${checkIn instanceof Date ? checkIn.toISOString() : checkIn}`);
 
     // If checkIn is provided and we should auto-calculate (lateMinutes is 0 or not provided)
     const originalLateMinutes =
@@ -2178,20 +2271,25 @@ class AttendanceService {
       : originalData.lateMinutes === undefined || originalLateMinutes === 0;
 
     if (checkIn && shouldAutoCalculateLate) {
-      const gracePeriod = settings?.lateGracePeriod || settings?.lateThresholdMinutes || 15;
-      const graceTime = new Date(workStart.getTime() + gracePeriod * 60000);
+      const graceTime = new Date(
+        workStart.getTime() + config.allowanceMinutes * 60000,
+      );
+      const checkInDate = new Date(checkIn);
 
       console.log(
-        `📝 [METRICS] gracePeriod: ${gracePeriod}, graceTime: ${graceTime.toISOString()}`,
+        `📝 [METRICS] allowanceMinutes: ${config.allowanceMinutes}, graceTime: ${graceTime.toISOString()}`,
       );
 
-      if (checkIn > graceTime) {
-        lateMinutes = Math.floor((checkIn - workStart) / 60000);
+      if (checkInDate > graceTime) {
+        lateMinutes = Math.floor(
+          (checkInDate.getTime() - graceTime.getTime()) / 60000,
+        );
         status = "LATE";
         console.log(
           `✅ [METRICS] Status set to LATE, lateMinutes: ${lateMinutes}`,
         );
       } else {
+        lateMinutes = 0;
         console.log(`ℹ️ [METRICS] Not late. checkIn <= graceTime`);
       }
     }

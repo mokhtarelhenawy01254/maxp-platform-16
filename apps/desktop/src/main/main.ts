@@ -1018,6 +1018,15 @@ function registerIpcHandlers(): void {
     }
   });
 
+  ipcMain.handle('hr:my-performance-score', async () => {
+    try {
+      const result = await apiClient.getMyPerformanceScore();
+      return result;
+    } catch (err: any) {
+      return { success: false, error: err?.message };
+    }
+  });
+
   ipcMain.handle(IPC_CHANNELS.GET_DAILY_SUMMARY, async (_, targetDate?: string, endDate?: string) => {
     const today = getLocalDateString();
     const dateToQuery = targetDate || today;

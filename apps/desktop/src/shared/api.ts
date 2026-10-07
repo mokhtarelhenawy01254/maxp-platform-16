@@ -1068,6 +1068,39 @@ class MonitorApiClient {
     }
   }
 
+  async getMyPerformanceScore(): Promise<{
+    success: boolean;
+    data?: {
+      compositeScore: number;
+      tier: string;
+      tierLabel: string;
+      pillars: {
+        delivery: { score: number; weight: number; label: string; details: string };
+        quality: { score: number; weight: number; label: string; details: string };
+        punctuality: { score: number; weight: number; label: string; details: string };
+        focus: { score: number; weight: number; label: string; details: string };
+        goals: { score: number; weight: number; label: string; details: string };
+      };
+      recommendations: string[];
+      period: string;
+    };
+    error?: string;
+  }> {
+    const base = this.serverUrl;
+    try {
+      const res = await axios.get(`${base}/api/v1/hr/performance/my-score`, {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      return res.data;
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.response?.data?.error || err.message,
+      };
+    }
+  }
+
   // ── Shift Close & Overtime Engine ─────────────────────────────
   async closeShiftWithHandover(data: {
     handoverNotes?: string;

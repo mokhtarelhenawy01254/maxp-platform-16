@@ -14,6 +14,7 @@ import {
   Send,
   HelpCircle,
   FileText,
+  Award,
 } from 'lucide-react';
 import { InlineErrorBanner } from '../components/InlineErrorBanner';
 import { PermissionRequestModal } from '../components/hr/PermissionRequestModal';
@@ -223,6 +224,16 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = () 
         </div>
 
         <div style={styles.headerActions}>
+          <button
+            style={styles.scoreQuickBtn}
+            onClick={() => window.dispatchEvent(new CustomEvent('maxp:navigate', { detail: { tab: 'score' } }))}
+            onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+            onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+            title="الانتقال إلى شاشة تقييم الأداء التلقائي 360°"
+          >
+            <Award size={13} color="var(--accent-green)" />
+            <span>تقييم أدائي 360°</span>
+          </button>
           <button
             style={styles.requestPermBtn}
             onClick={() => setShowPermissionModal(true)}
@@ -554,6 +565,20 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
+  },
+  scoreQuickBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    background: 'rgba(16, 185, 129, 0.12)',
+    border: '1px solid rgba(16, 185, 129, 0.3)',
+    color: 'var(--accent-green)',
+    borderRadius: 6,
+    padding: '5px 12px',
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: 'pointer',
+    transition: 'transform 140ms ease-out',
   },
   requestPermBtn: {
     display: 'flex',

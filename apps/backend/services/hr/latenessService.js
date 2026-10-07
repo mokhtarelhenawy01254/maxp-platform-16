@@ -12,6 +12,7 @@
  */
 
 const { getSharedPrismaClient } = require('../sharedDatabase');
+const { combineDateAndTime } = require('../../utils/dateUtils');
 
 class LatenessService {
   constructor() {
@@ -26,13 +27,10 @@ class LatenessService {
   }
 
   /**
-   * Parse time string (HH:mm) and apply to a date
+   * Parse time string (HH:mm) and apply to a date in company timezone
    */
-  parseTimeToDate(date, timeString) {
-    const [hours, minutes] = timeString.split(':').map(Number);
-    const result = new Date(date);
-    result.setHours(hours, minutes, 0, 0);
-    return result;
+  parseTimeToDate(date, timeString, timezone = 'Africa/Cairo') {
+    return combineDateAndTime(date, timeString, timezone);
   }
 
   /**
@@ -107,10 +105,12 @@ class LatenessService {
    * Returns: { latenessMinutes, category, isViolation }
    */
   calculateLateness(checkInTime, expectedStartTime, latestAllowedTime, remainingAllowance) {
-    const latenessMinutes = Math.floor((checkInTime - expectedStartTime) / 60000);
+    const checkInDate = new Date(checkInTime);
+    const expectedStartDate = new Date(expectedStartTime);
+    const latestAllowedDate = new Date(latestAllowedTime);
 
-    // On time or early
-    if (latenessMinutes <= 0) {
+    // On time or early (before or at expected start time)
+    if (checkInDate <= expectedStartDate) {
       return {
         latenessMinutes: 0,
         category: 'ON_TIME',
@@ -120,47 +120,28 @@ class LatenessService {
       };
     }
 
-    // Direct violation - after 10:10 AM
-    if (checkInTime > latestAllowedTime) {
+    // Direct violation - after latest allowed time (e.g. 10:10 AM)
+    if (checkInDate > latestAllowedDate) {
+      const latenessMinutes = Math.floor((checkInDate.getTime() - latestAllowedDate.getTime()) / 60000);
       return {
         latenessMinutes,
         category: 'DIRECT_VIOLATION',
         isViolation: true,
         allowanceUsed: 0,
         excessMinutes: latenessMinutes,
-        violationReason: `Check-in at ${checkInTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} exceeds latest allowed time (10:10 AM)`
+        violationReason: `Check-in exceeds latest allowed time`
       };
     }
 
-    // Between 10:01 and 10:10 - use allowance
-    if (remainingAllowance >= latenessMinutes) {
-      // Sufficient allowance
-      return {
-        latenessMinutes,
-        category: 'ALLOWANCE_USED',
-        isViolation: false,
-        allowanceUsed: latenessMinutes,
-        excessMinutes: 0
-      };
-    } else if (remainingAllowance > 0) {
-      // Partial allowance - use what's left, excess becomes deduction
-      return {
-        latenessMinutes,
-        category: 'ALLOWANCE_USED',
-        isViolation: false,
-        allowanceUsed: remainingAllowance,
-        excessMinutes: latenessMinutes - remainingAllowance
-      };
-    } else {
-      // No allowance left - all minutes are excess
-      return {
-        latenessMinutes,
-        category: 'GRACE_PERIOD',
-        isViolation: false,
-        allowanceUsed: 0,
-        excessMinutes: latenessMinutes
-      };
-    }
+    // Between expected start and latest allowed time (e.g. 10:01 and 10:10)
+    const minutesPastStart = Math.floor((checkInDate.getTime() - expectedStartDate.getTime()) / 60000);
+    return {
+      latenessMinutes: 0,
+      category: 'ALLOWANCE_USED',
+      isViolation: false,
+      allowanceUsed: minutesPastStart,
+      excessMinutes: 0
+    };
   }
 
   /**
@@ -171,15 +152,20 @@ class LatenessService {
     try {
       console.log(`🕐 [LATENESS] Processing check-in for user ${userId} at ${checkInTime}`);
 
-      // Get company rules
+      // Get company rules and timezone
       const rules = await this.getCompanyRules(companyId);
+      const company = await this.prisma.company.findUnique({
+        where: { id: companyId },
+        select: { timezone: true },
+      });
+      const timezone = company?.timezone || 'Africa/Cairo';
 
       // Get or create monthly allowance
       const allowance = await this.getOrCreateMonthlyAllowance(companyId, userId, date);
 
-      // Calculate expected times
-      const expectedStartTime = this.parseTimeToDate(date, rules.workStartTime);
-      const latestAllowedTime = this.parseTimeToDate(date, rules.latestAllowedTime);
+      // Calculate expected times in company timezone
+      const expectedStartTime = this.parseTimeToDate(date, rules.workStartTime, timezone);
+      const latestAllowedTime = this.parseTimeToDate(date, rules.latestAllowedTime, timezone);
 
       // Calculate lateness
       const latenessData = this.calculateLateness(

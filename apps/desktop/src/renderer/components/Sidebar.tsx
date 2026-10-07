@@ -17,10 +17,11 @@ import {
   Users,
   CalendarDays,
   Wallet,
+  Award,
 } from 'lucide-react';
 import { useTheme } from '../theme/ThemeContext';
 
-export type TabId = 'tasks' | 'timers' | 'goals' | 'wage' | 'reports' | 'team' | 'cockpit' | 'apps' | 'attendance' | 'daily';
+export type TabId = 'tasks' | 'timers' | 'goals' | 'wage' | 'score' | 'reports' | 'team' | 'cockpit' | 'apps' | 'attendance' | 'daily';
 
 interface SidebarProps {
   activeTab: TabId;
@@ -53,6 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             { id: 'timers', label: 'المؤقتات الحية', icon: <Timer size={17} /> },
             { id: 'goals', label: 'الأهداف ومؤشرات الأداء', icon: <Target size={17} /> },
             { id: 'wage', label: 'حضوري ومستحقاتي', icon: <Wallet size={17} /> },
+            { id: 'score', label: 'تقييم أدائي 360°', icon: <Award size={17} /> },
           ],
         },
         {
@@ -80,6 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             { id: 'timers', label: 'المؤقتات الحية', icon: <Timer size={17} /> },
             { id: 'goals', label: 'الأهداف ومؤشرات الأداء', icon: <Target size={17} /> },
             { id: 'wage', label: 'حضوري ومستحقاتي', icon: <Wallet size={17} /> },
+            { id: 'score', label: 'تقييم أدائي 360°', icon: <Award size={17} /> },
             { id: 'reports', label: 'تقارير الأداء', icon: <FileText size={17} /> },
           ],
         },

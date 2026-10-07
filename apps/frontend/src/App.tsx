@@ -1733,6 +1733,9 @@ const MyAdvances = React.lazy(() =>
   import("./pages/employee").then((m) => ({ default: m.MyAdvances })),
 );
 const MyPayroll = React.lazy(() => import("./pages/hr/MyPayroll"));
+const EmployeePerformanceScorePage = React.lazy(
+  () => import("./pages/hr/EmployeePerformanceScorePage"),
+);
 const MyCustody = React.lazy(() => import("./pages/my-custody/MyCustody"));
 const MyFeedback = React.lazy(() => import("./pages/hr/MyFeedback"));
 const MyWarnings = React.lazy(() =>
@@ -8091,6 +8094,22 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <MyPayroll />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-performance"
+                  element={
+                    <Layout>
+                      <EmployeePerformanceScorePage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/my-performance"
+                  element={
+                    <Layout>
+                      <EmployeePerformanceScorePage />
                     </Layout>
                   }
                 />

@@ -161,6 +161,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('hr:my-permissions-summary'),
   createPermissionRequest: (data: any) =>
     ipcRenderer.invoke('hr:create-permission-request', data),
+  getMyPerformanceScore: () =>
+    ipcRenderer.invoke('hr:my-performance-score'),
 
   openExternal: (url: string) =>
     ipcRenderer.invoke('shell:open-external', url),
