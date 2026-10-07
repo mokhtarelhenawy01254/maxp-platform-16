@@ -31,6 +31,17 @@
 5. **Scoped Storage & Cache Keys**: Always prefix `localStorage`, `sessionStorage`, and query cache keys with the specific screen/module namespace so state changes in one screen never collide with or leak into another screen.
 6. **Post-Edit `git diff` Blast-Radius Check**: Before committing, verify via `git status` and `git diff` that ONLY the intended target feature files were modified and zero unintended side-effects were introduced elsewhere (see `.agents/skills/strict-change-isolation/SKILL.md`).
 
+## Rule: Multi-Agent Parallel Task Execution & Subagent Delegation (إلزامية تشغيل المهام وتفويضها عبر أكثر من إيجينت متخصص)
+1. **Mandatory Subagent Delegation on Complex Tasks**: Never execute multi-phase or multi-domain tasks in a single bloated, monolithic pass. Any task requiring exploration/research, multi-file code modifications across frontend/backend, security auditing, or scenario verification MUST be partitioned and executed across specialized subagents using `invoke_subagent` (and `define_subagent` when custom roles are required).
+2. **Subagent Archetypes & Separation of Concerns**:
+   - **Lead Orchestrator (Parent Agent)**: Coordinates the subtask dependency graph, launches subagents in parallel, synthesizes findings, resolves conflicts, and interfaces with the user.
+   - **Codebase & Schema Researcher (`research` / `flash`)**: Read-only exploration of files, database schemas, and references without cluttering the main context.
+   - **Module Implementers (`self` / specialized)**: Focused code writers operating on discrete files or branched workspaces (`branch`/`share`).
+   - **Strict Isolation & Security Auditor (`self` / `code-reviewer`)**: Verifies `git diff`, ensures zero blast-radius, checks modular file size limits (< 400 lines), and confirms zero AI keys in `.env`.
+   - **Live Scenario Tester (`self` / devtools)**: Runs hands-on browser verification, checks console logs, and confirms API responses.
+3. **Zero Polling Loops**: Never poll `manage_subagents(Action='status')` in a loop. Launch subagents concurrently via `invoke_subagent` and stop tool execution to await the runtime's reactive wakeup.
+4. **Strict Compliance with `multi-agent-orchestrator` Skill**: All multi-agent workflows must strictly conform to `.agents/skills/multi-agent-orchestrator/SKILL.md`.
+
 ## Rule: Deployment Strategy (Frontend via GitHub CI/CD, Backend Fast Hot-Patch with Git Sync)
 1. **Frontend Releases**: Always deploy frontend changes through Git (`git commit & push` to `main`). GitHub Actions builds the production `dist` bundle, runs full syntax/size guards, and deploys cleanly to Nginx. Never upload ad-hoc raw bundles manually unless specifically directed during emergency offline recovery.
 2. **Backend Fast Verification & Sync**: Backend JS files may be hot-tested on the server directly for rapid verification (`ssh` file update + `pm2 reload maxp-backend`). Once verified on production, ALWAYS commit and push the changes to GitHub immediately to ensure zero drift between the repository and the live environment.
@@ -88,4 +99,17 @@ Any design resembling typical LLM-generated output is strictly rejected. Audit a
 2. **SemVer Comparison Law (`electron-updater`):** The Electron auto-updater strictly compares the remote version in `latest.yml` against the client's currently installed local version (`package.json`). If `remoteVersion === localVersion`, the updater evaluates the app as "up-to-date" and silently aborts download. For employees and users to receive automatic background updates without manual reinstall, `remoteVersion` MUST BE STRICTLY GREATER than `localVersion` (`remote > local`).
 3. **Synchronized Tag & Release Pipeline:** After bumping the version in `package.json`, create and push the matching git tag (e.g. `git tag -a v1.0.5` + `git push origin refs/tags/v1.0.5`) to trigger the GitHub Actions build workflow (`release-desktop.yml`), which publishes the new installer and `latest.yml` to `https://maxp.online/download/`.
 4. **Ban Ghost Releases:** Never push desktop source code fixes or build installers without bumping the version in `package.json`. Every desktop release MUST have an incremented version.
+
+## Rule: Mandatory Scenario Formulation & Browser Self-Verification Before Push (قاعدة السيناريو الإلزامي والاختبار الذاتي بالمتصفح قبل الرفع)
+1. **Strict Law — NO PUSH WITHOUT LIVE PROOF (حظر قطعي للرفع بدون إثبات عملي حي):**
+   - **Phase 1 (فهم التاسك وصياغة السيناريو):** عند استلام أي تاسك، يجب تحليل المطلوب بدقة وصياغة سيناريو تنفيذ وسيناريو فحص تفاعلي مسبق (Pre-Flight Test Scenario) يحدد الرابط المستهدف وخطوات التجربة ومعايير النجاح قبل لمس الكود.
+   - **Phase 2 (التنفيذ المنضبط المعزول):** تطبيق التعديل طبقاً لقواعد `strict-change-isolation` دون أي آثار جانبية.
+   - **Phase 3 (بوابة الاختبار الذاتي بالمتصفح - شرط مانع للرفع):** يُحظر منعاً باتاً عمل `git commit` أو `git push` قبل تشغيل المتصفح (عبر `chrome-devtools` MCP أو بيئة التطوير)، وزيارة الصفحة، وتنفيذ خطوات السيناريو تفاعلياً، والتأكد من خلو سجلات الكونسول تماماً من أي أخطاء (`list_console_messages` - Zero Errors)، وسلامة اتصالات الشبكة والواجهة. (وللمهام الخلفية/Backend: تشغيل فحص واختبار حقيقي للـ API بنتيجة 200 OK).
+   - **Phase 4 (الرفع المعتمد والتوثيق):** فقط بعد اجتياز فحص المتصفح بنجاح تام، يتم عمل Commit & Push مع إرفاق سيناريو الفحص ونتيجة التجربة للعميل.
+
+## Rule: Post-Task Automatic Git Push Rule (Conditional on Passing Browser Verification)
+1. **Mandatory Quality Gate:** You MUST strictly pass the Browser Self-Verification above BEFORE executing this push rule. Pushing unverified code is strictly prohibited.
+2. **Commit & Push Execution:** After passing verification, automatically stage changes, craft a descriptive commit message, and push directly to `https://github.com/mokhtar-el7/maxp-platform-13` (`origin` remote).
+3. **ABSOLUTE BAN — Force Push is PERMANENTLY FORBIDDEN:** Never force push under any circumstance.
+
 

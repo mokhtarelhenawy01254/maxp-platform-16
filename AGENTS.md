@@ -85,6 +85,17 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
 - **Asset Visibility Tools:** Agents must never be launched blind without account introspection (`_account_info`) and real order attribution (`_attribution_report`) tools.
 - **Continuous Evolutionary Updates:** Whenever any error, edge case, or enhancement is discovered regarding agents, update `.agents/skills/maxp-agent-builder/SKILL.md` immediately with the resolution and checklist item.
 
+## 🐝 Rule: Multi-Agent Parallel Task Execution & Subagent Delegation (إلزامية تشغيل المهام وتفويضها عبر أكثر من إيجينت متخصص)
+- **Mandatory Subagent Delegation on Complex Tasks**: Never execute multi-phase or multi-domain tasks in a single bloated, monolithic pass. Any task requiring exploration/research, multi-file code modifications across frontend/backend, security auditing, or scenario verification MUST be partitioned and executed across specialized subagents using `invoke_subagent` (and `define_subagent` when custom roles are required).
+- **Subagent Archetypes & Separation of Concerns**:
+  1. **Lead Orchestrator (Parent Agent)**: Coordinates the subtask dependency graph, launches subagents in parallel, synthesizes findings, resolves conflicts, and interfaces with the user.
+  2. **Codebase & Schema Researcher (`research` / `flash`)**: Read-only exploration of files, database schemas, and references without cluttering the main context.
+  3. **Module Implementers (`self` / specialized)**: Focused code writers operating on discrete files or branched workspaces (`branch`/`share`).
+  4. **Strict Isolation & Security Auditor (`self` / `code-reviewer`)**: Verifies `git diff`, ensures zero blast-radius, checks modular file size limits (< 400 lines), and confirms zero AI keys in `.env`.
+  5. **Live Scenario Tester (`self` / devtools)**: Runs hands-on browser verification, checks console logs, and confirms API responses.
+- **Zero Polling Loops**: Never poll `manage_subagents(Action='status')` in a loop. Launch subagents concurrently via `invoke_subagent` and stop tool execution to await the runtime's reactive wakeup.
+- **Strict Compliance with `multi-agent-orchestrator` Skill**: All multi-agent workflows must strictly conform to `.agents/skills/multi-agent-orchestrator/SKILL.md`.
+
 ## 📐 Rule: Ergonomic Workspace Design (Ban Wasted Space, Explanatory Clutter, and Single-Use Permanent Columns)
 - **Ban Permanent Columns for Single-Use Tools**: Never allocate a permanent screen column/panel (eating 20-30%+ of screen width) to an action that the user performs only once per session (e.g. selecting a product, browsing historical chat sessions, or picking initial filters). Such tools MUST be placed inside top-bar comboboxes, dropdowns, or collapsible slide-over sheets/modals that disappear immediately after selection, reserving 75-85%+ of the screen for the active workspace and live canvas.
 - **Ban Explanatory Copy & Subtitle Clutter (Show, Don't Tell)**: Pro SaaS and dashboard tools must NEVER be bloated with instructional paragraphs, tutorial subtitles, or marketing copy under every button and title (e.g., "تخطيط الحملات وصياغة الزوايا بناءً على...", "خبير الميديا باير..."). Replace wordy text with crisp, compact action labels, tooltips on hover, and self-evident interactive controls.
@@ -133,9 +144,17 @@ Any design resembling typical LLM-generated output is strictly rejected. Audit a
 9. Ban The Centered Hero Trap.
 10. Ban Dead Unclickable UI Badges.
 
-## 🚀 Post-Task Automatic Git Push Rule
+## 🧪 Rule: Mandatory Scenario Formulation & Browser Self-Verification Before Push (قاعدة السيناريو الإلزامي والاختبار الذاتي بالمتصفح قبل الرفع)
+- **Strict Law — NO PUSH WITHOUT LIVE PROOF (حظر قطعي للرفع بدون إثبات عملي حي):**
+  1. **Phase 1 (فهم التاسك وصياغة السيناريو):** عند استلام أي تاسك، يجب فهم المطلوب بدقة وصياغة سيناريو تنفيذ وسيناريو فحص تفاعلي مسبق (Pre-Flight Test Scenario) يحدد الرابط المستهدف وخطوات التجربة ومعايير النجاح قبل لمس الكود.
+  2. **Phase 2 (التنفيذ المنضبط المعزول):** تطبيق التعديل طبقاً لقواعد `strict-change-isolation` دون أي آثار جانبية.
+  3. **Phase 3 (بوابة الاختبار الذاتي بالمتصفح - شرط مانع للرفع):** يُحظر منعاً باتاً عمل `git commit` أو `git push` قبل تشغيل المتصفح (عبر `chrome-devtools` MCP أو بيئة التطوير)، وزيارة الصفحة، وتنفيذ خطوات السيناريو تفاعلياً، والتأكد من خلو سجلات الكونسول تماماً من أي أخطاء (`list_console_messages` - Zero Errors)، وسلامة اتصالات الشبكة والواجهة. (وللمهام الخلفية/Backend: تشغيل فحص واختبار حقيقي للـ API بنتيجة 200 OK).
+  4. **Phase 4 (الرفع المعتمد والتوثيق):** فقط بعد اجتياز فحص المتصفح بنجاح تام، يتم عمل Commit & Push مع إرفاق سيناريو الفحص ونتيجة التجربة للعميل.
 
-- **Mandatory Action:** After completing **ANY** task (feature, bug fix, configuration update, refactoring, or document edit), automatically commit all relevant changes and push directly to `https://github.com/mokhtar-el7/maxp-platform-13` (`origin` remote).
+## 🚀 Post-Task Automatic Git Push Rule (Conditional on Passing Browser Verification)
+
+- **Mandatory Quality Gate:** You MUST strictly pass the Browser Self-Verification above BEFORE executing this push rule. Pushing unverified code is strictly prohibited.
+- **Mandatory Action:** After passing verification for **ANY** task (feature, bug fix, configuration update, refactoring, or document edit), automatically commit all relevant changes and push directly to `https://github.com/mokhtar-el7/maxp-platform-13` (`origin` remote).
 - **Descriptive Commit Message:** Always write a clear, descriptive commit message explaining the exact task changes so the user can easily trace and identify what was updated.
 - **Workflow:**
   1. `git status`

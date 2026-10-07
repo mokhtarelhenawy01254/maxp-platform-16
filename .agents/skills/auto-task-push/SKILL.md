@@ -11,7 +11,18 @@ This skill defines the mandatory post-task workflow for the MaxP platform worksp
 
 Automatically triggered upon completing **ANY** task, feature implementation, bug fix, refactoring, or rule/documentation update.
 
-## Target Repository
+## Mandatory Prerequisite Gate (بوابة الجودة الإلزامية قبل الرفع)
+
+> [!IMPORTANT]
+> **NO PUSH WITHOUT LIVE PROOF (ممنوع الرفع بدون إثبات عملي)**:
+> Before running any git commands in this skill, the agent MUST have strictly satisfied the `task-scenario-browser-verify` skill:
+> 1. Formulated the pre-flight test scenario.
+> 2. Implemented the task cleanly with zero blast-radius.
+> 3. Opened the live browser (via `chrome-devtools` or dev environment), executed the test scenario hands-on, confirmed zero console errors (`list_console_messages`), and verified proper UI/API responses.
+> *(For backend/script tasks without UI: executed a verifiable test script or API curl call confirming 200 OK).*
+> **If this prerequisite is not met, executing Git Push is STRICTLY FORBIDDEN.**
+
+
 
 - **Repository URL:** `https://github.com/mokhtar-el7/maxp-platform-13`
 - **Git Remote Name:** `origin`
