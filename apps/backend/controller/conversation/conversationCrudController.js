@@ -41,6 +41,26 @@ const getCustomerAvatar = (customer) => {
 const getProxiedCustomerAvatar = (customer) =>
     proxyCustomerAvatarUrl(customer?.id, getCustomerAvatar(customer));
 
+const formatPreviewText = (preview) => {
+    if (!preview || typeof preview !== 'string' || preview.trim() === '' || preview.trim().toLowerCase() === 'no messages') {
+        return 'لا توجد رسائل';
+    }
+    const text = preview.trim();
+    if (
+        /audioclip|\.mp4|\.m4a|\.mp3|\.opus/i.test(text) &&
+        (/fbsbx\.com|uploads\/chat-media/i.test(text) || text.endsWith('.mp4'))
+    ) {
+        return '🎤 رسالة صوتية';
+    }
+    if (/scontent.*fbcdn|proxy-image|\/uploads\/chat-media.*?\.(jpg|jpeg|png|webp)/i.test(text)) {
+        return '📷 صورة';
+    }
+    if (/^(?:Template:\s*)?[a-z0-9_]{10,}(?:\r?\n)+/i.test(text)) {
+        return text.replace(/^(?:Template:\s*)?[a-z0-9_]{10,}(?:\r?\n)+/i, '').trim();
+    }
+    return text;
+};
+
 const deleteConverstation = async (req, res) => {
     try {
         const { id } = req.params;
@@ -415,7 +435,7 @@ const getConversations = async (req, res) => {
                 customerId: conv.customerId,
                 customerName: conv.customer ? `${conv.customer.firstName || ''} ${conv.customer.lastName || ''}`.trim() : 'Unknown',
                 customerAvatar: getProxiedCustomerAvatar(conv.customer),
-                lastMessage: conv.lastMessagePreview || 'No messages',
+                lastMessage: formatPreviewText(conv.lastMessagePreview),
                 lastMessageTime: conv.lastMessageAt || conv.updatedAt,
                 unreadCount: conv.unreadCount || 0,
                 platform: platformStr,
@@ -501,7 +521,7 @@ const getConversation = async (req, res) => {
                     : conversation.customer,
                 // Add derived fields for frontend compatibility
                 platform: conversation.channel?.toLowerCase(),
-                lastMessage: conversation.lastMessagePreview,
+                lastMessage: formatPreviewText(conversation.lastMessagePreview),
                 lastMessageTime: conversation.lastMessageAt,
                 customerId: conversation.customerId,
                 customerName: conversation.customer ? `${conversation.customer.firstName || ''} ${conversation.customer.lastName || ''}`.trim() : 'Unknown',

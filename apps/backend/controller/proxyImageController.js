@@ -497,10 +497,14 @@ const archiveBufferToLocal = async (
       let attachments = parseJsonSafely(message.attachments, null);
       let attachmentsUpdated = false;
       if (Array.isArray(attachments) && attachments[idx]) {
-        attachments[idx] = { ...attachments[idx], url: localUrl };
+        attachments[idx] = {
+          ...attachments[idx],
+          url: localUrl,
+          ...(attachments[idx].payload ? { payload: { ...attachments[idx].payload, url: localUrl } } : {}),
+        };
         attachmentsUpdated = true;
       } else if (!attachments && idx === 0) {
-        attachments = [{ url: localUrl, type: "image" }];
+        attachments = [{ url: localUrl, type: "image", payload: { url: localUrl } }];
         attachmentsUpdated = true;
       }
       const isExpiringContent = isFacebookExpiringMediaUrl(message.content);
@@ -813,6 +817,15 @@ const getMessageMediaUrlFromPayload = (payload, targetIndex = null, targetAttach
 const getStoredMessageMediaUrl = (message, targetIndex = null, targetAttachmentId = null) => {
   if (!message) {
     return null;
+  }
+
+  // If message.content is already archived locally to /uploads/, prioritize it for index 0
+  if (
+    (targetIndex === null || targetIndex === 0) &&
+    typeof message.content === 'string' &&
+    (message.content.startsWith('/uploads/') || message.content.includes('/uploads/chat-media/'))
+  ) {
+    return message.content;
   }
 
   const attachments = parseJsonSafely(message.attachments, null);

@@ -175,16 +175,33 @@ const getDirectMediaUrl = (
   return "";
 };
 
-const getAttachmentRawUrl = (attachment: MessageAttachment): string =>
-  [
+const getAttachmentRawUrl = (attachment: MessageAttachment): string => {
+  const candidates = [
+    attachment.url,
+    attachment.file_url,
+    attachment.image_data?.url,
     attachment.payload?.url,
     attachment.payload?.image_url,
-    attachment.image_data?.url,
-    attachment.file_url,
-    attachment.url,
     attachment.image_url,
-  ].find((candidate) => typeof candidate === "string" && candidate.trim())
-    ?.trim() || "";
+  ];
+
+  // Prioritize local archived files (/uploads/ or /assets/) over expiring Facebook CDN links
+  const localCandidate = candidates.find(
+    (c) =>
+      typeof c === "string" &&
+      (c.startsWith("/uploads/") ||
+        c.includes("/uploads/chat-media/") ||
+        c.startsWith("/assets/")),
+  );
+  if (localCandidate) {
+    return localCandidate.trim();
+  }
+
+  return (
+    candidates.find((candidate) => typeof candidate === "string" && candidate.trim())
+      ?.trim() || ""
+  );
+};
 
 const getAttachmentMediaUrl = (
   attachment: MessageAttachment,
@@ -249,7 +266,16 @@ const getDisplayTextContent = (
     hasRenderedMedia: boolean;
   },
 ): string => {
-  const withoutMediaTokens = content.replace(MEDIA_URL_TOKEN_PATTERN, "").trim();
+  if (!content) {
+    return "";
+  }
+
+  // Strip leading internal Meta template slugs (e.g. swan_confirmed_msbtz1ov... or Template: ...)
+  const strippedTemplate = content
+    .replace(/^(?:Template:\s*)?[a-z0-9_]{10,}(?:\r?\n)+/i, "")
+    .trim();
+
+  const withoutMediaTokens = strippedTemplate.replace(MEDIA_URL_TOKEN_PATTERN, "").trim();
   const hasQueuePlaceholders = /\[\d+\]|\[attachment\]/i.test(
     withoutMediaTokens,
   );
@@ -509,15 +535,24 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
       message.type === "voice" ||
       message.type === "VOICE";
     const isFileMessage = message.type === "file" || message.type === "FILE";
+    const attachmentImageUrls = attachments
+      .map((attachment) => getAttachmentMediaUrl(attachment, "image"))
+      .filter((url) => Boolean(url && url.trim()));
+
+    const fallbackImageUrls =
+      attachmentImageUrls.length > 0
+        ? []
+        : uniqueUrls([
+            extractMediaTokenUrl(message.content, "image"),
+            extractMediaTokenUrl(message.fileUrl, "image"),
+            isImageMessage
+              ? getDirectMediaUrl("image", message.fileUrl, message.content)
+              : "",
+          ]);
+
     const rawImageMediaUrls = uniqueUrls([
-      ...attachments.map((attachment) =>
-        getAttachmentMediaUrl(attachment, "image"),
-      ),
-      extractMediaTokenUrl(message.content, "image"),
-      extractMediaTokenUrl(message.fileUrl, "image"),
-      isImageMessage
-        ? getDirectMediaUrl("image", message.fileUrl, message.content)
-        : "",
+      ...attachmentImageUrls,
+      ...fallbackImageUrls,
     ]);
     const imageMediaUrls =
       rawImageMediaUrls.length > 0
@@ -880,6 +915,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                     onError={(e) => {
                       const target = e.currentTarget as HTMLImageElement;
                       if (target.dataset.retried) {
+                        target.style.display = "none";
+                        const parent = target.parentElement;
+                        if (parent && !parent.querySelector(".fb-expired-img-notice")) {
+                          const notice = document.createElement("div");
+                          notice.className =
+                            "fb-expired-img-notice flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs my-1";
+                          notice.textContent = "⚠️ انتهت صلاحية عرض هذه الصورة من خوادم فيسبوك";
+                          parent.appendChild(notice);
+                        }
                         return;
                       }
                       target.dataset.retried = "true";

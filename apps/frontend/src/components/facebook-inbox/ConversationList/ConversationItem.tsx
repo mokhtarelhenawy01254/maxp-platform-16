@@ -24,6 +24,49 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
       conversation.customerAvatar,
     );
 
+    const formatConversationPreview = (raw?: string | null): string => {
+      if (!raw || !raw.trim() || raw.trim().toLowerCase() === "no messages") {
+        return "لا توجد رسائل";
+      }
+      const text = raw.trim();
+
+      // Voice note / Audio clip
+      if (
+        /audioclip|\.mp4|\.m4a|\.mp3|\.aac|\.opus|\.oga|\.ogg/i.test(text) &&
+        (/fbsbx\.com|uploads\/chat-media|chat-media|https?:\/\//i.test(text) || text.endsWith(".mp4"))
+      ) {
+        return "🎤 رسالة صوتية";
+      }
+
+      // Image URL / proxy-image
+      if (
+        /proxy-image|\/uploads\/chat-media.*?\.(jpg|jpeg|png|webp|gif)/i.test(text) ||
+        /scontent.*?\.fbcdn\.net/i.test(text)
+      ) {
+        return "📷 صورة";
+      }
+
+      // Video URL
+      if (/^https?:\/\/.*?\.(mp4|mov|webm)/i.test(text) && !/audioclip/i.test(text)) {
+        return "🎥 فيديو";
+      }
+
+      // Generic upload attachment
+      if (/^https?:\/\/.*\/uploads\//i.test(text) || text.startsWith("/uploads/")) {
+        return "📎 مرفق";
+      }
+
+      // Strip leading internal Meta template slugs (e.g. swan_confirmed_msbtz1ov... or Template: ...)
+      const cleanedTemplate = text
+        .replace(/^(?:Template:\s*)?[a-z0-9_]{10,}(?:\r?\n)+/i, "")
+        .trim();
+      if (cleanedTemplate) {
+        return cleanedTemplate;
+      }
+
+      return text;
+    };
+
     const formatTime = (date: Date) => {
       const now = new Date();
       const diff = now.getTime() - date.getTime();
@@ -141,7 +184,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
               className={`truncate text-[12px] ${conversation.unreadCount > 0 ? "font-medium text-gray-800 dark:text-slate-200" : "font-normal text-gray-500 dark:text-slate-400"}`}
             >
               {conversation.lastMessageIsFromCustomer ? "" : "أنت: "}
-              {conversation.lastMessage}
+              {formatConversationPreview(conversation.lastMessage)}
             </p>
 
             {/* Badges */}

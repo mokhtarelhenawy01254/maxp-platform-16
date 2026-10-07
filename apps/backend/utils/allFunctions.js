@@ -2024,11 +2024,30 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
       }
 
       // 🔧 FIX: Update conversation lastMessagePreview AFTER sending socket (non-blocking)
-      const lastMessagePreview = messageType === 'IMAGE' ? '📷 صورة' :
-        messageType === 'FILE' ? '📎 ملف' :
-          (content && content.trim() !== '' ?
-            (content.length > 100 ? content.substring(0, 100) + '...' : content) :
-            null);
+      const normType = String(messageType || '').toUpperCase();
+      let lastMessagePreview =
+        normType === 'IMAGE' ? '📷 صورة' :
+        normType === 'AUDIO' || normType === 'VOICE' ? '🎤 رسالة صوتية' :
+        normType === 'VIDEO' ? '🎥 فيديو' :
+        normType === 'STICKER' ? '🖼️ ملصق' :
+        normType === 'FILE' ? '📎 ملف' :
+        null;
+
+      if (!lastMessagePreview && content && content.trim() !== '') {
+        const trimmed = content.trim();
+        if (
+          /audioclip|\.mp4|\.m4a|\.mp3|\.opus/i.test(trimmed) &&
+          (/fbsbx\.com|uploads\/chat-media/i.test(trimmed) || trimmed.endsWith('.mp4'))
+        ) {
+          lastMessagePreview = '🎤 رسالة صوتية';
+        } else if (/scontent.*fbcdn|proxy-image|\/uploads\/chat-media.*?\.(jpg|jpeg|png|webp)/i.test(trimmed)) {
+          lastMessagePreview = '📷 صورة';
+        } else if (trimmed.length > 100) {
+          lastMessagePreview = trimmed.substring(0, 100) + '...';
+        } else {
+          lastMessagePreview = trimmed;
+        }
+      }
 
       if (lastMessagePreview) {
         const updateConvStartTime = Date.now();

@@ -1861,7 +1861,7 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
                 console.warn(`[WhatsAppMessageHandler] Could not auto-fetch template definition for ${templateName}:`, err.message);
             }
 
-            const displayContent = templateBody ? `${templateName}\n${templateBody}` : `Template: ${templateName}`;
+            const displayContent = templateBody || `Template: ${templateName}`;
             let meta = serializeOutgoingMetadata(options.metadata);
 
             // 🚨 PRODUCTION-FIX: حفظ الرسالة محلياً بعد نجاح إرسال ميتا الفعلي.
