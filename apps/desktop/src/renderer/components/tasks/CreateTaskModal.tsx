@@ -15,6 +15,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { audioAlerts } from '../../utils/audioAlerts';
+import { AcceptanceCriteriaChecklist } from './AcceptanceCriteriaChecklist';
 
 interface CompanyUser {
   id: string;
@@ -62,7 +63,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [projectName, setProjectName] = useState('');
   const [templates, setTemplates] = useState<{ name: string; title: string; description: string; priority: string; estimatedMinutes: number }[]>(() => {
     try { return JSON.parse(localStorage.getItem('maxp_task_templates') || '[]'); } catch { return []; }
-  }, []);
+  });
 
   const saveAsTemplate = (): void => {
     if (!title.trim()) return;
@@ -373,18 +374,10 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           </div>
 
           {/* Acceptance Criteria */}
-          <div>
-            <label style={modalStyles.label}>
-              معايير القبول (سطر لكل معيار — اختياري)
-            </label>
-            <textarea
-              value={acceptanceCriteria}
-              onChange={(e) => setAcceptanceCriteria(e.target.value)}
-              placeholder="اكتب معايير القبول المطلوب استيفاؤها لإتمام المهمة (معيار في كل سطر)..."
-              rows={3}
-              style={{ ...modalStyles.input, resize: 'vertical' }}
-            />
-          </div>
+          <AcceptanceCriteriaChecklist
+            value={acceptanceCriteria}
+            onChange={setAcceptanceCriteria}
+          />
 
           {/* Assignee & Priority (2 columns) */}
           <div style={modalStyles.row2}>

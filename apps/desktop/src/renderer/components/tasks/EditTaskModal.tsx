@@ -16,6 +16,7 @@ import {
   Check,
 } from 'lucide-react';
 import { audioAlerts } from '../../utils/audioAlerts';
+import { AcceptanceCriteriaChecklist } from './AcceptanceCriteriaChecklist';
 
 interface CompanyUser {
   id: string;
@@ -352,18 +353,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
           </div>
 
           {/* Acceptance Criteria */}
-          <div>
-            <label style={modalStyles.label}>
-              معايير القبول (سطر لكل معيار — اختياري)
-            </label>
-            <textarea
-              value={acceptanceCriteria}
-              onChange={(e) => setAcceptanceCriteria(e.target.value)}
-              placeholder="اكتب معايير القبول المطلوب استيفاؤها لإتمام المهمة (معيار في كل سطر)..."
-              rows={3}
-              style={{ ...modalStyles.input, resize: 'vertical' }}
-            />
-          </div>
+          <AcceptanceCriteriaChecklist
+            value={acceptanceCriteria}
+            onChange={setAcceptanceCriteria}
+          />
 
           {/* Assignee & Priority */}
           <div style={modalStyles.row2}>
