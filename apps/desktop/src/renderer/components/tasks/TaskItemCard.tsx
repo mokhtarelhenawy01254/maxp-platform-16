@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { audioAlerts } from '../../utils/audioAlerts';
 import { ReturnForRevisionModal } from './ReturnForRevisionModal';
+import { parseCriteriaItems } from './AcceptanceCriteriaChecklist';
 
 interface TaskItemCardProps {
   task: any;
@@ -125,24 +126,19 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   );
   const hasBlocking = incompleteBlockingDeps.length > 0;
 
-  const criteriaItems = task.acceptanceCriteria
-    ? String(task.acceptanceCriteria)
-        .split('\n')
-        .map((l: string) => l.replace(/^[-*•\d.\s]+/, '').trim())
-        .filter(Boolean)
-    : [];
-  const criteriaCount = criteriaItems.length;
+  const parsedCriteria = parseCriteriaItems(task.acceptanceCriteria);
+  const criteriaCount = parsedCriteria.length;
 
   const criteriaCompletedCount = (() => {
     if (criteriaCount === 0) return 0;
     try {
       const stored = localStorage.getItem(`maxp_task_criteria_${task.id}`);
-      if (!stored) return 0;
-      const parsed = JSON.parse(stored);
-      return criteriaItems.filter((_: any, idx: number) => parsed[idx]).length;
-    } catch {
-      return 0;
-    }
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return parsedCriteria.filter((_: any, idx: number) => parsed[idx]).length;
+      }
+    } catch {}
+    return parsedCriteria.filter((item) => item.completed).length;
   })();
 
   const handleToggleWatch = async (e: React.MouseEvent) => {
@@ -442,7 +438,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                 e.stopPropagation();
                 onSelect?.(task);
               }}
-              title={`معايير القبول (${criteriaCompletedCount}/${criteriaCount}):\n${criteriaItems.map((c: string, i: number) => `• ${c}`).join('\n')}`}
+              title={`معايير القبول (${criteriaCompletedCount}/${criteriaCount}):\n${parsedCriteria.map((c, i) => `• ${c.text}`).join('\n')}`}
             >
               <ListChecks
                 size={10}

@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   ExternalLink,
 } from 'lucide-react';
+import { parseCriteriaItems } from './AcceptanceCriteriaChecklist';
 
 interface ApprovalGateModalProps {
   isOpen: boolean;
@@ -38,8 +39,8 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
   if (!isOpen || !task) return null;
 
   const initialChecklist = useMemo(() => {
-    const raw = String(task.acceptanceCriteria || '').trim();
-    if (!raw) {
+    const parsed = parseCriteriaItems(task.acceptanceCriteria);
+    if (parsed.length === 0) {
       return [
         {
           id: 0,
@@ -48,12 +49,18 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
         },
       ];
     }
-    return raw
-      .split('\n')
-      .map((line) => line.replace(/^[-*•\d\.\s]+/, '').trim())
-      .filter(Boolean)
-      .map((text, idx) => ({ id: idx, text, checked: false }));
-  }, [task.acceptanceCriteria]);
+    let storedChecked: Record<number, boolean> = {};
+    try {
+      const stored = localStorage.getItem(`maxp_task_criteria_${task.id}`);
+      if (stored) storedChecked = JSON.parse(stored);
+    } catch {}
+
+    return parsed.map((item, idx) => ({
+      id: idx,
+      text: item.text,
+      checked: storedChecked[idx] !== undefined ? storedChecked[idx] : Boolean(item.completed),
+    }));
+  }, [task.acceptanceCriteria, task.id]);
 
   const evidenceObj = useMemo(() => {
     if (!task.evidence) return null;

@@ -990,7 +990,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
 const drawerStyles: Record<string, React.CSSProperties> = {
   overlay: {
     position: 'fixed',
-    top: 0,
+    top: 32,
     left: 0,
     right: 0,
     bottom: 0,

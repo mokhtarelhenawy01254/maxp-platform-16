@@ -9,19 +9,63 @@ import {
   GripVertical,
 } from 'lucide-react';
 
+export interface CriteriaItem {
+  id: string;
+  text: string;
+  completed?: boolean;
+}
+
 interface AcceptanceCriteriaChecklistProps {
-  value: string;
+  value: string | any[];
   onChange?: (next: string) => void;
   readOnly?: boolean;
   interactive?: boolean;
   taskId?: string;
 }
 
-const toItems = (raw: string): string[] =>
-  String(raw || '')
-    .split('\n')
-    .map((l) => l.replace(/^[-*•\d.\s]+/, '').trim())
-    .filter(Boolean);
+export const parseCriteriaItems = (raw: any): CriteriaItem[] => {
+  if (!raw) return [];
+  const results: CriteriaItem[] = [];
+  if (Array.isArray(raw)) {
+    raw.forEach((item, idx) => {
+      if (typeof item === 'string') {
+        const clean = item.replace(/^[-*•\d.\s]+/, '').trim();
+        if (clean) results.push({ id: `crit-${idx}`, text: clean, completed: false });
+      } else if (typeof item === 'object' && item !== null) {
+        const text = (item.text || item.title || item.label || '').trim();
+        if (text) {
+          results.push({
+            id: String(item.id || `crit-${idx}`),
+            text,
+            completed: Boolean(item.completed || item.isCompleted),
+          });
+        }
+      } else {
+        const text = String(item).trim();
+        if (text) results.push({ id: `crit-${idx}`, text, completed: false });
+      }
+    });
+    return results;
+  }
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return parseCriteriaItems(parsed);
+      } catch {}
+    }
+    trimmed.split('\n').forEach((l, idx) => {
+      const clean = l.replace(/^[-*•\d.\s]+/, '').trim();
+      if (clean) results.push({ id: `crit-${idx}`, text: clean, completed: false });
+    });
+    return results;
+  }
+  return results;
+};
+
+const toItems = (raw: any): string[] =>
+  parseCriteriaItems(raw).map((i) => i.text);
 
 export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistProps> = ({
   value,
@@ -30,32 +74,49 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
   interactive = false,
   taskId,
 }) => {
-  // Raw lines while editing (no trimming) — cleaned on blur / add.
-  const items = value ? String(value).split('\n') : [];
+  const parsedItems = parseCriteriaItems(value);
+  // In readOnly mode, use cleanly parsed item texts. In editing mode, split raw string if possible.
+  const items = readOnly
+    ? parsedItems.map((i) => i.text)
+    : typeof value === 'string'
+    ? (value ? value.split('\n') : [])
+    : parsedItems.map((i) => i.text);
+
   const [draft, setDraft] = useState('');
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
 
   // Persistence of checked state in readOnly / interactive mode per task
   const [checkedMap, setCheckedMap] = useState<Record<number, boolean>>(() => {
-    if (!taskId) return {};
-    try {
-      const stored = localStorage.getItem(`maxp_task_criteria_${taskId}`);
-      return stored ? JSON.parse(stored) : {};
-    } catch {
-      return {};
+    if (taskId) {
+      try {
+        const stored = localStorage.getItem(`maxp_task_criteria_${taskId}`);
+        if (stored) return JSON.parse(stored);
+      } catch {}
     }
+    const initialMap: Record<number, boolean> = {};
+    parsedItems.forEach((item, idx) => {
+      if (item.completed) initialMap[idx] = true;
+    });
+    return initialMap;
   });
 
   useEffect(() => {
-    if (!taskId) return;
-    try {
-      const stored = localStorage.getItem(`maxp_task_criteria_${taskId}`);
-      setCheckedMap(stored ? JSON.parse(stored) : {});
-    } catch {
-      setCheckedMap({});
+    if (taskId) {
+      try {
+        const stored = localStorage.getItem(`maxp_task_criteria_${taskId}`);
+        if (stored) {
+          setCheckedMap(JSON.parse(stored));
+          return;
+        }
+      } catch {}
     }
-  }, [taskId]);
+    const initialMap: Record<number, boolean> = {};
+    parsedItems.forEach((item, idx) => {
+      if (item.completed) initialMap[idx] = true;
+    });
+    setCheckedMap(initialMap);
+  }, [taskId, value]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const itemInputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -164,7 +225,7 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
 
   // ReadOnly View Mode (TaskDetailDrawer)
   if (readOnly) {
-    const displayItems = toItems(value);
+    const displayItems = items;
     const completedCount = displayItems.filter((_, idx) => checkedMap[idx]).length;
     const totalCount = displayItems.length;
     const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
@@ -237,7 +298,18 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
             return (
               <div
                 key={idx}
+                data-testid={`criteria-item-${idx}`}
+                data-checked={isChecked ? 'true' : 'false'}
+                role="checkbox"
+                aria-checked={isChecked}
+                tabIndex={interactive ? 0 : undefined}
                 onClick={() => interactive && toggleCheck(idx)}
+                onKeyDown={(e) => {
+                  if (interactive && (e.key === ' ' || e.key === 'Enter')) {
+                    e.preventDefault();
+                    toggleCheck(idx);
+                  }
+                }}
                 style={{
                   ...s.readOnlyItem,
                   cursor: interactive ? 'pointer' : 'default',
