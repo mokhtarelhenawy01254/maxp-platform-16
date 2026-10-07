@@ -157,6 +157,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('hr:my-attendance-summary'),
   getMyPayrollSummary: () =>
     ipcRenderer.invoke('hr:my-payroll-summary'),
+  getMyPermissionsSummary: () =>
+    ipcRenderer.invoke('hr:my-permissions-summary'),
+  createPermissionRequest: (data: any) =>
+    ipcRenderer.invoke('hr:create-permission-request', data),
 
   openExternal: (url: string) =>
     ipcRenderer.invoke('shell:open-external', url),

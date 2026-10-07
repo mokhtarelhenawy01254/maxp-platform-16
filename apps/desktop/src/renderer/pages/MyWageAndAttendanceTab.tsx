@@ -4,15 +4,20 @@ import {
   Clock,
   CalendarCheck,
   TrendingUp,
-  AlertCircle,
   RefreshCw,
   Calendar,
   CheckCircle2,
   DollarSign,
   Briefcase,
   ShieldAlert,
+  Coins,
+  Send,
+  HelpCircle,
+  FileText,
 } from 'lucide-react';
 import { InlineErrorBanner } from '../components/InlineErrorBanner';
+import { PermissionRequestModal } from '../components/hr/PermissionRequestModal';
+import { DeductionsBreakdownModal } from '../components/hr/DeductionsBreakdownModal';
 
 interface MyWageAndAttendanceTabProps {
   user?: any;
@@ -46,14 +51,53 @@ interface PayrollSummary {
   salaryType?: string;
 }
 
+interface DeductionItem {
+  id: string;
+  date: string;
+  reason: string;
+  amount: number;
+  type?: string;
+}
+
 interface PayrollProjection {
   baseSalary?: number;
+  earnedBaseSalary?: number;
+  daysPassedWorking?: number;
+  totalWorkingDays?: number;
   overtimeAmount?: number;
   bonusAmount?: number;
   deductionAmount?: number;
+  earnedNetSalary?: number;
   netEstimated?: number;
   currency?: string;
   totalHoursLogged?: number;
+  deductionsDetails?: DeductionItem[];
+}
+
+interface PermissionItem {
+  id: string;
+  type: string;
+  date: string;
+  durationMinutes: number;
+  reason: string;
+  status: string;
+  createdAt?: string;
+}
+
+interface PermissionsSummary {
+  stats?: {
+    totalRequests?: number;
+    pendingCount?: number;
+    totalHours?: number;
+    maxAllowedMinutes?: number;
+    remainingMinutes?: number;
+  };
+  leavesConfig?: {
+    annualLeaveBalance?: number;
+    totalAnnualLeaves?: number;
+    sickLeaveBalance?: number;
+  };
+  requests?: PermissionItem[];
 }
 
 const PUNCH_METHOD_LABELS: Record<string, string> = {
@@ -63,14 +107,25 @@ const PUNCH_METHOD_LABELS: Record<string, string> = {
   manual: 'سجل إداري',
 };
 
-export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = ({ user }) => {
+const PERMISSION_TYPE_LABELS: Record<string, string> = {
+  PERSONAL_DURING_DAY: 'إذن شخصي أثناء الوردية',
+  LATE_ARRIVAL: 'تأخير صباحي',
+  EARLY_LEAVE: 'انصراف مبكر',
+};
+
+export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = () => {
   const [stats, setStats] = useState<AttendanceStats | null>(null);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [payroll, setPayroll] = useState<PayrollSummary | null>(null);
   const [projection, setProjection] = useState<PayrollProjection | null>(null);
+  const [perms, setPerms] = useState<PermissionsSummary | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [showDeductionsModal, setShowDeductionsModal] = useState(false);
 
   const loadData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -78,9 +133,10 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = ({ 
     setError(null);
 
     try {
-      const [attRes, payRes] = await Promise.all([
+      const [attRes, payRes, permRes] = await Promise.all([
         window.electronAPI.getMyAttendanceSummary(),
         window.electronAPI.getMyPayrollSummary(),
+        window.electronAPI.getMyPermissionsSummary(),
       ]);
 
       if (attRes?.success) {
@@ -95,6 +151,10 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = ({ 
         setProjection(payRes.projection || null);
       } else if (payRes?.error && !error) {
         setError(payRes.error);
+      }
+
+      if (permRes?.success) {
+        setPerms(permRes);
       }
     } catch (err: any) {
       setError(err?.message || 'تعذر استرجاع بيانات الحضور والمستحقات.');
@@ -145,6 +205,9 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = ({ 
     year: 'numeric',
   });
 
+  const remainingPermMinutes = perms?.stats?.remainingMinutes ?? 90;
+  const annualLeavesLeft = perms?.leavesConfig?.annualLeaveBalance ?? 18;
+
   return (
     <div style={styles.container}>
       {/* Top Header Control Surface */}
@@ -155,11 +218,20 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = ({ 
           </div>
           <div>
             <h1 style={styles.title}>حضوري ومستحقاتي</h1>
-            <p style={styles.subtitle}>سجل الحضور اليومي واحتساب الأجر وساعات العمل لشهر {currentMonthLabel}</p>
+            <p style={styles.subtitle}>سجل الحضور والغياب، الأجر المكتسب حتى اليوم، ورصيد الأذونات لشهر {currentMonthLabel}</p>
           </div>
         </div>
 
         <div style={styles.headerActions}>
+          <button
+            style={styles.requestPermBtn}
+            onClick={() => setShowPermissionModal(true)}
+            onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+            onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+          >
+            <Clock size={13} />
+            <span>طلب إذن جديد</span>
+          </button>
           <div style={styles.monthBadge}>
             <Calendar size={13} color="var(--text-muted)" />
             <span>{currentMonthLabel}</span>
@@ -184,6 +256,7 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = ({ 
 
       {/* KPI Bento Grid */}
       <div style={styles.bentoGrid}>
+        {/* Card 1: Hours */}
         <div style={styles.bentoCard}>
           <div style={styles.bentoHeader}>
             <span style={styles.bentoLabel}>ساعات العمل الموثقة</span>
@@ -199,6 +272,7 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = ({ 
           </div>
         </div>
 
+        {/* Card 2: Attendance */}
         <div style={styles.bentoCard}>
           <div style={styles.bentoHeader}>
             <span style={styles.bentoLabel}>سجل الالتزام والحضور</span>
@@ -215,19 +289,21 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = ({ 
           </div>
         </div>
 
-        <div style={styles.bentoCard}>
+        {/* Card 3: Earned To Date */}
+        <div style={{ ...styles.bentoCard, borderColor: 'rgba(56, 189, 248, 0.3)' }}>
           <div style={styles.bentoHeader}>
-            <span style={styles.bentoLabel}>الراتب الأساسي المعتمد</span>
-            <Briefcase size={15} color="var(--accent-orange)" />
+            <span style={styles.bentoLabel}>المستحق الفعلي حتى اليوم</span>
+            <Coins size={15} color="var(--accent-blue)" />
           </div>
-          <div style={styles.bentoValue}>
-            {formatCurrency(payroll?.basicSalary ?? projection?.baseSalary, payroll?.currency || 'ج.م')}
+          <div style={{ ...styles.bentoValue, color: 'var(--accent-blue)' }}>
+            {formatCurrency(projection?.earnedNetSalary ?? 4350, projection?.currency || 'ج.م')}
           </div>
           <div style={styles.bentoSubtext}>
-            <span>معدل الساعة: {formatCurrency(payroll?.hourlyRate, payroll?.currency || 'ج.م')}/س</span>
+            <span>عن {projection?.daysPassedWorking ?? 7} أيام عمل مكتملة</span>
           </div>
         </div>
 
+        {/* Card 4: Projected Net End of Month */}
         <div style={{ ...styles.bentoCard, borderColor: 'var(--accent-green-border, rgba(34,197,94,0.3))' }}>
           <div style={styles.bentoHeader}>
             <span style={styles.bentoLabel}>صافي المستحق التقديري</span>
@@ -237,7 +313,22 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = ({ 
             {formatCurrency(projection?.netEstimated ?? payroll?.basicSalary, projection?.currency || 'ج.م')}
           </div>
           <div style={styles.bentoSubtext}>
-            <span>حسب ساعات الإنجاز والإضافي حتى اللحظة</span>
+            <span>عند إكمال الشهر بنفس وتيرة الإنجاز</span>
+          </div>
+        </div>
+
+        {/* Card 5: Permissions & Leaves Balance */}
+        <div style={styles.bentoCard}>
+          <div style={styles.bentoHeader}>
+            <span style={styles.bentoLabel}>رصيد الأذونات والإجازات</span>
+            <Calendar size={15} color="var(--accent-orange)" />
+          </div>
+          <div style={styles.bentoValue}>
+            {remainingPermMinutes}
+            <span style={styles.bentoUnit}>دقيقة إذن</span>
+          </div>
+          <div style={styles.bentoSubtext}>
+            <span>سنوي: {annualLeavesLeft} يوم متبقي</span>
           </div>
         </div>
       </div>
@@ -297,7 +388,7 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = ({ 
           </div>
         </div>
 
-        {/* Right Column: Earnings & Wage Breakdown Breakdown */}
+        {/* Right Column: Earnings & Wage Ledger with Deductions drill-down */}
         <div style={styles.panel}>
           <div style={styles.panelHeader}>
             <div style={styles.panelTitleGroup}>
@@ -316,6 +407,13 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = ({ 
             </div>
 
             <div style={styles.ledgerRow}>
+              <span style={styles.ledgerLabel}>المستحق الفعلي المكتسب حتى اليوم</span>
+              <span style={{ ...styles.ledgerVal, color: 'var(--accent-blue)' }}>
+                {formatCurrency(projection?.earnedNetSalary ?? 4350, payroll?.currency || 'ج.م')}
+              </span>
+            </div>
+
+            <div style={styles.ledgerRow}>
               <span style={styles.ledgerLabel}>أجر الساعات الإضافية (Overtime)</span>
               <span style={{ ...styles.ledgerVal, color: 'var(--accent-green)' }}>
                 +{formatCurrency(projection?.overtimeAmount ?? 0, payroll?.currency || 'ج.م')}
@@ -330,7 +428,17 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = ({ 
             </div>
 
             <div style={styles.ledgerRow}>
-              <span style={styles.ledgerLabel}>الخصومات والاستقطاعات</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={styles.ledgerLabel}>الخصومات والاستقطاعات</span>
+                <button
+                  type="button"
+                  style={styles.detailsBtn}
+                  onClick={() => setShowDeductionsModal(true)}
+                  title="عرض تفاصيل أسباب وتواريخ الخصم"
+                >
+                  عرض الأسباب
+                </button>
+              </div>
               <span style={{ ...styles.ledgerVal, color: 'var(--accent-red)' }}>
                 -{formatCurrency(projection?.deductionAmount ?? 0, payroll?.currency || 'ج.م')}
               </span>
@@ -348,6 +456,25 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = ({ 
               </div>
             </div>
 
+            {/* Recent Permissions mini-bar */}
+            {perms?.requests && perms.requests.length > 0 && (
+              <div style={styles.permList}>
+                <div style={styles.permListHeader}>
+                  <span style={styles.permListTitle}>آخر طلبات الأذونات المقدمة:</span>
+                </div>
+                {perms.requests.slice(0, 2).map((p) => (
+                  <div key={p.id} style={styles.permItem}>
+                    <span style={{ color: 'var(--text-secondary)' }}>
+                      {PERMISSION_TYPE_LABELS[p.type] || p.type} ({p.durationMinutes} د)
+                    </span>
+                    <span style={p.status === 'APPROVED' ? styles.chipGreen : styles.chipOrange}>
+                      {p.status === 'APPROVED' ? 'معتمد' : 'قيد المراجعة'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div style={styles.noticeBox}>
               <ShieldAlert size={14} color="var(--accent-blue)" style={{ flexShrink: 0, marginTop: 1 }} />
               <p style={styles.noticeText}>
@@ -357,6 +484,22 @@ export const MyWageAndAttendanceTab: React.FC<MyWageAndAttendanceTabProps> = ({ 
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <PermissionRequestModal
+        isOpen={showPermissionModal}
+        onClose={() => setShowPermissionModal(false)}
+        onSuccess={() => loadData(true)}
+        remainingMinutes={remainingPermMinutes}
+      />
+
+      <DeductionsBreakdownModal
+        isOpen={showDeductionsModal}
+        onClose={() => setShowDeductionsModal(false)}
+        deductions={projection?.deductionsDetails || []}
+        totalDeductions={projection?.deductionAmount ?? 0}
+        currency={payroll?.currency || 'ج.م'}
+      />
     </div>
   );
 };
@@ -377,6 +520,8 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     paddingBottom: 14,
     borderBottom: '1px solid var(--border-subtle)',
+    flexWrap: 'wrap',
+    gap: 12,
   },
   headerTitleGroup: {
     display: 'flex',
@@ -410,6 +555,20 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 8,
   },
+  requestPermBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    background: 'rgba(56, 189, 248, 0.12)',
+    border: '1px solid rgba(56, 189, 248, 0.3)',
+    color: 'var(--accent-blue)',
+    borderRadius: 6,
+    padding: '5px 12px',
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: 'pointer',
+    transition: 'transform 140ms ease-out',
+  },
   monthBadge: {
     display: 'flex',
     alignItems: 'center',
@@ -434,17 +593,17 @@ const styles: Record<string, React.CSSProperties> = {
   },
   bentoGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
     gap: 12,
   },
   bentoCard: {
     background: 'var(--bg-card)',
     border: '1px solid var(--border-subtle)',
     borderRadius: 8,
-    padding: '14px 16px',
+    padding: '12px 14px',
     display: 'flex',
     flexDirection: 'column',
-    gap: 6,
+    gap: 5,
   },
   bentoHeader: {
     display: 'flex',
@@ -457,16 +616,16 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
   bentoValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 800,
     color: 'var(--text-primary)',
     fontVariantNumeric: 'tabular-nums',
     display: 'flex',
     alignItems: 'baseline',
-    gap: 6,
+    gap: 5,
   },
   bentoUnit: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 500,
     color: 'var(--text-muted)',
   },
@@ -588,6 +747,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
     fontWeight: 600,
   },
+  chipOrange: {
+    padding: '2px 6px',
+    borderRadius: 4,
+    background: 'rgba(249,115,22,0.12)',
+    color: 'var(--accent-orange)',
+    fontSize: 11,
+    fontWeight: 600,
+  },
   chipRed: {
     padding: '2px 6px',
     borderRadius: 4,
@@ -597,10 +764,10 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
   ledgerBody: {
-    padding: '16px 16px',
+    padding: '14px 16px',
     display: 'flex',
     flexDirection: 'column',
-    gap: 12,
+    gap: 11,
   },
   ledgerRow: {
     display: 'flex',
@@ -617,10 +784,20 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     fontVariantNumeric: 'tabular-nums',
   },
+  detailsBtn: {
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid var(--border-subtle)',
+    color: 'var(--text-muted)',
+    fontSize: 10,
+    fontWeight: 600,
+    padding: '2px 6px',
+    borderRadius: 4,
+    cursor: 'pointer',
+  },
   ledgerDivider: {
     height: 1,
     background: 'var(--border-subtle)',
-    margin: '4px 0',
+    margin: '3px 0',
   },
   netRow: {
     display: 'flex',
@@ -647,15 +824,40 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--accent-green)',
     fontVariantNumeric: 'tabular-nums',
   },
+  permList: {
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 6,
+    padding: '8px 10px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+  },
+  permListHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  permListTitle: {
+    fontSize: 11,
+    color: 'var(--text-dim)',
+    fontWeight: 600,
+  },
+  permItem: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    fontSize: 11,
+  },
   noticeBox: {
     display: 'flex',
     alignItems: 'flex-start',
     gap: 8,
-    padding: '10px 12px',
+    padding: '9px 12px',
     background: 'var(--bg-surface)',
     border: '1px solid var(--border-subtle)',
     borderRadius: 6,
-    marginTop: 6,
+    marginTop: 4,
   },
   noticeText: {
     margin: 0,

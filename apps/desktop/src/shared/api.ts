@@ -1010,6 +1010,64 @@ class MonitorApiClient {
     }
   }
 
+  async getMyPermissionsSummary(): Promise<{
+    stats?: any;
+    requests: any[];
+    leavesConfig?: any;
+  }> {
+    const base = this.serverUrl;
+    let stats = null;
+    let requests: any[] = [];
+    let leavesConfig = null;
+
+    try {
+      const resStats = await axios.get(`${base}/api/v1/hr/permissions/stats?mine=true`, {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      stats = resStats.data?.data ?? resStats.data?.stats ?? null;
+    } catch {}
+
+    try {
+      const resReqs = await axios.get(`${base}/api/v1/hr/permissions?mine=true&limit=10`, {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      requests = resReqs.data?.requests ?? resReqs.data?.data ?? [];
+    } catch {}
+
+    try {
+      const resLeaves = await axios.get(`${base}/api/v1/hr/leaves/my-config`, {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      leavesConfig = resLeaves.data?.config ?? resLeaves.data?.data ?? null;
+    } catch {}
+
+    return { stats, requests, leavesConfig };
+  }
+
+  async createPermissionRequest(data: {
+    type: string;
+    date: string;
+    durationMinutes: number;
+    reason: string;
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    const base = this.serverUrl;
+    try {
+      const res = await axios.post(`${base}/api/v1/hr/permissions`, data, {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      return { success: true, data: res.data?.data ?? res.data };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.response?.data?.message || err.response?.data?.error || err.message,
+      };
+    }
+  }
+
   // ── Shift Close & Overtime Engine ─────────────────────────────
   async closeShiftWithHandover(data: {
     handoverNotes?: string;

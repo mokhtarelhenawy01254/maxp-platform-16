@@ -87,6 +87,8 @@ declare global {
       // HR & Self-Service
       getMyAttendanceSummary: () => Promise<{ success: boolean; stats?: any; recent?: any[]; error?: string }>;
       getMyPayrollSummary: () => Promise<{ success: boolean; payroll?: any; projection?: any; error?: string }>;
+      getMyPermissionsSummary: () => Promise<{ success: boolean; stats?: any; requests?: any[]; leavesConfig?: any; error?: string }>;
+      createPermissionRequest: (data: { type: string; date: string; durationMinutes: number; reason: string }) => Promise<{ success: boolean; data?: any; error?: string }>;
 
       openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
       copyToClipboard: (text: string) => Promise<{ success: boolean; error?: string }>;

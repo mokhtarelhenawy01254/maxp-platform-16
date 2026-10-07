@@ -293,12 +293,69 @@ export function initMockElectronBridge() {
       },
       projection: {
         baseSalary: 12000,
+        earnedBaseSalary: 2800,
+        daysPassedWorking: 7,
+        totalWorkingDays: 26,
         overtimeAmount: 1250,
         bonusAmount: 500,
         deductionAmount: 200,
+        earnedNetSalary: 4350,
         netEstimated: 13550,
         currency: 'EGP',
         totalHoursLogged: 188.5,
+        deductionsDetails: [
+          {
+            id: 'ded-1',
+            date: '2026-10-04',
+            reason: 'تأخير صباحي 25 دقيقة عن موعد الوردية',
+            amount: 150,
+            type: 'LATENESS',
+          },
+          {
+            id: 'ded-2',
+            date: '2026-10-02',
+            reason: 'انصراف مبكر قبل نهاية الوردية الرسمية',
+            amount: 50,
+            type: 'EARLY_LEAVE',
+          },
+        ],
+      },
+    }),
+
+    getMyPermissionsSummary: async () => ({
+      success: true,
+      stats: {
+        totalRequests: 1,
+        pendingCount: 0,
+        totalHours: 0.5,
+        maxAllowedMinutes: 120,
+        remainingMinutes: 90,
+      },
+      leavesConfig: {
+        annualLeaveBalance: 18,
+        totalAnnualLeaves: 21,
+        sickLeaveBalance: 14,
+      },
+      requests: [
+        {
+          id: 'perm-1',
+          type: 'PERSONAL_DURING_DAY',
+          date: '2026-10-05',
+          durationMinutes: 30,
+          reason: 'ظرف طارئ لمراجعة البنك',
+          status: 'APPROVED',
+          createdAt: '2026-10-05T08:30:00Z',
+        },
+      ],
+    }),
+
+    createPermissionRequest: async (data: any) => ({
+      success: true,
+      data: {
+        id: `perm-${Date.now()}`,
+        ...data,
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
       },
     }),
 

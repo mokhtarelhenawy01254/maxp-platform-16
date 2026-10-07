@@ -1000,6 +1000,24 @@ function registerIpcHandlers(): void {
     }
   });
 
+  ipcMain.handle('hr:my-permissions-summary', async () => {
+    try {
+      const data = await apiClient.getMyPermissionsSummary();
+      return { success: true, ...data };
+    } catch (err: any) {
+      return { success: false, error: err?.message };
+    }
+  });
+
+  ipcMain.handle('hr:create-permission-request', async (_, payload: any) => {
+    try {
+      const result = await apiClient.createPermissionRequest(payload);
+      return result;
+    } catch (err: any) {
+      return { success: false, error: err?.message };
+    }
+  });
+
   ipcMain.handle(IPC_CHANNELS.GET_DAILY_SUMMARY, async (_, targetDate?: string, endDate?: string) => {
     const today = getLocalDateString();
     const dateToQuery = targetDate || today;
