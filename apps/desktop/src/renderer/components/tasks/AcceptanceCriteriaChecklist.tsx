@@ -1,11 +1,20 @@
-import React, { useRef, useState } from 'react';
-import { Plus, Square, CheckSquare, X, ListChecks } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import {
+  Plus,
+  Square,
+  CheckSquare,
+  X,
+  ListChecks,
+  Check,
+  GripVertical,
+} from 'lucide-react';
 
 interface AcceptanceCriteriaChecklistProps {
   value: string;
   onChange?: (next: string) => void;
   readOnly?: boolean;
   interactive?: boolean;
+  taskId?: string;
 }
 
 const toItems = (raw: string): string[] =>
@@ -19,12 +28,37 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
   onChange,
   readOnly = false,
   interactive = false,
+  taskId,
 }) => {
   // Raw lines while editing (no trimming) — cleaned on blur / add.
   const items = value ? String(value).split('\n') : [];
   const [draft, setDraft] = useState('');
-  const [checkedMap, setCheckedMap] = useState<Record<number, boolean>>({});
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+
+  // Persistence of checked state in readOnly / interactive mode per task
+  const [checkedMap, setCheckedMap] = useState<Record<number, boolean>>(() => {
+    if (!taskId) return {};
+    try {
+      const stored = localStorage.getItem(`maxp_task_criteria_${taskId}`);
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    if (!taskId) return;
+    try {
+      const stored = localStorage.getItem(`maxp_task_criteria_${taskId}`);
+      setCheckedMap(stored ? JSON.parse(stored) : {});
+    } catch {
+      setCheckedMap({});
+    }
+  }, [taskId]);
+
   const inputRef = useRef<HTMLInputElement>(null);
+  const itemInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const commit = (next: string[]) => onChange?.(next.filter((t) => t.trim()).join('\n'));
 
@@ -51,18 +85,92 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
 
   const toggleCheck = (idx: number) => {
     if (!interactive) return;
-    setCheckedMap((prev) => ({
-      ...prev,
-      [idx]: !prev[idx],
-    }));
+    setCheckedMap((prev) => {
+      const updated = {
+        ...prev,
+        [idx]: !prev[idx],
+      };
+      if (taskId) {
+        try {
+          localStorage.setItem(`maxp_task_criteria_${taskId}`, JSON.stringify(updated));
+        } catch {}
+      }
+      return updated;
+    });
   };
 
-  // If readOnly view mode
+  // Keyboard navigation for items
+  const handleKeyDownItem = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    idx: number
+  ) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (idx + 1 < items.length) {
+        itemInputRefs.current[idx + 1]?.focus();
+      } else {
+        inputRef.current?.focus();
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (idx > 0) {
+        itemInputRefs.current[idx - 1]?.focus();
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const inputEl = e.currentTarget;
+      const cursorPos = inputEl.selectionStart ?? items[idx].length;
+      const currentText = items[idx];
+      const before = currentText.slice(0, cursorPos).trim();
+      const after = currentText.slice(cursorPos).trim();
+
+      const next = [...items];
+      next[idx] = before;
+      next.splice(idx + 1, 0, after);
+      commit(next);
+
+      setTimeout(() => {
+        itemInputRefs.current[idx + 1]?.focus();
+      }, 30);
+    } else if (e.key === 'Backspace' && items[idx].trim() === '') {
+      e.preventDefault();
+      removeItem(idx);
+      if (idx > 0) {
+        itemInputRefs.current[idx - 1]?.focus();
+      } else {
+        inputRef.current?.focus();
+      }
+    }
+  };
+
+  // Drag and Drop handlers
+  const handleDragStart = (idx: number) => {
+    setDraggedIdx(idx);
+  };
+
+  const handleDragOver = (e: React.DragEvent, targetIdx: number) => {
+    e.preventDefault();
+    if (draggedIdx === null || draggedIdx === targetIdx) return;
+    const reordered = [...items];
+    const [moved] = reordered.splice(draggedIdx, 1);
+    reordered.splice(targetIdx, 0, moved);
+    setDraggedIdx(targetIdx);
+    commit(reordered);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIdx(null);
+  };
+
+  // ReadOnly View Mode (TaskDetailDrawer)
   if (readOnly) {
     const displayItems = toItems(value);
     const completedCount = displayItems.filter((_, idx) => checkedMap[idx]).length;
+    const totalCount = displayItems.length;
+    const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+    const isAllDone = totalCount > 0 && completedCount === totalCount;
 
-    if (displayItems.length === 0) {
+    if (totalCount === 0) {
       return (
         <div>
           <div style={s.headerRow}>
@@ -92,21 +200,36 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
               <span
                 style={{
                   ...s.counter,
-                  color: completedCount === displayItems.length ? 'var(--accent-green)' : 'var(--text-dim)',
-                  borderColor:
-                    completedCount === displayItems.length
-                      ? 'var(--accent-green-border)'
-                      : 'var(--border-default)',
-                  backgroundColor:
-                    completedCount === displayItems.length ? 'var(--accent-green-bg)' : 'transparent',
+                  color: isAllDone ? 'var(--accent-green)' : 'var(--text-dim)',
+                  borderColor: isAllDone ? 'var(--accent-green-border)' : 'var(--border-default)',
+                  backgroundColor: isAllDone ? 'var(--accent-green-bg)' : 'transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
                 }}
               >
-                {completedCount} / {displayItems.length}
+                {isAllDone && <Check size={11} />}
+                <span>
+                  {completedCount} / {totalCount} ({percentage}%)
+                </span>
               </span>
             )}
-            {!interactive && <span style={s.counter}>{displayItems.length} معايير</span>}
+            {!interactive && <span style={s.counter}>{totalCount} معايير</span>}
           </div>
         </div>
+
+        {/* Micro-Progress Bar */}
+        {interactive && totalCount > 0 && (
+          <div style={s.progressBarTrack}>
+            <div
+              style={{
+                ...s.progressBarFill,
+                width: `${percentage}%`,
+                backgroundColor: isAllDone ? 'var(--accent-green)' : 'var(--accent-blue)',
+              }}
+            />
+          </div>
+        )}
 
         <div style={s.readOnlyList}>
           {displayItems.map((text, idx) => {
@@ -146,35 +269,75 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
     );
   }
 
-  // Edit / Form Mode
+  // Edit / Form Mode (CreateTaskModal & EditTaskModal)
   return (
     <div>
       <div style={s.headerRow}>
-        <label style={s.label}>
-          <ListChecks size={12} style={{ verticalAlign: '-2px', marginInlineEnd: 4 }} />
-          معايير القبول
-          <span style={{ color: 'var(--text-dim)', marginInlineStart: 4 }}>(اختياري)</span>
-        </label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <ListChecks size={12} style={{ verticalAlign: '-2px', color: 'var(--accent-blue)' }} />
+          <label style={s.label}>
+            معايير القبول
+            <span style={{ color: 'var(--text-dim)', marginInlineStart: 4 }}>(اختياري)</span>
+          </label>
+        </div>
         <span style={s.counter}>{items.length}</span>
       </div>
 
       <div style={s.list}>
         {items.map((text, idx) => (
-          <div key={idx} style={s.item}>
-            <Square size={14} color="var(--text-dim)" style={{ flexShrink: 0 }} />
+          <div
+            key={idx}
+            draggable
+            onDragStart={() => handleDragStart(idx)}
+            onDragOver={(e) => handleDragOver(e, idx)}
+            onDragEnd={handleDragEnd}
+            onMouseEnter={() => setHoveredIdx(idx)}
+            onMouseLeave={() => setHoveredIdx(null)}
+            style={{
+              ...s.item,
+              opacity: draggedIdx === idx ? 0.4 : 1,
+            }}
+          >
+            {/* Drag Handle */}
+            <div
+              style={{
+                cursor: 'grab',
+                display: 'flex',
+                alignItems: 'center',
+                color: hoveredIdx === idx ? 'var(--text-muted)' : 'transparent',
+                transition: 'color 120ms ease',
+                flexShrink: 0,
+              }}
+              title="اسحب لإعادة الترتيب"
+            >
+              <GripVertical size={12} />
+            </div>
+
+            <Square size={13} color="var(--text-dim)" style={{ flexShrink: 0 }} />
+
             <input
+              ref={(el) => {
+                itemInputRefs.current[idx] = el;
+              }}
               type="text"
               value={text}
               onChange={(e) => updateItem(idx, e.target.value)}
               onBlur={() => commit(items)}
+              onKeyDown={(e) => handleKeyDownItem(e, idx)}
               aria-label={`معيار ${idx + 1}`}
               style={s.itemInput}
             />
+
+            {/* Hover-reveal delete button */}
             <button
               type="button"
               onClick={() => removeItem(idx)}
-              style={s.removeBtn}
-              title="حذف المعيار"
+              style={{
+                ...s.removeBtn,
+                opacity: hoveredIdx === idx ? 1 : 0,
+                pointerEvents: hoveredIdx === idx ? 'auto' : 'none',
+              }}
+              title="حذف المعيار (أو Backspace على سطر فارغ)"
               aria-label="حذف المعيار"
             >
               <X size={12} />
@@ -182,8 +345,10 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
           </div>
         ))}
 
+        {/* Add New Criterion Input Row */}
         <div style={{ ...s.item, borderBottom: 'none' }}>
-          <Plus size={14} color="var(--accent-blue)" style={{ flexShrink: 0 }} />
+          <div style={{ width: 12, flexShrink: 0 }} />
+          <Plus size={13} color="var(--accent-blue)" style={{ flexShrink: 0 }} />
           <input
             ref={inputRef}
             type="text"
@@ -193,6 +358,9 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
               if (e.key === 'Enter') {
                 e.preventDefault();
                 addDraft();
+              } else if (e.key === 'ArrowUp' && items.length > 0) {
+                e.preventDefault();
+                itemInputRefs.current[items.length - 1]?.focus();
               }
             }}
             onPaste={(e) => {
@@ -202,7 +370,7 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
                 commit([...items, ...toItems(pastedText)]);
               }
             }}
-            placeholder={items.length ? 'إضافة معيار… (Enter)' : 'اكتب أول معيار واضغط Enter…'}
+            placeholder={items.length ? 'إضافة معيار جديد… (Enter)' : 'اكتب أول معيار واضغط Enter…'}
             style={s.itemInput}
           />
           {draft.trim() && (
@@ -231,6 +399,19 @@ const s: Record<string, React.CSSProperties> = {
     padding: '1px 7px',
     borderRadius: 10,
     border: '1px solid var(--border-default)',
+  },
+  progressBarTrack: {
+    width: '100%',
+    height: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 2,
+    transition: 'width 240ms ease-out, background-color 240ms ease',
   },
   list: {
     backgroundColor: 'var(--bg-input)',
@@ -273,9 +454,10 @@ const s: Record<string, React.CSSProperties> = {
   item: {
     display: 'flex',
     alignItems: 'center',
-    gap: 8,
-    padding: '2px 10px',
+    gap: 6,
+    padding: '2px 8px',
     borderBottom: '1px solid var(--border-default)',
+    transition: 'background-color 100ms ease',
   },
   itemInput: {
     flex: 1,
@@ -296,6 +478,7 @@ const s: Record<string, React.CSSProperties> = {
     padding: 3,
     display: 'flex',
     borderRadius: 4,
+    transition: 'opacity 140ms ease, color 120ms ease',
   },
   addBtn: {
     fontSize: 11,

@@ -687,6 +687,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                   value={task.acceptanceCriteria || ''}
                   readOnly={true}
                   interactive={true}
+                  taskId={task.id}
                 />
               </div>
             )}

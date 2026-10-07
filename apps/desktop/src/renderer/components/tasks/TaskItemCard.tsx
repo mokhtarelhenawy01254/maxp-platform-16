@@ -122,12 +122,25 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   );
   const hasBlocking = incompleteBlockingDeps.length > 0;
 
-  const criteriaCount = task.acceptanceCriteria
+  const criteriaItems = task.acceptanceCriteria
     ? String(task.acceptanceCriteria)
         .split('\n')
-        .map((l: string) => l.trim())
-        .filter(Boolean).length
-    : 0;
+        .map((l: string) => l.replace(/^[-*•\d.\s]+/, '').trim())
+        .filter(Boolean)
+    : [];
+  const criteriaCount = criteriaItems.length;
+
+  const criteriaCompletedCount = (() => {
+    if (criteriaCount === 0) return 0;
+    try {
+      const stored = localStorage.getItem(`maxp_task_criteria_${task.id}`);
+      if (!stored) return 0;
+      const parsed = JSON.parse(stored);
+      return criteriaItems.filter((_: any, idx: number) => parsed[idx]).length;
+    } catch {
+      return 0;
+    }
+  })();
 
   const handleToggleWatch = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -408,19 +421,46 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             </span>
           )}
 
-          {/* Acceptance Criteria Micro Badge */}
+          {/* Acceptance Criteria Micro Badge with Progress */}
           {criteriaCount > 0 && (
             <span
-              style={rowStyles.attChip}
+              style={{
+                ...rowStyles.attChip,
+                backgroundColor:
+                  criteriaCompletedCount === criteriaCount
+                    ? 'var(--accent-green-bg)'
+                    : 'rgba(255, 255, 255, 0.04)',
+                borderColor:
+                  criteriaCompletedCount === criteriaCount
+                    ? 'var(--accent-green-border)'
+                    : 'var(--border-subtle)',
+              }}
               onClick={(e) => {
                 e.stopPropagation();
                 onSelect?.(task);
               }}
-              title={`${criteriaCount} معايير قبول — انقر للمعاينة`}
+              title={`معايير القبول (${criteriaCompletedCount}/${criteriaCount}):\n${criteriaItems.map((c: string, i: number) => `• ${c}`).join('\n')}`}
             >
-              <ListChecks size={10} color="var(--accent-blue)" />
-              <span style={{ fontSize: 9.5, fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
-                {criteriaCount}
+              <ListChecks
+                size={10}
+                color={
+                  criteriaCompletedCount === criteriaCount
+                    ? 'var(--accent-green)'
+                    : 'var(--accent-blue)'
+                }
+              />
+              <span
+                style={{
+                  fontSize: 9.5,
+                  fontVariantNumeric: 'tabular-nums',
+                  color:
+                    criteriaCompletedCount === criteriaCount
+                      ? 'var(--accent-green)'
+                      : 'var(--text-secondary)',
+                  fontWeight: criteriaCompletedCount === criteriaCount ? 600 : 500,
+                }}
+              >
+                {criteriaCompletedCount > 0 ? `${criteriaCompletedCount}/${criteriaCount}` : criteriaCount}
               </span>
             </span>
           )}
