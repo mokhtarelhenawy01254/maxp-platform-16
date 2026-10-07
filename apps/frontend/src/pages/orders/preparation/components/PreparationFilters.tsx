@@ -251,6 +251,39 @@ const PreparationFilters = ({
     setLocalSearch("");
   };
 
+  // Set of all status codes explicitly present as tabs
+  const tabCodes = useMemo(
+    () => new Set(filterTabs.map((t) => t.statusCode)),
+    [filterTabs]
+  );
+
+  // Map each normalized stage to the primary tab representing it (e.g. 'WAITING' -> 'PENDING_PREPARATION')
+  const primaryTabByStage = useMemo(() => {
+    const map = new Map<string, string>();
+    filterTabs.forEach((tab) => {
+      const stage = normalizeStatusToStage(tab.statusCode);
+      if (stage && !map.has(stage)) {
+        map.set(stage, tab.statusCode);
+      }
+    });
+    return map;
+  }, [filterTabs]);
+
+  // Aggregate counts of statuses that do NOT have their own tab, grouped by their preparation stage
+  // (e.g. 'CONFIRMED' orders that map to 'WAITING' stage and appear inside 'PENDING_PREPARATION' tab)
+  const unrepresentedCountsByStage = useMemo(() => {
+    const counts: Record<string, number> = {};
+    Object.entries(statusCounts).forEach(([statusCode, count]) => {
+      if (!tabCodes.has(statusCode)) {
+        const stage = normalizeStatusToStage(statusCode);
+        if (stage) {
+          counts[stage] = (counts[stage] || 0) + Number(count || 0);
+        }
+      }
+    });
+    return counts;
+  }, [statusCounts, tabCodes]);
+
   return (
     <div className="sticky top-0 z-10 rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
       {/* Top bar: Tabs & Search Controls */}
@@ -278,11 +311,16 @@ const PreparationFilters = ({
             {filterTabs.map((tab) => {
               const display = getStatusDisplay(tab.statusCode);
               const mappedStage = normalizeStatusToStage(tab.statusCode);
-              const count = statusCounts[tab.statusCode] !== undefined
+              const hasDirectCount = statusCounts[tab.statusCode] !== undefined;
+              const isPrimary = mappedStage ? primaryTabByStage.get(mappedStage) === tab.statusCode : false;
+              const unrepresentedCount = hasDirectCount && isPrimary && mappedStage
+                ? (unrepresentedCountsByStage[mappedStage] || 0)
+                : 0;
+              const count = (hasDirectCount
                 ? statusCounts[tab.statusCode]
                 : mappedStage && stageCounts[mappedStage] !== undefined
                 ? stageCounts[mappedStage]
-                : 0;
+                : 0) + unrepresentedCount;
               const isActive = activeFilter === tab.statusCode;
 
               return (
