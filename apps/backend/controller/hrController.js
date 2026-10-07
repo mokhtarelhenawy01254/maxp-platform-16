@@ -4179,17 +4179,27 @@ async function getPerformanceStats(req, res) {
  */
 async function getMyPerformanceScore(req, res) {
   try {
-    const { companyId, id: userId } = req.user;
+    const companyId = req.user?.companyId;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: "المستخدم غير مسجل الدخول" });
+    }
+
     const dbClient = getSharedPrismaClient();
 
     // 1. المحور الأول: سرعة ومعدل الإنجاز (Delivery & Throughput) - 25%
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+    const taskWhere = {
+      assignedTo: userId,
+      createdAt: { gte: thirtyDaysAgo }
+    };
+    if (companyId) {
+      taskWhere.companyId = companyId;
+    }
+
     const tasks = await dbClient.task.findMany({
-      where: {
-        companyId,
-        assignedTo: userId,
-        createdAt: { gte: thirtyDaysAgo }
-      },
+      where: taskWhere,
       select: {
         id: true,
         status: true,
@@ -4221,21 +4231,25 @@ async function getMyPerformanceScore(req, res) {
     qualityScore = Math.max(25, Math.min(100, Math.round(qualityScore)));
 
     // 3. المحور الثالث: الانضباط والحضور (Punctuality & Shift Attendance) - 20%
+    const attendanceWhere = {
+      userId,
+      date: { gte: thirtyDaysAgo }
+    };
+    if (companyId) {
+      attendanceWhere.companyId = companyId;
+    }
+
     const attendances = await dbClient.attendance.findMany({
-      where: {
-        companyId,
-        userId,
-        date: { gte: thirtyDaysAgo }
-      },
+      where: attendanceWhere,
       select: {
         status: true,
-        lateStartSeconds: true
+        lateMinutes: true
       }
     });
 
     const totalDays = attendances.length;
     const presentDays = attendances.filter(a => a.status === 'PRESENT').length;
-    const lateDays = attendances.filter(a => a.status === 'LATE' || (a.lateStartSeconds && a.lateStartSeconds > 0)).length;
+    const lateDays = attendances.filter(a => a.status === 'LATE' || (Number(a.lateMinutes) > 0)).length;
     const punctualityRate = totalDays > 0 ? ((totalDays - lateDays) / totalDays) * 100 : 100;
     const attendanceScore = Math.max(30, Math.min(100, Math.round(punctualityRate)));
 

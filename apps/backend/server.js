@@ -1180,6 +1180,7 @@ app.use("/api/invitations", invitationRoutes);
 // HR & Operations
 const hrRoutes = require("./routes/hrRoutes");
 app.use("/api/v1/hr", hrRoutes);
+app.use("/api/hr", hrRoutes);
 const employeeMonitorRoutes = require("./routes/employeeMonitorRoutes");
 app.use("/api/v1/employee-monitor", employeeMonitorRoutes);
 app.use("/api/monitor", employeeMonitorRoutes);

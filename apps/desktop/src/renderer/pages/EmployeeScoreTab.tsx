@@ -94,9 +94,71 @@ export const EmployeeScoreTab: React.FC<EmployeeScoreTabProps> = ({ user }) => {
 
   if (loading && !data) {
     return (
-      <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
+      <div style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--text-muted)' }}>
         <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 12px', opacity: 0.7 }} />
         <div style={{ fontSize: 13, fontWeight: 600 }}>جاري احتساب تقييم الأداء التلقائي من السجلات…</div>
+      </div>
+    );
+  }
+
+  if (!data && error) {
+    return (
+      <div style={{ padding: '32px 16px', maxWidth: 600, margin: '40px auto', textAlign: 'center' }}>
+        <div
+          style={{
+            background: 'var(--bg-card, rgba(255,255,255,0.02))',
+            border: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
+            borderRadius: 12,
+            padding: '32px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 10,
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ef4444',
+            }}
+          >
+            <Award size={22} />
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
+            تعذر تحميل بيانات تقييم الأداء
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+            {error}
+          </div>
+          <button
+            onClick={loadScore}
+            disabled={loading}
+            style={{
+              marginTop: 8,
+              background: 'var(--accent-green, #10b981)',
+              color: '#000',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 18px',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+            <span>إعادة المحاولة</span>
+          </button>
+        </div>
       </div>
     );
   }

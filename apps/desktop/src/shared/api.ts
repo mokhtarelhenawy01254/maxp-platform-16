@@ -1094,10 +1094,18 @@ class MonitorApiClient {
       });
       return res.data;
     } catch (err: any) {
-      return {
-        success: false,
-        error: err.response?.data?.error || err.message,
-      };
+      try {
+        const resFallback = await axios.get(`${base}/api/hr/performance/my-score`, {
+          headers: this.getAuthHeaders(),
+          timeout: 10_000,
+        });
+        return resFallback.data;
+      } catch (errFallback: any) {
+        return {
+          success: false,
+          error: err.response?.data?.error || errFallback.response?.data?.error || err.message,
+        };
+      }
     }
   }
 

@@ -569,6 +569,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
       { path: "/my-payroll", label: "راتبي" },
       { path: "/my-advances", label: "سلفي" },
       { path: "/my-deductions", label: "خصوماتي" },
+      { path: "/my-performance", label: "تقييم أدائي" },
     ],
     action: "تم ربط الرواتب بـ hr-payroll مع fallback على hr-core/hr-basic.",
   },
