@@ -19,6 +19,7 @@ import {
   ClipboardCheck,
   Copy,
   CheckCheck,
+  ListChecks,
 } from 'lucide-react';
 import { audioAlerts } from '../../utils/audioAlerts';
 import { ReturnForRevisionModal } from './ReturnForRevisionModal';
@@ -120,6 +121,13 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
     (d: any) => String(d.dependsOn?.status || '').toUpperCase() !== 'COMPLETED'
   );
   const hasBlocking = incompleteBlockingDeps.length > 0;
+
+  const criteriaCount = task.acceptanceCriteria
+    ? String(task.acceptanceCriteria)
+        .split('\n')
+        .map((l: string) => l.trim())
+        .filter(Boolean).length
+    : 0;
 
   const handleToggleWatch = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -397,6 +405,23 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             <span style={rowStyles.blockBadge} title="محظورة بمهام أخرى">
               <AlertTriangle size={10} />
               <span>{incompleteBlockingDeps.length}</span>
+            </span>
+          )}
+
+          {/* Acceptance Criteria Micro Badge */}
+          {criteriaCount > 0 && (
+            <span
+              style={rowStyles.attChip}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect?.(task);
+              }}
+              title={`${criteriaCount} معايير قبول — انقر للمعاينة`}
+            >
+              <ListChecks size={10} color="var(--accent-blue)" />
+              <span style={{ fontSize: 9.5, fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
+                {criteriaCount}
+              </span>
             </span>
           )}
 

@@ -1,9 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { Plus, Square, X, ListChecks } from 'lucide-react';
+import { Plus, Square, CheckSquare, X, ListChecks } from 'lucide-react';
 
 interface AcceptanceCriteriaChecklistProps {
   value: string;
-  onChange: (next: string) => void;
+  onChange?: (next: string) => void;
+  readOnly?: boolean;
+  interactive?: boolean;
 }
 
 const toItems = (raw: string): string[] =>
@@ -15,15 +17,19 @@ const toItems = (raw: string): string[] =>
 export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistProps> = ({
   value,
   onChange,
+  readOnly = false,
+  interactive = false,
 }) => {
   // Raw lines while editing (no trimming) — cleaned on blur / add.
   const items = value ? String(value).split('\n') : [];
   const [draft, setDraft] = useState('');
+  const [checkedMap, setCheckedMap] = useState<Record<number, boolean>>({});
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const commit = (next: string[]) => onChange(next.filter((t) => t.trim()).join('\n'));
+  const commit = (next: string[]) => onChange?.(next.filter((t) => t.trim()).join('\n'));
 
   const addDraft = () => {
+    if (readOnly || !onChange) return;
     const lines = toItems(draft);
     if (lines.length === 0) return;
     commit([...items, ...lines]);
@@ -32,13 +38,115 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
   };
 
   const updateItem = (idx: number, text: string) => {
+    if (readOnly || !onChange) return;
     const next = [...items];
     next[idx] = text;
     onChange(next.join('\n'));
   };
 
-  const removeItem = (idx: number) => commit(items.filter((_, i) => i !== idx));
+  const removeItem = (idx: number) => {
+    if (readOnly || !onChange) return;
+    commit(items.filter((_, i) => i !== idx));
+  };
 
+  const toggleCheck = (idx: number) => {
+    if (!interactive) return;
+    setCheckedMap((prev) => ({
+      ...prev,
+      [idx]: !prev[idx],
+    }));
+  };
+
+  // If readOnly view mode
+  if (readOnly) {
+    const displayItems = toItems(value);
+    const completedCount = displayItems.filter((_, idx) => checkedMap[idx]).length;
+
+    if (displayItems.length === 0) {
+      return (
+        <div>
+          <div style={s.headerRow}>
+            <label style={s.label}>
+              <ListChecks size={13} style={{ verticalAlign: '-2px', marginInlineEnd: 4 }} />
+              معايير القبول
+            </label>
+          </div>
+          <div style={s.emptyState}>
+            <span>لم يتم تحديد معايير قبول لهذه المهمة.</span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <div style={s.headerRow}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <ListChecks size={13} color="var(--accent-blue)" />
+            <label style={{ ...s.label, color: 'var(--text-primary)', fontWeight: 600 }}>
+              معايير القبول والتسليم
+            </label>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {interactive && (
+              <span
+                style={{
+                  ...s.counter,
+                  color: completedCount === displayItems.length ? 'var(--accent-green)' : 'var(--text-dim)',
+                  borderColor:
+                    completedCount === displayItems.length
+                      ? 'var(--accent-green-border)'
+                      : 'var(--border-default)',
+                  backgroundColor:
+                    completedCount === displayItems.length ? 'var(--accent-green-bg)' : 'transparent',
+                }}
+              >
+                {completedCount} / {displayItems.length}
+              </span>
+            )}
+            {!interactive && <span style={s.counter}>{displayItems.length} معايير</span>}
+          </div>
+        </div>
+
+        <div style={s.readOnlyList}>
+          {displayItems.map((text, idx) => {
+            const isChecked = Boolean(checkedMap[idx]);
+            return (
+              <div
+                key={idx}
+                onClick={() => interactive && toggleCheck(idx)}
+                style={{
+                  ...s.readOnlyItem,
+                  cursor: interactive ? 'pointer' : 'default',
+                  backgroundColor: isChecked ? 'rgba(16, 185, 129, 0.06)' : 'transparent',
+                  borderColor: isChecked ? 'rgba(16, 185, 129, 0.25)' : 'var(--border-subtle)',
+                }}
+              >
+                <div style={{ flexShrink: 0, marginTop: 1, display: 'flex', alignItems: 'center' }}>
+                  {isChecked ? (
+                    <CheckSquare size={14} color="var(--accent-green)" />
+                  ) : (
+                    <Square size={14} color="var(--text-dim)" />
+                  )}
+                </div>
+                <span
+                  style={{
+                    ...s.readOnlyText,
+                    textDecoration: isChecked ? 'line-through' : 'none',
+                    color: isChecked ? 'var(--text-dim)' : 'var(--text-primary)',
+                  }}
+                >
+                  {text}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Edit / Form Mode
   return (
     <div>
       <div style={s.headerRow}>
@@ -88,10 +196,10 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
               }
             }}
             onPaste={(e) => {
-              const text = e.clipboardData.getData('text');
-              if (text.includes('\n')) {
+              const pastedText = e.clipboardData.getData('text');
+              if (pastedText.includes('\n')) {
                 e.preventDefault();
-                commit([...items, ...toItems(text)]);
+                commit([...items, ...toItems(pastedText)]);
               }
             }}
             placeholder={items.length ? 'إضافة معيار… (Enter)' : 'اكتب أول معيار واضغط Enter…'}
@@ -109,7 +217,12 @@ export const AcceptanceCriteriaChecklist: React.FC<AcceptanceCriteriaChecklistPr
 };
 
 const s: Record<string, React.CSSProperties> = {
-  headerRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  headerRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
   label: { fontSize: 11, color: 'var(--text-muted)' },
   counter: {
     fontSize: 10.5,
@@ -124,6 +237,38 @@ const s: Record<string, React.CSSProperties> = {
     border: '1px solid var(--border-strong)',
     borderRadius: 6,
     overflow: 'hidden',
+  },
+  readOnlyList: {
+    backgroundColor: 'var(--bg-hover, rgba(255, 255, 255, 0.02))',
+    border: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.07))',
+    borderRadius: 6,
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  readOnlyItem: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 8,
+    padding: '7px 10px',
+    borderBottom: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.07))',
+    transition: 'background-color 120ms ease, border-color 120ms ease',
+  },
+  readOnlyText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 1.5,
+    wordBreak: 'break-word',
+    transition: 'color 120ms ease',
+  },
+  emptyState: {
+    padding: '10px 12px',
+    fontSize: 11.5,
+    color: 'var(--text-dim)',
+    fontStyle: 'italic',
+    backgroundColor: 'var(--bg-hover, rgba(255, 255, 255, 0.02))',
+    borderRadius: 6,
+    border: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.07))',
   },
   item: {
     display: 'flex',

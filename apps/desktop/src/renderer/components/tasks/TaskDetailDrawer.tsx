@@ -26,6 +26,7 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { TaskDescriptionRenderer } from './TaskDescriptionRenderer';
+import { AcceptanceCriteriaChecklist } from './AcceptanceCriteriaChecklist';
 import { TaskSubtasks } from './TaskSubtasks';
 import { TaskComments } from './TaskComments';
 import { TaskActivityLog } from './TaskActivityLog';
@@ -678,6 +679,17 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
             <div style={drawerStyles.cardSection}>
               <TaskDescriptionRenderer description={task.description || ''} />
             </div>
+
+            {/* ACCEPTANCE CRITERIA CHECKLIST (معايير القبول والتسليم) */}
+            {task.acceptanceCriteria && (
+              <div style={drawerStyles.cardSection}>
+                <AcceptanceCriteriaChecklist
+                  value={task.acceptanceCriteria || ''}
+                  readOnly={true}
+                  interactive={true}
+                />
+              </div>
+            )}
 
             {/* AI BRIEF (وصف الذكاء الاصطناعي) */}
             {task.aiDescription ? (
