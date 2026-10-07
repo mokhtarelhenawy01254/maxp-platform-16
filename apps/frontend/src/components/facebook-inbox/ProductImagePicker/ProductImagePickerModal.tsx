@@ -67,16 +67,26 @@ const buildProductImages = (product: any): ProductImage[] => {
   );
 
   const variantImages = (product.variants || product.productVariants || [])
-    .map((variant: any) =>
-      getPrimaryImageUrl(
+    .map((variant: any) => {
+      let parsedMetadata: any = {};
+      if (typeof variant.metadata === "string") {
+        try {
+          parsedMetadata = JSON.parse(variant.metadata);
+        } catch (_) {}
+      } else if (variant.metadata && typeof variant.metadata === "object") {
+        parsedMetadata = variant.metadata;
+      }
+
+      return getPrimaryImageUrl(
         variant.image,
         variant.imageUrl,
         variant.image_url,
         variant.images,
         variant.mainImage,
-        variant.metadata?.image,
-      ),
-    )
+        parsedMetadata?.image,
+        parsedMetadata?.imageUrl,
+      );
+    })
     .filter((url: string) => typeof url === "string" && url.length > 0);
 
   const allUrls = Array.from(new Set([...candidates, ...variantImages]));
