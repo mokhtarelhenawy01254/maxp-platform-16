@@ -434,7 +434,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   bentoGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
     gap: 12,
   },
   bentoCard: {
@@ -477,7 +477,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   workspaceGrid: {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1.35fr) minmax(0, 1fr)',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))',
     gap: 14,
     alignItems: 'start',
   },
@@ -528,6 +528,7 @@ const styles: Record<string, React.CSSProperties> = {
   tableWrapper: {
     maxHeight: 380,
     overflowY: 'auto',
+    overflowX: 'auto',
   },
   table: {
     width: '100%',
@@ -544,6 +545,7 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'sticky',
     top: 0,
     zIndex: 1,
+    whiteSpace: 'nowrap',
   },
   tr: {
     borderBottom: '1px solid var(--border-subtle)',
@@ -551,22 +553,26 @@ const styles: Record<string, React.CSSProperties> = {
   td: {
     padding: '9px 12px',
     color: 'var(--text-secondary)',
+    whiteSpace: 'nowrap',
   },
   tdBold: {
     padding: '9px 12px',
     color: 'var(--text-primary)',
     fontWeight: 600,
     fontVariantNumeric: 'tabular-nums',
+    whiteSpace: 'nowrap',
   },
   tdTabular: {
     padding: '9px 12px',
     color: 'var(--text-secondary)',
     fontVariantNumeric: 'tabular-nums',
+    whiteSpace: 'nowrap',
   },
   tdMuted: {
     padding: '9px 12px',
     color: 'var(--text-muted)',
     fontSize: 11,
+    whiteSpace: 'nowrap',
   },
   emptyTd: {
     padding: '30px 14px',
