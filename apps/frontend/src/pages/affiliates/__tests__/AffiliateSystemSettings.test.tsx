@@ -139,4 +139,58 @@ describe("AffiliateSystemSettings", () => {
       });
     });
   });
+
+  test("instantly saves autoApproveAffiliates toggle with badge confirmation", async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        success: true,
+        data: {
+          commissionType: "PERCENTAGE",
+          commissionRate: 5,
+          cookieDuration: 30,
+          termsAndConditions: "",
+          isActive: true,
+          autoApproveAffiliates: false,
+          defaultMinPayout: 100,
+          defaultCanCreateOrdersForOthers: true,
+          defaultCanViewCustomerData: true,
+          requireIdentityDocument: false,
+          identityDocumentLabel: "مستند إثبات الهوية",
+          payoutSlaDays: 3,
+          platformMarginType: "FIXED",
+          platformMarginValue: 0,
+        },
+      },
+    });
+    mockPut.mockResolvedValue({
+      data: {
+        success: true,
+        data: {
+          isActive: true,
+          autoApproveAffiliates: true,
+        },
+      },
+    });
+
+    render(<AffiliateSystemSettings />);
+
+    expect(await screen.findByText("الموافقة التلقائية على المسوقين الجدد")).toBeInTheDocument();
+    expect(screen.getByText("يتطلب موافقة يدوية من الإدارة")).toBeInTheDocument();
+
+    const autoApproveSwitch = screen.getByLabelText("الموافقة التلقائية على المسوقين الجدد");
+    fireEvent.click(autoApproveSwitch);
+
+    await waitFor(() => {
+      expect(mockPut).toHaveBeenCalledWith(
+        "/affiliate-settings",
+        expect.objectContaining({
+          autoApproveAffiliates: true,
+          isActive: true,
+        }),
+      );
+    });
+
+    expect(await screen.findByText("مفعلة تلقائياً (تفعيل فوري)")).toBeInTheDocument();
+  });
 });
+

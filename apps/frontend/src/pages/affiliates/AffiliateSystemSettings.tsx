@@ -10,6 +10,7 @@ import {
   LinkIcon,
   ClipboardDocumentIcon,
   Cog6ToothIcon,
+  CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 
 interface ApiSuccess<T> {
@@ -201,6 +202,72 @@ const AffiliateSystemSettings: React.FC = () => {
     }
   };
 
+  const handleToggleAutoApprove = async (nextValue: boolean) => {
+    const updatedSettings = {
+      ...settings,
+      autoApproveAffiliates: nextValue,
+      isActive: nextValue ? true : settings.isActive,
+    };
+    setSettings(updatedSettings);
+
+    try {
+      const response = await apiClient.put<
+        ApiSuccess<typeof settings>,
+        typeof settings
+      >("/affiliate-settings", updatedSettings);
+
+      if (response.data.success) {
+        setSettings(normalizeSettings(response.data.data));
+        if (nextValue) {
+          toast.success("تم تفعيل الموافقة التلقائية على المسوقين الجدد وحفظها بنجاح!");
+        } else {
+          toast.success("تم تعطيل الموافقة التلقائية (يتطلب الآن موافقة يدوية) وحفظ التعديل!");
+        }
+      }
+    } catch (error: any) {
+      setSettings((prev) => ({
+        ...prev,
+        autoApproveAffiliates: !nextValue,
+      }));
+      toast.error(
+        error.response?.data?.message || "حدث خطأ أثناء حفظ التعديل، يرجى المحاولة ثانية",
+      );
+    }
+  };
+
+  const handleToggleIsActive = async (nextValue: boolean) => {
+    const updatedSettings = {
+      ...settings,
+      isActive: nextValue,
+      autoApproveAffiliates: !nextValue ? false : settings.autoApproveAffiliates,
+    };
+    setSettings(updatedSettings);
+
+    try {
+      const response = await apiClient.put<
+        ApiSuccess<typeof settings>,
+        typeof settings
+      >("/affiliate-settings", updatedSettings);
+
+      if (response.data.success) {
+        setSettings(normalizeSettings(response.data.data));
+        if (nextValue) {
+          toast.success("تم تفعيل نظام تسجيل المسوقين وحفظ التعديل بنجاح!");
+        } else {
+          toast.success("تم إيقاف نظام تسجيل المسوقين وحفظ التعديل!");
+        }
+      }
+    } catch (error: any) {
+      setSettings((prev) => ({
+        ...prev,
+        isActive: !nextValue,
+      }));
+      toast.error(
+        error.response?.data?.message || "حدث خطأ أثناء حفظ التعديل",
+      );
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validationError = validateSettings(settings);
@@ -346,72 +413,168 @@ const AffiliateSystemSettings: React.FC = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Program Status */}
-          <div
-            className={`p-4 rounded-lg border ${isDark ? "border-gray-700 bg-gray-800/50" : "border-gray-200 bg-gray-50"}`}
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3
-                    className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
-                  >
-                    حالة نظام المسوقين (تسجيل المسوقين)
-                  </h3>
+          {/* Program Status Controls */}
+          <div className="space-y-4">
+            <h2
+              className={`text-lg font-bold border-b pb-2 ${isDark ? "text-white border-gray-700" : "text-gray-900 border-gray-200"}`}
+            >
+              حالة النظام والتسجيل
+            </h2>
+
+            {/* Card 1: حالة نظام المسوقين */}
+            <div
+              className={`p-5 rounded-xl border transition-all ${
+                isDark
+                  ? settings.isActive
+                    ? "border-blue-700/60 bg-blue-950/20"
+                    : "border-gray-700 bg-gray-800/40"
+                  : settings.isActive
+                    ? "border-blue-200 bg-blue-50/50"
+                    : "border-gray-200 bg-gray-50/70"
+              }`}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3
+                      className={`font-bold text-base ${isDark ? "text-white" : "text-gray-900"}`}
+                    >
+                      حالة نظام المسوقين (تسجيل المسوقين)
+                    </h3>
+                    {settings.isActive ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        مفعل (يستقبل تسجيلات)
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border border-gray-300 dark:border-gray-700">
+                        معطل (التسجيل مغلق)
+                      </span>
+                    )}
+                  </div>
                   <p
                     className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
                   >
-                    تفعيل واستقبال تسجيل مسوقين جدد عبر رابط المتجر
+                    تفعيل واستقبال تسجيل مسوقين جدد عبر رابط المتجر الرسمي
                   </p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer" dir="ltr">
-                  <input
-                    type="checkbox"
-                    aria-label="حالة نظام المسوقين"
-                    className="sr-only peer"
-                    checked={settings.isActive}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setSettings((prev) => ({
-                        ...prev,
-                        isActive: checked,
-                        autoApproveAffiliates: !checked ? false : prev.autoApproveAffiliates,
-                      }));
-                    }}
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+
+                <label
+                  htmlFor="system-is-active-switch"
+                  className="inline-flex items-center gap-3 cursor-pointer self-start sm:self-auto select-none"
+                >
+                  <span
+                    className={`text-sm font-semibold ${
+                      settings.isActive
+                        ? "text-blue-600 dark:text-blue-400"
+                        : "text-gray-500 dark:text-gray-400"
+                    }`}
+                  >
+                    {settings.isActive ? "تشغيل" : "إيقاف"}
+                  </span>
+                  <div className="relative inline-block w-12 h-6" dir="ltr">
+                    <input
+                      id="system-is-active-switch"
+                      type="checkbox"
+                      aria-label="حالة نظام المسوقين"
+                      className="sr-only"
+                      checked={settings.isActive}
+                      onChange={(e) => handleToggleIsActive(e.target.checked)}
+                    />
+                    <div
+                      className={`block w-12 h-6 rounded-full transition-colors ${
+                        settings.isActive
+                          ? "bg-blue-600"
+                          : isDark
+                            ? "bg-gray-700 border border-gray-600"
+                            : "bg-gray-300"
+                      }`}
+                    ></div>
+                    <div
+                      className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow-md transition-transform duration-200 ${
+                        settings.isActive ? "translate-x-6" : "translate-x-0"
+                      }`}
+                    ></div>
+                  </div>
                 </label>
               </div>
+            </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3
-                    className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
-                  >
-                    الموافقة التلقائية على المسوقين الجدد
-                  </h3>
+            {/* Card 2: الموافقة التلقائية على المسوقين الجدد */}
+            <div
+              className={`p-5 rounded-xl border transition-all ${
+                isDark
+                  ? settings.autoApproveAffiliates
+                    ? "border-emerald-700/60 bg-emerald-950/20"
+                    : "border-gray-700 bg-gray-800/40"
+                  : settings.autoApproveAffiliates
+                    ? "border-emerald-200 bg-emerald-50/50"
+                    : "border-gray-200 bg-gray-50/70"
+              }`}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3
+                      className={`font-bold text-base ${isDark ? "text-white" : "text-gray-900"}`}
+                    >
+                      الموافقة التلقائية على المسوقين الجدد
+                    </h3>
+                    {settings.autoApproveAffiliates ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                        <CheckCircleIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        مفعلة تلقائياً (تفعيل فوري)
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                        يتطلب موافقة يدوية من الإدارة
+                      </span>
+                    )}
+                  </div>
                   <p
                     className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
                   >
-                    تفعيل حساب المسوق فور التسجيل مباشرة دون الحاجة لموافقة يدوية
+                    تفعيل حساب المسوق فور التسجيل مباشرة لتمكينه من بدء التسويق دون انتظار موافقة يدوية
                   </p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer" dir="ltr">
-                  <input
-                    type="checkbox"
-                    aria-label="الموافقة التلقائية على المسوقين الجدد"
-                    className="sr-only peer"
-                    checked={settings.autoApproveAffiliates}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setSettings((prev) => ({
-                        ...prev,
-                        autoApproveAffiliates: checked,
-                        isActive: checked ? true : prev.isActive,
-                      }));
-                    }}
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+
+                <label
+                  htmlFor="auto-approve-affiliates-switch"
+                  className="inline-flex items-center gap-3 cursor-pointer self-start sm:self-auto select-none"
+                >
+                  <span
+                    className={`text-sm font-semibold ${
+                      settings.autoApproveAffiliates
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-gray-500 dark:text-gray-400"
+                    }`}
+                  >
+                    {settings.autoApproveAffiliates ? "مفعل" : "معطل"}
+                  </span>
+                  <div className="relative inline-block w-12 h-6" dir="ltr">
+                    <input
+                      id="auto-approve-affiliates-switch"
+                      type="checkbox"
+                      aria-label="الموافقة التلقائية على المسوقين الجدد"
+                      className="sr-only"
+                      checked={settings.autoApproveAffiliates}
+                      onChange={(e) => handleToggleAutoApprove(e.target.checked)}
+                    />
+                    <div
+                      className={`block w-12 h-6 rounded-full transition-colors ${
+                        settings.autoApproveAffiliates
+                          ? "bg-emerald-600 dark:bg-emerald-500"
+                          : isDark
+                            ? "bg-gray-700 border border-gray-600"
+                            : "bg-gray-300"
+                      }`}
+                    ></div>
+                    <div
+                      className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow-md transition-transform duration-200 ${
+                        settings.autoApproveAffiliates ? "translate-x-6" : "translate-x-0"
+                      }`}
+                    ></div>
+                  </div>
                 </label>
               </div>
             </div>
