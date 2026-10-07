@@ -376,7 +376,11 @@ export function getVariantAttributes(
           }
         });
         Object.entries(nameAttributes).forEach(([nKey, nVal]) => {
-          if (!reconciled[nKey] && nameParts.includes(nVal)) {
+          if (
+            !reconciled[nKey] &&
+            !Object.values(reconciled).includes(nVal) &&
+            nameParts.includes(nVal)
+          ) {
             reconciled[nKey] = nVal;
           }
         });

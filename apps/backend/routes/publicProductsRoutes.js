@@ -38,16 +38,37 @@ const CANONICAL_ATTRIBUTE_LABELS = {
   '\u0623\u0644\u0648\u0627\u0646': 'Color',
   size: 'Size',
   sizes: 'Size',
+  '\u0645\u0642\u0627\u0633': 'Size',
+  '\u0645\u0642\u0627\u0633\u0627\u062a': 'Size',
   '\u0627\u0644\u0645\u0642\u0627\u0633': 'Size',
   '\u0627\u0644\u0645\u0642\u0627\u0633\u0627\u062a': 'Size',
+  '\u062d\u062c\u0645': 'Size',
   '\u0627\u0644\u062d\u062c\u0645': 'Size',
   '\u0627\u0644\u0627\u062d\u062c\u0627\u0645': 'Size',
   '\u0627\u0644\u0623\u062d\u062c\u0627\u0645': 'Size',
+  shoe_size: 'Size',
+  shoesize: 'Size',
+  'shoe-size': 'Size',
+  '\u0645\u0642\u0627\u0633 \u0627\u0644\u062d\u0630\u0627\u0621': 'Size',
   material: 'Material',
   '\u0627\u0644\u062e\u0627\u0645\u0629': 'Material',
   style: 'Style',
   '\u0627\u0644\u0637\u0631\u0627\u0632': 'Style',
 };
+
+function canonicalizeAttributeKey(key) {
+  const rawKey = String(key || '').trim();
+  if (!rawKey) return '';
+  if (CANONICAL_ATTRIBUTE_LABELS[rawKey]) return CANONICAL_ATTRIBUTE_LABELS[rawKey];
+  const directLower = rawKey.toLowerCase();
+  if (CANONICAL_ATTRIBUTE_LABELS[directLower]) return CANONICAL_ATTRIBUTE_LABELS[directLower];
+  const cleaned = directLower
+    .replace(/[:_ـ\-]/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+  if (CANONICAL_ATTRIBUTE_LABELS[cleaned]) return CANONICAL_ATTRIBUTE_LABELS[cleaned];
+  return rawKey.replace(/[:_ـ\-]+$/g, '').trim();
+}
 
 const PUBLIC_CATEGORY_SELECT = Object.freeze({
   id: true,
@@ -565,7 +586,7 @@ function normalizeVariantAttributes(rawAttributes) {
 
       const rawKey = attribute.name ?? attribute.key ?? attribute.attributeName ?? attribute.attribute ?? attribute.type;
       const rawValue = attribute.option ?? attribute.value ?? attribute.label ?? attribute.displayValue;
-      const normalizedKey = CANONICAL_ATTRIBUTE_LABELS[String(rawKey || '').trim().toLowerCase()] || String(rawKey || '').trim();
+      const normalizedKey = canonicalizeAttributeKey(rawKey);
       const normalizedValue = typeof rawValue === 'string'
         ? rawValue.trim()
         : (typeof rawValue === 'number' || typeof rawValue === 'boolean' ? String(rawValue) : '');
@@ -583,7 +604,7 @@ function normalizeVariantAttributes(rawAttributes) {
   }
 
   return Object.entries(parsedAttributes).reduce((acc, [key, value]) => {
-    const normalizedKey = CANONICAL_ATTRIBUTE_LABELS[String(key).trim().toLowerCase()] || String(key).trim();
+    const normalizedKey = canonicalizeAttributeKey(key);
     if (!normalizedKey) {
       return acc;
     }
@@ -835,7 +856,11 @@ function resolveVariantAttributes(variant) {
           }
         });
         Object.entries(nameAttributes).forEach(([nKey, nVal]) => {
-          if (!reconciled[nKey] && nameParts.includes(nVal)) {
+          if (
+            !reconciled[nKey] &&
+            !Object.values(reconciled).includes(nVal) &&
+            nameParts.includes(nVal)
+          ) {
             reconciled[nKey] = nVal;
           }
         });
