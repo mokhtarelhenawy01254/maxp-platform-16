@@ -536,7 +536,7 @@ const PreparationQueue: React.FC = () => {
 
     forcedStatuses.forEach((s) => {
       const code = toUpper(s.code);
-      if (!seen.has(code)) {
+      if (!seen.has(code) && !seen.has("PENDING_PREPARATION")) {
         seen.add(code);
         tabs.push({ statusCode: code, name: s.name });
       }

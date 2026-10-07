@@ -278,9 +278,11 @@ const PreparationFilters = ({
             {filterTabs.map((tab) => {
               const display = getStatusDisplay(tab.statusCode);
               const mappedStage = normalizeStatusToStage(tab.statusCode);
-              const count = mappedStage && stageCounts[mappedStage] !== undefined
+              const count = statusCounts[tab.statusCode] !== undefined
+                ? statusCounts[tab.statusCode]
+                : mappedStage && stageCounts[mappedStage] !== undefined
                 ? stageCounts[mappedStage]
-                : statusCounts[tab.statusCode] ?? 0;
+                : 0;
               const isActive = activeFilter === tab.statusCode;
 
               return (

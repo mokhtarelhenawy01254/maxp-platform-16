@@ -28,7 +28,8 @@ const PREPARATION_TERMINAL_STATUSES = new Set([
   'REFUNDED',
   'PARTIALLY_REFUNDED',
   'DUPLICATE_ORDER',
-  'TRASH'
+  'TRASH',
+  'SHORTAGE_FAILED'
 ]);
 const PREPARATION_SOURCE_LABELS = {
   ai_conversation: 'محادثة تلقائية',
@@ -47,9 +48,8 @@ const PREPARATION_SHORTAGE_FOLLOW_UP_PRIORITY = {
   scheduled: 3,
   none: 4
 };
-const PREPARATION_DB_TERMINAL_STATUSES = [...PREPARATION_TERMINAL_STATUSES].filter(
-  (status) => status !== 'TRASH'
-).concat(['PENDING', 'DRAFT', 'SCHEDULED', 'TRASH_ORDER', 'EXCHANGED', 'PARTIALLY_DELIVERED']);
+const PREPARATION_DB_TERMINAL_STATUSES = [...PREPARATION_TERMINAL_STATUSES]
+  .concat(['PENDING', 'DRAFT', 'SCHEDULED', 'TRASH_ORDER', 'EXCHANGED', 'PARTIALLY_DELIVERED', 'ON_HOLD', 'LOST']);
 const PREPARATION_BATCH_SIZE = 150;
 
 const toPreparationUpper = (value) => String(value || '').trim().toUpperCase();
@@ -66,13 +66,35 @@ const PREPARATION_ONLY_STATUSES = new Set([
   'ON_HOLD_PREP'
 ]);
 
+const STANDARD_PREPARATION_STATUS_CODES = new Set([
+  'PENDING_PREPARATION',
+  'PREPARING',
+  'READY',
+  'QUALITY_CHECK',
+  'PACKAGED',
+  'PACKED',
+  'READY_TO_SHIP',
+  'STOCK_SHORTAGE',
+  'PENDING_STOCK',
+  'ON_HOLD_STOCK',
+  'ON_HOLD_PREP',
+  'PENDING_CANCELLATION',
+  'CONFIRMED',
+  'WAITING'
+]);
+
 // Maps a preparation-queue status to the "regular" order.status value that the
 // rest of the system expects (dashboards/analytics/WhatsApp/Turbo). The prep
 // stage itself is stored in metadata.preparationStatus.
-const getMappedRegularOrderStatus = (preparationStatus) => {
+const getMappedRegularOrderStatus = (preparationStatus, customStatusMap = null) => {
   if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
   if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
   if (preparationStatus === 'ON_HOLD_PREP') return 'ON_HOLD_PREP';
+  if (preparationStatus === 'BDONKODTERBO') return 'PENDING';
+  if (customStatusMap) {
+    const customConfig = customStatusMap.get?.(preparationStatus) || customStatusMap[preparationStatus];
+    if (customConfig?.mapsToSystem) return customConfig.mapsToSystem;
+  }
   return 'PROCESSING';
 };
 
@@ -422,14 +444,14 @@ const normalizePreparationStage = (status, customStatusMap = null) => {
   if (customStatusMap) {
     const customConfig = customStatusMap.get?.(normalized) || customStatusMap[normalized];
     if (customConfig) {
+      if (customConfig.mapsToSystem) {
+        const sysMapped = normalizePreparationStage(customConfig.mapsToSystem, customStatusMap);
+        if (sysMapped) return sysMapped;
+      }
       if (customConfig.statusType === 'preparation') {
         return 'WAITING';
       }
-      if (customConfig.mapsToSystem) {
-        const sysMapped = normalizePreparationStage(customConfig.mapsToSystem);
-        if (sysMapped) return sysMapped;
-      }
-      return 'WAITING';
+      return null;
     }
   }
 
@@ -1011,8 +1033,6 @@ const stripPreparationTransientFields = ({
   recommendedWarehouseName,
   shortageHoldDetails,
   problemHoldDetails,
-  normalizedStatus,
-  stage,
   hasProblem,
   createdAtMs,
   ...order
@@ -1230,7 +1250,7 @@ const loadPreparationCustomStatusContext = async (companyId) => {
         customStatusMap.set(upperCode, cfg);
 
         const stage = normalizePreparationStage(upperCode, customStatusMap);
-        if (stage) {
+        if (stage && !PREPARATION_TERMINAL_STATUSES.has(upperCode)) {
           customPrepCodes.push(upperCode);
           if (!customStageMap[stage]) customStageMap[stage] = [];
           customStageMap[stage].push(upperCode);
@@ -1704,12 +1724,19 @@ const getPreparationQueue = async ({ user, query }) => {
         return;
       }
 
+      const isCustomOrder = Boolean(
+        order.customStatusCode && !STANDARD_PREPARATION_STATUS_CODES.has(order.customStatusCode)
+      );
+
       filteredTotal += 1;
       stageCounts.ALL += 1;
       if (order.stage) {
         stageCounts[order.stage] = (stageCounts[order.stage] || 0) + 1;
       }
       statusCounts[order.normalizedStatus] = (statusCounts[order.normalizedStatus] || 0) + 1;
+      if (order.customStatusCode && order.customStatusCode !== order.normalizedStatus) {
+        statusCounts[order.customStatusCode] = (statusCounts[order.customStatusCode] || 0) + 1;
+      }
 
       if (order.isReady) {
         readyCount += 1;
@@ -1741,12 +1768,20 @@ const getPreparationQueue = async ({ user, query }) => {
         readyToShipCount += 1;
       }
 
-      if (
-        resolvedStage === 'ALL' ||
-        order.stage === resolvedStage ||
-        order.stage === activeStage ||
-        (order.normalizedStatus && order.normalizedStatus === activeStage)
-      ) {
+      const isCustomStageFilter = !STANDARD_PREPARATION_STATUS_CODES.has(activeStage) && activeStage !== 'ALL';
+
+      const matchesStage = (() => {
+        if (resolvedStage === 'ALL' || activeStage === 'ALL') return true;
+        if (isCustomStageFilter) {
+          return order.customStatusCode === activeStage || order.normalizedStatus === activeStage;
+        }
+        if (isCustomOrder) {
+          return false;
+        }
+        return order.stage === resolvedStage || order.stage === activeStage;
+      })();
+
+      if (matchesStage) {
         visibleTotal += 1;
         collectTopPreparationOrders({
           buffer: topVisibleOrders,
@@ -1951,12 +1986,23 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
 
       if (!matchesFilters) return;
 
-      if (
-        resolvedStage === 'ALL' ||
-        order.stage === resolvedStage ||
-        order.stage === activeStage ||
-        (order.normalizedStatus && order.normalizedStatus === activeStage)
-      ) {
+      const isCustomOrder = Boolean(
+        order.customStatusCode && !STANDARD_PREPARATION_STATUS_CODES.has(order.customStatusCode)
+      );
+      const isCustomStageFilter = !STANDARD_PREPARATION_STATUS_CODES.has(activeStage) && activeStage !== 'ALL';
+
+      const matchesStage = (() => {
+        if (resolvedStage === 'ALL' || activeStage === 'ALL') return true;
+        if (isCustomStageFilter) {
+          return order.customStatusCode === activeStage || order.normalizedStatus === activeStage;
+        }
+        if (isCustomOrder) {
+          return false;
+        }
+        return order.stage === resolvedStage || order.stage === activeStage;
+      })();
+
+      if (matchesStage) {
         matchingOrderNumbers.push(order.orderNumber);
       }
     });
@@ -2127,5 +2173,8 @@ module.exports = {
   assertPreparationHoldRule,
   // exported for regression tests (prep-stage-notify)
   updatePreparationOrderStatus,
-  notifyPreparationStageChange
+  notifyPreparationStageChange,
+  getEffectivePreparationStatus,
+  normalizePreparationStage,
+  getMappedRegularOrderStatus,
 };
