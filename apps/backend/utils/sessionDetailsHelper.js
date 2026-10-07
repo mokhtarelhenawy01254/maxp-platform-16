@@ -534,7 +534,9 @@ async function getCustomerOrderHistory(prisma, companyId, {
       }
     }
 
-    const completedAttempts = deliveredCount + returnedCount + cancelledCount;
+    // Calculate delivery success rate strictly from actual shipment outcomes (delivered vs returned).
+    // Pre-shipment cancellations and in-progress orders must not penalize delivery reliability.
+    const completedAttempts = deliveredCount + returnedCount;
     const deliverySuccessRate = completedAttempts > 0
       ? Math.round((deliveredCount / completedAttempts) * 100)
       : (deliveredCount > 0 ? 100 : null);

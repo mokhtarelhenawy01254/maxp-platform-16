@@ -286,13 +286,36 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
             </span>
             <CustomerRatingBadge
               rating={order.customerRating || (order as any).customer?.customerRating}
-              healthScore={(order as any).healthScore || (order as any).customer?.healthScore}
+              healthScore={(order as any).healthScore ?? (order as any).customer?.healthScore}
               healthDiagnosis={(order as any).healthDiagnosis}
               orderNumber={order.orderNumber}
               customerId={order.customerId || (order as any).customer?.id}
-              deliveryRate={(order as any).deliveryRate ?? (order as any).customer?.deliveryRate}
-              totalDelivered={(order as any).totalDelivered ?? (order as any).customer?.totalDelivered}
-              totalAttempts={(order as any).totalAttempts ?? (order as any).customer?.totalOrdersCount}
+              deliveryRate={
+                (order as any).deliveryRate ??
+                order.customerHistory?.stats?.deliverySuccessRate ??
+                (order as any).customer?.deliveryRate
+              }
+              totalDelivered={
+                (order as any).totalDelivered ??
+                order.customerHistory?.stats?.deliveredCount ??
+                (order as any).customer?.totalDelivered
+              }
+              totalFailed={
+                (order as any).totalFailed ??
+                order.customerHistory?.stats?.returnedCount
+              }
+              totalAttempts={
+                (order as any).totalAttempts ??
+                (order.customerHistory?.stats
+                  ? (order.customerHistory.stats.deliveredCount || 0) +
+                    (order.customerHistory.stats.returnedCount || 0)
+                  : undefined)
+              }
+              totalOrdersCount={
+                (order as any).totalOrdersCount ??
+                order.customerHistory?.stats?.totalOrders ??
+                (order as any).customer?.totalOrdersCount
+              }
               interactive={false}
               variant="badge"
               size="sm"

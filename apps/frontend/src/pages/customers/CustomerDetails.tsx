@@ -523,7 +523,7 @@ const CustomerDetails: React.FC = () => {
                 rating={customer.customerRating}
                 deliveryRate={customer.deliveryRate ?? stats.deliveryRate}
                 totalDelivered={customer.totalDelivered ?? stats.totalDelivered}
-                totalAttempts={customer.totalOrdersCount ?? stats.totalOrdersCount}
+                totalOrdersCount={customer.totalOrdersCount ?? stats.totalOrdersCount}
                 variant="badge"
                 size="sm"
               />

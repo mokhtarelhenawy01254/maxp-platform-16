@@ -141,10 +141,21 @@ export function computeHealthScore({
   orderStatus?: string | null;
 }): ComputedHealthScore {
   let score = 7.5;
-  let diagnosis = "عميل جديد — رصيد أولي موثوق (7.5/10)";
+  let diagnosis = "عميل جديد — لم تكتمل له شحنات سابقة بعد";
   let isNew = false;
 
-  if (healthScore !== null && healthScore !== undefined && !isNaN(Number(healthScore))) {
+  const hasCompletedAttempts = Boolean(totalAttempts && totalAttempts > 0);
+  const hasPositiveDeliveryRate = Boolean(
+    deliveryRate !== null && deliveryRate !== undefined && Number(deliveryRate) > 0
+  );
+  const hasExplicitTier = Boolean(rating && rating !== "UNKNOWN");
+  const hasNonDefaultHealthScore =
+    healthScore !== null &&
+    healthScore !== undefined &&
+    !isNaN(Number(healthScore)) &&
+    (Number(healthScore) !== 7.5 || hasCompletedAttempts || hasPositiveDeliveryRate || hasExplicitTier);
+
+  if (hasNonDefaultHealthScore) {
     score = Number(healthScore);
     if (deliveryRate !== null && deliveryRate !== undefined) {
       diagnosis = `نسبة الاستلام: ${Math.round(deliveryRate)}% — مؤشر موثوقية ${score.toFixed(1)}/10`;
@@ -152,9 +163,9 @@ export function computeHealthScore({
   } else if (isDuplicate) {
     score = 3.3;
     diagnosis = "تحذير: طلب مكرر لنفس العميل — نسبة مخاطرة مرتفعة";
-  } else if (totalAttempts && totalAttempts > 0) {
+  } else if (hasCompletedAttempts) {
     const delivered = totalDelivered ?? 0;
-    const attempts = totalAttempts;
+    const attempts = totalAttempts!;
     const returned = totalFailed ?? Math.max(0, attempts - delivered);
     const rate = delivered / attempts;
 
@@ -169,10 +180,6 @@ export function computeHealthScore({
       s = base - penalty;
     }
 
-    if (totalCancelled && totalCancelled > 0) {
-      s -= Math.min(totalCancelled * 0.3, 1.0);
-    }
-
     score = Math.min(9.9, Math.max(1.0, Math.round(s * 10) / 10));
     const pct = Math.round(rate * 100);
     if (score >= 8.0) {
@@ -184,31 +191,29 @@ export function computeHealthScore({
     } else {
       diagnosis = `تحذير: مخاطرة مرتفعة (${pct}%) — ${returned} مرتجع سابق`;
     }
-  } else if (deliveryRate !== null && deliveryRate !== undefined && deliveryRate > 0) {
-    if (deliveryRate >= 90) score = 9.2;
-    else if (deliveryRate >= 80) score = 8.5;
-    else if (deliveryRate >= 70) score = 7.7;
-    else if (deliveryRate >= 60) score = 6.4;
-    else if (deliveryRate >= 50) score = 5.2;
+  } else if (hasPositiveDeliveryRate) {
+    const rateVal = Number(deliveryRate);
+    if (rateVal >= 90) score = 9.2;
+    else if (rateVal >= 80) score = 8.5;
+    else if (rateVal >= 70) score = 7.7;
+    else if (rateVal >= 60) score = 6.4;
+    else if (rateVal >= 50) score = 5.2;
     else score = 3.5;
-    diagnosis = `نسبة الاستلام: ${Math.round(deliveryRate)}%`;
-  } else if (rating && rating !== "UNKNOWN") {
+    diagnosis = `نسبة الاستلام: ${Math.round(rateVal)}%`;
+  } else if (hasExplicitTier) {
     if (rating === "EXCELLENT") {
       score = 9.2;
-      diagnosis = "عميل ممتاز مصنف يدوياً";
+      diagnosis = "عميل ممتاز";
     } else if (rating === "GOOD") {
       score = 8.2;
-      diagnosis = "عميل جيد مصنف يدوياً";
+      diagnosis = "عميل جيد";
     } else if (rating === "AVERAGE") {
       score = 6.4;
-      diagnosis = "عميل متوسط مصنف يدوياً";
+      diagnosis = "عميل متوسط";
     } else if (rating === "POOR") {
       score = 3.3;
-      diagnosis = "عميل ضعيف / مخاطرة مصنف يدوياً";
+      diagnosis = "عميل ضعيف / مخاطرة";
     }
-  } else if (orderStatus === "CANCELLED") {
-    score = 4.7;
-    diagnosis = "تم إلغاء هذا الطلب";
   } else if (orderStatus === "RETURNED") {
     score = 2.3;
     diagnosis = "طلب مرتجع — مخاطرة عدم استلام";
@@ -218,7 +223,7 @@ export function computeHealthScore({
   } else {
     isNew = true;
     score = 7.5;
-    diagnosis = "عميل جديد — رصيد أولي موثوق (7.5/10)";
+    diagnosis = "عميل جديد — لم تكتمل له شحنات سابقة بعد";
   }
 
   score = Math.min(9.9, Math.max(1.0, Math.round(score * 10) / 10));
@@ -231,7 +236,14 @@ export function computeHealthScore({
   let iconClass = "text-amber-600 dark:text-amber-400";
   let barColor = "bg-amber-500";
 
-  if (score >= 8.0) {
+  if (isNew) {
+    tier = "medium";
+    tierLabel = "عميل جديد • لم تكتمل له شحنات بعد";
+    badgeClass =
+      "bg-slate-100 text-slate-600 border-slate-200/80 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700/60";
+    iconClass = "text-slate-500 dark:text-slate-400";
+    barColor = "bg-slate-400";
+  } else if (score >= 8.0) {
     tier = "high";
     tierLabel = "عميل موثوق • عالي الجودة";
     badgeClass =
@@ -340,8 +352,33 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
     };
   }, [isMenuOpen]);
 
+  const healthInfo = computeHealthScore({
+    healthScore,
+    deliveryRate,
+    totalDelivered,
+    totalAttempts,
+    totalFailed,
+    totalCancelled,
+    rating: currentRating,
+    isDuplicate,
+    orderStatus,
+  });
+
+  const effectiveRatingLevel: CustomerRatingLevel =
+    currentRating !== "UNKNOWN"
+      ? currentRating
+      : !healthInfo.isNew
+      ? healthInfo.score >= 8.0
+        ? "EXCELLENT"
+        : healthInfo.score >= 7.0
+        ? "GOOD"
+        : healthInfo.score >= 5.0
+        ? "AVERAGE"
+        : "POOR"
+      : "UNKNOWN";
+
   const currentOption =
-    CUSTOMER_RATING_OPTIONS.find((opt) => opt.value === currentRating) ||
+    CUSTOMER_RATING_OPTIONS.find((opt) => opt.value === effectiveRatingLevel) ||
     CUSTOMER_RATING_OPTIONS[4];
 
   const hasDeliveryStats =
@@ -355,18 +392,6 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
     hasDeliveryStats && deliveryRate !== null
       ? `${Math.round(deliveryRate)}%`
       : null;
-
-  const healthInfo = computeHealthScore({
-    healthScore,
-    deliveryRate,
-    totalDelivered,
-    totalAttempts,
-    totalFailed,
-    totalCancelled,
-    rating: currentRating,
-    isDuplicate,
-    orderStatus,
-  });
 
   const tooltipText = `تقييم العميل: ${currentOption.label}${
     displayPercent ? ` (نسبة الاستلام: ${displayPercent})` : ""
@@ -471,9 +496,11 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
             </span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-md border tabular-nums ${healthInfo.badgeClass}`}>
-              {healthInfo.formattedScore} / 10
-            </span>
+            {!healthInfo.isNew && (
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-md border tabular-nums ${healthInfo.badgeClass}`}>
+                {healthInfo.formattedScore} / 10
+              </span>
+            )}
             <span className={`text-xs font-semibold px-2 py-0.5 rounded-md border ${currentOption.badgeClass}`}>
               {currentOption.label}
             </span>
@@ -484,9 +511,9 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
           <div className="flex items-center justify-between text-xs font-medium">
             <span className="text-slate-500 dark:text-slate-400">نسبة نجاح الاستلام:</span>
             <span className="font-bold tabular-nums text-slate-900 dark:text-slate-100">
-              {deliveryRate !== null && deliveryRate !== undefined
+              {deliveryRate !== null && deliveryRate !== undefined && !healthInfo.isNew
                 ? `${Math.round(deliveryRate)}%`
-                : "0% (عميل جديد)"}
+                : "عميل جديد (لم يستلم بعد)"}
             </span>
           </div>
 
@@ -552,13 +579,23 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
     return (
       <span
         className={`inline-flex items-center font-semibold rounded-md border select-none transition-colors duration-150 cursor-default ${sizeClasses} ${healthInfo.badgeClass} ${className}`}
-        title={`مؤشر صحة العميل الآلي: ${currentOption.label} — ${healthInfo.formattedScore}/10 — ${healthInfo.diagnosis}`}
-        aria-label={`تقييم العميل الآلي: ${currentOption.label} (${healthInfo.formattedScore})`}
+        title={
+          healthInfo.isNew
+            ? `تقييم العميل: ${currentOption.label} — ${healthInfo.diagnosis}`
+            : `مؤشر صحة العميل الآلي: ${currentOption.label} — ${healthInfo.formattedScore}/10 — ${healthInfo.diagnosis}`
+        }
+        aria-label={
+          healthInfo.isNew
+            ? `تقييم العميل الآلي: ${currentOption.label}`
+            : `تقييم العميل الآلي: ${currentOption.label} (${healthInfo.formattedScore})`
+        }
       >
         <span>{currentOption.shortLabel}</span>
-        <span className="tabular-nums font-mono text-[10px] opacity-75">
-          {healthInfo.formattedScore}
-        </span>
+        {!healthInfo.isNew && (
+          <span className="tabular-nums font-mono text-[10px] opacity-75">
+            {healthInfo.formattedScore}
+          </span>
+        )}
       </span>
     );
   }
@@ -577,14 +614,24 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
         }}
         disabled={isUpdating || isRecalculating}
         className={`group inline-flex items-center font-semibold rounded-md border select-none transition-all duration-150 active:scale-97 cursor-pointer hover:shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 ${sizeClasses} ${healthInfo.badgeClass}`}
-        title={`مؤشر صحة العميل الآلي: ${currentOption.label} — ${healthInfo.formattedScore}/10 — ${healthInfo.diagnosis} (انقر لعرض التحليل)`}
-        aria-label={`تقييم العميل الآلي: ${currentOption.label} (${healthInfo.formattedScore})`}
+        title={
+          healthInfo.isNew
+            ? `تقييم العميل: ${currentOption.label} — ${healthInfo.diagnosis} (انقر لعرض التحليل)`
+            : `مؤشر صحة العميل الآلي: ${currentOption.label} — ${healthInfo.formattedScore}/10 — ${healthInfo.diagnosis} (انقر لعرض التحليل)`
+        }
+        aria-label={
+          healthInfo.isNew
+            ? `تقييم العميل الآلي: ${currentOption.label}`
+            : `تقييم العميل الآلي: ${currentOption.label} (${healthInfo.formattedScore})`
+        }
         aria-expanded={isMenuOpen}
       >
         <span>{currentOption.shortLabel}</span>
-        <span className="tabular-nums font-mono text-[10px] opacity-75">
-          {healthInfo.formattedScore}
-        </span>
+        {!healthInfo.isNew && (
+          <span className="tabular-nums font-mono text-[10px] opacity-75">
+            {healthInfo.formattedScore}
+          </span>
+        )}
         <InfoOutlineIcon
           className={`${iconSizes} shrink-0 opacity-80 group-hover:opacity-100 transition-opacity ${healthInfo.iconClass}`}
         />

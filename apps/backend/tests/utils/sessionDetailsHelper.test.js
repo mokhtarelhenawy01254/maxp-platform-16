@@ -124,4 +124,27 @@ describe('utils/ipGeoLookup & sessionDetailsHelper', () => {
     assert.strictEqual(result.firstOrderNumber, '1000');
     assert.strictEqual(result.totalOrdersCount, 2);
   });
+
+  test('getCustomerOrderHistory excludes pre-shipment cancellations and in-progress orders from deliverySuccessRate', async () => {
+    const { getCustomerOrderHistory } = require('../../utils/sessionDetailsHelper');
+    const mockPrisma = {
+      order: {
+        findMany: async () => [
+          { id: '1', orderNumber: '101013', createdAt: new Date('2026-02-27'), status: 'DELIVERED', total: 559, orderItems: [] },
+          { id: '2', orderNumber: 'ORD-668182-219', createdAt: new Date('2026-10-07'), status: 'CANCELLED', total: 540, orderItems: [] },
+        ],
+      },
+      guestOrder: { findMany: async () => [] },
+    };
+
+    const history = await getCustomerOrderHistory(mockPrisma, 'comp-1', {
+      phone: '01000777356',
+      currentOrderNumber: 'ORD-668182-219',
+    });
+
+    assert.strictEqual(history.stats.deliveredCount, 1);
+    assert.strictEqual(history.stats.cancelledCount, 1);
+    assert.strictEqual(history.stats.returnedCount, 0);
+    assert.strictEqual(history.stats.deliverySuccessRate, 100);
+  });
 });

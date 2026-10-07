@@ -340,7 +340,8 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                                 customerId={order.customerId || order.customer?.id}
                                 deliveryRate={(order as any).deliveryRate ?? order.customer?.deliveryRate}
                                 totalDelivered={(order as any).totalDelivered ?? order.customer?.totalDelivered}
-                                totalAttempts={(order as any).totalAttempts ?? (order as any).totalOrdersCount ?? order.customer?.totalOrdersCount}
+                                totalAttempts={(order as any).totalAttempts}
+                                totalOrdersCount={(order as any).totalOrdersCount ?? order.customer?.totalOrdersCount}
                                 totalFailed={(order as any).totalFailed}
                                 totalCancelled={(order as any).totalCancelled}
                                 isDuplicate={order.status === "DUPLICATE_ORDER" || Boolean(order.metadata?.duplicate)}
@@ -372,7 +373,8 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                           customerId={order.customerId || order.customer?.id}
                           deliveryRate={(order as any).deliveryRate ?? order.customer?.deliveryRate}
                           totalDelivered={(order as any).totalDelivered ?? order.customer?.totalDelivered}
-                          totalAttempts={(order as any).totalAttempts ?? (order as any).totalOrdersCount ?? order.customer?.totalOrdersCount}
+                          totalAttempts={(order as any).totalAttempts}
+                          totalOrdersCount={(order as any).totalOrdersCount ?? order.customer?.totalOrdersCount}
                           totalFailed={(order as any).totalFailed}
                           totalCancelled={(order as any).totalCancelled}
                           isDuplicate={order.status === "DUPLICATE_ORDER" || Boolean(order.metadata?.duplicate)}
