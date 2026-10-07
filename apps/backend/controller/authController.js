@@ -142,7 +142,9 @@ const register = async (req, res) => {
       promoCode,
       businessSpecialtyId,
       businessSpecialtySlug,
-      specialtySlug
+      specialtySlug,
+      landingBundle,
+      utm: bodyUtm
     } = req.body;
     const trimmedCompanyName = String(companyName || '').trim() || 'حساب جديد';
     const normalizedEmail = normalizeEmail(email);
@@ -308,7 +310,7 @@ const register = async (req, res) => {
 
     // Integrated landing («باقة متجر الملابس»): auto-install the free tier
     // (store + order workflow) for signups coming from that landing page.
-    const landingBundle = String(req.body?.landingBundle || '').trim();
+    // (landingBundle also arrives in the outer destructure from req.body.)
     if (landingBundle === 'clothing-store-bundle') {
       try {
         const { initializeDefaultApps } = require('../utils/initializeCompanyDefaults');
@@ -325,7 +327,9 @@ const register = async (req, res) => {
     // Landing attribution: persist utm_* + landing source captured by the
     // server-level utm middleware (maxp_utm cookie) into an AUTH activity log.
     try {
-      const landingUtm = req.utm || null;
+      const landingUtm = (bodyUtm && typeof bodyUtm === 'object' && Object.keys(bodyUtm).length > 0)
+        ? bodyUtm
+        : (req.utm || null);
       await prisma.activityLog.create({
         data: {
           userId: user.id,
