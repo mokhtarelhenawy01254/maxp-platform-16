@@ -273,7 +273,7 @@ async function riskReport(prisma, companyId, days = 30) {
   const since = new Date(Date.now() - Number(days || 30) * 86400000);
   const rows = await prisma.$queryRawUnsafe(
     `SELECT s.level, COUNT(*)::int AS orders, COALESCE(SUM(o.total),0)::float AS total_value
-     FROM "order_risk_scores" s JOIN "orders" o ON o.id = s."order_id"
+     FROM "order_risk_scores" s JOIN "orders" o ON o.id = s."orderId"
      WHERE s."companyId" = $1 AND s."createdAt" >= $2
      GROUP BY s.level`,
     companyId, since
