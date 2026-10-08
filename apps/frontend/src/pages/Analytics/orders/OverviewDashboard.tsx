@@ -85,7 +85,7 @@ const OverviewDashboard: React.FC = () => {
     }
 
     return createStorageKey(
-      "orders-overview-dashboard-v2",
+      "orders-overview-dashboard-v3",
       `${companyId}:${range?.period || ""}:${range?.startDate || ""}:${range?.endDate || ""}`,
     );
   }, [range, user?.company?.id, user?.companyId]);
@@ -116,12 +116,16 @@ const OverviewDashboard: React.FC = () => {
               range?.endDate,
               signal,
             ),
-            analyticsService.getCODPerformanceAnalytics(
-              range?.period,
-              range?.startDate,
-              range?.endDate,
-            ),
-            analyticsService.getTodayOps(),
+            typeof analyticsService.getCODPerformanceAnalytics === "function"
+              ? analyticsService.getCODPerformanceAnalytics(
+                  range?.period,
+                  range?.startDate,
+                  range?.endDate,
+                )
+              : Promise.resolve(null),
+            typeof analyticsService.getTodayOps === "function"
+              ? analyticsService.getTodayOps()
+              : Promise.resolve(null),
           ]);
 
         const storeVal = storeResult.status === "fulfilled" ? (storeResult.value as any) : null;
@@ -131,7 +135,13 @@ const OverviewDashboard: React.FC = () => {
 
         if (storeVal?.success) {
           const storeStats = storeVal.data || {};
-          const dailyTrend = dailyVal?.success ? dailyVal.data || [] : [];
+          const rawDailyTrend = dailyVal?.success && Array.isArray(dailyVal.data) ? dailyVal.data : [];
+          const dailyTrend = rawDailyTrend.map((item: any) => ({
+            ...item,
+            date: item?.date ? String(item.date) : "",
+            orders: Number(item?.orders ?? item?.totalPurchases ?? 0),
+            revenue: Number(item?.revenue ?? item?.totalRevenue ?? 0),
+          }));
           const codStats = codVal?.success ? codVal.data || {} : {};
           const todayOps = todayOpsVal?.success ? todayOpsVal.data || {} : {};
 

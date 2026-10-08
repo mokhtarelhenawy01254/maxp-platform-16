@@ -11,8 +11,10 @@ import ResponsiveContainer from "../../../../components/ui/DeferredResponsiveCon
 
 interface DailyTrendItem {
   date: string;
-  orders: number;
-  revenue: number;
+  orders?: number;
+  revenue?: number;
+  totalPurchases?: number;
+  totalRevenue?: number;
 }
 
 interface OverviewDualTrendChartProps {
@@ -20,15 +22,50 @@ interface OverviewDualTrendChartProps {
   formatPrice: (val: number) => string;
 }
 
+const formatShortDate = (rawDate?: string): string => {
+  if (!rawDate) return "";
+  const trimmed = String(rawDate).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed.slice(5);
+  }
+  const parsed = new Date(trimmed);
+  if (!Number.isNaN(parsed.getTime())) {
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const day = String(parsed.getDate()).padStart(2, "0");
+    return `${month}-${day}`;
+  }
+  const datePart = trimmed.split("T")[0] || trimmed;
+  return datePart.length >= 10 ? datePart.slice(5, 10) : datePart;
+};
+
+const formatFullDate = (rawDate?: string): string => {
+  if (!rawDate) return "";
+  const trimmed = String(rawDate).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+  const parsed = new Date(trimmed);
+  if (!Number.isNaN(parsed.getTime())) {
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const day = String(parsed.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+  return trimmed.split("T")[0] || trimmed;
+};
+
 export const OverviewDualTrendChart: React.FC<OverviewDualTrendChartProps> = ({
   data,
   formatPrice,
 }) => {
   const [metricMode, setMetricMode] = useState<"orders" | "revenue">("orders");
 
-  const formattedData = data.map((d) => ({
+  const formattedData = (Array.isArray(data) ? data : []).map((d) => ({
     ...d,
-    shortDate: d.date ? d.date.slice(5) : "",
+    orders: Number(d.orders ?? d.totalPurchases ?? 0),
+    revenue: Number(d.revenue ?? d.totalRevenue ?? 0),
+    shortDate: formatShortDate(d.date),
+    fullDate: formatFullDate(d.date),
   }));
 
   return (
@@ -98,16 +135,22 @@ export const OverviewDualTrendChart: React.FC<OverviewDualTrendChartProps> = ({
                 stroke="currentColor"
                 className="stroke-gray-400 dark:stroke-gray-500 text-[11px]"
                 tickLine={false}
+                minTickGap={20}
               />
               <YAxis
                 stroke="currentColor"
                 className="stroke-gray-400 dark:stroke-gray-500 text-[11px]"
                 tickLine={false}
-                tickFormatter={(val) =>
-                  metricMode === "revenue"
-                    ? `${(val / 1000).toFixed(0)}k`
-                    : String(val)
-                }
+                allowDecimals={metricMode === "revenue"}
+                tickFormatter={(val) => {
+                  const num = Number(val) || 0;
+                  if (metricMode === "revenue") {
+                    return num >= 1000
+                      ? `${(num / 1000).toFixed(num % 1000 === 0 ? 0 : 1)}k`
+                      : String(Math.round(num));
+                  }
+                  return String(Math.round(num));
+                }}
               />
               <Tooltip
                 contentStyle={{
@@ -120,9 +163,12 @@ export const OverviewDualTrendChart: React.FC<OverviewDualTrendChartProps> = ({
                 formatter={(val: any) =>
                   metricMode === "revenue"
                     ? [formatPrice(Number(val) || 0), "الإيراد"]
-                    : [`${val} طلب`, "الطلبات"]
+                    : [`${Number(val) || 0} طلب`, "الطلبات"]
                 }
-                labelFormatter={(label) => `التاريخ: ${label}`}
+                labelFormatter={(label, payload) => {
+                  const full = payload?.[0]?.payload?.fullDate;
+                  return `التاريخ: ${full || label}`;
+                }}
               />
               {metricMode === "orders" ? (
                 <Area

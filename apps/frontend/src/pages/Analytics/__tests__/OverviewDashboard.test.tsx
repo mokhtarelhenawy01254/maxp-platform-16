@@ -11,15 +11,39 @@ jest.mock("../../../utils/storage", () => ({
   setWithExpiry: () => {},
 }));
 
+jest.mock("../../../components/ui/DeferredResponsiveContainer", () => ({
+  __esModule: true,
+  default: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="deferred-responsive-container">{children}</div>
+  ),
+}));
+
 jest.mock("recharts", () => {
   const MockResponsiveContainer = ({ children }: { children: React.ReactNode }) => (
     <div data-testid="recharts-container">{children}</div>
   );
   return {
     ResponsiveContainer: MockResponsiveContainer,
-    AreaChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    Area: () => null,
-    XAxis: () => null,
+    AreaChart: ({
+      children,
+      data,
+    }: {
+      children: React.ReactNode;
+      data?: Array<Record<string, unknown>>;
+    }) => (
+      <div
+        data-testid="area-chart"
+        data-chart-items={JSON.stringify(data || [])}
+      >
+        {children}
+      </div>
+    ),
+    Area: ({ dataKey }: { dataKey?: string }) => (
+      <div data-testid={`area-series-${dataKey || "unknown"}`} />
+    ),
+    XAxis: ({ dataKey }: { dataKey?: string }) => (
+      <div data-testid={`xaxis-${dataKey || "unknown"}`} />
+    ),
     YAxis: () => null,
     CartesianGrid: () => null,
     Tooltip: () => null,
@@ -34,6 +58,8 @@ jest.mock("../../../services/analyticsService", () => ({
   default: {
     getStoreAnalytics: jest.fn(),
     getDailyAnalytics: jest.fn(),
+    getCODPerformanceAnalytics: jest.fn(),
+    getTodayOps: jest.fn(),
   },
 }));
 
@@ -73,40 +99,49 @@ describe("OverviewDashboard Component", () => {
         conversionRate: 3.2,
         multiPieceOrders: 227,
         multiPiecePercentage: 10.6,
+        totalPieces: 610,
       },
     } as any);
 
     mockedAnalyticsService.getDailyAnalytics.mockResolvedValue({
       success: true,
       data: [
-        { date: "2026-09-01", orders: 50, revenue: 12000 },
+        {
+          date: "2026-09-17T21:00:00.000Z",
+          totalPurchases: 50,
+          totalRevenue: 12000,
+        },
       ],
+    } as any);
+
+    mockedAnalyticsService.getCODPerformanceAnalytics.mockResolvedValue({
+      success: true,
+      data: {},
+    } as any);
+
+    mockedAnalyticsService.getTodayOps.mockResolvedValue({
+      success: true,
+      data: {},
     } as any);
   });
 
-  it("renders multi-piece orders card with count, percentage, and explanatory copy", async () => {
+  it("renders multi-piece orders card with count and percentage", async () => {
     render(
       <MemoryRouter>
         <OverviewDashboard />
       </MemoryRouter>
     );
 
-    // Wait for data load
     await waitFor(() => {
-      expect(screen.getByText("الطلبات اللي فيها أكتر من قطعة")).toBeInTheDocument();
+      expect(screen.getByText("الطلبات متعددة القطع")).toBeInTheDocument();
     });
 
-    // Verify multi-piece order count and percentage badge
-    expect(screen.getByText("227 طلب")).toBeInTheDocument();
-    expect(screen.getByText("10.6% من الطلبات")).toBeInTheDocument();
-
-    // Verify explanatory micro-copy
-    expect(
-      screen.getByText("الطلبات التي تحتوي على قطعتين أو أكثر ونسبتها من إجمالي الطلبات")
-    ).toBeInTheDocument();
+    expect(screen.getByText("227")).toBeInTheDocument();
+    expect(screen.getByText("10.6%")).toBeInTheDocument();
+    expect(screen.getByText("610 قطعة مباعة")).toBeInTheDocument();
   });
 
-  it("renders average order value card (orange) directly next to total revenue", async () => {
+  it("renders average order value card next to total revenue", async () => {
     render(
       <MemoryRouter>
         <OverviewDashboard />
@@ -117,21 +152,34 @@ describe("OverviewDashboard Component", () => {
       expect(screen.getByText("متوسط قيمة الطلب")).toBeInTheDocument();
     });
 
-    // Verify AOV value and explanation
     expect(screen.getByText("252.57 ج.م")).toBeInTheDocument();
-    expect(
-      screen.getByText("متوسط قيمة الشراء للطلب الواحد خلال هذه الفترة")
-    ).toBeInTheDocument();
-
-    // Verify total revenue card and explanation
+    expect(screen.getByText("معدل سلة الشراء (AOV)")).toBeInTheDocument();
     expect(screen.getByText("إجمالي الإيرادات")).toBeInTheDocument();
     expect(screen.getByText("540000 ج.م")).toBeInTheDocument();
-    expect(
-      screen.getByText("مجموع قيمة المبيعات للطلبات المؤكدة والناجحة خلال الفترة")
-    ).toBeInTheDocument();
   });
 
-  it("provides an export button for orders report with piece counts", async () => {
+  it("maps backend totalPurchases/totalRevenue to orders/revenue and formats ISO dates cleanly in OverviewDualTrendChart", async () => {
+    render(
+      <MemoryRouter>
+        <OverviewDashboard />
+      </MemoryRouter>
+    );
+
+    const chart = await screen.findByTestId("area-chart");
+    const parsedItems = JSON.parse(chart.getAttribute("data-chart-items") || "[]");
+
+    expect(parsedItems).toHaveLength(1);
+    expect(parsedItems[0].orders).toBe(50);
+    expect(parsedItems[0].revenue).toBe(12000);
+    expect(parsedItems[0].shortDate).toMatch(/^\d{2}-\d{2}$/);
+    expect(parsedItems[0].shortDate).not.toContain("T");
+
+    expect(screen.getByTestId("area-series-orders")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "الإيرادات المالية" }));
+    expect(screen.getByTestId("area-series-revenue")).toBeInTheDocument();
+  });
+
+  it("provides an export button for orders report", async () => {
     (apiClient.get as jest.Mock).mockResolvedValue({
       data: new ArrayBuffer(8),
     });
@@ -142,7 +190,7 @@ describe("OverviewDashboard Component", () => {
       </MemoryRouter>
     );
 
-    const exportBtn = await screen.findByRole("button", { name: /تصدير الطلبات/i });
+    const exportBtn = await screen.findByRole("button", { name: /تصدير \(Excel\)/i });
     expect(exportBtn).toBeInTheDocument();
 
     fireEvent.click(exportBtn);
