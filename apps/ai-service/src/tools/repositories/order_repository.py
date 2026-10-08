@@ -589,7 +589,35 @@ class OrderRepository(BaseRepository):
 
         merged = regular + guest
         merged.sort(key=lambda o: o.get("confirmedAt") or o.get("date") or "", reverse=True)
+
+        total_matching = len(merged)
+        try:
+            cnt_row = await self._session.execute(text(f"SELECT COUNT(*)::int AS cnt FROM orders o WHERE {where_orders}"), params)
+            first_c = cnt_row.first()
+            if first_c and first_c.cnt is not None:
+                total_matching = int(first_c.cnt)
+        except Exception:
+            pass
+
+        self.last_total_matching = total_matching
         return merged[:limit]
+
+    async def get_recent_orders_with_count(
+        self,
+        company_id: str,
+        limit: int = 25,
+        status: str | None = None,
+        period: str | None = None,
+        date: str | None = None,
+    ) -> tuple[list[dict[str, Any]], int]:
+        orders = await self.get_recent_orders(
+            company_id=company_id,
+            limit=limit,
+            status=status,
+            period=period,
+            date=date,
+        )
+        return orders, getattr(self, "last_total_matching", len(orders))
 
     async def cancel_order(self, company_id: str, order_number: str) -> dict[str, Any]:
         row = await self._session.execute(text("""

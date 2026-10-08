@@ -167,3 +167,286 @@ class ShippingRepository(BaseRepository):
             "isUpdated": is_updated,
         }
 
+    async def list_shipping_companies(self, company_id: str) -> list[dict[str, Any]]:
+        import json
+        rows = await self._session.execute(text("""
+            SELECT id, name, slug, phone, email, website,
+                   "providerKey", "integrationMode", settings, "isActive",
+                   CASE WHEN "apiKey" IS NOT NULL AND "apiKey" != '' THEN TRUE ELSE FALSE END AS "hasApiKey",
+                   "apiUrl"
+            FROM shipping_companies
+            WHERE "companyId" = :cid
+            ORDER BY "isActive" DESC, "createdAt" ASC
+        """), {"cid": company_id})
+
+        result = []
+        for r in rows:
+            m = dict(r._mapping)
+            has_creds = bool(m.get("hasApiKey"))
+            settings_str = m.get("settings")
+            parsed_settings = {}
+            if settings_str:
+                try:
+                    parsed_settings = json.loads(settings_str) if isinstance(settings_str, str) else settings_str
+                except Exception:
+                    pass
+            if parsed_settings.get("username") or parsed_settings.get("apiKey") or parsed_settings.get("mainClientCode"):
+                has_creds = True
+
+            result.append({
+                "id": m["id"],
+                "name": m["name"],
+                "slug": m.get("slug") or "",
+                "providerKey": m.get("providerKey") or "MANUAL",
+                "integrationMode": m.get("integrationMode") or "MANUAL",
+                "isActive": bool(m.get("isActive")),
+                "hasCredentials": has_creds,
+                "phone": m.get("phone") or "",
+                "website": m.get("website") or "",
+                "autoCreateShipments": bool(parsed_settings.get("autoCreateShipments", False)),
+                "mainClientCode": parsed_settings.get("mainClientCode") or parsed_settings.get("clientCode"),
+            })
+        return result
+
+    async def connect_shipping_company(
+        self,
+        company_id: str,
+        carrier: str,
+        api_key: str | None = None,
+        username: str | None = None,
+        password: str | None = None,
+        main_client_code: str | int | None = None,
+        sender_number: str | None = None,
+        auto_create_shipments: bool = False,
+        phone: str | None = None,
+        website: str | None = None,
+        notes: str | None = None,
+        is_active: bool = True,
+        name: str | None = None,
+    ) -> dict[str, Any]:
+        import json
+        import re
+        import uuid
+
+        raw_carrier = (carrier or "").strip().lower()
+        carrier_name = (name or "").strip()
+        provider_key = "MANUAL"
+        clean_slug = re.sub(r"[^a-z0-9\-]", "-", raw_carrier).strip("-") or "custom-carrier"
+        slug = clean_slug
+        integration_mode = "LIVE"
+        api_url: str | None = None
+        settings_dict: dict[str, Any] = {}
+
+        if "bosta" in raw_carrier or "بوستا" in raw_carrier:
+            provider_key = "BOSTA"
+            slug = "bosta"
+            if not carrier_name:
+                carrier_name = "بوستا (Bosta)"
+            if not website:
+                website = "https://bosta.co"
+            if not phone:
+                phone = "19000"
+            integration_mode = "LIVE"
+
+        elif "turbo" in raw_carrier or "تربو" in raw_carrier:
+            provider_key = "TURBO"
+            slug = "turbo"
+            if not carrier_name:
+                carrier_name = "Turbo"
+            if not website:
+                website = "https://turbo-eg.com"
+            if not phone:
+                phone = "19685"
+            integration_mode = "LIVE"
+            settings_dict["autoCreateShipments"] = bool(auto_create_shipments)
+            if main_client_code is not None:
+                settings_dict["mainClientCode"] = main_client_code
+            if sender_number:
+                settings_dict["senderNumber"] = str(sender_number)
+            if notes:
+                settings_dict["defaultNotes"] = notes
+
+        elif "qp" in raw_carrier or "كيو بي" in raw_carrier or "qpxpress" in raw_carrier:
+            provider_key = "QP_EXPRESS"
+            slug = "qp-express"
+            if not carrier_name:
+                carrier_name = "كيو بي إكسبريس (QP Express)"
+            if not website:
+                website = "https://qpxpress.com"
+            if not phone:
+                phone = "19252"
+            api_url = "https://qpxpress.com:8001"
+            integration_mode = "LIVE"
+            if username:
+                settings_dict["username"] = username.strip()
+            if password:
+                settings_dict["password"] = password.strip()
+        else:
+            if not carrier_name:
+                carrier_name = carrier.strip()
+            integration_mode = "MANUAL"
+
+        settings_json = json.dumps(settings_dict, ensure_ascii=False) if settings_dict else None
+
+        check_row = await self._session.execute(text("""
+            SELECT id FROM shipping_companies
+            WHERE "companyId" = :cid AND (slug = :slug OR ("providerKey" = :pkey AND :pkey != 'MANUAL'))
+            LIMIT 1
+        """), {"cid": company_id, "slug": slug, "pkey": provider_key})
+        existing = check_row.first()
+
+        if existing:
+            carrier_id = existing.id
+            update_clauses = [
+                'name = :name',
+                '"providerKey" = :pkey',
+                '"integrationMode" = :mode',
+                '"isActive" = :active',
+                '"updatedAt" = NOW()',
+            ]
+            params: dict[str, Any] = {
+                "cid": company_id,
+                "id": carrier_id,
+                "name": carrier_name,
+                "pkey": provider_key,
+                "mode": integration_mode,
+                "active": is_active,
+            }
+            if api_key is not None:
+                update_clauses.append('"apiKey" = :apikey')
+                params["apikey"] = api_key.strip()
+            if api_url:
+                update_clauses.append('"apiUrl" = :apiurl')
+                params["apiurl"] = api_url
+            if settings_json:
+                update_clauses.append('settings = :settings')
+                params["settings"] = settings_json
+            if phone:
+                update_clauses.append('phone = :phone')
+                params["phone"] = phone
+            if website:
+                update_clauses.append('website = :website')
+                params["website"] = website
+
+            await self._session.execute(text(f"""
+                UPDATE shipping_companies
+                SET {', '.join(update_clauses)}
+                WHERE id = :id AND "companyId" = :cid
+            """), params)
+        else:
+            carrier_id = f"c{uuid.uuid4().hex[:24]}"
+            await self._session.execute(text("""
+                INSERT INTO shipping_companies (
+                    id, name, slug, phone, website, "apiKey", "apiUrl",
+                    "providerKey", "integrationMode", settings, "isActive",
+                    "companyId", "createdAt", "updatedAt"
+                ) VALUES (
+                    :id, :name, :slug, :phone, :website, :apikey, :apiurl,
+                    :pkey, :mode, :settings, :active,
+                    :cid, NOW(), NOW()
+                )
+            """), {
+                "id": carrier_id,
+                "name": carrier_name,
+                "slug": slug,
+                "phone": phone,
+                "website": website,
+                "apikey": api_key.strip() if api_key else None,
+                "apiurl": api_url,
+                "pkey": provider_key,
+                "mode": integration_mode,
+                "settings": settings_json,
+                "active": is_active,
+                "cid": company_id,
+            })
+
+        if provider_key == "BOSTA":
+            if api_key:
+                await self._session.execute(text("""
+                    UPDATE companies
+                    SET "bostaApiKey" = :k, "bostaEnabled" = :en, "updatedAt" = NOW()
+                    WHERE id = :cid
+                """), {"cid": company_id, "k": api_key.strip(), "en": is_active})
+            else:
+                await self._session.execute(text("""
+                    UPDATE companies
+                    SET "bostaEnabled" = :en, "updatedAt" = NOW()
+                    WHERE id = :cid
+                """), {"cid": company_id, "en": is_active})
+
+        elif provider_key == "TURBO":
+            turbo_clauses = ['"turboEnabled" = :en', '"updatedAt" = NOW()']
+            t_params: dict[str, Any] = {"cid": company_id, "en": is_active}
+            if api_key:
+                turbo_clauses.append('"turboApiKey" = :k')
+                t_params["k"] = api_key.strip()
+            if main_client_code is not None:
+                try:
+                    c_code = int(str(main_client_code).strip())
+                    turbo_clauses.append('"turboMainClientCode" = :ccode')
+                    t_params["ccode"] = c_code
+                except Exception:
+                    pass
+            if sender_number:
+                turbo_clauses.append('"turboSenderNumber" = :snum')
+                t_params["snum"] = str(sender_number).strip()
+            turbo_clauses.append('"turboAutoCreate" = :autoc')
+            t_params["autoc"] = bool(auto_create_shipments)
+
+            await self._session.execute(text(f"""
+                UPDATE companies
+                SET {', '.join(turbo_clauses)}
+                WHERE id = :cid
+            """), t_params)
+
+        await self._session.commit()
+
+        return {
+            "id": carrier_id,
+            "carrier": carrier_name,
+            "slug": slug,
+            "providerKey": provider_key,
+            "isActive": is_active,
+            "hasApiKey": bool(api_key),
+            "phone": phone or "",
+            "message": f"تم ربط وتفعيل شركة الشحن «{carrier_name}» بنجاح في المنظومة."
+        }
+
+    async def toggle_shipping_company(self, company_id: str, carrier_slug_or_id: str, is_active: bool) -> dict[str, Any]:
+        c_clean = carrier_slug_or_id.strip()
+        row = await self._session.execute(text("""
+            SELECT id, name, slug, "providerKey" FROM shipping_companies
+            WHERE "companyId" = :cid AND (id = :c OR slug = :c OR "providerKey" ILIKE :c OR name ILIKE :c)
+            LIMIT 1
+        """), {"cid": company_id, "c": c_clean})
+        carrier = row.first()
+        if not carrier:
+            raise ValueError(f"لم يتم العثور على شركة الشحن «{carrier_slug_or_id}»")
+
+        await self._session.execute(text("""
+            UPDATE shipping_companies
+            SET "isActive" = :act, "updatedAt" = NOW()
+            WHERE id = :id AND "companyId" = :cid
+        """), {"id": carrier.id, "cid": company_id, "act": is_active})
+
+        if carrier.providerKey == "BOSTA":
+            await self._session.execute(text("""
+                UPDATE companies SET "bostaEnabled" = :act, "updatedAt" = NOW() WHERE id = :cid
+            """), {"cid": company_id, "act": is_active})
+        elif carrier.providerKey == "TURBO":
+            await self._session.execute(text("""
+                UPDATE companies SET "turboEnabled" = :act, "updatedAt" = NOW() WHERE id = :cid
+            """), {"cid": company_id, "act": is_active})
+
+        await self._session.commit()
+        state_ar = "تفعيل" if is_active else "إلغاء تفعيل"
+        return {
+            "id": carrier.id,
+            "name": carrier.name,
+            "slug": carrier.slug,
+            "providerKey": carrier.providerKey,
+            "isActive": is_active,
+            "message": f"تم {state_ar} شركة الشحن «{carrier.name}» بنجاح."
+        }
+
+

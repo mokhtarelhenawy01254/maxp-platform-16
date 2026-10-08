@@ -34,16 +34,16 @@ def period_date_range(period: str) -> tuple[datetime, datetime | None]:
     now = datetime.utcnow()
     p = (period or "today").lower().strip()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    if p == "today":
+    if p in ("today", "اليوم"):
         return today_start, None
-    elif p == "yesterday":
+    elif p in ("yesterday", "امس", "أمس"):
         yesterday_start = today_start - timedelta(days=1)
         return yesterday_start, today_start
-    elif p == "week":
+    elif p in ("week", "last_week", "last-week", "7days", "اسبوع", "أسبوع", "الاسبوع", "الأسبوع", "اخر اسبوع", "آخر أسبوع"):
         return now - timedelta(days=7), None
-    elif p == "month":
+    elif p in ("month", "last_month", "last-month", "30days", "شهر", "الشهر", "اخر شهر", "آخر شهر"):
         return now - timedelta(days=30), None
-    elif p == "all":
+    elif p in ("all", "الكل"):
         return datetime(2000, 1, 1), None
     return now - timedelta(days=30), None
 

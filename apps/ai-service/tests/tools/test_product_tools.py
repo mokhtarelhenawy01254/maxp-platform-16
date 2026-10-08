@@ -95,6 +95,10 @@ class TestMapProduct:
             "images": [],
             "mainImage": None,
             "productVariants": [],
+            "quantityOffers": [
+                {"quantity": 2, "totalPrice": 180},
+                {"quantity": 3, "totalPrice": 240},
+            ],
         }
         result = _map_product(product)
         assert result["name"] == "Shirt"

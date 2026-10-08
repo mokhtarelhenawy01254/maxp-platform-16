@@ -358,18 +358,22 @@ async def order_create_confirmed(input_data: OrderCreateConfirmedInput) -> dict[
 async def order_summary(input_data: OrderSummaryInput) -> dict[str, Any]:
     company_id = input_data.company_id or ""
     if not company_id:
-        return {"period": input_data.period, "totalOrders": 0, "paidRevenue": "0", "paidOrdersCount": 0, "avgOrderValue": "0", "byStatus": {}}
+        return {"period": input_data.period, "totalOrders": 0, "paidRevenue": "0", "paidOrdersCount": 0, "avgOrderValue": "0", "byStatus": {}, "summary": "لا توجد طلبات مسجلة"}
 
     sf = _db_mod.async_session
     async with sf() as sess:
         repo = OrderRepository(sess)
-        return await repo.get_order_summary(company_id, input_data.period)
+        res = await repo.get_order_summary(company_id, input_data.period)
+
+    tot = res.get("totalOrders", 0)
+    res["summary"] = f"إجمالي عدد الطلبات في فترة ({input_data.period}): {tot} طلباً مسجلاً."
+    return res
 
 
 async def order_recent_list(input_data: OrderRecentListInput) -> dict[str, Any]:
     company_id = input_data.company_id or ""
     if not company_id:
-        return {"orders": [], "count": 0}
+        return {"orders": [], "count": 0, "total_in_period": 0}
 
     sf = _db_mod.async_session
     async with sf() as sess:
@@ -381,12 +385,15 @@ async def order_recent_list(input_data: OrderRecentListInput) -> dict[str, Any]:
             period=input_data.period,
             date=input_data.date,
         )
+        total_matching = getattr(repo, "last_total_matching", len(orders))
     return {
         "orders": orders,
         "count": len(orders),
+        "total_in_period": total_matching,
         "period": input_data.period,
         "status": input_data.status,
         "date": input_data.date,
+        "note": f"تم استرجاع أحدث {len(orders)} طلباً من إجمالي {total_matching} طلباً مسجلاً في هذه الفترة.",
     }
 
 
@@ -639,14 +646,14 @@ order_create_confirmed_tool = FunctionTool(
 
 order_summary_tool = FunctionTool(
     name="order_summary",
-    description="Get order summary (counts, revenue) for a period.",
+    description="Get aggregate order summary, total order count, and revenue for a time period ('today', 'yesterday', 'week', 'month', 'all'). ALWAYS USE THIS tool when asked for the number or count of orders (e.g. 'عدد الأوردرات في آخر أسبوع', 'كام أوردر جالنا'). Returns the true totalOrders count without any list limits.",
     func=order_summary,
     input_model=OrderSummaryInput,
 )
 
 order_recent_list_tool = FunctionTool(
     name="order_recent_list",
-    description="List and browse store orders. Supports filtering by status ('CONFIRMED', 'PENDING', 'SHIPPED', 'DELIVERED', 'CANCELLED'), period ('today', 'yesterday', 'week', 'month', 'all'), or specific date ('YYYY-MM-DD'). ALWAYS pass period='yesterday' when merchant asks for yesterday's orders, and status='CONFIRMED' for confirmed orders.",
+    description="List and browse individual order records with customer and tracking details. Supports filtering by status ('CONFIRMED', 'PENDING', 'SHIPPED', 'DELIVERED', 'CANCELLED'), period ('today', 'yesterday', 'week', 'month', 'all'), or date. For order counts only, use order_summary instead.",
     func=order_recent_list,
     input_model=OrderRecentListInput,
 )

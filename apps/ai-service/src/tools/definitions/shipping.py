@@ -110,6 +110,71 @@ class ShipmentTrackInput(BaseModel):
         return data
 
 
+class ShippingCompaniesListInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class ShippingCompanyConnectInput(BaseModel):
+    carrier: str = Field(
+        description="Shipping company name or key to connect (e.g. 'bosta' or 'بوستا', 'turbo' or 'تربو', 'qp_express' or 'كيو بي', or custom courier name)",
+    )
+    api_key: str | None = Field(
+        default=None,
+        description="API Key for Bosta or Turbo integration",
+    )
+    username: str | None = Field(
+        default=None,
+        description="Username for QP Express integration",
+    )
+    password: str | None = Field(
+        default=None,
+        description="Password for QP Express integration",
+    )
+    main_client_code: str | int | None = Field(
+        default=None,
+        description="Main client code for Turbo (optional)",
+    )
+    sender_number: str | None = Field(
+        default=None,
+        description="Sender phone number for Turbo (optional)",
+    )
+    auto_create_shipments: bool = Field(
+        default=False,
+        description="Whether to automatically create shipments upon order confirmation (for Turbo)",
+    )
+    phone: str | None = Field(
+        default=None,
+        description="Carrier hotline or contact phone number",
+    )
+    website: str | None = Field(
+        default=None,
+        description="Carrier website URL",
+    )
+    notes: str | None = Field(
+        default=None,
+        description="Default shipping instructions or notes",
+    )
+    is_active: bool = Field(
+        default=True,
+        description="Whether to activate this shipping company immediately in the store",
+    )
+    name: str | None = Field(
+        default=None,
+        description="Custom display name for the shipping carrier (optional)",
+    )
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class ShippingCompanyToggleInput(BaseModel):
+    carrier_slug_or_id: str = Field(
+        description="Slug or identifier of the shipping company (e.g. 'bosta', 'turbo', 'qp-express')",
+    )
+    is_active: bool = Field(
+        description="True to activate the carrier, False to deactivate",
+    )
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
 
 async def shipping_rates(input_data: ShippingRatesInput) -> dict[str, Any]:
     company_id = input_data.company_id or ""
@@ -305,6 +370,100 @@ def _format_shipping_zone_set(result: dict[str, Any]) -> str:
     if res.get("freeShippingThreshold"):
         msg += f" [شحن مجاني للطلبات فوق {res.get('freeShippingThreshold')} ج.م]."
     return msg
+
+
+async def shipping_companies_list(input_data: ShippingCompaniesListInput) -> dict[str, Any]:
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"companies": [], "count": 0, "error": "Missing company_id"}
+
+    from src.tools.repositories.shipping_repository import ShippingRepository
+    import src.db.session as _db_mod
+
+    if _db_mod.async_session is None:
+        await _db_mod.init_db()
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = ShippingRepository(sess)
+        companies = await repo.list_shipping_companies(company_id)
+
+    active_count = sum(1 for c in companies if c.get("isActive"))
+    return {
+        "companies": companies,
+        "count": len(companies),
+        "active_count": active_count,
+        "summary": f"يوجد {len(companies)} شركات شحن مسجلة بالمتجر (منها {active_count} مفعلة)."
+    }
+
+
+async def shipping_company_connect(input_data: ShippingCompanyConnectInput) -> dict[str, Any]:
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "Missing company_id"}
+
+    from src.tools.repositories.shipping_repository import ShippingRepository
+    import src.db.session as _db_mod
+
+    if _db_mod.async_session is None:
+        await _db_mod.init_db()
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = ShippingRepository(sess)
+        res = await repo.connect_shipping_company(
+            company_id=company_id,
+            carrier=input_data.carrier,
+            api_key=input_data.api_key,
+            username=input_data.username,
+            password=input_data.password,
+            main_client_code=input_data.main_client_code,
+            sender_number=input_data.sender_number,
+            auto_create_shipments=input_data.auto_create_shipments,
+            phone=input_data.phone,
+            website=input_data.website,
+            notes=input_data.notes,
+            is_active=input_data.is_active,
+            name=input_data.name,
+        )
+
+    return _executed_result("SHIPPING_COMPANY_CONNECTED", res)
+
+
+def _format_shipping_company_connect(result: dict[str, Any]) -> str:
+    res = result.get("result", result)
+    carrier = res.get("carrier", "شركة الشحن")
+    return f"تم ربط وتفعيل شركة الشحن «{carrier}» بنجاح في المنظومة."
+
+
+async def shipping_company_toggle(input_data: ShippingCompanyToggleInput) -> dict[str, Any]:
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "Missing company_id"}
+
+    from src.tools.repositories.shipping_repository import ShippingRepository
+    import src.db.session as _db_mod
+
+    if _db_mod.async_session is None:
+        await _db_mod.init_db()
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = ShippingRepository(sess)
+        res = await repo.toggle_shipping_company(
+            company_id=company_id,
+            carrier_slug_or_id=input_data.carrier_slug_or_id,
+            is_active=input_data.is_active,
+        )
+
+    return _executed_result("SHIPPING_COMPANY_TOGGLED", res)
+
+
+def _format_shipping_company_toggle(result: dict[str, Any]) -> str:
+    res = result.get("result", result)
+    name = res.get("name", "شركة الشحن")
+    state = "تفعيل" if res.get("isActive") else "إلغاء تفعيل"
+    return f"تم {state} شركة الشحن «{name}» بنجاح في المنظومة."
 
 
 async def shipping_ticket_categories(input_data: ShippingTicketCategoriesInput) -> dict[str, Any]:
@@ -688,10 +847,36 @@ shipment_track_tool = FunctionTool(
     format_result=_format_shipment_track,
 )
 
+shipping_companies_list_tool = FunctionTool(
+    name="shipping_companies_list",
+    description="List all shipping companies registered for the store (Bosta, Turbo, QP Express, manual couriers) with their activation status and credential status. ALWAYS use this tool first when the merchant asks about shipping carriers, linking shipping companies, or shipping integrations.",
+    func=shipping_companies_list,
+    input_model=ShippingCompaniesListInput,
+)
+
+shipping_company_connect_tool = FunctionTool(
+    name="shipping_company_connect",
+    description="Connect and configure a shipping company directly into the store (e.g. Bosta with API Key, Turbo with API Key, QP Express with username/password, or custom courier). REQUIRES MERCHANT APPROVAL.",
+    func=shipping_company_connect,
+    input_model=ShippingCompanyConnectInput,
+    format_result=_format_shipping_company_connect,
+)
+
+shipping_company_toggle_tool = FunctionTool(
+    name="shipping_company_toggle",
+    description="Toggle activation (enable/disable) for an existing shipping company in the store. REQUIRES MERCHANT APPROVAL.",
+    func=shipping_company_toggle,
+    input_model=ShippingCompanyToggleInput,
+    format_result=_format_shipping_company_toggle,
+)
+
 __all_tools__ = [
     shipping_rates_tool,
     shipping_zone_set_tool,
     shipping_update_tool,
+    shipping_companies_list_tool,
+    shipping_company_connect_tool,
+    shipping_company_toggle_tool,
     shipping_company_governorates_tool,
     shipping_company_areas_tool,
     search_area_by_text_tool,

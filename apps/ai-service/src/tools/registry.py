@@ -104,6 +104,7 @@ ADVANCED_TOOL_NAMES: set[str] = {
     # Storefront management
     "conversion_tools_read",
     "payment_settings_read",
+    "shipping_companies_list",
     # Target & Inventory monitoring
     "order_target_settings",
     "order_target_progress",
@@ -147,6 +148,8 @@ WRITE_TOOL_NAMES: set[str] = {
     "message_broadcast",
     "agent_spawn",
     "shipping_update",
+    "shipping_company_connect",
+    "shipping_company_toggle",
     "hotel_reserve",
     "hotel_cancel_reservation",
     "hr_leave_request_create",
