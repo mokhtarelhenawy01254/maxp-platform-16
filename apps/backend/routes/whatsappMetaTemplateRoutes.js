@@ -2,7 +2,11 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const verifyToken = require('../utils/verifyToken');
+const { checkAppAccess } = require('../middleware/checkAppAccess');
 const metaTemplateController = require('../controller/whatsappMetaTemplateController');
+
+router.use(verifyToken.authenticateToken);
+router.use(checkAppAccess('whatsapp-business'));
 
 // رفع وسيط (صورة/فيديو/مستند) في الذاكرة — نمرره مباشرة لـ Resumable Upload API في ميتا
 const mediaUpload = multer({

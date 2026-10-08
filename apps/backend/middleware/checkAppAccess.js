@@ -99,6 +99,120 @@ const getCandidateAppSlugs = (appSlug) => {
   return [...new Set([normalizedSlug, ...aliases].filter(Boolean))];
 };
 
+const WHATSAPP_LEGACY_ALIAS_SLUGS = new Set([
+  'whatsapp-integration',
+  'whatsapp-inbox',
+  'whatsapp-settings',
+  'whatsapp-notifications',
+  'whatsapp-templates',
+  'whatsapp-routing'
+]);
+
+/**
+ * Determines whether a CompanyApp installation record is currently active and valid (not expired).
+ * Checks status, trialEndsAt, validUntil, nextBillingAt, and fallback platformSubscription expiry.
+ */
+const isCompanyAppInstallationValid = (ca, company = null) => {
+  if (!ca) return false;
+  const statusUpper = String(ca.status || '').trim().toUpperCase();
+  if (!['ACTIVE', 'TRIAL'].includes(statusUpper)) {
+    return false;
+  }
+
+  const now = new Date();
+  const isCompanyInActiveTrial = Boolean(
+    company?.trialModeEnabled &&
+    company?.trialEndsAt &&
+    now <= new Date(company.trialEndsAt)
+  );
+
+  const appSlug = String(ca.app?.slug || ca.slug || '').trim().toLowerCase();
+  const pricingModelUpper = String(ca.activePricingModel || '').trim().toUpperCase();
+
+  // Block ghost free auto-installs of deprecated whatsapp-integration alias
+  if (
+    appSlug === 'whatsapp-integration' &&
+    pricingModelUpper === 'FREE' &&
+    !ca.validUntil &&
+    !ca.trialEndsAt
+  ) {
+    return isCompanyInActiveTrial;
+  }
+
+  if (statusUpper === 'TRIAL' && ca.trialEndsAt && now > new Date(ca.trialEndsAt)) {
+    return isCompanyInActiveTrial;
+  }
+
+  if (ca.validUntil && now > new Date(ca.validUntil)) {
+    return isCompanyInActiveTrial;
+  }
+
+  if (
+    !ca.validUntil &&
+    ca.nextBillingAt &&
+    pricingModelUpper === 'SUBSCRIPTION' &&
+    now > new Date(ca.nextBillingAt)
+  ) {
+    return isCompanyInActiveTrial;
+  }
+
+  const monthlyPrice = Number(ca.app?.monthlyPrice ?? ca.monthlyPrice ?? 0);
+  if (
+    !ca.validUntil &&
+    !ca.nextBillingAt &&
+    pricingModelUpper === 'SUBSCRIPTION' &&
+    monthlyPrice > 0 &&
+    company?.platformSubscription
+  ) {
+    const pSub = company.platformSubscription;
+    const pSubStatus = String(pSub.status || '').trim().toUpperCase();
+    const pSubStatusInvalid = Boolean(pSubStatus && !['ACTIVE', 'TRIAL'].includes(pSubStatus));
+    const pSubDateExpired = Boolean(pSub.nextBillingDate && now > new Date(pSub.nextBillingDate));
+    if (pSubStatusInvalid || pSubDateExpired) {
+      return isCompanyInActiveTrial;
+    }
+  }
+
+  return true;
+};
+
+/**
+ * Returns the list of currently valid active app slugs for a company,
+ * excluding expired subscriptions and preventing legacy WhatsApp aliases from
+ * bypassing an expired/suspended/cancelled primary whatsapp-business subscription.
+ */
+const filterActiveCompanyAppSlugs = (installedApps = [], company = null) => {
+  if (!Array.isArray(installedApps) || installedApps.length === 0) {
+    return [];
+  }
+
+  const primaryWaRecord = installedApps.find(
+    (ca) => String(ca?.app?.slug || ca?.slug || '').trim().toLowerCase() === 'whatsapp-business'
+  );
+  const isPrimaryWaExplicitlyInactive = Boolean(
+    primaryWaRecord && !isCompanyAppInstallationValid(primaryWaRecord, company)
+  );
+
+  const validSlugs = [];
+  for (const ca of installedApps) {
+    const slug = String(ca?.app?.slug || ca?.slug || '').trim();
+    if (!slug) continue;
+
+    if (isPrimaryWaExplicitlyInactive && WHATSAPP_LEGACY_ALIAS_SLUGS.has(slug.toLowerCase())) {
+      const hasOwnFutureValidity = Boolean(ca.validUntil && new Date(ca.validUntil) > new Date());
+      if (!hasOwnFutureValidity) {
+        continue;
+      }
+    }
+
+    if (isCompanyAppInstallationValid(ca, company)) {
+      validSlugs.push(slug);
+    }
+  }
+
+  return [...new Set(validSlugs)];
+};
+
 /**
  * Middleware to check if a company has access to a specific app
  * @param {string} appSlug - The slug of the app to check
@@ -139,12 +253,21 @@ const checkAppAccess = (appSlug) => {
             turboApiKey: true,
             bostaApiKey: true,
             bostaEnabled: true,
+            platformSubscription: {
+              select: {
+                status: true,
+                nextBillingDate: true
+              }
+            },
             installedApps: {
               where: { status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial'] } },
               select: {
                 id: true,
                 status: true,
+                activePricingModel: true,
                 trialEndsAt: true,
+                validUntil: true,
+                nextBillingAt: true,
                 app: {
                   select: {
                     id: true,
@@ -178,23 +301,22 @@ const checkAppAccess = (appSlug) => {
       // ⚡ Fast path: Check if company.installedApps directly satisfies any candidate slug (preferring primary slug first)
       const primarySlug = String(appSlug || '').trim();
       const installedList = company?.installedApps || [];
-      const matchedInstalledApp =
-        installedList.find((ca) => ca.app?.slug === primarySlug) ||
-        installedList.find((ca) => candidateSlugs.includes(ca.app?.slug));
+      const primaryInstalled = installedList.find((ca) => ca.app?.slug === primarySlug);
 
-      if (matchedInstalledApp) {
-        const isTrial = String(matchedInstalledApp.status || '').toUpperCase() === 'TRIAL';
-        // If it's a TRIAL, check expiry
-        if (isTrial && matchedInstalledApp.trialEndsAt && new Date() > new Date(matchedInstalledApp.trialEndsAt)) {
-          if (isCompanyInActiveTrial) {
-            req.companyApp = matchedInstalledApp;
-            req.marketplaceApp = matchedInstalledApp.app;
-            return next();
-          }
-          // Expired trial, continue below to show proper renewal message
-        } else {
-          req.companyApp = matchedInstalledApp;
-          req.marketplaceApp = matchedInstalledApp.app;
+      if (primaryInstalled && isCompanyAppInstallationValid(primaryInstalled, company)) {
+        req.companyApp = primaryInstalled;
+        req.marketplaceApp = primaryInstalled.app;
+        return next();
+      }
+
+      // Only check secondary aliases in fast-path if primaryInstalled is not explicitly present & expired
+      if (!primaryInstalled) {
+        const aliasInstalled = installedList.find(
+          (ca) => candidateSlugs.includes(ca.app?.slug) && isCompanyAppInstallationValid(ca, company)
+        );
+        if (aliasInstalled) {
+          req.companyApp = aliasInstalled;
+          req.marketplaceApp = aliasInstalled.app;
           return next();
         }
       }
@@ -223,6 +345,7 @@ const checkAppAccess = (appSlug) => {
       // Check if company has ANY of the candidate apps installed and active
       let matchedApp = null;
       let matchedCompanyApp = null;
+      let primaryAppExplicitlyInactive = false;
 
       for (const candidateApp of candidateApps) {
         const companyAppRecord = await executeWithRetry(async () => {
@@ -237,7 +360,37 @@ const checkAppAccess = (appSlug) => {
           continue;
         }
 
+        const recordWithApp = { ...companyAppRecord, app: candidateApp };
+
+        // Ignore ghost free auto-installs of deprecated whatsapp-integration alias
+        if (
+          candidateApp.slug === 'whatsapp-integration' &&
+          String(companyAppRecord.activePricingModel || '').toUpperCase() === 'FREE' &&
+          !companyAppRecord.validUntil &&
+          !companyAppRecord.trialEndsAt &&
+          !isCompanyInActiveTrial
+        ) {
+          continue;
+        }
+
+        // If the primary app was explicitly expired/suspended/cancelled, do not allow legacy WhatsApp aliases without their own future validUntil to bypass it
+        if (
+          primaryAppExplicitlyInactive &&
+          candidateApp.slug !== primarySlug &&
+          WHATSAPP_LEGACY_ALIAS_SLUGS.has(candidateApp.slug)
+        ) {
+          const hasOwnFutureValidity = Boolean(
+            companyAppRecord.validUntil && new Date(companyAppRecord.validUntil) > new Date()
+          );
+          if (!hasOwnFutureValidity) {
+            continue;
+          }
+        }
+
         if (!['TRIAL', 'ACTIVE'].includes(companyAppRecord.status)) {
+          if (candidateApp.slug === primarySlug) {
+            primaryAppExplicitlyInactive = true;
+          }
           // Track the best error to show later (prefer primary app error)
           if (!matchedApp || candidateApp.slug === primarySlug) {
             matchedApp = candidateApp;
@@ -246,38 +399,37 @@ const checkAppAccess = (appSlug) => {
           continue;
         }
 
-        // Check trial expiry
-        if (companyAppRecord.status === 'TRIAL' && companyAppRecord.trialEndsAt) {
-          const now = new Date();
-          if (now > companyAppRecord.trialEndsAt) {
-            // If company itself is still in active company-wide trial, auto-renew trial for this existing active record
-            if (isCompanyInActiveTrial && companyAppRecord.status !== 'CANCELLED') {
-              const updatedRecord = await executeWithRetry(async () => {
-                return await getSharedPrismaClient().companyApp.update({
-                  where: { id: companyAppRecord.id },
-                  data: {
-                    status: 'TRIAL',
-                    trialEndsAt: company.trialEndsAt
-                  }
-                });
-              });
-              req.companyApp = updatedRecord;
-              req.marketplaceApp = candidateApp;
-              return next();
-            }
-
-            await executeWithRetry(async () => {
+        // Check trial & subscription expiry (validUntil / nextBillingAt / platformSubscription)
+        if (!isCompanyAppInstallationValid(recordWithApp, company)) {
+          if (isCompanyInActiveTrial && companyAppRecord.status !== 'CANCELLED') {
+            const updatedRecord = await executeWithRetry(async () => {
               return await getSharedPrismaClient().companyApp.update({
                 where: { id: companyAppRecord.id },
-                data: { status: 'EXPIRED' }
+                data: {
+                  status: 'TRIAL',
+                  trialEndsAt: company.trialEndsAt
+                }
               });
             });
-            if (!matchedApp || candidateApp.slug === primarySlug) {
-              matchedApp = candidateApp;
-              matchedCompanyApp = { ...companyAppRecord, status: 'EXPIRED' };
-            }
-            continue;
+            req.companyApp = updatedRecord;
+            req.marketplaceApp = candidateApp;
+            return next();
           }
+
+          await executeWithRetry(async () => {
+            return await getSharedPrismaClient().companyApp.update({
+              where: { id: companyAppRecord.id },
+              data: { status: 'EXPIRED' }
+            });
+          });
+          if (candidateApp.slug === primarySlug) {
+            primaryAppExplicitlyInactive = true;
+          }
+          if (!matchedApp || candidateApp.slug === primarySlug) {
+            matchedApp = candidateApp;
+            matchedCompanyApp = { ...companyAppRecord, status: 'EXPIRED' };
+          }
+          continue;
         }
 
         // Found a valid app — grant access
@@ -339,8 +491,10 @@ const checkAppAccess = (appSlug) => {
         }
       }
 
-      // 🎁 Free apps auto-activation: if the app is 100% free and not explicitly cancelled, auto-activate
-      const freeApp = candidateApps.find((a) => a.pricingModel === 'FREE' || Number(a.monthlyPrice) === 0);
+      // 🎁 Free apps auto-activation: ONLY if the primary requested app itself has pricingModel === 'FREE'
+      const freeApp = candidateApps.find(
+        (a) => a.slug === primarySlug && String(a.pricingModel || '').toUpperCase() === 'FREE'
+      );
       if (freeApp) {
         const existingRecord = await executeWithRetry(async () => {
           return await getSharedPrismaClient().companyApp.findUnique({
@@ -393,12 +547,15 @@ const checkAppAccess = (appSlug) => {
         });
       }
 
-      if (bestCompanyApp.status === 'EXPIRED') {
+      if (bestCompanyApp.status === 'EXPIRED' || bestCompanyApp.status === 'SUSPENDED') {
+        const isTrialOnly = Boolean(bestCompanyApp.trialEndsAt && !bestCompanyApp.validUntil);
         return res.status(403).json({
           success: false,
-          message: bestCompanyApp.trialEndsAt ? `انتهت الفترة التجريبية لـ ${bestApp.name}. يرجى الترقية للاستمرار` : `انتهت صلاحية ${bestApp.name}. يرجى تجديد الاشتراك`,
+          message: isTrialOnly
+            ? `انتهت الفترة التجريبية لـ ${bestApp.name}. يرجى الترقية للاستمرار`
+            : `انتهت صلاحية اشتراك ${bestApp.name}. يرجى تجديد الاشتراك للاستمرار`,
           needsRenewal: true,
-          trialEnded: !!bestCompanyApp.trialEndsAt,
+          trialEnded: isTrialOnly,
           app: {
             slug: bestApp.slug,
             name: bestApp.name,
@@ -410,8 +567,6 @@ const checkAppAccess = (appSlug) => {
       let message = 'هذه الأداة غير نشطة';
       if (bestCompanyApp.status === 'CANCELLED') {
         message = `تم إلغاء ${bestApp.name}. يرجى إعادة التفعيل`;
-      } else if (bestCompanyApp.status === 'SUSPENDED') {
-        message = `تم تعليق ${bestApp.name}. يرجى التواصل مع الدعم`;
       }
 
       return res.status(403).json({
@@ -482,6 +637,9 @@ module.exports = checkAppAccess;
 module.exports.checkAppAccess = checkAppAccess;
 module.exports.checkWalletBalance = checkWalletBalance;
 module.exports.getCandidateAppSlugs = getCandidateAppSlugs;
+module.exports.isCompanyAppInstallationValid = isCompanyAppInstallationValid;
+module.exports.filterActiveCompanyAppSlugs = filterActiveCompanyAppSlugs;
 module.exports.STORE_APP_SLUGS = STORE_APP_SLUGS;
 module.exports.LEGACY_APP_SLUG_ALIASES = LEGACY_APP_SLUG_ALIASES;
+
 

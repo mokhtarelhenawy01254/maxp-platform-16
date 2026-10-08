@@ -7,6 +7,10 @@ const express = require('express');
 const router = express.Router();
 const whatsappNotificationController = require('../controller/whatsappNotificationController');
 const verifyToken = require("../utils/verifyToken");
+const { checkAppAccess } = require('../middleware/checkAppAccess');
+
+router.use(verifyToken.authenticateToken);
+router.use(checkAppAccess('whatsapp-business'));
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ⚙️ إعدادات الإشعارات

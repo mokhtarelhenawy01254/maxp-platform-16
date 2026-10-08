@@ -13,6 +13,7 @@ const {
 const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 const { getJwtSecret, getJwtRefreshSecret } = require('../utils/jwtSecret');
 const businessSpecialtyService = require('../services/businessSpecialtyService');
+const { filterActiveCompanyAppSlugs } = require('../middleware/checkAppAccess');
 const normalizeEmail = (value = '') => value.trim().toLowerCase();
 
 const getSessionExpiryConfig = (req) => {
@@ -700,6 +701,8 @@ const login = async (req, res) => {
               isActive: true,
               sidebarLayout: true,
               settings: true,
+              trialModeEnabled: true,
+              trialEndsAt: true,
               businessSpecialty: {
                 select: {
                   id: true,
@@ -716,8 +719,14 @@ const login = async (req, res) => {
                 }
               },
               installedApps: {
-                where: { status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial'] } },
-                select: { app: { select: { slug: true } } }
+                select: {
+                  status: true,
+                  activePricingModel: true,
+                  trialEndsAt: true,
+                  validUntil: true,
+                  nextBillingAt: true,
+                  app: { select: { slug: true, monthlyPrice: true, pricingModel: true } }
+                }
               }
             }
           },
@@ -737,6 +746,8 @@ const login = async (req, res) => {
                   isActive: true,
                   sidebarLayout: true,
                   settings: true,
+                  trialModeEnabled: true,
+                  trialEndsAt: true,
                   businessSpecialty: {
                     select: {
                       id: true,
@@ -753,8 +764,14 @@ const login = async (req, res) => {
                     }
                   },
                   installedApps: {
-                    where: { status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial'] } },
-                    select: { app: { select: { slug: true } } }
+                    select: {
+                      status: true,
+                      activePricingModel: true,
+                      trialEndsAt: true,
+                      validUntil: true,
+                      nextBillingAt: true,
+                      app: { select: { slug: true, monthlyPrice: true, pricingModel: true } }
+                    }
                   }
                 }
               }
@@ -964,7 +981,7 @@ const login = async (req, res) => {
     // Add main company first
     if (user.company) {
       const roleInPrimary = findRoleInCompany(user.companyId);
-      const activeApps = user.company.installedApps?.map(ca => ca.app.slug) || [];
+      const activeApps = filterActiveCompanyAppSlugs(user.company.installedApps, user.company);
       const responseCompany = {
         ...buildCompanyResponseWithOnboarding(user.company, user),
         activeApps
@@ -988,7 +1005,7 @@ const login = async (req, res) => {
       for (const uc of user.userCompanies) {
         if (uc.company && uc.company.isActive) {
           if (!companiesMap.has(uc.companyId)) {
-            const activeApps = uc.company.installedApps?.map(ca => ca.app.slug) || [];
+            const activeApps = filterActiveCompanyAppSlugs(uc.company.installedApps, uc.company);
             const responseCompany = {
               ...buildCompanyResponseWithOnboarding(uc.company, user),
               activeApps
@@ -1171,6 +1188,8 @@ const me = async (req, res) => {
             isActive: true,
             sidebarLayout: true,
             settings: true,
+            trialModeEnabled: true,
+            trialEndsAt: true,
             businessSpecialty: {
               select: {
                 id: true,
@@ -1187,8 +1206,14 @@ const me = async (req, res) => {
               }
             },
             installedApps: {
-              where: { status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial'] } },
-              select: { app: { select: { slug: true } } }
+              select: {
+                status: true,
+                activePricingModel: true,
+                trialEndsAt: true,
+                validUntil: true,
+                nextBillingAt: true,
+                app: { select: { slug: true, monthlyPrice: true, pricingModel: true } }
+              }
             }
           }
         },
@@ -1208,6 +1233,8 @@ const me = async (req, res) => {
                 isActive: true,
                 sidebarLayout: true,
                 settings: true,
+                trialModeEnabled: true,
+                trialEndsAt: true,
                 businessSpecialty: {
                   select: {
                     id: true,
@@ -1217,9 +1244,21 @@ const me = async (req, res) => {
                     icon: true
                   }
                 },
+                platformSubscription: {
+                  select: {
+                    status: true,
+                    nextBillingDate: true
+                  }
+                },
                 installedApps: {
-                  where: { status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial'] } },
-                  select: { app: { select: { slug: true } } }
+                  select: {
+                    status: true,
+                    activePricingModel: true,
+                    trialEndsAt: true,
+                    validUntil: true,
+                    nextBillingAt: true,
+                    app: { select: { slug: true, monthlyPrice: true, pricingModel: true } }
+                  }
                 }
               }
             }
@@ -1241,7 +1280,7 @@ const me = async (req, res) => {
     if (!user || !user.isActive) {
       return res.status(401).json({
         success: false,
-        message: 'ÃƒËœÃ‚Â§Ãƒâ„¢Ã¢â‚¬Å¾Ãƒâ„¢Ã¢â‚¬Â¦ÃƒËœÃ‚Â³ÃƒËœÃ‚ÂªÃƒËœÃ‚Â®ÃƒËœÃ‚Â¯Ãƒâ„¢Ã¢â‚¬Â¦ ÃƒËœÃ‚ÂºÃƒâ„¢Ã…Â ÃƒËœÃ‚Â± Ãƒâ„¢Ã¢â‚¬Â¦Ãƒâ„¢Ã‹â€ ÃƒËœÃ‚Â¬Ãƒâ„¢Ã‹â€ ÃƒËœÃ‚Â¯ ÃƒËœÃ‚Â£Ãƒâ„¢Ã‹â€  ÃƒËœÃ‚ÂºÃƒâ„¢Ã…Â ÃƒËœÃ‚Â± Ãƒâ„¢Ã¢â‚¬Â¦Ãƒâ„¢Ã‚ÂÃƒËœÃ‚Â¹Ãƒâ„¢Ã¢â‚¬Å¾'
+        message: 'ÃƒËœÃ‚Â§Ãƒâ„¢Ã¢â‚¬Å¾Ãƒâ„¢Ã¢â‚¬Â¦ÃƒËœÃ‚Â³ÃƒËœÃ‚ÂªÃƒËœÃ‚Â®ÃƒËœÃ‚Â¯Ãƒâ„¢Ã¢â‚¬Â¦ ÃƒËœÃ‚ÂºÃƒâ„¢Ã…Â ÃƒËœÃ‚Â± Ãƒâ„¢Ã¢â‚¬Â¦Ãƒâ„¢Ã‹â€ ÃƒËœÃ‚Â¬Ãƒâ„¢Ã‹â€ ÃƒËœÃ‚Â¯ ÃƒËœÃ‚Â£Ãƒâ„¢Ã‹â€  ÃƒËœÃ‚ÂºÃƒâ„¢Ã…Â ÃƒËœÃ‚Â± Ãƒâ„¢Ã¢â‚¬Â¦Ãƒâ„¢Ã‚Â ÃƒËœÃ‚Â¹Ãƒâ„¢Ã¢â‚¬Å¾'
       });
     }
 
@@ -1249,7 +1288,7 @@ const me = async (req, res) => {
     if (user.company && !user.company.isActive) {
       return res.status(401).json({
         success: false,
-        message: 'ÃƒËœÃ‚Â­ÃƒËœÃ‚Â³ÃƒËœÃ‚Â§ÃƒËœÃ‚Â¨ ÃƒËœÃ‚Â§Ãƒâ„¢Ã¢â‚¬Å¾ÃƒËœÃ‚Â´ÃƒËœÃ‚Â±Ãƒâ„¢Ã†â€™ÃƒËœÃ‚Â© ÃƒËœÃ‚ÂºÃƒâ„¢Ã…Â ÃƒËœÃ‚Â± Ãƒâ„¢Ã¢â‚¬Â¦Ãƒâ„¢Ã‚ÂÃƒËœÃ‚Â¹Ãƒâ„¢Ã¢â‚¬Å¾'
+        message: 'ÃƒËœÃ‚Â­ÃƒËœÃ‚Â³ÃƒËœÃ‚Â§ÃƒËœÃ‚Â¨ ÃƒËœÃ‚Â§Ãƒâ„¢Ã¢â‚¬Å¾ÃƒËœÃ‚Â´ÃƒËœÃ‚Â±Ãƒâ„¢Ã†â€™ÃƒËœÃ‚Â© ÃƒËœÃ‚ÂºÃƒâ„¢Ã…Â ÃƒËœÃ‚Â± Ãƒâ„¢Ã¢â‚¬Â¦Ãƒâ„¢Ã‚Â ÃƒËœÃ‚Â¹Ãƒâ„¢Ã¢â‚¬Å¾'
       });
     }
 
@@ -1283,7 +1322,7 @@ const me = async (req, res) => {
     // Add main company first
     if (user.company) {
       const roleInPrimary = findRoleInCompany(user.companyId);
-      const activeApps = user.company.installedApps?.map(ca => ca.app.slug) || [];
+      const activeApps = filterActiveCompanyAppSlugs(user.company.installedApps, user.company);
       const responseCompany = {
         ...buildCompanyResponseWithOnboarding(user.company, user),
         activeApps
@@ -1314,7 +1353,7 @@ const me = async (req, res) => {
     for (const uc of user.userCompanies) {
       if (uc.company && uc.company.isActive) {
         if (!companiesMap.has(uc.companyId)) {
-          const activeApps = uc.company.installedApps?.map(ca => ca.app.slug) || [];
+          const activeApps = filterActiveCompanyAppSlugs(uc.company.installedApps, uc.company);
           const responseCompany = {
             ...buildCompanyResponseWithOnboarding(uc.company, user),
             activeApps
@@ -2070,17 +2109,41 @@ const switchCompany = async (req, res) => {
     }
 
     // Get the target company details
-    const targetCompany = await getSharedPrismaClient().company.findUnique({
+    const rawTargetCompany = await getSharedPrismaClient().company.findUnique({
       where: { id: companyId },
       select: {
         id: true,
         name: true,
         slug: true,
+        logo: true,
         currency: true,
         isActive: true,
-        sidebarLayout: true
+        sidebarLayout: true,
+        trialModeEnabled: true,
+        trialEndsAt: true,
+        platformSubscription: {
+          select: {
+            status: true,
+            nextBillingDate: true
+          }
+        },
+        installedApps: {
+          where: { status: { in: ['ACTIVE', 'TRIAL'] } },
+          select: {
+            status: true,
+            activePricingModel: true,
+            trialEndsAt: true,
+            validUntil: true,
+            nextBillingAt: true,
+            app: { select: { slug: true, monthlyPrice: true, pricingModel: true } }
+          }
+        }
       }
     });
+    const targetCompany = rawTargetCompany ? {
+      ...rawTargetCompany,
+      activeApps: filterActiveCompanyAppSlugs(rawTargetCompany.installedApps, rawTargetCompany)
+    } : null;
 
     if (!targetCompany) {
       return res.status(404).json({
@@ -2216,7 +2279,10 @@ const switchCompany = async (req, res) => {
       data: {
         token: newToken,
         refreshToken: newRefreshToken,
-        company: companiesMap.get(companyId) || targetCompany,
+        company: {
+          ...(companiesMap.get(companyId) || targetCompany),
+          activeApps: targetCompany.activeApps
+        },
         role: userRole,
         permissions,
         companies: Array.from(companiesMap.values()),

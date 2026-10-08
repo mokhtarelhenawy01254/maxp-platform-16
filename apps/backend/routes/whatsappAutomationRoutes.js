@@ -3,9 +3,11 @@ const router = express.Router();
 const whatsappAutomationController = require('../controller/whatsappAutomationController');
 
 const verifyToken = require('../utils/verifyToken');
+const { checkAppAccess } = require('../middleware/checkAppAccess');
 
-// Keep explicit auth on these routes (defense in depth) because
-// global middleware may be bypassed in some flows.
+// Keep explicit auth and WhatsApp subscription guard on these routes
+router.use(verifyToken.authenticateToken);
+router.use(checkAppAccess('whatsapp-business'));
 
 // Flows management
 router.get('/flows', verifyToken.authenticateToken, (req, res) => whatsappAutomationController.getFlows(req, res));

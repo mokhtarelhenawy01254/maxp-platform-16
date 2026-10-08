@@ -7,7 +7,7 @@ const { buildInstalledMarketplaceAppSettings } = require('../utils/marketplaceAp
 const businessSpecialtyService = require('../services/businessSpecialtyService');
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const { getDefaultAgentTemplateSlug, buildDefaultAgentConfig } = require('../utils/getDefaultAgentTemplate');
-const { getCandidateAppSlugs } = require('../middleware/checkAppAccess');
+const { getCandidateAppSlugs, isCompanyAppInstallationValid } = require('../middleware/checkAppAccess');
 
 // Legacy storefront template engine has been removed from runtime.
 const PLATFORM_ENGINE_VERSION = 'removed';
@@ -99,29 +99,48 @@ async function enrichAppsWithDbState(apps, user) {
   const installedSlugSet = new Set();
 
   if (user && user.companyId) {
-    const installedApps = await executeWithRetry(async () => {
-      return await getSharedPrismaClient().companyApp.findMany({
-        where: {
-          companyId: user.companyId
-        },
-        select: {
-          appId: true,
-          status: true,
-          activePricingModel: true,
-          app: {
-            select: {
-              slug: true
+    const [installedApps, company] = await executeWithRetry(async () => {
+      const prisma = getSharedPrismaClient();
+      return await Promise.all([
+        prisma.companyApp.findMany({
+          where: {
+            companyId: user.companyId
+          },
+          select: {
+            appId: true,
+            status: true,
+            activePricingModel: true,
+            trialEndsAt: true,
+            validUntil: true,
+            nextBillingAt: true,
+            app: {
+              select: {
+                slug: true,
+                monthlyPrice: true,
+                pricingModel: true
+              }
             }
           }
-        }
-      });
+        }),
+        prisma.company.findUnique({
+          where: { id: user.companyId },
+          select: {
+            id: true,
+            trialModeEnabled: true,
+            trialEndsAt: true,
+            platformSubscription: {
+              select: { status: true, nextBillingDate: true }
+            }
+          }
+        })
+      ]);
     });
 
     installedApps.forEach((installation) => {
-      if (ACTIVE_STATUSES.includes(installation.status)) {
+      if (isCompanyAppInstallationValid(installation, company)) {
         installedByAppId.set(installation.appId, installation.activePricingModel || null);
         const slug = installation.app?.slug || dbById.get(installation.appId)?.slug;
-        if (slug) {
+        if (slug && !(slug === 'whatsapp-integration' && Number(installation.app?.monthlyPrice || 0) <= 0)) {
           installedSlugSet.add(slug);
         }
       }
@@ -360,7 +379,14 @@ async function ensureCompanyAppInstalled(tx, {
   const normalizedBillingCycle = String(billingCycle || '').toLowerCase() === 'yearly' ? 'yearly' : 'monthly';
   const isYearly = normalizedBillingCycle === 'yearly';
 
-  const isExpired = existing && existing.validUntil && new Date(existing.validUntil) < new Date();
+  const isExpired = Boolean(
+    existing && (
+      (existing.validUntil && new Date(existing.validUntil) < new Date()) ||
+      (existing.nextBillingAt && new Date(existing.nextBillingAt) < new Date()) ||
+      (existing.status === 'TRIAL' && existing.trialEndsAt && new Date(existing.trialEndsAt) < new Date()) ||
+      (!existing.validUntil && !existing.nextBillingAt && Number(app?.monthlyPrice || 0) > 0 && existing.status === 'ACTIVE')
+    )
+  );
   const existingSettings = typeof existing?.settings === 'string'
     ? (() => { try { return JSON.parse(existing.settings); } catch { return {}; } })()
     : (existing?.settings || {});
@@ -942,22 +968,44 @@ exports.getAllApps = async (req, res) => {
     if (req.user && req.user.companyId && apps.length > 0) {
       logToFile('Checking installed check for user:', { userId: req.user.id, companyId: req.user.companyId });
 
-      installedApps = await executeWithRetry(async () => {
-        return await getSharedPrismaClient().companyApp.findMany({
-          where: {
-            companyId: req.user.companyId,
-            appId: { in: apps.map(app => app.id) }
-          },
-          select: { appId: true, status: true, activePricingModel: true }
-        });
+      const [rawInstalledApps, company] = await executeWithRetry(async () => {
+        const prisma = getSharedPrismaClient();
+        return await Promise.all([
+          prisma.companyApp.findMany({
+            where: {
+              companyId: req.user.companyId,
+              appId: { in: apps.map(app => app.id) }
+            },
+            select: {
+              appId: true,
+              status: true,
+              activePricingModel: true,
+              trialEndsAt: true,
+              validUntil: true,
+              nextBillingAt: true,
+              app: { select: { slug: true, monthlyPrice: true, pricingModel: true } }
+            }
+          }),
+          prisma.company.findUnique({
+            where: { id: req.user.companyId },
+            select: {
+              id: true,
+              trialModeEnabled: true,
+              trialEndsAt: true,
+              platformSubscription: {
+                select: { status: true, nextBillingDate: true }
+              }
+            }
+          })
+        ]);
       });
+      installedApps = rawInstalledApps;
 
       logToFile('Installed apps query result:', installedApps);
 
-      const activeStatuses = ['ACTIVE', 'TRIAL', 'active', 'trial'];
       const installedMap = new Map();
       installedApps.forEach(ia => {
-        if (activeStatuses.includes(ia.status)) {
+        if (isCompanyAppInstallationValid(ia, company)) {
           installedMap.set(ia.appId, ia.activePricingModel);
         }
       });
@@ -1102,26 +1150,41 @@ exports.getAppDetails = async (req, res) => {
           };
 
           if (req.user && req.user.companyId) {
-            const installation = await executeWithRetry(async () => {
-              return await getSharedPrismaClient().companyApp.findFirst({
-                where: {
-                  companyId: req.user.companyId,
-                  appId: dbApp.id
-                },
-                select: {
-                  activePricingModel: true,
-                  status: true,
-                  trialEndsAt: true,
-                  validUntil: true
-                }
-              });
+            const [installation, company] = await executeWithRetry(async () => {
+              const prisma = getSharedPrismaClient();
+              return await Promise.all([
+                prisma.companyApp.findFirst({
+                  where: {
+                    companyId: req.user.companyId,
+                    appId: dbApp.id
+                  },
+                  select: {
+                    activePricingModel: true,
+                    status: true,
+                    trialEndsAt: true,
+                    validUntil: true,
+                    nextBillingAt: true,
+                    app: { select: { slug: true, monthlyPrice: true, pricingModel: true } }
+                  }
+                }),
+                prisma.company.findUnique({
+                  where: { id: req.user.companyId },
+                  select: {
+                    id: true,
+                    trialModeEnabled: true,
+                    trialEndsAt: true,
+                    platformSubscription: {
+                      select: { status: true, nextBillingDate: true }
+                    }
+                  }
+                })
+              ]);
             });
 
             if (installation) {
-              const isTrialExpired = installation.status === 'TRIAL' && installation.trialEndsAt && new Date(installation.trialEndsAt) < new Date();
-              const isSubExpired = installation.validUntil && new Date(installation.validUntil) < new Date();
-              const isExpired = isTrialExpired || isSubExpired || installation.status === 'EXPIRED' || installation.status === 'CANCELLED';
-              if (ACTIVE_STATUSES.includes(installation.status) && !isExpired) {
+              const valid = isCompanyAppInstallationValid(installation, company);
+              const isExpired = !valid;
+              if (valid) {
                 isInstalled = true;
                 activePricingModel = installation.activePricingModel || null;
               }
@@ -1190,27 +1253,42 @@ exports.getAppDetails = async (req, res) => {
     let installedApp = null;
 
     if (req.user && req.user.companyId) {
-      const installation = await executeWithRetry(async () => {
-        return await getSharedPrismaClient().companyApp.findFirst({
-          where: {
-            companyId: req.user.companyId,
-            appId: app.id
-          },
-          select: {
-            activePricingModel: true,
-            status: true,
-            trialEndsAt: true,
-            validUntil: true
-          }
-        });
+      const [installation, company] = await executeWithRetry(async () => {
+        const prisma = getSharedPrismaClient();
+        return await Promise.all([
+          prisma.companyApp.findFirst({
+            where: {
+              companyId: req.user.companyId,
+              appId: app.id
+            },
+            select: {
+              activePricingModel: true,
+              status: true,
+              trialEndsAt: true,
+              validUntil: true,
+              nextBillingAt: true,
+              app: { select: { slug: true, monthlyPrice: true, pricingModel: true } }
+            }
+          }),
+          prisma.company.findUnique({
+            where: { id: req.user.companyId },
+            select: {
+              id: true,
+              trialModeEnabled: true,
+              trialEndsAt: true,
+              platformSubscription: {
+                select: { status: true, nextBillingDate: true }
+              }
+            }
+          })
+        ]);
       });
 
       if (installation) {
         installedApp = installation;
-        const isTrialExpired = installation.status === 'TRIAL' && installation.trialEndsAt && new Date(installation.trialEndsAt) < new Date();
-        const isSubExpired = installation.validUntil && new Date(installation.validUntil) < new Date();
-        isExpired = Boolean(isTrialExpired || isSubExpired || installation.status === 'EXPIRED' || installation.status === 'CANCELLED');
-        if (ACTIVE_STATUSES.includes(installation.status) && !isExpired) {
+        const valid = isCompanyAppInstallationValid(installation, company);
+        isExpired = !valid;
+        if (valid) {
           isInstalled = true;
           activePricingModel = installation.activePricingModel;
         }
@@ -2175,8 +2253,8 @@ exports.subscribeToBundle = async (req, res) => {
           if (app) {
             await tx.companyApp.upsert({
               where: { companyId_appId: { companyId, appId: app.id } },
-              update: { status: 'ACTIVE' },
-              create: { companyId, appId: app.id, status: 'ACTIVE' }
+              update: { status: 'ACTIVE', validUntil: nextBillingDate, nextBillingAt: nextBillingDate },
+              create: { companyId, appId: app.id, status: 'ACTIVE', validUntil: nextBillingDate, nextBillingAt: nextBillingDate }
             });
           }
         }

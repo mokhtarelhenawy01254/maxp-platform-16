@@ -3,10 +3,12 @@ const router = express.Router();
 const verifyToken = require('../utils/verifyToken');
 const { numberAccessGuard, conversationAccessGuard } = require('../middleware/numberAccessGuard');
 const { requireDbPermission } = require('../middleware/rbacMiddleware');
+const { checkAppAccess } = require('../middleware/checkAppAccess');
 const inboxController = require('../controller/whatsappInboxController');
 
-// All routes require authentication
+// All routes require authentication and active WhatsApp subscription
 router.use(verifyToken.authenticateToken);
+router.use(checkAppAccess('whatsapp-business'));
 
 // ─── Sessions ─────────────────────────────────────────────────────
 

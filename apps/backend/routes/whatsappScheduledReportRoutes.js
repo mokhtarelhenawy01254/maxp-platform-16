@@ -7,10 +7,12 @@ const express = require('express');
 const router = express.Router();
 const scheduledReportController = require('../controller/whatsappScheduledReportController');
 const { authenticateToken, requireCompanyAccess } = require('../utils/verifyToken');
+const { checkAppAccess } = require('../middleware/checkAppAccess');
 
-// تطبيق حماية المصادقة وصلاحيات الشركة على جميع المسارات
+// تطبيق حماية المصادقة وصلاحيات الشركة واشتراك الواتساب على جميع المسارات
 router.use(authenticateToken);
 router.use(requireCompanyAccess);
+router.use(checkAppAccess('whatsapp-business'));
 
 // جلب إعدادات التقارير المجدولة
 router.get('/configs', scheduledReportController.getConfigs);

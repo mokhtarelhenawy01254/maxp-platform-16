@@ -57,7 +57,6 @@ class BillingCronService {
         return await getSharedPrismaClient().platformSubscription.findMany({
           where: {
             nextBillingDate: {
-              gte: today,
               lt: tomorrow
             },
             status: 'ACTIVE'
@@ -233,15 +232,15 @@ class BillingCronService {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      // جلب الأدوات المستحقة
+      // جلب الأدوات المستحقة أو المتأخرة
       const dueApps = await executeWithRetry(async () => {
         return await getSharedPrismaClient().companyApp.findMany({
           where: {
             status: 'ACTIVE',
-            nextBillingAt: {
-              gte: today,
-              lt: tomorrow
-            }
+            OR: [
+              { nextBillingAt: { lt: tomorrow } },
+              { nextBillingAt: null, validUntil: { lt: tomorrow } }
+            ]
           },
           include: {
             app: {
@@ -298,21 +297,16 @@ class BillingCronService {
             where: { companyId }
           });
 
-          if (!wallet) {
-            console.warn(`⚠️ [BILLING-CRON] No wallet found for ${company.name}`);
-            return;
-          }
-
-          const currentBalance = parseFloat(wallet.balance.toString());
+          const currentBalance = wallet ? parseFloat(wallet.balance.toString()) : 0;
 
           // التحقق من الرصيد
-          if (currentBalance < monthlyPrice) {
+          if (!wallet || currentBalance < monthlyPrice) {
             console.warn(`⚠️ [BILLING-CRON] Insufficient balance for ${app.name}: ${currentBalance} < ${monthlyPrice}`);
 
-            // تعليق الأداة
+            // تعليق الأداة لانتهاء الاشتراك وعدم كفاية الرصيد
             await tx.companyApp.update({
               where: { id: companyApp.id },
-              data: { status: 'SUSPENDED' }
+              data: { status: 'EXPIRED' }
             });
 
             // تسجيل محاولة فاشلة
@@ -352,15 +346,17 @@ class BillingCronService {
             }
           });
 
-          // تحديث تاريخ الفاتورة التالية
-          const nextBillingAt = new Date(companyApp.nextBillingAt);
+          // تحديث تاريخ الفاتورة التالية وصلاحية الاشتراك
+          const baseDate = companyApp.nextBillingAt || companyApp.validUntil || new Date();
+          const nextBillingAt = new Date(baseDate > new Date() ? baseDate : new Date());
           nextBillingAt.setMonth(nextBillingAt.getMonth() + 1);
 
           await tx.companyApp.update({
             where: { id: companyApp.id },
             data: {
               nextBillingAt,
-              totalSpent: parseFloat(companyApp.totalSpent.toString()) + monthlyPrice
+              validUntil: nextBillingAt,
+              totalSpent: parseFloat((companyApp.totalSpent || 0).toString()) + monthlyPrice
             }
           });
 

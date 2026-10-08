@@ -21,6 +21,7 @@ const sharedDatabase = require("../../services/sharedDatabase");
 const {
   checkAppAccess,
   getCandidateAppSlugs,
+  filterActiveCompanyAppSlugs,
 } = require("../../middleware/checkAppAccess");
 
 const createResponse = () => {
@@ -265,5 +266,138 @@ describe("checkAppAccess middleware", () => {
       }
     );
   });
+
+  describe("WhatsApp monthly subscription expiration enforcement", () => {
+    it("blocks access with 403 and marks status EXPIRED when ACTIVE subscription validUntil has passed", async () => {
+      const req = { user: { companyId: "company-expired-wa" } };
+      const res = createResponse();
+      const next = jest.fn();
+
+      mockPrisma.marketplaceApp.findMany.mockResolvedValue([
+        {
+          id: "app-wa-biz",
+          slug: "whatsapp-business",
+          name: "WhatsApp Business",
+          monthlyPrice: 199,
+          pricingModel: "SUBSCRIPTION",
+        },
+        {
+          id: "app-wa-legacy",
+          slug: "whatsapp-integration",
+          name: "Legacy WhatsApp",
+          monthlyPrice: 0,
+          pricingModel: "PAY_PER_USE",
+        },
+      ]);
+
+      mockPrisma.companyApp.findUnique.mockImplementation(async ({ where }) => {
+        if (where.companyId_appId.appId === "app-wa-biz") {
+          return {
+            id: "ca-expired-wa",
+            status: "ACTIVE",
+            activePricingModel: "SUBSCRIPTION",
+            validUntil: new Date(Date.now() - 86400000),
+          };
+        }
+        return null;
+      });
+
+      await checkAppAccess("whatsapp-business")(req, res, next);
+
+      expect(mockPrisma.companyApp.update).toHaveBeenCalledWith({
+        where: { id: "ca-expired-wa" },
+        data: { status: "EXPIRED" },
+      });
+      expect(mockPrisma.companyApp.upsert).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          needsRenewal: true,
+        })
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("blocks access when validUntil is null on paid whatsapp-business and platformSubscription has expired", async () => {
+      const req = { user: { companyId: "company-bundle-expired" } };
+      const res = createResponse();
+      const next = jest.fn();
+
+      mockPrisma.company.findUnique.mockResolvedValue({
+        trialModeEnabled: false,
+        platformSubscription: {
+          status: "ACTIVE",
+          nextBillingDate: new Date(Date.now() - 86400000),
+        },
+      });
+
+      mockPrisma.marketplaceApp.findMany.mockResolvedValue([
+        {
+          id: "app-wa-biz",
+          slug: "whatsapp-business",
+          name: "WhatsApp Business",
+          monthlyPrice: 199,
+          pricingModel: "SUBSCRIPTION",
+        },
+      ]);
+
+      mockPrisma.companyApp.findUnique.mockResolvedValue({
+        id: "ca-bundle-wa",
+        status: "ACTIVE",
+        activePricingModel: "SUBSCRIPTION",
+        validUntil: null,
+        nextBillingAt: null,
+      });
+
+      await checkAppAccess("whatsapp-business")(req, res, next);
+
+      expect(mockPrisma.companyApp.update).toHaveBeenCalledWith({
+        where: { id: "ca-bundle-wa" },
+        data: { status: "EXPIRED" },
+      });
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          needsRenewal: true,
+        })
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("filters out expired apps and ghost free whatsapp-integration from activeApps", () => {
+      const past = new Date(Date.now() - 86400000);
+      const future = new Date(Date.now() + 86400000);
+
+      const slugs = filterActiveCompanyAppSlugs(
+        [
+          {
+            status: "ACTIVE",
+            validUntil: past,
+            app: { slug: "whatsapp-business", monthlyPrice: 199, pricingModel: "SUBSCRIPTION" },
+          },
+          {
+            status: "ACTIVE",
+            validUntil: null,
+            activePricingModel: "FREE",
+            app: { slug: "whatsapp-integration", monthlyPrice: 0, pricingModel: "PAY_PER_USE" },
+          },
+          {
+            status: "ACTIVE",
+            validUntil: future,
+            app: { slug: "crm-basic", monthlyPrice: 99, pricingModel: "SUBSCRIPTION" },
+          },
+        ],
+        {
+          trialModeEnabled: false,
+          platformSubscription: null,
+        }
+      );
+
+      expect(slugs).toEqual(["crm-basic"]);
+    });
+  });
 });
+
 

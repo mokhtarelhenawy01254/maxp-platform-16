@@ -1,5 +1,6 @@
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
 const redisCacheService = require('../services/redisCacheService');
+const { isCompanyAppInstallationValid } = require('../middleware/checkAppAccess');
 
 /**
  * @route GET /api/v1/my-apps
@@ -20,27 +21,43 @@ exports.getMyApps = async (req, res) => {
       });
     }
 
-    const apps = await executeWithRetry(async () => {
-      return await getSharedPrismaClient().companyApp.findMany({
-        where: {
-          companyId,
-          status: { in: ['TRIAL', 'ACTIVE'] },
-          app: {
-            category: {
-              notIn: ['THEME', 'TEMPLATE'],
+    const [rawApps, company] = await executeWithRetry(async () => {
+      const prisma = getSharedPrismaClient();
+      return await Promise.all([
+        prisma.companyApp.findMany({
+          where: {
+            companyId,
+            status: { in: ['TRIAL', 'ACTIVE'] },
+            app: {
+              category: {
+                notIn: ['THEME', 'TEMPLATE'],
+              },
             },
           },
-        },
-        include: {
-          app: true,
-          usageLogs: {
-            take: 10,
-            orderBy: { createdAt: 'desc' }
+          include: {
+            app: true,
+            usageLogs: {
+              take: 10,
+              orderBy: { createdAt: 'desc' }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        }),
+        prisma.company.findUnique({
+          where: { id: companyId },
+          select: {
+            id: true,
+            trialModeEnabled: true,
+            trialEndsAt: true,
+            platformSubscription: {
+              select: { status: true, nextBillingDate: true }
+            }
           }
-        },
-        orderBy: { createdAt: 'desc' }
-      });
+        })
+      ]);
     });
+
+    const apps = rawApps.filter((ca) => isCompanyAppInstallationValid(ca, company));
 
     // ONE grouped aggregate instead of one query per app: with ~45 installed
     // apps, the per-app Promise.all herd fired 45 parallel RLS transactions

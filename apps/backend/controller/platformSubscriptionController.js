@@ -110,8 +110,8 @@ async function payFromWallet(prisma, { companyId, amount, appSlugs, description 
       for (const app of apps) {
         await tx.companyApp.upsert({
           where: { companyId_appId: { companyId, appId: app.id } },
-          update: { status: 'ACTIVE' },
-          create: { companyId, appId: app.id, status: 'ACTIVE' },
+          update: { status: 'ACTIVE', validUntil: nextBillingDate, nextBillingAt: nextBillingDate },
+          create: { companyId, appId: app.id, status: 'ACTIVE', validUntil: nextBillingDate, nextBillingAt: nextBillingDate },
         });
       }
 
@@ -821,8 +821,8 @@ exports.handleWebhook = async (req, res) => {
           for (const app of directApps) {
             await tx.companyApp.upsert({
               where: { companyId_appId: { companyId: billingRecord.companyId, appId: app.id } },
-              update: { status: 'ACTIVE' },
-              create: { companyId: billingRecord.companyId, appId: app.id, status: 'ACTIVE' }
+              update: { status: 'ACTIVE', validUntil: nextBillingDate, nextBillingAt: nextBillingDate },
+              create: { companyId: billingRecord.companyId, appId: app.id, status: 'ACTIVE', validUntil: nextBillingDate, nextBillingAt: nextBillingDate }
             });
           }
         } else if (isMessaging) {
@@ -833,8 +833,8 @@ exports.handleWebhook = async (req, res) => {
           for (const app of messagingApps) {
             await tx.companyApp.upsert({
               where: { companyId_appId: { companyId: billingRecord.companyId, appId: app.id } },
-              update: { status: 'ACTIVE' },
-              create: { companyId: billingRecord.companyId, appId: app.id, status: 'ACTIVE' }
+              update: { status: 'ACTIVE', validUntil: nextBillingDate, nextBillingAt: nextBillingDate },
+              create: { companyId: billingRecord.companyId, appId: app.id, status: 'ACTIVE', validUntil: nextBillingDate, nextBillingAt: nextBillingDate }
             });
           }
         }
