@@ -6,6 +6,8 @@ import {
   Calendar,
   Tag,
   RotateCw,
+  RotateCcw,
+  AlertTriangle,
   SlidersHorizontal,
 } from 'lucide-react';
 import {
@@ -28,6 +30,7 @@ export interface TaskUnifiedFilterBarProps {
   users?: TeamMember[];
   totalCount?: number;
   filteredCount?: number;
+  returnedCount?: number;
   className?: string;
   onRefresh?: () => void;
   isLoading?: boolean;
@@ -39,6 +42,7 @@ export const TaskUnifiedFilterBar: React.FC<TaskUnifiedFilterBarProps> = ({
   users = [],
   totalCount,
   filteredCount,
+  returnedCount,
   className = '',
   onRefresh,
   isLoading = false,
@@ -52,7 +56,7 @@ export const TaskUnifiedFilterBar: React.FC<TaskUnifiedFilterBarProps> = ({
 
   // Helper to update individual filter keys
   const updateFilter = useCallback(
-    (key: keyof UnifiedTaskFilters, value: string) => {
+    (key: keyof UnifiedTaskFilters, value: any) => {
       const next: UnifiedTaskFilters = { ...filters, [key]: value };
       persistUnifiedFilters(next);
       onFiltersChange(next);
@@ -107,6 +111,9 @@ export const TaskUnifiedFilterBar: React.FC<TaskUnifiedFilterBarProps> = ({
     if (filters.priority && filters.priority !== 'all') count++;
     if (filters.dueDateFrom || filters.dueDateTo) count++;
     if (filters.tag && filters.tag !== 'all') count++;
+    if (filters.returnedOnly) count++;
+    if (filters.returnReasonType && filters.returnReasonType !== 'all') count++;
+    if (filters.chronicOnly) count++;
     return count;
   }, [filters]);
 
@@ -240,10 +247,111 @@ export const TaskUnifiedFilterBar: React.FC<TaskUnifiedFilterBarProps> = ({
         <option value="pending">في الانتظار</option>
         <option value="in_progress">قيد التنفيذ</option>
         <option value="in_review">بانتظار المراجعة</option>
-        <option value="revision">تحتاج مراجعة</option>
+        <option value="revision">تحتاج مراجعة (مُعادة)</option>
         <option value="completed">مكتملة</option>
         <option value="cancelled">ملغاة</option>
       </select>
+
+      {/* 3b. Dedicated Quick Toggle: Returned for Revision */}
+      <button
+        type="button"
+        onClick={() => updateFilter('returnedOnly', !filters.returnedOnly)}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 5,
+          height: 32,
+          backgroundColor: filters.returnedOnly ? 'rgba(245, 158, 11, 0.16)' : 'var(--bg-elevated)',
+          border: filters.returnedOnly ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid var(--border-default)',
+          borderRadius: 7,
+          padding: '0 10px',
+          fontSize: 11.5,
+          color: filters.returnedOnly ? 'var(--accent-yellow)' : 'var(--text-secondary)',
+          fontWeight: filters.returnedOnly ? 700 : 500,
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          transition: 'all 120ms ease-out',
+          flexShrink: 0,
+        }}
+        title="تصفية المهام المرتجعة للتعديل فقط"
+      >
+        <RotateCcw size={12} color={filters.returnedOnly ? 'var(--accent-yellow)' : 'var(--text-muted)'} />
+        <span>المرتجعات للتعديل</span>
+        {returnedCount !== undefined && returnedCount > 0 && (
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: 16,
+              height: 16,
+              padding: '0 4px',
+              borderRadius: 9999,
+              backgroundColor: filters.returnedOnly ? 'var(--accent-yellow)' : 'rgba(245, 158, 11, 0.25)',
+              color: filters.returnedOnly ? '#1e293b' : 'var(--accent-yellow)',
+              fontSize: 10,
+              fontWeight: 700,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {returnedCount}
+          </span>
+        )}
+      </button>
+
+      {/* 3c. Sub-filters for Returned tasks when active */}
+      {filters.returnedOnly && (
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <select
+            value={filters.returnReasonType || 'all'}
+            onChange={(e) => updateFilter('returnReasonType', e.target.value)}
+            style={{
+              height: 32,
+              background: 'var(--bg-elevated)',
+              border: '1px solid rgba(245, 158, 11, 0.4)',
+              borderRadius: 7,
+              padding: '4px 8px',
+              fontSize: 11,
+              color: 'var(--accent-yellow)',
+              fontFamily: 'inherit',
+              outline: 'none',
+              cursor: 'pointer',
+            }}
+            title="تصفية بحسب سبب الإرجاع"
+          >
+            <option value="all">كافة أسباب الإرجاع</option>
+            <option value="WRONG_EXECUTION">خطأ في التنفيذ</option>
+            <option value="MISSING_EVIDENCE">نقص في أدلة الإنجاز</option>
+            <option value="CRITERIA_VIOLATION">مخالفة معايير القبول</option>
+            <option value="QUALITY">جودة دون المستوى</option>
+            <option value="LATE">تأخير في التسليم</option>
+          </select>
+
+          <button
+            type="button"
+            onClick={() => updateFilter('chronicOnly', !filters.chronicOnly)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              height: 32,
+              backgroundColor: filters.chronicOnly ? 'rgba(239, 68, 68, 0.16)' : 'var(--bg-elevated)',
+              border: filters.chronicOnly ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid var(--border-default)',
+              borderRadius: 7,
+              padding: '0 8px',
+              fontSize: 11,
+              color: filters.chronicOnly ? 'var(--accent-red)' : 'var(--text-muted)',
+              fontWeight: filters.chronicOnly ? 700 : 500,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+            title="المهام التي أُعيدت للتعديل أكثر من مرة (متكررة > 1)"
+          >
+            <AlertTriangle size={11} color={filters.chronicOnly ? 'var(--accent-red)' : 'var(--text-muted)'} />
+            <span>متكررة (&gt;1)</span>
+          </button>
+        </div>
+      )}
 
       {/* 4. Priority Filter Dropdown */}
       <select

@@ -851,8 +851,10 @@ export const TasksTab: React.FC = () => {
   };
 
   const isTaskReturned = (t: any) => {
+    if (!t) return false;
     const rawStatus = String(t.status || '').toUpperCase();
     if (rawStatus === 'REVISION') return true;
+    if (t?.returnCount && Number(t.returnCount) > 0 && rawStatus !== 'COMPLETED') return true;
     const tags = t.tags;
     if (!tags) return false;
     if (Array.isArray(tags)) return tags.includes('needs_revision');
@@ -1315,6 +1317,7 @@ export const TasksTab: React.FC = () => {
           isLoading={loading}
           totalCount={tasks.length}
           filteredCount={displayTasks.length}
+          returnedCount={revisionCount}
           className="mb-2"
         />
 
@@ -1402,7 +1405,7 @@ export const TasksTab: React.FC = () => {
               );
             })}
 
-            {revisionCount > 0 && (
+            {(revisionCount > 0 || statusFilter === 'REVISION') && (
               <button
                 onClick={() => setStatusFilter('REVISION')}
                 style={{

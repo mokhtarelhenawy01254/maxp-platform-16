@@ -11,6 +11,9 @@ export interface UnifiedTaskFilters {
   dueDateFrom: string; // YYYY-MM-DD
   dueDateTo: string; // YYYY-MM-DD
   tag: string; // 'all' or specific tag name
+  returnedOnly?: boolean; // When true, filters strictly tasks that were returned for revision
+  returnReasonType?: string; // 'all' or specific reason e.g. 'WRONG_EXECUTION', 'MISSING_EVIDENCE', etc.
+  chronicOnly?: boolean; // When true, filters tasks that were returned more than once (returnCount >= 2)
 }
 
 export const defaultUnifiedTaskFilters: UnifiedTaskFilters = {
@@ -21,6 +24,9 @@ export const defaultUnifiedTaskFilters: UnifiedTaskFilters = {
   dueDateFrom: '',
   dueDateTo: '',
   tag: 'all',
+  returnedOnly: false,
+  returnReasonType: 'all',
+  chronicOnly: false,
 };
 
 const STORAGE_KEY = 'maxp_tasks_unified_filters';
@@ -43,11 +49,13 @@ export function normalizeTaskPriority(priority: unknown): string {
 }
 
 /**
- * Checks if a task has revision tag or status
+ * Checks if a task has revision tag or status or returnCount
  */
 export function isTaskNeedsRevision(task: any): boolean {
+  if (!task) return false;
   const rawStatus = String(task?.status || '').toUpperCase();
   if (rawStatus === 'REVISION') return true;
+  if (task?.returnCount && Number(task.returnCount) > 0 && rawStatus !== 'COMPLETED') return true;
   const tags = task?.tags;
   if (!tags) return false;
   if (Array.isArray(tags)) return tags.includes('needs_revision');
@@ -194,6 +202,29 @@ export function matchesUnifiedFilter(task: any, filters: UnifiedTaskFilters): bo
     }
   }
 
+  // 3b. Dedicated Returned For Revision Filter (Quick Toggle or engine rule)
+  if (filters.returnedOnly) {
+    if (!isTaskNeedsRevision(task)) {
+      return false;
+    }
+  }
+
+  // 3c. Chronic Returns (Multiple reworks: returnCount >= 2)
+  if (filters.chronicOnly) {
+    const count = Number(task.returnCount || 0);
+    if (count < 2) {
+      return false;
+    }
+  }
+
+  // 3d. Return Reason Type Filter
+  if (filters.returnReasonType && filters.returnReasonType !== 'all') {
+    const rType = String(task.returnReasonType || task.return_reason_type || '').toUpperCase();
+    if (rType !== filters.returnReasonType.toUpperCase()) {
+      return false;
+    }
+  }
+
   // 4. Priority Filter
   if (filters.priority && filters.priority !== 'all') {
     const filterPriority = normalizeTaskPriority(filters.priority);
@@ -264,6 +295,9 @@ export function parseUnifiedFiltersFromUrl(
       dueDateFrom: params.get('dueDateFrom') ?? fallback.dueDateFrom,
       dueDateTo: params.get('dueDateTo') ?? fallback.dueDateTo,
       tag: params.get('tag') ?? fallback.tag,
+      returnedOnly: params.get('returnedOnly') === 'true' ? true : fallback.returnedOnly ?? false,
+      returnReasonType: params.get('returnReasonType') ?? fallback.returnReasonType ?? 'all',
+      chronicOnly: params.get('chronicOnly') === 'true' ? true : fallback.chronicOnly ?? false,
     };
   } catch {
     return { ...fallback };
@@ -299,6 +333,15 @@ export function serializeUnifiedFiltersToQuery(
 
   if (filters.tag && filters.tag !== 'all') params.set('tag', filters.tag);
   else params.delete('tag');
+
+  if (filters.returnedOnly) params.set('returnedOnly', 'true');
+  else params.delete('returnedOnly');
+
+  if (filters.returnReasonType && filters.returnReasonType !== 'all') params.set('returnReasonType', filters.returnReasonType);
+  else params.delete('returnReasonType');
+
+  if (filters.chronicOnly) params.set('chronicOnly', 'true');
+  else params.delete('chronicOnly');
 
   const str = params.toString();
   return str ? `?${str}` : '';

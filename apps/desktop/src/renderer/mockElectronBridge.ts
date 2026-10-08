@@ -48,6 +48,57 @@ const mockTasks = [
     taskAttachments: [],
     createdAt: '2026-10-05T08:00:00.000Z',
   },
+  {
+    id: 'task-103',
+    title: 'تصحيح تقرير الحضور وضبط السجلات المكررة',
+    status: 'IN_PROGRESS',
+    priority: 'HIGH',
+    description: 'تم إرجاع المهمة لوجود أخطاء في تكرار بصمات الموظفين ونقص أدلة الإنجاز المرفقة.',
+    acceptanceCriteria: [
+      { id: 'crit-301', text: 'حذف السجلات المكررة في التقرير', completed: false },
+      { id: 'crit-302', text: 'إرفاق ملف الاكسل المعتمد', completed: false },
+    ],
+    assignedTo: 'usr-1',
+    assigneeName: 'مختار الدسوقي',
+    assignee: { id: 'usr-1', firstName: 'مختار', lastName: 'الدسوقي', email: 'mokhtar@maxp.online' },
+    createdBy: 'usr-2',
+    createdByName: 'أحمد علي',
+    creator: { id: 'usr-2', firstName: 'أحمد', lastName: 'علي', email: 'ahmed@maxp.online' },
+    dueDate: '2026-10-10T15:00:00.000Z',
+    tags: ['attendance', 'needs_revision'],
+    returnCount: 1,
+    revisionReason: 'يرجى مراجعة وتصفية البصمات المكررة وإرفاق الإكسيل قبل التسليم',
+    returnReasonType: 'MISSING_EVIDENCE',
+    returnSeverity: 2,
+    taskWatchers: [],
+    taskAttachments: [],
+    createdAt: '2026-10-06T09:00:00.000Z',
+  },
+  {
+    id: 'task-104',
+    title: 'تعديل مسارات الـ API لمحرك المزامنة التلقائية',
+    status: 'IN_PROGRESS',
+    priority: 'URGENT',
+    description: 'إرجاع متكرر للمرة الثانية بسبب عدم مطابقة معايير القبول وفشل الاختبارات.',
+    acceptanceCriteria: [
+      { id: 'crit-401', text: 'اختبار زمن الاستجابة P95 < 0.8s', completed: false },
+    ],
+    assignedTo: 'usr-2',
+    assigneeName: 'أحمد علي',
+    assignee: { id: 'usr-2', firstName: 'أحمد', lastName: 'علي', email: 'ahmed@maxp.online' },
+    createdBy: 'usr-1',
+    createdByName: 'مختار الدسوقي',
+    creator: { id: 'usr-1', firstName: 'مختار', lastName: 'الدسوقي', email: 'mokhtar@maxp.online' },
+    dueDate: '2026-10-09T18:00:00.000Z',
+    tags: ['api', 'sync', 'needs_revision'],
+    returnCount: 2,
+    revisionReason: 'فشل فحص زمن الاستجابة في الاختبارات، يرجى التحسين وإعادة التسليم',
+    returnReasonType: 'CRITERIA_VIOLATION',
+    returnSeverity: 3,
+    taskWatchers: [],
+    taskAttachments: [],
+    createdAt: '2026-10-04T11:00:00.000Z',
+  },
 ];
 
 let tasksState = [...mockTasks];
@@ -115,12 +166,29 @@ export function initMockElectronBridge() {
       status: string,
       revisionReason?: string,
       _options?: any,
-      _returnReasonType?: string,
-      _returnSeverity?: number
+      returnReasonType?: string,
+      returnSeverity?: number
     ) => {
-      tasksState = tasksState.map((t) =>
-        t.id === taskId ? { ...t, status, revisionReason: revisionReason || (t as any).revisionReason } : t
-      );
+      tasksState = tasksState.map((t) => {
+        if (t.id !== taskId) return t;
+        const currentCount = Number((t as any).returnCount || 0);
+        const tags = Array.isArray(t.tags) ? [...t.tags] : [];
+        if (revisionReason && !tags.includes('needs_revision')) {
+          tags.push('needs_revision');
+        } else if (status === 'COMPLETED' || status === 'IN_REVIEW') {
+          const idx = tags.indexOf('needs_revision');
+          if (idx !== -1) tags.splice(idx, 1);
+        }
+        return {
+          ...t,
+          status,
+          tags,
+          returnCount: revisionReason ? currentCount + 1 : currentCount,
+          revisionReason: revisionReason ?? (t as any).revisionReason,
+          returnReasonType: returnReasonType ?? (t as any).returnReasonType,
+          returnSeverity: returnSeverity ?? (t as any).returnSeverity,
+        };
+      });
       const updated = tasksState.find((t) => t.id === taskId);
       return { success: true, task: updated };
     },

@@ -107,7 +107,10 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
         }
       })()
     : [];
-  const isReturnedForRevision = parsedTags.includes('needs_revision') || rawStatus === 'REVISION';
+  const isReturnedForRevision =
+    parsedTags.includes('needs_revision') ||
+    rawStatus === 'REVISION' ||
+    (Boolean(task.returnCount) && Number(task.returnCount) > 0 && !isCompleted);
 
   const isMultiRunning = activeTaskIds ? activeTaskIds[task.id] !== undefined : false;
   const isRunning = !isCompleted && !isInReview && (activeTaskId === task.id || isMultiRunning);
@@ -314,9 +317,44 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
 
           {/* Distinct Revision Badge for Returned Tasks */}
           {isReturnedForRevision && !isCompleted && (
-            <span style={rowStyles.revisionBadge} title="مهمة مُعادة للتعديل — انقر لعرض ملاحظات المشرف">
+            <span
+              style={rowStyles.revisionBadge}
+              title={
+                task.revisionReason
+                  ? `مهمة مُعادة للتعديل — سبب الإرجاع: ${task.revisionReason}`
+                  : 'مهمة مُعادة للتعديل — انقر لعرض ملاحظات المشرف'
+              }
+            >
               <RotateCcw size={9} color="var(--accent-yellow)" />
               <span>مُعادة للتعديل</span>
+              {task.returnCount && task.returnCount > 1 ? (
+                <span style={{ fontSize: 9, fontWeight: 800 }}>({task.returnCount}x)</span>
+              ) : null}
+            </span>
+          )}
+
+          {/* Quick Revision Reason Snippet */}
+          {isReturnedForRevision && !isCompleted && task.revisionReason && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                fontSize: 10,
+                padding: '1px 6px',
+                borderRadius: 4,
+                backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                border: '1px solid rgba(245, 158, 11, 0.25)',
+                color: 'var(--text-secondary)',
+                maxWidth: 240,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+              title={`سبب الإرجاع: ${task.revisionReason}`}
+            >
+              <span style={{ color: 'var(--accent-yellow)', fontWeight: 600, flexShrink: 0 }}>السبب:</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.revisionReason}</span>
             </span>
           )}
 
