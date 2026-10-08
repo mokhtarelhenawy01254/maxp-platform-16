@@ -9,6 +9,7 @@ GRADLE="apps/frontend/android/app/build.gradle"
 JSON_PUB="apps/frontend/public/latest-android.json"
 JSON_DL="apps/frontend/public/download/latest-android.json"
 SERVICE="apps/frontend/src/services/appUpdateService.ts"
+BACKEND="apps/backend/routes/appVersionRoutes.js"
 
 # Extract versions
 GRADLE_NAME=$(grep -E "versionName\s+\"" "$GRADLE" | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
@@ -54,10 +55,26 @@ if [ "$GRADLE_NAME" != "$DL_NAME" ]; then
   ERRORS=$((ERRORS + 1))
 fi
 
+# Check backend route hardcoded default (primary API source)
+if [ -f "$BACKEND" ]; then
+  BE_NAME=$(grep -oP "latestVersion:\s*'\K[^']+" "$BACKEND" | head -1)
+  BE_CODE=$(grep -oP "latestVersionCode:\s*\K[0-9]+" "$BACKEND" | head -1)
+  echo "  backend route:       $BE_NAME (code $BE_CODE)"
+
+  if [ "$GRADLE_NAME" != "$BE_NAME" ]; then
+    echo "MISMATCH: build.gradle ($GRADLE_NAME) != backend appVersionRoutes.js ($BE_NAME)"
+    ERRORS=$((ERRORS + 1))
+  fi
+  if [ "$GRADLE_CODE" != "$BE_CODE" ]; then
+    echo "MISMATCH: build.gradle code ($GRADLE_CODE) != backend appVersionRoutes.js code ($BE_CODE)"
+    ERRORS=$((ERRORS + 1))
+  fi
+fi
+
 if [ $ERRORS -gt 0 ]; then
   echo ""
   echo "FAILED: $ERRORS version mismatch(es) detected."
-  echo "All three sources must agree. Update them together when bumping the Android version."
+  echo "All four sources must agree: build.gradle, latest-android.json, appUpdateService.ts, appVersionRoutes.js"
   exit 1
 fi
 
