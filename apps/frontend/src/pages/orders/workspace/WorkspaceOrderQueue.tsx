@@ -187,7 +187,16 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
 
       {/* Stream list */}
       <div className="flex-1 divide-y divide-border/30 overflow-y-auto overscroll-contain h-full scrollbar-thin scrollbar-thumb-border/60 hover:scrollbar-thumb-border">
-        {displayOrders.map((order) => {
+        {displayOrders.length === 0 ? (
+          <div className="flex h-32 flex-col items-center justify-center p-4 text-center text-muted-foreground">
+            <p className="text-xs font-medium">
+              {riskOnly
+                ? (isArabic ? 'لا توجد طلبات عالية الخطورة' : 'No high-risk orders')
+                : (isArabic ? 'لا توجد طلبات مطابقة' : 'No matching orders')}
+            </p>
+          </div>
+        ) : (
+          displayOrders.map((order) => {
           const isSelected = order.id === selectedOrderId;
           const overdue = isOrderOverdue(order);
           const location = [order.governorate, order.city].filter(Boolean).join('، ') || '—';
@@ -323,7 +332,8 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
               </div>
             </article>
           );
-        })}
+        })
+      )}
 
         {/* Sentinel for infinite scroll */}
         <div ref={sentinelRef} className="h-4 w-full" aria-hidden="true" />

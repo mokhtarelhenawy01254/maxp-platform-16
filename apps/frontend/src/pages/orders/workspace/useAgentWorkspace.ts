@@ -266,6 +266,7 @@ export function useAgentWorkspace() {
         ? payload.data
         : [];
 
+      let extraIncompleteCount = 0;
       // Merge incomplete carts into pending and all queues
       if (incRes?.data?.data && Array.isArray(incRes.data.data)) {
         const incompleteOrders: WorkspaceOrder[] = (incRes.data.data as any[])
@@ -275,14 +276,17 @@ export function useAgentWorkspace() {
         if (incompleteOrders.length > 0) {
           const existingIds = new Set(nextOrders.map((o) => o.id));
           const distinctIncomplete = incompleteOrders.filter((inc) => !existingIds.has(inc.id));
+          extraIncompleteCount = distinctIncomplete.length;
           nextOrders = [...nextOrders, ...distinctIncomplete];
-
-          if (resolvedSort === 'oldest') {
-            nextOrders.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-          } else {
-            nextOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          }
         }
+      }
+
+      if (resolvedSort === 'oldest') {
+        nextOrders.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      } else if (resolvedSort === 'attempts') {
+        nextOrders.sort((a, b) => (b.callAttempts || 0) - (a.callAttempts || 0));
+      } else {
+        nextOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       }
 
       const paginationData: any = payload?.pagination;
@@ -312,7 +316,7 @@ export function useAgentWorkspace() {
 
       setPage(append ? nextPage : 1);
       setPagination({
-        total: nextTotal,
+        total: nextTotal + extraIncompleteCount,
         page: nextPage,
         limit: Number(paginationData?.limit) || 50,
         pages: nextPages,

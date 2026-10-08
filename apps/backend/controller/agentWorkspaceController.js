@@ -288,21 +288,14 @@ const getWorkspaceStats = async (prisma, companyId, userId, { assignedTo = '', i
     ]
   };
 
-  const todayStatusWhere = (status) => ({
-    ...base,
-    OR: [
-      { order: { status, createdAt: { gte: startOfToday } } },
-      { guestOrder: { status: { in: [status.toUpperCase(), status.toLowerCase()] }, createdAt: { gte: startOfToday } } }
-    ]
-  });
 
   const [total, today, pending, processing, confirmed, cancelled, followup] = await Promise.all([
     prisma.orderAssignment.count({ where: excludedWhere }),
     prisma.orderAssignment.count({ where: todayWhere }),
-    prisma.orderAssignment.count({ where: todayStatusWhere('PENDING') }),
-    prisma.orderAssignment.count({ where: todayStatusWhere('PROCESSING') }),
-    prisma.orderAssignment.count({ where: todayStatusWhere('CONFIRMED') }),
-    prisma.orderAssignment.count({ where: todayStatusWhere('CANCELLED') }),
+    prisma.orderAssignment.count({ where: statusWhere('PENDING') }),
+    prisma.orderAssignment.count({ where: statusWhere('PROCESSING') }),
+    prisma.orderAssignment.count({ where: statusWhere('CONFIRMED') }),
+    prisma.orderAssignment.count({ where: statusWhere('CANCELLED') }),
     prisma.orderAssignment.count({ where: followupWhere })
   ]);
 
