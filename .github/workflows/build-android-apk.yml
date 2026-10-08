@@ -55,6 +55,9 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
+      - name: Verify Android Version Sync (build.gradle == latest-android.json == appUpdateService.ts)
+        run: bash scripts/verify-android-version-sync.sh
+
       - name: Install Frontend Dependencies
         working-directory: apps/frontend
         run: npm ci --legacy-peer-deps
