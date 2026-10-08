@@ -512,6 +512,10 @@ class ProductConfigureConversionInput(BaseModel):
         default=None,
         description="Set to True to completely clear/remove/delete all quantity discount tiers and bundle offers from this product (or from all products if product_id='all').",
     )
+    clear_compare_prices: bool | None = Field(
+        default=None,
+        description="Set to True to completely clear/remove/reset compare-at strikethrough discount prices (سعر الشطب قبل الخصم وشارات الخصم المئوية) from this product (or across all products in the store if product_id='all').",
+    )
     show_fake_stock: bool | None = Field(
         default=None,
         description="Optional toggle for the per-product urgency fake stock counter (عداد وهمي) in the Advanced tab.",
@@ -563,6 +567,8 @@ async def product_configure_conversion(input_data: ProductConfigureConversionInp
         updates["quantity_tiers"] = [t.model_dump() for t in input_data.quantity_tiers]
     if input_data.clear_quantity_offers is not None:
         updates["clear_quantity_offers"] = input_data.clear_quantity_offers
+    if input_data.clear_compare_prices is not None:
+        updates["clear_compare_prices"] = input_data.clear_compare_prices
     if input_data.show_fake_stock is not None:
         updates["show_fake_stock"] = input_data.show_fake_stock
     if input_data.exclude_from_free_shipping is not None:
@@ -571,6 +577,7 @@ async def product_configure_conversion(input_data: ProductConfigureConversionInp
         updates["enable_checkout_form"] = input_data.enable_checkout_form
     if input_data.compare_price is not None:
         updates["compare_price"] = input_data.compare_price
+
 
     from src.tools.repositories.product_repository import ProductRepository
     import src.db.session as _db_mod
@@ -632,14 +639,16 @@ product_configure_conversion_tool = FunctionTool(
     name="product_configure_conversion",
     description=(
         "Configure or clear per-product conversion, bundle, cross-sell, upsell, related products, quantity discount tiers (شرائح عروض الكميات), "
-        "fake stock urgency counter, or checkout settings for a single specific product (or pass product_id='all' with clear_quantity_offers=True to clear quantity offers across all products in the store). "
-        "Use clear_quantity_offers=True (or quantity_tiers=[]) whenever the merchant asks to remove/delete/cancel quantity offers on a product or all products. "
+        "compare-at strikethrough discount prices (سعر الشطب وشارة الخصم), fake stock urgency counter, or checkout settings for a single specific product "
+        "(or pass product_id='all' with clear_quantity_offers=True and/or clear_compare_prices=True to clear offers and discount badges across all products in the store). "
+        "Use clear_quantity_offers=True and/or clear_compare_prices=True whenever the merchant asks to remove/delete/cancel offers or discounts on a product or all products ('عايز اشيل عروض', 'احذف العروض', 'شيل سعر الشطب'). "
         "Requires merchant approval."
     ),
     func=product_configure_conversion,
     input_model=ProductConfigureConversionInput,
     format_result=_format_product_configure_conversion,
 )
+
 
 __all_tools__ = [
     product_search_tool,

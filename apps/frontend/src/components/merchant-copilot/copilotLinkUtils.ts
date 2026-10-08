@@ -4,8 +4,16 @@ import { toast } from 'sonner';
 if (typeof window !== 'undefined') {
   try {
     const sp = new URLSearchParams(window.location.search);
-    const hasCopilot = sp.get('copilot') === '1' || sp.get('copilot') === 'true';
-    const sess = sp.get('session');
+    let hasCopilot = sp.get('copilot') === '1' || sp.get('copilot') === 'true';
+    let sess = sp.get('session');
+
+    if (!hasCopilot && !sess && window.location.hash.includes('?')) {
+      const hashQuery = window.location.hash.split('?')[1];
+      const hp = new URLSearchParams(hashQuery);
+      hasCopilot = hp.get('copilot') === '1' || hp.get('copilot') === 'true';
+      sess = hp.get('session');
+    }
+
     if (hasCopilot || sess) {
       sessionStorage.setItem('pending_copilot_open', '1');
       if (sess) {
@@ -16,6 +24,7 @@ if (typeof window !== 'undefined') {
     // Ignore storage restrictions
   }
 }
+
 
 /**
  * Builds the canonical deep link URL for a specific Copilot session.

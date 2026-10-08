@@ -126,7 +126,42 @@ export const MerchantCopilotHost: React.FC = () => {
     location.pathname.startsWith('/super-admin') ||
     shouldUseSuperAdminShell(user?.role, location.pathname);
 
-  // Clean deep-link params from address bar using history.replaceState once on initial mount
+  // Reactive listener for deep links across route transitions and auth redirects
+  useEffect(() => {
+    try {
+      const searchParams = new URLSearchParams(location.search);
+      let isCopilotRequested =
+        searchParams.get('copilot') === '1' ||
+        searchParams.get('copilot') === 'true';
+      let sessionParam = searchParams.get('session');
+
+      if (!isCopilotRequested && !sessionParam && location.hash.includes('?')) {
+        const hashQuery = location.hash.split('?')[1];
+        const hashParams = new URLSearchParams(hashQuery);
+        isCopilotRequested =
+          hashParams.get('copilot') === '1' ||
+          hashParams.get('copilot') === 'true';
+        sessionParam = hashParams.get('session');
+      }
+
+      const storedOpen = sessionStorage.getItem('pending_copilot_open');
+      const storedSession = sessionStorage.getItem('pending_copilot_session');
+
+      if (isCopilotRequested || sessionParam || storedOpen === '1' || storedSession) {
+        setIsOpen(true);
+        const resolvedSession = sessionParam || storedSession;
+        if (resolvedSession) {
+          setInitialSessionId(resolvedSession);
+        }
+        if (storedOpen) sessionStorage.removeItem('pending_copilot_open');
+        if (storedSession) sessionStorage.removeItem('pending_copilot_session');
+      }
+    } catch (err) {
+      console.warn('[MerchantCopilotHost] Location update check error:', err);
+    }
+  }, [location.search, location.hash]);
+
+  // Clean deep-link params from address bar safely after state is captured
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -145,7 +180,8 @@ export const MerchantCopilotHost: React.FC = () => {
     } catch (err) {
       console.warn('[MerchantCopilotHost] URL cleanup error:', err);
     }
-  }, []);
+  }, [location.pathname]);
+
 
   useEffect(() => {
     if (isSuperAdminRoute) return;

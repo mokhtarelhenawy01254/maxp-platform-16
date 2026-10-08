@@ -1,7 +1,8 @@
 import React, { ReactNode, useEffect } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { Lock, CreditCard, ArrowLeft } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import AccessDenied from "./AccessDenied";
 import { APP_REGISTRY } from "../../config/appRegistry";
@@ -59,13 +60,14 @@ function getCandidateSlugs(slug: string): string[] {
 interface AppAccessRouteProps {
   children: ReactNode;
   requiredAppSlugs: string[];
-  redirectMode?: "redirect" | "screen";
+  redirectMode?: "redirect" | "screen" | "overlay-blur";
 }
 
 /**
  * Protects a route based on whether the company has one of the required
  * marketplace apps active.
- * If subscription is missing or expired, redirects to the marketplace subscription/renewal page.
+ * If subscription is missing or expired, redirects to the marketplace subscription/renewal page
+ * or renders a blurred locked overlay with renewal popup.
  * SUPER_ADMIN always bypasses.
  */
 export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
@@ -76,6 +78,7 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
   const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
@@ -121,13 +124,81 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
 
   useEffect(() => {
     if (!hasAccess && isAuthenticated && user && user.role !== "SUPER_ADMIN") {
-      toast.error(
-        `هذه الصفحة تتطلب اشتراكاً سارياً في تطبيق «${formattedAppNames}». يرجى تجديد أو تفعيل الاشتراك للمتابعة.`
-      );
+      if (redirectMode !== "overlay-blur") {
+        toast.error(
+          `هذه الصفحة تتطلب اشتراكاً سارياً في تطبيق «${formattedAppNames}». يرجى تجديد أو تفعيل الاشتراك للمتابعة.`
+        );
+      }
     }
-  }, [hasAccess, isAuthenticated, user, formattedAppNames]);
+  }, [hasAccess, isAuthenticated, user, formattedAppNames, redirectMode]);
 
   if (!hasAccess) {
+    if (redirectMode === "overlay-blur") {
+      return (
+        <div className="relative w-full h-full min-h-[calc(100vh-4rem)] overflow-hidden isolate">
+          {/* Blurred locked underlying app */}
+          <div
+            className="w-full h-full pointer-events-none select-none filter blur-md opacity-35 grayscale-[20%] transition-all"
+            aria-hidden="true"
+            tabIndex={-1}
+          >
+            {children}
+          </div>
+
+          {/* Locked Overlay Backdrop & Renewal Modal */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="expired-subscription-title"
+              aria-describedby="expired-subscription-desc"
+              className="relative w-full max-w-md bg-card/95 border border-border/80 shadow-2xl rounded-2xl p-6 sm:p-7 text-center space-y-5 backdrop-blur-md"
+            >
+              {/* Lock Badge */}
+              <div className="mx-auto w-14 h-14 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive shadow-inner">
+                <Lock className="w-7 h-7" />
+              </div>
+
+              {/* Status & Copy */}
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-destructive/10 text-destructive border border-destructive/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
+                  <span>انتهى الاشتراك الشهري</span>
+                </div>
+                <h2 id="expired-subscription-title" className="text-xl font-bold tracking-tight text-foreground">
+                  اشتراك «{formattedAppNames}» منتهي
+                </h2>
+                <p id="expired-subscription-desc" className="text-sm text-muted-foreground leading-relaxed text-pretty">
+                  لقد انتهت فترة الاشتراك في خدمة «{formattedAppNames}». تم إيقاف وتشفير إمكانية إرسال واستقبال المحادثات حتى يتم تجديد الاشتراك.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="pt-2 flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => navigate(`/marketplace/${encodeURIComponent(primarySlug)}`)}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm shadow hover:bg-primary/90 active:scale-[0.98] transition-all"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  <span>تجديد الاشتراك الآن</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/dashboard")}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-border/70 bg-secondary/50 hover:bg-secondary text-secondary-foreground text-sm font-medium transition-all active:scale-[0.98]"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>العودة إلى لوحة التحكم</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     if (redirectMode === "screen") {
       return (
         <AccessDenied

@@ -436,3 +436,12 @@ def test_product_configure_conversion_input_accepts_clear_quantity_offers():
     assert inp.product_id == "all"
     assert inp.clear_quantity_offers is True
 
+
+def test_product_configure_conversion_input_accepts_clear_compare_prices():
+    from src.tools.definitions.product import ProductConfigureConversionInput
+
+    inp = ProductConfigureConversionInput(product_id="all", clear_compare_prices=True)
+    assert inp.product_id == "all"
+    assert inp.clear_compare_prices is True
+
+

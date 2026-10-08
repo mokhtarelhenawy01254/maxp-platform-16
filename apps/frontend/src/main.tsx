@@ -1,6 +1,8 @@
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
+import "./components/merchant-copilot/copilotLinkUtils";
 import { shouldBootstrapStorefront } from "./bootstrap/requestTarget";
+
 import {
   emergencyPurgeAndHardReload,
   installChunkLoadRecovery,

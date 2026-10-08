@@ -156,12 +156,15 @@ class ProductRepository(BaseRepository):
 
         norm_pid = str(product_id or "").strip().lower()
         if norm_pid in ("all", "الكل", "جميع المنتجات", "كل المنتجات", "*"):
+            cleared_count = 0
+            cleared_compare_count = 0
+            changes_applied: list[str] = []
+
             if updates.get("clear_quantity_offers") or updates.get("quantity_tiers") == []:
                 rows = await self._session.execute(
                     text('SELECT id, name, metadata FROM products WHERE "companyId" = :cid'),
                     {"cid": company_id},
                 )
-                cleared_count = 0
                 for row in rows.mappings().all():
                     p_meta = self._parse_metadata(row.get("metadata"))
                     had_offers = bool(
@@ -179,6 +182,8 @@ class ProductRepository(BaseRepository):
                     if had_offers:
                         cleared_count += 1
                 await self._session.commit()
+                changes_applied.append(f"مسح وإلغاء شرائح عروض الكميات من جميع المنتجات ({cleared_count} منتج كان عليه عروض)")
+
                 try:
                     from src.tools.backend_client import get_backend_client
                     from src.tools.definitions.conversion_tools import _deep_merge, _find_managed_app, _is_operational
@@ -201,14 +206,25 @@ class ProductRepository(BaseRepository):
                         await backend.update_company_app_settings(company_id, conv_app["id"], merged_conv)
                 except Exception:
                     pass
+
+            if updates.get("clear_compare_prices"):
+                comp_res = await self._session.execute(
+                    text('UPDATE products SET "comparePrice" = NULL, "updatedAt" = NOW() WHERE "companyId" = :cid AND "comparePrice" IS NOT NULL'),
+                    {"cid": company_id},
+                )
+                cleared_compare_count = comp_res.rowcount
+                await self._session.commit()
+                changes_applied.append(f"مسح أسعار الشطب والخصومات المباشرة من {cleared_compare_count} منتج وإلغاء شارات الخصم المئوية من واجهة المتجر")
+
+            if changes_applied:
                 return {
                     "success": True,
                     "clearedProductsCount": cleared_count,
-                    "changesApplied": [
-                        f"تم مسح وإلغاء شرائح عروض الكمية من جميع المنتجات ({cleared_count} منتج كان عليه عروض) وإيقاف عرض عروض الكميات على واجهة المتجر"
-                    ],
-                    "message": f"تم مسح وإلغاء شرائح عروض الكمية من جميع منتجات المتجر بنجاح ({cleared_count} منتج) وإيقاف ودجت عروض الكميات.",
+                    "clearedComparePricesCount": cleared_compare_count,
+                    "changesApplied": changes_applied,
+                    "message": " · ".join(changes_applied),
                 }
+
 
         product = await self.resolve_product_by_identifier(company_id, product_id)
         if not product:
@@ -309,9 +325,13 @@ class ProductRepository(BaseRepository):
             changes_applied.append(f"العداد الوهمي للمنتج: {'مفعّل' if show_fake_stock else 'متوقف'}")
 
         compare_price = product.get("comparePrice")
-        if updates.get("compare_price") is not None:
+        if updates.get("clear_compare_prices"):
+            compare_price = None
+            changes_applied.append("مسح سعر الشطب (قبل الخصم) وإلغاء شارة الخصم")
+        elif updates.get("compare_price") is not None:
             compare_price = float(updates["compare_price"])
             changes_applied.append(f"سعر الشطب (قبل الخصم): {compare_price} ج.م")
+
 
         meta_json = json.dumps(meta, ensure_ascii=False)
         await self._session.execute(text("""

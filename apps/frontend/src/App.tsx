@@ -3687,7 +3687,7 @@ const AppContent = () => {
                   path="/whatsapp/routing"
                   element={
                     <Layout fullWidth>
-                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']} redirectMode="overlay-blur">
                         <InboxPage />
                       </AppAccessRoute>
                     </Layout>
@@ -3697,7 +3697,7 @@ const AppContent = () => {
                   path="/whatsapp/routing/:sessionId"
                   element={
                     <Layout fullWidth>
-                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']} redirectMode="overlay-blur">
                         <InboxPage />
                       </AppAccessRoute>
                     </Layout>
@@ -3707,7 +3707,7 @@ const AppContent = () => {
                   path="/whatsapp-chat/:conversationId"
                   element={
                     <Layout fullWidth>
-                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']} redirectMode="overlay-blur">
                         <InboxChat />
                       </AppAccessRoute>
                     </Layout>
@@ -7228,7 +7228,7 @@ const AppContent = () => {
                   path="/whatsapp"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']} redirectMode="overlay-blur">
                         <WhatsAppChat />
                       </AppAccessRoute>
                     </Layout>
@@ -7238,7 +7238,7 @@ const AppContent = () => {
                   path="/whatsapp/chat"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']} redirectMode="overlay-blur">
                         <WhatsAppChat />
                       </AppAccessRoute>
                     </Layout>
@@ -7248,7 +7248,7 @@ const AppContent = () => {
                   path="/whatsapp/settings"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']} redirectMode="overlay-blur">
                         <WhatsAppSettings />
                       </AppAccessRoute>
                     </Layout>
@@ -7258,7 +7258,7 @@ const AppContent = () => {
                   path="/whatsapp/notifications"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']} redirectMode="overlay-blur">
                         <WhatsAppNotifications />
                       </AppAccessRoute>
                     </Layout>
@@ -7268,7 +7268,7 @@ const AppContent = () => {
                   path="/whatsapp/templates"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']} redirectMode="overlay-blur">
                         <WhatsAppTemplates />
                       </AppAccessRoute>
                     </Layout>
@@ -7278,7 +7278,7 @@ const AppContent = () => {
                   path="/whatsapp/customer-journey"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']} redirectMode="overlay-blur">
                         <WhatsAppCustomerJourney />
                       </AppAccessRoute>
                     </Layout>
@@ -7288,7 +7288,7 @@ const AppContent = () => {
                   path="/whatsapp/meta-templates"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']} redirectMode="overlay-blur">
                         <WhatsAppMetaTemplates />
                       </AppAccessRoute>
                     </Layout>
@@ -7298,7 +7298,7 @@ const AppContent = () => {
                   path="/whatsapp/template-broadcast"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']} redirectMode="overlay-blur">
                         <WhatsAppTemplateBroadcast />
                       </AppAccessRoute>
                     </Layout>
@@ -7308,7 +7308,7 @@ const AppContent = () => {
                   path="/whatsapp/lead-followup"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']} redirectMode="overlay-blur">
                         <WhatsAppLeadFollowUp />
                       </AppAccessRoute>
                     </Layout>
@@ -7318,7 +7318,7 @@ const AppContent = () => {
                   path="/whatsapp/cloud-connect"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']} redirectMode="overlay-blur">
                         <WhatsAppCloudConnect />
                       </AppAccessRoute>
                     </Layout>
@@ -7328,7 +7328,7 @@ const AppContent = () => {
                   path="/whatsapp/employee-analytics"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']} redirectMode="overlay-blur">
                         <WhatsAppEmployeeAnalytics />
                       </AppAccessRoute>
                     </Layout>
@@ -7338,7 +7338,7 @@ const AppContent = () => {
                   path="/whatsapp/conversation-analytics"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']} redirectMode="overlay-blur">
                         <WhatsAppConversationAnalytics />
                       </AppAccessRoute>
                     </Layout>
@@ -7348,7 +7348,7 @@ const AppContent = () => {
                   path="/whatsapp/notification-logs"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']} redirectMode="overlay-blur">
                         <WhatsAppNotificationLogs />
                       </AppAccessRoute>
                     </Layout>
