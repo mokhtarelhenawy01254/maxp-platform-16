@@ -65,9 +65,9 @@ export interface TeamMemberSummary {
   overdueTasksCount?: number;
   tasksPerHour?: number;
   operationalSignal?: {
-    type: 'TASK_OVERLOAD' | 'DISTRACTION' | 'NEGLECT' | 'OFF_DEVICE_WORK' | 'NORMAL';
+    type: 'TASK_OVERLOAD' | 'DISTRACTION' | 'NEGLECT' | 'OFF_DEVICE_WORK' | 'STEADY_PERFORMANCE' | 'NORMAL';
     label: string;
-    severity: 'info' | 'warning' | 'critical';
+    severity: 'info' | 'warning' | 'critical' | 'success';
     reason: string;
   } | null;
   elapsedAttendanceSeconds?: number;
@@ -863,6 +863,8 @@ export const MonitorDashboard: React.FC = () => {
                                       ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:border-transparent dark:bg-amber-500/15 dark:text-amber-300'
                                       : m.operationalSignal.type === 'NEGLECT'
                                       ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:border-transparent dark:bg-rose-500/15 dark:text-rose-300'
+                                      : m.operationalSignal.type === 'STEADY_PERFORMANCE'
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:border-transparent dark:bg-emerald-500/15 dark:text-emerald-300'
                                       : 'bg-sky-50 text-sky-700 border border-sky-200 dark:border-transparent dark:bg-sky-500/15 dark:text-sky-300'
                                   }`}
                                   title={m.operationalSignal.reason}

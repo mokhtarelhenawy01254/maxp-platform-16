@@ -237,6 +237,8 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
                       ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-amber-500/30'
                       : data.summary.operationalSignal.type === 'NEGLECT'
                       ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 ring-1 ring-inset ring-rose-500/30'
+                      : data.summary.operationalSignal.type === 'STEADY_PERFORMANCE'
+                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-1 ring-inset ring-emerald-500/30'
                       : 'bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-1 ring-inset ring-sky-500/30'
                   }`}
                   title={data.summary.operationalSignal.reason}
@@ -379,11 +381,11 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
             <span className="text-muted-foreground font-medium">
-              سكون: {formatSeconds(Math.max(0, totalIdle - (data.breaksSummary?.totalBreakSeconds || 0)))}
+              سكون: {formatSeconds(data.summary?.totalSleepSeconds ?? Math.max(0, totalIdle - (data.breaksSummary?.totalBreakSeconds || 0)))}
             </span>
             <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-amber-500/20">
-              بريك: {formatSeconds(data.breaksSummary?.totalBreakSeconds || 0)}
-              {data.breaksSummary?.totalBreaksCount ? ` (${data.breaksSummary.totalBreaksCount} مرات)` : ''}
+              بريك: {formatSeconds(data.summary?.totalBreakSeconds ?? data.breaksSummary?.totalBreakSeconds ?? 0)}
+              {(data.summary?.totalBreaksCount ?? data.breaksSummary?.totalBreaksCount) ? ` (${data.summary?.totalBreaksCount ?? data.breaksSummary?.totalBreaksCount} مرات)` : ''}
             </span>
           </div>
         </div>

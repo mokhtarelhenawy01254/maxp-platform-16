@@ -109,5 +109,46 @@ describe('MonitorService Productivity & Warmup Calculations', () => {
       expect(signal.type).toBe('NEGLECT');
       expect(signal.target).toBe('DIRECT_INTERVENTION');
     });
+
+    test('prevents false NEGLECT signal when employee has an active task timer running', () => {
+      const metrics = {
+        totalActiveSeconds: 20 * 60, // 20 mins active
+        totalClockSeconds: 4 * 3600, // 4 hours clocked in
+        totalProductiveSeconds: 0,
+        totalUnproductiveSeconds: 0,
+        avgActivityScore: 15,
+        completedTasksCount: 0,
+        openTasksCount: 2,
+        overdueTasksCount: 0,
+        hasActiveTimer: true, // task timer is actively running
+      };
+
+      const signal = monitorService.evaluateOperationalSignal({
+        ...metrics,
+        activeRatio: Math.round((metrics.totalActiveSeconds / metrics.totalClockSeconds) * 100),
+      });
+      expect(signal.type).not.toBe('NEGLECT');
+    });
+
+    test('returns STEADY_PERFORMANCE when employee has steady active progress on open tasks without distraction', () => {
+      const metrics = {
+        totalActiveSeconds: 4 * 3600, // 4 hours active
+        totalClockSeconds: 5 * 3600,  // 5 hours clocked in
+        totalProductiveSeconds: 3.5 * 3600,
+        totalUnproductiveSeconds: 0,
+        avgActivityScore: 78,
+        completedTasksCount: 0, // working on a long multi-hour open task
+        openTasksCount: 2,
+        overdueTasksCount: 0,
+        hasActiveTimer: true,
+      };
+
+      const signal = monitorService.evaluateOperationalSignal({
+        ...metrics,
+        activeRatio: Math.round((metrics.totalActiveSeconds / metrics.totalClockSeconds) * 100),
+      });
+      expect(signal.type).toBe('STEADY_PERFORMANCE');
+      expect(signal.severity).toBe('success');
+    });
   });
 });

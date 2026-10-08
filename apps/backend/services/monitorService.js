@@ -128,11 +128,19 @@ function computeProductivityScore({
   const sActive = Math.round((activeRatio * 0.6) + (Math.min(100, Math.max(0, avgActivityScore)) * 0.4));
 
   // 2. Productive Tools Usage Factor (S_tools - Weight: 35%)
-  let sTools = 70; // Fair neutral baseline if tool tracking hasn't gathered sufficient data
+  let sTools = 75; // Fair neutral baseline if tool tracking hasn't gathered sufficient data
   const totalTrackedTools = totalProductiveSeconds + totalUnproductiveSeconds;
-  if (totalTrackedTools > 0 || totalActiveSeconds >= 1800) {
+  if (totalTrackedTools > 0) {
     const denom = Math.max(totalTrackedTools, totalActiveSeconds, 1800);
-    sTools = Math.min(100, Math.round((totalProductiveSeconds / denom) * 100));
+    if (totalProductiveSeconds > 0) {
+      sTools = Math.min(100, Math.max(50, Math.round((totalProductiveSeconds / denom) * 100)));
+    } else if (totalUnproductiveSeconds > 0) {
+      // Scale down only when explicit unproductive apps were used
+      sTools = Math.max(15, 75 - Math.round((totalUnproductiveSeconds / 3600) * 20));
+    }
+  } else if (totalActiveSeconds >= 1800) {
+    // Active on device with unrated/neutral apps — maintain fair neutral baseline (75)
+    sTools = 75;
   }
 
   // 3. Output & Task Completion Factor (S_output - Weight: 40%)
@@ -176,45 +184,48 @@ function evaluateOperationalSignal({
   openTasksCount = 0,
   overdueTasksCount = 0,
   activeRatio = 0,
+  hasActiveTimer = false,
+  totalUnproductiveSeconds = 0,
 }) {
-  // 1. مشكلة توزيع مهام (نشاط منخفض + مهام متأخرة كتير) -> التنبيه للمدير مش للموظف
-  if (overdueTasksCount >= 2 && (activeRatio < 40 || totalActiveSeconds < 3 * 3600)) {
+  // 1. مشكلة توزيع مهام (نشاط منخفض + مهام متأخرة كتير بعد انقضاء جزء معتبر من الدوام) -> التنبيه للمدير مش للموظف
+  if (overdueTasksCount >= 2 && (totalClockSeconds >= 3 * 3600 || totalActiveSeconds >= 2 * 3600) && (activeRatio < 40 || totalActiveSeconds < 3 * 3600)) {
     return {
       type: 'TASK_OVERLOAD',
       label: 'مشكلة توزيع مهام',
       severity: 'warning',
       target: 'MANAGER',
-      badgeClass: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 ring-1 ring-amber-500/30',
+      badgeClass: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300 ring-1 ring-indigo-500/30',
       reason: 'الموظف يواجه تراكماً في المهام المتأخرة مع انخفاض النشاط على الجهاز، ما يشير إلى حمل عمل يفوق طاقته أو تعثر في التكليفات. يُوصى بمراجعة توزيع المهام وليس مساءلة الموظف.'
     };
   }
 
-  // 2. تشتت (نشاط عالي + مخرجات صفر)
-  if ((totalActiveSeconds >= 3 * 3600 || activeRatio >= 60) && completedTasksCount === 0 && (openTasksCount > 0 || totalClockSeconds >= 4 * 3600)) {
+  // 2. تشتت (نشاط عالي على برامج غير منتجة + مخرجات صفر، أو وقت طويل جداً بلا أي إنجاز)
+  const isHighUnproductive = totalUnproductiveSeconds >= 3600 || (totalActiveSeconds >= 3 * 3600 && totalUnproductiveSeconds > 0 && (totalUnproductiveSeconds / Math.max(1, totalActiveSeconds)) > 0.3);
+  if ((isHighUnproductive || (totalActiveSeconds >= 6 * 3600 && totalUnproductiveSeconds > 1800)) && completedTasksCount === 0 && (openTasksCount > 0 || totalClockSeconds >= 4 * 3600)) {
     return {
       type: 'DISTRACTION',
       label: 'تشتت / نشاط بلا مخرجات',
       severity: 'warning',
       target: 'EMPLOYEE_AND_MANAGER',
       badgeClass: 'bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300 ring-1 ring-orange-500/30',
-      reason: 'رصد حركة ونشاط مكثف على الجهاز طوال اليوم دون تسليم أو إنجاز أي مخرجات موثقة، ما يشير إلى استغراق في تفاصيل جانبية أو تشتت في الأولويات.'
+      reason: 'رصد حركة ونشاط على برامج غير منتجة أو تشتت طوال اليوم دون تسليم أو إنجاز أي مخرجات موثقة.'
     };
   }
 
-  // 3. إهمال (نشاط منخفض + مخرجات صفر) -> الحالة الوحيدة التي تستحق تدخلاً ومساءلة مباشرة
-  if (totalClockSeconds >= 3 * 3600 && totalActiveSeconds < 1.5 * 3600 && activeRatio < 25 && completedTasksCount === 0) {
+  // 3. إهمال (نشاط منخفض + مخرجات صفر + لا يوجد مؤقت عمل جاري) -> الحالة الوحيدة التي تستحق تدخلاً ومساءلة مباشرة
+  if (totalClockSeconds >= 3 * 3600 && totalActiveSeconds < 1.5 * 3600 && activeRatio < 25 && completedTasksCount === 0 && !hasActiveTimer) {
     return {
       type: 'NEGLECT',
       label: 'إهمال / ضعف الفاعلية',
       severity: 'critical',
       target: 'DIRECT_INTERVENTION',
       badgeClass: 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 ring-1 ring-rose-500/30',
-      reason: 'انخفاض حاد في النشاط الموثق مع انعدام تام للمخرجات أثناء ساعات الدوام المسجلة بالبصمة (الحالة التي تستدعي تدخلاً ومتابعة مباشرة).'
+      reason: 'انخفاض حاد في النشاط الموثق مع انعدام تام للمخرجات أثناء ساعات الدوام المسجلة بالبصمة دون أي مؤقت مهمة جاري (الحالة التي تستدعي تدخلاً ومتابعة مباشرة).'
     };
   }
 
-  // 4. شغل خارج الجهاز (نشاط منخفض + مخرجات طبيعية) -> لا يُصنف كإهمال
-  if (totalActiveSeconds < 3 * 3600 && completedTasksCount >= 1) {
+  // 4. شغل خارج الجهاز (نشاط منخفض + مخرجات طبيعية أو مؤقت جاري لمهمة ميدانية) -> لا يُصنف كإهمال
+  if (totalActiveSeconds < 3 * 3600 && (completedTasksCount >= 1 || (hasActiveTimer && totalClockSeconds < 4 * 3600))) {
     return {
       type: 'OFF_DEVICE_WORK',
       label: 'شغل خارج الجهاز / ميداني',
@@ -1606,11 +1617,40 @@ class MonitorService {
         ...(item.employee?.id ? (empLogsMap.get(item.employee.id) || []) : [])
       ];
       const uniqueLogs = Array.from(new Map(empLogs.map(l => [new Date(l.intervalStart).getTime(), l])).values());
+
+      // Live activity & idle calculation directly from all logs
+      const liveActiveSec = uniqueLogs.reduce((sum, a) => sum + (Number(a.activeSeconds) || 0), 0);
+      const liveIdleSec = uniqueLogs.reduce((sum, a) => {
+        const startMs = a.intervalStart ? new Date(a.intervalStart).getTime() : 0;
+        const endMs = a.intervalEnd ? new Date(a.intervalEnd).getTime() : 0;
+        const active = Number(a.activeSeconds) || 0;
+        if (startMs && endMs && endMs > startMs) {
+          const intervalSec = Math.min(300, Math.max(1, Math.floor((endMs - startMs) / 1000)));
+          return sum + Math.max(0, intervalSec - active);
+        }
+        return sum;
+      }, 0);
+
+      const effectiveActiveSeconds = Math.max(item.totalActiveSeconds || 0, liveActiveSec);
+      const effectiveRawIdleSeconds = Math.max(item.totalIdleSeconds || 0, liveIdleSec);
+
       const breaksSummary = this.computeBreaksFromActivities(uniqueLogs);
       const totalBreaksCount = breaksSummary.totalBreaksCount || 0;
       const totalBreakSeconds = breaksSummary.totalBreakSeconds || 0;
       const totalBreakMinutes = breaksSummary.totalBreakMinutes || Math.round(totalBreakSeconds / 60);
-      const totalSleepSeconds = Math.max(0, (item.totalIdleSeconds || 0) - totalBreakSeconds);
+
+      // Distinguish in-session breaks from gap breaks so micro-idle and total idle reconcile
+      const inSessionBreakSeconds = (breaksSummary.breaks || [])
+        .filter(b => !b.isGap)
+        .reduce((sum, b) => sum + (b.durationSeconds || 0), 0);
+      const gapBreakSeconds = (breaksSummary.breaks || [])
+        .filter(b => b.isGap)
+        .reduce((sum, b) => sum + (b.durationSeconds || 0), 0);
+
+      // Micro-idle (سكون: توقفات قصيرة أقل من 5 دقائق داخل جلسة العمل)
+      const totalSleepSeconds = Math.max(0, effectiveRawIdleSeconds - inSessionBreakSeconds);
+      // Total idle includes micro-idle + breaks
+      const totalIdleSeconds = effectiveRawIdleSeconds + gapBreakSeconds;
 
       // Weekly average warmup
       const pastList = [
@@ -1624,20 +1664,25 @@ class MonitorService {
       }
 
       // Bound active time (active time cannot exceed clock time + 300s grace)
-      let boundedActive = item.totalActiveSeconds || 0;
+      let boundedActive = effectiveActiveSeconds;
       if (totalClockSeconds > 0 && boundedActive > (totalClockSeconds + 300)) {
         boundedActive = totalClockSeconds + 300;
       }
 
+      // Net clock seconds deducting approved/detected breaks so active ratio is fair
+      const netClockSeconds = totalClockSeconds > 0
+        ? Math.max(boundedActive, totalClockSeconds - totalBreakSeconds)
+        : 0;
+
       const activeRatio = totalClockSeconds > 0
-        ? Math.min(100, Math.round((boundedActive / totalClockSeconds) * 100))
+        ? Math.min(100, Math.round((boundedActive / (netClockSeconds || 1)) * 100))
         : (boundedActive > 0 ? 100 : 0);
 
       // Layer 2: Productive vs Unproductive Duration
       const prodSec = empProdMap.get(item.employeeId) || empProdMap.get(item.employee?.userId) || empProdMap.get(item.employee?.id) || item.totalProductiveSeconds || 0;
       const unprodSec = empUnprodMap.get(item.employeeId) || empUnprodMap.get(item.employee?.userId) || empUnprodMap.get(item.employee?.id) || item.totalUnproductiveSeconds || 0;
 
-      const maxSession = totalClockSeconds > 0 ? totalClockSeconds : Math.max(boundedActive + item.totalIdleSeconds, 8 * 3600);
+      const maxSession = totalClockSeconds > 0 ? totalClockSeconds : Math.max(boundedActive + totalIdleSeconds, 8 * 3600);
       const totalProductiveSeconds = Math.min(maxSession, prodSec);
       const totalUnproductiveSeconds = Math.min(maxSession, unprodSec);
 
@@ -1671,10 +1716,12 @@ class MonitorService {
         openTasksCount,
         overdueTasksCount,
         activeRatio,
+        hasActiveTimer: Boolean(activeTimer),
+        totalUnproductiveSeconds,
       });
 
       // Untracked presence gap
-      const trackedDeviceSeconds = (item.totalActiveSeconds || 0) + (item.totalIdleSeconds || 0);
+      const trackedDeviceSeconds = boundedActive + totalIdleSeconds;
       const untrackedSeconds = (totalClockSeconds > trackedDeviceSeconds)
         ? (totalClockSeconds - trackedDeviceSeconds)
         : 0;
@@ -1712,8 +1759,8 @@ class MonitorService {
           lastActivityTime: item.lastActivityTime ? new Date(item.lastActivityTime) : null,
           lateStartSeconds,
           totalClockSeconds,
-          totalActiveSeconds: item.totalActiveSeconds || 0,
-          totalIdleSeconds: item.totalIdleSeconds || 0,
+          totalActiveSeconds: boundedActive,
+          totalIdleSeconds,
           totalProductiveSeconds,
           totalUnproductiveSeconds,
           productivityScore,
@@ -1731,8 +1778,8 @@ class MonitorService {
           totalClockSeconds,
           totalProductiveSeconds,
           totalUnproductiveSeconds,
-          totalActiveSeconds: item.totalActiveSeconds || 0,
-          totalIdleSeconds: item.totalIdleSeconds || 0,
+          totalActiveSeconds: boundedActive,
+          totalIdleSeconds,
           productivityScore,
           avgActivityScore: avgScore,
         }
@@ -1756,8 +1803,8 @@ class MonitorService {
       return {
         employeeId: item.employeeId,
         employee: item.employee,
-        totalActiveSeconds: item.totalActiveSeconds,
-        totalIdleSeconds: item.totalIdleSeconds,
+        totalActiveSeconds: boundedActive,
+        totalIdleSeconds,
         totalProductiveSeconds,
         totalUnproductiveSeconds,
         totalBreaksCount,
@@ -1959,11 +2006,28 @@ class MonitorService {
       weeklyAvgLateStartMinutes = Math.round(sumSec / (pastSummaries.length + 1) / 60);
     }
 
-    const finalTotalActive = (summary?.totalActiveSeconds && summary.totalActiveSeconds > 0) ? summary.totalActiveSeconds : calcActiveSeconds;
-    const finalTotalIdle = (summary?.totalIdleSeconds && summary.totalIdleSeconds > 0) ? summary.totalIdleSeconds : calcIdleSeconds;
+    // Break detection calculation for accurate idle and break separation
+    const breaksSummary = this.computeBreaksFromActivities(activities);
+    let inSessionBreakSec = 0;
+    let gapBreakSec = 0;
+    for (const b of (breaksSummary.breaks || [])) {
+      if (b.isGap) {
+        gapBreakSec += b.durationSeconds;
+      } else {
+        inSessionBreakSec += b.durationSeconds;
+      }
+    }
+    const totalBreakSeconds = inSessionBreakSec + gapBreakSec;
+    const totalBreakMinutes = Math.round(totalBreakSeconds / 60);
+    const totalBreaksCount = breaksSummary.totalBreaksCount || 0;
 
-    const activeRatio = totalClockSeconds > 0
-      ? Math.min(100, Math.round((finalTotalActive / totalClockSeconds) * 100))
+    const finalTotalActive = Math.max(summary?.totalActiveSeconds || 0, calcActiveSeconds);
+    const finalTotalIdle = Math.max(summary?.totalIdleSeconds || 0, calcIdleSeconds) + gapBreakSec;
+    const totalSleepSeconds = Math.max(0, finalTotalIdle - totalBreakSeconds);
+
+    const effectiveClockForRatio = Math.max(finalTotalActive, totalClockSeconds - totalBreakSeconds);
+    const activeRatio = effectiveClockForRatio > 0
+      ? Math.min(100, Math.round((finalTotalActive / effectiveClockForRatio) * 100))
       : (finalTotalActive > 0 ? 100 : 0);
 
     // Layer 2: Productive vs Unproductive Duration
@@ -2036,6 +2100,8 @@ class MonitorService {
       openTasksCount: openTasks.length,
       overdueTasksCount: overdueTasks.length,
       activeRatio,
+      hasActiveTimer: Boolean(activeTimer),
+      totalUnproductiveSeconds,
     });
 
     const trackedDeviceSec = finalTotalActive + finalTotalIdle;
@@ -2046,6 +2112,10 @@ class MonitorService {
       ...(summary || {}),
       totalActiveSeconds: finalTotalActive,
       totalIdleSeconds: finalTotalIdle,
+      totalBreaksCount,
+      totalBreakSeconds,
+      totalBreakMinutes,
+      totalSleepSeconds,
       totalProductiveSeconds,
       totalUnproductiveSeconds,
       productivityScore: newProductivityScore,
@@ -2145,10 +2215,7 @@ class MonitorService {
       }))
     };
 
-    // 5. Break Detection Calculation
-    const breaksSummary = this.computeBreaksFromActivities(activities);
-
-    // 6. Aggregate apps
+    // 5. Aggregate apps
     const appMap = new Map();
     for (const a of apps) {
       const key = a.appName || 'Unknown';

@@ -41,9 +41,9 @@ export interface TaskPerformanceData {
   idleRatioPct: number;
   idleToActiveRatio: string;
   operationalSignal?: {
-    type: 'TASK_OVERLOAD' | 'DISTRACTION' | 'NEGLECT' | 'OFF_DEVICE_WORK' | 'NORMAL';
+    type: 'TASK_OVERLOAD' | 'DISTRACTION' | 'NEGLECT' | 'OFF_DEVICE_WORK' | 'STEADY_PERFORMANCE' | 'NORMAL';
     label: string;
-    severity: 'info' | 'warning' | 'critical';
+    severity: 'info' | 'warning' | 'critical' | 'success';
     reason: string;
   } | null;
   tasks: CompletedTaskItem[];
@@ -82,6 +82,7 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
   const activePct = taskPerformance?.activeRatioPct ?? Math.round((totalActiveSeconds / (totalActiveSeconds + totalIdleSeconds || 1)) * 100);
   const idlePct = taskPerformance?.idleRatioPct ?? Math.round((totalIdleSeconds / (totalActiveSeconds + totalIdleSeconds || 1)) * 100);
   const idleMultiplier = taskPerformance?.idleToActiveRatio ?? (totalActiveSeconds > 0 ? (totalIdleSeconds / totalActiveSeconds).toFixed(1) : '0.0');
+  const numMultiplier = parseFloat(idleMultiplier) || 0;
 
   return (
     <div className="rounded-xl border border-border/40 bg-card/60 p-4 text-card-foreground shadow-sm">
@@ -137,10 +138,16 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
               ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'
               : signal.type === 'NEGLECT'
               ? 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300'
+              : signal.type === 'STEADY_PERFORMANCE'
+              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
               : 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300'
           }`}
         >
-          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+          {signal.type === 'STEADY_PERFORMANCE' ? (
+            <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
+          ) : (
+            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+          )}
           <div className="space-y-0.5">
             <div className="font-bold flex items-center gap-2">
               <span>التشخيص التشغيلي الموثق: {signal.label}</span>
@@ -201,14 +208,23 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
         {/* Metric 4: Active vs Idle Ratio Factor */}
         <div className="rounded-lg border border-border/40 bg-muted/40 dark:bg-zinc-900/40 p-3">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>استغلال الوقت (نشاط مقابل خمول)</span>
-            <AlertCircle className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+            <span>استغلال الوقت (نشاط مقابل توقف)</span>
+            {numMultiplier < 1.0 ? (
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+            )}
           </div>
           <div className="mt-2 text-lg font-bold text-foreground tabular-nums">
-            {activePct}% عمل <span className="text-xs font-normal text-muted-foreground">({idleMultiplier}x خمول)</span>
+            {activePct}% عمل{' '}
+            <span className="text-xs font-normal text-muted-foreground">
+              ({idlePct}% استراحة/توقف)
+            </span>
           </div>
           <div className="mt-1 text-[11px] text-muted-foreground">
-            لكل دقيقة عمل يقابلها {idleMultiplier} دقيقة توقف
+            {numMultiplier < 1.0
+              ? `معدل نشاط ممتاز: العمل يمثل ${activePct}% من الوقت`
+              : `تنبيه: وقت التوقف (${idleMultiplier}x) يتجاوز وقت العمل الفعلي`}
           </div>
         </div>
       </div>
