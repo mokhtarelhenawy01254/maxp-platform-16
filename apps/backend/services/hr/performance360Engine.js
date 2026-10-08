@@ -288,7 +288,8 @@ async function computeEmployee360Metrics(dbClient, options = {}) {
         title: true,
         progress: true,
         status: true,
-        dueDate: true
+        endDate: true,
+        goalDate: true
       }
     });
   }
