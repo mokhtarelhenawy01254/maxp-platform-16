@@ -130,8 +130,7 @@ const hasAppBypassException = (ca, company = null) => {
     appSettings?.allowAccessWhenExpired === true ||
     appSettings?.graceAccess === true ||
     compSettings?.whatsappAccessBypass === true ||
-    (Array.isArray(compSettings?.bypassAppExpiry) && compSettings.bypassAppExpiry.includes(appSlug)) ||
-    (company?.id === 'cmteva12p00lrjuwxpufr4k8w' && appSlug === 'whatsapp-business')
+    (Array.isArray(compSettings?.bypassAppExpiry) && compSettings.bypassAppExpiry.includes(appSlug))
   );
 };
 
