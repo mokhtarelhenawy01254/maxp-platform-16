@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   ArrowsRightLeftIcon,
   CheckIcon,
@@ -57,7 +58,7 @@ const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
     setIsOpen(false);
   }, [currentCompany?.id]);
 
-  if ((!user?.hasMultipleCompanies && user?.role !== 'SUPER_ADMIN') || companies.length <= 1) {
+  if (user?.role !== 'SUPER_ADMIN' && (!user?.hasMultipleCompanies || companies.length <= 1)) {
     return null;
   }
 
@@ -159,6 +160,18 @@ const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
 
           <div className="max-h-[70vh] space-y-0.5 overflow-y-auto pt-1">
             {companies.map((company) => renderCompanyOption(company, true))}
+            {user?.role === 'SUPER_ADMIN' && (
+              <div className="border-t border-gray-100 p-3 dark:border-gray-800">
+                <Link
+                  to="/super-admin/companies-v2"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center justify-between rounded-xl bg-amber-500/10 px-4 py-2.5 text-xs font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition-all no-underline"
+                >
+                  <span>إدارة جميع شركات المنصة (Super Admin)</span>
+                  <span>⚡</span>
+                </Link>
+              </div>
+            )}
           </div>
         </SheetContent>
       </Sheet>
@@ -210,6 +223,18 @@ const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
             </p>
           </div>
           {companies.map((company) => renderCompanyOption(company))}
+          {user?.role === 'SUPER_ADMIN' && (
+            <div className="border-t border-gray-100 p-2 dark:border-gray-700/50">
+              <Link
+                to="/super-admin/companies-v2"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center justify-between rounded-lg bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition-all no-underline"
+              >
+                <span>إدارة جميع شركات المنصة (Super Admin)</span>
+                <span>⚡</span>
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </div>

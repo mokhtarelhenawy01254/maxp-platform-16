@@ -3143,6 +3143,7 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
+                <Route path="/dashboard" element={<Navigate to="/company-dashboard" replace />} />
                 <Route
                   path="/apps"
                   element={

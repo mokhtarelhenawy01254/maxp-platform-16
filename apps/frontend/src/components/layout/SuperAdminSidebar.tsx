@@ -90,6 +90,11 @@ export const getMenuGroups = (t: (key: string) => string): SuperAdminMenuGroup[]
         path: "/super-admin/dashboard",
       },
       {
+        text: "كوكبيت عمليات الشركة (HQ)",
+        icon: <ShoppingBag className="h-4 w-4 text-indigo-500" />,
+        path: "/company-dashboard",
+      },
+      {
         text: t("superAdmin.sidebar.serverUsage") || "مراقبة الموارد والخوادم",
         icon: <HardDrive className="h-4 w-4" />,
         path: "/super-admin/server-usage",

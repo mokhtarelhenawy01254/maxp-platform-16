@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Menu, Lightbulb, LogOut } from "lucide-react";
+import { Menu, Lightbulb, LogOut, Building2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -70,7 +70,19 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
           <div className="hidden md:block"><GlobalTimer /></div>
           <GlobalSearch />
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/company-dashboard")}
+            className="flex items-center gap-1.5 h-8 px-2.5 sm:px-3 text-xs font-semibold rounded-lg border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all shadow-sm"
+            title="التبديل إلى كوكبيت الشركة التشغيلية (الطلبات، المنتجات، الميديا باير، المحادثات)"
+          >
+            <Building2 className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+            <span className="hidden sm:inline">كوكبيت الشركة (HQ)</span>
+            <span className="sm:hidden">الشركة</span>
+          </Button>
+
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -97,8 +109,15 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
               <Avatar className="size-8 bg-primary font-bold shadow-sm"><AvatarFallback>{user?.firstName?.charAt(0) || "M"}</AvatarFallback></Avatar>
               <span className="absolute bottom-0 inset-inline-end-0 size-2 rounded-full bg-emerald-500 ring-2 ring-background" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[180px]">
-              <DropdownMenuItem onClick={() => { logout(); navigate("/auth/login"); }} className="font-semibold text-destructive"><LogOut className="ml-2 size-4" />{t("superAdmin.logout")}</DropdownMenuItem>
+            <DropdownMenuContent align="end" className="min-w-[190px]">
+              <DropdownMenuItem onClick={() => navigate("/company-dashboard")} className="font-semibold text-foreground cursor-pointer">
+                <Building2 className="ml-2 size-4 text-indigo-600 dark:text-indigo-400" />
+                كوكبيت عمليات الشركة (HQ)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { logout(); navigate("/auth/login"); }} className="font-semibold text-destructive cursor-pointer">
+                <LogOut className="ml-2 size-4" />
+                {t("superAdmin.logout")}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
