@@ -410,6 +410,7 @@ const formatWorkspaceOrderRecord = (order, isGuest, assignedAt, assignedTo = nul
   }
 
   let attribution = null;
+  let riskData = null;
   if (order.metadata) {
     try {
       const metaObj = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : order.metadata;
@@ -420,6 +421,19 @@ const formatWorkspaceOrderRecord = (order, isGuest, assignedAt, assignedTo = nul
           adSetId: metaObj.adSetId || metaObj.adsetId || null,
           adId: metaObj.adId || metaObj.adid || null,
         };
+        if (metaObj.risk && typeof metaObj.risk === 'object') {
+          riskData = {
+            score: Number(metaObj.risk.riskScore) || 0,
+            level: String(metaObj.risk.riskLevel || 'low'),
+            reasons: Array.isArray(metaObj.risk.riskReasons)
+              ? metaObj.risk.riskReasons.map((r) => ({
+                  code: r.code || null,
+                  label: r.label || String(r.code || ''),
+                  weight: Number(r.weight) || 0,
+                }))
+              : [],
+          };
+        }
       }
     } catch {
       // ignore metadata json parsing errors
@@ -477,6 +491,7 @@ const formatWorkspaceOrderRecord = (order, isGuest, assignedAt, assignedTo = nul
     callLogs,
     customerStats,
     attribution,
+    riskData,
   };
 };
 

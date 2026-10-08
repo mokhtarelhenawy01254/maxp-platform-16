@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   PhoneIcon,
@@ -28,8 +28,7 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
   orders,
   selectedOrderId,
   onSelectOrder,
-  loading,
-  loadingMore,
+  loading,  loadingMore,
   onLoadMore,
   pagination,
   page,
@@ -40,6 +39,7 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
   const { t, i18n } = useTranslation();
   const { formatPrice } = useCurrency();
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
+  const [riskOnly, setRiskOnly] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef<Map<string, HTMLElement>>(new Map());
   const suppressFocusRef = useRef(false);
@@ -142,15 +142,34 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
     );
   }
 
+  const displayOrders = riskOnly
+    ? orders.filter((o) => o.riskData?.level === 'high')
+    : orders;
+
   return (
     <div className="flex h-full flex-col overflow-hidden bg-card/50">
       {/* Queue Counter Header */}
+      {/* [risk-filter] «خطر عالي» — client-side فلتر فوق بيانات السكور المحفوظة */}
       <div className="flex items-center justify-between border-b border-border/30 bg-muted/15 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground shrink-0">
         <span className="font-mono tabular-nums">
           {isArabic
             ? `معروض ${orders.length} من ${pagination.total || orders.length} طلب`
             : `Showing ${orders.length} of ${pagination.total || orders.length}`}
         </span>
+        <button
+          type="button"
+          data-risk-filter-toggle="1"
+          onClick={() => setRiskOnly((v) => !v)}
+          aria-pressed={riskOnly}
+          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold transition-colors ${
+            riskOnly
+              ? 'border-destructive/40 bg-destructive/15 text-destructive'
+              : 'border-border/60 bg-background/60 text-muted-foreground hover:border-destructive/30'
+          }`}
+          title={isArabic ? 'عرض الطلبات عالية الخطورة فقط' : 'Show high-risk orders only'}
+        >
+          {isArabic ? 'خطر عالي' : 'High risk'}
+        </button>
         <span
           className="hidden items-center gap-1 sm:inline-flex"
           title={isArabic ? 'تنقل بالكيبورد: j أو ↓ للطلب التالي، k أو ↑ للسابق، Enter لاختيار الصف' : 'Keyboard: j/↓ next, k/↑ previous, Enter to select'}
@@ -168,7 +187,7 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
 
       {/* Stream list */}
       <div className="flex-1 divide-y divide-border/30 overflow-y-auto overscroll-contain h-full scrollbar-thin scrollbar-thumb-border/60 hover:scrollbar-thumb-border">
-        {orders.map((order) => {
+        {displayOrders.map((order) => {
           const isSelected = order.id === selectedOrderId;
           const overdue = isOrderOverdue(order);
           const location = [order.governorate, order.city].filter(Boolean).join('، ') || '—';
@@ -232,6 +251,23 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
                     <span className="inline-flex items-center gap-1 rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-bold text-destructive">
                       <ExclamationTriangleIcon className="h-3 w-3" />
                       {t('orders.urgent')}
+                    </span>
+                  )}
+                  {order.riskData && order.riskData.level !== 'low' && (
+                    <span
+                      title={
+                        order.riskData.reasons?.length
+                          ? order.riskData.reasons.map((r) => r.label).join(' · ')
+                          : undefined
+                      }
+                      className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
+                        order.riskData.level === 'high'
+                          ? 'bg-destructive/15 text-destructive'
+                          : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                      }`}
+                      dir="ltr"
+                    >
+                      ⚠ {order.riskData.score}
                     </span>
                   )}
                 </div>

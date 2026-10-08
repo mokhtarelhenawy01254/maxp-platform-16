@@ -19,5 +19,6 @@ router.get('/rules', customerBlocklistController.listRules);
 router.post('/rules', requireBlocklistAdmin, customerBlocklistController.createRule);
 router.patch('/rules/:ruleId/lift', requireBlocklistAdmin, customerBlocklistController.liftRule);
 router.post('/check', customerBlocklistController.checkRule);
+router.get('/risk-report', customerBlocklistController.getRiskReport);
 
 module.exports = router;

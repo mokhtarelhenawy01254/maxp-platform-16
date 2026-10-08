@@ -81,6 +81,11 @@ export interface WorkspaceOrder {
   callLogs?: CallLogEntry[];
   customerStats?: CustomerStats | null;
   attribution?: OrderAttribution | null;
+  riskData?: {
+    score: number;
+    level: 'low' | 'medium' | 'high';
+    reasons: Array<{ code: string | null; label: string; weight: number }>;
+  } | null;
   isIncomplete?: boolean;
   abandonReason?: string;
   cartId?: string;

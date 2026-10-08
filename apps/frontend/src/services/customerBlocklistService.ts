@@ -13,6 +13,14 @@ export type CustomerBlockReasonCode =
   | "WRONG_DATA"
   | "OTHER";
 
+export interface RiskScoringSettings {
+  enabled: boolean;
+  highThreshold: number;
+  mediumThreshold: number;
+  highValueThreshold: number;
+  historyWindowDays: number;
+}
+
 export interface CustomerBlockSettings {
   id?: string;
   companyId?: string;
@@ -166,6 +174,30 @@ class CustomerBlocklistService {
     });
     return response.data.data;
   }
+  async getRiskScoringSettings(companyId: string): Promise<RiskScoringSettings> {
+    const response = await apiClient.get(`/customer-blocklist/settings?companyId=${companyId}`);
+    const data = (response.data as any)?.riskScoring;
+    return (
+      data || {
+        enabled: false,
+        highThreshold: 70,
+        mediumThreshold: 40,
+        highValueThreshold: 5000,
+        historyWindowDays: 180,
+      }
+    );
+  }
+
+  async updateRiskScoringSettings(
+    companyId: string,
+    patch: Partial<RiskScoringSettings>
+  ): Promise<RiskScoringSettings> {
+    const response = await apiClient.put("/customer-blocklist/settings", {
+      riskScoring: { ...patch, companyId },
+    });
+    return (response.data as any)?.riskScoring;
+  }
+
 }
 
 export const customerBlocklistService = new CustomerBlocklistService();

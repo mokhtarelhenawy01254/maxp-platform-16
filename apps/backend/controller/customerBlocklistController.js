@@ -1,5 +1,6 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const customerBlocklistService = require('../services/customerBlocklistService');
+const orderRiskScoringService = require('../services/orderRiskScoringService');
 
 function getCompanyId(req) {
   return req.user?.effectiveCompanyId || req.user?.companyId;
@@ -36,10 +37,15 @@ async function getSettings(req, res) {
       getSharedPrismaClient(),
       companyId,
     );
+    const riskScoring = await orderRiskScoringService.getSettings(
+      getSharedPrismaClient(),
+      companyId,
+    );
 
     res.json({
       success: true,
       data: settings,
+      riskScoring,
     });
   } catch (error) {
     console.error('❌ [CUSTOMER-BLOCKLIST] getSettings:', error);
@@ -62,9 +68,19 @@ async function updateSettings(req, res) {
       req.body || {},
     );
 
+    let riskScoring = null;
+    if (req.body && typeof req.body.riskScoring === 'object' && req.body.riskScoring !== null) {
+      riskScoring = await orderRiskScoringService.saveSettings(
+        getSharedPrismaClient(),
+        companyId,
+        req.body.riskScoring,
+      );
+    }
+
     res.json({
       success: true,
       data: settings,
+      riskScoring: riskScoring || (await orderRiskScoringService.getSettings(getSharedPrismaClient(), companyId)),
       message: 'تم حفظ إعدادات الحظر بنجاح',
     });
   } catch (error) {
@@ -72,6 +88,36 @@ async function updateSettings(req, res) {
     res.status(500).json({
       success: false,
       message: 'فشل في تحديث إعدادات الحظر',
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * تقرير «سكور الطلبات الوهمية» — أعداد حسب المستوى + قيمة الطلبات عالية الخطورة
+ * من جدول order_risk_scores (بيانات فعلية محسوبة عند الإنشاء).
+ */
+async function getRiskReport(req, res) {
+  try {
+    const companyId = requireCompany(req, res);
+    if (!companyId) return;
+
+    const days = Math.min(365, Math.max(1, parseInt(req.query.days, 10) || 30));
+    const summary = await orderRiskScoringService.riskReport(
+      getSharedPrismaClient(),
+      companyId,
+      days,
+    );
+
+    res.json({
+      success: true,
+      data: { days, ...summary },
+    });
+  } catch (error) {
+    console.error('❌ [CUSTOMER-BLOCKLIST] getRiskReport:', error);
+    res.status(500).json({
+      success: false,
+      message: 'فشل في تقرير سكور الطلبات',
       error: error.message,
     });
   }
@@ -199,4 +245,5 @@ module.exports = {
   createRule,
   liftRule,
   checkRule,
+  getRiskReport,
 };

@@ -580,6 +580,31 @@ class OrderService {
         data.shippingAddress || data.address || data.customerAddress || null
       );
 
+      // 🎯 طبقة سكور الطلبات الوهمية (MVP) — إعلامية فقط، محمية بمفتاح الشركة،
+      //    لا تؤثر على إنشاء الأوردر إطلاقًا (فشلها يُسجل ويُتجاهل).
+      try {
+        const orderRiskScoringService = require('./orderRiskScoringService');
+        const riskSettings = await orderRiskScoringService.getSettings(this.getPrisma(), companyId);
+        if (riskSettings.enabled) {
+          const riskResult = await orderRiskScoringService.scoreOrderDraft(this.getPrisma(), {
+            companyId,
+            phone: customerPhone,
+            email: data.customerEmail || null,
+            total: parseFloat(total.toFixed(2)),
+            address: data.customerAddress || data.address || data.shippingAddress || null,
+            city: city || null,
+            blockEvaluation,
+          });
+          await orderRiskScoringService.persistRiskResult(this.getPrisma(), {
+            orderId: order.id,
+            companyId,
+            result: riskResult
+          });
+        }
+      } catch (riskErr) {
+        console.warn('⚠️ [ORDER-SERVICE] Risk scoring skipped:', riskErr?.message);
+      }
+
       // تحديث إحصائيات العميل
       await this.updateCustomerStats(resolvedCustomerId, parseFloat(total));
 
