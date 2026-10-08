@@ -57,6 +57,7 @@ class BillingCronService {
         return await getSharedPrismaClient().platformSubscription.findMany({
           where: {
             nextBillingDate: {
+              gte: today,
               lt: tomorrow
             },
             status: 'ACTIVE'
@@ -232,15 +233,15 @@ class BillingCronService {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      // جلب الأدوات المستحقة أو المتأخرة
+      // جلب الأدوات المستحقة
       const dueApps = await executeWithRetry(async () => {
         return await getSharedPrismaClient().companyApp.findMany({
           where: {
             status: 'ACTIVE',
-            OR: [
-              { nextBillingAt: { lt: tomorrow } },
-              { nextBillingAt: null, validUntil: { lt: tomorrow } }
-            ]
+            nextBillingAt: {
+              gte: today,
+              lt: tomorrow
+            }
           },
           include: {
             app: {

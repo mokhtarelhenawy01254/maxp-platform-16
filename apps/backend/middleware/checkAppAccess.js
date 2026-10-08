@@ -22,9 +22,9 @@ const LEGACY_APP_SLUG_ALIASES = {
   'dental-lab-app': ['dental-lab'],
   'dental-lab': ['dental-lab-app'],
   // WhatsApp apps aliases & backwards compatibility:
-  'whatsapp-business': ['whatsapp-integration', 'whatsapp-inbox', 'whatsapp-settings', 'whatsapp-notifications', 'whatsapp-templates', 'whatsapp-routing', 'unified-inbox'],
-  'whatsapp-integration': ['whatsapp-business', 'whatsapp-inbox', 'whatsapp-settings', 'whatsapp-notifications', 'whatsapp-templates', 'whatsapp-routing', 'unified-inbox'],
-  'whatsapp-inbox': ['whatsapp-business', 'whatsapp-integration', 'unified-inbox'],
+  'whatsapp-business': ['whatsapp-integration', 'whatsapp-inbox', 'whatsapp-settings', 'whatsapp-notifications', 'whatsapp-templates', 'whatsapp-routing'],
+  'whatsapp-integration': ['whatsapp-business', 'whatsapp-inbox', 'whatsapp-settings', 'whatsapp-notifications', 'whatsapp-templates', 'whatsapp-routing'],
+  'whatsapp-inbox': ['whatsapp-business', 'whatsapp-integration'],
   'whatsapp-settings': ['whatsapp-business', 'whatsapp-integration'],
   'whatsapp-notifications': ['whatsapp-business', 'whatsapp-integration'],
   'whatsapp-templates': ['whatsapp-business', 'whatsapp-integration'],
@@ -108,15 +108,26 @@ const WHATSAPP_LEGACY_ALIAS_SLUGS = new Set([
   'whatsapp-routing'
 ]);
 
+const WHATSAPP_ALL_SLUGS = new Set([
+  'whatsapp-business',
+  ...WHATSAPP_LEGACY_ALIAS_SLUGS
+]);
+
 /**
- * Determines whether a CompanyApp installation record is currently active and valid (not expired).
- * Checks status, trialEndsAt, validUntil, nextBillingAt, and fallback platformSubscription expiry.
+ * Determines whether a CompanyApp installation record is currently active and valid.
+ * Strict date/subscription expiration checks are isolated exclusively to WhatsApp apps
+ * (WHATSAPP_ALL_SLUGS) so non-WhatsApp apps preserve 100% backward compatibility.
  */
 const isCompanyAppInstallationValid = (ca, company = null) => {
   if (!ca) return false;
   const statusUpper = String(ca.status || '').trim().toUpperCase();
   if (!['ACTIVE', 'TRIAL'].includes(statusUpper)) {
     return false;
+  }
+
+  const appSlug = String(ca.app?.slug || ca.slug || '').trim().toLowerCase();
+  if (!WHATSAPP_ALL_SLUGS.has(appSlug)) {
+    return true;
   }
 
   const now = new Date();
@@ -126,7 +137,6 @@ const isCompanyAppInstallationValid = (ca, company = null) => {
     now <= new Date(company.trialEndsAt)
   );
 
-  const appSlug = String(ca.app?.slug || ca.slug || '').trim().toLowerCase();
   const pricingModelUpper = String(ca.activePricingModel || '').trim().toUpperCase();
 
   // Block ghost free auto-installs of deprecated whatsapp-integration alias
@@ -178,7 +188,7 @@ const isCompanyAppInstallationValid = (ca, company = null) => {
 
 /**
  * Returns the list of currently valid active app slugs for a company,
- * excluding expired subscriptions and preventing legacy WhatsApp aliases from
+ * excluding expired WhatsApp subscriptions and preventing legacy WhatsApp aliases from
  * bypassing an expired/suspended/cancelled primary whatsapp-business subscription.
  */
 const filterActiveCompanyAppSlugs = (installedApps = [], company = null) => {

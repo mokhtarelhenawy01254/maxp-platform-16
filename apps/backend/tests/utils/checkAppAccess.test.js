@@ -366,7 +366,7 @@ describe("checkAppAccess middleware", () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it("filters out expired apps and ghost free whatsapp-integration from activeApps", () => {
+    it("filters out expired whatsapp-business and ghost free whatsapp-integration while keeping non-WhatsApp apps active", () => {
       const past = new Date(Date.now() - 86400000);
       const future = new Date(Date.now() + 86400000);
 
@@ -385,6 +385,11 @@ describe("checkAppAccess middleware", () => {
           },
           {
             status: "ACTIVE",
+            validUntil: past,
+            app: { slug: "ecommerce-basic", monthlyPrice: 199, pricingModel: "SUBSCRIPTION" },
+          },
+          {
+            status: "ACTIVE",
             validUntil: future,
             app: { slug: "crm-basic", monthlyPrice: 99, pricingModel: "SUBSCRIPTION" },
           },
@@ -395,7 +400,7 @@ describe("checkAppAccess middleware", () => {
         }
       );
 
-      expect(slugs).toEqual(["crm-basic"]);
+      expect(slugs).toEqual(["ecommerce-basic", "crm-basic"]);
     });
   });
 });
