@@ -149,14 +149,24 @@ def _parse_quantity_offers(p: dict[str, Any]) -> list[dict[str, Any]]:
         or meta.get("volumeDiscounts")
         or []
     )
+    variants = p.get("productVariants") or p.get("_variants") or []
     try:
         base_price = float(p.get("price") or 0)
     except (TypeError, ValueError):
         base_price = 0.0
+    if base_price <= 0 and variants:
+        var_prices = [float(v.get("price") or 0) for v in variants if v.get("price") and float(v.get("price") or 0) > 0]
+        if var_prices:
+            base_price = var_prices[0]
+
     try:
         compare_price = float(p.get("comparePrice") or 0) if p.get("comparePrice") is not None else 0.0
     except (TypeError, ValueError):
         compare_price = 0.0
+    if compare_price <= 0 and variants:
+        var_compares = [float(v.get("comparePrice") or 0) for v in variants if v.get("comparePrice") and float(v.get("comparePrice") or 0) > 0]
+        if var_compares:
+            compare_price = var_compares[0]
 
     if not isinstance(raw_offers, list) or not raw_offers:
         return []
@@ -234,6 +244,27 @@ def _map_product(p: dict[str, Any]) -> dict[str, Any]:
 
     price_val = p.get("price")
     compare_val = p.get("comparePrice")
+
+    # Resolve comparePrice from variants if missing or 0 on parent product
+    if (compare_val is None or str(compare_val).strip() in {"", "0", "0.0", "None"}) and variants:
+        var_compares = [
+            float(v.get("comparePrice") or 0)
+            for v in variants
+            if v.get("comparePrice") is not None and float(v.get("comparePrice") or 0) > 0
+        ]
+        if var_compares:
+            compare_val = var_compares[0]
+
+    # Resolve price from variants if missing or 0 on parent product
+    if (price_val is None or str(price_val).strip() in {"", "0", "0.0", "None"}) and variants:
+        var_prices = [
+            float(v.get("price") or 0)
+            for v in variants
+            if v.get("price") is not None and float(v.get("price") or 0) > 0
+        ]
+        if var_prices:
+            price_val = var_prices[0]
+
     discount_summary: str | None = None
     try:
         p_f = float(price_val or 0)

@@ -52,7 +52,16 @@ class ProductRepository(BaseRepository):
         if not clean or not company_id:
             return None
         row = await self._session.execute(text("""
-            SELECT id, name, sku, price, "comparePrice", stock, "showFakeStock", "isPreOrder", metadata
+            SELECT id, name, sku, price,
+                   COALESCE(
+                       products."comparePrice",
+                       (SELECT pv."comparePrice"
+                        FROM product_variants pv
+                        WHERE pv."productId" = products.id AND pv."comparePrice" IS NOT NULL AND pv."comparePrice" > 0 AND pv."isActive" = TRUE
+                        ORDER BY pv."comparePrice" DESC
+                        LIMIT 1)
+                   ) AS "comparePrice",
+                   stock, "showFakeStock", "isPreOrder", metadata
             FROM products
             WHERE "companyId" = :cid
               AND (id = :ident OR LOWER(COALESCE(sku, '')) = LOWER(:ident) OR LOWER(name) = LOWER(:ident))
@@ -63,7 +72,16 @@ class ProductRepository(BaseRepository):
             return dict(found._mapping)
 
         row_like = await self._session.execute(text("""
-            SELECT id, name, sku, price, "comparePrice", stock, "showFakeStock", "isPreOrder", metadata
+            SELECT id, name, sku, price,
+                   COALESCE(
+                       products."comparePrice",
+                       (SELECT pv."comparePrice"
+                        FROM product_variants pv
+                        WHERE pv."productId" = products.id AND pv."comparePrice" IS NOT NULL AND pv."comparePrice" > 0 AND pv."isActive" = TRUE
+                        ORDER BY pv."comparePrice" DESC
+                        LIMIT 1)
+                   ) AS "comparePrice",
+                   stock, "showFakeStock", "isPreOrder", metadata
             FROM products
             WHERE "companyId" = :cid
               AND (name ILIKE :pattern OR COALESCE(sku, '') ILIKE :pattern)

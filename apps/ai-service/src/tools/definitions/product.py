@@ -394,7 +394,20 @@ def _format_product_search(result: dict) -> str:
             price = price.get("amount", "")
         compare_price = p.get("comparePrice")
         offers_summary = p.get("offersSummary")
-        price_part = f"{price} بدل {compare_price}" if (price and compare_price and compare_price != price) else f"{price}"
+        has_discount = False
+        try:
+            if price and compare_price and float(compare_price) > float(price):
+                has_discount = True
+        except (TypeError, ValueError):
+            pass
+
+        if has_discount:
+            price_part = f"سعر القطعة {price} ج.م بدل {compare_price} ج.م"
+        elif price:
+            price_part = f"{price} ج.م"
+        else:
+            price_part = ""
+
         entry = f"{name}{f' ({price_part})' if price_part else ''}"
         if offers_summary:
             entry += f" [{offers_summary}]"

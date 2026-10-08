@@ -392,13 +392,29 @@ function formatProductResponse(product) {
     parsedMetadata?.seo?.description ||
     null;
 
+  let effectiveComparePrice = product.comparePrice ? parseFloat(product.comparePrice) : null;
+  if (!effectiveComparePrice && variants && variants.length > 0) {
+    const varCompares = variants.map(v => v.comparePrice).filter(cp => cp && cp > 0);
+    if (varCompares.length > 0) {
+      effectiveComparePrice = varCompares[0];
+    }
+  }
+
+  let effectivePrice = parseFloat(product.price) || 0;
+  if (!effectivePrice && variants && variants.length > 0) {
+    const varPrices = variants.map(v => v.price).filter(p => p && p > 0);
+    if (varPrices.length > 0) {
+      effectivePrice = varPrices[0];
+    }
+  }
+
   return {
     ...product,
     metadata: parsedMetadata,
     metaTitle,
     metaDescription,
-    price: parseFloat(product.price) || 0,
-    comparePrice: product.comparePrice ? parseFloat(product.comparePrice) : null,
+    price: effectivePrice,
+    comparePrice: effectiveComparePrice,
     cost: product.cost ? parseFloat(product.cost) : null,
     weight: product.weight ? parseFloat(product.weight) : null,
     mainImage: finalMainImage,

@@ -60,7 +60,15 @@ class ProductSearchRepository(BaseRepository):
             where = "TRUE"
 
         sql = text(f"""
-            SELECT p.id, p.name, p.sku, p.price, p."comparePrice",
+            SELECT p.id, p.name, p.sku, p.price,
+                   COALESCE(
+                       p."comparePrice",
+                       (SELECT pv."comparePrice"
+                        FROM product_variants pv
+                        WHERE pv."productId" = p.id AND pv."comparePrice" IS NOT NULL AND pv."comparePrice" > 0 AND pv."isActive" = TRUE
+                        ORDER BY pv."comparePrice" DESC
+                        LIMIT 1)
+                   ) AS "comparePrice",
                    p.stock, p."trackInventory", p."isActive",
                    p."isFeatured", p.images, p."mainImage",
                    p."categoryId", c.name AS "categoryName",
@@ -176,7 +184,7 @@ class ProductSearchRepository(BaseRepository):
         if not product_ids:
             return {}
         sql = text("""
-            SELECT "productId", name, type, sku, stock, "trackInventory"
+            SELECT "productId", name, type, sku, price, "comparePrice", cost, stock, "trackInventory"
             FROM product_variants
             WHERE "productId" = ANY(:pids)
               AND "isActive" = TRUE
