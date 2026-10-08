@@ -504,6 +504,25 @@ export default defineConfig(({ mode }) => {
       },
     },
 
+    preview: {
+      port: 4173,
+      proxy: {
+        '/api': {
+          target: proxyTarget,
+          changeOrigin: true,
+        },
+        '/webhooks': {
+          target: proxyTarget,
+          changeOrigin: false,
+        },
+        '/socket.io': {
+          target: proxyTarget,
+          changeOrigin: false,
+          ws: true,
+        },
+      },
+    },
+
     // Optimization
     optimizeDeps: {
       // On this Windows workspace the default dependency crawler can push

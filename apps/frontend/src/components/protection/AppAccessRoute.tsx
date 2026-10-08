@@ -110,17 +110,41 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
 
   const primarySlug = requiredAppSlugs[0]?.trim() || "marketplace";
 
-  const formattedAppNames = requiredAppSlugs
-    .map((slug) => {
-      const reg = APP_REGISTRY.find((a) => a.id.toLowerCase() === slug.trim().toLowerCase());
+  const formattedAppNames = React.useMemo(() => {
+    if (requiredAppSlugs.some((s) => s.toLowerCase().startsWith("whatsapp"))) {
+      return "واتساب للأعمال";
+    }
+
+    const FRIENDLY_APP_NAMES: Record<string, string> = {
+      "telegram-business": "تيليجرام للأعمال",
+      "telegram-integration": "تكامل تيليجرام",
+      "unified-inbox": "صندوق المحادثات الموحد",
+      "crm-lite": "إدارة العملاء CRM",
+      "crm-basic": "إدارة العملاء الأساسي",
+      "dental-lab-app": "معمل الأسنان",
+      "dental-lab": "معمل الأسنان",
+      "booking-app": "نظام الحجوزات",
+    };
+
+    const names = requiredAppSlugs.map((slug) => {
+      const lower = slug.trim().toLowerCase();
+      if (FRIENDLY_APP_NAMES[lower]) return FRIENDLY_APP_NAMES[lower];
+
+      const reg = APP_REGISTRY.find(
+        (a) =>
+          a.id.toLowerCase() === lower ||
+          a.requiredApps?.some((r) => r.toLowerCase() === lower)
+      );
       if (reg) {
         const translated = t(reg.nameKey);
         if (translated && translated !== reg.nameKey) return translated;
         return reg.displayName || slug;
       }
       return slug;
-    })
-    .join(" أو ");
+    });
+
+    return Array.from(new Set(names)).join(" أو ");
+  }, [requiredAppSlugs, t]);
 
   useEffect(() => {
     if (!hasAccess && isAuthenticated && user && user.role !== "SUPER_ADMIN") {
