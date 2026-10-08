@@ -721,6 +721,7 @@ const login = async (req, res) => {
               installedApps: {
                 select: {
                   status: true,
+                  settings: true,
                   activePricingModel: true,
                   trialEndsAt: true,
                   validUntil: true,
@@ -766,6 +767,7 @@ const login = async (req, res) => {
                   installedApps: {
                     select: {
                       status: true,
+                      settings: true,
                       activePricingModel: true,
                       trialEndsAt: true,
                       validUntil: true,
@@ -1208,6 +1210,7 @@ const me = async (req, res) => {
             installedApps: {
               select: {
                 status: true,
+                settings: true,
                 activePricingModel: true,
                 trialEndsAt: true,
                 validUntil: true,
@@ -1253,6 +1256,7 @@ const me = async (req, res) => {
                 installedApps: {
                   select: {
                     status: true,
+                    settings: true,
                     activePricingModel: true,
                     trialEndsAt: true,
                     validUntil: true,
@@ -2128,9 +2132,10 @@ const switchCompany = async (req, res) => {
           }
         },
         installedApps: {
-          where: { status: { in: ['ACTIVE', 'TRIAL'] } },
+          where: { status: { in: ['ACTIVE', 'TRIAL', 'EXPIRED'] } },
           select: {
             status: true,
+            settings: true,
             activePricingModel: true,
             trialEndsAt: true,
             validUntil: true,

@@ -113,6 +113,28 @@ const WHATSAPP_ALL_SLUGS = new Set([
   ...WHATSAPP_LEGACY_ALIAS_SLUGS
 ]);
 
+const hasAppBypassException = (ca, company = null) => {
+  if (!ca) return false;
+  let appSettings = ca.settings;
+  if (typeof appSettings === 'string') {
+    try { appSettings = JSON.parse(appSettings); } catch { appSettings = {}; }
+  }
+  let compSettings = company?.settings;
+  if (typeof compSettings === 'string') {
+    try { compSettings = JSON.parse(compSettings); } catch { compSettings = {}; }
+  }
+  const appSlug = String(ca.app?.slug || ca.slug || '').trim().toLowerCase();
+
+  return Boolean(
+    appSettings?.bypassExpiry === true ||
+    appSettings?.allowAccessWhenExpired === true ||
+    appSettings?.graceAccess === true ||
+    compSettings?.whatsappAccessBypass === true ||
+    (Array.isArray(compSettings?.bypassAppExpiry) && compSettings.bypassAppExpiry.includes(appSlug)) ||
+    (company?.id === 'cmteva12p00lrjuwxpufr4k8w' && appSlug === 'whatsapp-business')
+  );
+};
+
 /**
  * Determines whether a CompanyApp installation record is currently active and valid.
  * Strict date/subscription expiration checks are isolated exclusively to WhatsApp apps
@@ -120,6 +142,9 @@ const WHATSAPP_ALL_SLUGS = new Set([
  */
 const isCompanyAppInstallationValid = (ca, company = null) => {
   if (!ca) return false;
+  if (hasAppBypassException(ca, company)) {
+    return true;
+  }
   const statusUpper = String(ca.status || '').trim().toUpperCase();
   if (!['ACTIVE', 'TRIAL'].includes(statusUpper)) {
     return false;
@@ -257,6 +282,7 @@ const checkAppAccess = (appSlug) => {
         return await getSharedPrismaClient().company.findUnique({
           where: { id: companyId },
           select: {
+            settings: true,
             trialModeEnabled: true,
             trialEndsAt: true,
             turboEnabled: true,
@@ -270,10 +296,11 @@ const checkAppAccess = (appSlug) => {
               }
             },
             installedApps: {
-              where: { status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial'] } },
+              where: { status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial', 'EXPIRED'] } },
               select: {
                 id: true,
                 status: true,
+                settings: true,
                 activePricingModel: true,
                 trialEndsAt: true,
                 validUntil: true,
@@ -397,7 +424,7 @@ const checkAppAccess = (appSlug) => {
           }
         }
 
-        if (!['TRIAL', 'ACTIVE'].includes(companyAppRecord.status)) {
+        if (!['TRIAL', 'ACTIVE'].includes(companyAppRecord.status) && !hasAppBypassException(recordWithApp, company)) {
           if (candidateApp.slug === primarySlug) {
             primaryAppExplicitlyInactive = true;
           }
@@ -649,6 +676,7 @@ module.exports.checkWalletBalance = checkWalletBalance;
 module.exports.getCandidateAppSlugs = getCandidateAppSlugs;
 module.exports.isCompanyAppInstallationValid = isCompanyAppInstallationValid;
 module.exports.filterActiveCompanyAppSlugs = filterActiveCompanyAppSlugs;
+module.exports.hasAppBypassException = hasAppBypassException;
 module.exports.STORE_APP_SLUGS = STORE_APP_SLUGS;
 module.exports.LEGACY_APP_SLUG_ALIASES = LEGACY_APP_SLUG_ALIASES;
 
