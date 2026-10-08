@@ -796,6 +796,7 @@ async function resolvePlatformSenderCompanyId() {
   const slugCandidates = [
     process.env.WHATSAPP_PLATFORM_SENDER_COMPANY_SLUG,
     process.env.PLATFORM_COMPANY_SLUG,
+    'max-p',
     'maxp'
   ].filter(Boolean);
 

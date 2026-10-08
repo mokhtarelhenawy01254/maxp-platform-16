@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   ArrowPathIcon,
   ArrowTopRightOnSquareIcon,
@@ -110,6 +111,27 @@ const SuperAdminLandingPages: React.FC = () => {
             تحكم في ظهور صفحات اللاندينغ الثابتة <span dir="ltr" className="font-mono">/lp/*</span>. إخفاء الصفحة يمنع الوصول إليها ويحوّل الزائر إلى الصفحة الرئيسية.
           </p>
         </header>
+
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl border border-indigo-200/80 bg-indigo-50/60 p-5 dark:border-indigo-900/60 dark:bg-indigo-950/30">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="flex size-2 rounded-full bg-indigo-600 animate-pulse" />
+              <h3 className="text-sm font-bold text-indigo-950 dark:text-indigo-200">
+                صفحات الهبوط البيعية لمنتجات الشركة (HQ): max-p
+              </h3>
+            </div>
+            <p className="text-xs text-indigo-800/80 dark:text-indigo-300/80 leading-relaxed">
+              إنشاء وإدارة صفحات الهبوط البيعية لمنتجات وعروض شركة max-p مع ربط مباشر ومكتمل بنظام الطلبات والمخزون والتتبع.
+            </p>
+          </div>
+          <Link
+            to="/advertising/product-landing-pages"
+            className="inline-flex items-center gap-1.5 shrink-0 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
+          >
+            منشئ صفحات الهبوط (HQ)
+            <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+          </Link>
+        </div>
 
         <section className="rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
           {pages.length === 0 ? (

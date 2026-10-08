@@ -2581,7 +2581,7 @@ const setPrimaryCompany = async (req, res) => {
     }
 
     // Get the system company ID (the super admin's company)
-    const systemCompanyId = requester.companyId;
+    const systemCompanyId = requester.companyId || 'cmopgxu3a07i4jujj6f1oh32h';
 
     if (!systemCompanyId) {
       return res.status(400).json({

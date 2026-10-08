@@ -154,6 +154,16 @@ export const getMenuGroups = (t: (key: string) => string): SuperAdminMenuGroup[]
         path: "/super-admin/whatsapp",
       },
       {
+        text: "واتساب المنصة (max-p HQ)",
+        icon: <Building2 className="h-4 w-4 text-emerald-500" />,
+        path: "/super-admin/whatsapp/companies/cmopgxu3a07i4jujj6f1oh32h",
+      },
+      {
+        text: "صندوق محادثات المنصة (max-p)",
+        icon: <MessageSquare className="h-4 w-4 text-indigo-500" />,
+        path: "/super-admin/whatsapp/companies/cmopgxu3a07i4jujj6f1oh32h/routing",
+      },
+      {
         text: t("superAdmin.sidebar.whatsappCompanies") || "شركات واتساب المربوطة",
         icon: <Building2 className="h-4 w-4" />,
         path: "/super-admin/whatsapp/companies",

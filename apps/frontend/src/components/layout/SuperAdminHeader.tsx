@@ -47,8 +47,20 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
   title,
 }) => {
   const { t, i18n } = useTranslation();
-  const { logout } = useAuth();
+  const { logout, user: authUser, switchCompany } = useAuth();
   const navigate = useNavigate();
+
+  const handleGoToHQ = async () => {
+    const targetHqCompanyId = "cmopgxu3a07i4jujj6f1oh32h";
+    if (authUser?.company?.id !== targetHqCompanyId) {
+      try {
+        await switchCompany(targetHqCompanyId);
+      } catch {
+        // Fallback to direct navigation if switch fails
+      }
+    }
+    navigate("/company-dashboard");
+  };
 
   return (
     <header
@@ -74,7 +86,7 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate("/company-dashboard")}
+            onClick={() => void handleGoToHQ()}
             className="flex items-center gap-1.5 h-8 px-2.5 sm:px-3 text-xs font-semibold rounded-lg border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-all shadow-sm"
             title="التبديل إلى كوكبيت الشركة التشغيلية (الطلبات، المنتجات، الميديا باير، المحادثات)"
           >
@@ -110,7 +122,7 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
               <span className="absolute bottom-0 inset-inline-end-0 size-2 rounded-full bg-emerald-500 ring-2 ring-background" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[190px]">
-              <DropdownMenuItem onClick={() => navigate("/company-dashboard")} className="font-semibold text-foreground cursor-pointer">
+              <DropdownMenuItem onClick={() => void handleGoToHQ()} className="font-semibold text-foreground cursor-pointer">
                 <Building2 className="ml-2 size-4 text-indigo-600 dark:text-indigo-400" />
                 كوكبيت عمليات الشركة (HQ)
               </DropdownMenuItem>

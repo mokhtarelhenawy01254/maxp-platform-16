@@ -171,13 +171,51 @@ export default function SuperAdminWhatsAppOverview() {
         </Alert>
       ) : (
         <>
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-[24px] border border-emerald-500/30 bg-emerald-500/10 p-5 text-emerald-950 dark:text-emerald-100 shadow-sm">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                <h3 className="text-sm font-bold text-emerald-950 dark:text-emerald-200">
+                  شركة المنصة المركزية الرسمية (HQ): max-p
+                </h3>
+                <Badge variant="outline" className="border-emerald-500/40 text-emerald-700 dark:text-emerald-300 text-[11px]">
+                  متصلة ومربوطة بالسوبر أدمن
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                جميع إشعارات المنصة، رسائل الترحيب، وتنبيهات الإدارة تصدر وتُدار عبر جلسات واتساب شركة max-p.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs font-semibold rounded-lg bg-background border-emerald-500/40 hover:bg-emerald-500/10 text-emerald-800 dark:text-emerald-200"
+                nativeButton={false}
+                render={<Link to="/super-admin/whatsapp/companies/cmopgxu3a07i4jujj6f1oh32h" />}
+              >
+                <Smartphone className="size-3.5 mr-1 text-emerald-600" />
+                جلسات وأرقام المنصة
+              </Button>
+              <Button
+                size="sm"
+                className="h-8 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                nativeButton={false}
+                render={<Link to="/super-admin/whatsapp/companies/cmopgxu3a07i4jujj6f1oh32h/routing" />}
+              >
+                <MessageSquareText className="size-3.5 mr-1" />
+                صندوق المحادثات والروتينج
+              </Button>
+            </div>
+          </div>
+
           <Alert className="rounded-[24px] border-sky-300/70 bg-sky-500/10 text-sky-950 dark:text-sky-100">
             <RadioTower className="size-4" />
             <AlertTitle>{t("superAdmin.whatsapp.overview.infoTitle")}</AlertTitle>
             <AlertDescription>
               {t("superAdmin.whatsapp.overview.infoDescription")}
             </AlertDescription>
-            </Alert>
+          </Alert>
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <WhatsAppMetricCard
