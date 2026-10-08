@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Lock, CreditCard, ArrowLeft } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import AccessDenied from "./AccessDenied";
+import ErrorBoundary from "../common/ErrorBoundary";
 import { APP_REGISTRY } from "../../config/appRegistry";
 
 export const APP_SLUG_ALIASES: Record<string, string[]> = {
@@ -160,13 +161,15 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
     if (redirectMode === "overlay-blur") {
       return (
         <div className="relative w-full h-full min-h-[calc(100vh-4rem)] overflow-hidden isolate">
-          {/* Blurred locked underlying app */}
+          {/* Blurred locked underlying app protected by ErrorBoundary */}
           <div
             className="w-full h-full pointer-events-none select-none filter blur-md opacity-35 grayscale-[20%] transition-all"
             aria-hidden="true"
             tabIndex={-1}
           >
-            {children}
+            <ErrorBoundary fallback={<div className="h-full w-full" />}>
+              {children}
+            </ErrorBoundary>
           </div>
 
           {/* Locked Overlay Backdrop & Renewal Modal */}
@@ -193,7 +196,7 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
                   اشتراك «{formattedAppNames}» منتهي
                 </h2>
                 <p id="expired-subscription-desc" className="text-sm text-muted-foreground leading-relaxed text-pretty">
-                  لقد انتهت فترة الاشتراك في خدمة «{formattedAppNames}». تم إيقاف وتشفير إمكانية إرسال واستقبال المحادثات حتى يتم تجديد الاشتراك.
+                  لقد انتهت فترة الاشتراك في خدمة «{formattedAppNames}». تطبيقك وبيانات الربط والمحادثات محفوظة ومثبتة بالكامل، وتم إيقاف وتشفير إمكانية إرسال واستقبال المحادثات مؤقتاً لحين تجديد الاشتراك.
                 </p>
               </div>
 
