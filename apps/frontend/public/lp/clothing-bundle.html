@@ -2,542 +2,1285 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>MaxP لمتاجر الملابس — متجر مجاني 0 ج.م وباقة 999 في الشهر</title>
-<meta name="description" content="ابدأ بمتجر مجاني وإدارة أوردر بـ1 ج.م. ولما تكبر: باقة واحدة بـ999 في الشهر — 17 أداة في نظام واحد: المتجر والأوردرات بتتأكد على واتساب والإنبوكس الموحد والشحن والمخزون والمرتجعات بأسبابها والتقارير والحملات.">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MaxP لمتاجر وبراندات الملابس — وقف نزيف الأوردرات والمرتجعات</title>
+<meta name="description" content="النظام المتكامل لإدارة متاجر ومحلات الملابس في مصر: متجر مجاني 0 ج.م، إدارة الأوردر بـ 1 ج.م، وباقة المتجر الكاملة 999 ج.م/شهر (17 أداة قيمتها 2936 ج.م فرادى). تأكيد واتساب، مصفوفة المقاسات والألوان، والشحن.">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#f5f1e8">
+<meta name="theme-color" content="#07080a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
-:root{
-  --paper:#f5f1e8; --paper-2:#efe9db; --card:#fffdf7;
-  --ink:#181510; --ink-2:#4b463c; --muted:#7b7466;
-  --line:#ded6c6; --rule:#e7e0d1;
-  --accent:#8a2f1a; --accent-d:#6c2412; --ok:#2f6b46;
-  --maxw:1140px;
-  --fs-0:clamp(1rem,.97rem + .22vw,1.1rem);
-  --fs-s:clamp(.83rem,.8rem + .18vw,.92rem);
-  --fs-h1:clamp(1.95rem,1.25rem + 3.6vw,4rem);
-  --fs-h2:clamp(1.45rem,1.15rem + 1.35vw,2.3rem);
-  --fs-h3:1.08rem;
-  --gutter:clamp(18px,4vw,40px);
+:root {
+  --bg-dark: #07080a;
+  --bg-surface: #0e1117;
+  --bg-elevated: #151a24;
+  --bg-card: #121620;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-active: rgba(255, 255, 255, 0.18);
+  --border-emerald: rgba(16, 185, 129, 0.28);
+  
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  
+  --emerald: #10b981;
+  --emerald-glow: rgba(16, 185, 129, 0.15);
+  --amber: #f59e0b;
+  --amber-glow: rgba(245, 158, 11, 0.15);
+  --indigo: #6366f1;
+  --rose: #f43f5e;
+  
+  --max-w: 1200px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
 }
-*{box-sizing:border-box}
-html,body{margin:0;padding:0}
-body{background:var(--paper);color:var(--ink);font-family:"Cairo","Segoe UI",Tahoma,system-ui,sans-serif;
-  font-size:var(--fs-0);line-height:1.8;text-wrap:pretty;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-h1,h2,h3{line-height:1.24;margin:0;letter-spacing:-.02em;font-weight:800}
-h1{font-size:var(--fs-h1);line-height:1.16}
-h2{font-size:var(--fs-h2)}
-h3{font-size:var(--fs-h3);line-height:1.35}
-p{margin:0 0 1em;color:var(--ink-2);max-width:64ch}
-strong,b{color:var(--ink);font-weight:800}
-a{color:var(--accent-d)}
-.wrap{max-width:var(--maxw);margin-inline:auto;padding-inline:var(--gutter)}
-.num{font-variant-numeric:tabular-nums}
-section{padding-block:clamp(40px,6vw,84px)}
-.band{background:var(--paper-2);border-block:1px solid var(--line)}
-.eyebrow{font-size:var(--fs-s);color:var(--accent);font-weight:800;letter-spacing:.02em;margin:0 0 14px}
-.sub{font-size:clamp(1.02rem,.99rem + .35vw,1.2rem);color:var(--ink-2);max-width:58ch}
-.draft{background:#fdf3e3;color:#7a4a06;font-size:var(--fs-s);text-align:center;padding:7px 14px;border-bottom:1px solid #eedcbb}
-header{position:sticky;top:0;z-index:30;background:var(--paper);border-bottom:1px solid var(--line)}
-header .wrap{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-block:11px}
-.logo{font-weight:800;font-size:1.1rem;letter-spacing:-.02em}
-.logo i{font-style:normal;color:var(--accent)}
-.logo small{display:block;font-weight:400;font-size:.7rem;color:var(--muted);line-height:1.2}
-.h-cta{font-size:var(--fs-s);font-weight:800;text-decoration:none;color:#fff;background:var(--accent);
-  padding:11px 16px;border-radius:9px;min-height:44px;display:inline-flex;align-items:center}
-.h-cta:hover{background:var(--accent-d)}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:52px;padding:14px 24px;
-  border-radius:10px;font:inherit;font-weight:800;text-decoration:none;border:1px solid transparent;cursor:pointer}
-.btn-p{background:var(--accent);color:#fff} .btn-p:hover{background:var(--accent-d)}
-.btn-w{background:#1f9d55;color:#fff} .btn-w:hover{background:#187c42}
-.btn-g{background:transparent;border-color:var(--ink);color:var(--ink)} .btn-g:hover{background:var(--ink);color:var(--paper)}
-.btn-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
-.micro{font-size:var(--fs-s);color:var(--muted);max-width:52ch}
-.hero{padding-block:clamp(34px,5vw,70px) clamp(30px,4.5vw,58px)}
-.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(26px,4.5vw,64px);align-items:start}
-@media (max-width:900px){.hero-grid{grid-template-columns:1fr;gap:30px}}
-.chips{list-style:none;display:flex;flex-wrap:wrap;gap:8px;padding:0;margin:24px 0 0}
-.chips li{font-size:var(--fs-s);color:var(--ink-2);border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:var(--card)}
-.ledger{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
-.ledger h3{font-size:.9rem;color:var(--muted);font-weight:400;margin-bottom:14px}
-.ledger .row{display:flex;align-items:baseline;gap:8px;padding-block:4px;font-size:.96rem}
-.ledger .row .dot{flex:1;border-bottom:1px dotted #c9c0ad;transform:translateY(-4px)}
-.ledger .row .pv{font-weight:800;white-space:nowrap}
-.ledger .tot{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:14px;
-  padding-top:14px;border-top:2px solid var(--ink);font-weight:800}
-.ledger .tot .big{font-size:1.5rem}
-.ledger .note{font-size:var(--fs-s);color:var(--muted);margin:12px 0 0;max-width:none}
-.freerow{margin-top:14px;padding:14px;border:2px solid var(--accent);border-radius:12px;background:#fbf3ef}
-.freerow .k{font-size:var(--fs-s);color:var(--accent);font-weight:800}
-.freerow .v{font-size:1.7rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.2}
-.freerow p{font-size:var(--fs-s);margin:6px 0 0;max-width:none}
-.save{display:inline-block;background:#fbeee9;color:var(--accent-d);border:1px solid #efd7cd;border-radius:999px;padding:4px 12px;font-size:var(--fs-s);font-weight:800}
-.demo{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
-.demo h3{font-size:.95rem;margin-bottom:12px}
-.demo .who{font-size:var(--fs-s);color:var(--muted);margin:0 0 5px}
-.bub{padding:10px 13px;border-radius:12px;font-size:.93rem;max-width:92%;margin:0 0 12px;line-height:1.7;border:1px solid var(--line);background:#fff}
-.bub.out{background:#e7f4ec;border-color:#d3e8db;margin-inline-start:auto}
-.bub time{display:block;font-size:.68rem;color:var(--muted);margin-top:4px}
-.qp{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.qp button{font:inherit;font-size:var(--fs-s);color:var(--ink-2);border:1px dashed var(--line);border-radius:999px;
-  padding:8px 12px;background:transparent;cursor:pointer;min-height:40px}
-.qp button:hover{border-color:var(--accent);color:var(--accent-d)}
-.quotes{margin-top:30px;display:grid;gap:16px}
-.q{border-top:2px solid var(--ink);padding-top:14px;margin:0;max-width:58ch}
-.q p{font-size:clamp(1.05rem,1rem + .5vw,1.35rem);color:var(--ink);margin:0;line-height:1.6}
-.q cite{display:block;font-style:normal;font-size:var(--fs-s);color:var(--muted);margin-top:8px}
-.cost{list-style:none;counter-reset:c;margin:28px 0 0;padding:0;border-top:1px solid var(--line)}
-.cost li{counter-increment:c;padding-block:14px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:42px 1fr;gap:12px;color:var(--ink-2)}
-.cost li::before{content:counter(c,decimal-leading-zero);color:var(--accent);font-weight:800;font-size:.9rem;font-variant-numeric:tabular-nums;padding-top:3px}
-.steps{list-style:none;counter-reset:s;margin:0;padding:0}
-.steps li{counter-increment:s;padding:0 0 26px;border-bottom:1px solid var(--line);margin-bottom:26px;display:grid;grid-template-columns:64px 1fr;gap:16px}
-.steps li:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
-.steps li::before{content:"0" counter(s);font-size:1.6rem;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1}
-.steps h3{margin-bottom:5px}
-.steps p{margin:0;max-width:54ch}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:clamp(22px,4vw,50px);align-items:start;margin-top:28px}
-@media (max-width:880px){.two-col{grid-template-columns:1fr}}
-table{width:100%;border-collapse:collapse;margin-top:22px;font-size:.96rem;background:var(--card)}
-caption{text-align:start;font-size:var(--fs-s);color:var(--muted);margin-bottom:10px}
-th,td{text-align:start;padding:13px 11px;border-bottom:1px solid var(--line);vertical-align:top}
-th{font-size:var(--fs-s);color:var(--muted);font-weight:800}
-td.p{white-space:nowrap;font-weight:800;font-variant-numeric:tabular-nums}
-tr.hi td{background:#fbf3ef;border-block:1px solid #e9d9d0}
-tr:last-child td{border-bottom:0}
-.tag{display:inline-block;font-size:.7rem;font-weight:800;border-radius:999px;padding:3px 10px;background:var(--ink);color:var(--paper);margin-top:4px}
-.tag.g{background:#efe9dc;color:#6b5a35}
-.bundle{background:var(--ink);color:#efe9db;border-radius:14px;padding:clamp(20px,3.4vw,32px)}
-.bundle h3{color:#fff;font-size:1.3rem}
-.bundle .price{display:flex;align-items:baseline;gap:12px;margin:8px 0 18px;flex-wrap:wrap}
-.bundle .price b{font-size:clamp(2rem,1.4rem + 2.2vw,3rem);color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
-.bundle .price span{color:#b3aa99;font-size:var(--fs-s)}
-.bundle .bgrp{margin:0 0 14px}
-.bundle .bgrp h4{font-size:.76rem;color:#b3aa99;margin:0 0 6px;font-weight:800;letter-spacing:.03em}
-.bundle ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
-.bundle li{display:grid;grid-template-columns:18px 1fr;gap:12px;font-size:.97rem;color:#ded6c6}
-.bundle li::before{content:"+";color:#e8a08b;font-weight:800}
-.bundle .btn{width:100%;margin-top:8px}
-.risk{background:var(--ink);color:var(--paper);border-radius:14px;padding:clamp(22px,3.4vw,34px);display:grid;grid-template-columns:1.2fr .8fr;gap:clamp(18px,3vw,42px);align-items:center}
-@media (max-width:800px){.risk{grid-template-columns:1fr}}
-.risk h3{color:var(--paper);font-size:clamp(1.2rem,1.05rem + .6vw,1.6rem)}
-.risk p{color:#d7cebd;margin:.6em 0 0;max-width:52ch}
-.faq{margin-top:24px;border-top:1px solid var(--line)}
-details{border-bottom:1px solid var(--line)}
-summary{cursor:pointer;font-weight:800;min-height:52px;display:flex;align-items:center;gap:12px}
-summary::marker{color:var(--accent)}
-details p{margin:0 0 18px;max-width:66ch;white-space:pre-line}
-.form-wrap{display:grid;grid-template-columns:.9fr 1.1fr;gap:clamp(26px,4vw,58px);align-items:start}
-@media (max-width:880px){.form-wrap{grid-template-columns:1fr}}
-form{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:clamp(20px,3vw,28px);display:grid;gap:16px}
-label{display:block;font-size:var(--fs-s);color:var(--ink-2);font-weight:800;margin-bottom:6px}
-input,select{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:9px;font:inherit;font-size:16px;background:#fff;color:var(--ink);min-height:50px}
-input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
-form .btn{width:100%}
-.plain-list{list-style:none;margin:22px 0 0;padding:0}
-.plain-list li{color:var(--ink-2);padding-inline-start:16px;position:relative;margin-bottom:8px}
-.plain-list li::before{content:"";position:absolute;inset-inline-start:0;top:.72em;width:10px;height:1px;background:var(--accent)}
-footer{border-top:1px solid var(--line);padding-block:28px;color:var(--muted);font-size:var(--fs-s)}
-footer p{color:var(--muted);max-width:70ch}
-.sticky-cta{position:fixed;inset-inline:0;bottom:0;z-index:40;display:none;background:var(--paper);
-  border-top:1px solid var(--line);padding:10px var(--gutter) calc(10px + env(safe-area-inset-bottom))}
-.sticky-cta .txt{font-size:var(--fs-s);color:var(--ink-2);font-weight:800;display:block;text-align:center;margin-bottom:6px}
-.sticky-cta .btn{width:100%}
-.sticky-cta.on{display:block}
-@media (min-width:641px){.sticky-cta{display:none!important}}
-@media (prefers-reduced-motion:no-preference){
-  .rv{opacity:0;transform:translateY(14px);transition:opacity .5s ease-out,transform .5s cubic-bezier(.22,.61,.36,1)}
-  .rv.seen{opacity:1;transform:none}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { scroll-behavior: smooth; }
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+  line-height: 1.7;
+  font-size: 16px;
+  overflow-x: hidden;
+  text-wrap: pretty;
 }
-@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+
+.num, .mono { font-family: 'JetBrains Mono', 'Cairo', monospace; font-variant-numeric: tabular-nums; }
+.wrap { max-width: var(--max-w); margin-inline: auto; padding-inline: clamp(16px, 4vw, 32px); }
+
+/* Machine Hairline Grid Texture */
+.bg-grid {
+  background-image: 
+    linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Header */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(7, 8, 10, 0.82);
+  border-bottom: 1px solid var(--border-subtle);
+}
+header .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 68px;
+}
+.brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text-main);
+}
+.brand-badge .logo-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #10b981, #047857);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 18px;
+  color: #fff;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
+}
+.brand-badge .brand-text {
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+.brand-badge .brand-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 8px;
+  border-radius: 6px;
+  color: var(--text-muted);
+}
+
+.h-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nav-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+.nav-link:hover { color: var(--text-main); }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 11px 22px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.16s ease;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(0.97); }
+.btn-emerald {
+  background: #10b981;
+  color: #042f22;
+  font-weight: 800;
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.32);
+}
+.btn-emerald:hover { background: #34d399; }
+.btn-outline {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  border-color: var(--border-active);
+}
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* Hero Section */
+.hero {
+  padding-block: clamp(40px, 6vw, 84px) clamp(36px, 5vw, 70px);
+  position: relative;
+  overflow: hidden;
+}
+.hero-glow {
+  position: absolute;
+  top: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(700px, 92vw);
+  height: 420px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.14) 0%, rgba(99, 102, 241, 0.06) 50%, transparent 80%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+.hero .wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .nav-link { display: none; }
+  header .btn { padding: 8px 12px; font-size: 0.8rem; }
+  .brand-badge .brand-tag { display: none; }
+}
+
+.eyebrow-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #34d399;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 999px;
+  margin-bottom: 18px;
+}
+.eyebrow-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulse 2s infinite ease-in-out;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
+
+.hero-title {
+  font-size: clamp(1.75rem, 1.2rem + 2.6vw, 3.4rem);
+  font-weight: 900;
+  line-height: 1.24;
+  letter-spacing: -0.02em;
+  max-width: 840px;
+  margin-inline: auto;
+  text-wrap: balance;
+  margin-bottom: 20px;
+}
+.hero-title .gradient-text {
+  background: linear-gradient(135deg, #ffffff 40%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-subtitle {
+  font-size: clamp(0.98rem, 0.92rem + 0.35vw, 1.18rem);
+  color: var(--text-muted);
+  max-width: 60ch;
+  margin-inline: auto;
+  margin-bottom: 30px;
+  line-height: 1.8;
+}
+
+.hero-cta-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 26px;
+  width: 100%;
+}
+@media (max-width: 540px) {
+  .hero-cta-group .btn { width: 100%; }
+}
+
+.metrics-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 18px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+.metrics-strip .metric-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.metrics-strip .metric-item b {
+  color: var(--text-main);
+  font-weight: 800;
+}
+
+/* Live Cockpit Preview Canvas */
+.cockpit-canvas {
+  width: 100%;
+  max-width: 1060px;
+  margin-top: 48px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: 
+    0 24px 70px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  text-align: right;
+}
+.canvas-header {
+  height: 48px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 18px;
+}
+.canvas-dots { display: flex; gap: 6px; }
+.canvas-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, 0.15); }
+.canvas-dot:nth-child(1) { background: #ef4444; }
+.canvas-dot:nth-child(2) { background: #f59e0b; }
+.canvas-dot:nth-child(3) { background: #10b981; }
+.canvas-title {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.canvas-body {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 1px;
+  background: var(--border-subtle);
+}
+@media (max-width: 820px) {
+  .canvas-body { grid-template-columns: 1fr; }
+}
+
+.canvas-panel {
+  background: var(--bg-surface);
+  padding: clamp(16px, 3vw, 28px);
+}
+
+.panel-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.live-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--emerald-glow);
+  color: var(--emerald);
+  border: 1px solid var(--border-emerald);
+}
+
+/* WhatsApp Simulator UI */
+.chat-window {
+  background: #090c10;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.chat-bubble {
+  max-width: 88%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+.chat-in {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+}
+.chat-out {
+  align-self: flex-end;
+  background: #064e3b;
+  border: 1px solid #047857;
+  color: #ecfdf5;
+}
+.chat-tag {
+  display: inline-block;
+  background: rgba(255,255,255,0.14);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-inline: 2px;
+  font-weight: 700;
+}
+.chat-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+.chat-action-btn {
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid #10b981;
+  background: #10b981;
+  color: #042f22;
+  cursor: pointer;
+}
+
+/* Stock Matrix UI */
+.stock-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+.size-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 6px;
+  text-align: center;
+}
+.size-name { font-weight: 800; font-size: 0.9rem; color: var(--text-main); }
+.size-qty { font-size: 0.78rem; color: var(--emerald); font-weight: 700; margin-top: 2px; }
+.size-out { border-color: rgba(244, 63, 94, 0.3); }
+.size-out .size-qty { color: var(--rose); }
+
+/* Problem vs Solution Bento Section */
+.section {
+  padding-block: clamp(54px, 8vw, 100px);
+  border-top: 1px solid var(--border-subtle);
+}
+.section-header {
+  text-align: center;
+  max-width: 60ch;
+  margin-inline: auto;
+  margin-bottom: clamp(36px, 5vw, 64px);
+}
+.section-tag {
+  color: var(--emerald);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.section-title {
+  font-size: clamp(1.6rem, 1.2rem + 1.8vw, 2.6rem);
+  font-weight: 800;
+  line-height: 1.3;
+  margin-bottom: 14px;
+}
+.section-desc {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.bento-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+@media (max-width: 900px) {
+  .bento-grid-3 { grid-template-columns: 1fr; }
+}
+
+.bento-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: clamp(20px, 3vw, 28px);
+  position: relative;
+  transition: border-color 0.2s ease;
+}
+.bento-card:hover { border-color: var(--border-active); }
+.bento-card-highlight {
+  border-color: var(--border-emerald);
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, var(--bg-surface) 100%);
+}
+
+.bento-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  font-size: 20px;
+}
+.bento-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  color: var(--text-main);
+}
+.bento-desc {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+/* Pricing Section (The 3 Levels: 0 · 1 · 999) */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+@media (max-width: 960px) {
+  .pricing-grid { grid-template-columns: 1fr; max-width: 500px; margin-inline: auto; }
+}
+
+.price-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 32px 26px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.price-card-hero {
+  border-color: #10b981;
+  background: linear-gradient(180deg, #10211a 0%, var(--bg-surface) 60%);
+  box-shadow: 0 0 50px rgba(16, 185, 129, 0.15);
+  transform: scale(1.02);
+}
+@media (max-width: 960px) {
+  .price-card-hero { transform: none; }
+}
+
+.badge-featured {
+  position: absolute;
+  top: -14px;
+  right: 50%;
+  transform: translateX(50%);
+  background: #10b981;
+  color: #042f22;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 4px 14px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+}
+
+.price-tier-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.price-tier-desc {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  min-height: 44px;
+  margin-bottom: 20px;
+}
+.price-tag {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.price-amount {
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: var(--text-main);
+  line-height: 1;
+}
+.price-unit {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.feature-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+  flex-grow: 1;
+}
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+.feature-item .check {
+  color: var(--emerald);
+  font-weight: 900;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.feature-item strong {
+  color: var(--text-main);
+}
+
+.bundle-highlight-badge {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  color: #fbbf24;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 0.84rem;
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+
+/* 17 Tools Interactive Bento Grid */
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+.tool-tile {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.tool-tile:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-active);
+}
+.tool-tile-num {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--emerald);
+  background: var(--emerald-glow);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.tool-tile-content h4 {
+  font-size: 0.96rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+.tool-tile-content p {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Steps Section */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+@media (max-width: 800px) {
+  .steps-grid { grid-template-columns: 1fr; }
+}
+.step-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 28px 22px;
+  position: relative;
+}
+.step-number {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.08);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 12px;
+  line-height: 1;
+}
+
+/* Lead Capture Form */
+.lead-section {
+  background: linear-gradient(180deg, var(--bg-dark) 0%, #0d121c 100%);
+  border-top: 1px solid var(--border-subtle);
+}
+.lead-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-lg);
+  padding: clamp(24px, 5vw, 44px);
+  max-width: 640px;
+  margin-inline: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.form-group {
+  margin-bottom: 16px;
+  text-align: right;
+}
+.form-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.form-input {
+  width: 100%;
+  height: 48px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding-inline: 14px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--text-main);
+  transition: border-color 0.15s ease;
+}
+.form-input:focus {
+  outline: none;
+  border-color: var(--emerald);
+  box-shadow: 0 0 0 3px var(--emerald-glow);
+}
+
+/* Sticky Bottom Bar for Mobile */
+.sticky-bar {
+  display: none;
+}
+@media (max-width: 767px) {
+  .sticky-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    background: rgba(7, 8, 10, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--border-active);
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  body { padding-bottom: 74px; }
+}
+.sticky-info {
+  display: flex;
+  flex-direction: column;
+}
+.sticky-info b { font-size: 0.92rem; color: var(--text-main); }
+.sticky-info span { font-size: 0.74rem; color: var(--text-muted); }
+
+/* Footer */
+footer {
+  padding-block: 40px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-align: center;
+}
 </style>
 </head>
-<body>
-<div class="draft">نسخة للمراجعة، مش منشورة. العرض من ملف العرض المعتمد بتاريخ 2026-10-05 (باقة 999 · 17 مكوّن)، والأسعار محتاجة تأكيد حي من المنصة.</div>
+<body class="bg-grid">
 
+<!-- Header -->
 <header>
   <div class="wrap">
-    <div class="logo">Max<i>P</i><small>نظام تشغيل الأعمال</small></div>
-    <a class="h-cta js-cta" data-cta="header-free" href="#lead">ابدأ بمتجر مجاني</a>
+    <a href="#" class="brand-badge">
+      <div class="logo-icon">M</div>
+      <span class="brand-text">MaxP</span>
+      <span class="brand-tag">محلات الملابس</span>
+    </a>
+    <div class="h-actions">
+      <a href="#pricing" class="nav-link">المستويات</a>
+      <a href="#tools" class="nav-link">الـ 17 أداة</a>
+      <a href="#lead" class="btn btn-emerald">افتح متجرك 0 ج.م</a>
+    </div>
   </div>
 </header>
 
-<main>
-
+<!-- Hero Section -->
 <section class="hero">
-  <div class="wrap hero-grid">
-    <div>
-      <p class="eyebrow">لمتاجر الملابس والأزياء · المتجر مجاني — والباقة 999 في الشهر</p>
-      <h1>افتح متجرك ببلاش… وادفع لما تكبر</h1>
-      <p style="margin-top:18px">تبدأ بمتجر إلكتروني <b>مجاني</b> وإدارة الأوردر الأساسية، وإدارة الأوردر بـ<b>1 ج.م</b>.
-      ولما الشغل يكبر، باقة واحدة <b>بـ999 ج.م في الشهر</b> فيها <b>17 أداة</b> بتشتغل مع بعض: المتجر + الأوردرات بتتأكد على <b>واتساب</b> + الإنبوكس الموحد + الشحن والمخزون + المرتجعات بأسبابها + التقارير والحملات.</p>
-      <div class="btn-row">
-        <a class="btn btn-p js-cta" data-cta="hero-free" href="#lead">افتح متجرك مجانًا</a>
-        <a class="btn btn-g js-cta" data-cta="hero-bundle" href="#bundle">شوف الباقة 999</a>
-      </div>
-      <p class="micro" style="margin-top:12px">من غير مبرمج · من غير مقدم · تجديد شهري · تلغي أو توقف في أي وقت.</p>
-      <ul class="chips">
-        <li>واتساب · ماسنجر · تيك توك · تليجرام في صندوق واحد</li>
-        <li>فواتير إلكترونية ETA</li>
-        <li>ربط شركات الشحن</li>
-        <li>مخزون لحظي لكل فرع</li>
-      </ul>
+  <div class="hero-glow"></div>
+  <div class="wrap">
+    
+    <div class="eyebrow-pill">
+      <span class="eyebrow-dot"></span>
+      <span>نظام تشغيل محلات وبراندات الملابس في مصر</span>
     </div>
 
-    <aside class="ledger" aria-label="المستويات الثلاثة">
-      <h3>3 مستويات بس — واضحة من الأول</h3>
-      <div class="row"><span>متجر مجاني + إدارة أوردر أساسية</span><span class="dot"></span><span class="pv num">0 ج.م</span></div>
-      <div class="row"><span>إدارة الأوردر</span><span class="dot"></span><span class="pv num">1 ج.م</span></div>
-      <div class="row"><span>باقة المتجر الكاملة</span><span class="dot"></span><span class="pv num">999 ج.م/شهر</span></div>
-      <div class="freerow">
-        <span class="k">اللي تبدأ بيه النهاردة</span>
-        <span class="v num">0 ج.م</span>
-        <p>متجر إلكتروني تعرض فيه منتجاتك + إدارة الأوردر الأساسية (Order Core). يبدأ فورًا، من غير مقدم.</p>
-      </div>
-      <p class="note">مدة عرض «إدارة الأوردر بـ1 ج.م» محتاجة تأكيد المدة من مالك المنصة — مكتوبة هنا كسعر معتمد من غير مدة.</p>
-    </aside>
-  </div>
-</section>
+    <h1 class="hero-title">
+      وقف نزيف الأوردرات والمرتجعات في محلك — <span class="gradient-text">من أول مقاس لآخر بوليصة شحن</span>
+    </h1>
 
-<section class="band">
-  <div class="wrap">
-    <p class="eyebrow">الوجع</p>
-    <h2>السيناريو اللي بيتكرر كل أسبوع</h2>
-    <p class="sub">مش «محتاج برنامج» — فقدان سيطرة وفلوس بتتسرّب.</p>
+    <p class="hero-subtitle">
+      كل تاجر ملابس عارف الوجع: الإعلانات شغالة والرسائل داخلة، بس الأوردرات بتضيع في شات الواتساب، المقاسات بتطلع غلط، والمرتجع بياكل المكسب. MaxP بيجمع متجرك وتأكيد مقاساتك ومخزونك وشحنك في شاشة واحدة.
+    </p>
 
-    <div class="quotes">
-      <blockquote class="q"><p>«ببيع قطعة في المحل، وفي نفس اللحظة عميل بيطلبها أونلاين — وتكتشف إنها خلصت.»</p><cite>جملة موثّقة عندنا من تجّار، من غير أي اسم</cite></blockquote>
-      <blockquote class="q"><p>«بتبيع بنصف مليون شهرياً وفاكر نفسك كسبان… وتتفاجئ إن الكاش مش موجود.»</p><cite>جملة موثّقة عندنا من تجّار، من غير أي اسم</cite></blockquote>
+    <div class="hero-cta-group">
+      <a href="#lead" class="btn btn-emerald" style="padding: 14px 32px; font-size: 1.05rem;">
+        افتح متجرك الآن مجانًا (0 ج.م)
+      </a>
+      <a href="#pricing" class="btn btn-outline" style="padding: 14px 26px;">
+        شوف باقة المتجر الكاملة (999 ج.م)
+      </a>
     </div>
 
-    <h3 style="margin-top:32px">التكلفة اللي مش بتتكتب في أي دفتر</h3>
-    <ol class="cost">
-      <li><span>قطعة بتتباع مرتين — وأوردر بيترجع بنفس السبب تاني.</span></li>
-      <li><span>مقاسات بترجع، ومحدش عارف السبب: المقاس؟ الصور؟ الإعلان؟</span></li>
-      <li><span>جرد آخر الشهر = عجز مش معروف مصدره.</span></li>
-      <li><span>أوردرات مأكدة بالتليفون والواتساب بتتوه في المحادثات.</span></li>
-      <li><span>كاش داخل وخارج متلخبط في آخر الشهر.</span></li>
-    </ol>
-
-    <div class="btn-row"><a class="btn btn-p js-cta" data-cta="pain-how" href="#how">شوف الحل في 3 خطوات</a></div>
-  </div>
-</section>
-
-<section id="price">
-  <div class="wrap">
-    <p class="eyebrow">العرض</p>
-    <h2>العرض في 3 مستويات — واضح من غير لف</h2>
-    <p class="sub">مش قائمة تطبيقات ومش عارف تختار إيه. دي 3 مستويات بس، وكل واحد بيقول لك بالظبط هتدفع إيه وهتاخد إيه.</p>
-
-    <table>
-      <caption>المستويات الثلاثة، بالجنيه المصري</caption>
-      <thead><tr><th>المستوى</th><th>بيعمل إيه</th><th>السعر</th></tr></thead>
-      <tbody>
-        <tr><td><b>متجر مجاني</b><br><span class="tag g">تبدأ فورًا</span></td><td>متجر إلكتروني تعرض فيه منتجاتك + إدارة الأوردر الأساسية (Order Core).</td><td class="p num">0 ج.م</td></tr>
-        <tr><td><b>إدارة الأوردر</b><br><span class="tag g">خطوة أولى</span></td><td>إدارة أوردرات كاملة: الاستلام · التأكيد · الحالة · التسليم.</td><td class="p num">1 ج.م</td></tr>
-        <tr class="hi"><td><b>باقة المتجر الكاملة</b><br><span class="tag">17 أداة · الأكثر اكتمالًا</span></td><td>المتجر + الأوردرات بتتأكد على <b>واتساب</b> + الإنبوكس الموحد + الشحن والمخزون + المرتجعات بأسبابها + التقارير والحملات.</td><td class="p num">999 ج.م/شهر</td></tr>
-      </tbody>
-    </table>
-
-    <p class="micro" style="margin-top:16px">الباقة بتتجدد شهريًا وتوقفها في أي وقت — بدون شروط جزائية. سعر «إدارة الأوردر» بـ1 ج.م معتمد، ومدة العرض محتاجة تأكيد من مالك المنصة.</p>
-    <div class="btn-row"><a class="btn btn-p js-cta" data-cta="price-whatsapp" href="#lead">اختار مستواك — كلّمنا</a></div>
-  </div>
-</section>
-
-<section class="band">
-  <div class="wrap">
-    <p class="eyebrow">دفتر القيمة</p>
-    <h2>لو ركّبت كل مكوّن لوحده… هيطلع كام؟</h2>
-    <p class="sub">دي المكوّنات الـ17 الحقيقية للباقة بأسعار تطبيقات المنصة لمنفردة، والمجموع مقابل سعر الباقة.</p>
-
-    <aside class="ledger" style="max-width:640px" aria-label="دفتر القيمة">
-      <h3>مكوّنات الباقة بأسعار التطبيقات المنفردة</h3>
-      <div class="row"><span>المتجر الإلكتروني</span><span class="dot"></span><span class="pv num">699</span></div>
-      <div class="row"><span>إدارة الأوردرات ومسار الطلبات</span><span class="dot"></span><span class="pv num">149</span></div>
-      <div class="row"><span>واتساب بزنس (تأكيد وإشعارات الأوردر)</span><span class="dot"></span><span class="pv num">350</span></div>
-      <div class="row"><span>أتمتة المحادثات (رد آلي على العملاء)</span><span class="dot"></span><span class="pv num">149</span></div>
-      <div class="row"><span>الطلبات الجماعية (رفع الأوردرات)</span><span class="dot"></span><span class="pv num">99</span></div>
-      <div class="row"><span>تجهيز الطلبات (متابعة المعلّق)</span><span class="dot"></span><span class="pv num">0</span></div>
-      <div class="row"><span>بوابة وشركات الشحن الذكي</span><span class="dot"></span><span class="pv num">149</span></div>
-      <div class="row"><span>المخزون والمستودعات الشامل</span><span class="dot"></span><span class="pv num">199</span></div>
-      <div class="row"><span>إعدادات المرتجعات</span><span class="dot"></span><span class="pv num">99</span></div>
-      <div class="row"><span>أسباب المرتجعات</span><span class="dot"></span><span class="pv num">99</span></div>
-      <div class="row"><span>تحليلات الطلبات</span><span class="dot"></span><span class="pv num">99</span></div>
-      <div class="row"><span>تحليلات الأرباح</span><span class="dot"></span><span class="pv num">99</span></div>
-      <div class="row"><span>نسب الحملات (Campaign Attribution)</span><span class="dot"></span><span class="pv num">149</span></div>
-      <div class="row"><span>بيانات الحملة</span><span class="dot"></span><span class="pv num">0</span></div>
-      <div class="row"><span>إعلانات فيسبوك وانستجرام</span><span class="dot"></span><span class="pv num">199</span></div>
-      <div class="row"><span>ربط صفحات فيسبوك</span><span class="dot"></span><span class="pv num">99</span></div>
-      <div class="row"><span>صندوق وارد موحد</span><span class="dot"></span><span class="pv num">299</span></div>
-      <div class="tot"><span>المجموع فرادى <span class="save">أقل بـ66% في الباقة</span></span><span class="big num">2,936</span></div>
-      <div class="tot" style="border-top:1px dashed var(--line);margin-top:8px"><span>باقة المتجر الكاملة شهريًا</span><span class="big num">999</span></div>
-      <p class="note">الأرقام دي مجموع أسعار معلنة للتطبيقات المنفردة، مش سعر باقة. والفرق بينهم هو اللي بتكسبه لما تاخد الباقة.</p>
-    </aside>
-
-    <div class="btn-row"><a class="btn btn-p js-cta" data-cta="ledger-whatsapp" href="#lead">احسبها على شغلي — كلّمنا</a></div>
-  </div>
-</section>
-
-<section id="bundle">
-  <div class="wrap">
-    <p class="eyebrow">الباقة</p>
-    <h2>اللي جوه الـ999 بالظبط</h2>
-    <p class="sub">مفيش حاجة مخفية: دي الـ17 أداة اللي بتشتغل مع بعض في اشتراك واحد، مجمّعة في 8 مجموعات.</p>
-
-    <div class="two-col">
-      <div class="bundle">
-        <h3>باقة المتجر الكاملة</h3>
-        <div class="price"><b class="num">999</b><span>ج.م / شهريًا · تجديد شهري · 17 أداة</span></div>
-        <div class="bgrp"><h4>المتجر</h4><ul>
-          <li><b>المتجر الإلكتروني</b> — واجهة ومنتجات، وسلات متروكة وعروض وكوبونات.</li>
-        </ul></div>
-        <div class="bgrp"><h4>الطلبات والتأكيد</h4><ul>
-          <li><b>مسار الطلبات</b> — الأوردر من الاستلام للتسليم بحالة واضحة.</li>
-          <li><b>واتساب بزنس</b> — تأكيد الأوردرات وإشعارات على واتساب.</li>
-          <li><b>أتمتة المحادثات</b> — رد آلي على أسئلة العملاء.</li>
-          <li><b>الطلبات الجماعية</b> — رفع وإدارة الأوردرات بالجملة.</li>
-          <li><b>تجهيز الطلبات</b> — متابعة المعلّق وتسريع التجهيز.</li>
-        </ul></div>
-        <div class="bgrp"><h4>الشحن</h4><ul>
-          <li><b>بوابة وشركات الشحن الذكي</b> — ربط شركات الشحن وأتمتة الشحن.</li>
-        </ul></div>
-        <div class="bgrp"><h4>المخزون</h4><ul>
-          <li><b>المخزون والمستودعات الشامل</b> — رصيد واحد للمحل والأونلاين.</li>
-        </ul></div>
-        <div class="bgrp"><h4>المرتجعات</h4><ul>
-          <li><b>إعدادات المرتجعات</b> — مرتجعات منظمة بتقلل الخسائر.</li>
-          <li><b>أسباب المرتجعات</b> — كل مرتجع بسببه (مقاس/لون/شحن).</li>
-        </ul></div>
-        <div class="bgrp"><h4>التقارير</h4><ul>
-          <li><b>تحليلات الطلبات</b> — تقارير الطلبات.</li>
-          <li><b>تحليلات الأرباح</b> — صافي الربح قدامك.</li>
-        </ul></div>
-        <div class="bgrp"><h4>الحملات</h4><ul>
-          <li><b>نسب الحملات (Campaign Attribution)</b> — أنهي حملة جابت مبيعات.</li>
-          <li><b>بيانات الحملة</b> — فعالية الحملات.</li>
-          <li><b>إعلانات فيسبوك وانستجرام</b> — إعداد وإدارة الحملات من مكان واحد.</li>
-        </ul></div>
-        <div class="bgrp"><h4>التواصل والإنبوكس</h4><ul>
-          <li><b>ربط صفحات فيسبوك</b> — إدارة صفحاتك من مكان واحد.</li>
-          <li><b>صندوق وارد موحد</b> — فيسبوك + واتساب في إنبوكس واحد.</li>
-        </ul></div>
-        <a class="btn btn-p js-cta" data-cta="bundle-whatsapp" href="#lead">فعّل الباقة — كلّمنا على واتساب</a>
+    <div class="metrics-strip">
+      <div class="metric-item">
+        <span>متجر مجاني:</span>
+        <b class="num">0 ج.م</b>
       </div>
+      <div class="metric-item">
+        <span>إدارة الأوردر:</span>
+        <b class="num">1 ج.م</b>
+      </div>
+      <div class="metric-item">
+        <span>باقة المتجر الكاملة:</span>
+        <b class="num">999 ج.م / شهر</b>
+      </div>
+      <div class="metric-item">
+        <span>قيمة الأدوات فرادى:</span>
+        <b class="num">2,936 ج.م</b>
+      </div>
+    </div>
 
-      <div class="demo" aria-label="ديمو واتساب تأكيد الأوردر">
-        <h3>ديمو: تأكيد الأوردر على واتساب</h3>
-        <p class="who">الرسالة الداخلة</p>
-        <div class="bub">أوردر جديد — كوتشي أسود مقاس 43 · العنوان: مدينة نصر · الدفع عند الاستلام<time>9:14 م</time></div>
-        <p class="who">رد المنصة</p>
-        <div class="bub out">أهلاً يا فندم، أوردرك مؤكد وماشي للشحن. هيوصلك على ميعاد شركة الشحن، والدفع مع المندوب عند الاستلام.<time>9:14 م</time></div>
-        <div class="qp" id="qp">
-          <button type="button" data-q="الشحن لمصر الجديدة بياخد قد إيه؟">الشحن لمصر الجديدة؟</button>
-          <button type="button" data-q="عندي مقاس 44؟">مقاس 44 موجود؟</button>
-          <button type="button" data-q="عايز أرجّع المقاس">عايز أرجّع المقاس</button>
+    <!-- Live Cockpit Visual Canvas -->
+    <div class="cockpit-canvas">
+      <div class="canvas-header">
+        <div class="canvas-dots">
+          <div class="canvas-dot"></div>
+          <div class="canvas-dot"></div>
+          <div class="canvas-dot"></div>
         </div>
-        <div id="thread"></div>
-        <p class="micro" style="margin:12px 0 0">شكل الرسالة الفعلي من المنصة — اضغط أي سؤال تشوف الرد. الدفع عند الاستلام متاح، والمرتجع حسب سياستك وسياسة شركة الشحن.</p>
+        <div class="canvas-title">maxp-clothing-os // live-operations</div>
+        <div class="live-pill">● متصل بالواتساب لايف</div>
+      </div>
+
+      <div class="canvas-body">
+        <!-- Left: WhatsApp Automated Confirmation -->
+        <div class="canvas-panel">
+          <div class="panel-title">
+            <span>تأكيد الأوردر والمقاس الآلي (WhatsApp Bot)</span>
+            <span class="mono" style="font-size:0.75rem; color:var(--emerald);">AUTO_CONFIRM: ON</span>
+          </div>
+          
+          <div class="chat-window">
+            <div class="chat-bubble chat-in">
+              عايز السويت شيرت الأوفر سايز الأسود مقاس <span class="chat-tag">L</span> لمصر الجديدة، والشحن بياخد قد إيه؟
+            </div>
+            <div class="chat-bubble chat-out">
+              أهلاً بحضرتك في متجر كولكشن الصيف! 👕<br>
+              المقاس <span class="chat-tag">L</span> متاح في المخزن (<span class="num">14</span> قطعة).<br>
+              الشحن لمصر الجديدة خلال 24 ساعة.<br>
+              إجمالي الأوردر: <b class="num">999 ج.م</b> (الدفع عند الاستلام).
+              <div class="chat-actions">
+                <button type="button" class="chat-action-btn" onclick="simulateConfirm(this)">✓ اضغط لتأكيد الأوردر والعنوان</button>
+              </div>
+            </div>
+            <div id="simulatedStatus" class="chat-bubble chat-in" style="display:none; border-color:var(--emerald); background:rgba(16,185,129,0.08);">
+              ✅ <b>تم التأكيد آلياً:</b> تم خصم القطعة من المخزن وتوليد بوليصة الشحن رقم <span class="mono">EG-84291</span>!
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Real-time Size & Color Inventory Matrix -->
+        <div class="canvas-panel">
+          <div class="panel-title">
+            <span>مصفوفة مخزون المقاسات والألوان الحية</span>
+            <span class="mono" style="font-size:0.75rem; color:var(--text-muted);">تيشيرت أوفر سايز أسود</span>
+          </div>
+
+          <div class="stock-grid">
+            <div class="size-box">
+              <div class="size-name">S</div>
+              <div class="size-qty num">8 قطع</div>
+            </div>
+            <div class="size-box">
+              <div class="size-name">M</div>
+              <div class="size-qty num">21 قطعة</div>
+            </div>
+            <div class="size-box" style="border-color:var(--emerald); background:rgba(16,185,129,0.06);">
+              <div class="size-name">L</div>
+              <div class="size-qty num">14 قطعة</div>
+            </div>
+            <div class="size-box size-out">
+              <div class="size-name">XL</div>
+              <div class="size-qty num">0 (نفد)</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-subtle); font-size: 0.8rem; color: var(--text-muted); line-height: 1.6;">
+            🛡️ <b>منع البيع المزدوج:</b> بمجرد تأكيد العميل على واتساب، السيستم بيحجز القطعة فوراً ويمنع طلب مقاس خلصان.
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="btn-row"><a class="btn btn-g js-cta" data-cta="bundle-steps" href="#how">شوف تبدأ إزاي في 3 خطوات</a></div>
   </div>
 </section>
 
-<section id="how">
+<!-- Pain vs Solution Section -->
+<section class="section">
   <div class="wrap">
-    <p class="eyebrow">البداية</p>
-    <h2>تبدأ إزاي؟ 3 خطوات</h2>
-    <p class="sub">مش محتاج تغيّر طريقة شغلك. النظام بيتركّب على الشغل اللي بتعمله أصلًا.</p>
-    <ol class="steps" style="margin-top:28px">
-      <li><div><h3>افتح متجر مجاني</h3><p>تعرض منتجاتك وتستقبل أوردرات. من غير مقدم ومن غير التزام.</p></div></li>
-      <li><div><h3>شغّل إدارة الأوردرات</h3><p>كل أوردر بحالة واضحة: الاستلام · التأكيد · الحالة · التسليم — مش في محادثة توه.</p></div></li>
-      <li><div><h3>رقّي للباقة لما تكبر</h3><p>ساعتها بتاخد الـ17 أداة كلها: الأوردرات بتتأكد على واتساب + الإنبوكس الموحد + الشحن والمخزون + المرتجعات بأسبابها + التقارير والحملات.</p></div></li>
-    </ol>
-    <div class="btn-row"><a class="btn btn-w js-cta" data-cta="steps-whatsapp" href="#lead">ابدأ بالخطوة الأولى — كلّمنا</a></div>
-  </div>
-</section>
+    <div class="section-header">
+      <div class="section-tag">وجع السوق الحقيقي</div>
+      <h2 class="section-title">ليه محلات وبراندات الملابس بتخسر فلوس كل شهر؟</h2>
+      <p class="section-desc">مشكلة تجارة الملابس في مصر مش في قلة الزباين، المشكلة في الفوضى التشغيلية اللي بتاكل الأرباح.</p>
+    </div>
 
-<section class="band">
-  <div class="wrap">
-    <div class="risk">
-      <div>
-        <h3>شروط واضحة — من غير شروط جزائية</h3>
-        <p>تجديد شهري، وتقدر توقف أو ترقّي في أي وقت.</p>
-        <p>وبياناتك (منتجاتك، عملاؤك، مخازنك) تتنقل من شيتات إكسيل أو من منصة تانية كجزء من التجهيز.</p>
+    <div class="bento-grid-3">
+      <div class="bento-card">
+        <div class="bento-icon" style="color:var(--rose);">⚠️</div>
+        <h3 class="bento-title">نزيف المرتجعات مجهولة السبب</h3>
+        <p class="bento-desc">
+          العميل يطلب مقاس، يوصله المندوب يلاقي المقاس واسع أو اللون مش هو، يرفض يستلم وتدفع أنت مصاريف شحن رايح جاي. مع MaxP، التأكيد الآلي للمقاس والعنوان بيمنع الأوردرات العشوائية.
+        </p>
       </div>
-      <div><a class="btn btn-p js-cta" data-cta="risk-whatsapp" href="#lead">اتكلم مع حد من الفريق</a></div>
-    </div>
-  </div>
-</section>
 
-<section>
-  <div class="wrap">
-    <p class="eyebrow">قبل ما تبدأ</p>
-    <h2>الأسئلة اللي بتتسأل قبل الاشتراك</h2>
-    <div class="faq">
-      <details><summary>غالي عليّ.</summary><p>مش لازم تدفع حاجة تبدأ: المتجر مجاني وإدارة الأوردر الأساسية معاه. وإدارة الأوردر بـ1 ج.م. والباقة 999 لما تحتاج كل أدوات التشغيل — ومكوّناتها الـ17 لو ركّبتها فرادى تطلع 2,936 ج.م في الشهر.
-ومقابل الفوضى الحالية (بيع مزدوج، مرتجع متكرر، عجز جرد) بيتحسب لوحده.</p></details>
-      <details><summary>عندي نظام وشغّال بالفعل.</summary><p>حلو — سؤال واحد: بتعرف ربح الأوردر بالقرش؟ وبعدين، المرتجع ده جاي من أنهي مقاس بعينه؟
-لو تقدر تجاوب على الاتنين من نظامك دلوقتي، متغيّرش حاجة. لو لأ، دي بالظبط الحاجة الناقصة.</p></details>
-      <details><summary>مش فاضي أتعلّم نظام جديد.</summary><p>الشغل داخل من نفس مكانك: واتساب وقنواتك، والكاشير مكانه. اللي بيتغير إن اللي بتحصل بيخصم من المخزون ويسجّل الأوردر لوحده.</p></details>
-      <details><summary>مش متأكد إنه هينفعني.</summary><p>خلّينا نختبرها على شغلك: ابعتلنا عدد الأوردرات وعدد المرتجعات الشهرية. لو مفيش فرق يبان، هنقولك على طول.</p></details>
-      <details><summary>خايف أنقل بياناتي.</summary><p>النقل جزء من التجهيز — من شيتات إكسيل أو من المنصة القديمة. والبيانات تفضل ملكك.</p></details>
-      <details><summary>محتاج أفكر.</summary><p>تمام. يهمنا نعرف الناقص إيه بالظبط للقرار: الفلوس؟ الوقت؟ ولا موافقة شريك؟ قولنا، ونبعتلك اللي ناقص من غير ضغط.</p></details>
-    </div>
-  </div>
-</section>
-
-<section class="band" id="lead">
-  <div class="wrap form-wrap">
-    <div>
-      <p class="eyebrow">الخطوة</p>
-      <h2>ابدأ بمتجر مجاني — في 10 دقايق</h2>
-      <p class="sub">ابعت بياناتك ونكلّمك على واتساب. لو المتجر المجاني كفايتك تفضل عليه، ولو محتاج الباقة هنقولك الفرق بالأرقام.</p>
-      <ul class="plain-list">
-        <li>مكالمة قصيرة على قد شغلك — مش عرض عام.</li>
-        <li>تختار المستوى اللي يناسبك من غير ضغط.</li>
-        <li>من غير مقدم ومن غير التزام سنوي.</li>
-      </ul>
-    </div>
-    <form id="leadForm" novalidate>
-      <div><label for="nm">اسمك</label><input id="nm" name="name" type="text" autocomplete="name" required placeholder="مثال: محمود"></div>
-      <div><label for="ph">موبايل / واتساب</label><input id="ph" name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="01xxxxxxxxx"></div>
-      <div><label for="ty">النشاط</label>
-        <select id="ty" name="type" required>
-          <option value="">اختار</option>
-          <option>متجر ملابس أونلاين</option>
-          <option>محل ملابس + أونلاين</option>
-          <option>تجارة إلكترونية غير ملابس</option>
-          <option>محل/تجزئة</option>
-          <option>حاجة تانية</option>
-        </select>
+      <div class="bento-card">
+        <div class="bento-icon" style="color:var(--amber);">📦</div>
+        <h3 class="bento-title">خناقة عجز جرد المقاسات والألوان</h3>
+        <p class="bento-desc">
+          الأوردرات بتتسجل في شات وورق، تكتشف بعد ما تأكد إن مقاس L خلصان من المحل الصبح! عميل زعلان وتقييم سيء. نظامنا يربط جرد المحل بمتجر الأونلاين لحظة بلحظة.
+        </p>
       </div>
-      <button class="btn btn-w js-cta" data-cta="form-submit" type="submit">افتح متجري المجاني</button>
-      <p class="micro" id="formMsg" role="status" aria-live="polite" style="margin:0">بالضغط بتفتح محادثة واتساب وبياناتك مكتوبة — بدون تخزين على أي سيرفر.</p>
-    </form>
+
+      <div class="bento-card bento-card-highlight">
+        <div class="bento-icon" style="color:var(--emerald);">⚡</div>
+        <h3 class="bento-title">شتات 5 برامج وتكلفة 2,936 ج.م</h3>
+        <p class="bento-desc">
+          برنامج للكاشير، وبرنامج للواتساب، وسيستم لشركة الشحن، وشيت للمرتجع. تشتت مجهد وتكلفة شهرية تصل لـ 2,936 ج.م لو ركبتهم فرادى. باقة MaxP بتجمع كل الـ 17 أداة بـ 999 ج.م فقط.
+        </p>
+      </div>
+    </div>
   </div>
 </section>
 
-</main>
+<!-- Pricing Tiers: 0 · 1 · 999 -->
+<section class="section" id="pricing" style="background: rgba(255,255,255,0.015);">
+  <div class="wrap">
+    <div class="section-header">
+      <div class="section-tag">مستويات التشغيل</div>
+      <h2 class="section-title">تسعير واضح وعادل — يبدأ من 0 ج.م</h2>
+      <p class="section-desc">اختار المستوى المناسب لحجم محلك الحالي، وتقدر ترقي في أي وقت بدون أي شروط جزائية.</p>
+    </div>
 
+    <div class="pricing-grid">
+      <!-- Tier 1: Free -->
+      <div class="price-card">
+        <h3 class="price-tier-name">متجر مجاني</h3>
+        <p class="price-tier-desc">للمبتدئين وأصحاب المحلات اللي عايزين يعرضوا منتجاتهم أونلاين فوراً.</p>
+        <div class="price-tag">
+          <span class="price-amount num">0</span>
+          <span class="price-unit">ج.م / دائمًا</span>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item"><span class="check">✓</span><span>متجر إلكتروني سريع باسم محلك</span></li>
+          <li class="feature-item"><span class="check">✓</span><span>عرض صور الكولكشن وجدول المقاسات</span></li>
+          <li class="feature-item"><span class="check">✓</span><span>استقبال طلبات العملاء بدون عمولة</span></li>
+          <li class="feature-item"><span class="check">✓</span><span>رابط مباشر للمتجر تشاركه على إنستجرام وفيسبوك</span></li>
+        </ul>
+        <a href="#lead" class="btn btn-outline" style="width:100%;">افتح متجرك 0 ج.م</a>
+      </div>
+
+      <!-- Tier 2: 1 EGP -->
+      <div class="price-card">
+        <h3 class="price-tier-name">إدارة الأوردر</h3>
+        <p class="price-tier-desc">للمحلات اللي عندها تشغيل فعلي وعايزة نظام يضبط حركة كل شحنة.</p>
+        <div class="price-tag">
+          <span class="price-amount num">1</span>
+          <span class="price-unit">ج.م / لكل أوردر</span>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item"><span class="check">✓</span><span>كل مزايا المتجر المجاني بالكامل</span></li>
+          <li class="feature-item"><span class="check">✓</span><span>تتبع حالة كل أوردر بالقرش (استلام، تأكيد، تسليم)</span></li>
+          <li class="feature-item"><span class="check">✓</span><span>طباعة بوالص الشحن وباركود القطع</span></li>
+          <li class="feature-item"><span class="check">✓</span><span>كول سنتر بسيط لموظفي التأكيد</span></li>
+        </ul>
+        <a href="#lead" class="btn btn-outline" style="width:100%;">ابدأ بنظام 1 ج.م</a>
+      </div>
+
+      <!-- Tier 3: Complete Bundle 999 (Hero Card) -->
+      <div class="price-card price-card-hero">
+        <div class="badge-featured">الباقة الأكثر طلباً للمحلات</div>
+        <h3 class="price-tier-name" style="color:#fff;">باقة المتجر الكاملة</h3>
+        <p class="price-tier-desc" style="color:#cbd5e1;">النظام الشامل لبراندات ومحلات الملابس: الـ 17 أداة في لوحة تحكم واحدة.</p>
+        <div class="price-tag">
+          <span class="price-amount num" style="color:#10b981;">999</span>
+          <span class="price-unit">ج.م / شهريًا</span>
+        </div>
+        
+        <div class="bundle-highlight-badge">
+          💡 قيمة الـ 17 أداة لو ركبتها فرادى تصل لـ <b>2,936 ج.م</b> في الشهر — مجمعة هنا في اشتراك واحد بنظام متكامل.
+        </div>
+
+        <ul class="feature-list">
+          <li class="feature-item"><span class="check">✓</span><span><strong>تأكيد واتساب الذكي الآلي</strong> بدون تدخل بشري</span></li>
+          <li class="feature-item"><span class="check">✓</span><span><strong>مصفوفة المقاسات والألوان</strong> المتزامنة مع المحل</span></li>
+          <li class="feature-item"><span class="check">✓</span><span><strong>الإنبوكس الموحد</strong> (واتساب + ماسنجر + إنستجرام)</span></li>
+          <li class="feature-item"><span class="check">✓</span><span><strong>ربط شركات الشحن في مصر</strong> ومتابعة المندوبين</span></li>
+          <li class="feature-item"><span class="check">✓</span><span><strong>رادار تتبع أسباب المرتجعات</strong> لكل محافظة ومقاس</span></li>
+          <li class="feature-item"><span class="check">✓</span><span><strong>تقارير الأرباح بالقرش</strong> وكاشير المحل (POS)</span></li>
+          <li class="feature-item"><span class="check">✓</span><span><strong>الـ 17 أداة كاملة</strong> مفعلة فوراً بدون برامج خارجية</span></li>
+        </ul>
+        <a href="#lead" class="btn btn-emerald" style="width:100%;">اشترك في الباقة الكاملة 999 ج.م</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- The 17 Tools Grid -->
+<section class="section" id="tools">
+  <div class="wrap">
+    <div class="section-header">
+      <div class="section-tag">البنية التحتية</div>
+      <h2 class="section-title">الـ 17 أداة التي يحتاجها محل الملابس</h2>
+      <p class="section-desc">مصممة خصيصاً لتفاصيل تجارة الفاشن والأزياء في السوق المصري، مدمجة في شاشة واحدة.</p>
+    </div>
+
+    <div class="tools-grid">
+      <div class="tool-tile">
+        <span class="tool-tile-num">01</span>
+        <div class="tool-tile-content">
+          <h4>المتجر الإلكتروني السريع</h4>
+          <p>واجهة موبايل سريعة تفتح في أقل من ثانية، مصممة لكولكشن الملابس.</p>
+        </div>
+      </div>
+
+      <div class="tool-tile">
+        <span class="tool-tile-num">02</span>
+        <div class="tool-tile-content">
+          <h4>تأكيد واتساب التلقائي</h4>
+          <p>روبوت محادثة يؤكد العنوان والمقاس ويرسل لوكيشن التسليم آلياً.</p>
+        </div>
+      </div>
+
+      <div class="tool-tile">
+        <span class="tool-tile-num">03</span>
+        <div class="tool-tile-content">
+          <h4>الإنبوكس الموحد للرسائل</h4>
+          <p>رد على رسائل واتساب وفيسبوك وإنستجرام من شاشة واحدة لكل موظفيك.</p>
+        </div>
+      </div>
+
+      <div class="tool-tile">
+        <span class="tool-tile-num">04</span>
+        <div class="tool-tile-content">
+          <h4>مصفوفة المقاسات والألوان</h4>
+          <p>جرد دقيق لكل قطعة (S/M/L/XL/XXL) بالألوان لمنع البيع المزدوج.</p>
+        </div>
+      </div>
+
+      <div class="tool-tile">
+        <span class="tool-tile-num">05</span>
+        <div class="tool-tile-content">
+          <h4>كاشير نقطة البيع للمحل (POS)</h4>
+          <p>بيع مباشر في المحل يخصم فوراً من نفس مخزون المتجر الإلكتروني.</p>
+        </div>
+      </div>
+
+      <div class="tool-tile">
+        <span class="tool-tile-num">06</span>
+        <div class="tool-tile-content">
+          <h4>توليد باركود القطع</h4>
+          <p>طباعة ليبل واستيكر باركود لكل قطعة ومقاس لتسهيل الجرد السريع.</p>
+        </div>
+      </div>
+
+      <div class="tool-tile">
+        <span class="tool-tile-num">07</span>
+        <div class="tool-tile-content">
+          <h4>ربط شركات الشحن المصرية</h4>
+          <p>إرسال الشحنات وطباعة البوالص مع كبرى شركات الشحن بضغطة زر.</p>
+        </div>
+      </div>
+
+      <div class="tool-tile">
+        <span class="tool-tile-num">08</span>
+        <div class="tool-tile-content">
+          <h4>تتبع حالات الشحنات الحية</h4>
+          <p>معرفة مكان كل أوردر ومتابعة المندوب حتى تسليم الكاش للمحل.</p>
+        </div>
+      </div>
+
+      <div class="tool-tile">
+        <span class="tool-tile-num">09</span>
+        <div class="tool-tile-content">
+          <h4>رادار تحليل أسباب المرتجعات</h4>
+          <p>معرفة هل المرتجع بسبب المقاس، الخامة، أو تأخير المندوب بالمحافظات.</p>
+        </div>
+      </div>
+
+      <div class="tool-tile">
+        <span class="tool-tile-num">10</span>
+        <div class="tool-tile-content">
+          <h4>حساب ربح الأوردر بالقرش</h4>
+          <p>خصم سعر القماش/القطعة ومصاريف الشحن والإعلانات لمعرفة الصافي الحقيقي.</p>
+        </div>
+      </div>
+
+      <div class="tool-tile">
+        <span class="tool-tile-num">11</span>
+        <div class="tool-tile-content">
+          <h4>تنبيهات نواقص المقاسات</h4>
+          <p>إشعار فوري لما يوشك مقاس معين على النفاد لتجهيز تشغيلة جديدة.</p>
+        </div>
+      </div>
+
+      <div class="tool-tile">
+        <span class="tool-tile-num">12</span>
+        <div class="tool-tile-content">
+          <h4>إدارة فروع ومخازن المحل</h4>
+          <p>توزيع قطع الكولكشن بين الفرع الرئيسي والمخازن بدقة وسهولة.</p>
+        </div>
+      </div>
+
+      <div class="tool-tile">
+        <span class="tool-tile-num">13</span>
+        <div class="tool-tile-content">
+          <h4>أدوار وصلاحيات الموظفين</h4>
+          <p>صلاحيات منفصلة للكاشير، وموظف التأكيد، ومسؤول التجهيز والشحن.</p>
+        </div>
+      </div>
+
+      <div class="tool-tile">
+        <span class="tool-tile-num">14</span>
+        <div class="tool-tile-content">
+          <h4>برنامج نقاط وولاء العملاء</h4>
+          <p>تشجيع الزباين على تكرار الشراء من محلك بنظام نقاط واضح ومحفز.</p>
+        </div>
+      </div>
+
+      <div class="tool-tile">
+        <span class="tool-tile-num">15</span>
+        <div class="tool-tile-content">
+          <h4>ربط بيكسل إعلانات ميتا وتيك توك</h4>
+          <p>تتبع الأحداث الدقيق (Purchase, AddToCart) لتحسين أداء الحملات.</p>
+        </div>
+      </div>
+
+      <div class="tool-tile">
+        <span class="tool-tile-num">16</span>
+        <div class="tool-tile-content">
+          <h4>تقارير القطع الأكثر مبيعاً</h4>
+          <p>إحصائيات تفصيلية عن الموديلات والألوان اللي بتحقق أعلى مبيعات وهامش ربح.</p>
+        </div>
+      </div>
+
+      <div class="tool-tile">
+        <span class="tool-tile-num">17</span>
+        <div class="tool-tile-content">
+          <h4>تطبيق موبايل للتاجر</h4>
+          <p>متابعة حركة الأوردرات والكاش من موبايلك وأنت خارج المحل في أي وقت.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 Steps Section -->
+<section class="section" style="background: rgba(255,255,255,0.015);">
+  <div class="wrap">
+    <div class="section-header">
+      <div class="section-tag">البداية السهلة</div>
+      <h2 class="section-title">كيف تبدأ في 3 خطوات بسيطة؟</h2>
+      <p class="section-desc">مش محتاج تغير طريقة شغلك الحالية، النظام بيتركب على شغلك في 10 دقائق.</p>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-number">01</div>
+        <h3 class="bento-title">سجل متجرك المجاني</h3>
+        <p class="bento-desc">اكتب اسم محلك ورقم واتسابك، وهيتم إنشاء المتجر فوراً بـ 0 ج.م وبدون أي بطاقة بنكية.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">02</div>
+        <h3 class="bento-title">ارفع كولكشن الملابس</h3>
+        <p class="bento-desc">حط صور الموديلات، وحدد المقاسات المتاحة وألوانها وأسعارها في دقائق معدودة.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">03</div>
+        <h3 class="bento-title">شغّل تأكيد الواتساب والشحن</h3>
+        <p class="bento-desc">اربط رقم واتسابك، واستقبل أوردراتك مؤكدة وجاهزة للطباعة والتسليم لشركة الشحن.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Lead Capture Section -->
+<section class="section lead-section" id="lead">
+  <div class="wrap">
+    <div class="lead-box">
+      <div style="text-align:center; margin-bottom: 26px;">
+        <span class="live-pill">🚀 انضم لمحلات الملابس المنظمة</span>
+        <h2 style="font-size:1.8rem; font-weight:800; margin-top:10px;">افتح متجرك وابدأ فوراً</h2>
+        <p style="color:var(--text-muted); font-size:0.9rem;">
+          سجل بياناتك وهيتواصل معاك مهندس تشغيل يشرحلك النظام ويجهز متجرك على مقاس شغلك.
+        </p>
+      </div>
+
+      <form id="storeLeadForm" onsubmit="handleLeadSubmit(event)">
+        <div class="form-group">
+          <label class="form-label" for="merchantName">اسم التاجر / المسؤول</label>
+          <input class="form-input" type="text" id="merchantName" required placeholder="مثال: أحمد مصطفى">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="merchantPhone">رقم الموبايل / واتساب</label>
+          <input class="form-input mono" type="tel" id="merchantPhone" required placeholder="01xxxxxxxxx" dir="ltr">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="storeType">نوع النشاط</label>
+          <select class="form-input" id="storeType" required style="cursor:pointer;">
+            <option value="محل ملابس + بيع أونلاين">محل ملابس + بيع أونلاين</option>
+            <option value="براند ملابس أونلاين فقط">براند ملابس أونلاين فقط</option>
+            <option value="محل تجزئة / كولكشن ملابس">محل تجزئة / كولكشن ملابس</option>
+            <option value="نشاط تجاري آخر">نشاط تجاري آخر</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="selectedTier">المستوى المطلوب للبدء</label>
+          <select class="form-input" id="selectedTier" required style="cursor:pointer;">
+            <option value="متجر مجاني (0 ج.م)">متجر مجاني (0 ج.م)</option>
+            <option value="إدارة الأوردر (1 ج.م)">إدارة الأوردر (1 ج.م)</option>
+            <option value="باقة المتجر الكاملة (999 ج.م/شهر)" selected>باقة المتجر الكاملة (999 ج.م/شهر - 17 أداة)</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-emerald" style="width:100%; height:50px; font-size:1.05rem; margin-top:8px;">
+          افتح متجرك وتواصل عبر واتساب 💬
+        </button>
+      </form>
+      
+      <p style="text-align:center; font-size:0.78rem; color:var(--text-dim); margin-top:14px;">
+        🔒 لا توجد أي التزامات سنوية أو شروط جزائية. بياناتك مشفرة ومحمية بالكامل.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
 <footer>
   <div class="wrap">
-    <p><b>MaxP</b> نظام تشغيل الأعمال. هذه صفحة مراجعة داخلية، مش منشورة، ومفيش أي إرسال لأي ليد قبل موافقة مكتوبة. مفيش أرقام مبيعات، ومفيش شهادات عملاء، ومفيش وعود بنتائج مضمونة، ومفيش أي خصم.</p>
-    <p>العرض والمستويات من ملف العرض المعتمد بتاريخ 2026-10-05 (باقة 999 · 17 مكوّن) (`offers-pricing.md`). أسعار المكوّنات المنفردة من قائمة أسعار التطبيقات الداخلية ومحتاجة تأكيد حي من المنصة. رقم الواتساب وحساب الإعلانات والبيكسل لسه محتاجين قرار.</p>
+    <p><b>MaxP</b> — نظام التشغيل المتكامل للتجارة وإدارة متاجر الملابس في مصر.</p>
+    <p style="margin-top:6px;">هذه صفحة معاينة داخلية (noindex). الأسعار والمستويات المعتمدة: 0 ج.م · 1 ج.م · 999 ج.م · قيمة الأدوات 2,936 ج.م فرادى.</p>
   </div>
 </footer>
 
-<div class="sticky-cta" id="stickyCta">
-  <span class="txt">متجر مجاني 0 ج.م — والباقة 999 شهريًا</span>
-  <a class="btn btn-w js-cta" data-cta="sticky-whatsapp" href="#lead">كلّمنا على واتساب</a>
+<!-- Sticky Mobile Action Bar -->
+<div class="sticky-bar">
+  <div class="sticky-info">
+    <b>متجر مجاني 0 ج.م</b>
+    <span>أو باقة المتجر الكاملة 999 ج.م/شهر</span>
+  </div>
+  <a href="#lead" class="btn btn-emerald" style="padding:9px 18px; font-size:0.88rem;">ابدأ الآن</a>
 </div>
 
 <script>
-(function(){
-  "use strict";
-  var KEYS = ["utm_source","utm_medium","utm_campaign","utm_content","utm_term"];
-  var UTM = "";
-  try{
-    var q = new URLSearchParams(window.location.search);
-    UTM = KEYS.map(function(k){var v=q.get(k);return v?k+"="+v:null;}).filter(Boolean).join(" | ");
-  }catch(e){ UTM = ""; }
-
-  var WHATSAPP = "201123087745"; /* يتأكد من مختار: الرقم الرسمي لمبيعات MaxP */
-
-  function waLink(text){
-    var t = text + (UTM ? "\n\n[" + UTM + "]" : "");
-    return "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(t);
+// Simulator confirmation trigger
+function simulateConfirm(btn) {
+  btn.style.display = 'none';
+  const status = document.getElementById('simulatedStatus');
+  if (status) {
+    status.style.display = 'block';
   }
-  function track(ev, cta){
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({event:ev, cta:cta||null, utm:UTM});
-  }
+}
 
-  var form = document.getElementById("leadForm");
-  var msg  = document.getElementById("formMsg");
-  if(form){
-    form.addEventListener("submit", function(e){
-      e.preventDefault();
-      var n = form.elements.namedItem("name");
-      var p = form.elements.namedItem("phone");
-      var t = form.elements.namedItem("type");
-      if(!n.value.trim()){ n.focus(); if(msg) msg.textContent = "اكتب اسمك الأول."; return; }
-      if(!p.value.trim()){ p.focus(); if(msg) msg.textContent = "اكتب رقم الموبايل."; return; }
-      var text = "أهلاً، عايز أفتح متجر مجاني على MaxP.\n"
-               + "الاسم: " + n.value.trim() + "\n"
-               + "الموبايل: " + p.value.trim() + "\n"
-               + "النشاط: " + (t.value || "غير محدد");
-      track("lead_submit","form-submit");
-      if(msg) msg.textContent = "بنجهز لك المحادثة…";
-      window.open(waLink(text), "_blank", "noopener");
-    });
-  }
+// Lead form submit handler (Redirects straight to official WhatsApp with formatted lead message)
+function handleLeadSubmit(e) {
+  e.preventDefault();
+  const name = document.getElementById('merchantName').value.trim();
+  const phone = document.getElementById('merchantPhone').value.trim();
+  const storeType = document.getElementById('storeType').value;
+  const tier = document.getElementById('selectedTier').value;
 
-  Array.prototype.forEach.call(document.querySelectorAll(".js-cta"), function(el){
-    el.addEventListener("click", function(){ track("cta_click", el.getAttribute("data-cta")); });
-  });
-
-  var sticky = document.getElementById("stickyCta");
-  function syncSticky(){
-    if(sticky) sticky.classList.toggle("on", window.pageYOffset > 380);
-  }
-  window.addEventListener("scroll", syncSticky, {passive:true});
-  window.addEventListener("resize", syncSticky);
-  syncSticky();
-
-  var REPLIES = {
-    "الشحن لمصر الجديدة بياخد قد إيه؟": "التوصيل متاح لمصر الجديدة، والدفع عند الاستلام متاح كمان.",
-    "عندي مقاس 44؟": "مقاس 44 متاح — تحب أحجزه مع الأوردر؟",
-    "عايز أرجّع المقاس": "تمام، بنسجّل المرتجع بسبب «المقاس»، والمندوب بيوصلك للاستلام."
-  };
-  var thread = document.getElementById("thread");
-  Array.prototype.forEach.call(document.querySelectorAll("#qp button"), function(b){
-    b.addEventListener("click", function(){
-      var qq = b.getAttribute("data-q");
-      if(thread) thread.insertAdjacentHTML("beforeend",
-        '<p class="who">العميل</p><div class="bub">' + qq + '<time>الآن</time></div>');
-      track("demo_click", qq);
-      setTimeout(function(){
-        if(thread) thread.insertAdjacentHTML("beforeend",
-          '<p class="who">رد المنصة</p><div class="bub out">' + (REPLIES[qq] || "") + '<time>الآن</time></div>');
-      }, 420);
-    });
-  });
-
-  var reduceMotion = false;
-  try{ reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ reduceMotion = false; }
-
-  var secs = document.querySelectorAll("section");
-  if(!reduceMotion && secs.length){
-    Array.prototype.forEach.call(secs, function(s){ s.classList.add("rv"); });
-    var showAll = function(){ Array.prototype.forEach.call(secs, function(s){ s.classList.add("seen"); }); };
-    var reveal = function(){
-      Array.prototype.forEach.call(secs, function(s){
-        if(s.classList.contains("seen")) return;
-        var r = s.getBoundingClientRect();
-        if(r.top < (window.innerHeight || 600) * 0.94) s.classList.add("seen");
-      });
-    };
-    /* IntersectionObserver لو موجود، ولو مش موجود منكسرش: مستمع السكرول شغال في الحالتين */
-    try{
-      if(typeof window.IntersectionObserver === "function"){
-        var io = new window.IntersectionObserver(function(entries){
-          entries.forEach(function(en){ if(en.isIntersecting) en.target.classList.add("seen"); });
-        }, {rootMargin:"0px 0px -8% 0px"});
-        Array.prototype.forEach.call(secs, function(s){ io.observe(s); });
-      }
-    }catch(e){ /* الفشل الأمن: بنكمل بمستمع السكرول تحت */ }
-    window.addEventListener("scroll", reveal, {passive:true});
-    window.addEventListener("resize", reveal);
-    reveal();
-    setTimeout(showAll, 1500); /* فشل أمان: مفيش مسار واحد يسيب المحتوى مخفي */
-  }
-  /* TODO(ربط): Meta Pixel + CAPI. الحدث Lead على submit، ويتحدد البيكسل لما يتفتح حساب الإعلانات. */
-})();
+  const msg = `أهلاً بك، أنا ${name} (%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81: ${phone})%0A` +
+              `النشاط: ${storeType}%0A` +
+              `المستوى المطلوب: ${tier}%0A` +
+              `مهتم ببدء نظام MaxP لمحل الملابس ووقف نزيف الأوردرات والمرتجعات.`;
+  
+  // Official MaxP Support WhatsApp
+  const waUrl = `https://wa.me/201123087745?text=${msg}`;
+  window.open(waUrl, '_blank');
+}
 </script>
+
 </body>
 </html>
