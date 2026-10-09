@@ -821,7 +821,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
               </svg>
             </a>
 
-            <div className="hidden sm:inline-flex">
+            <div className="inline-flex max-w-[46%] overflow-hidden">
               <PageExplanations />
             </div>
 
@@ -869,6 +869,13 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
         data-template={templateId}
       >
         {isAppsDashboard && headerBlock}
+        {/* شرح التطبيقات على باقي صفحات الـapp-dashboard (غير /apps) —
+            شريط رفيع بنفس منطق by-route، ظاهر على الديسكتوب والموبايل */}
+        {!isAppsDashboard && (
+          <div className="flex items-center justify-end gap-2 px-3 pt-2 sm:px-4">
+            <PageExplanations />
+          </div>
+        )}
         {isAppsDashboard && isMobile && (
           <div
             className="business-mobile-overlay"

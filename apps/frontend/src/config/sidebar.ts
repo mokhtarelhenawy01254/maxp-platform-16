@@ -1296,6 +1296,7 @@ export const getSidebarConfig = (
                 { to: '/my-resignation', icon: FileText, label: t('sidebar.myResignation'), hidden: !isAnyAppActive(['hr-basic', 'hr-core']) },
                 { to: '/my-advances', icon: Banknote, label: t('sidebar.myAdvances'), hidden: !isAnyAppActive(['hr-payroll', 'hr-basic', 'hr-core']) },
                 { to: '/profile', icon: CircleUser, label: t('sidebar.myProfile') },
+                { to: '/app-explanations', icon: HelpCircle, label: t('sidebar.platformExplanations', 'شرح المنصة') },
                 { to: '/my-activity', icon: ClipboardList, label: t('sidebar.myActivity') },
             ]
         },

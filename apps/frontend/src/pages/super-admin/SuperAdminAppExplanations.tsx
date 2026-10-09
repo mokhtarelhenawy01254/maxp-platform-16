@@ -67,13 +67,22 @@ const ROUTE_OPTIONS = [
     { value: "/invoices", label: "الفواتير" },
     { value: "/settings", label: "الإعدادات" },
     { value: "/facebook-inbox", label: "رسائل فيسبوك" },
-    { value: "/affiliate", label: "المسوقين" },
+    { value: "/affiliates", label: "الإحالات والمسوقين" },
     { value: "/coupons", label: "الكوبونات" },
     { value: "/marketplace", label: "متجر التطبيقات" },
     { value: "/wallet", label: "المحفظة" },
     { value: "/analytics", label: "التحليلات" },
     { value: "/hr", label: "الموارد البشرية" },
-    { value: "/attendance", label: "الحضور والانصراف" },
+    { value: "/hr/attendance", label: "الحضور والانصراف" },
+    { value: "/whatsapp", label: "واتساب للأعمال" },
+    { value: "/advertising", label: "الإعلانات" },
+    { value: "/shipping", label: "الشحن والتوصيل" },
+    { value: "/returns", label: "المرتجعات" },
+    { value: "/procurement", label: "المشتريات" },
+    { value: "/tools", label: "أدوات التسويق" },
+    { value: "/inventory", label: "المخزون" },
+    { value: "/academy", label: "أكاديمية ماكس بي" },
+    { value: "/support", label: "الدعم" },
     { value: "/tasks", label: "المهام" },
 ];
 
@@ -111,7 +120,13 @@ const SuperAdminAppExplanations: React.FC = () => {
             }
         } catch (err: any) {
             console.error(err);
-            setError(err.response?.data?.message || "فشل في جلب الشروحات");
+            const status = err.response?.status;
+            if (status === 403 || status === 401) {
+                setNoPermission(true);
+                setError(null);
+            } else {
+                setError(err.response?.data?.message || "فشل في جلب الشروحات");
+            }
         } finally {
             setLoading(false);
         }
@@ -212,6 +227,21 @@ const SuperAdminAppExplanations: React.FC = () => {
         return (
             <div className="p-3 flex justify-center">
                 <LoadingSpinner size="md" />
+            </div>
+        );
+    }
+
+    // عدم الصلاحية (403/401 من السيرفر): رسالة واحدة واضحة بدون أي عناصر إدارة
+    if (noPermission) {
+        return (
+            <div className="p-3 rtl">
+                <div className="max-w-md mx-auto mt-16 text-center">
+                    <div className="text-4xl mb-4">🔒</div>
+                    <h1 className="text-xl font-bold mb-2">الصفحة دي لمدير النظام فقط</h1>
+                    <p className="text-sm text-muted-foreground">
+                        لو محتاج صلاحيات إدارة الشروحات، تواصل مع مدير النظام.
+                    </p>
+                </div>
             </div>
         );
     }
