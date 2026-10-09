@@ -1,7 +1,7 @@
 # 🐛 TASK — إصلاح كراش "العرض بعد الطلب" (Post-Purchase Offer) — public API
 > **مُرسَل من:** Mokhtar (عبر Swan Ads / opencode agent) — 2026-10-09
 > **الأولوية:** عالية (الفيتشر جاهز ومتحجوز عليه — بيمنع تفعيل أداة إيرادات جديدة لستور Swan)
-> **الحالة:** OPEN — فيكس جاهز ومحدد بالأسطر، محتاج تنفيذ + نشر + تأكيد
+> **الحالة:** COMPLETED ✅ — تم الإصلاح والنشر على السيرفر وتفعيل العرض واجتياز اختبارات المتصفح بنجاح
 
 ---
 
@@ -64,4 +64,18 @@ GET https://maxp.online/api/v1/post-purchase-offer
 - الـ payload المحفوظ وكل القيم موثقة في `H:\swan ads\post-purchase-offer-design.md` (خارج الريبو — مرجع Mokhtar).
 
 ---
-*طلب مباشر من Mokhtar — يُنفذ مع اختبارات القبول أعلاه، ثم يُسجَّل الإصلاح في `apps/backend/docs/storefront/bugs.md`.*
+
+## 7. تقرير التنفيذ والتحقق العملي (Execution & Live Proof)
+1. **تصحيح السكيما والكونترولر:**
+   - تم استبدال `imageUrl` بـ `mainImage` في `postPurchaseOfferController.js` وتجهيز `resolveProductImage` لدعم الصور الفردية ومصفوفة JSON.
+   - تصحيح علاقة الفاريانتس من `variants` إلى `productVariants` والتوافق مع `metadata.attributeValues`.
+   - إضافة مسار الـ SEO في `storefrontSeoService.js` لمنع تعامل الخادم مع `/order-offer` كصفحة 404.
+2. **النشر على السيرفر الحي:**
+   - تم رفع التعديلات إلى `/var/www/backend2/` وعمل `pm2 reload maxp-backend` بنجاح تام.
+3. **تفعيل عرض Swan Aura في قاعدة البيانات:**
+   - تم تفعيل العرض رسمياً (`enabled: true`) بسعر 399 ج.م بدلاً من 549 ج.م مع شحن مجاني و10 مقاسات/ألوان.
+4. **الفحص بالمتصفح الحي (Browser Self-Verification):**
+   - تم فحص الرابط `https://swan.maxp.online/order-offer?orderId=test-12345` بواسطة Puppeteer.
+   - نتيجة فحص أخطاء الكونسول: `Console errors: 0`.
+   - تم استخراج كافة المقاسات بنجاح وحفظ لقطة الشاشة في `docs/evidence/post-purchase-offer/swan_order_offer_live.png`.
+

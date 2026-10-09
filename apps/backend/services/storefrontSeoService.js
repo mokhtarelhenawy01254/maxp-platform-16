@@ -19,6 +19,7 @@ const PAGE_NAME_MAP = {
   lookbook: "اللوك بوك",
   "size-guide": "دليل المقاسات",
   "thank-you": "تم الطلب بنجاح",
+  "order-offer": "العرض الخاص",
   articles: "المقالات",
   blog: "المدونة",
 };
@@ -35,6 +36,7 @@ const RESERVED_PAGE_SEGMENTS = new Set([
   "lookbook",
   "size-guide",
   "thank-you",
+  "order-offer",
   "articles",
   "blog",
 ]);
