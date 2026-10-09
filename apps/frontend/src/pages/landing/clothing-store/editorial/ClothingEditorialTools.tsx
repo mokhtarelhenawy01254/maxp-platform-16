@@ -40,7 +40,7 @@ export const ClothingEditorialTools: React.FC<ClothingEditorialToolsProps> = ({
               </div>
             </BlurFade>
             <BlurFade delay={0.1}>
-              <h2 className="text-2xl sm:text-4xl font-black font-serif text-zinc-950 tracking-tight mb-2">
+              <h2 className="text-2xl sm:text-4xl font-black font-serif text-zinc-950 tracking-tight leading-[1.2] text-balance mb-2">
                 17 أداة متخصصة لبراند الأزياء في شاشة واحدة
               </h2>
             </BlurFade>
@@ -61,7 +61,7 @@ export const ClothingEditorialTools: React.FC<ClothingEditorialToolsProps> = ({
             <div className="p-4 sm:p-5 rounded-2xl bg-white border border-black/10 flex items-center justify-between gap-6 shadow-sm">
               <div className="text-right">
                 <div className="text-xs text-zinc-500">سعر الأدوات فرادى</div>
-                <div className="text-sm text-zinc-400 line-through cse-tabular">
+                <div className="text-sm text-zinc-500 line-through cse-tabular">
                   {TOTAL_STANDALONE_PRICE.toLocaleString("en-US")} ج.م/شهر
                 </div>
               </div>
@@ -106,17 +106,12 @@ export const ClothingEditorialTools: React.FC<ClothingEditorialToolsProps> = ({
                   className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-neutral-50/80 transition-colors"
                 >
                   <div className="flex items-start sm:items-center gap-3">
-                    <span className="font-mono text-xs text-zinc-400 cse-tabular w-8">
+                    <span className="font-mono text-xs text-zinc-500 cse-tabular w-8">
                       #{tool.id.toString().padStart(2, "0")}
                     </span>
                     <div>
                       <div className="font-bold text-zinc-900 text-sm sm:text-base flex items-center gap-2">
-                        <span>{tool.title}</span>
-                        {tool.isPrimary && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-black text-white font-mono">
-                            CORE
-                          </span>
-                        )}
+                        <span>{tool.name}</span>
                       </div>
                       <div className="text-xs text-zinc-500 mt-0.5 max-w-xl">
                         {tool.description}
@@ -126,7 +121,7 @@ export const ClothingEditorialTools: React.FC<ClothingEditorialToolsProps> = ({
 
                   <div className="flex items-center justify-between sm:justify-end gap-6 pt-2 sm:pt-0 border-t sm:border-t-0 border-black/5">
                     <div className="text-right">
-                      <span className="text-xs text-zinc-400 line-through cse-tabular block">
+                      <span className="text-xs text-zinc-500 line-through cse-tabular block">
                         {tool.standalonePrice} ج.م
                       </span>
                       <span className="text-xs text-emerald-700 font-bold">

@@ -64,7 +64,7 @@ export const ClothingStoreFooter: React.FC<ClothingStoreFooterProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>بنية تحتية سحابية آمنة 100% مع تشفير كامل للبيانات</span>
+            <span>اتصال مشفر HTTPS وعزل بيانات لكل تاجر</span>
           </div>
         </div>
       </div>

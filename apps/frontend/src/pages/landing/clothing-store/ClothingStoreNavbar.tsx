@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowLeft, Store, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Store } from "lucide-react";
 
 interface ClothingStoreNavbarProps {
   onFreeRegister: () => void;
@@ -46,7 +46,7 @@ export const ClothingStoreNavbar: React.FC<ClothingStoreNavbarProps> = ({
                     : "text-gray-400 hover:text-white"
                 }`}
               >
-                الستايل الفاشون الفاتح
+                العرض التسويقي
               </button>
               <button
                 type="button"
@@ -57,7 +57,7 @@ export const ClothingStoreNavbar: React.FC<ClothingStoreNavbarProps> = ({
                     : "text-gray-400 hover:text-white"
                 }`}
               >
-                غرفة العمليات الداكنة
+                كابينة التشغيل
               </button>
             </div>
           )}

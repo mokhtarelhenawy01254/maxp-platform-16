@@ -88,7 +88,7 @@ export const ClothingStoreLeadForm: React.FC<ClothingStoreLeadFormProps> = ({
               تحدث مع فريق MaxP لمساعدتك في تهيئة متجرك
             </h2>
             <p className="text-xs sm:text-sm text-gray-400 leading-relaxed csn-text-pretty">
-              سجل بياناتك وسيتم التواصل معك مباشرة لشرح كيفية ربط فروعك ومخازنك مع بوسطة خلال دقائق.
+              استشارة عملية على متجرك: ربط الفروع والمخزن وبوسطة — بدون أي التزام.
             </p>
           </div>
 
@@ -190,7 +190,7 @@ export const ClothingStoreLeadForm: React.FC<ClothingStoreLeadFormProps> = ({
                   type="tel"
                   name="phone"
                   autoComplete="tel"
-                  placeholder="010XXXXXXXX أو 011XXXXXXXX"
+                  placeholder="01xxxxxxxxx"
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}

@@ -31,7 +31,7 @@ export const ClothingEditorialHero: React.FC<ClothingEditorialHeroProps> = ({
             </BlurFade>
 
             <BlurFade delay={0.1}>
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-zinc-950 tracking-tight leading-[1.15] mb-4 font-serif">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-zinc-950 tracking-tight leading-[1.15] mb-4 font-serif text-balance">
                 متجر إلكتروني يشبه زارا… وسيستم فروع وشحن يوقف نزيف المرتجعات
               </h1>
             </BlurFade>
@@ -44,7 +44,7 @@ export const ClothingEditorialHero: React.FC<ClothingEditorialHeroProps> = ({
 
             {/* Merchant Primary CTAs */}
             <BlurFade delay={0.2} className="w-full">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto mb-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-stretch gap-3 w-full sm:w-auto mb-4">
                 <button
                   onClick={onFreeRegister}
                   type="button"
@@ -64,7 +64,7 @@ export const ClothingEditorialHero: React.FC<ClothingEditorialHeroProps> = ({
                   href={WHATSAPP_CONSULT_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl border border-black/10 bg-white hover:bg-neutral-100 text-xs sm:text-sm font-bold text-zinc-900 transition-all"
+                  className="inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl border border-black/10 bg-white hover:bg-neutral-100 text-xs sm:text-sm font-bold text-zinc-900 transition-all whitespace-nowrap"
                 >
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   <span>تواصل عبر واتساب</span>

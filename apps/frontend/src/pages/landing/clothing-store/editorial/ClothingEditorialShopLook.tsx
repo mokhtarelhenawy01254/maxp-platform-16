@@ -164,14 +164,14 @@ export const ClothingEditorialShopLook: React.FC<ClothingEditorialShopLookProps>
               </div>
             </BlurFade>
             <BlurFade delay={0.1}>
-              <h2 className="text-2xl sm:text-4xl md:text-5xl font-black font-serif tracking-tight text-white mb-2">
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-black font-serif tracking-tight leading-[1.15] text-balance text-white mb-2">
                 كيف تحل المنظومة المشاكل اليومية لبراندك؟
               </h2>
             </BlurFade>
           </div>
           <BlurFade delay={0.15}>
             <p className="text-sm text-zinc-400 max-w-sm mt-3 md:mt-0 leading-relaxed">
-              انقر على أي كرت لاستكشاف تفاصيل الحل التقني، وفعل الميزة مباشرة لمتجرك وفروعك بنقرة واحدة.
+              أربع ميزات جذرية تعالج أغلب أسباب المرتجعات، البيع المزدوج بين الفرع والمتجر، وتوه الأوردرات.
             </p>
           </BlurFade>
         </div>

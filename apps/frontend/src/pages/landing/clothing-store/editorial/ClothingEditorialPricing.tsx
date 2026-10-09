@@ -29,7 +29,7 @@ export const ClothingEditorialPricing: React.FC<ClothingEditorialPricingProps> =
             <Sparkles className="w-3.5 h-3.5 text-amber-600" />
             <span>تسعير شفاف لرواد الأعمال وأصحاب المحلات</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-zinc-950 tracking-tight mb-3">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-zinc-950 tracking-tight leading-[1.2] text-balance mb-3">
             اختر الخطة المناسبة لحجم نشاطك التجاري
           </h2>
           <p className="text-sm sm:text-base text-zinc-600 leading-relaxed">
@@ -61,9 +61,9 @@ export const ClothingEditorialPricing: React.FC<ClothingEditorialPricingProps> =
               >
                 {/* Popular Badge */}
                 {isPopular && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
                     <span className="bg-amber-400 text-black text-[11px] font-black py-1 px-4 rounded-full shadow-md">
-                      الباقة الأكثر طلباً لبراندات الملابس
+                      الأكثر طلباً — الباقة الشاملة
                     </span>
                   </div>
                 )}

@@ -276,7 +276,7 @@ export const ClothingStoreLanding: React.FC = () => {
       <div className={activeMode === "editorial" ? "cse-sticky-mobile" : "csn-sticky-mobile"}>
         <div className="flex flex-col">
           <span className="text-[10px] text-zinc-500 font-semibold">ابدأ متجرك 0 ج.م</span>
-          <span className="text-sm font-extrabold text-zinc-950 cse-tabular">مجاناً بدون بطاقة</span>
+          <span className="text-sm font-extrabold text-zinc-950 cse-tabular">بدون بطاقة دفع</span>
         </div>
 
         <div className="flex items-center gap-1.5">

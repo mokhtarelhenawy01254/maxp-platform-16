@@ -251,3 +251,64 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Editorial treatment for shared cockpit-styled sections ──
+   الصفحة الفاتحة تنتهي بلوحات داكنة بستايل الكابينة — نحوّلها للغة الكريمي
+   (الكارت الداكن في الفورم يبقى عنصر تمييز مقصود زي الهيرو) */
+.cse-root #lead-form,
+.cse-root #faq {
+  background-color: #faf8f5;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.cse-root #faq h2 {
+  color: #141416;
+}
+
+.cse-root #faq .csn-badge {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #52525b;
+}
+
+.cse-root #faq .csn-badge svg {
+  color: #2563eb;
+}
+
+.cse-root #faq .csn-panel {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.cse-root #faq .csn-panel button span {
+  color: #141416;
+}
+
+.cse-root #faq .csn-panel button svg {
+  color: #71717a;
+}
+
+.cse-root #faq .csn-panel button[aria-expanded="true"] svg {
+  color: #141416;
+}
+
+.cse-root #faq .csn-panel [id^="clothing-faq-panel"] {
+  color: #52525b;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.cse-root footer {
+  background: #161513;
+}
+
+/* تنويع قصاصة الصورتين المتكررتين في الكاروسيل عشان الشكل مش يبان قالبًا واحدًا
+   (نفس ملف الصورة بزوايا مختلفة — بنحافظ على brightness-75 الأصلي) */
+.cse-root [class*="overflow-x-scroll"] > div:nth-child(3) img {
+  object-position: 50% 88%;
+  filter: brightness(0.75) saturate(0.85);
+}
+
+.cse-root [class*="overflow-x-scroll"] > div:nth-child(4) img {
+  object-position: 50% 18%;
+}

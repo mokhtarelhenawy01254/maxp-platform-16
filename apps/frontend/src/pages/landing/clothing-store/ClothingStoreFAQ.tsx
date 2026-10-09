@@ -21,9 +21,6 @@ export const ClothingStoreFAQ: React.FC = () => {
           <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight csn-text-balance mb-2">
             الأسئلة الشائعة حول المنظومة
           </h2>
-          <p className="text-xs sm:text-sm text-gray-400 leading-relaxed csn-text-pretty">
-            كل ما يهمك معرفته حول تشغيل المتجر، ربط بوسطة، وكاشير الفروع.
-          </p>
         </div>
 
         <div className="space-y-3">

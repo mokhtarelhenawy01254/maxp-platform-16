@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowLeft, Sparkles, ShoppingBag } from "lucide-react";
+import { ArrowLeft, ShoppingBag } from "lucide-react";
 
 interface ClothingEditorialNavbarProps {
   onFreeRegister: () => void;
@@ -53,7 +53,7 @@ export const ClothingEditorialNavbar: React.FC<ClothingEditorialNavbarProps> = (
 
         {/* Actions + Mode Switcher */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Aesthetic Toggle Switch */}
+          {/* Preview Mode Switcher */}
           <div className="hidden lg:flex items-center bg-black/5 p-1 rounded-xl border border-black/5 text-xs font-semibold">
             <button
               type="button"
@@ -61,10 +61,10 @@ export const ClothingEditorialNavbar: React.FC<ClothingEditorialNavbarProps> = (
               className={`px-2.5 py-1 rounded-lg transition-all ${
                 currentMode === "editorial"
                   ? "bg-white text-black shadow-sm font-bold"
-                  : "text-zinc-500 hover:text-black"
+                  : "text-zinc-600 hover:text-black"
               }`}
             >
-              الستايل الفاشون الفاتح
+              العرض التسويقي
             </button>
             <button
               type="button"
@@ -72,10 +72,10 @@ export const ClothingEditorialNavbar: React.FC<ClothingEditorialNavbarProps> = (
               className={`px-2.5 py-1 rounded-lg transition-all ${
                 currentMode === "cockpit"
                   ? "bg-black text-white shadow-sm font-bold"
-                  : "text-zinc-500 hover:text-black"
+                  : "text-zinc-600 hover:text-black"
               }`}
             >
-              غرفة العمليات الداكنة
+              كابينة التشغيل
             </button>
           </div>
 
