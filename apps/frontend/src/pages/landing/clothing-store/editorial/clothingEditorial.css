@@ -1,0 +1,199 @@
+/* Scoped Styles for Clothing Store Editorial Fashion (.cse-*) */
+.cse-root {
+  background-color: #FAF8F5;
+  color: #141416;
+  font-family: 'Cairo', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
+  direction: rtl;
+  text-align: right;
+  -webkit-font-smoothing: antialiased;
+}
+
+.cse-root *,
+.cse-root *::before,
+.cse-root *::after {
+  box-sizing: border-box;
+}
+
+.cse-serif {
+  font-family: 'Playfair Display', Georgia, 'Cairo', serif;
+}
+
+.cse-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Elegant hairline borders */
+.cse-panel {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.cse-panel:hover {
+  border-color: rgba(0, 0, 0, 0.16);
+  box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.06);
+}
+
+.cse-panel-dark {
+  background: #121316;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.25);
+}
+
+/* Luxury buttons */
+.cse-btn-primary {
+  background: #141416;
+  color: #ffffff;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 160ms ease-out, background-color 160ms ease-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cse-btn-primary:hover {
+  background: #27272a;
+}
+
+.cse-btn-primary:active {
+  transform: scale(0.97);
+}
+
+.cse-btn-secondary {
+  background: #ffffff;
+  color: #141416;
+  font-weight: 600;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  padding: 12px 24px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 160ms ease-out, background-color 160ms ease-out, border-color 160ms ease-out;
+}
+
+.cse-btn-secondary:hover {
+  background: #f4f4f5;
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+.cse-btn-secondary:active {
+  transform: scale(0.97);
+}
+
+/* Badge styling */
+.cse-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #52525b;
+}
+
+.cse-badge-gold {
+  background: rgba(217, 119, 6, 0.08);
+  border-color: rgba(217, 119, 6, 0.25);
+  color: #b45309;
+}
+
+/* Hotspot pulsing animation */
+@keyframes cse-pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(20, 20, 22, 0.4); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(20, 20, 22, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(20, 20, 22, 0); }
+}
+
+.cse-hotspot {
+  width: 24px;
+  height: 24px;
+  background: #141416;
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  animation: cse-pulse 2s infinite;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  border: 2px solid #ffffff;
+  transition: transform 0.2s ease;
+}
+
+.cse-hotspot:hover {
+  transform: scale(1.2);
+}
+
+/* Slider custom styles */
+.cse-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #e4e4e7;
+  outline: none;
+}
+
+.cse-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #141416;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease;
+}
+
+.cse-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+/* Mobile Sticky Bar */
+.cse-sticky-mobile {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(250, 248, 245, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 10px 16px;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
+}
+
+@media (min-width: 768px) {
+  .cse-sticky-mobile {
+    display: none;
+  }
+}

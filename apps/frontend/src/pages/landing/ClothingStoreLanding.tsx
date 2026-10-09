@@ -1,17 +1,31 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import tokenManager from "../../utils/tokenManager";
+
+// Cockpit Dark Components
 import { ClothingStoreNavbar } from "./clothing-store/ClothingStoreNavbar";
 import { ClothingStoreHero } from "./clothing-store/ClothingStoreHero";
 import { ClothingStoreBento } from "./clothing-store/ClothingStoreBento";
 import { ClothingStoreToolsGrid } from "./clothing-store/ClothingStoreToolsGrid";
 import { ClothingStorePricing } from "./clothing-store/ClothingStorePricing";
+
+// Editorial Luxury Fashion Components
+import { ClothingEditorialNavbar } from "./clothing-store/editorial/ClothingEditorialNavbar";
+import { ClothingEditorialHero } from "./clothing-store/editorial/ClothingEditorialHero";
+import { ClothingEditorialShopLook } from "./clothing-store/editorial/ClothingEditorialShopLook";
+import { ClothingEditorialTools } from "./clothing-store/editorial/ClothingEditorialTools";
+import { ClothingEditorialPricing } from "./clothing-store/editorial/ClothingEditorialPricing";
+
+// Shared Modules
 import { ClothingStoreLeadForm } from "./clothing-store/ClothingStoreLeadForm";
 import { ClothingStoreFAQ } from "./clothing-store/ClothingStoreFAQ";
 import { ClothingStoreFooter } from "./clothing-store/ClothingStoreFooter";
 import { UtmData } from "./clothing-store/types";
+
+// Scoped CSS
 import "./clothing-store/clothingStoreNative.css";
-import { ArrowLeft, Zap } from "lucide-react";
+import "./clothing-store/editorial/clothingEditorial.css";
+import { ArrowLeft } from "lucide-react";
 
 const BUNDLE_SLUG = "store-complete-bundle";
 const LANDING_SLUG = "clothing-store-bundle";
@@ -20,7 +34,8 @@ const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "ut
 export const ClothingStoreLanding: React.FC = () => {
   const navigate = useNavigate();
   const [utm, setUtm] = useState<UtmData>({});
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [, setIsCheckingOut] = useState(false);
+  const [activeMode, setActiveMode] = useState<"editorial" | "cockpit">("editorial");
 
   // ── First-touch UTM capture & SEO tags ──
   useEffect(() => {
@@ -33,10 +48,10 @@ export const ClothingStoreLanding: React.FC = () => {
 
     const fontLink = document.createElement("link");
     fontLink.rel = "stylesheet";
-    fontLink.href = "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap";
+    fontLink.href = "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Playfair+Display:ital,wght@0,600;1,600&display=swap";
     document.head.appendChild(fontLink);
 
-    // UTM reading
+    // Read UTM
     try {
       const q = new URLSearchParams(window.location.search);
       const parsed: Record<string, string> = {};
@@ -53,7 +68,7 @@ export const ClothingStoreLanding: React.FC = () => {
         if (stored) setUtm(JSON.parse(stored));
       }
     } catch {
-      // ignore storage access issues
+      // ignore
     }
 
     return () => {
@@ -91,14 +106,12 @@ export const ClothingStoreLanding: React.FC = () => {
   const handleBundleCheckout = useCallback(async () => {
     const token = tokenManager.getAccessToken ? tokenManager.getAccessToken() : tokenManager.getToken?.();
 
-    // If user is not logged in, take them to register with plan intent
     if (!token) {
       const q = buildQueryString({ plan: "999", tier: "bundle" });
       navigate(`/auth/register?${q}`);
       return;
     }
 
-    // Direct Kashier hosted checkout for authenticated user
     setIsCheckingOut(true);
     try {
       const res = await fetch(`/api/v1/marketplace/bundles/${BUNDLE_SLUG}/checkout`, {
@@ -128,42 +141,80 @@ export const ClothingStoreLanding: React.FC = () => {
   }, [navigate]);
 
   const scrollToPricing = useCallback(() => {
-    const el = document.getElementById("pricing");
+    const el = document.getElementById(activeMode === "editorial" ? "editorial-pricing" : "pricing");
     if (el) el.scrollIntoView({ behavior: "smooth" });
-  }, []);
+  }, [activeMode]);
 
   return (
-    <div className="csn-root" dir="rtl">
-      {/* Platform Navigation */}
-      <ClothingStoreNavbar
-        onFreeRegister={handleFreeRegister}
-        onLogin={handleLogin}
-      />
+    <div className={activeMode === "editorial" ? "cse-root" : "csn-root"} dir="rtl">
+      {/* Dynamic Navigation according to active mode */}
+      {activeMode === "editorial" ? (
+        <ClothingEditorialNavbar
+          onFreeRegister={handleFreeRegister}
+          onLogin={handleLogin}
+          currentMode={activeMode}
+          onToggleMode={setActiveMode}
+        />
+      ) : (
+        <ClothingStoreNavbar
+          onFreeRegister={handleFreeRegister}
+          onLogin={handleLogin}
+          currentMode={activeMode}
+          onToggleMode={setActiveMode}
+        />
+      )}
 
       {/* Main Content Sections */}
       <main>
-        <ClothingStoreHero
-          onFreeRegister={handleFreeRegister}
-          onPricingScroll={scrollToPricing}
-        />
+        {activeMode === "editorial" ? (
+          <>
+            {/* 1. Editorial Fashion Hero with Interactive Size Advisor */}
+            <ClothingEditorialHero
+              onFreeRegister={handleFreeRegister}
+              onPricingScroll={scrollToPricing}
+            />
 
-        <ClothingStoreBento />
+            {/* 2. Interactive "Shop The Look" Module */}
+            <ClothingEditorialShopLook />
 
-        <ClothingStoreToolsGrid
-          onSelectBundle={scrollToPricing}
-        />
+            {/* 3. The 17 Fashion Tools Suite Matrix */}
+            <ClothingEditorialTools
+              onPricingScroll={scrollToPricing}
+            />
 
-        <ClothingStorePricing
-          onFreeRegister={handleFreeRegister}
-          onPaygRegister={handlePaygRegister}
-          onBundleCheckout={handleBundleCheckout}
-        />
+            {/* 4. Luxury Pricing Engine */}
+            <ClothingEditorialPricing
+              onFreeRegister={handleFreeRegister}
+              onPaygRegister={handlePaygRegister}
+              onBundleCheckout={handleBundleCheckout}
+            />
+          </>
+        ) : (
+          <>
+            {/* Cockpit Mode Components */}
+            <ClothingStoreHero
+              onFreeRegister={handleFreeRegister}
+              onPricingScroll={scrollToPricing}
+            />
+            <ClothingStoreBento />
+            <ClothingStoreToolsGrid
+              onSelectBundle={scrollToPricing}
+            />
+            <ClothingStorePricing
+              onFreeRegister={handleFreeRegister}
+              onPaygRegister={handlePaygRegister}
+              onBundleCheckout={handleBundleCheckout}
+            />
+          </>
+        )}
 
+        {/* Shared Direct CRM Lead Intake Form */}
         <ClothingStoreLeadForm
           utm={utm}
           onFreeRegister={handleFreeRegister}
         />
 
+        {/* Shared FAQ */}
         <ClothingStoreFAQ />
       </main>
 
@@ -171,24 +222,24 @@ export const ClothingStoreLanding: React.FC = () => {
       <ClothingStoreFooter onFreeRegister={handleFreeRegister} />
 
       {/* Sticky Mobile CTA Bar */}
-      <div className="csn-sticky-mobile">
+      <div className={activeMode === "editorial" ? "cse-sticky-mobile" : "csn-sticky-mobile"}>
         <div className="flex flex-col">
-          <span className="text-[10px] text-gray-400">ابدأ الآن مجاناً</span>
-          <span className="text-sm font-bold text-white csn-tabular">0 ج.م / شهر</span>
+          <span className="text-[10px] text-zinc-500 font-semibold">ابدأ متجرك 0 ج.م</span>
+          <span className="text-sm font-extrabold text-zinc-950 cse-tabular">مجاناً بدون بطاقة</span>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={scrollToPricing}
-            className="csn-btn-secondary text-xs py-2 px-3 whitespace-nowrap"
+            className="text-xs py-2 px-3 rounded-lg border border-black/10 font-bold bg-white text-black"
           >
-            الباقة 999
+            باقة 999
           </button>
           <button
             type="button"
             onClick={handleFreeRegister}
-            className="csn-btn-primary text-xs py-2 px-3 whitespace-nowrap"
+            className={activeMode === "editorial" ? "cse-btn-primary text-xs py-2 px-3 whitespace-nowrap" : "csn-btn-primary text-xs py-2 px-3 whitespace-nowrap"}
           >
             <span>افتح متجرك</span>
             <ArrowLeft className="w-3.5 h-3.5" />

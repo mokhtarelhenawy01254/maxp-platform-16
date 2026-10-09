@@ -4,16 +4,20 @@ import { ArrowLeft, Store, ShieldCheck } from "lucide-react";
 interface ClothingStoreNavbarProps {
   onFreeRegister: () => void;
   onLogin: () => void;
+  currentMode?: "editorial" | "cockpit";
+  onToggleMode?: (mode: "editorial" | "cockpit") => void;
 }
 
 export const ClothingStoreNavbar: React.FC<ClothingStoreNavbarProps> = ({
   onFreeRegister,
   onLogin,
+  currentMode,
+  onToggleMode,
 }) => {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#050608]/90 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        {/* Brand identity */}
+        {/* Brand identity & Mode Toggle */}
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-white">
             <Store className="w-5 h-5 text-blue-400" />
@@ -29,6 +33,34 @@ export const ClothingStoreNavbar: React.FC<ClothingStoreNavbarProps> = ({
               منظومة متاجر الملابس وبراندات الموضة
             </span>
           </div>
+
+          {/* Mode Switcher Pill */}
+          {onToggleMode && (
+            <div className="hidden lg:flex items-center gap-1 p-0.5 rounded-full border border-white/15 bg-white/5 mr-2">
+              <button
+                type="button"
+                onClick={() => onToggleMode("editorial")}
+                className={`px-2.5 py-1 text-xs rounded-full transition-all font-medium ${
+                  currentMode === "editorial"
+                    ? "bg-white text-black shadow-sm font-bold"
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                الستايل الفاشون الفاتح
+              </button>
+              <button
+                type="button"
+                onClick={() => onToggleMode("cockpit")}
+                className={`px-2.5 py-1 text-xs rounded-full transition-all font-medium ${
+                  currentMode === "cockpit"
+                    ? "bg-blue-600 text-white font-bold"
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                غرفة العمليات الداكنة
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Anchors desktop */}
