@@ -1,65 +1,60 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { CLOTHING_STORE_LANDING_MARKUP } from "./clothingStoreLandingMarkup";
-import "./clothingStoreLanding.css";
 import tokenManager from "../../utils/tokenManager";
+import { ClothingStoreNavbar } from "./clothing-store/ClothingStoreNavbar";
+import { ClothingStoreHero } from "./clothing-store/ClothingStoreHero";
+import { ClothingStoreBento } from "./clothing-store/ClothingStoreBento";
+import { ClothingStoreToolsGrid } from "./clothing-store/ClothingStoreToolsGrid";
+import { ClothingStorePricing } from "./clothing-store/ClothingStorePricing";
+import { ClothingStoreLeadForm } from "./clothing-store/ClothingStoreLeadForm";
+import { ClothingStoreFAQ } from "./clothing-store/ClothingStoreFAQ";
+import { ClothingStoreFooter } from "./clothing-store/ClothingStoreFooter";
+import { UtmData } from "./clothing-store/types";
+import "./clothing-store/clothingStoreNative.css";
+import { ArrowLeft, Zap } from "lucide-react";
 
-/**
- * «باقة متجر الملابس» — integrated landing (Phase 2, native to the platform).
- * Content: v5 direction A («دفتر المتجر الرابح») — numbers frozen: 0 / 1 / 999 / 2,936.
- * Flows:
- *  - «ابدأ مجانًا» → /auth/register?landingBundle=clothing-store-bundle (free tier auto-install).
- *  - «اشترك بالباقة 999» → Kashier checkout (POST /marketplace/bundles/store-complete-bundle/checkout)
- *    → hosted payment → webhook activates the 17 apps.
- *  - WhatsApp lead form kept as the secondary channel (utm passthrough).
- * Draft: noindex until Mokhtar's written approval.
- */
-const WHATSAPP_NUMBER = "201123087745"; // pending Mokhtar's official number confirmation
 const BUNDLE_SLUG = "store-complete-bundle";
 const LANDING_SLUG = "clothing-store-bundle";
+const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
 
-const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
-
-const readUtm = (): Record<string, string> => {
-  try {
-    const q = new URLSearchParams(window.location.search);
-    const fromQuery: Record<string, string> = {};
-    UTM_KEYS.forEach((k) => {
-      const v = q.get(k);
-      if (v) fromQuery[k] = v;
-    });
-    if (Object.keys(fromQuery).length > 0) {
-      sessionStorage.setItem("cslp_utm", JSON.stringify(fromQuery));
-      return fromQuery;
-    }
-    const stored = sessionStorage.getItem("cslp_utm");
-    return stored ? JSON.parse(stored) : {};
-  } catch {
-    return {};
-  }
-};
-
-const buildUtmSuffix = (utm: Record<string, string>): string => {
-  const parts = UTM_KEYS.map((k) => (utm[k] ? `${k}=${utm[k]}` : null)).filter(Boolean);
-  return parts.length ? `\n\n[${parts.join(" | ")}]` : "";
-};
-
-const ClothingStoreLanding: React.FC = () => {
+export const ClothingStoreLanding: React.FC = () => {
   const navigate = useNavigate();
-  const rootRef = useRef<HTMLDivElement>(null);
+  const [utm, setUtm] = useState<UtmData>({});
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
+  // ── First-touch UTM capture & SEO tags ──
   useEffect(() => {
     document.title = "MaxP لمتاجر الملابس — متجر مجاني 0 ج.م وباقة 999 في الشهر";
+
     const meta = document.createElement("meta");
     meta.name = "robots";
     meta.content = "noindex, nofollow";
     document.head.appendChild(meta);
-    // Cairo font (same as the approved v5 design)
+
     const fontLink = document.createElement("link");
     fontLink.rel = "stylesheet";
-    fontLink.href = "https://fonts.googleapis.com/css2?family=Cairo:wght@400;800&display=swap";
+    fontLink.href = "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap";
     document.head.appendChild(fontLink);
-    readUtm(); // first-touch capture into sessionStorage
+
+    // UTM reading
+    try {
+      const q = new URLSearchParams(window.location.search);
+      const parsed: Record<string, string> = {};
+      UTM_KEYS.forEach((k) => {
+        const v = q.get(k);
+        if (v) parsed[k] = v;
+      });
+
+      if (Object.keys(parsed).length > 0) {
+        sessionStorage.setItem("cslp_utm", JSON.stringify(parsed));
+        setUtm(parsed);
+      } else {
+        const stored = sessionStorage.getItem("cslp_utm");
+        if (stored) setUtm(JSON.parse(stored));
+      }
+    } catch {
+      // ignore storage access issues
+    }
 
     return () => {
       if (meta.parentNode) meta.parentNode.removeChild(meta);
@@ -67,210 +62,140 @@ const ClothingStoreLanding: React.FC = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
-
-    // ── CTA delegation: register / checkout flows ──
-    const onCtaClick = async (el: Element) => {
-      const action = el.getAttribute("data-action");
-      const utm = readUtm();
-      const utmQuery = UTM_KEYS.map((k) => (utm[k] ? `${k}=${encodeURIComponent(utm[k])}` : null))
-        .filter(Boolean)
-        .join("&");
-
-      if (action === "register") {
-        const query = [
-          "landingBundle=" + LANDING_SLUG,
-          utmQuery,
-          "redirect=" + encodeURIComponent(`/lp/${LANDING_SLUG}`),
-        ]
-          .filter(Boolean)
-          .join("&");
-        navigate(`/auth/register?${query}`);
-        return true;
-      }
-      if (action === "checkout") {
-        const token = tokenManager.getAccessToken ? tokenManager.getAccessToken() : tokenManager.getToken?.();
-        if (!token) {
-          const query = [
-            "landingBundle=" + LANDING_SLUG,
-            "plan=999",
-            utmQuery,
-            "redirect=" + encodeURIComponent(`/lp/${LANDING_SLUG}`),
-          ]
-            .filter(Boolean)
-            .join("&");
-          navigate(`/auth/register?${query}`);
-          return true;
-        }
-        try {
-          el.setAttribute("disabled", "true");
-          const res = await fetch(`/api/v1/marketplace/bundles/${BUNDLE_SLUG}/checkout`, {
-            method: "POST",
-            headers: {
-              ...tokenManager.createAuthHeaders({ "Content-Type": "application/json" }),
-            },
-            credentials: "include",
-            body: JSON.stringify({ utm, redirectUrl: window.location.href }),
-          });
-          const data = await res.json();
-          if (data?.success && data?.sessionUrl) {
-            window.location.href = data.sessionUrl;
-            return true;
-          }
-          el.removeAttribute("disabled");
-          alert(data?.message || "تعذر بدء الدفع، حاول مرة أخرى");
-        } catch {
-          el.removeAttribute("disabled");
-          alert("تعذر بدء الدفع، حاول مرة أخرى");
-        }
-        return true;
-      }
-      return false;
-    };
-
-    const clickHandler = (e: Event) => {
-      const target = e.target as HTMLElement;
-      const cta = target.closest("[data-action]");
-      if (cta) {
-        e.preventDefault();
-        onCtaClick(cta).catch(() => {});
-        return;
-      }
-      const anchor = target.closest("a[href^='#']");
-      if (anchor) {
-        const id = anchor.getAttribute("href")?.slice(1);
-        if (id) {
-          const dest = document.getElementById(id);
-          if (dest) {
-            e.preventDefault();
-            dest.scrollIntoView({ behavior: "smooth" });
-          }
-        }
-      }
-    };
-    root.addEventListener("click", clickHandler);
-
-    // ── WhatsApp lead form (secondary channel, utm passthrough) ──
-    const submitHandler = (e: Event) => {
-      const form = e.target as HTMLFormElement;
-      if (form.id !== "leadForm") return;
-      e.preventDefault();
-      const msg = document.getElementById("formMsg");
-      const n = form.elements.namedItem("name") as HTMLInputElement | null;
-      const p = form.elements.namedItem("phone") as HTMLInputElement | null;
-      const t = form.elements.namedItem("type") as HTMLSelectElement | null;
-      if (!n?.value.trim()) {
-        if (msg) msg.textContent = "اكتب اسمك الأول.";
-        n?.focus();
-        return;
-      }
-      if (!p?.value.trim()) {
-        if (msg) msg.textContent = "اكتب رقم الموبايل.";
-        p?.focus();
-        return;
-      }
-      const utm = readUtm();
-      const text =
-        "أهلاً، عايز أفتح متجر مجاني على MaxP.\n" +
-        "الاسم: " + n.value.trim() + "\n" +
-        "الموبايل: " + p.value.trim() + "\n" +
-        "النشاط: " + (t?.value || "غير محدد") +
-        buildUtmSuffix(utm);
-      window.dataLayer = window.dataLayer || [];
-      (window as unknown as { dataLayer: unknown[] }).dataLayer.push({ event: "lead_submit", cta: "form-submit", utm });
-      if (msg) msg.textContent = "بنجهز لك المحادثة…";
-      window.open(
-        `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`,
-        "_blank",
-        "noopener"
-      );
-    };
-    root.addEventListener("submit", submitHandler);
-
-    // ── Demo quick replies ──
-    const REPLIES: Record<string, string> = {
-      "الشحن لمصر الجديدة بياخد قد إيه؟": "التوصيل متاح لمصر الجديدة، والدفع عند الاستلام متاح كمان.",
-      "عندي مقاس 44؟": "مقاس 44 متاح — تحب أحجزه مع الأوردر؟",
-      "عايز أرجّع المقاس": "تمام، بنسجّل المرتجع بسبب «المقاس»، والمندوب بيوصلك للاستلام."
-    };
-    const thread = root.querySelector("#thread");
-    const demoHandler = (e: Event) => {
-      const btn = (e.target as HTMLElement).closest("#qp button") as HTMLButtonElement | null;
-      if (!btn) return;
-      const qq = btn.getAttribute("data-q") || "";
-      if (thread) {
-        thread.insertAdjacentHTML(
-          "beforeend",
-          `<p class="who">العميل</p><div class="bub">${qq}<time>الآن</time></div>`
-        );
-      }
-      window.dataLayer = window.dataLayer || [];
-      (window as unknown as { dataLayer: unknown[] }).dataLayer.push({ event: "demo_click", cta: qq });
-      window.setTimeout(() => {
-        if (thread) {
-          thread.insertAdjacentHTML(
-            "beforeend",
-            `<p class="who">رد المنصة</p><div class="bub out">${REPLIES[qq] || ""}<time>الآن</time></div>`
-          );
-        }
-      }, 420);
-    };
-    root.addEventListener("click", demoHandler);
-
-    // ── Reveal on scroll (fail-safe) ──
-    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || false;
-    const sections = Array.from(root.querySelectorAll("section"));
-    let cleanupReveal = () => {};
-    if (!reduceMotion && sections.length) {
-      sections.forEach((s) => s.classList.add("rv"));
-      const io = typeof IntersectionObserver === "function"
-        ? new IntersectionObserver(
-            (entries) => entries.forEach((en) => en.isIntersecting && en.target.classList.add("seen")),
-            { rootMargin: "0px 0px -8% 0px" }
-          )
-        : null;
-      if (io) sections.forEach((s) => io.observe(s));
-      const reveal = () => sections.forEach((s) => {
-        if (!s.classList.contains("seen") && s.getBoundingClientRect().top < window.innerHeight * 0.94) {
-          s.classList.add("seen");
-        }
+  const buildQueryString = useCallback(
+    (extraParams: Record<string, string> = {}) => {
+      const parts: string[] = [`landingBundle=${LANDING_SLUG}`];
+      Object.entries(extraParams).forEach(([k, v]) => {
+        if (v) parts.push(`${k}=${encodeURIComponent(v)}`);
       });
-      window.addEventListener("scroll", reveal, { passive: true });
-      const showAll = window.setTimeout(() => sections.forEach((s) => s.classList.add("seen")), 1500);
-      cleanupReveal = () => {
-        io?.disconnect();
-        window.removeEventListener("scroll", reveal);
-        window.clearTimeout(showAll);
-      };
+      UTM_KEYS.forEach((k) => {
+        if (utm[k]) parts.push(`${k}=${encodeURIComponent(utm[k] as string)}`);
+      });
+      parts.push(`redirect=${encodeURIComponent(`/lp/${LANDING_SLUG}`)}`);
+      return parts.join("&");
+    },
+    [utm]
+  );
+
+  // ── Registration & Checkout Handlers ──
+  const handleFreeRegister = useCallback(() => {
+    const q = buildQueryString({ tier: "free" });
+    navigate(`/auth/register?${q}`);
+  }, [navigate, buildQueryString]);
+
+  const handlePaygRegister = useCallback(() => {
+    const q = buildQueryString({ tier: "payg" });
+    navigate(`/auth/register?${q}`);
+  }, [navigate, buildQueryString]);
+
+  const handleBundleCheckout = useCallback(async () => {
+    const token = tokenManager.getAccessToken ? tokenManager.getAccessToken() : tokenManager.getToken?.();
+
+    // If user is not logged in, take them to register with plan intent
+    if (!token) {
+      const q = buildQueryString({ plan: "999", tier: "bundle" });
+      navigate(`/auth/register?${q}`);
+      return;
     }
 
-    // ── Sticky mobile CTA ──
-    const sticky = root.querySelector<HTMLElement>("#stickyCta");
-    const syncSticky = () => sticky?.classList.toggle("on", window.pageYOffset > 380);
-    window.addEventListener("scroll", syncSticky, { passive: true });
-    syncSticky();
+    // Direct Kashier hosted checkout for authenticated user
+    setIsCheckingOut(true);
+    try {
+      const res = await fetch(`/api/v1/marketplace/bundles/${BUNDLE_SLUG}/checkout`, {
+        method: "POST",
+        headers: {
+          ...tokenManager.createAuthHeaders({ "Content-Type": "application/json" }),
+        },
+        credentials: "include",
+        body: JSON.stringify({ utm, redirectUrl: window.location.href }),
+      });
 
-    return () => {
-      root.removeEventListener("click", clickHandler);
-      root.removeEventListener("submit", submitHandler);
-      root.removeEventListener("click", demoHandler);
-      cleanupReveal();
-      window.removeEventListener("scroll", syncSticky);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      const data = await res.json();
+      if (data?.success && data?.sessionUrl) {
+        window.location.href = data.sessionUrl;
+        return;
+      }
+      alert(data?.message || "تعذر بدء الدفع، حاول مرة أخرى.");
+    } catch {
+      alert("تعذر الاتصال ببوابة الدفع، حاول مرة أخرى.");
+    } finally {
+      setIsCheckingOut(false);
+    }
+  }, [navigate, buildQueryString, utm]);
+
+  const handleLogin = useCallback(() => {
+    navigate("/auth/login");
   }, [navigate]);
 
+  const scrollToPricing = useCallback(() => {
+    const el = document.getElementById("pricing");
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
   return (
-    <div
-      ref={rootRef}
-      className="cslp-root"
-      dir="rtl"
-      // v5 direction-A content (numbers frozen: 0 / 1 / 999 / 2,936) — static marketing
-      // markup wired through delegated listeners above.
-      dangerouslySetInnerHTML={{ __html: CLOTHING_STORE_LANDING_MARKUP }}
-    />
+    <div className="csn-root" dir="rtl">
+      {/* Platform Navigation */}
+      <ClothingStoreNavbar
+        onFreeRegister={handleFreeRegister}
+        onLogin={handleLogin}
+      />
+
+      {/* Main Content Sections */}
+      <main>
+        <ClothingStoreHero
+          onFreeRegister={handleFreeRegister}
+          onPricingScroll={scrollToPricing}
+        />
+
+        <ClothingStoreBento />
+
+        <ClothingStoreToolsGrid
+          onSelectBundle={scrollToPricing}
+        />
+
+        <ClothingStorePricing
+          onFreeRegister={handleFreeRegister}
+          onPaygRegister={handlePaygRegister}
+          onBundleCheckout={handleBundleCheckout}
+        />
+
+        <ClothingStoreLeadForm
+          utm={utm}
+          onFreeRegister={handleFreeRegister}
+        />
+
+        <ClothingStoreFAQ />
+      </main>
+
+      {/* Footer */}
+      <ClothingStoreFooter onFreeRegister={handleFreeRegister} />
+
+      {/* Sticky Mobile CTA Bar */}
+      <div className="csn-sticky-mobile">
+        <div className="flex flex-col">
+          <span className="text-[10px] text-gray-400">ابدأ الآن مجاناً</span>
+          <span className="text-sm font-bold text-white csn-tabular">0 ج.م / شهر</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={scrollToPricing}
+            className="csn-btn-secondary text-xs py-2 px-3 whitespace-nowrap"
+          >
+            الباقة 999
+          </button>
+          <button
+            type="button"
+            onClick={handleFreeRegister}
+            className="csn-btn-primary text-xs py-2 px-3 whitespace-nowrap"
+          >
+            <span>افتح متجرك</span>
+            <ArrowLeft className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
