@@ -9,6 +9,10 @@ import ErrorBoundary from "../common/ErrorBoundary";
 import { APP_REGISTRY } from "../../config/appRegistry";
 
 export const APP_SLUG_ALIASES: Record<string, string[]> = {
+  "product-break-even-calculator": ["break-even"],
+  "pricing-strategy-calculator": ["pricing-strategy"],
+  "discount-impact-calculator": ["discount-impact"],
+  "refund-rate-calculator": ["refund-rate"],
   "whatsapp-business": [
     "whatsapp-integration",
     "whatsapp-inbox",
