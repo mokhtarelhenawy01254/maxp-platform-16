@@ -296,11 +296,12 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
 
   useCategories(undefined, { enabled: shouldWarmLayoutCategories });
 
+  const isPostPurchaseOfferPage = normalizedPath.endsWith("/order-offer");
   const isMinimal =
     isProductImageLandingPage ||
     isFunnelPage ||
     normalizedPath.endsWith("/checkout") ||
-    normalizedPath.endsWith("/order-offer") ||
+    isPostPurchaseOfferPage ||
     normalizedPath.endsWith("/thank-you");
   const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
   const isKhemetLuxeInnerRoute =
@@ -1446,7 +1447,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         </React.Suspense>
       ) : null}
       {isGracefulTheme ? <GracefulScrollTop /> : null}
-      {!isProductImageLandingPage ? <FreeShippingBar /> : null}
+      {!isProductImageLandingPage && !isPostPurchaseOfferPage ? <FreeShippingBar /> : null}
       {!isProductImageLandingPage ? <StorePromotionBar /> : null}
       {!isProductImageLandingPage && !isFastlyTheme && !isGracefulTheme && canRenderConversionHosts ? (
         <>

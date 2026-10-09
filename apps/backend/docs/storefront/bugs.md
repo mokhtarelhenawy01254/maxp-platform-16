@@ -2,6 +2,23 @@
 
 > Domain-specific bug tracker for all storefront, theme, template, and PDP/Shop/Cart/Checkout issues.
 
+### [FIX — UX] Post-Purchase Offer Variant Picker Upgraded to Grouped Color+Size UI (2026-10-09)
+- **Description**: On `/order-offer` the variant picker rendered 10 flat chips with full repeated names ("أبيض × أسود - 37" … "أبيض × نبيتي - 41") with jagged mobile wrapping, interleaved colors mid-grid, and a default variant (smallest size 37) pre-selected, which risked wrong-size orders/RTO.
+- **Root Cause**: The post-purchase offer page lacked two-tier variant decomposition logic and selected the first variant by default. Additionally, `FreeShippingBar` appeared at the top of `/order-offer`, clashing with the offer's own free-shipping messaging.
+- **Fix**:
+  1. Implemented two-tier variant decomposition (`parseVariantOptions` and `groupedData`) in `PostPurchaseOfferPage.tsx` supporting option metadata with regex fallback (`/^(.*?)\s*-\s*(\d{1,3})$/`).
+  2. Removed default selection so the page loads with no variant pre-selected.
+  3. Added feminine section headers ("اختاري اللون" with emerald selection badge, "اختاري المقاس" with clean numeric chips).
+  4. Fortified CTA: clicking without full selection displays a polite toast (`"اختاري اللون والمقاس الأول 🙏"`), scrolls to the picker, and blocks any API request.
+  5. Implemented stock guard disabling out-of-stock sizes with line-through and tooltip, and color switching size preservation/clearing logic.
+  6. Provided safe fallback to flat chips if variants cannot be parsed.
+  7. Hidden `FreeShippingBar` specifically on the `/order-offer` route in `StorefrontShell.tsx`.
+- **Verification & Acceptance**:
+  - 7 Vitest unit & integration tests passed in `apps/frontend/src/storefront/__tests__/postPurchaseOfferPicker.test.tsx`.
+  - Playwright live browser test passed with 0 console errors on mobile (390px) and desktop (1280px).
+  - Evidence captured: `docs/evidence/post-purchase-offer/swan_offer_picker_after_mobile.png`, `swan_offer_picker_after_desktop.png`.
+- **Full task doc**: `docs/post-purchase-offer-picker-ux-2026-10-09.md`
+
 ### [FIX] Post-Purchase Offer Public API Crashes When a Product Is Selected (2026-10-09)
 - **Description**: Enabling the post-purchase offer for the Swan store (`swan.maxp.online`) with a selected product (Swan Aura) made the public offer endpoint return HTTP 500, so the storefront `/order-offer` page could not load the product/variants (size picker missing).
 - **Root Cause**: `postPurchaseOfferController.js` selected the non-existent `imageUrl` field on the Product model (schema only has `mainImage` + `images`). It only fired once `offer.productId` was set (enrichment path).

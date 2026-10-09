@@ -24,6 +24,54 @@ import type {
 } from "../../types/postPurchaseOffer";
 import { DEFAULT_POST_PURCHASE_OFFER } from "../../types/postPurchaseOffer";
 
+interface ParsedVariantInfo {
+  variant: PostPurchaseOfferProductVariant;
+  colorLabel: string;
+  sizeLabel: string;
+}
+
+const VARIANT_NAME_REGEX = /^(.*?)\s*-\s*(\d{1,3})$/;
+
+function parseVariantOptions(
+  variant: PostPurchaseOfferProductVariant
+): { colorLabel: string; sizeLabel: string } | null {
+  // 1. Prefer options/metadata if non-empty
+  const rawOptions =
+    variant.options ||
+    (variant as any).metadata?.attributeValues ||
+    (variant as any).attributes ||
+    {};
+  if (
+    rawOptions &&
+    typeof rawOptions === "object" &&
+    Object.keys(rawOptions).length > 0
+  ) {
+    let color: string | undefined;
+    let size: string | undefined;
+    for (const [k, v] of Object.entries(rawOptions)) {
+      if (/لون|color|colour/i.test(k) && v) color = String(v).trim();
+      else if (/مقاس|size/i.test(k) && v) size = String(v).trim();
+    }
+    if (color && size) {
+      return { colorLabel: color, sizeLabel: size };
+    }
+  }
+
+  // 2. Fallback to name regex ^(.*?)\s*-\s*(\d{1,3})$
+  if (variant.name) {
+    const match = variant.name.match(VARIANT_NAME_REGEX);
+    if (match) {
+      const colorLabel = match[1].trim();
+      const sizeLabel = match[2].trim();
+      if (colorLabel && sizeLabel) {
+        return { colorLabel, sizeLabel };
+      }
+    }
+  }
+
+  return null;
+}
+
 export default function PostPurchaseOfferPage() {
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -40,11 +88,14 @@ export default function PostPurchaseOfferPage() {
   const [loading, setLoading] = useState(true);
   const [offer, setOffer] = useState<PostPurchaseOfferConfig | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<PostPurchaseOfferProductVariant | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [accepting, setAccepting] = useState(false);
   const [secondsRemaining, setSecondsRemaining] = useState(300); // 5 min default
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const variantPickerRef = useRef<HTMLDivElement | null>(null);
   const isRtl = theme?.direction !== "ltr";
 
   // Build safe thank-you path
@@ -81,13 +132,7 @@ export default function PostPurchaseOfferPage() {
           setOffer(fetchedOffer);
           setSecondsRemaining((fetchedOffer.timerMinutes || 5) * 60);
 
-          // Select first variant if available
-          if (
-            fetchedOffer.product?.variants &&
-            fetchedOffer.product.variants.length > 0
-          ) {
-            setSelectedVariant(fetchedOffer.product.variants[0]);
-          }
+          // No default variant selection - customer chooses color & size manually
         } else if (!tokens?.enabled) {
           // No active offer, seamlessly continue to thank-you page
           navigate(thankYouPath, { replace: true });
@@ -186,8 +231,120 @@ export default function PostPurchaseOfferPage() {
   const savingsPercent =
     originalPrice > 0 ? Math.round((savingsAmount / originalPrice) * 100) : 0;
 
+  // Grouped variants parsing
+  const parsedVariants = useMemo<ParsedVariantInfo[] | null>(() => {
+    const rawVariants = offer?.product?.variants;
+    if (!rawVariants || rawVariants.length <= 1) return null;
+
+    const parsedList: ParsedVariantInfo[] = [];
+    for (const v of rawVariants) {
+      const parsed = parseVariantOptions(v);
+      if (!parsed) {
+        // Fallback completely to flat list if ANY variant cannot be parsed
+        return null;
+      }
+      parsedList.push({
+        variant: v,
+        colorLabel: parsed.colorLabel,
+        sizeLabel: parsed.sizeLabel
+      });
+    }
+    return parsedList;
+  }, [offer?.product?.variants]);
+
+  const groupedData = useMemo(() => {
+    if (!parsedVariants || parsedVariants.length === 0) return null;
+
+    // Unique colors in appearance order
+    const colors: string[] = [];
+    const allSizesSet = new Set<string>();
+
+    for (const item of parsedVariants) {
+      if (!colors.includes(item.colorLabel)) {
+        colors.push(item.colorLabel);
+      }
+      allSizesSet.add(item.sizeLabel);
+    }
+
+    // Sort sizes ascending numerically
+    const allSizes = Array.from(allSizesSet).sort((a, b) => {
+      const numA = Number(a);
+      const numB = Number(b);
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return numA - numB;
+      }
+      return a.localeCompare(b, undefined, { numeric: true });
+    });
+
+    return {
+      colors,
+      allSizes,
+      parsedVariants
+    };
+  }, [parsedVariants]);
+
+  // Color selection: if current size exists in new color -> keep it, else clear size
+  const handleSelectColor = (color: string) => {
+    setSelectedColor(color);
+
+    if (selectedSize) {
+      const matching = groupedData?.parsedVariants.find(
+        (p) => p.colorLabel === color && p.sizeLabel === selectedSize
+      );
+      const isAvailable =
+        matching?.variant &&
+        (typeof matching.variant.stock !== "number" || matching.variant.stock > 0);
+
+      if (matching && isAvailable) {
+        setSelectedVariant(matching.variant);
+      } else {
+        setSelectedSize(null);
+        setSelectedVariant(null);
+      }
+    } else {
+      setSelectedVariant(null);
+    }
+  };
+
+  // Size selection
+  const handleSelectSize = (size: string) => {
+    setSelectedSize(size);
+
+    if (selectedColor) {
+      const matching = groupedData?.parsedVariants.find(
+        (p) => p.colorLabel === selectedColor && p.sizeLabel === size
+      );
+      if (matching) {
+        setSelectedVariant(matching.variant);
+      }
+    }
+  };
+
   // Handle Offer Acceptance
   const handleAcceptOffer = async () => {
+    // Fortified variant check: If product has variants, require valid in-stock variant selection
+    if (offer?.product?.variants && offer.product.variants.length > 0) {
+      if (!selectedVariant) {
+        toast.error(
+          groupedData
+            ? "اختاري اللون والمقاس الأول 🙏"
+            : "اختاري الخيار المناسب أولاً 🙏"
+        );
+        if (typeof variantPickerRef.current?.scrollIntoView === "function") {
+          variantPickerRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+          });
+        }
+        return;
+      }
+
+      if (typeof selectedVariant.stock === "number" && selectedVariant.stock <= 0) {
+        toast.error("عذراً، هذا المقاس غير متوفر بالمخزون حالياً 🙏");
+        return;
+      }
+    }
+
     if (!orderId) {
       toast.error("رقم الطلب غير متاح، جارٍ نقلك إلى صفحة التأكيد...");
       navigate(thankYouPath);
@@ -368,31 +525,126 @@ export default function PostPurchaseOfferPage() {
                 )}
               </div>
 
-              {/* Variant Picker (Sizes / Colors) */}
+              {/* Variant Picker (Color -> Size Grouped, or Flat Fallback) */}
               {offer.product?.variants && offer.product.variants.length > 1 && (
-                <div className="space-y-2 pt-1 border-t border-border/60">
-                  <label className="text-xs font-bold text-foreground block">
-                    اختر الخيار المناسب:
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {offer.product.variants.map((v) => {
-                      const isSelected = selectedVariant?.id === v.id;
-                      return (
-                        <button
-                          key={v.id}
-                          type="button"
-                          onClick={() => setSelectedVariant(v)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                            isSelected
-                              ? "border-emerald-600 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 shadow-sm"
-                              : "border-border hover:bg-muted/40 text-foreground"
-                          }`}
-                        >
-                          {v.name}
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div ref={variantPickerRef} className="space-y-3.5 pt-3 border-t border-border/60">
+                  {groupedData ? (
+                    <>
+                      {/* 1. Color Selection Row */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
+                          <span>اختاري اللون</span>
+                          {selectedColor && (
+                            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                              : {selectedColor}
+                            </span>
+                          )}
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {groupedData.colors.map((color) => {
+                            const isSelected = selectedColor === color;
+                            return (
+                              <button
+                                key={color}
+                                type="button"
+                                onClick={() => handleSelectColor(color)}
+                                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-all flex items-center gap-1.5 cursor-pointer active:scale-[0.98] ${
+                                  isSelected
+                                    ? "border-emerald-600 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 shadow-sm ring-1 ring-emerald-600/30"
+                                    : "border-border hover:border-emerald-500/40 hover:bg-muted/40 text-foreground"
+                                }`}
+                              >
+                                {isSelected && (
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                )}
+                                <span>{color}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* 2. Size Selection Row */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
+                          <span>اختاري المقاس</span>
+                          {selectedSize && (
+                            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                              : {selectedSize}
+                            </span>
+                          )}
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {groupedData.allSizes.map((size) => {
+                            const isSelected = selectedSize === size;
+                            const matchingVariant = selectedColor
+                              ? groupedData.parsedVariants.find(
+                                  (p) =>
+                                    p.colorLabel === selectedColor &&
+                                    p.sizeLabel === size
+                                )?.variant
+                              : null;
+
+                            // If color is chosen, check if variant exists for this color & has stock > 0
+                            const isUnavailable = selectedColor
+                              ? !matchingVariant ||
+                                (typeof matchingVariant.stock === "number" &&
+                                  matchingVariant.stock <= 0)
+                              : false;
+
+                            return (
+                              <button
+                                key={size}
+                                type="button"
+                                disabled={isUnavailable}
+                                onClick={() => handleSelectSize(size)}
+                                className={`min-w-[44px] h-10 px-3 rounded-xl text-xs sm:text-sm font-bold border transition-all flex items-center justify-center tabular-nums active:scale-[0.98] ${
+                                  isUnavailable
+                                    ? "border-border/40 bg-muted/20 text-muted-foreground/50 opacity-40 cursor-not-allowed line-through"
+                                    : isSelected
+                                    ? "border-emerald-600 bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600/30"
+                                    : "border-border/80 bg-background hover:border-emerald-500/50 hover:bg-muted/40 text-foreground cursor-pointer"
+                                }`}
+                              >
+                                {size}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    /* Fallback Flat Chips View (Safe Failover if any variant is unparseable) */
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-foreground block">
+                        اختاري الخيار المناسب:
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {offer.product.variants.map((v) => {
+                          const isSelected = selectedVariant?.id === v.id;
+                          const isUnavailable =
+                            typeof v.stock === "number" && v.stock <= 0;
+                          return (
+                            <button
+                              key={v.id}
+                              type="button"
+                              disabled={isUnavailable}
+                              onClick={() => setSelectedVariant(v)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                                isUnavailable
+                                  ? "border-border/40 bg-muted/20 text-muted-foreground/50 opacity-40 cursor-not-allowed line-through"
+                                  : isSelected
+                                  ? "border-emerald-600 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 shadow-sm ring-1 ring-emerald-600/30"
+                                  : "border-border hover:bg-muted/40 text-foreground cursor-pointer"
+                              }`}
+                            >
+                              {v.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
