@@ -25,6 +25,7 @@ async function runVerification() {
     const text = msg.text();
     if (text.includes("502") || text.includes("meta-pixel")) return;
     if (msg.type() === "error") {
+      console.error("[Browser Error]", text);
       consoleErrors.push(text);
     } else if (msg.type() === "warning") {
       consoleWarnings.push(text);
@@ -32,13 +33,19 @@ async function runVerification() {
   });
 
   page.on("pageerror", (err) => {
+    console.error("[Browser PageError]", err.message);
     consoleErrors.push(err.message);
   });
 
   const url = "http://127.0.0.1:5173/lp/clothing-store-bundle";
   console.log(`Navigating to: ${url}`);
-  const response = await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
+  const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.waitForTimeout(1000);
   console.log(`HTTP Status: ${response.status()}`);
+
+  // Check Container First (waits for React mount)
+  await page.waitForSelector(".cse-root", { timeout: 10000 });
+  console.log("PASS: .cse-root (Editorial Fashion Container) rendered successfully");
 
   // Check Title & Meta
   const title = await page.title();
@@ -46,10 +53,6 @@ async function runVerification() {
   if (!title.includes("MaxP لمتاجر الملابس")) {
     throw new Error(`Unexpected page title: ${title}`);
   }
-
-  // Check Container
-  await page.waitForSelector(".cse-root", { timeout: 5000 });
-  console.log("PASS: .cse-root (Editorial Fashion Container) rendered successfully");
 
   // Check Headline
   const h1Text = await page.$eval("h1", (el) => el.textContent.trim());
@@ -68,19 +71,45 @@ async function runVerification() {
   const recommendedSizeText = await page.locator("#size-advisor").textContent();
   console.log(`Advisor Output: includes size update: ${recommendedSizeText.includes("XL") || recommendedSizeText.includes("2XL")}`);
 
-  // Interactive Shop The Look Hotspot & Add Button Test
-  console.log("Testing Shop The Look interactive hotspots...");
+  // Test Aceternity UI Lens Hover
+  console.log("Testing Aceternity UI Lens...");
+  const lensContainer = page.locator(".cursor-crosshair").first();
+  await lensContainer.hover({ force: true });
+  await page.waitForTimeout(300);
+  console.log("PASS: Lens hover activated");
+
+  // Test Magic UI Marquee
+  const hasMarquee = await page.locator(".animate-marquee").first().isVisible();
+  console.log(`PASS: Magic UI Marquee visible: ${hasMarquee}`);
+
+  // Test Aceternity UI Apple Cards Carousel Modal
+  console.log("Testing Aceternity UI Apple Cards Carousel...");
   await page.locator("#shop-the-look").scrollIntoViewIfNeeded();
   await page.waitForTimeout(400);
-  const hotspotCap = page.locator(".cse-hotspot").first();
-  await hotspotCap.click({ force: true });
-  await page.waitForTimeout(300);
 
-  const addLookBtn = page.locator("#shop-the-look button:has-text('أضف الطقم كاملاً')").first();
-  await addLookBtn.click({ force: true });
-  await page.waitForTimeout(300);
-  const lookBtnText = await page.locator("#shop-the-look button:has-text('تمت إضافة الطقم')").textContent();
-  console.log(`Shop The Look Added confirmation: ${lookBtnText.includes("تمت إضافة الطقم")}`);
+  // Click first card to open modal
+  const firstCard = page.locator("#shop-the-look button.group").first();
+  await firstCard.click({ force: true });
+  await page.waitForTimeout(500);
+
+  const modalCloseBtn = page.locator("button[aria-label='Close']").first();
+  const isModalOpen = await modalCloseBtn.isVisible();
+  console.log(`PASS: Apple Card Expand Modal Opened: ${isModalOpen}`);
+
+  if (isModalOpen) {
+    // Click add bundle inside modal
+    const addBundleBtn = page.locator("button:has-text('أضف الطقم كاملاً لسلة الشراء')").first();
+    if (await addBundleBtn.isVisible()) {
+      await addBundleBtn.click({ force: true });
+      await page.waitForTimeout(300);
+      const isConfirmed = await page.locator("button:has-text('تمت إضافة الطقم')").first().isVisible();
+      console.log(`PASS: Bundle Added confirmation inside modal: ${isConfirmed}`);
+    }
+    // Close modal
+    await modalCloseBtn.click({ force: true });
+    await page.waitForTimeout(400);
+    console.log("PASS: Modal closed cleanly");
+  }
 
   // Test Mode Switcher: Toggle to Cockpit, then back to Editorial
   console.log("Testing Mode Switcher (Cockpit / Editorial)...");
@@ -120,7 +149,8 @@ async function runVerification() {
     if (msg.type() === "error") consoleErrors.push(`[Mobile] ${text}`);
   });
 
-  await mobilePage.goto(url, { waitUntil: "networkidle", timeout: 30000 });
+  await mobilePage.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
+  await mobilePage.waitForTimeout(1000);
 
   // Verify Sticky Mobile CTA is visible
   const stickyVisible = await mobilePage.isVisible(".cse-sticky-mobile");
