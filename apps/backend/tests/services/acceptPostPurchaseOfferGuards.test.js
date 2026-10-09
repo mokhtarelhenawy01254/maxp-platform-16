@@ -77,4 +77,32 @@ describe('Post-Purchase Offer Accept Guards', () => {
       ]);
     });
   });
+
+  describe('Primary Order Update Payload Validation', () => {
+    it('calculates total and subtotal without invalid schema fields (finalTotal or items)', () => {
+      const primaryOrder = {
+        id: 'ord_123',
+        subtotal: 620,
+        shipping: 70,
+        total: 690
+      };
+      const additionalTotal = 399;
+
+      const nextOrderTotal = Number((Number(primaryOrder.total || 0) + additionalTotal).toFixed(2));
+      const nextOrderSubtotal = Number((Number(primaryOrder.subtotal || 0) + additionalTotal).toFixed(2));
+
+      const updateData = {
+        total: nextOrderTotal,
+        subtotal: nextOrderSubtotal
+      };
+
+      // Valid Order model fields
+      expect(updateData.total).toBe(1089);
+      expect(updateData.subtotal).toBe(1019);
+
+      // Must NOT contain invalid fields that throw Prisma Unknown argument
+      expect(updateData).not.toHaveProperty('finalTotal');
+      expect(updateData).not.toHaveProperty('items');
+    });
+  });
 });

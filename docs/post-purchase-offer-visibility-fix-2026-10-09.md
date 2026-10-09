@@ -69,3 +69,16 @@ export function resolvePostPurchaseTarget(
 ## ملاحظات تشغيلية
 - **إلغاء أوردر اختباري:** `ORD-511828-979` (اسم: "تجربة نظام - للإلغاء") — اتعمل بواسطة Swan Ads agent لإثبات الباج. برجاء إلغاؤه (أو إبلاغي بمسار الإلغاء الرسمي).
 - بعد النشر سيعيد Swan Ads agent الاختبار الحي الكامل (أوردر جديد) ويقيس الوصول الفعلي لأول مرة.
+
+---
+
+## ✅ التحقق النهائي (Swan Ads agent — 20:20)
+تم النشر (باندل جديد 20:16) واختبار حي كامل نجح: أوردر `ORD-251748-226` اتوجّه فعلاً إلى `/order-offer` — أول تحويل حقيقي! المنتقي (لون/مقاس) + العداد شغالين، والاعتذار رجّع thank-you بدون أي تعديل على الأوردر (items=1، offerAccepted=false). إيفيدنس: `H:\swan ads\offer-live-after-visibility-fix.png`.
+
+## 📌 إضافة صغيرة (OPEN — سطر واحد في الباك-إند)
+`postPurchaseOfferController.js` (getPublicOffer، سطر ~336):
+```js
+const originalPrice = Number(product.price || offer.originalPrice || 0);  // ❌ product.price (549) أولاً
+```
+النتيجة: الـAPI العام بيطلع `originalPrice=549` متجاهلاً `offer.originalPrice` (850) → صفحة العرض في حالة "مفيش اختيار" بتعرض "~~549~~ 399 / وفر 27%" بينما العنوان "بدل 850" → تناقض ظاهر.
+**المطلوب:** اقلب الترتيب — `offer.originalPrice` ثم `product.comparePrice` ثم `product.price` → الصفحة هتعرض 850/وفر 451/53% متسقة في الحالتين (مفيش اختيار / مع اختيار).

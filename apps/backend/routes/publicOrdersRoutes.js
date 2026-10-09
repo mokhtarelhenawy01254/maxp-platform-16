@@ -3903,12 +3903,13 @@ router.post('/:id/accept-offer', async (req, res) => {
         }
       });
       if (primaryOrder) {
+        const nextOrderTotal = Number((Number(primaryOrder.total || 0) + additionalTotal).toFixed(2));
+        const nextOrderSubtotal = Number((Number(primaryOrder.subtotal || 0) + additionalTotal).toFixed(2));
         await prisma.order.update({
           where: { id: primaryOrder.id },
           data: {
-            total: nextTotal,
-            finalTotal: nextFinalTotal,
-            items: JSON.stringify(existingItems)
+            total: nextOrderTotal,
+            subtotal: nextOrderSubtotal
           }
         });
         await prisma.orderItem.create({

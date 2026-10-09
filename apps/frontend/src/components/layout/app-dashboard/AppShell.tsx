@@ -6,6 +6,7 @@ import AppSidebar from './AppSidebar';
 import AdminBottomNav from './AdminBottomNav';
 import { sectionHasVisibleItems, isChatRoute } from './helpers';
 import { isSidebarPathActive } from '../sidebar/matchSidebarPath';
+import PageExplanations from '../../common/PageExplanations';
 import { getAppById, APP_REGISTRY } from '../../../config/appRegistry';
 import type { AppDefinition } from '../../../config/appRegistry';
 import type { SidebarItem, SidebarSection } from '../../../types/layout';
@@ -211,14 +212,17 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
             <Bars3Icon aria-hidden="true" className="h-5 w-5" />
           </button>
           <div className="app-shell-mobile-header-title">{appName}</div>
-          <button
-            type="button"
-            onClick={handleBack}
-            aria-label={String(t('appDashboard.backToApps'))}
-            className="app-shell-mobile-header-button"
-          >
-            <ArrowUturnLeftIcon aria-hidden="true" className={`h-5 w-5 ${isRtl ? 'rotate-180' : ''}`} />
-          </button>
+          <div className="flex items-center gap-1.5 ms-auto">
+            <PageExplanations />
+            <button
+              type="button"
+              onClick={handleBack}
+              aria-label={String(t('appDashboard.backToApps'))}
+              className="app-shell-mobile-header-button"
+            >
+              <ArrowUturnLeftIcon aria-hidden="true" className={`h-5 w-5 ${isRtl ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
         </header>
       )}
 

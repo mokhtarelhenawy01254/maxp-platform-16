@@ -6,6 +6,7 @@ import type { SidebarSection } from '../../../types/layout';
 import { useAuth } from '../../../hooks/useAuthSimple';
 import { buildStoreUrl } from '../../../utils/storeUrl';
 import { isSidebarPathActive } from '../sidebar/matchSidebarPath';
+import PageExplanations from '../../common/PageExplanations';
 
 interface AppSidebarProps {
   appName: string;
@@ -148,6 +149,10 @@ const AppSidebarInner: React.FC<AppSidebarProps> = ({
           )}
         </div>
       </div>
+
+      {!isCollapsed && (
+        <PageExplanations className="px-4 py-2 border-b border-gray-100 dark:border-gray-800/80" />
+      )}
 
       <nav ref={navRef} className="app-shell-sidebar-content">
         {sections.map((section) => {

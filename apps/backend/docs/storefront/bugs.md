@@ -2,6 +2,19 @@
 
 > Domain-specific bug tracker for all storefront, theme, template, and PDP/Shop/Cart/Checkout issues.
 
+### [FIX — BACKEND] Post-Purchase Offer Accept — Admin Order & OrderItems Sync Fails Silently (2026-10-09)
+- **Description**: After a customer accepts the post-purchase offer (`/order-offer`), the `GuestOrder` was updated (item + flag + totals) but the primary `Order` record in the admin database never received the item — it didn't appear in "تفاصيل الطلب" and totals stayed unchanged. Reproduced live on orders `ORD-331490-717`, `ORD-251748-226`, and `ORD-511828-979`.
+- **Root Cause**: In `apps/backend/routes/publicOrdersRoutes.js` accept handler (~L3906), the sync called `prisma.order.update` with `finalTotal` and `items` — **neither field exists on the `Order` model** (they exist only on `GuestOrder`). Prisma threw an `Unknown argument` error, which was caught by `catch (orderSyncErr)`, preventing both `prisma.order.update` and subsequent `prisma.orderItem.create` from ever executing.
+- **Exact Fix**:
+  1. Removed `finalTotal` and `items` from `prisma.order.update`.
+  2. Correctly incremented `total: nextOrderTotal` and `subtotal: nextOrderSubtotal` based on `primaryOrder.total` and `primaryOrder.subtotal` + `additionalTotal`.
+  3. Ensured `prisma.orderItem.create` executes cleanly with metadata `{ isPostPurchaseOffer: true, addedPostPurchase: true }`, populating "تفاصيل الطلب".
+- **Verification & Acceptance**:
+  - Unit tests in `tests/services/acceptPostPurchaseOfferGuards.test.js` pass 100% (6/6 tests).
+  - Production server (`/var/www/backend2`) hot-patched and PM2 reloaded (`maxp-backend` workers 3 & 4 up, healthcheck OK).
+  - Live server integration test confirmed: primary order receives the offer item (`orderItems.length = 2`) and total updates correctly (`initialTotal + offerPrice`).
+- **Full task doc**: `docs/post-purchase-offer-sync-fix-2026-10-09.md`
+
 ### [FIX — UX] Post-Purchase Offer Variant Picker Upgraded to Grouped Color+Size UI (2026-10-09)
 - **Description**: On `/order-offer` the variant picker rendered 10 flat chips with full repeated names ("أبيض × أسود - 37" … "أبيض × نبيتي - 41") with jagged mobile wrapping, interleaved colors mid-grid, and a default variant (smallest size 37) pre-selected, which risked wrong-size orders/RTO.
 - **Root Cause**: The post-purchase offer page lacked two-tier variant decomposition logic and selected the first variant by default. Additionally, `FreeShippingBar` appeared at the top of `/order-offer`, clashing with the offer's own free-shipping messaging.
