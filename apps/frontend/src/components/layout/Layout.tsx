@@ -11,6 +11,7 @@ import {
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   ShieldCheckIcon,
+  BookOpenIcon,
 } from "@heroicons/react/24/outline";
 import { Cpu } from "lucide-react";
 import { MerchantCopilotHost, toggleMerchantCopilot } from "../merchant-copilot";
@@ -610,6 +611,14 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
                   <span>{t("sidebar.settings")}</span>
                 </Link>
               ) : null}
+              <Link
+                to="/app-explanations"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors no-underline"
+                onClick={() => setIsProfileMenuOpen(false)}
+              >
+                <BookOpenIcon className="h-4 w-4 text-gray-500 dark:text-gray-400 shrink-0" />
+                <span>{t("sidebar.platformExplanations", "شرح المنصة")}</span>
+              </Link>
               {isSuperAdmin && (
                 <Link
                   to="/super-admin/dashboard"
@@ -869,13 +878,6 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
         data-template={templateId}
       >
         {isAppsDashboard && headerBlock}
-        {/* شرح التطبيقات على باقي صفحات الـapp-dashboard (غير /apps) —
-            شريط رفيع بنفس منطق by-route، ظاهر على الديسكتوب والموبايل */}
-        {!isAppsDashboard && (
-          <div className="flex items-center justify-end gap-2 px-3 pt-2 sm:px-4">
-            <PageExplanations />
-          </div>
-        )}
         {isAppsDashboard && isMobile && (
           <div
             className="business-mobile-overlay"

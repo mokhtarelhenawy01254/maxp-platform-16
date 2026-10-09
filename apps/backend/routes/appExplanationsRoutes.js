@@ -44,12 +44,24 @@ router.get("/by-route", async (req, res) => {
 
     // Filter: match if the current route starts with the targetRoute —
     // targetRoute الفارغ يُعتبر مطابقًا لكل الصفحات
-    const filtered = (explanations || []).filter((exp) => {
+    const current = route.replace(/\/+$/, "");
+    const matches = (explanations || []).filter((exp) => {
       const target = (exp.targetRoute || "").replace(/\/+$/, "");
-      const current = route.replace(/\/+$/, "");
       if (!target) return true;
       return current === target || current.startsWith(target + "/");
     });
+
+    // لو فيه شرح مطابق للمسار بالظبط، نخفي شروحات الصفحات الأب (prefix match)
+    // مثال: /orders/preparation كان بيوريك «أول أوردر» (من /orders) + «التجهيز» — بقى يوريك التجهيز بس
+    const hasExactMatch = matches.some(
+      (exp) => (exp.targetRoute || "").replace(/\/+$/, "") === current
+    );
+    const filtered = hasExactMatch
+      ? matches.filter((exp) => {
+          const target = (exp.targetRoute || "").replace(/\/+$/, "");
+          return !target || target === current;
+        })
+      : matches;
 
     res.json({ success: true, explanations: filtered });
   } catch (error) {

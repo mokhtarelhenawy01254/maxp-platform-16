@@ -39,7 +39,25 @@ function getYouTubeEmbedUrl(url: string): string | null {
   return null;
 }
 
-const PageExplanations: React.FC = () => {
+/**
+ * Detects a self-hosted video file (mp4/webm/ogg/mov/m3u8) that can play in a native <video>.
+ */
+function getDirectVideoUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const path = u.pathname + u.search;
+    if (/\.(mp4|webm|ogg|ogv|mov|m4v|m3u8)(\?|#|$)/i.test(path)) return url;
+  } catch {
+    // not a valid URL
+  }
+  return null;
+}
+
+export interface PageExplanationsProps {
+  className?: string;
+}
+
+const PageExplanations: React.FC<PageExplanationsProps> = ({ className }) => {
   const location = useLocation();
   const [explanations, setExplanations] = useState<Explanation[]>([]);
   const [selectedExp, setSelectedExp] = useState<Explanation | null>(null);
@@ -72,11 +90,15 @@ const PageExplanations: React.FC = () => {
   const embedUrl = selectedExp?.videoUrl
     ? getYouTubeEmbedUrl(selectedExp.videoUrl)
     : null;
+  const directVideoUrl =
+    selectedExp?.videoUrl && !embedUrl
+      ? getDirectVideoUrl(selectedExp.videoUrl)
+      : null;
 
   return (
     <>
       {/* Buttons in the header */}
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className={`flex items-center gap-1.5 flex-wrap ${className || ""}`}>
         {explanations.map((exp) => (
           <button
             key={exp.id}
@@ -87,7 +109,7 @@ const PageExplanations: React.FC = () => {
               text-gray-700 dark:text-gray-200
               hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700
               dark:hover:bg-blue-900/30 dark:hover:border-blue-600 dark:hover:text-blue-300
-              transition-all duration-200 cursor-pointer"
+              transition-all duration-200 cursor-pointer max-w-full"
           >
             {exp.videoUrl ? (
               <PlayCircleIcon className="h-4 w-4 text-red-500 flex-shrink-0" />
@@ -106,7 +128,7 @@ const PageExplanations: React.FC = () => {
                 />
               </svg>
             )}
-            <span>{exp.title}</span>
+            <span className="truncate">{exp.title}</span>
           </button>
         ))}
       </div>
@@ -152,7 +174,20 @@ const PageExplanations: React.FC = () => {
               )}
 
               {/* If video URL exists but can't be embedded, show link */}
-              {selectedExp.videoUrl && !embedUrl && (
+              {/* Direct video file (self-hosted mp4/webm/ogg) — native player */}
+              {directVideoUrl && (
+                <div className="w-full mb-4 rounded-xl overflow-hidden bg-black">
+                  <video
+                    className="w-full max-h-[60vh]"
+                    src={directVideoUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                  />
+                </div>
+              )}
+
+              {selectedExp.videoUrl && !embedUrl && !directVideoUrl && (
                 <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
                   <a
                     href={selectedExp.videoUrl}
