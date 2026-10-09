@@ -3741,6 +3741,16 @@ router.post('/:id/accept-offer', async (req, res) => {
       return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
     }
 
+    // ⏰ حماية زمنية: ارفض القبول لو order.createdAt أقدم من 6 ساعات
+    const orderCreatedAt = order.createdAt ? new Date(order.createdAt).getTime() : 0;
+    const sixHoursMs = 6 * 60 * 60 * 1000;
+    if (orderCreatedAt && (Date.now() - orderCreatedAt > sixHoursMs)) {
+      return res.status(400).json({
+        success: false,
+        message: 'انتهت صلاحية العرض لهذا الطلب'
+      });
+    }
+
     let metadata = {};
     try {
       metadata = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : (order.metadata || {});
@@ -3883,7 +3893,14 @@ router.post('/:id/accept-offer', async (req, res) => {
     // Also sync to primary order and create orderItem row if primary order exists
     try {
       const primaryOrder = await prisma.order.findFirst({
-        where: { orderNumber: order.orderNumber, companyId: company.id }
+        where: {
+          companyId: company.id,
+          OR: [
+            { id: order.orderNumber },
+            { orderNumber: order.orderNumber },
+            { id: order.id }
+          ]
+        }
       });
       if (primaryOrder) {
         await prisma.order.update({
@@ -3910,9 +3927,11 @@ router.post('/:id/accept-offer', async (req, res) => {
             metadata: JSON.stringify({ isPostPurchaseOffer: true, addedPostPurchase: true, attributes: resolvedAttributes || {} })
           }
         });
+      } else {
+        console.warn('⚠️ [POST-PURCHASE-OFFER] Primary order not found for sync:', order.orderNumber);
       }
     } catch (orderSyncErr) {
-      console.warn('⚠️ [POST-PURCHASE-OFFER] Sync to primary order warning:', orderSyncErr.message);
+      console.error('❌ [POST-PURCHASE-OFFER] Sync to primary order error:', orderSyncErr);
     }
 
     // Decrement stock if tracking enabled

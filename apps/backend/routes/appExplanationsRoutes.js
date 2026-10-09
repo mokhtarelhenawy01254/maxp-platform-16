@@ -31,22 +31,23 @@ router.get("/by-route", async (req, res) => {
       return res.json({ success: true, explanations: [] });
     }
 
+    // جلب الشروحات النشطة: ذات مسار محدد + شرح «كل الصفحات» (targetRoute فارغ
+    // = يظهر كزر في كل صفحات التطبيق — قرار المنتج 2026-10-09)
     const explanations = await prisma.appExplanation.findMany({
       where: {
         isActive: true,
-        targetRoute: {
-          not: "",
-        },
       },
       orderBy: {
         order: "asc",
       },
     });
 
-    // Filter: match if the current route starts with the targetRoute
+    // Filter: match if the current route starts with the targetRoute —
+    // targetRoute الفارغ يُعتبر مطابقًا لكل الصفحات
     const filtered = (explanations || []).filter((exp) => {
-      const target = exp.targetRoute.replace(/\/+$/, "");
+      const target = (exp.targetRoute || "").replace(/\/+$/, "");
       const current = route.replace(/\/+$/, "");
+      if (!target) return true;
       return current === target || current.startsWith(target + "/");
     });
 
