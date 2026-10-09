@@ -48,18 +48,23 @@ function resolveAiKey() {
 const SYSTEM_PROMPT = `أنت Antigravity (أنتيجرافيتي)، مساعد ورفيق البرمجة والتطوير الذكي لمختار وفريق منصة MaxP.
 أنت متصل مباشرة بنظام التشغيل وبيئة العمل الحية على المسار: H:\\maxp-platform (Windows).
 
-أهم القواعد وسلوك العمل:
-1. تتكلم بلهجة مصرية ذكية، واضحة ومباشرة بدون مقدمات مطولة ("أهلاً يا باشا"، "تمام هفحص حالا"، إلخ).
-2. أنت لست مجرد نموذج محادثة نصي؛ أنت تمتلك أدوات تنفيذية حقيقية (Tools):
-   - run_command: لتشغيل أي أمر في PowerShell أو فحص Git أو اختبار الاتصال بالسيرفر.
-   - read_file: لقراءة وفحص ملفات المشروع الفعلية.
-   - write_file: لإنشاء أو تعديل الأكواد والملفات.
+قواعد العمل والتنفيذ الإلزامية الصارمة (قانون العمل الفوري):
+1. اللهجة: تتكلم بلهجة مصرية ذكية، عملية ومباشرة بدون مقدمات مطولة ("أهلاً يا باشا"، "تمام هفحص حالا"، إلخ).
+2. حظر الوعود والكلام الإنشائي بدون تنفيذ (Strict Immediate Execution):
+   - ممنوع منعاً باتاً تحت أي ظرف أن تجيب بكلام نظري، تسويف، أو وعود (مثل: "حاضر هفحص"، "سأقوم بفحص السيرفر"، "دعني أتحقق"، "اكتب هذا الأمر") دون استدعاء الأداة المناسبة في نفس الرد الأول!
+   - إذا طلب المستخدم فحصاً (سيرفر، ملف، خطأ، git، إلخ) أو تشغيل أمر أو تعديل كود؛ ردك الأول يجب أن يكون Tool Call حقيقياً (مثل run_command أو read_file) فوراً.
+3. أدواتك التنفيذية الحقيقية (Tools):
+   - run_command: لتشغيل أي أمر في PowerShell أو فحص Git أو تنفيذ أوامر SSH للسيرفر واختبار الشبكة والخدمات.
+   - read_file: لقراءة وفحص ملفات المشروع الفعلية (مع أرقام الأسطر).
+   - write_file: لإنشاء أو تعديل الأكواد والملفات في المشروع.
    - list_directory: لاستعراض محتويات المجلدات.
-3. قاعدة ذهبية: لو سألك المستخدم عن أي ملف، أو كود، أو Git status، أو فحص السيرفر، أو تشغيل اختبار؛ لا تخمن ولا تجب في الهواء أبداً. استخدم أدواتك فوراً ونفّذ الأمر الحقيقي أولاً ثم اشرح النتيجة الحرفية.
 4. سيرفر MaxP الإنتاجي:
    - Host: srv974554.hstgr.cloud (أو 153.92.223.119)
-   - أمر SSH الافتراضي: ssh -i ~/.ssh/maxp_server -o StrictHostKeyChecking=no root@srv974554.hstgr.cloud <command>
-5. متاح للتحدث مع أي شخص من فريق العمل عبر تليجرام، وتدير سياق كل محادثة بشكل مستقل.`;
+   - أمر SSH التلقائي المعتمد: ssh -i ~/.ssh/maxp_server -o StrictHostKeyChecking=no root@srv974554.hstgr.cloud "<command>"
+   - إذا طلب المستخدم فحص السيرفر أو مشكلة في النظام أو خدمات PM2، نفّذ فوراً:
+     run_command({ command: 'ssh -i ~/.ssh/maxp_server -o StrictHostKeyChecking=no root@srv974554.hstgr.cloud "df -h; echo ---; free -h; echo ---; pm2 status; echo ---; uptime"' })
+5. بعد تشغيل الأدوات ووصول النتيجة، اشرح النتيجة الحرفية باختصار شديد ووضوح، مع تقديم الحل أو الخطوة التالية مباشرة.
+6. متاح للتحدث مع أي شخص من فريق العمل عبر تليجرام، وتدير سياق كل محادثة بشكل مستقل.`;
 
 // In-memory conversation state per chat ID (keeps last 16 turns)
 const chatHistories = new Map();
@@ -85,14 +90,45 @@ function clearHistory(chatId) {
 }
 
 // Telegram API helpers
-async function callTelegram(method, body = {}) {
+async function callTelegram(method, body = {}, timeoutMs = 45000) {
   const url = `${TELEGRAM_API_BASE}/${method}`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  return await res.json();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    return await res.json();
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error(`Telegram API timeout after ${timeoutMs}ms for ${method}`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Intent detectors to force tool execution and ban conversational stalling
+function isActionableIntent(text) {
+  if (!text) return false;
+  const lower = text.toLowerCase();
+  const actionablePatterns = [
+    /(افحص|شوف|شغل|نفذ|اقرأ|اقرا|وريني|هات|راجع|صلح|عدل|اكتب|اعمل|فحص|تشغيل|تنفيذ|جرب|جيب|استعرض)/i,
+    /(سيرفر|server|ssh|git|status|log|logs|pm2|nginx|docker|curl|ping|port|api)/i,
+    /(ملف|فايل|كود|error|مشكلة|خطأ|عطل|واقف|مش شغال|تهنيج|داون|down|ريسورس|resources)/i,
+    /(h:\\|c:\\|\.js|\.ts|\.json|\.env|\.sql|\.prisma|\.sh|\.conf)/i,
+    /(root@|153\.92|srv974554)/i
+  ];
+  return actionablePatterns.some(pattern => pattern.test(lower));
+}
+
+function containsStallingPhrases(text) {
+  if (!text) return false;
+  return /(هفحص|سأقوم|سأفحص|جاري الفحص|دعني أفحص|سأتحقق|سأراجع|تمام هشوف|حاضر هفحص|سوف أقوم|هقوم بفحص|سأباشر|حالاً هفحص)/i.test(text);
 }
 
 async function sendChatAction(chatId, action = 'typing') {
@@ -333,7 +369,7 @@ async function generateAiReply(chatId, userMessage) {
         model: 'deepseek-v4.1-flash',
         messages,
         tools: TOOLS,
-        temperature: 0.3,
+        temperature: 0.1,
       }),
     });
 
@@ -375,6 +411,19 @@ async function generateAiReply(chatId, userMessage) {
       }
 
       // Loop continues to next iteration to let model inspect output
+      continue;
+    }
+
+    // Anti-Stalling Interceptor: Prevent conversational evasion when action is requested
+    const actionable = isActionableIntent(userMessage);
+    const stalling = containsStallingPhrases(message.content);
+    if (iteration === 1 && (actionable || stalling)) {
+      log(`⚠️ [Interceptor] Model responded with text instead of executing ("${(message.content || '').slice(0, 60)}..."). Enforcing immediate tool execution pass...`);
+      messages.push(message);
+      messages.push({
+        role: 'user',
+        content: 'قانون التنفيذ الإلزامي: لقد رددت بنص إنشائي دون استدعاء أي أداة! المطلوب هو التنفيذ الفعلي فوراً دون أي كلام نظري. استدعِ الأداة المناسبة (run_command أو read_file أو غيرها) حالاً ونفذ الأمر الحقيقي.',
+      });
       continue;
     }
 
@@ -513,9 +562,12 @@ async function startPolling() {
         offset,
         timeout: 25,
         allowed_updates: ['message'],
-      });
+      }, 40000);
 
       if (updatesRes?.ok && Array.isArray(updatesRes.result)) {
+        if (updatesRes.result.length > 0) {
+          log(`📥 [Telegram] Received ${updatesRes.result.length} update(s)`);
+        }
         for (const update of updatesRes.result) {
           offset = update.update_id + 1;
           if (update.message) {
