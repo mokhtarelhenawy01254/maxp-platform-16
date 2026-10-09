@@ -90,6 +90,7 @@ const SuperAdminAppExplanations: React.FC = () => {
     const [explanations, setExplanations] = useState<AppExplanation[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [noPermission, setNoPermission] = useState(false);
 
     const [openDialog, setOpenDialog] = useState(false);
     const [editMode, setEditMode] = useState(false);
