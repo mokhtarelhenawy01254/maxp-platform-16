@@ -261,29 +261,18 @@ class AttendanceService {
       const actualMinutesOfDay = actualH * 60 + actualM;
       const scheduledMinutesOfDay = h * 60 + m;
 
-      if (latenessRules || config.hasExplicitRules) {
-        const latestAllowedMinutesOfDay = scheduledMinutesOfDay + config.allowanceMinutes;
-        if (actualMinutesOfDay > latestAllowedMinutesOfDay) {
-          lateMinutes = actualMinutesOfDay - latestAllowedMinutesOfDay;
-          status = "LATE";
-        } else {
-          lateMinutes = 0;
-          status = "PRESENT";
-        }
+      const latestAllowedMinutesOfDay = scheduledMinutesOfDay + config.allowanceMinutes;
+      if (actualMinutesOfDay > latestAllowedMinutesOfDay) {
+        lateMinutes = actualMinutesOfDay - latestAllowedMinutesOfDay;
+        status = "LATE";
       } else {
-        if (actualMinutesOfDay > scheduledMinutesOfDay) {
-          const diffMinutes = actualMinutesOfDay - scheduledMinutesOfDay;
-          const grace = Number(config.allowanceMinutes);
-          if (diffMinutes > grace) {
-            lateMinutes = diffMinutes;
-            status = "LATE";
-          }
-        }
+        lateMinutes = 0;
+        status = "PRESENT";
       }
     }
 
     if (checkOut) {
-      const workEndTime = shift?.endTime || settings?.workEndTime || "17:00";
+      const workEndTime = shift?.endTime || settings?.workEndTime || "18:00";
       const [endH, endM] = workEndTime.split(":").map(Number);
       const checkOutParts = new Intl.DateTimeFormat("en-US", {
         timeZone: timezone,
@@ -2264,13 +2253,14 @@ class AttendanceService {
         ? parseInt(originalData.lateMinutes)
         : 0;
 
-    // Only auto-calculate lateMinutes if it's NOT an update OR it wasn't explicitly provided
-    // If it's an update and originalLateMinutes is 0, we trust the HR wanted 0.
-    const shouldAutoCalculateLate = isUpdate
-      ? false // Do not auto-calculate for updates, trust frontend
-      : originalData.lateMinutes === undefined || originalLateMinutes === 0;
+    // Only auto-calculate lateMinutes if it wasn't explicitly provided by HR
+    const shouldAutoCalculateLate =
+      originalData.lateMinutes === undefined ||
+      originalData.lateMinutes === null ||
+      originalData.lateMinutes === "" ||
+      originalData.isAutoCalculate === true;
 
-    if (checkIn && shouldAutoCalculateLate) {
+    if (checkIn && shouldAutoCalculateLate && workStart) {
       const graceTime = new Date(
         workStart.getTime() + config.allowanceMinutes * 60000,
       );

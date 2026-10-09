@@ -801,6 +801,8 @@ app.use("/api/v1/public/support-settings", require("./routes/publicSupportSettin
 app.use("/api/v1/public", publicCouponsRoutes);
 app.use("/api/v1/public/checkout-form-settings", checkoutFormSettingsRoutes);
 app.use("/api/v1/public/post-purchase-offer", postPurchaseOfferRoutes.publicRouter);
+app.use("/api/v1/public/public/post-purchase-offer", postPurchaseOfferRoutes.publicRouter);
+app.use("/api/public/post-purchase-offer", postPurchaseOfferRoutes.publicRouter);
 app.use("/api/v1/public/footer-settings", footerSettingsRoutes);
 app.use("/api/v1/public/promotion-settings", promotionSettingsRoutes);
 app.use("/api/v1/public/forms", publicFormsRoutes);

@@ -3782,7 +3782,7 @@ router.post('/:id/accept-offer', async (req, res) => {
       if (dbProduct) {
         resolvedName = dbProduct.name;
         if (!resolvedImage) {
-          const firstImg = dbProduct.imageUrl || (Array.isArray(dbProduct.images) && dbProduct.images[0]);
+          const firstImg = dbProduct.mainImage || dbProduct.imageUrl || (Array.isArray(dbProduct.images) && dbProduct.images[0]);
           resolvedImage = typeof firstImg === 'string' ? firstImg : firstImg?.url || null;
         }
         const variantsList = Array.isArray(dbProduct.productVariants) ? dbProduct.productVariants : [];

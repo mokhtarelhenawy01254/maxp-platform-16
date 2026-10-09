@@ -1597,7 +1597,7 @@ const getCODPerformanceAnalytics = async (req, res) => {
 
     const whereClause = {
       companyId: String(companyId),
-      paymentMethod: 'COD',
+      paymentMethod: 'CASH',
       ...(startDate && endDate ? {
         createdAt: {
           gte: new Date(startDate),

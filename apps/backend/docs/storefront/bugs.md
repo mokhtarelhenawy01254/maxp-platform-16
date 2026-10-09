@@ -2,6 +2,17 @@
 
 > Domain-specific bug tracker for all storefront, theme, template, and PDP/Shop/Cart/Checkout issues.
 
+### [FIX] Post-Purchase Offer Public API Crashes When a Product Is Selected (2026-10-09)
+- **Description**: Enabling the post-purchase offer for the Swan store (`swan.maxp.online`) with a selected product (Swan Aura) made the public offer endpoint return HTTP 500, so the storefront `/order-offer` page could not load the product/variants (size picker missing).
+- **Root Cause**: `postPurchaseOfferController.js` selected the non-existent `imageUrl` field on the Product model (schema only has `mainImage` + `images`). It only fired once `offer.productId` was set (enrichment path).
+- **Fix**:
+  1. Replaced `imageUrl: true` with `mainImage: true` in Prisma `findFirst` selects in `getOffer` and `getPublicOffer`.
+  2. Added `resolveProductImage()` helper to safely extract the main image (from `mainImage` or `images` array/JSON string) and populated both `offer.productImage` and `product.imageUrl` for backward compatibility.
+  3. Added `mainImage` support to frontend types and `PostPurchaseOfferPage.tsx` / `PostPurchaseOfferBuilderPage.tsx`.
+  4. Updated `publicOrdersRoutes.js` accept-offer endpoint to fall back to `dbProduct.mainImage`.
+- **Acceptance**: Public and admin offer GET return 200 with product and variants; `/order-offer` renders the variant picker; Swan offer config can now be re-enabled safely (`enabled: true`).
+- **Full task doc**: `docs/post-purchase-offer-crash-fix-2026-10-09.md`
+
 ### [FIX] KHEMET Homepage Categories And Buybox Flow Were Too Static (2026-05-07)
 - **Description**: The KHEMET homepage `gallery-columns` image section used fixed authored collections even when the storefront had real product categories. The PDP needed a cleaner merged quick-order flow after review, and footer legal/service links pointed to missing dynamic pages.
 - **Root Cause**:

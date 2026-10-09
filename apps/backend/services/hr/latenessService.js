@@ -13,6 +13,7 @@
 
 const { getSharedPrismaClient } = require('../sharedDatabase');
 const { combineDateAndTime } = require('../../utils/dateUtils');
+const { getEffectiveShiftForDate } = require('./shiftAssignmentResolver');
 
 class LatenessService {
   constructor() {
@@ -163,9 +164,29 @@ class LatenessService {
       // Get or create monthly allowance
       const allowance = await this.getOrCreateMonthlyAllowance(companyId, userId, date);
 
+      // Resolve shift and lateness rules (unifying shift + lateness_rules)
+      const shift = await getEffectiveShiftForDate(this.prisma, companyId, userId, date, timezone);
+      const workStartTime = shift?.startTime || rules.workStartTime || this.WORK_START_TIME;
+      let latestAllowedTimeString = rules.latestAllowedTime || this.LATEST_ALLOWED_TIME;
+
+      let allowanceMinutes = 10;
+      if (rules.latestAllowedTime && rules.workStartTime) {
+        const [latH, latM] = rules.latestAllowedTime.split(':').map(Number);
+        const [wH, wM] = rules.workStartTime.split(':').map(Number);
+        const diff = (latH * 60 + latM) - (wH * 60 + wM);
+        if (!isNaN(diff) && diff >= 0) allowanceMinutes = diff;
+      }
+      if (shift?.startTime && shift.startTime !== (rules.workStartTime || this.WORK_START_TIME)) {
+        const [sH, sM] = shift.startTime.split(':').map(Number);
+        const totalAllowedM = sH * 60 + sM + allowanceMinutes;
+        const allowedH = Math.floor(totalAllowedM / 60) % 24;
+        const allowedM = totalAllowedM % 60;
+        latestAllowedTimeString = `${String(allowedH).padStart(2, '0')}:${String(allowedM).padStart(2, '0')}`;
+      }
+
       // Calculate expected times in company timezone
-      const expectedStartTime = this.parseTimeToDate(date, rules.workStartTime, timezone);
-      const latestAllowedTime = this.parseTimeToDate(date, rules.latestAllowedTime, timezone);
+      const expectedStartTime = this.parseTimeToDate(date, workStartTime, timezone);
+      const latestAllowedTime = this.parseTimeToDate(date, latestAllowedTimeString, timezone);
 
       // Calculate lateness
       const latenessData = this.calculateLateness(

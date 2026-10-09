@@ -99,6 +99,8 @@ export default function PostPurchaseOfferBuilderPage() {
         let imageUrl: string | undefined;
         if (typeof p.imageUrl === "string" && p.imageUrl.trim()) {
           imageUrl = p.imageUrl.trim();
+        } else if (typeof p.mainImage === "string" && p.mainImage.trim()) {
+          imageUrl = p.mainImage.trim();
         } else if (Array.isArray(p.images) && p.images.length > 0) {
           const first = p.images[0];
           imageUrl = typeof first === "string" ? first : first?.url;

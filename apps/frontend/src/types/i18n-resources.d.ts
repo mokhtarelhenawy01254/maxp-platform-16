@@ -7776,6 +7776,7 @@ declare module 'react-i18next' {
         grossProfit: string;
         netProfit: string;
         profitMargin: string;
+        margin: string;
         totalCosts: string;
         cogs: string;
         adsCost: string;

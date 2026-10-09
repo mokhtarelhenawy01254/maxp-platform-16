@@ -138,11 +138,24 @@ export default function PostPurchaseOfferPage() {
     }
     const imgs: string[] = [];
     if (offer.product.imageUrl) imgs.push(offer.product.imageUrl);
+    if (offer.product.mainImage && !imgs.includes(offer.product.mainImage)) {
+      imgs.push(offer.product.mainImage);
+    }
     if (Array.isArray(offer.product.images)) {
       offer.product.images.forEach((im) => {
-        const url = typeof im === "string" ? im : im?.url;
+        const url = typeof im === "string" ? im : (im as any)?.url;
         if (url && !imgs.includes(url)) imgs.push(url);
       });
+    } else if (typeof offer.product.images === "string") {
+      try {
+        const parsed = JSON.parse(offer.product.images);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((im: any) => {
+            const url = typeof im === "string" ? im : im?.url;
+            if (url && !imgs.includes(url)) imgs.push(url);
+          });
+        }
+      } catch {}
     }
     return imgs.length > 0 ? imgs : [offer.productImage || ""];
   }, [offer]);

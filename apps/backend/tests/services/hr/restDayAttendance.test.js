@@ -87,7 +87,7 @@ describe('HR Weekly Rest Days & Overtime Attendance Logic', () => {
 
       assert.strictEqual(result.isRestDay, false);
       assert.strictEqual(result.status, 'LATE');
-      assert.strictEqual(result.lateMinutes, 300);
+      assert.strictEqual(result.lateMinutes, 285, 'Late minutes must reflect delay beyond 10:15 cutoff (300m - 15m = 285m)');
       assert.strictEqual(result.earlyLeaveMinutes, 0);
       assert.strictEqual(result.workHours, 5.5);
       assert.strictEqual(result.overtimeHours, 0);

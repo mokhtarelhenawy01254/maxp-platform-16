@@ -31,7 +31,7 @@ describe('September 2026 HR & Payroll Defect Edge Cases Test Suite', () => {
       timezone: 'Africa/Cairo'
     });
 
-    assert.strictEqual(result.lateMinutes, 15, 'lateMinutes should ONLY reflect check-in delay (15m)');
+    assert.strictEqual(result.lateMinutes, 5, 'lateMinutes should reflect check-in delay beyond allowance cutoff (10:15 - 10:10 = 5m)');
     assert.strictEqual(result.earlyLeaveMinutes, 60, 'earlyLeaveMinutes should reflect checkout shortfall (60m)');
     assert.strictEqual(result.status, 'LATE');
   });

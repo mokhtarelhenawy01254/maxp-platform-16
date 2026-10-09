@@ -14,6 +14,7 @@ export interface PostPurchaseOfferProduct {
   price: number;
   comparePrice?: number | null;
   imageUrl?: string;
+  mainImage?: string;
   images?: (string | { url: string })[];
   variants?: PostPurchaseOfferProductVariant[];
 }

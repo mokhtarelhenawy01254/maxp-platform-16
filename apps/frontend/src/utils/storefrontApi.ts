@@ -727,7 +727,7 @@ export const storefrontApi = {
   },
 
   getPostPurchaseOffer: async () => {
-    return storefrontFetch("/public/post-purchase-offer", {
+    return storefrontFetch("/post-purchase-offer", {
       method: "GET",
     });
   },

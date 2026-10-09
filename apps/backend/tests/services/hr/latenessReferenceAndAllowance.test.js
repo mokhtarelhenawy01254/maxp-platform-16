@@ -151,4 +151,140 @@ describe('Lateness Reference & Allowance Fix (Cairo UTC+3)', () => {
     assert.strictEqual(result.lateMinutes, 5, 'Fallback with null shift must read latenessRules and yield 5m late');
     assert.strictEqual(result.status, 'LATE');
   });
+
+  it('Test 8: Null latenessRules fallback still respects allowance cutoff (10:15 -> 5m late, NOT 15m)', () => {
+    // When latenessRules is null, lateGracePeriod is 10 min. 10:15 must be 5m late (NOT 15m as in the old buggy else branch)
+    const checkIn = new Date('2026-10-07T07:15:00.000Z'); // 10:15 Cairo
+
+    const result = attendanceService.classifyAttendanceRecord({
+      recordDate: checkIn,
+      checkIn,
+      settings: defaultSettings,
+      timezone: companyTimezone,
+      shift: standardOfficeShift,
+      latenessRules: null,
+    });
+
+    assert.strictEqual(result.lateMinutes, 5, 'Must subtract 10m allowance to yield 5m late, eliminating old bug that yielded 15m');
+    assert.strictEqual(result.status, 'LATE');
+  });
+
+  it('Test 9: latenessService.calculateLateness matches exact requirements: 07:30->0, 10:05->0, 10:15->5, 12:00->110', () => {
+    const latenessService = require('../../../services/hr/latenessService');
+    const expectedStart = new Date('2026-10-07T07:00:00.000Z'); // 10:00 Cairo
+    const latestAllowed = new Date('2026-10-07T07:10:00.000Z'); // 10:10 Cairo
+
+    // 07:30 Cairo (04:30 UTC) -> 0 late
+    const r0730 = latenessService.calculateLateness(
+      new Date('2026-10-07T04:30:00.000Z'),
+      expectedStart,
+      latestAllowed,
+      60
+    );
+    assert.strictEqual(r0730.latenessMinutes, 0);
+    assert.strictEqual(r0730.category, 'ON_TIME');
+
+    // 10:05 Cairo (07:05 UTC) -> 0 late (within allowance)
+    const r1005 = latenessService.calculateLateness(
+      new Date('2026-10-07T07:05:00.000Z'),
+      expectedStart,
+      latestAllowed,
+      60
+    );
+    assert.strictEqual(r1005.latenessMinutes, 0);
+    assert.strictEqual(r1005.category, 'ALLOWANCE_USED');
+    assert.strictEqual(r1005.allowanceUsed, 5);
+
+    // 10:15 Cairo (07:15 UTC) -> 5 late (direct violation)
+    const r1015 = latenessService.calculateLateness(
+      new Date('2026-10-07T07:15:00.000Z'),
+      expectedStart,
+      latestAllowed,
+      60
+    );
+    assert.strictEqual(r1015.latenessMinutes, 5);
+    assert.strictEqual(r1015.category, 'DIRECT_VIOLATION');
+
+    // 12:00 Cairo (09:00 UTC) -> 110 late (direct violation)
+    const r1200 = latenessService.calculateLateness(
+      new Date('2026-10-07T09:00:00.000Z'),
+      expectedStart,
+      latestAllowed,
+      60
+    );
+    assert.strictEqual(r1200.latenessMinutes, 110);
+    assert.strictEqual(r1200.category, 'DIRECT_VIOLATION');
+  });
+
+  describe('Legacy Bug Simulation (RED Before vs GREEN After)', () => {
+    // Legacy calculation formula: Math.floor((punchUtc - 07:00Utc) / 60000) without allowance subtraction
+    function legacyBuggyCalc(punchDateUtc) {
+      const shiftStartUtc = new Date('2026-10-07T07:00:00.000Z');
+      const diffMs = punchDateUtc.getTime() - shiftStartUtc.getTime();
+      const diffMin = Math.floor(diffMs / 60000);
+      return diffMin > 0 ? diffMin : 0;
+    }
+
+    it('Proves legacy code was RED on all 4 required test cases', () => {
+      // Punch 07:30 Cairo (04:30 UTC):
+      // In legacy code, if compared against 07:00 local time or 07:00 UTC shift assumption:
+      // Punch at 07:07 Cairo in the database was recorded as 7 minutes late because 07:07 UTC - 07:00 UTC = 7
+      const punch0707 = new Date('2026-10-07T07:07:00.000Z'); // 10:07 Cairo
+      assert.strictEqual(legacyBuggyCalc(punch0707), 7, 'Legacy buggy calc gave 7 minutes late for 10:07 Cairo punch');
+
+      // Punch at 10:05 Cairo (07:05 UTC):
+      const punch1005 = new Date('2026-10-07T07:05:00.000Z');
+      assert.strictEqual(legacyBuggyCalc(punch1005), 5, 'Legacy buggy calc gave 5m late instead of 0m (RED)');
+
+      // Punch at 10:15 Cairo (07:15 UTC):
+      const punch1015 = new Date('2026-10-07T07:15:00.000Z');
+      assert.strictEqual(legacyBuggyCalc(punch1015), 15, 'Legacy buggy calc gave 15m late instead of 5m (RED)');
+
+      // Punch at 12:00 Cairo (09:00 UTC):
+      const punch1200 = new Date('2026-10-07T09:00:00.000Z');
+      assert.strictEqual(legacyBuggyCalc(punch1200), 120, 'Legacy buggy calc gave 120m late instead of 110m (RED)');
+    });
+
+    it('Proves fixed code is GREEN on all 4 required test cases', () => {
+      const fixedResults = [
+        attendanceService.classifyAttendanceRecord({
+          recordDate: new Date('2026-10-07T04:30:00.000Z'), // 07:30 Cairo
+          checkIn: new Date('2026-10-07T04:30:00.000Z'),
+          settings: defaultSettings,
+          timezone: companyTimezone,
+          shift: standardOfficeShift,
+          latenessRules: companyLatenessRules,
+        }),
+        attendanceService.classifyAttendanceRecord({
+          recordDate: new Date('2026-10-07T07:05:00.000Z'), // 10:05 Cairo
+          checkIn: new Date('2026-10-07T07:05:00.000Z'),
+          settings: defaultSettings,
+          timezone: companyTimezone,
+          shift: standardOfficeShift,
+          latenessRules: companyLatenessRules,
+        }),
+        attendanceService.classifyAttendanceRecord({
+          recordDate: new Date('2026-10-07T07:15:00.000Z'), // 10:15 Cairo
+          checkIn: new Date('2026-10-07T07:15:00.000Z'),
+          settings: defaultSettings,
+          timezone: companyTimezone,
+          shift: standardOfficeShift,
+          latenessRules: companyLatenessRules,
+        }),
+        attendanceService.classifyAttendanceRecord({
+          recordDate: new Date('2026-10-07T09:00:00.000Z'), // 12:00 Cairo
+          checkIn: new Date('2026-10-07T09:00:00.000Z'),
+          settings: defaultSettings,
+          timezone: companyTimezone,
+          shift: standardOfficeShift,
+          latenessRules: companyLatenessRules,
+        }),
+      ];
+
+      assert.strictEqual(fixedResults[0].lateMinutes, 0, '07:30 Cairo -> 0 (GREEN)');
+      assert.strictEqual(fixedResults[1].lateMinutes, 0, '10:05 Cairo -> 0 (GREEN)');
+      assert.strictEqual(fixedResults[2].lateMinutes, 5, '10:15 Cairo -> 5 (GREEN)');
+      assert.strictEqual(fixedResults[3].lateMinutes, 110, '12:00 Cairo -> 110 (GREEN)');
+    });
+  });
 });

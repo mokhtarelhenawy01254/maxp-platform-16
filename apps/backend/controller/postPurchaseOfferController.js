@@ -5,6 +5,31 @@ const redisCacheService = require('../services/redisCacheService');
 const isRecord = (value) =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
+const resolveProductImage = (product) => {
+  if (!product) return '';
+  if (typeof product.mainImage === 'string' && product.mainImage.trim()) {
+    return product.mainImage.trim();
+  }
+  if (Array.isArray(product.images) && product.images.length > 0) {
+    const first = product.images[0];
+    return typeof first === 'string' ? first : first?.url || '';
+  }
+  if (typeof product.images === 'string' && product.images.trim()) {
+    try {
+      const parsed = JSON.parse(product.images);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const first = parsed[0];
+        return typeof first === 'string' ? first : first?.url || '';
+      }
+    } catch {
+      if (product.images.startsWith('http')) {
+        return product.images.split(',')[0].trim();
+      }
+    }
+  }
+  return '';
+};
+
 const DEFAULT_OFFER_CONFIG = {
   enabled: false,
   title: 'انتظر! لدينا عرض خاص وحصري لطلبك الآن',
@@ -77,10 +102,12 @@ const getOffer = async (req, res) => {
             name: true,
             price: true,
             comparePrice: true,
-            imageUrl: true,
+            mainImage: true,
             images: true,
             isActive: true,
-            variants: {
+            productVariants: {
+              where: { isActive: true },
+              orderBy: { sortOrder: 'asc' },
               select: {
                 id: true,
                 name: true,
@@ -88,7 +115,7 @@ const getOffer = async (req, res) => {
                 comparePrice: true,
                 sku: true,
                 stock: true,
-                options: true
+                metadata: true
               }
             }
           }
@@ -96,12 +123,34 @@ const getOffer = async (req, res) => {
       });
 
       if (product) {
+        const variants = (product.productVariants || []).map((v) => {
+          let options = {};
+          if (v.metadata) {
+            try {
+              const meta = typeof v.metadata === 'string' ? JSON.parse(v.metadata) : v.metadata;
+              if (meta && typeof meta === 'object') {
+                options = meta.options || meta.attributes || {};
+              }
+            } catch (_) {}
+          }
+          return {
+            id: v.id,
+            name: v.name,
+            price: Number(v.price || product.price || 0),
+            comparePrice: v.comparePrice ? Number(v.comparePrice) : null,
+            sku: v.sku || '',
+            stock: v.stock || 0,
+            options
+          };
+        });
+        product.variants = variants;
+        const resolvedImg = resolveProductImage(product);
+        product.imageUrl = resolvedImg;
         offer.product = product;
         if (!offer.productName) offer.productName = product.name;
         if (!offer.originalPrice) offer.originalPrice = Number(product.price || 0);
         if (!offer.productImage) {
-          const img = product.imageUrl || (Array.isArray(product.images) && product.images[0]) || '';
-          offer.productImage = typeof img === 'string' ? img : img?.url || '';
+          offer.productImage = resolvedImg;
         }
       }
     }
@@ -239,10 +288,11 @@ const getPublicOffer = async (req, res) => {
           name: true,
           price: true,
           comparePrice: true,
-          imageUrl: true,
+          mainImage: true,
           images: true,
-          variants: {
+          productVariants: {
             where: { isActive: true },
+            orderBy: { sortOrder: 'asc' },
             select: {
               id: true,
               name: true,
@@ -250,7 +300,7 @@ const getPublicOffer = async (req, res) => {
               comparePrice: true,
               sku: true,
               stock: true,
-              options: true
+              metadata: true
             }
           }
         }
@@ -261,6 +311,28 @@ const getPublicOffer = async (req, res) => {
       return res.json({ success: true, data: null });
     }
 
+    const variants = (product.productVariants || []).map((v) => {
+      let options = {};
+      if (v.metadata) {
+        try {
+          const meta = typeof v.metadata === 'string' ? JSON.parse(v.metadata) : v.metadata;
+          if (meta && typeof meta === 'object') {
+            options = meta.options || meta.attributes || {};
+          }
+        } catch (_) {}
+      }
+      return {
+        id: v.id,
+        name: v.name,
+        price: Number(v.price || product.price || 0),
+        comparePrice: v.comparePrice ? Number(v.comparePrice) : null,
+        sku: v.sku || '',
+        stock: v.stock || 0,
+        options
+      };
+    });
+    product.variants = variants;
+
     const originalPrice = Number(product.price || offer.originalPrice || 0);
     let offerPrice = offer.offerPrice;
     if (offer.discountType === 'percentage' && originalPrice > 0) {
@@ -269,12 +341,15 @@ const getPublicOffer = async (req, res) => {
       offerPrice = Number(offer.discountValue.toFixed(2));
     }
 
+    const resolvedImg = resolveProductImage(product);
+    product.imageUrl = resolvedImg;
+
     const enrichedOffer = {
       ...offer,
       originalPrice,
       offerPrice,
       productName: product.name,
-      productImage: product.imageUrl || (Array.isArray(product.images) && product.images[0]) || offer.productImage,
+      productImage: resolvedImg || offer.productImage || '',
       product
     };
 
