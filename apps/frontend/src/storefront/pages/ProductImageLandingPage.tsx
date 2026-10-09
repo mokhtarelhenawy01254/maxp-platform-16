@@ -9,6 +9,7 @@ import type { CartItem } from "../store/useCartStore";
 import { formatStorefrontCurrency } from "../utils/currency";
 import { getPrimaryProductImage } from "../utils/productImages";
 import { buildStorefrontPath } from "../utils/paths";
+import { resolvePostPurchaseTarget } from "../utils/postPurchaseOffer";
 import { persistPurchaseTracking } from "../utils/purchaseTrackingStorage";
 import { isValidStorefrontPhone } from "../utils/phoneValidation";
 import { useStorefrontSettings } from "../hooks/useStorefrontSettings";
@@ -1818,12 +1819,10 @@ const ProductImageLandingPage: React.FC = () => {
           });
       }
 
-      const postPurchaseOffer = (storefrontSettings as any)?.designTokens?.postPurchaseOffer;
-      const isOfferActive = Boolean(
-        postPurchaseOffer?.enabled &&
-        postPurchaseOffer?.productId
+      const targetRoute = resolvePostPurchaseTarget(
+        storefrontSettings,
+        itemsToOrder.map((it) => ({ productId: it.productId }))
       );
-      const targetRoute = isOfferActive ? "/order-offer" : "/thank-you";
       const thankYouPath = buildStorefrontPath(
         location.pathname,
         `${targetRoute}?orderId=${encodeURIComponent(String(orderId))}`,

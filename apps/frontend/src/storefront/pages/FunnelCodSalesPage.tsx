@@ -40,6 +40,8 @@ import { buildCheckoutOrderPayload } from "../hooks/useCheckout";
 import { formatStorefrontCurrency } from "../utils/currency";
 import { getPrimaryProductImage } from "../utils/productImages";
 import { buildStorefrontPath } from "../utils/paths";
+import { resolvePostPurchaseTarget } from "../utils/postPurchaseOffer";
+import { useStorefrontSettings } from "../hooks/useStorefrontSettings";
 import { persistPurchaseTracking } from "../utils/purchaseTrackingStorage";
 import { captureStorefrontAttribution } from "../utils/orderAttribution";
 import type { CartItem } from "../store/useCartStore";
@@ -188,6 +190,7 @@ const FunnelCodSalesPage: React.FC = () => {
   const { slug = "" } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { settings: storefrontSettings } = useStorefrontSettings();
   const [funnel, setFunnel] = useState<PublicFunnel | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
   const [company, setCompany] = useState(DEFAULT_COMPANY);
@@ -465,9 +468,13 @@ const FunnelCodSalesPage: React.FC = () => {
       );
 
       toast.success("تم إرسال طلبك بنجاح!");
+      const targetRoute = resolvePostPurchaseTarget(
+        storefrontSettings,
+        items.map((it) => ({ productId: it.productId }))
+      );
       const thankYouPath = buildStorefrontPath(
         location.pathname,
-        `/thank-you?orderId=${encodeURIComponent(String(orderId))}`,
+        `${targetRoute}?orderId=${encodeURIComponent(String(orderId))}`,
         location.search,
       );
       navigate(thankYouPath, {

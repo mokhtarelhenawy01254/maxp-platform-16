@@ -7,6 +7,7 @@ import { useCartStore } from '../store/useCartStore';
 import { useStorefrontSettings } from '../hooks/useStorefrontSettings';
 import { formatStorefrontCurrency } from '../utils/currency';
 import { buildStorefrontPath } from '../utils/paths';
+import { resolvePostPurchaseTarget } from '../utils/postPurchaseOffer';
 import { isKhemetLuxeTheme } from '../utils/navigationGuards';
 import { storefrontApi } from '../../utils/storefrontApi';
 import { useStorefrontFacebookTracking } from '../hooks/useStorefrontFacebookTracking';
@@ -821,13 +822,10 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
   useEffect(() => {
     if (orderSuccess) {
       const resolvedOrderId = orderSuccess.orderNumber || orderSuccess.id || 'success';
-      const postPurchaseOffer = (storefrontSettings as any)?.designTokens?.postPurchaseOffer;
-      const isOfferActive = Boolean(
-        postPurchaseOffer?.enabled &&
-        postPurchaseOffer?.productId
-      );
-
-      const targetRoute = isOfferActive ? '/order-offer' : '/thank-you';
+      const purchasedItems = (Array.isArray(orderSuccess?.items) && orderSuccess.items.length > 0)
+        ? orderSuccess.items
+        : items.map((it) => ({ productId: it.productId }));
+      const targetRoute = resolvePostPurchaseTarget(storefrontSettings, purchasedItems);
       const nextPath = buildStorefrontPath(
         location.pathname,
         `${targetRoute}?orderId=${encodeURIComponent(resolvedOrderId)}`,

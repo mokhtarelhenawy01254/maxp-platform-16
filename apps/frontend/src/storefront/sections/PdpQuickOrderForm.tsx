@@ -14,6 +14,7 @@ import { useStorefrontFacebookTracking } from "../hooks/useStorefrontFacebookTra
 import { useMinimumOrderSettings } from "../hooks/useMinimumOrderSettings";
 import { formatStorefrontCurrency } from "../utils/currency";
 import { buildStorefrontPath } from "../utils/paths";
+import { resolvePostPurchaseTarget } from "../utils/postPurchaseOffer";
 import { trackConversionSuiteUsage } from "../utils/conversionSuiteTracking";
 import { getOrderAttributionPayload } from "../utils/orderAttribution";
 import { buildQuantityOfferCartItems } from "../utils/quantityOfferCartItems";
@@ -1431,12 +1432,9 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       const resolvedOrderTotal = Number(
         response.data?.finalTotal ?? response.data?.total ?? total,
       );
-      const postPurchaseOffer = (storefrontSettings as any)?.designTokens?.postPurchaseOffer;
-      const isOfferActive = Boolean(
-        postPurchaseOffer?.enabled &&
-        postPurchaseOffer?.productId
-      );
-      const targetRoute = isOfferActive ? "/order-offer" : "/thank-you";
+      const targetRoute = resolvePostPurchaseTarget(storefrontSettings, [
+        { productId: product?.id }
+      ]);
       const thankYouPath = buildStorefrontPath(
         location.pathname,
         `${targetRoute}?orderId=${encodeURIComponent(String(resolvedOrderId))}`,

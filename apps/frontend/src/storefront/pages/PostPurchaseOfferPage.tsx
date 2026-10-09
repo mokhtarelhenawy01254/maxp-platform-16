@@ -23,6 +23,7 @@ import type {
   PostPurchaseOfferProductVariant
 } from "../../types/postPurchaseOffer";
 import { DEFAULT_POST_PURCHASE_OFFER } from "../../types/postPurchaseOffer";
+import { getPostPurchaseOfferConfig } from "../utils/postPurchaseOffer";
 
 interface ParsedVariantInfo {
   variant: PostPurchaseOfferProductVariant;
@@ -117,7 +118,7 @@ export default function PostPurchaseOfferPage() {
       try {
         setLoading(true);
         // First check if designTokens already has the offer
-        const tokens = (storefrontSettings as any)?.designTokens?.postPurchaseOffer;
+        const tokens = getPostPurchaseOfferConfig(storefrontSettings) as any;
         if (tokens?.enabled && tokens?.productId) {
           setOffer(tokens);
           setSecondsRemaining((tokens.timerMinutes || 5) * 60);
