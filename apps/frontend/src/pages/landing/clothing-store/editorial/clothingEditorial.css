@@ -184,6 +184,7 @@
   -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   padding: 10px 16px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
   z-index: 999;
   display: flex;
   align-items: center;
@@ -192,14 +193,21 @@
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
 }
 
+.cse-root {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+
 @media (min-width: 768px) {
   .cse-sticky-mobile {
     display: none;
   }
+  .cse-root {
+    padding-bottom: 0;
+  }
 }
 
-/* Magic UI Marquee Keyframes */
-@keyframes marquee {
+/* Magic UI Marquee Keyframes (Scoped) */
+@keyframes cse-marquee {
   from {
     transform: translateX(0%);
   }
@@ -208,7 +216,7 @@
   }
 }
 
-@keyframes marquee-vertical {
+@keyframes cse-marquee-vertical {
   from {
     transform: translateY(0%);
   }
@@ -217,10 +225,10 @@
   }
 }
 
-.animate-marquee {
-  animation: marquee var(--duration, 40s) linear infinite;
+.cse-animate-marquee {
+  animation: cse-marquee var(--duration, 40s) linear infinite;
 }
 
-.animate-marquee-vertical {
-  animation: marquee-vertical var(--duration, 40s) linear infinite;
+.cse-animate-marquee-vertical {
+  animation: cse-marquee-vertical var(--duration, 40s) linear infinite;
 }

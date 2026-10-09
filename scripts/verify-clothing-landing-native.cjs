@@ -96,6 +96,10 @@ async function runVerification() {
   console.log(`PASS: Apple Card Expand Modal Opened: ${isModalOpen}`);
 
   if (isModalOpen) {
+    const inCardBtn = page.locator("button:has-text('جرب مستشار المقاسات لمتجرك مجاناً')").first();
+    const hasInCardAction = await inCardBtn.isVisible();
+    console.log(`PASS: In-card action CTA visible inside expanded modal: ${hasInCardAction}`);
+
     // Close modal
     await modalCloseBtn.click({ force: true });
     await page.waitForTimeout(400);

@@ -28,8 +28,8 @@ export const LuxuryMarquee: React.FC<MarqueeProps> = ({
           key={i}
           className={`flex shrink-0 justify-around [gap:var(--gap)] ${
             vertical
-              ? "animate-marquee-vertical flex-col"
-              : "animate-marquee flex-row"
+              ? "cse-animate-marquee-vertical animate-marquee-vertical flex-col"
+              : "cse-animate-marquee animate-marquee flex-row"
           } ${reverse ? "[animation-direction:reverse]" : ""} ${
             pauseOnHover ? "group-hover:[animation-play-state:paused]" : ""
           }`}

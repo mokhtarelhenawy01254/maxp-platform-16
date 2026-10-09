@@ -30,14 +30,17 @@ export const BlurFade: React.FC<BlurFadeProps> = ({
   const inViewResult = useInView(ref, { once: true, margin: inViewMargin as any });
   const isInView = inView ? inViewResult : true;
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const effectiveBlur = isMobile ? "0px" : blur;
+
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: yOffset, filter: `blur(${blur})` }}
+      initial={{ opacity: 0, y: yOffset, filter: effectiveBlur !== "0px" ? `blur(${effectiveBlur})` : undefined }}
       animate={
         isInView
-          ? { opacity: 1, y: 0, filter: "blur(0px)" }
-          : { opacity: 0, y: yOffset, filter: `blur(${blur})` }
+          ? { opacity: 1, y: 0, filter: effectiveBlur !== "0px" ? "blur(0px)" : undefined }
+          : { opacity: 0, y: yOffset, filter: effectiveBlur !== "0px" ? `blur(${effectiveBlur})` : undefined }
       }
       transition={{
         delay: 0.04 + delay,

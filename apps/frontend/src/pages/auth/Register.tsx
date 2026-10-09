@@ -344,6 +344,7 @@ const Register: React.FC = () => {
       const SOURCE_TO_BUNDLE: Record<string, string> = {
         messaging: "messaging-bundle",
         "ai-inbox": "ai-inbox-bundle",
+        clothing: "store-complete-bundle",
       };
 
       const token = localStorage.getItem("accessToken");

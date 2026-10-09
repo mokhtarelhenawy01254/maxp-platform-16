@@ -1,9 +1,17 @@
 import React from "react";
-import { Sparkles, Check, ArrowLeft, ShieldCheck } from "lucide-react";
+import { Sparkles, ArrowLeft } from "lucide-react";
 import { Carousel, Card } from "../../../../components/ui/luxury/AppleCardsCarousel";
 import { BlurFade } from "../../../../components/ui/luxury/BlurFade";
 
-export const ClothingEditorialShopLook: React.FC = () => {
+interface ClothingEditorialShopLookProps {
+  onFreeRegister?: () => void;
+  onPricingScroll?: () => void;
+}
+
+export const ClothingEditorialShopLook: React.FC<ClothingEditorialShopLookProps> = ({
+  onFreeRegister,
+  onPricingScroll,
+}) => {
   const merchantSuperpowers = [
     {
       category: "RETURN REDUCTION • 60%",
@@ -27,6 +35,16 @@ export const ClothingEditorialShopLook: React.FC = () => {
           <div className="text-xs text-zinc-400">
             • توفير متوسط 12,000 ج.م شهرياً في هدر مصاريف الشحن للبراند المتوسط.
           </div>
+          {onFreeRegister && (
+            <button
+              type="button"
+              onClick={onFreeRegister}
+              className="w-full py-3 px-4 rounded-xl bg-white text-black font-bold text-xs hover:bg-neutral-200 transition-all flex items-center justify-center gap-2 mt-2"
+            >
+              <span>جرب مستشار المقاسات لمتجرك مجاناً (0 ج.م)</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -49,6 +67,16 @@ export const ClothingEditorialShopLook: React.FC = () => {
               <li>✓ تقرير يومي بأرباح كل فرع ومطابقة النقدية مع الدرج.</li>
             </ul>
           </div>
+          {onPricingScroll && (
+            <button
+              type="button"
+              onClick={onPricingScroll}
+              className="w-full py-3 px-4 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-500 transition-all flex items-center justify-center gap-2 mt-2"
+            >
+              <span>اربط كاشير فروعك بالمتجر (باقة 999 ج.م)</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -71,6 +99,16 @@ export const ClothingEditorialShopLook: React.FC = () => {
               <li>✓ تسوية وتدقيق مبالغ الدفع عند الاستلام (COD) مع حسابك البنكي تلقائياً.</li>
             </ul>
           </div>
+          {onFreeRegister && (
+            <button
+              type="button"
+              onClick={onFreeRegister}
+              className="w-full py-3 px-4 rounded-xl bg-white text-black font-bold text-xs hover:bg-neutral-200 transition-all flex items-center justify-center gap-2 mt-2"
+            >
+              <span>ابدأ شحن بوسطة بنقرة واحدة (0 ج.م)</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -93,6 +131,16 @@ export const ClothingEditorialShopLook: React.FC = () => {
               <li>✓ تنبيه مبكر قبل نفاذ المقاسات الأكثر مبيعاً للطلب من ورشة التصنيع.</li>
             </ul>
           </div>
+          {onPricingScroll && (
+            <button
+              type="button"
+              onClick={onPricingScroll}
+              className="w-full py-3 px-4 rounded-xl bg-purple-600 text-white font-bold text-xs hover:bg-purple-500 transition-all flex items-center justify-center gap-2 mt-2"
+            >
+              <span>فعل مصفوفة الباركود لمتجرك (باقة 999 ج.م)</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -123,7 +171,7 @@ export const ClothingEditorialShopLook: React.FC = () => {
           </div>
           <BlurFade delay={0.15}>
             <p className="text-sm text-zinc-400 max-w-sm mt-3 md:mt-0 leading-relaxed">
-              انقر على أي كرت لاستكشاف تفاصيل الحل التقني وكيف يوفر لبراندك آلاف الجنيهات في التشغيل والمرتجعات.
+              انقر على أي كرت لاستكشاف تفاصيل الحل التقني، وفعل الميزة مباشرة لمتجرك وفروعك بنقرة واحدة.
             </p>
           </BlurFade>
         </div>

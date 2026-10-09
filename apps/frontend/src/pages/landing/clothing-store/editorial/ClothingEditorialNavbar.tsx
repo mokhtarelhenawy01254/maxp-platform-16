@@ -26,7 +26,7 @@ export const ClothingEditorialNavbar: React.FC<ClothingEditorialNavbarProps> = (
             <div className="flex items-center gap-1.5">
               <span className="font-extrabold text-black tracking-wider text-base">MAXP</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/5 text-zinc-700 font-bold uppercase tracking-wider">
-                ATELIER
+                APPAREL OS
               </span>
             </div>
             <span className="text-[11px] text-zinc-500 hidden sm:inline">
@@ -38,13 +38,10 @@ export const ClothingEditorialNavbar: React.FC<ClothingEditorialNavbarProps> = (
         {/* Anchors desktop */}
         <nav className="hidden md:flex items-center gap-6 text-xs sm:text-sm text-zinc-600 font-semibold">
           <a href="#editorial-hero" className="hover:text-black transition-colors">
-            واجهة الكوليكشن
-          </a>
-          <a href="#size-advisor" className="hover:text-black transition-colors">
-            مستشار المقاسات
+            متجر الزبائن
           </a>
           <a href="#shop-the-look" className="hover:text-black transition-colors">
-            تجميعة الطقم (Shop The Look)
+            حل أزمات التشغيل
           </a>
           <a href="#editorial-tools" className="hover:text-black transition-colors">
             الـ 17 أداة

@@ -94,12 +94,12 @@ export const ClothingStoreLanding: React.FC = () => {
 
   // ── Registration & Checkout Handlers ──
   const handleFreeRegister = useCallback(() => {
-    const q = buildQueryString({ tier: "free" });
+    const q = buildQueryString({ tier: "free", source: "clothing", action: "free" });
     navigate(`/auth/register?${q}`);
   }, [navigate, buildQueryString]);
 
   const handlePaygRegister = useCallback(() => {
-    const q = buildQueryString({ tier: "payg" });
+    const q = buildQueryString({ tier: "payg", source: "clothing", action: "free" });
     navigate(`/auth/register?${q}`);
   }, [navigate, buildQueryString]);
 
@@ -107,7 +107,7 @@ export const ClothingStoreLanding: React.FC = () => {
     const token = tokenManager.getAccessToken ? tokenManager.getAccessToken() : tokenManager.getToken?.();
 
     if (!token) {
-      const q = buildQueryString({ plan: "999", tier: "bundle" });
+      const q = buildQueryString({ plan: "999", tier: "bundle", source: "clothing", action: "paid" });
       navigate(`/auth/register?${q}`);
       return;
     }
@@ -175,7 +175,10 @@ export const ClothingStoreLanding: React.FC = () => {
             />
 
             {/* 2. Interactive "Shop The Look" Module */}
-            <ClothingEditorialShopLook />
+            <ClothingEditorialShopLook
+              onFreeRegister={handleFreeRegister}
+              onPricingScroll={scrollToPricing}
+            />
 
             {/* 3. The 17 Fashion Tools Suite Matrix */}
             <ClothingEditorialTools
@@ -228,18 +231,28 @@ export const ClothingStoreLanding: React.FC = () => {
           <span className="text-sm font-extrabold text-zinc-950 cse-tabular">مجاناً بدون بطاقة</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <a
+            href="https://wa.me/201016843431?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%D8%8C%20%D8%A3%D9%88%D8%AF%20%D9%85%D8%B9%D8%B1%D9%81%D8%A9%20%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84%20%D8%A8%D8%A7%D9%82%D8%A9%20%D9%85%D8%AA%D8%AC%D8%B1%20%D8%A7%D9%84%D9%85%D9%84%D8%A7%D8%A8%D8%B3"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs p-2.5 rounded-xl border border-black/10 font-bold bg-white text-emerald-700 flex items-center justify-center min-h-[44px] min-w-[44px]"
+            title="تواصل عبر واتساب"
+            aria-label="تواصل مع خبير الأزياء عبر واتساب"
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          </a>
           <button
             type="button"
             onClick={scrollToPricing}
-            className="text-xs py-2 px-3 rounded-lg border border-black/10 font-bold bg-white text-black"
+            className="text-xs py-2 px-3 rounded-xl border border-black/10 font-bold bg-white text-black min-h-[44px]"
           >
             باقة 999
           </button>
           <button
             type="button"
             onClick={handleFreeRegister}
-            className={activeMode === "editorial" ? "cse-btn-primary text-xs py-2 px-3 whitespace-nowrap" : "csn-btn-primary text-xs py-2 px-3 whitespace-nowrap"}
+            className={activeMode === "editorial" ? "cse-btn-primary text-xs py-2 px-3 whitespace-nowrap min-h-[44px]" : "csn-btn-primary text-xs py-2 px-3 whitespace-nowrap min-h-[44px]"}
           >
             <span>افتح متجرك</span>
             <ArrowLeft className="w-3.5 h-3.5" />

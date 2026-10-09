@@ -43,7 +43,7 @@ export const ClothingEditorialHero: React.FC<ClothingEditorialHeroProps> = ({
 
             {/* Merchant Primary CTAs */}
             <BlurFade delay={0.2} className="w-full">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto mb-8">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto mb-4">
                 <button
                   onClick={onFreeRegister}
                   type="button"
@@ -59,6 +59,25 @@ export const ClothingEditorialHero: React.FC<ClothingEditorialHeroProps> = ({
                 >
                   <span>باقة المتجر الكاملة (999 ج.م)</span>
                 </button>
+                <a
+                  href="https://wa.me/201016843431?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%D8%8C%20%D8%A3%D9%88%D8%AF%20%D9%85%D8%B9%D8%B1%D9%81%D8%A9%20%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84%20%D8%A8%D8%A7%D9%82%D8%A9%20%D9%85%D8%AA%D8%AC%D8%B1%20%D8%A7%D9%84%D9%85%D9%84%D8%A7%D8%A8%D8%B3%20%D9%88%D8%B1%D8%A8%D8%B7%20%D8%A8%D9%88%D8%B3%D8%B7%D8%A9%20%D9%88%D8%A7%D9%84%D9%81%D8%B1%D9%88%D8%B9"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl border border-black/10 bg-white hover:bg-neutral-100 text-xs sm:text-sm font-bold text-zinc-900 transition-all"
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>تواصل عبر واتساب</span>
+                </a>
+              </div>
+
+              {/* Explicit Risk Reversals */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-600 mb-6 font-medium">
+                <span className="text-emerald-800 font-bold flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  0% عمولة على مبيعاتك نهائياً
+                </span>
+                <span>• بدون فيزا دولارية وبدون مصاريف شوبيفاي</span>
+                <span>• مساعدة في رفع أول 50 منتج مجاناً</span>
               </div>
             </BlurFade>
 

@@ -35,6 +35,14 @@ export const ClothingEditorialPricing: React.FC<ClothingEditorialPricingProps> =
           <p className="text-sm sm:text-base text-zinc-600 leading-relaxed">
             ابدأ متجرك بـ 0 ج.م، أو ادفع 1 ج.م لكل أوردر، أو امتلك المنظومة الكاملة بـ 999 ج.م في الشهر.
           </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-zinc-600 mt-4 font-semibold">
+            <span className="text-emerald-800 flex items-center gap-1 font-bold">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              0% عمولة على مبيعاتك نهائياً
+            </span>
+            <span>• الدفع بالجنيه المصري (بدون فيزا دولارية وبدون مصاريف شوبيفاي)</span>
+            <span>• مساعدة مجانية في رفع أول 50 منتج ومقاس</span>
+          </div>
         </div>
 
         {/* 3 Pricing Cards */}

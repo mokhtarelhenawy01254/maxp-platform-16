@@ -128,13 +128,15 @@ export const Card = ({
       }
     }
 
+    const originalOverflow = document.body.style.overflow;
     if (open) {
       document.body.style.overflow = "hidden";
       window.addEventListener("keydown", onKeyDown);
-    } else {
-      document.body.style.overflow = "auto";
     }
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
   }, [open]);
 
   const handleOpen = () => {
@@ -179,6 +181,8 @@ export const Card = ({
                 <img
                   src={card.src}
                   alt={card.title}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -200,6 +204,8 @@ export const Card = ({
           <img
             src={card.src}
             alt={card.title}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 filter brightness-75 group-hover:brightness-90"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
