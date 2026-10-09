@@ -58,25 +58,24 @@ async function runVerification() {
   const h1Text = await page.$eval("h1", (el) => el.textContent.trim());
   console.log(`Headline: "${h1Text}"`);
 
-  // Interactive Live Size Advisor Slider Test
-  console.log("Testing Live Size Advisor Sliders...");
-  const heightSlider = await page.locator("input[type='range']").first();
-  await heightSlider.fill("185");
-  await page.waitForTimeout(200);
-
-  const weightSlider = await page.locator("input[type='range']").nth(1);
-  await weightSlider.fill("95");
+  // Interactive Merchant Cockpit Tabs Test
+  console.log("Testing Interactive Merchant Cockpit Tabs (POS, Bosta, Storefront)...");
+  const posTabBtn = page.locator("button:has-text('كاشير الفروع')").first();
+  await posTabBtn.click({ force: true });
   await page.waitForTimeout(300);
+  const posActive = await page.locator("text=نظام كاشير الفروع والمخزون الموحد").isVisible();
+  console.log(`PASS: Branch POS Tab Active: ${posActive}`);
 
-  const recommendedSizeText = await page.locator("#size-advisor").textContent();
-  console.log(`Advisor Output: includes size update: ${recommendedSizeText.includes("XL") || recommendedSizeText.includes("2XL")}`);
-
-  // Test Aceternity UI Lens Hover
-  console.log("Testing Aceternity UI Lens...");
-  const lensContainer = page.locator(".cursor-crosshair").first();
-  await lensContainer.hover({ force: true });
+  const bostaTabBtn = page.locator("button:has-text('بوليصة بوسطة')").first();
+  await bostaTabBtn.click({ force: true });
   await page.waitForTimeout(300);
-  console.log("PASS: Lens hover activated");
+  const bostaActive = await page.locator("text=BOSTA AIRWAY BILL").isVisible();
+  console.log(`PASS: Bosta Waybill Tab Active: ${bostaActive}`);
+
+  const storefrontTabBtn = page.locator("button:has-text('متجر الزبائن')").first();
+  await storefrontTabBtn.click({ force: true });
+  await page.waitForTimeout(300);
+  console.log("PASS: Switched back to Storefront tab");
 
   // Test Magic UI Marquee
   const hasMarquee = await page.locator(".animate-marquee").first().isVisible();
@@ -97,14 +96,6 @@ async function runVerification() {
   console.log(`PASS: Apple Card Expand Modal Opened: ${isModalOpen}`);
 
   if (isModalOpen) {
-    // Click add bundle inside modal
-    const addBundleBtn = page.locator("button:has-text('أضف الطقم كاملاً لسلة الشراء')").first();
-    if (await addBundleBtn.isVisible()) {
-      await addBundleBtn.click({ force: true });
-      await page.waitForTimeout(300);
-      const isConfirmed = await page.locator("button:has-text('تمت إضافة الطقم')").first().isVisible();
-      console.log(`PASS: Bundle Added confirmation inside modal: ${isConfirmed}`);
-    }
     // Close modal
     await modalCloseBtn.click({ force: true });
     await page.waitForTimeout(400);

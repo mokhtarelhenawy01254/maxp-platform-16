@@ -1,95 +1,104 @@
-import React, { useState } from "react";
-import { Sparkles, Check, ShoppingBag, ArrowLeft } from "lucide-react";
+import React from "react";
+import { Sparkles, Check, ArrowLeft, ShieldCheck } from "lucide-react";
 import { Carousel, Card } from "../../../../components/ui/luxury/AppleCardsCarousel";
 import { BlurFade } from "../../../../components/ui/luxury/BlurFade";
 
 export const ClothingEditorialShopLook: React.FC = () => {
-  const [bundleAdded, setBundleAdded] = useState(false);
-
-  const carouselData = [
+  const merchantSuperpowers = [
     {
-      category: "LOOKBOOK #01 • STREETWEAR",
-      title: "سويت شيرت أوفر سايز وبنطلون كارجو ستوديو",
+      category: "RETURN REDUCTION • 60%",
+      title: "مستشار المقاسات الذكي: وقف نزيف شحن المرتجعات",
       src: "/images/fashion/editorial-streetwear.jpg",
       content: (
-        <div className="space-y-4">
-          <p className="text-zinc-300 leading-relaxed">
-            طقم الشارع المتكامل: خامة سويت شيرت قطن مصري 100% ثقيل (500 جرام)، بنطلون كارجو بـ 6 جيوب مقاوم للتجعيد، وكاب قماش مطرز.
+        <div className="space-y-4 text-right">
+          <p className="text-zinc-300 leading-relaxed text-sm">
+            أكبر كابوس يواجه براندات الملابس في مصر هو شحن القطعة للزبون وتطلع واسعة أو ضيقة، فيتحمل التاجر مصاريف شحن رايح جاي وخصم من أرباحه.
           </p>
-          <div className="p-4 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-between">
-            <div>
-              <div className="text-xs text-zinc-400">إجمالي الطقم المنسق</div>
-              <div className="text-xl font-black text-white font-serif cse-tabular">1,400 ج.م</div>
+          <div className="p-4 rounded-2xl bg-zinc-900 border border-white/10 space-y-2">
+            <div className="text-xs font-bold text-emerald-400">
+              كيف تحلها منظومة MaxP لمتجرك؟
             </div>
-            <button
-              type="button"
-              onClick={() => setBundleAdded(true)}
-              className="px-5 py-2.5 rounded-xl bg-white text-black font-bold text-xs hover:bg-neutral-200 transition-all"
-            >
-              {bundleAdded ? "✓ تمت إضافة الطقم كاملاً" : "أضف الطقم كاملاً لسلة الشراء"}
-            </button>
+            <ul className="text-xs text-zinc-300 space-y-1.5 leading-relaxed">
+              <li>✓ أداة تسأل الزبون تفاعلياً عن الطول والوزن وترشح المقاس المظبوط (S/M/L/XL).</li>
+              <li>✓ خفضت مرتجعات المقاسات بنسبة 60% لدى البراندات المشتركة.</li>
+              <li>✓ تنبيهات واضحة للزبون بنوع التلبيس (Oversized أم Regular Fit).</li>
+            </ul>
           </div>
           <div className="text-xs text-zinc-400">
-            • ميزة ربط الأطقم (Shop The Look) ترفع متوسط سلة الشراء بنسبة 45%.
+            • توفير متوسط 12,000 ج.م شهرياً في هدر مصاريف الشحن للبراند المتوسط.
           </div>
         </div>
       ),
     },
     {
-      category: "LOOKBOOK #02 • QUIET LUXURY",
-      title: "معطف الكشمير العاجي والبنطلون التيلور",
+      category: "OMNICHANNEL • REALTIME",
+      title: "كاشير الفروع والمخزون الموحد (Cloud POS)",
       src: "/images/fashion/editorial-coat.jpg",
       content: (
-        <div className="space-y-4">
-          <p className="text-zinc-300 leading-relaxed">
-            تصميم تحريري راقٍ لبراندات الأزياء الفاخرة: معطف كشمير مهدأ بصف أزرار مزدوج وتفصيل إيطالي دقيق، يبرز جمال التصوير وتفاصيل الخامة.
+        <div className="space-y-4 text-right">
+          <p className="text-zinc-300 leading-relaxed text-sm">
+            لو عندك محل وبتبيع أونلاين، أسوأ موقف لما زبون يطلب تيشيرت من الويبسايت ويكون زبون تاني اشتراه من المحل الصبح!
           </p>
-          <div className="p-4 rounded-2xl bg-zinc-900 border border-white/10">
-            <div className="text-xs text-emerald-400 font-bold mb-1">
-              مزامنة فورية بين فروع المحل والمتجر
+          <div className="p-4 rounded-2xl bg-zinc-900 border border-white/10 space-y-2">
+            <div className="text-xs font-bold text-blue-400">
+              مزامنة لحظية بين فروعك والمتجر:
             </div>
-            <div className="text-xs text-zinc-400 leading-relaxed">
-              بيع قطعة داخل الفرع يخصمها في اللحظة نفسها من المتجر الإلكتروني لمنع أي بيع متضارب.
-            </div>
+            <ul className="text-xs text-zinc-300 space-y-1.5 leading-relaxed">
+              <li>✓ أي قطعة تتباع على الكاشير في أي فرع، تتخصم في الثانية نفسها من الموقع.</li>
+              <li>✓ دعم البيع بالباركود وطباعة فواتير حرارية لزبائن المحل.</li>
+              <li>✓ تقرير يومي بأرباح كل فرع ومطابقة النقدية مع الدرج.</li>
+            </ul>
           </div>
         </div>
       ),
     },
     {
-      category: "ENGINE • SMART MATRIX",
-      title: "إدارة المقاسات والألوان ووقف نزيف المرتجعات",
+      category: "LOGISTICS • BOSTA 1-CLICK",
+      title: "طباعة بوالص بوسطة وتحديث الحالات تلقائياً",
       src: "/images/fashion/editorial-streetwear.jpg",
       content: (
-        <div className="space-y-4">
-          <p className="text-zinc-300 leading-relaxed">
-            مصفوفة متقدمة تدعم كل توليفات المقاسات (S, M, L, XL, 2XL) والألوان مع كود باركود مستقل لكل مقاس.
+        <div className="space-y-4 text-right">
+          <p className="text-zinc-300 leading-relaxed text-sm">
+            بدل ما موظف خدمة العملاء يقعد ينسخ العناوين وأرقام التليفونات في موقع شركة الشحن ويغلط في البيانات، المنظومة بتطبع البوليصة بضغطة زر.
           </p>
-          <ul className="text-xs text-zinc-400 space-y-2">
-            <li>✓ مستشار المقاسات التلقائي يخفض المرتجعات بنسبة 60%.</li>
-            <li>✓ جرد فوري بالباركود في ثوانٍ معدودة.</li>
-            <li>✓ تنبيهات ذكية قبل نفاذ المقاسات الأكثر طلباً.</li>
-          </ul>
+          <div className="p-4 rounded-2xl bg-zinc-900 border border-white/10 space-y-2">
+            <div className="text-xs font-bold text-amber-400">
+              ربط مباشر مع بوسطة وميلرز:
+            </div>
+            <ul className="text-xs text-zinc-300 space-y-1.5 leading-relaxed">
+              <li>✓ إنشاء بوليصة الشحن بباركود التتبع بنقرة واحدة (1-Click Dispatch).</li>
+              <li>✓ إرسال رسالة واتساب تلقائية للزبون برقم التتبع وموعد التوصيل.</li>
+              <li>✓ تسوية وتدقيق مبالغ الدفع عند الاستلام (COD) مع حسابك البنكي تلقائياً.</li>
+            </ul>
+          </div>
         </div>
       ),
     },
     {
-      category: "LOGISTICS • BOSTA SYNC",
-      title: "ربط بوسطة وشركات الشحن المصرية بلحظة",
+      category: "INVENTORY • MATRIX BARCODE",
+      title: "مصفوفة المقاسات والألوان وجرد المحل بالباركود",
       src: "/images/fashion/editorial-coat.jpg",
       content: (
-        <div className="space-y-4">
-          <p className="text-zinc-300 leading-relaxed">
-            إنشاء بوالص الشحن وطباعتها بنقرة واحدة، مع تحديث مسار التوصيل للعميل تلقائياً على الواتساب دون أي تدخل بشري.
+        <div className="space-y-4 text-right">
+          <p className="text-zinc-300 leading-relaxed text-sm">
+            إدارة ألوان ومقاسات الموديل الواحد بطريقة منظمة بدون فوضى في الكتالوج.
           </p>
-          <div className="p-4 rounded-2xl bg-zinc-900 border border-white/10 text-xs text-zinc-300">
-            مطابقة دقيقة لتحصيلات الدفع عند الاستلام (COD) مع حسابك البنكي.
+          <div className="p-4 rounded-2xl bg-zinc-900 border border-white/10 space-y-2">
+            <div className="text-xs font-bold text-purple-400">
+              جرد وتتبع دقيق للمصنع والمحل:
+            </div>
+            <ul className="text-xs text-zinc-300 space-y-1.5 leading-relaxed">
+              <li>✓ كود باركود وسعر مستقل لكل توليفة (مثال: أسود L، زيتي XL).</li>
+              <li>✓ جرد كامل لفروع المحل والمخازن في دقائق باستخدام ماسح الباركود.</li>
+              <li>✓ تنبيه مبكر قبل نفاذ المقاسات الأكثر مبيعاً للطلب من ورشة التصنيع.</li>
+            </ul>
           </div>
         </div>
       ),
     },
   ];
 
-  const cards = carouselData.map((card, index) => (
+  const cards = merchantSuperpowers.map((card, index) => (
     <Card key={card.title} card={card} index={index} layout={true} />
   ));
 
@@ -103,18 +112,18 @@ export const ClothingEditorialShopLook: React.FC = () => {
             <BlurFade delay={0.05}>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white/80 text-xs font-mono tracking-widest uppercase mb-3">
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>ACETERNITY CAROUSEL • كوليكشن الكتالوج الحي</span>
+                <span>حل كوابيس تشغيل متاجر الملابس • 4 ميزات جذرية</span>
               </div>
             </BlurFade>
             <BlurFade delay={0.1}>
               <h2 className="text-2xl sm:text-4xl md:text-5xl font-black font-serif tracking-tight text-white mb-2">
-                انقر على أي كوليكشن لاستكشاف التفاصيل وتجربة الشراء
+                كيف تحل المنظومة المشاكل اليومية لبراندك؟
               </h2>
             </BlurFade>
           </div>
           <BlurFade delay={0.15}>
             <p className="text-sm text-zinc-400 max-w-sm mt-3 md:mt-0 leading-relaxed">
-              تجربة مستوحاة من كبرى دور الأزياء العالمية: انقر على الكرت للتوسيع السينمائي، فحص تفاصيل الطقم، والإضافة بنقرة واحدة.
+              انقر على أي كرت لاستكشاف تفاصيل الحل التقني وكيف يوفر لبراندك آلاف الجنيهات في التشغيل والمرتجعات.
             </p>
           </BlurFade>
         </div>

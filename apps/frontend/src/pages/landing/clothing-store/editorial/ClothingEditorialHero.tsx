@@ -1,6 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { ArrowLeft, Sparkles, Sliders, ShieldCheck } from "lucide-react";
-import { Lens } from "../../../../components/ui/luxury/Lens";
+import React, { useState } from "react";
+import { ArrowLeft, Sparkles, Smartphone, Store, Package, Check, ShieldCheck, Printer, Barcode } from "lucide-react";
 import { BlurFade } from "../../../../components/ui/luxury/BlurFade";
 import { LuxuryMarquee } from "../../../../components/ui/luxury/LuxuryMarquee";
 
@@ -13,53 +12,36 @@ export const ClothingEditorialHero: React.FC<ClothingEditorialHeroProps> = ({
   onFreeRegister,
   onPricingScroll,
 }) => {
-  const [selectedColor, setSelectedColor] = useState<string>("black");
-  const [height, setHeight] = useState<number>(178);
-  const [weight, setWeight] = useState<number>(80);
-
-  // Dynamic Size Advisor calculation logic
-  const calculatedSize = useMemo(() => {
-    const bmi = weight / Math.pow(height / 100, 2);
-    if (bmi < 21) return { size: "S", label: "مقاس S (تلبيس Regular)" };
-    if (bmi < 24.5) return { size: "M", label: "مقاس M (تلبيس Regular)" };
-    if (bmi < 27.5) return { size: "L", label: "مقاس L (تلبيس مناسب Perfect Fit)" };
-    if (bmi < 31) return { size: "XL", label: "مقاس XL (تلبيس Oversized)" };
-    return { size: "2XL", label: "مقاس 2XL (تلبيس فضفاض Loose Fit)" };
-  }, [height, weight]);
-
-  const colorData: Record<string, { name: string; hex: string; stock: number }> = {
-    black: { name: "أسود فحم ستوديو", hex: "#141416", stock: 18 },
-    olive: { name: "زيتي عسكري مهدأ", hex: "#4a5340", stock: 9 },
-    cream: { name: "أوف وايت عاجي", hex: "#e7e2d9", stock: 14 },
-  };
+  // Active demo tab inside the merchant cockpit mockup
+  const [activeTab, setActiveTab] = useState<"storefront" | "pos" | "bosta">("storefront");
 
   return (
-    <section id="editorial-hero" className="border-b border-black/[0.08] bg-[#FAF8F5] pt-8 sm:pt-16 pb-0 overflow-hidden">
+    <section id="editorial-hero" className="border-b border-black/[0.08] bg-[#FAF8F5] pt-10 sm:pt-16 pb-0 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           
-          {/* Main Hero Copy (6 cols) */}
+          {/* Main Hero Copy for the Merchant (6 cols) */}
           <div className="lg:col-span-6 flex flex-col items-start text-right">
             <BlurFade delay={0.05}>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/5 border border-black/10 text-xs font-mono tracking-widest uppercase mb-4 text-zinc-800">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>MAXP ATELIER • FASHION ENGINEERING 2026</span>
+                <span>MAXP APPAREL OS • سوفت وير إدارة براندات ومحلات الملابس</span>
               </div>
             </BlurFade>
 
             <BlurFade delay={0.1}>
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-zinc-950 tracking-tight leading-[1.15] mb-4 font-serif">
-                براند الملابس بتاعك يستحق متجر يشبه مجلات الموضة.. ومنظومة فروع وشحن ما تغلطش
+                متجر إلكتروني يشبه زارا.. وسيستم فروع وشحن يوقف نزيف المرتجعات
               </h1>
             </BlurFade>
 
             <BlurFade delay={0.15}>
               <p className="text-base sm:text-lg text-zinc-600 font-normal leading-relaxed mb-6 max-w-xl">
-                من أول جلسة التصوير لكوليكشن 2026، حتى تأكيد المقاس وطباعة بوليصة بوسطة بنقرة واحدة. واجهة استثنائية لزبائنك مع سيستم ذكي يوقف نزيف المرتجعات.
+                منظومة مخصصة لتجار وبراندات الملابس في مصر: متجر فاخر لزبائنك، كاشير سحابي متزامن مع فروع المحل، وطباعة بوالص بوسطة بنقرة واحدة، ومستشار مقاسات ذكي يمنع تبديل القطع.
               </p>
             </BlurFade>
 
-            {/* CTAs */}
+            {/* Merchant Primary CTAs */}
             <BlurFade delay={0.2} className="w-full">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto mb-8">
                 <button
@@ -80,16 +62,16 @@ export const ClothingEditorialHero: React.FC<ClothingEditorialHeroProps> = ({
               </div>
             </BlurFade>
 
-            {/* Key Telemetry Stats */}
+            {/* Key Telemetry Stats for the Merchant */}
             <BlurFade delay={0.25} className="w-full">
               <div className="grid grid-cols-3 gap-4 border-t border-black/10 pt-6 w-full">
                 <div>
                   <div className="text-2xl font-black text-zinc-950 cse-tabular">0 ج.م</div>
-                  <div className="text-xs text-zinc-500">تكلفة فتح المتجر المستمرة</div>
+                  <div className="text-xs text-zinc-500">متجر أونلاين مجاني دائم</div>
                 </div>
                 <div>
                   <div className="text-2xl font-black text-zinc-950 cse-tabular">1 ج.م/أوردر</div>
-                  <div className="text-xs text-zinc-500">بدون اشتراك شهري ثابت</div>
+                  <div className="text-xs text-zinc-500">تدفع فقط لما تشحن</div>
                 </div>
                 <div>
                   <div className="text-2xl font-black text-emerald-700 cse-tabular">60%</div>
@@ -99,115 +81,178 @@ export const ClothingEditorialHero: React.FC<ClothingEditorialHeroProps> = ({
             </BlurFade>
           </div>
 
-          {/* Interactive Fashion Lens Canvas (6 cols) */}
-          <div className="lg:col-span-6 flex flex-col items-center">
-            <BlurFade delay={0.2} className="w-full max-w-md sm:max-w-lg">
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-black/10 bg-white">
+          {/* Interactive Merchant Cockpit Preview (6 cols) */}
+          <div className="lg:col-span-6 flex flex-col items-center w-full">
+            <BlurFade delay={0.2} className="w-full max-w-lg">
+              <div className="rounded-3xl overflow-hidden shadow-2xl border border-black/15 bg-zinc-950 text-white">
                 
-                {/* Aceternity UI Lens Component wrapping the real editorial fashion photo */}
-                <Lens zoomFactor={2.4} lensSize={180}>
-                  <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-900">
-                    <img
-                      src="/images/fashion/editorial-streetwear.jpg"
-                      alt="كوليكشن الأزياء والستريت وير"
-                      className="w-full h-full object-cover select-none"
-                    />
-
-                    {/* Lens hint badge */}
-                    <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[11px] font-mono tracking-wider border border-white/20">
-                      <Sparkles className="w-3 h-3 text-amber-300" />
-                      <span>مرر الماوس لفحص نسيج القماش (LENS 2.4X)</span>
-                    </div>
-
-                    {/* Collection badge */}
-                    <div className="absolute bottom-4 right-4 z-20 px-3 py-1 rounded-lg bg-white/90 backdrop-blur-md text-zinc-900 text-xs font-bold border border-black/10 shadow-sm">
-                      سويت شيرت أوفر سايز (Heavy Fleece) • 750 ج.م
-                    </div>
+                {/* Mockup Header & Interactive Switcher for the 3 Superpowers */}
+                <div className="p-3 bg-zinc-900 border-b border-white/10 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-amber-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
                   </div>
-                </Lens>
-
-                {/* Embedded Minimal Size Advisor Controls */}
-                <div id="size-advisor" className="p-4 sm:p-5 bg-white border-t border-black/10 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Sliders className="w-4 h-4 text-zinc-900" />
-                      <span className="text-xs sm:text-sm font-bold text-zinc-900">
-                        مستشار المقاسات الذكي (جرب بنفسك):
-                      </span>
-                    </div>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold cse-tabular">
-                      دقة 98.6%
-                    </span>
-                  </div>
-
-                  {/* Sliders */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="flex justify-between text-xs text-zinc-600 mb-1">
-                        <span>طول العميل</span>
-                        <span className="font-bold text-zinc-900 cse-tabular">{height} سم</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="155"
-                        max="198"
-                        value={height}
-                        onChange={(e) => setHeight(Number(e.target.value))}
-                        className="w-full accent-black cursor-pointer"
-                        aria-label="طول العميل بالسنتيمتر"
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-xs text-zinc-600 mb-1">
-                        <span>وزن العميل</span>
-                        <span className="font-bold text-zinc-900 cse-tabular">{weight} كجم</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="55"
-                        max="125"
-                        value={weight}
-                        onChange={(e) => setWeight(Number(e.target.value))}
-                        className="w-full accent-black cursor-pointer"
-                        aria-label="وزن العميل بالكيلوجرام"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Recommendation banner */}
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 border border-black/5">
-                    <span className="text-xs text-zinc-600">المقاس الموصى به تلقائياً:</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-black px-2.5 py-0.5 rounded-md bg-black text-white">
-                        {calculatedSize.size}
-                      </span>
-                      <span className="text-xs font-bold text-zinc-900">
-                        {calculatedSize.label}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Color Swatches */}
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-xs text-zinc-600">اللون: {colorData[selectedColor].name}</span>
-                    <div className="flex items-center gap-2">
-                      {Object.entries(colorData).map(([key, val]) => (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => setSelectedColor(key)}
-                          className={`w-6 h-6 rounded-full border-2 transition-all ${
-                            selectedColor === key ? "border-black scale-110" : "border-transparent"
-                          }`}
-                          style={{ backgroundColor: val.hex }}
-                          title={val.name}
-                          aria-label={`اختيار لون ${val.name}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                  <span className="text-[11px] font-mono text-zinc-400">
+                    MaxP Apparel OS • معاينة شاشات النظام الحية
+                  </span>
                 </div>
+
+                {/* 3 Interactive Mode Tabs */}
+                <div className="grid grid-cols-3 bg-zinc-900/60 p-1 border-b border-white/10 text-xs font-bold text-center">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("storefront")}
+                    className={`py-2 px-1 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                      activeTab === "storefront"
+                        ? "bg-white text-black shadow-md"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>متجر الزبائن</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("pos")}
+                    className={`py-2 px-1 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                      activeTab === "pos"
+                        ? "bg-white text-black shadow-md"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    <Store className="w-3.5 h-3.5" />
+                    <span>كاشير الفروع</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("bosta")}
+                    className={`py-2 px-1 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                      activeTab === "bosta"
+                        ? "bg-white text-black shadow-md"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    <Package className="w-3.5 h-3.5" />
+                    <span>بوليصة بوسطة</span>
+                  </button>
+                </div>
+
+                {/* Tab 1: Customer Storefront Preview */}
+                {activeTab === "storefront" && (
+                  <div className="p-5 space-y-4 animate-in fade-in duration-300">
+                    <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                      <div>
+                        <div className="text-xs text-zinc-400">واجهة متجرك الإلكتروني الفاخر</div>
+                        <div className="text-base font-bold text-white">store.yourbrand.com</div>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono">
+                        LIVE & FAST (P95 &lt; 0.8s)
+                      </span>
+                    </div>
+
+                    <div className="flex gap-4 items-center bg-zinc-900/90 p-3 rounded-2xl border border-white/10">
+                      <img
+                        src="/images/fashion/editorial-streetwear.jpg"
+                        alt="كوليكشن المتجر"
+                        className="w-20 h-24 object-cover rounded-xl shrink-0"
+                      />
+                      <div className="space-y-1.5 flex-1">
+                        <div className="text-xs font-bold text-white">سويت شيرت أوفر سايز (Heavy Fleece)</div>
+                        <div className="text-xs text-zinc-400">المقاس الموصى به: <span className="text-white font-bold">L (Perfect Fit)</span></div>
+                        <div className="flex items-center gap-1.5 pt-1">
+                          <span className="text-sm font-black text-white font-serif cse-tabular">750 ج.م</span>
+                          <span className="text-[10px] text-zinc-400">(متبقي 4 قطع بالمخزن)</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-zinc-900/60 border border-white/5 flex items-center justify-between text-xs text-zinc-300">
+                      <span className="flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>مستشار المقاسات الذكي مدمج في صفحة المنتج</span>
+                      </span>
+                      <span className="text-emerald-400 font-bold">-60% مرتجعات</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tab 2: Branch POS & Live Inventory Sync */}
+                {activeTab === "pos" && (
+                  <div className="p-5 space-y-4 animate-in fade-in duration-300">
+                    <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                      <div>
+                        <div className="text-xs text-zinc-400">نظام كاشير الفروع والمخزون الموحد</div>
+                        <div className="text-base font-bold text-white">Cloud POS • مزامنة لحظية</div>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 font-mono">
+                        SYNCED 100%
+                      </span>
+                    </div>
+
+                    {/* Branches stock breakdown */}
+                    <div className="space-y-2">
+                      <div className="text-xs text-zinc-400 font-bold">توزيع رصيد المقاسات بين الفروع والمتجر:</div>
+                      
+                      <div className="p-2.5 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-between text-xs">
+                        <span className="text-zinc-200">فرع المهندسين (الكاشير 1)</span>
+                        <span className="font-bold text-white font-mono">5 قطع (L)</span>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-between text-xs">
+                        <span className="text-zinc-200">فرع مدينة نصر (الكاشير 2)</span>
+                        <span className="font-bold text-white font-mono">3 قطع (L)</span>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-between text-xs">
+                        <span className="text-emerald-400 font-bold">متاح على المتجر الإلكتروني</span>
+                        <span className="font-bold text-emerald-400 font-mono">8 قطع (مزامنة تلقائية)</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-center gap-2">
+                      <Barcode className="w-4 h-4 shrink-0" />
+                      <span>أي قطعة تتباع على كاشير المحل تتخصم فوراً من الموقع والعكس.</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tab 3: Automated Bosta Waybill & Tracking */}
+                {activeTab === "bosta" && (
+                  <div className="p-5 space-y-4 animate-in fade-in duration-300">
+                    <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                      <div>
+                        <div className="text-xs text-zinc-400">طباعة بوالص الشحن بنقرة واحدة</div>
+                        <div className="text-base font-bold text-white">ربط مباشر مع بوسطة (Bosta API)</div>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono">
+                        AUTO-GENERATED
+                      </span>
+                    </div>
+
+                    {/* Simulated Bosta Waybill */}
+                    <div className="p-4 rounded-2xl bg-white text-zinc-950 border border-white/20 space-y-2 text-right">
+                      <div className="flex items-center justify-between border-b border-zinc-200 pb-2">
+                        <span className="font-black text-sm font-serif">BOSTA AIRWAY BILL</span>
+                        <span className="text-xs font-mono font-bold">#BST-89420-EG</span>
+                      </div>
+                      <div className="text-xs font-bold text-zinc-900">العميل: أحمد محمود • 01012345678</div>
+                      <div className="text-xs text-zinc-600">العنوان: المعادي، القاهرة (توصيل غداً)</div>
+                      <div className="flex items-center justify-between pt-2 border-t border-zinc-100 text-xs">
+                        <span className="text-zinc-500">التحصيل عند الاستلام (COD):</span>
+                        <span className="font-black text-base cse-tabular">750 ج.م</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 text-xs text-zinc-400">
+                      <span className="flex items-center gap-1.5 text-emerald-400">
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>طباعة طابعة حرارية 10×15 بنقرة واحدة</span>
+                      </span>
+                      <span>إشعار واتساب تلقائي</span>
+                    </div>
+                  </div>
+                )}
 
               </div>
             </BlurFade>
@@ -216,16 +261,16 @@ export const ClothingEditorialHero: React.FC<ClothingEditorialHeroProps> = ({
         </div>
       </div>
 
-      {/* Magic UI Luxury Infinite Marquee */}
+      {/* Magic UI Luxury Infinite Marquee for Merchants */}
       <div className="mt-14 py-4 border-y border-black/[0.08] bg-black text-white">
         <LuxuryMarquee repeat={5} className="[--duration:25s]">
           <div className="flex items-center gap-8 text-xs font-mono tracking-widest uppercase">
-            <span className="text-amber-400 font-bold">✦ MAXP ATELIER 2026</span>
-            <span className="text-zinc-400">• ZARA OMNICHANNEL ENGINE</span>
-            <span className="text-zinc-200 font-bold">• ربط بوسطة وبوليسة الشحن بلحظة</span>
-            <span className="text-zinc-400">• كاشير وفروع CLOUD POS</span>
+            <span className="text-amber-400 font-bold">✦ MAXP APPAREL PLATFORM</span>
+            <span className="text-zinc-400">• ربط بوسطة وشركات الشحن بلحظة</span>
+            <span className="text-zinc-200 font-bold">• كاشير سحابي متزامن مع الفروع (CLOUD POS)</span>
+            <span className="text-zinc-400">• مستشار المقاسات الذكي لخفض المرتجعات 60%</span>
             <span className="text-emerald-400 font-bold">• 0 ج.م متجر مجاني</span>
-            <span className="text-zinc-400">• مصفوفة المقاسات والألوان (MATRIX)</span>
+            <span className="text-zinc-400">• مصفوفة المقاسات والألوان (MATRIX S/M/L/XL)</span>
             <span className="text-white font-bold">• باقة 999 ج.م الشاملة</span>
           </div>
         </LuxuryMarquee>
