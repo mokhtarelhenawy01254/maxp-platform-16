@@ -148,7 +148,7 @@ export const ClothingEditorialTools: React.FC<ClothingEditorialToolsProps> = ({
           <button
             onClick={onPricingScroll}
             type="button"
-            className="inline-flex items-center gap-2 text-xs font-bold text-zinc-800 hover:text-black hover:underline cursor-pointer"
+            className="inline-flex items-center gap-2 text-xs font-bold text-zinc-800 hover:text-black hover:underline cursor-pointer py-2.5 px-3 min-h-[32px]"
           >
             <span>اشترك في باقة الـ 999 ج.م ووفر تكلفة شراء الأدوات فرادى</span>
             <ArrowLeft className="w-3.5 h-3.5" />

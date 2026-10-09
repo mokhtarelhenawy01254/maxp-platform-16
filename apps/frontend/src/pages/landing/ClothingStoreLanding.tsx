@@ -21,11 +21,13 @@ import { ClothingStoreLeadForm } from "./clothing-store/ClothingStoreLeadForm";
 import { ClothingStoreFAQ } from "./clothing-store/ClothingStoreFAQ";
 import { ClothingStoreFooter } from "./clothing-store/ClothingStoreFooter";
 import { UtmData } from "./clothing-store/types";
+import { WHATSAPP_CONSULT_URL } from "./clothing-store/clothingStoreData";
 
 // Scoped CSS
 import "./clothing-store/clothingStoreNative.css";
 import "./clothing-store/editorial/clothingEditorial.css";
 import { ArrowLeft } from "lucide-react";
+import { MotionConfig } from "framer-motion";
 
 const BUNDLE_SLUG = "store-complete-bundle";
 const LANDING_SLUG = "clothing-store-bundle";
@@ -39,12 +41,43 @@ export const ClothingStoreLanding: React.FC = () => {
 
   // ── First-touch UTM capture & SEO tags ──
   useEffect(() => {
-    document.title = "MaxP لمتاجر الملابس — متجر مجاني 0 ج.م وباقة 999 في الشهر";
+    const LANDING_TITLE = "MaxP لمتاجر الملابس — متجر مجاني 0 ج.م وباقة 999 في الشهر";
+    const LANDING_DESCRIPTION = "باقة متجر الملابس الكاملة: متجر إلكتروني فاخر، كاشير فروع سحابي، مصفوفة مقاسات، ربط شحن بوسطة، ومستشار مقاسات ذكي — 999 ج.م/شهر شامل 17 أداة.";
+    document.title = LANDING_TITLE;
 
-    const meta = document.createElement("meta");
-    meta.name = "robots";
-    meta.content = "noindex, nofollow";
-    document.head.appendChild(meta);
+    const metaChanges: Array<{ el: HTMLMetaElement; prev: string | null }> = [];
+    const setMeta = (attr: "name" | "property", key: string, content: string) => {
+      let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`);
+      const prev = el ? el.content : null;
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+      }
+      el.content = content;
+      metaChanges.push({ el, prev });
+    };
+    setMeta("property", "og:title", LANDING_TITLE);
+    setMeta("property", "og:description", LANDING_DESCRIPTION);
+    setMeta("name", "twitter:title", LANDING_TITLE);
+    setMeta("name", "twitter:description", LANDING_DESCRIPTION);
+
+    // حدّث الـ canonical الموجود من index.html بدل إضافة ثانٍ (ملف واحد فقط مسموح)
+    const canonical = document.head.querySelector<HTMLLinkElement>("link[rel='canonical']");
+    const prevCanonical = canonical ? canonical.href : null;
+    if (canonical) {
+      canonical.href = `${window.location.origin}/lp/${LANDING_SLUG}`;
+    } else {
+      const created = document.createElement("link");
+      created.rel = "canonical";
+      created.href = `${window.location.origin}/lp/${LANDING_SLUG}`;
+      document.head.appendChild(created);
+    }
+
+    const robotsMeta = document.createElement("meta");
+    robotsMeta.name = "robots";
+    robotsMeta.content = "noindex, nofollow";
+    document.head.appendChild(robotsMeta);
 
     const fontLink = document.createElement("link");
     fontLink.rel = "stylesheet";
@@ -72,7 +105,18 @@ export const ClothingStoreLanding: React.FC = () => {
     }
 
     return () => {
-      if (meta.parentNode) meta.parentNode.removeChild(meta);
+      metaChanges.forEach(({ el, prev }) => {
+        if (prev === null) {
+          if (el.parentNode) el.parentNode.removeChild(el);
+        } else {
+          el.content = prev;
+        }
+      });
+      if (canonical) {
+        if (prevCanonical !== null) canonical.href = prevCanonical;
+        else if (canonical.parentNode) canonical.parentNode.removeChild(canonical);
+      }
+      if (robotsMeta.parentNode) robotsMeta.parentNode.removeChild(robotsMeta);
       if (fontLink.parentNode) fontLink.parentNode.removeChild(fontLink);
     };
   }, []);
@@ -140,12 +184,16 @@ export const ClothingStoreLanding: React.FC = () => {
     navigate("/auth/login");
   }, [navigate]);
 
+  const prefersReducedMotion = () =>
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   const scrollToPricing = useCallback(() => {
     const el = document.getElementById(activeMode === "editorial" ? "editorial-pricing" : "pricing");
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+    if (el) el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth" });
   }, [activeMode]);
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className={activeMode === "editorial" ? "cse-root" : "csn-root"} dir="rtl">
       {/* Dynamic Navigation according to active mode */}
       {activeMode === "editorial" ? (
@@ -222,7 +270,7 @@ export const ClothingStoreLanding: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <ClothingStoreFooter onFreeRegister={handleFreeRegister} />
+      <ClothingStoreFooter onFreeRegister={handleFreeRegister} activeMode={activeMode} />
 
       {/* Sticky Mobile CTA Bar */}
       <div className={activeMode === "editorial" ? "cse-sticky-mobile" : "csn-sticky-mobile"}>
@@ -233,7 +281,7 @@ export const ClothingStoreLanding: React.FC = () => {
 
         <div className="flex items-center gap-1.5">
           <a
-            href="https://wa.me/201016843431?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%D8%8C%20%D8%A3%D9%88%D8%AF%20%D9%85%D8%B9%D8%B1%D9%81%D8%A9%20%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84%20%D8%A8%D8%A7%D9%82%D8%A9%20%D9%85%D8%AA%D8%AC%D8%B1%20%D8%A7%D9%84%D9%85%D9%84%D8%A7%D8%A8%D8%B3"
+            href={WHATSAPP_CONSULT_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs p-2.5 rounded-xl border border-black/10 font-bold bg-white text-emerald-700 flex items-center justify-center min-h-[44px] min-w-[44px]"
@@ -260,6 +308,7 @@ export const ClothingStoreLanding: React.FC = () => {
         </div>
       </div>
     </div>
+    </MotionConfig>
   );
 };
 

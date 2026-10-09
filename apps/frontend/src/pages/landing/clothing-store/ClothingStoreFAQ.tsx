@@ -38,6 +38,8 @@ export const ClothingStoreFAQ: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => toggleIndex(idx)}
+                  aria-expanded={isOpen}
+                  aria-controls={`clothing-faq-panel-${idx}`}
                   className="w-full p-4 sm:p-5 flex items-center justify-between text-right gap-4 cursor-pointer hover:bg-white/[0.02] transition-colors"
                 >
                   <span className="text-sm sm:text-base font-bold text-white leading-relaxed">
@@ -51,7 +53,10 @@ export const ClothingStoreFAQ: React.FC = () => {
                 </button>
 
                 {isOpen && (
-                  <div className="px-4 sm:px-5 pb-5 pt-1 text-xs sm:text-sm text-gray-400 leading-relaxed border-t border-white/5 csn-text-pretty">
+                  <div
+                    id={`clothing-faq-panel-${idx}`}
+                    className="px-4 sm:px-5 pb-5 pt-1 text-xs sm:text-sm text-gray-400 leading-relaxed border-t border-white/5 csn-text-pretty"
+                  >
                     {faq.answer}
                   </div>
                 )}

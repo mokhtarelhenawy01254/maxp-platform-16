@@ -232,3 +232,22 @@
 .cse-animate-marquee-vertical {
   animation: cse-marquee-vertical var(--duration, 40s) linear infinite;
 }
+
+/* Accessibility: respect prefers-reduced-motion (marquee, hotspots, decorative pulses) */
+@media (prefers-reduced-motion: reduce) {
+  .cse-animate-marquee,
+  .cse-animate-marquee-vertical,
+  .cse-hotspot,
+  .cse-root [class*="animate-pulse"] {
+    animation: none !important;
+  }
+
+  .cse-root *,
+  .cse-root *::before,
+  .cse-root *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

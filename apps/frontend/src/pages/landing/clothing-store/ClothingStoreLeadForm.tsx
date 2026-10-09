@@ -20,6 +20,7 @@ export const ClothingStoreLeadForm: React.FC<ClothingStoreLeadFormProps> = ({
   const [storeType, setStoreType] = useState("online-only");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,8 +53,8 @@ export const ClothingStoreLeadForm: React.FC<ClothingStoreLeadFormProps> = ({
 
       setIsSuccess(true);
     } catch {
-      // If network fails, still allow user to proceed
-      setIsSuccess(true);
+      // صراحة مع التاجر: لم يكتمل الحفظ — نعرض مسار واتساب المباشر بنفس البيانات
+      setSaveFailed(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -130,12 +131,34 @@ export const ClothingStoreLeadForm: React.FC<ClothingStoreLeadFormProps> = ({
                 </div>
               )}
 
+              {saveFailed && (
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 space-y-3">
+                  <div className="text-xs text-amber-300 flex items-start gap-2 leading-relaxed">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span>
+                      تعذر حفظ طلبك في المنصة حالياً — ما تبعتش حاجة. كمّل مباشرة على واتساب
+                      وبياناتك اللي كتبتها هتنقل معاك، أو جرّب تاني.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={openWhatsAppContinuation}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-xs font-bold text-emerald-300 hover:bg-emerald-500/25 transition-colors"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>متابعة عبر واتساب بنفس البيانات</span>
+                  </button>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-semibold text-gray-300 mb-1.5">
                   اسم البراند أو المحل
                 </label>
                 <input
                   type="text"
+                  name="companyName"
+                  autoComplete="organization"
                   placeholder="مثال: كايرو كوليكشن"
                   value={storeName}
                   onChange={(e) => setStoreName(e.target.value)}
@@ -149,6 +172,8 @@ export const ClothingStoreLeadForm: React.FC<ClothingStoreLeadFormProps> = ({
                 </label>
                 <input
                   type="text"
+                  name="firstName"
+                  autoComplete="given-name"
                   placeholder="الاسم الأول"
                   required
                   value={ownerName}
@@ -163,6 +188,8 @@ export const ClothingStoreLeadForm: React.FC<ClothingStoreLeadFormProps> = ({
                 </label>
                 <input
                   type="tel"
+                  name="phone"
+                  autoComplete="tel"
                   placeholder="010XXXXXXXX أو 011XXXXXXXX"
                   required
                   value={phone}
@@ -177,6 +204,7 @@ export const ClothingStoreLeadForm: React.FC<ClothingStoreLeadFormProps> = ({
                   طبيعة النشاط
                 </label>
                 <select
+                  name="storeType"
                   value={storeType}
                   onChange={(e) => setStoreType(e.target.value)}
                   className="csn-input"
@@ -200,7 +228,7 @@ export const ClothingStoreLeadForm: React.FC<ClothingStoreLeadFormProps> = ({
                   className="csn-btn-primary w-full text-sm py-3 font-bold"
                 >
                   {isSubmitting ? (
-                    <span>جاري تسجيل الطلب...</span>
+                    <span>جاري تسجيل الطلب…</span>
                   ) : (
                     <>
                       <span>تأكيد طلب الاستشارة المجانية</span>

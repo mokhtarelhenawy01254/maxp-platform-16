@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { ArrowLeft, Sparkles, Smartphone, Store, Package, Check, ShieldCheck, Printer, Barcode } from "lucide-react";
+import { ArrowLeft, Smartphone, Store, Package, Check, ShieldCheck, Printer, Barcode } from "lucide-react";
 import { BlurFade } from "../../../../components/ui/luxury/BlurFade";
 import { LuxuryMarquee } from "../../../../components/ui/luxury/LuxuryMarquee";
+import { WHATSAPP_CONSULT_URL } from "../clothingStoreData";
 
 interface ClothingEditorialHeroProps {
   onFreeRegister: () => void;
@@ -31,7 +32,7 @@ export const ClothingEditorialHero: React.FC<ClothingEditorialHeroProps> = ({
 
             <BlurFade delay={0.1}>
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-zinc-950 tracking-tight leading-[1.15] mb-4 font-serif">
-                متجر إلكتروني يشبه زارا.. وسيستم فروع وشحن يوقف نزيف المرتجعات
+                متجر إلكتروني يشبه زارا… وسيستم فروع وشحن يوقف نزيف المرتجعات
               </h1>
             </BlurFade>
 
@@ -60,7 +61,7 @@ export const ClothingEditorialHero: React.FC<ClothingEditorialHeroProps> = ({
                   <span>باقة المتجر الكاملة (999 ج.م)</span>
                 </button>
                 <a
-                  href="https://wa.me/201016843431?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%D8%8C%20%D8%A3%D9%88%D8%AF%20%D9%85%D8%B9%D8%B1%D9%81%D8%A9%20%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84%20%D8%A8%D8%A7%D9%82%D8%A9%20%D9%85%D8%AA%D8%AC%D8%B1%20%D8%A7%D9%84%D9%85%D9%84%D8%A7%D8%A8%D8%B3%20%D9%88%D8%B1%D8%A8%D8%B7%20%D8%A8%D9%88%D8%B3%D8%B7%D8%A9%20%D9%88%D8%A7%D9%84%D9%81%D8%B1%D9%88%D8%B9"
+                  href={WHATSAPP_CONSULT_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl border border-black/10 bg-white hover:bg-neutral-100 text-xs sm:text-sm font-bold text-zinc-900 transition-all"

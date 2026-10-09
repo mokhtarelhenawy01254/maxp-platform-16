@@ -3,11 +3,19 @@ import { Store, ShieldCheck } from "lucide-react";
 
 interface ClothingStoreFooterProps {
   onFreeRegister: () => void;
+  /** الوضع النشط للصفحة — يحدد أقسام الـ anchor الصحيحة (افتراضي: cockpit للتوافق الخلفي) */
+  activeMode?: "editorial" | "cockpit";
 }
 
 export const ClothingStoreFooter: React.FC<ClothingStoreFooterProps> = ({
   onFreeRegister,
+  activeMode = "cockpit",
 }) => {
+  const anchors =
+    activeMode === "editorial"
+      ? { features: "shop-the-look", tools: "editorial-tools", pricing: "editorial-pricing" }
+      : { features: "features", tools: "tools", pricing: "pricing" };
+
   return (
     <footer className="py-12 bg-[#030406] border-t border-white/5 text-gray-400 text-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -24,17 +32,17 @@ export const ClothingStoreFooter: React.FC<ClothingStoreFooterProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <a href="#features" className="hover:text-white transition-colors">
+          <div className="flex items-center gap-4 sm:gap-6">
+            <a href={`#${anchors.features}`} className="py-2 hover:text-white transition-colors">
               المميزات
             </a>
-            <a href="#tools" className="hover:text-white transition-colors">
+            <a href={`#${anchors.tools}`} className="py-2 hover:text-white transition-colors">
               الأدوات الـ 17
             </a>
-            <a href="#pricing" className="hover:text-white transition-colors">
+            <a href={`#${anchors.pricing}`} className="py-2 hover:text-white transition-colors">
               الأسعار
             </a>
-            <a href="#faq" className="hover:text-white transition-colors">
+            <a href="#faq" className="py-2 hover:text-white transition-colors">
               الأسئلة
             </a>
           </div>

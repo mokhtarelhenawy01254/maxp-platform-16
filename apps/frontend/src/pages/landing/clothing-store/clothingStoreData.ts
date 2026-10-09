@@ -1,5 +1,11 @@
 import { PlatformToolItem, PricingPlan, FaqItem } from "./types";
 
+// الرقم الرسمي الموحّد للمنصة — نفس الرقم المستخدم في Header/Layout وصفحات الهبوط الأخرى
+export const OFFICIAL_WHATSAPP_NUMBER = "201123087745";
+export const WHATSAPP_CONSULT_URL = `https://wa.me/${OFFICIAL_WHATSAPP_NUMBER}?text=${encodeURIComponent(
+  "مرحباً، أود معرفة تفاصيل باقة متجر الملابس وربط بوسطة والفروع"
+)}`;
+
 export const CLOTHING_TOOLS_DATA: PlatformToolItem[] = [
   {
     id: "app-storefront",
@@ -142,7 +148,9 @@ export const CLOTHING_TOOLS_DATA: PlatformToolItem[] = [
 export const TOTAL_STANDALONE_PRICE = CLOTHING_TOOLS_DATA.reduce(
   (acc, item) => acc + item.standalonePrice,
   0
-); // Exactly 2936 EGP
+); // 2,944 EGP — derived from the standalone prices above, never hardcode it
+const SAVINGS_TEXT = `${(TOTAL_STANDALONE_PRICE - 999).toLocaleString("en-US")} ج.م`;
+const TOTAL_TEXT = `${TOTAL_STANDALONE_PRICE.toLocaleString("en-US")} ج.م`;
 
 export const PRICING_PLANS_DATA: PricingPlan[] = [
   {
@@ -157,7 +165,7 @@ export const PRICING_PLANS_DATA: PricingPlan[] = [
       "إضافة منتجات وتصنيفات بدون حد أقصى",
       "استقبال طلبات الشراء والدفع عند الاستلام",
       "لوحة تحكم أساسية لإدارة الأوردرات والعملاء",
-      "0 ج.م رسوم اشتراك شهري مستمرة",
+      "بدون رسوم اشتراك شهري نهائياً",
     ],
     ctaText: "افتح متجرك مجاناً (0 ج.م)",
     action: "free-register",
@@ -195,7 +203,7 @@ export const PRICING_PLANS_DATA: PricingPlan[] = [
       "مستشار المقاسات الذكي لتقليل المرتجعات",
       "ربط بيكسل فيسبوك وتيك توك (CAPI) خادمي",
       "تقارير صافي أرباح القطعة وحساب التكلفة",
-      "وفر 1,937 ج.م مقارنة بشراء الأدوات منفردة (2,936 ج.م)",
+      `وفر ${SAVINGS_TEXT} مقارنة بشراء الأدوات منفردة (${TOTAL_TEXT})`,
     ],
     ctaText: "اشترك في الباقة الكاملة (999 ج.م)",
     action: "bundle-checkout",
@@ -221,6 +229,6 @@ export const CLOTHING_FAQS: FaqItem[] = [
   },
   {
     question: "ما الفرق بين دفع 999 ج.م وشراء الأدوات منفردة؟",
-    answer: "قيمة الأدوات الـ 17 عند شرائها كل أداة على حدة تصل إلى 2,936 ج.م شهرياً. باقة المتجر الكاملة توفر لك جميع هذه الأدوات مدمجة في نظام سحابي موحد مقابل 999 ج.م في الشهر فقط.",
+    answer: `قيمة الأدوات الـ 17 عند شرائها كل أداة على حدة تصل إلى ${TOTAL_TEXT} شهرياً. باقة المتجر الكاملة توفر لك جميع هذه الأدوات مدمجة في نظام سحابي موحد مقابل 999 ج.م في الشهر فقط.`,
   },
 ];
