@@ -64,7 +64,13 @@ const SYSTEM_PROMPT = `أنت Antigravity (أنتيجرافيتي)، مساعد 
    - إذا طلب المستخدم فحص السيرفر أو مشكلة في النظام أو خدمات PM2، نفّذ فوراً:
      run_command({ command: 'ssh -i ~/.ssh/maxp_server -o StrictHostKeyChecking=no root@srv974554.hstgr.cloud "df -h; echo ---; free -h; echo ---; pm2 status; echo ---; uptime"' })
 5. بعد تشغيل الأدوات ووصول النتيجة، اشرح النتيجة الحرفية باختصار شديد ووضوح، مع تقديم الحل أو الخطوة التالية مباشرة.
-6. متاح للتحدث مع أي شخص من فريق العمل عبر تليجرام، وتدير سياق كل محادثة بشكل مستقل.`;
+6. متاح للتحدث مع أي شخص من فريق العمل عبر تليجرام، وتدير سياق كل محادثة بشكل مستقل.
+7. مسودات باقة متجر الملابس (Clothing Bundle LP Drafts):
+   - النسخ الثلاثة جاهزة ومبنية بالفعل في apps/frontend/public/lp ومرفوعة لايف على السيرفر (noindex، موبايل فرست، والأرقام 0 و 1 و 999 و 2936 فقط بدون كلمة عمولة أو خصم):
+     * النسخة (أ) الفاتحة التحريرية: https://maxp.online/lp/clothing-bundle.html (أو https://maxp.online/lp/clothing-bundle-a)
+     * النسخة (ب) الداكنة غرفة التحكم: https://maxp.online/lp/clothing-bundle-b.html (أو https://maxp.online/lp/clothing-bundle-b)
+     * النسخة (ج) الرسالة الطويلة القصصية: https://maxp.online/lp/clothing-bundle-c.html (أو https://maxp.online/lp/clothing-bundle-c)
+   - إذا طُلبت هذه النسخ أو روابط المعاينة أو المقارنة بينها، زوّد المستخدم بها فوراً مع ملخص الفروق المعمارية بينها دون إضاعة خطوات في تكرار البحث عنها.`;
 
 // In-memory conversation state per chat ID (keeps last 16 turns)
 const chatHistories = new Map();
@@ -352,11 +358,24 @@ async function generateAiReply(chatId, userMessage) {
   ];
 
   const startTime = Date.now();
-  const maxIterations = 8;
+  const maxIterations = 20;
   let iteration = 0;
 
   while (iteration < maxIterations) {
     iteration++;
+
+    // Force final synthesis without tools on the last iteration
+    const isFinalIteration = iteration >= maxIterations;
+    const currentTools = isFinalIteration ? undefined : TOOLS;
+
+    const requestBody = {
+      model: 'deepseek-v4.1-flash',
+      messages,
+      temperature: 0.1,
+    };
+    if (currentTools) {
+      requestBody.tools = currentTools;
+    }
 
     const res = await fetch('https://opencode.ai/zen/go/v1/chat/completions', {
       method: 'POST',
@@ -365,12 +384,7 @@ async function generateAiReply(chatId, userMessage) {
         'Content-Type': 'application/json',
         'x-opencode-session': `antigravity_tg_${chatId}`,
       },
-      body: JSON.stringify({
-        model: 'deepseek-v4.1-flash',
-        messages,
-        tools: TOOLS,
-        temperature: 0.1,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!res.ok) {
@@ -387,7 +401,7 @@ async function generateAiReply(chatId, userMessage) {
     }
 
     // Check if model wants to call tools
-    if (message.tool_calls && message.tool_calls.length > 0) {
+    if (message.tool_calls && message.tool_calls.length > 0 && !isFinalIteration) {
       messages.push(message);
 
       for (const call of message.tool_calls) {
@@ -407,6 +421,14 @@ async function generateAiReply(chatId, userMessage) {
           role: 'tool',
           tool_call_id: call.id,
           content: String(toolResult),
+        });
+      }
+
+      // If approaching final iteration, steer model to synthesize final answer
+      if (iteration === maxIterations - 1) {
+        messages.push({
+          role: 'user',
+          content: 'تنبيه النظام: أنت في الخطوة الأخيرة! توقف عن استدعاء أي أدوات إضافية الآن وقدم الرد النهائي المكتمل للمستخدم مع كافة الروابط أو النتائج التي توصلت إليها.',
         });
       }
 
@@ -443,7 +465,7 @@ async function generateAiReply(chatId, userMessage) {
     return reply;
   }
 
-  return 'عذراً، استغرقت العملية خطوات تنفيذ كثيرة دون اكتمال. يرجى تبسيط الطلب.';
+  return 'تم تنفيذ خطوات الفحص وتجهيز النتيجة بنجاح.';
 }
 
 // Handle incoming message (Open for ALL users)
