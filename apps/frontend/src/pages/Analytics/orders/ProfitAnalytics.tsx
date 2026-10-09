@@ -71,7 +71,29 @@ const ProfitAnalytics: React.FC = () => {
       );
 
       if (response.success && response.data) {
-        setStats(response.data);
+        // توحيد العقد: الـAPI يرجّع {summary, dailyData, categoryBreakdown} —
+        // والواجهة متوقعة {cogs, dailyProfit, profitByCategory…}
+        const d = response.data;
+        setStats({
+          grossProfit: d.summary?.grossProfit ?? 0,
+          netProfit: d.summary?.netProfit ?? 0,
+          profitMargin: d.summary?.profitMargin ?? 0,
+          cogs: d.summary?.totalCOGS ?? 0,
+          // operatingExpenses و adsCost غير متاحين في هذا الـendpoint — يظهران صفرًا
+          operatingExpenses: 0,
+          adsCost: 0,
+          dailyProfit: (d.dailyData || []).map((x: { date: string; profit: number; revenue: number; cogs: number }) => ({
+            date: x.date,
+            profit: x.profit,
+            revenue: x.revenue,
+            costs: x.cogs,
+          })),
+          profitByCategory: (d.categoryBreakdown || []).map((c: { name: string; profit: number; margin: number }) => ({
+            name: c.name,
+            profit: c.profit,
+            margin: c.margin,
+          })),
+        });
       } else {
         setStats({
           grossProfit: 0,
