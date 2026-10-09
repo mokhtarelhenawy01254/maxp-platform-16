@@ -3,61 +3,69 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>MaxP لمتاجر وبراندات الملابس — وقف نزيف الأوردرات والمرتجعات</title>
-<meta name="description" content="النظام المتكامل لإدارة متاجر ومحلات الملابس في مصر: متجر مجاني 0 ج.م، إدارة الأوردر بـ 1 ج.م، وباقة المتجر الكاملة 999 ج.م/شهر (17 أداة قيمتها 2936 ج.م فرادى). تأكيد واتساب، مصفوفة المقاسات والألوان، والشحن.">
+<title>MaxP لمتاجر وبراندات الملابس — نظام تشغيل الأوردرات والمخزون والمرتجعات</title>
+<meta name="description" content="نظام تشغيل متكامل لمحلات وبراندات الملابس في مصر: متجر مجاني 0 ج.م، إدارة الأوردر 1 ج.م، وباقة المتجر الكاملة 999 ج.م/شهر (17 أداة قيمتها 2936 ج.م فرادى). تأكيد واتساب للمقاسات، مصفوفة المخزون، والشحن.">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#07080a">
+<meta name="theme-color" content="#050608">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg-dark: #07080a;
-  --bg-surface: #0e1117;
-  --bg-elevated: #151a24;
-  --bg-card: #121620;
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-active: rgba(255, 255, 255, 0.18);
-  --border-emerald: rgba(16, 185, 129, 0.28);
+  --bg-oled: #050608;
+  --bg-surface: #0a0d13;
+  --bg-card: #0f131c;
+  --bg-elevated: #151b27;
+  --bg-hover: #1c2434;
   
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
+  --line-hairline: rgba(255, 255, 255, 0.08);
+  --line-subtle: rgba(255, 255, 255, 0.14);
+  --line-focus: rgba(16, 185, 129, 0.45);
   
-  --emerald: #10b981;
-  --emerald-glow: rgba(16, 185, 129, 0.15);
-  --amber: #f59e0b;
-  --amber-glow: rgba(245, 158, 11, 0.15);
-  --indigo: #6366f1;
-  --rose: #f43f5e;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
   
-  --max-w: 1200px;
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
+  --emerald-400: #34d399;
+  --emerald-500: #10b981;
+  --emerald-900: #064e3b;
+  --emerald-glow: rgba(16, 185, 129, 0.12);
+  
+  --amber-400: #fbbf24;
+  --amber-glow: rgba(245, 158, 11, 0.12);
+  
+  --rose-400: #f43f5e;
+  --rose-glow: rgba(244, 63, 94, 0.12);
+  
+  --max-width: 1240px;
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html { scroll-behavior: smooth; }
 body {
-  background-color: var(--bg-dark);
-  color: var(--text-main);
+  background-color: var(--bg-oled);
+  color: var(--text-primary);
   font-family: 'Cairo', system-ui, -apple-system, sans-serif;
   line-height: 1.7;
   font-size: 16px;
   overflow-x: hidden;
   text-wrap: pretty;
+  -webkit-font-smoothing: antialiased;
 }
 
-.num, .mono { font-family: 'JetBrains Mono', 'Cairo', monospace; font-variant-numeric: tabular-nums; }
-.wrap { max-width: var(--max-w); margin-inline: auto; padding-inline: clamp(16px, 4vw, 32px); }
+.mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+.wrap { max-width: var(--max-width); margin-inline: auto; padding-inline: clamp(16px, 4vw, 36px); }
 
-/* Machine Hairline Grid Texture */
-.bg-grid {
+/* Machined Background Texture */
+.machined-grid {
   background-image: 
-    linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
-  background-size: 48px 48px;
+    radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 32px 32px, 100% 32px;
 }
 
 /* Header */
@@ -65,66 +73,80 @@ header {
   position: sticky;
   top: 0;
   z-index: 50;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  background: rgba(7, 8, 10, 0.82);
-  border-bottom: 1px solid var(--border-subtle);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(5, 6, 8, 0.88);
+  border-bottom: 1px solid var(--line-hairline);
 }
 header .wrap {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 68px;
+  height: 70px;
 }
-.brand-badge {
+.brand-group {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-decoration: none;
-  color: var(--text-main);
+  color: var(--text-primary);
 }
-.brand-badge .logo-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #10b981, #047857);
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-xs);
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  font-size: 18px;
+  font-size: 19px;
   color: #fff;
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.28);
 }
-.brand-badge .brand-text {
+.brand-text {
+  font-size: 1.2rem;
   font-weight: 800;
-  font-size: 1.15rem;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
-.brand-badge .brand-tag {
+.brand-spec {
   font-size: 0.72rem;
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 2px 8px;
-  border-radius: 6px;
-  color: var(--text-muted);
+  font-weight: 600;
+  color: var(--text-tertiary);
+  background: var(--bg-card);
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--line-hairline);
 }
 
-.h-actions {
+.nav-cluster {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 20px;
 }
-.nav-link {
-  color: var(--text-muted);
+.nav-anchor {
+  color: var(--text-secondary);
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 600;
-  transition: color 0.15s ease;
+  transition: color 0.16s ease;
 }
-.nav-link:hover { color: var(--text-main); }
+.nav-anchor:hover { color: var(--text-primary); }
 
-/* Buttons */
+@media (max-width: 640px) {
+  .nav-anchor { display: none; }
+  .brand-spec { display: none; }
+  header .wrap { height: 60px; }
+  header .btn { padding: 8px 14px; font-size: 0.82rem; }
+  .hero-content { text-align: center; }
+  .hero-heading { font-size: clamp(1.65rem, 1.2rem + 2.4vw, 2.8rem); }
+  .hero-lead-text { margin-inline: auto; }
+  .hero-cta-bar { justify-content: center; }
+  .numbers-index-bar { justify-content: center; }
+  .order-telemetry-tile, .inventory-matrix-widget { text-align: right; }
+}
+
+/* Buttons & Triggers */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -132,869 +154,886 @@ header .wrap {
   gap: 8px;
   font-family: inherit;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.94rem;
   padding: 11px 22px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   text-decoration: none;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: all 0.16s ease;
+  transition: all 0.16s ease-out;
   white-space: nowrap;
 }
-.btn:active { transform: scale(0.97); }
+.btn:active { transform: scale(0.98); }
 .btn-emerald {
-  background: #10b981;
-  color: #042f22;
+  background: var(--emerald-500);
+  color: #032117;
   font-weight: 800;
-  box-shadow: 0 0 24px rgba(16, 185, 129, 0.32);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.22);
 }
 .btn-emerald:hover { background: #34d399; }
-.btn-outline {
+.btn-machined {
   background: rgba(255, 255, 255, 0.04);
-  color: var(--text-main);
-  border-color: var(--border-active);
+  color: var(--text-primary);
+  border-color: var(--line-subtle);
 }
-.btn-outline:hover {
-  background: rgba(255, 255, 255, 0.09);
+.btn-machined:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
-/* Hero Section */
+/* Asymmetrical Hero Layout */
 .hero {
-  padding-block: clamp(40px, 6vw, 84px) clamp(36px, 5vw, 70px);
+  padding-block: clamp(40px, 6vw, 84px) clamp(36px, 5vw, 68px);
   position: relative;
-  overflow: hidden;
 }
-.hero-glow {
-  position: absolute;
-  top: 5%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(700px, 92vw);
-  height: 420px;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.14) 0%, rgba(99, 102, 241, 0.06) 50%, transparent 80%);
-  filter: blur(80px);
-  pointer-events: none;
-  z-index: 0;
-}
-.hero .wrap {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
+.hero-split-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: clamp(24px, 4vw, 56px);
   align-items: center;
-  text-align: center;
+}
+@media (max-width: 980px) {
+  .hero-split-grid { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 640px) {
-  .nav-link { display: none; }
-  header .btn { padding: 8px 12px; font-size: 0.8rem; }
-  .brand-badge .brand-tag { display: none; }
+.hero-content {
+  text-align: right;
 }
-
-.eyebrow-pill {
+.telemetry-chip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.25);
-  color: #34d399;
-  font-size: 0.82rem;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  color: var(--emerald-400);
+  font-size: 0.8rem;
   font-weight: 700;
-  padding: 5px 14px;
-  border-radius: 999px;
-  margin-bottom: 18px;
-}
-.eyebrow-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 8px #10b981;
-  animation: pulse 2s infinite ease-in-out;
-}
-@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
-
-.hero-title {
-  font-size: clamp(1.75rem, 1.2rem + 2.6vw, 3.4rem);
-  font-weight: 900;
-  line-height: 1.24;
-  letter-spacing: -0.02em;
-  max-width: 840px;
-  margin-inline: auto;
-  text-wrap: balance;
+  padding: 4px 12px;
+  border-radius: var(--radius-xs);
   margin-bottom: 20px;
 }
-.hero-title .gradient-text {
+.telemetry-chip svg { width: 14px; height: 14px; }
+.telemetry-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--emerald-400);
+  box-shadow: 0 0 8px var(--emerald-400);
+}
+
+.hero-heading {
+  font-size: clamp(2rem, 1.4rem + 2.5vw, 3.4rem);
+  font-weight: 900;
+  line-height: 1.22;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+  margin-bottom: 22px;
+}
+.hero-heading .lead-gradient {
   background: linear-gradient(135deg, #ffffff 40%, #10b981 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.hero-subtitle {
-  font-size: clamp(0.98rem, 0.92rem + 0.35vw, 1.18rem);
-  color: var(--text-muted);
-  max-width: 60ch;
-  margin-inline: auto;
+.hero-lead-text {
+  font-size: clamp(1rem, 0.94rem + 0.35vw, 1.18rem);
+  color: var(--text-secondary);
+  line-height: 1.85;
   margin-bottom: 30px;
-  line-height: 1.8;
 }
 
-.hero-cta-group {
+.hero-cta-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
   gap: 12px;
-  margin-bottom: 26px;
-  width: 100%;
+  margin-bottom: 32px;
 }
-@media (max-width: 540px) {
-  .hero-cta-group .btn { width: 100%; }
+@media (max-width: 520px) {
+  .hero-cta-bar .btn { width: 100%; }
 }
 
-.metrics-strip {
+.numbers-index-bar {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 10px 18px;
-  padding: 12px 20px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  font-size: 0.84rem;
-  color: var(--text-muted);
+  gap: 16px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line-hairline);
 }
-.metrics-strip .metric-item {
+.number-spec-card {
+  display: flex;
+  flex-direction: column;
+}
+.number-spec-card span { font-size: 0.74rem; color: var(--text-tertiary); font-weight: 600; }
+.number-spec-card strong { font-size: 1.15rem; color: var(--text-primary); font-weight: 800; }
+
+/* The Retail Operating System (OS Cockpit) */
+.cockpit-chassis {
+  background: var(--bg-surface);
+  border: 1px solid var(--line-hairline);
+  border-radius: var(--radius-md);
+  box-shadow: 
+    0 30px 80px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.cockpit-top-bar {
+  height: 44px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--line-hairline);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 16px;
+  font-size: 0.76rem;
+  color: var(--text-tertiary);
+}
+.chassis-status-pill {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-.metrics-strip .metric-item b {
-  color: var(--text-main);
-  font-weight: 800;
-}
-
-/* Live Cockpit Preview Canvas */
-.cockpit-canvas {
-  width: 100%;
-  max-width: 1060px;
-  margin-top: 48px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: 
-    0 24px 70px rgba(0, 0, 0, 0.65),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-  text-align: right;
-}
-.canvas-header {
-  height: 48px;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid var(--border-subtle);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-inline: 18px;
-}
-.canvas-dots { display: flex; gap: 6px; }
-.canvas-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, 0.15); }
-.canvas-dot:nth-child(1) { background: #ef4444; }
-.canvas-dot:nth-child(2) { background: #f59e0b; }
-.canvas-dot:nth-child(3) { background: #10b981; }
-.canvas-title {
-  font-size: 0.8rem;
-  color: var(--text-dim);
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.canvas-body {
-  display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 1px;
-  background: var(--border-subtle);
-}
-@media (max-width: 820px) {
-  .canvas-body { grid-template-columns: 1fr; }
-}
-
-.canvas-panel {
-  background: var(--bg-surface);
-  padding: clamp(16px, 3vw, 28px);
-}
-
-.panel-title {
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: var(--text-muted);
-  margin-bottom: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.live-pill {
-  font-size: 0.72rem;
+  color: var(--emerald-400);
   font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: var(--emerald-glow);
-  color: var(--emerald);
-  border: 1px solid var(--border-emerald);
 }
 
-/* WhatsApp Simulator UI */
-.chat-window {
-  background: #090c10;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 16px;
+.cockpit-screen-body {
+  padding: clamp(16px, 2.5vw, 24px);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-.chat-bubble {
-  max-width: 88%;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: 0.86rem;
-  line-height: 1.6;
-}
-.chat-in {
-  align-self: flex-start;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-main);
-}
-.chat-out {
-  align-self: flex-end;
-  background: #064e3b;
-  border: 1px solid #047857;
-  color: #ecfdf5;
-}
-.chat-tag {
-  display: inline-block;
-  background: rgba(255,255,255,0.14);
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  margin-inline: 2px;
-  font-weight: 700;
-}
-.chat-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 6px;
-}
-.chat-action-btn {
-  font-family: inherit;
-  font-size: 0.76rem;
-  font-weight: 700;
-  padding: 5px 10px;
-  border-radius: 6px;
-  border: 1px solid #10b981;
-  background: #10b981;
-  color: #042f22;
-  cursor: pointer;
+  gap: 16px;
 }
 
-/* Stock Matrix UI */
-.stock-grid {
+/* Order Telemetry Card */
+.order-telemetry-tile {
+  background: var(--bg-card);
+  border: 1px solid var(--line-hairline);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+.order-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.order-id { font-size: 0.82rem; font-weight: 700; color: var(--text-secondary); }
+.order-badge-success {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--emerald-400);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-xs);
+}
+
+.order-product-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.product-title-group h5 { font-size: 0.94rem; font-weight: 800; color: var(--text-primary); }
+.product-title-group p { font-size: 0.78rem; color: var(--text-tertiary); }
+.product-price-spec { font-size: 1.1rem; font-weight: 800; color: var(--emerald-400); }
+
+.verification-strip {
+  background: var(--bg-elevated);
+  border: 1px solid var(--line-hairline);
+  border-radius: var(--radius-xs);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.78rem;
+}
+.verification-status { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+.btn-micro-action {
+  background: var(--emerald-500);
+  color: #032117;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* Inventory Matrix Widget */
+.inventory-matrix-widget {
+  background: var(--bg-card);
+  border: 1px solid var(--line-hairline);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+.matrix-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.sizes-grid-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
-  margin-top: 10px;
 }
-.size-box {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 10px 6px;
+.size-chip-cell {
+  background: var(--bg-elevated);
+  border: 1px solid var(--line-hairline);
+  border-radius: var(--radius-xs);
+  padding: 8px 4px;
   text-align: center;
 }
-.size-name { font-weight: 800; font-size: 0.9rem; color: var(--text-main); }
-.size-qty { font-size: 0.78rem; color: var(--emerald); font-weight: 700; margin-top: 2px; }
-.size-out { border-color: rgba(244, 63, 94, 0.3); }
-.size-out .size-qty { color: var(--rose); }
+.size-chip-cell.active-size {
+  border-color: var(--emerald-500);
+  background: rgba(16, 185, 129, 0.08);
+}
+.size-chip-cell.empty-size {
+  border-color: rgba(244, 63, 94, 0.28);
+  opacity: 0.6;
+}
+.size-code { font-size: 0.88rem; font-weight: 800; color: var(--text-primary); }
+.size-units { font-size: 0.74rem; color: var(--emerald-400); font-weight: 700; margin-top: 2px; }
+.size-chip-cell.empty-size .size-units { color: var(--rose-400); }
 
-/* Problem vs Solution Bento Section */
+/* Asymmetric Bento Architecture (8:4 layout) */
 .section {
-  padding-block: clamp(54px, 8vw, 100px);
-  border-top: 1px solid var(--border-subtle);
+  padding-block: clamp(54px, 8vw, 96px);
+  border-top: 1px solid var(--line-hairline);
 }
-.section-header {
-  text-align: center;
-  max-width: 60ch;
-  margin-inline: auto;
-  margin-bottom: clamp(36px, 5vw, 64px);
+.section-meta {
+  text-align: right;
+  max-width: 64ch;
+  margin-bottom: clamp(32px, 5vw, 54px);
 }
-.section-tag {
-  color: var(--emerald);
-  font-size: 0.82rem;
+.section-tag-label {
+  font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
+  color: var(--emerald-400);
   text-transform: uppercase;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
-.section-title {
-  font-size: clamp(1.6rem, 1.2rem + 1.8vw, 2.6rem);
-  font-weight: 800;
+.section-headline {
+  font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.4rem);
+  font-weight: 900;
   line-height: 1.3;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
-.section-desc {
-  color: var(--text-muted);
+.section-summary {
+  color: var(--text-secondary);
   font-size: 1rem;
 }
 
-.bento-grid-3 {
+.asymmetric-bento-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 8fr 4fr;
   gap: 20px;
 }
 @media (max-width: 900px) {
-  .bento-grid-3 { grid-template-columns: 1fr; }
+  .asymmetric-bento-grid { grid-template-columns: 1fr; }
 }
 
-.bento-card {
+.bento-surface {
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--line-hairline);
   border-radius: var(--radius-md);
-  padding: clamp(20px, 3vw, 28px);
-  position: relative;
-  transition: border-color 0.2s ease;
+  padding: clamp(22px, 3vw, 32px);
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.18s ease;
 }
-.bento-card:hover { border-color: var(--border-active); }
-.bento-card-highlight {
-  border-color: var(--border-emerald);
-  background: linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, var(--bg-surface) 100%);
+.bento-surface:hover { border-color: var(--line-subtle); }
+.bento-surface-featured {
+  border-color: rgba(16, 185, 129, 0.28);
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.04) 0%, var(--bg-surface) 100%);
 }
 
-.bento-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-subtle);
+.bento-head-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.bento-svg-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-card);
+  border: 1px solid var(--line-hairline);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 18px;
-  font-size: 20px;
+  color: var(--emerald-400);
+  flex-shrink: 0;
 }
-.bento-title {
-  font-size: 1.15rem;
-  font-weight: 800;
-  margin-bottom: 10px;
-  color: var(--text-main);
+.bento-svg-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bento-surface h3 { font-size: 1.18rem; font-weight: 800; color: var(--text-primary); }
+.bento-surface p { font-size: 0.92rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 18px; }
+
+/* Real Telemetry Table inside Bento 8-col */
+.telemetry-table-wrapper {
+  background: var(--bg-card);
+  border: 1px solid var(--line-hairline);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-top: auto;
 }
-.bento-desc {
-  color: var(--text-muted);
-  font-size: 0.92rem;
-  line-height: 1.7;
+.telemetry-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  text-align: right;
+}
+.telemetry-table th {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 10px 14px;
+  color: var(--text-tertiary);
+  font-weight: 700;
+  border-bottom: 1px solid var(--line-hairline);
+}
+.telemetry-table td {
+  padding: 10px 14px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--line-hairline);
+}
+.telemetry-table tr:last-child td { border-bottom: none; }
+.telemetry-badge-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--amber-400);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.telemetry-badge-ok {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--emerald-400);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
-/* Pricing Section (The 3 Levels: 0 · 1 · 999) */
-.pricing-grid {
+/* Pricing Section: 3 Levels (0 · 1 · 999) */
+.pricing-deck {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  align-items: stretch;
+  gap: 22px;
 }
 @media (max-width: 960px) {
-  .pricing-grid { grid-template-columns: 1fr; max-width: 500px; margin-inline: auto; }
+  .pricing-deck { grid-template-columns: 1fr; max-width: 520px; margin-inline: auto; }
 }
 
-.price-card {
+.pricing-panel {
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 32px 26px;
+  border: 1px solid var(--line-hairline);
+  border-radius: var(--radius-md);
+  padding: 32px 24px;
   display: flex;
   flex-direction: column;
   position: relative;
 }
-.price-card-hero {
-  border-color: #10b981;
-  background: linear-gradient(180deg, #10211a 0%, var(--bg-surface) 60%);
-  box-shadow: 0 0 50px rgba(16, 185, 129, 0.15);
-  transform: scale(1.02);
-}
-@media (max-width: 960px) {
-  .price-card-hero { transform: none; }
+.pricing-panel-command {
+  border-color: rgba(16, 185, 129, 0.55);
+  background: linear-gradient(180deg, #091712 0%, var(--bg-surface) 60%);
+  box-shadow: 0 0 50px rgba(16, 185, 129, 0.12);
 }
 
-.badge-featured {
+.panel-featured-pill {
   position: absolute;
-  top: -14px;
-  right: 50%;
-  transform: translateX(50%);
-  background: #10b981;
-  color: #042f22;
-  font-size: 0.76rem;
+  top: -13px;
+  right: 24px;
+  background: var(--emerald-500);
+  color: #032117;
+  font-size: 0.72rem;
   font-weight: 800;
-  padding: 4px 14px;
-  border-radius: 999px;
+  padding: 3px 12px;
+  border-radius: var(--radius-xs);
   letter-spacing: 0.04em;
 }
 
-.price-tier-name {
-  font-size: 1.25rem;
-  font-weight: 800;
-  margin-bottom: 6px;
+.tier-title-bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
 }
-.price-tier-desc {
-  font-size: 0.88rem;
-  color: var(--text-muted);
-  min-height: 44px;
-  margin-bottom: 20px;
-}
-.price-tag {
+.tier-label { font-size: 1.3rem; font-weight: 900; }
+.tier-caption { font-size: 0.86rem; color: var(--text-tertiary); margin-bottom: 20px; min-height: 44px; }
+
+.price-monument {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
   padding-bottom: 20px;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--line-hairline);
 }
-.price-amount {
-  font-size: 2.8rem;
-  font-weight: 900;
-  color: var(--text-main);
-  line-height: 1;
-}
-.price-unit {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  font-weight: 700;
+.price-figure { font-size: 3rem; font-weight: 900; line-height: 1; color: var(--text-primary); }
+.price-currency-unit { font-size: 0.88rem; color: var(--text-tertiary); font-weight: 700; }
+
+.bundle-arbitrage-box {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  color: #fde68a;
+  border-radius: var(--radius-xs);
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  margin-bottom: 22px;
+  line-height: 1.6;
 }
 
-.feature-list {
+.specs-stack {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 28px;
+  margin-bottom: 30px;
   flex-grow: 1;
 }
-.feature-item {
+.spec-line {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   font-size: 0.88rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
-.feature-item .check {
-  color: var(--emerald);
-  font-weight: 900;
+.spec-line svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--emerald-400);
+  stroke-width: 2.4;
+  fill: none;
   flex-shrink: 0;
-  margin-top: 1px;
+  margin-top: 3px;
 }
-.feature-item strong {
-  color: var(--text-main);
-}
+.spec-line strong { color: var(--text-primary); }
 
-.bundle-highlight-badge {
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.28);
-  color: #fbbf24;
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  font-size: 0.84rem;
-  margin-bottom: 22px;
-  line-height: 1.5;
-}
-
-/* 17 Tools Interactive Bento Grid */
-.tools-grid {
+/* The 17 Tools Matrix */
+.tools-quad-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
   gap: 16px;
 }
-.tool-tile {
+.tool-capsule {
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--line-hairline);
+  border-radius: var(--radius-sm);
   padding: 18px;
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  transition: border-color 0.16s ease;
 }
-.tool-tile:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-active);
-}
-.tool-tile-num {
-  font-size: 0.78rem;
+.tool-capsule:hover { border-color: var(--line-subtle); }
+.tool-index-tag {
+  font-size: 0.76rem;
   font-weight: 800;
-  color: var(--emerald);
-  background: var(--emerald-glow);
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-family: 'JetBrains Mono', monospace;
+  color: var(--emerald-400);
+  background: rgba(16, 185, 129, 0.08);
+  padding: 3px 8px;
+  border-radius: 4px;
 }
-.tool-tile-content h4 {
-  font-size: 0.96rem;
-  font-weight: 800;
-  margin-bottom: 4px;
-}
-.tool-tile-content p {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  line-height: 1.5;
-}
+.tool-body h4 { font-size: 0.96rem; font-weight: 800; margin-bottom: 4px; }
+.tool-body p { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; }
 
-/* Steps Section */
-.steps-grid {
+/* 3 Deployment Steps */
+.deployment-steps-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  gap: 20px;
 }
-@media (max-width: 800px) {
-  .steps-grid { grid-template-columns: 1fr; }
+@media (max-width: 820px) {
+  .deployment-steps-row { grid-template-columns: 1fr; }
 }
-.step-card {
+.step-terminal-box {
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 28px 22px;
+  border: 1px solid var(--line-hairline);
+  border-radius: var(--radius-sm);
+  padding: 24px;
   position: relative;
 }
-.step-number {
-  font-size: 2.2rem;
+.step-numeric-id {
+  font-size: 1.8rem;
   font-weight: 900;
-  color: rgba(255, 255, 255, 0.08);
-  font-family: 'JetBrains Mono', monospace;
-  margin-bottom: 12px;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
   line-height: 1;
 }
 
-/* Lead Capture Form */
-.lead-section {
-  background: linear-gradient(180deg, var(--bg-dark) 0%, #0d121c 100%);
-  border-top: 1px solid var(--border-subtle);
+/* Lead Section & Inputs */
+.lead-console-section {
+  background: linear-gradient(180deg, var(--bg-oled) 0%, #080c14 100%);
+  border-top: 1px solid var(--line-hairline);
 }
-.lead-box {
+.lead-intake-card {
   background: var(--bg-surface);
-  border: 1px solid var(--border-active);
-  border-radius: var(--radius-lg);
-  padding: clamp(24px, 5vw, 44px);
-  max-width: 640px;
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-md);
+  padding: clamp(24px, 5vw, 42px);
+  max-width: 620px;
   margin-inline: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
 }
-.form-group {
+.input-block {
   margin-bottom: 16px;
   text-align: right;
 }
-.form-label {
+.input-legend {
   display: block;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 700;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin-bottom: 6px;
 }
-.form-input {
+.machined-control {
   width: 100%;
   height: 48px;
-  background: var(--bg-dark);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  background: var(--bg-oled);
+  border: 1px solid var(--line-hairline);
+  border-radius: var(--radius-xs);
   padding-inline: 14px;
   font-family: inherit;
-  font-size: 0.95rem;
-  color: var(--text-main);
-  transition: border-color 0.15s ease;
+  font-size: 0.94rem;
+  color: var(--text-primary);
+  transition: border-color 0.16s ease;
 }
-.form-input:focus {
+.machined-control:focus {
   outline: none;
-  border-color: var(--emerald);
-  box-shadow: 0 0 0 3px var(--emerald-glow);
+  border-color: var(--emerald-500);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.16);
 }
 
-/* Sticky Bottom Bar for Mobile */
-.sticky-bar {
+/* Sticky Bottom Bar for Mobile Only */
+.mobile-fixed-bar {
   display: none;
 }
 @media (max-width: 767px) {
-  .sticky-bar {
+  .mobile-fixed-bar {
+    display: flex;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     z-index: 60;
-    background: rgba(7, 8, 10, 0.94);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-top: 1px solid var(--border-active);
+    background: rgba(5, 6, 8, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--line-subtle);
     padding: 12px 18px;
-    display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 14px;
+    gap: 12px;
   }
   body { padding-bottom: 74px; }
 }
-.sticky-info {
-  display: flex;
-  flex-direction: column;
-}
-.sticky-info b { font-size: 0.92rem; color: var(--text-main); }
-.sticky-info span { font-size: 0.74rem; color: var(--text-muted); }
 
-/* Footer */
 footer {
   padding-block: 40px;
-  border-top: 1px solid var(--border-subtle);
-  font-size: 0.8rem;
-  color: var(--text-dim);
+  border-top: 1px solid var(--line-hairline);
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
   text-align: center;
 }
 </style>
 </head>
-<body class="bg-grid">
+<body class="machined-grid">
 
 <!-- Header -->
 <header>
   <div class="wrap">
-    <a href="#" class="brand-badge">
-      <div class="logo-icon">M</div>
+    <a href="#" class="brand-group">
+      <div class="brand-mark">M</div>
       <span class="brand-text">MaxP</span>
-      <span class="brand-tag">محلات الملابس</span>
+      <span class="brand-spec mono">RETAIL_OS</span>
     </a>
-    <div class="h-actions">
-      <a href="#pricing" class="nav-link">المستويات</a>
-      <a href="#tools" class="nav-link">الـ 17 أداة</a>
+    <div class="nav-cluster">
+      <a href="#pricing" class="nav-anchor">المستويات</a>
+      <a href="#tools" class="nav-anchor">الـ 17 أداة</a>
       <a href="#lead" class="btn btn-emerald">افتح متجرك 0 ج.م</a>
     </div>
   </div>
 </header>
 
-<!-- Hero Section -->
+<!-- Asymmetric Split Hero -->
 <section class="hero">
-  <div class="hero-glow"></div>
   <div class="wrap">
-    
-    <div class="eyebrow-pill">
-      <span class="eyebrow-dot"></span>
-      <span>نظام تشغيل محلات وبراندات الملابس في مصر</span>
-    </div>
-
-    <h1 class="hero-title">
-      وقف نزيف الأوردرات والمرتجعات في محلك — <span class="gradient-text">من أول مقاس لآخر بوليصة شحن</span>
-    </h1>
-
-    <p class="hero-subtitle">
-      كل تاجر ملابس عارف الوجع: الإعلانات شغالة والرسائل داخلة، بس الأوردرات بتضيع في شات الواتساب، المقاسات بتطلع غلط، والمرتجع بياكل المكسب. MaxP بيجمع متجرك وتأكيد مقاساتك ومخزونك وشحنك في شاشة واحدة.
-    </p>
-
-    <div class="hero-cta-group">
-      <a href="#lead" class="btn btn-emerald" style="padding: 14px 32px; font-size: 1.05rem;">
-        افتح متجرك الآن مجانًا (0 ج.م)
-      </a>
-      <a href="#pricing" class="btn btn-outline" style="padding: 14px 26px;">
-        شوف باقة المتجر الكاملة (999 ج.م)
-      </a>
-    </div>
-
-    <div class="metrics-strip">
-      <div class="metric-item">
-        <span>متجر مجاني:</span>
-        <b class="num">0 ج.م</b>
-      </div>
-      <div class="metric-item">
-        <span>إدارة الأوردر:</span>
-        <b class="num">1 ج.م</b>
-      </div>
-      <div class="metric-item">
-        <span>باقة المتجر الكاملة:</span>
-        <b class="num">999 ج.م / شهر</b>
-      </div>
-      <div class="metric-item">
-        <span>قيمة الأدوات فرادى:</span>
-        <b class="num">2,936 ج.م</b>
-      </div>
-    </div>
-
-    <!-- Live Cockpit Visual Canvas -->
-    <div class="cockpit-canvas">
-      <div class="canvas-header">
-        <div class="canvas-dots">
-          <div class="canvas-dot"></div>
-          <div class="canvas-dot"></div>
-          <div class="canvas-dot"></div>
+    <div class="hero-split-grid">
+      
+      <!-- Content Column -->
+      <div class="hero-content">
+        <div class="telemetry-chip">
+          <span class="telemetry-dot"></span>
+          <span class="mono">EG-RETAIL-ENGINE v2.6 // المحلات والبراندات</span>
         </div>
-        <div class="canvas-title">maxp-clothing-os // live-operations</div>
-        <div class="live-pill">● متصل بالواتساب لايف</div>
+
+        <h1 class="hero-heading">
+          نظام تشغيل براندات ومحلات الملابس في مصر — <span class="lead-gradient">وقف نزيف الأوردرات والمرتجعات</span>
+        </h1>
+
+        <p class="hero-lead-text">
+          الإعلانات بتجيب أوردرات بس الواتساب بيضيعها، المقاسات بتطلع غلط، والمرتجع بياكل المكسب. MaxP بيجمع متجرك وتأكيد مقاساتك ومخزونك وشحنك في شاشة واحدة منظمة.
+        </p>
+
+        <div class="hero-cta-bar">
+          <a href="#lead" class="btn btn-emerald" style="padding: 14px 28px; font-size: 1.02rem;">
+            افتح متجرك الآن مجانًا (0 ج.م)
+          </a>
+          <a href="#pricing" class="btn btn-machined" style="padding: 14px 24px;">
+            تفاصيل باقة المتجر (999 ج.م)
+          </a>
+        </div>
+
+        <div class="numbers-index-bar">
+          <div class="number-spec-card">
+            <span>متجر مجاني</span>
+            <strong class="mono">0 ج.م</strong>
+          </div>
+          <div class="number-spec-card">
+            <span>إدارة الأوردر</span>
+            <strong class="mono">1 ج.م</strong>
+          </div>
+          <div class="number-spec-card">
+            <span>باقة المتجر الكاملة</span>
+            <strong class="mono">999 ج.م / شهر</strong>
+          </div>
+          <div class="number-spec-card">
+            <span>قيمة الـ17 أداة فرادى</span>
+            <strong class="mono">2,936 ج.م</strong>
+          </div>
+        </div>
       </div>
 
-      <div class="canvas-body">
-        <!-- Left: WhatsApp Automated Confirmation -->
-        <div class="canvas-panel">
-          <div class="panel-title">
-            <span>تأكيد الأوردر والمقاس الآلي (WhatsApp Bot)</span>
-            <span class="mono" style="font-size:0.75rem; color:var(--emerald);">AUTO_CONFIRM: ON</span>
-          </div>
-          
-          <div class="chat-window">
-            <div class="chat-bubble chat-in">
-              عايز السويت شيرت الأوفر سايز الأسود مقاس <span class="chat-tag">L</span> لمصر الجديدة، والشحن بياخد قد إيه؟
+      <!-- Real Operating System Cockpit Column -->
+      <div class="hero-cockpit-col">
+        <div class="cockpit-chassis">
+          <div class="cockpit-top-bar">
+            <div class="mono" style="font-size:0.72rem;">maxp-retail-os // live-dispatch</div>
+            <div class="chassis-status-pill">
+              <span class="telemetry-dot"></span>
+              <span class="mono">CONNECTED</span>
             </div>
-            <div class="chat-bubble chat-out">
-              أهلاً بحضرتك في متجر كولكشن الصيف! 👕<br>
-              المقاس <span class="chat-tag">L</span> متاح في المخزن (<span class="num">14</span> قطعة).<br>
-              الشحن لمصر الجديدة خلال 24 ساعة.<br>
-              إجمالي الأوردر: <b class="num">999 ج.م</b> (الدفع عند الاستلام).
-              <div class="chat-actions">
-                <button type="button" class="chat-action-btn" onclick="simulateConfirm(this)">✓ اضغط لتأكيد الأوردر والعنوان</button>
+          </div>
+
+          <div class="cockpit-screen-body">
+            <!-- Order Telemetry Card -->
+            <div class="order-telemetry-tile">
+              <div class="order-header-row">
+                <span class="order-id mono">أوردر #EG-9182 • مصر الجديدة</span>
+                <span class="order-badge-success mono">مؤكد آلياً</span>
+              </div>
+              <div class="order-product-row">
+                <div class="product-title-group">
+                  <h5>سويت شيرت أوفر سايز أسود كربون</h5>
+                  <p>القطعة محجوزة • مقاس L • ملتون 420 جرام</p>
+                </div>
+                <div class="product-price-spec mono">999 ج.م</div>
+              </div>
+
+              <div class="verification-strip">
+                <div class="verification-status">
+                  <span class="telemetry-dot"></span>
+                  <span>تأكيد واتساب: العميل أكد الطول 178 والوزن 82 كجم (L مناسب)</span>
+                </div>
+                <button type="button" class="btn-micro-action mono" onclick="this.innerText='✓ بوليصة صادرة'">طباعة بوليصة</button>
               </div>
             </div>
-            <div id="simulatedStatus" class="chat-bubble chat-in" style="display:none; border-color:var(--emerald); background:rgba(16,185,129,0.08);">
-              ✅ <b>تم التأكيد آلياً:</b> تم خصم القطعة من المخزن وتوليد بوليصة الشحن رقم <span class="mono">EG-84291</span>!
-            </div>
-          </div>
-        </div>
 
-        <!-- Right: Real-time Size & Color Inventory Matrix -->
-        <div class="canvas-panel">
-          <div class="panel-title">
-            <span>مصفوفة مخزون المقاسات والألوان الحية</span>
-            <span class="mono" style="font-size:0.75rem; color:var(--text-muted);">تيشيرت أوفر سايز أسود</span>
-          </div>
+            <!-- Inventory Matrix Tile -->
+            <div class="inventory-matrix-widget">
+              <div class="matrix-label-row">
+                <span>مصفوفة مخزون المقاسات الحية للمحل</span>
+                <span class="mono" style="font-size:0.72rem; color:var(--emerald-400);">SYNCED_WITH_STORE</span>
+              </div>
 
-          <div class="stock-grid">
-            <div class="size-box">
-              <div class="size-name">S</div>
-              <div class="size-qty num">8 قطع</div>
-            </div>
-            <div class="size-box">
-              <div class="size-name">M</div>
-              <div class="size-qty num">21 قطعة</div>
-            </div>
-            <div class="size-box" style="border-color:var(--emerald); background:rgba(16,185,129,0.06);">
-              <div class="size-name">L</div>
-              <div class="size-qty num">14 قطعة</div>
-            </div>
-            <div class="size-box size-out">
-              <div class="size-name">XL</div>
-              <div class="size-qty num">0 (نفد)</div>
-            </div>
-          </div>
+              <div class="sizes-grid-row">
+                <div class="size-chip-cell">
+                  <div class="size-code mono">S</div>
+                  <div class="size-units mono">8 قطع</div>
+                </div>
+                <div class="size-chip-cell">
+                  <div class="size-code mono">M</div>
+                  <div class="size-units mono">21 قطعة</div>
+                </div>
+                <div class="size-chip-cell active-size">
+                  <div class="size-code mono">L</div>
+                  <div class="size-units mono">14 قطعة</div>
+                </div>
+                <div class="size-chip-cell empty-size">
+                  <div class="size-code mono">XL</div>
+                  <div class="size-units mono">0 (نفد)</div>
+                </div>
+              </div>
 
-          <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-subtle); font-size: 0.8rem; color: var(--text-muted); line-height: 1.6;">
-            🛡️ <b>منع البيع المزدوج:</b> بمجرد تأكيد العميل على واتساب، السيستم بيحجز القطعة فوراً ويمنع طلب مقاس خلصان.
+              <div style="margin-top: 12px; font-size: 0.76rem; color: var(--text-tertiary); display:flex; justify-content:space-between;">
+                <span>منع البيع المزدوج: مفعل</span>
+                <span class="mono">BOSTA_API: READY</span>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
-    </div>
 
+    </div>
   </div>
 </section>
 
-<!-- Pain vs Solution Section -->
+<!-- Asymmetric Bento Section: Operations vs Legacy Mess -->
 <section class="section">
   <div class="wrap">
-    <div class="section-header">
-      <div class="section-tag">وجع السوق الحقيقي</div>
-      <h2 class="section-title">ليه محلات وبراندات الملابس بتخسر فلوس كل شهر؟</h2>
-      <p class="section-desc">مشكلة تجارة الملابس في مصر مش في قلة الزباين، المشكلة في الفوضى التشغيلية اللي بتاكل الأرباح.</p>
+    <div class="section-meta">
+      <div class="section-tag-label mono">ARCHITECTURAL TELEMETRY</div>
+      <h2 class="section-headline">أين تضيع أموال تاجر الملابس كل شهر؟</h2>
+      <p class="section-summary">المشكلة ليست في المبيعات؛ المشكلة في نزيف المرتجعات، وتشتت المقاسات، والاعتماد على شيتات غير متزامنة.</p>
     </div>
 
-    <div class="bento-grid-3">
-      <div class="bento-card">
-        <div class="bento-icon" style="color:var(--rose);">⚠️</div>
-        <h3 class="bento-title">نزيف المرتجعات مجهولة السبب</h3>
-        <p class="bento-desc">
-          العميل يطلب مقاس، يوصله المندوب يلاقي المقاس واسع أو اللون مش هو، يرفض يستلم وتدفع أنت مصاريف شحن رايح جاي. مع MaxP، التأكيد الآلي للمقاس والعنوان بيمنع الأوردرات العشوائية.
-        </p>
+    <div class="asymmetric-bento-grid">
+      <!-- 8-Column Wide Card: Returns Telemetry Table -->
+      <div class="bento-surface bento-surface-featured">
+        <div class="bento-head-row">
+          <div class="bento-svg-icon">
+            <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          </div>
+          <div>
+            <h3>رادار تشخيص وتفادي المرتجعات بالمحافظات</h3>
+          </div>
+        </div>
+        <p>بدلاً من دفع مصاريف الشحن ذهاباً وإياباً دون معرفة سبب الإلغاء، يقوم المحرك برصد أسباب المرتجع وحلها قبل تسليم الشحنة للمندوب.</p>
+
+        <div class="telemetry-table-wrapper">
+          <table class="telemetry-table">
+            <thead>
+              <tr>
+                <th>المحافظة</th>
+                <th>الأوردر</th>
+                <th>تشخيص المقاس</th>
+                <th>إجراء المنظومة الفوري</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>المنصورة</td>
+                <td class="mono">#EG-8142</td>
+                <td><span class="telemetry-badge-warning">اختلاف مقاس المحل</span></td>
+                <td>تأكيد الأبعاد على واتساب قبل إرسال المندوب</td>
+              </tr>
+              <tr>
+                <td>الجيزة</td>
+                <td class="mono">#EG-8145</td>
+                <td><span class="telemetry-badge-ok">مقاس L مطابق</span></td>
+                <td>إصدار بوليصة شحن سريعة (تسليم 24 ساعة)</td>
+              </tr>
+              <tr>
+                <td>الإسكندرية</td>
+                <td class="mono">#EG-8149</td>
+                <td><span class="telemetry-badge-ok">تأكيد لون أسود</span></td>
+                <td>خصم القطعة فورياً من جرد المحل الفرعي</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div class="bento-card">
-        <div class="bento-icon" style="color:var(--amber);">📦</div>
-        <h3 class="bento-title">خناقة عجز جرد المقاسات والألوان</h3>
-        <p class="bento-desc">
-          الأوردرات بتتسجل في شات وورق، تكتشف بعد ما تأكد إن مقاس L خلصان من المحل الصبح! عميل زعلان وتقييم سيء. نظامنا يربط جرد المحل بمتجر الأونلاين لحظة بلحظة.
-        </p>
-      </div>
+      <!-- 4-Column Card: Inventory Breakdown -->
+      <div class="bento-surface">
+        <div class="bento-head-row">
+          <div class="bento-svg-icon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </div>
+          <div>
+            <h3>ربط كاشير المحل بالمتجر</h3>
+          </div>
+        </div>
+        <p>إذا بيعت قطعة مقاس M داخل المحل، تُخصم في نفس الثانية من المتجر الإلكتروني لمنع بيعها لعميل الأونلاين والاعتذار له لاحقاً.</p>
 
-      <div class="bento-card bento-card-highlight">
-        <div class="bento-icon" style="color:var(--emerald);">⚡</div>
-        <h3 class="bento-title">شتات 5 برامج وتكلفة 2,936 ج.م</h3>
-        <p class="bento-desc">
-          برنامج للكاشير، وبرنامج للواتساب، وسيستم لشركة الشحن، وشيت للمرتجع. تشتت مجهد وتكلفة شهرية تصل لـ 2,936 ج.م لو ركبتهم فرادى. باقة MaxP بتجمع كل الـ 17 أداة بـ 999 ج.م فقط.
-        </p>
+        <div style="background:var(--bg-card); padding:14px; border-radius:var(--radius-xs); border:1px solid var(--line-hairline); margin-top:auto;">
+          <div style="font-size:0.78rem; color:var(--text-tertiary); margin-bottom:4px;">تزامن الجرد (Inventory Sync)</div>
+          <div style="font-size:1.05rem; font-weight:800; color:var(--emerald-400);">لحظي بالباركود (0 ثانية تأخير)</div>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Pricing Tiers: 0 · 1 · 999 -->
-<section class="section" id="pricing" style="background: rgba(255,255,255,0.015);">
+<!-- Pricing Deck: 3 Tiers (0 · 1 · 999) -->
+<section class="section" id="pricing">
   <div class="wrap">
-    <div class="section-header">
-      <div class="section-tag">مستويات التشغيل</div>
-      <h2 class="section-title">تسعير واضح وعادل — يبدأ من 0 ج.م</h2>
-      <p class="section-desc">اختار المستوى المناسب لحجم محلك الحالي، وتقدر ترقي في أي وقت بدون أي شروط جزائية.</p>
+    <div class="section-meta">
+      <div class="section-tag-label mono">PRICING STRUCTURE</div>
+      <h2 class="section-headline">مستويات التشغيل والتسعير</h2>
+      <p class="section-summary">تسعير مباشر وعادل بالأرقام المعتمدة فقط، بدون قيود أو شروط جزائية.</p>
     </div>
 
-    <div class="pricing-grid">
+    <div class="pricing-deck">
       <!-- Tier 1: Free -->
-      <div class="price-card">
-        <h3 class="price-tier-name">متجر مجاني</h3>
-        <p class="price-tier-desc">للمبتدئين وأصحاب المحلات اللي عايزين يعرضوا منتجاتهم أونلاين فوراً.</p>
-        <div class="price-tag">
-          <span class="price-amount num">0</span>
-          <span class="price-unit">ج.م / دائمًا</span>
+      <div class="pricing-panel">
+        <div class="tier-title-bar">
+          <h3 class="tier-label">متجر مجاني</h3>
         </div>
-        <ul class="feature-list">
-          <li class="feature-item"><span class="check">✓</span><span>متجر إلكتروني سريع باسم محلك</span></li>
-          <li class="feature-item"><span class="check">✓</span><span>عرض صور الكولكشن وجدول المقاسات</span></li>
-          <li class="feature-item"><span class="check">✓</span><span>استقبال طلبات العملاء بدون عمولة</span></li>
-          <li class="feature-item"><span class="check">✓</span><span>رابط مباشر للمتجر تشاركه على إنستجرام وفيسبوك</span></li>
+        <p class="tier-caption">لعرض الكولكشن واستقبال الأوردرات بدون أي تكاليف بداية.</p>
+        <div class="price-monument">
+          <span class="price-figure mono">0</span>
+          <span class="price-currency-unit">ج.م / دائمًا</span>
+        </div>
+        <ul class="specs-stack">
+          <li class="spec-line"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>متجر إلكتروني سريع باسم محلك</span></li>
+          <li class="spec-line"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>عرض صور الملابس وجداول المقاسات</span></li>
+          <li class="spec-line"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>استقبال طلبات العملاء المباشرة</span></li>
+          <li class="spec-line"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>رابط متجر لنشره على إنستجرام وفيسبوك</span></li>
         </ul>
-        <a href="#lead" class="btn btn-outline" style="width:100%;">افتح متجرك 0 ج.م</a>
+        <a href="#lead" class="btn btn-machined" style="width:100%;">افتح متجرك 0 ج.م</a>
       </div>
 
-      <!-- Tier 2: 1 EGP -->
-      <div class="price-card">
-        <h3 class="price-tier-name">إدارة الأوردر</h3>
-        <p class="price-tier-desc">للمحلات اللي عندها تشغيل فعلي وعايزة نظام يضبط حركة كل شحنة.</p>
-        <div class="price-tag">
-          <span class="price-amount num">1</span>
-          <span class="price-unit">ج.م / لكل أوردر</span>
+      <!-- Tier 2: 1 EGP per order -->
+      <div class="pricing-panel">
+        <div class="tier-title-bar">
+          <h3 class="tier-label">إدارة الأوردر</h3>
         </div>
-        <ul class="feature-list">
-          <li class="feature-item"><span class="check">✓</span><span>كل مزايا المتجر المجاني بالكامل</span></li>
-          <li class="feature-item"><span class="check">✓</span><span>تتبع حالة كل أوردر بالقرش (استلام، تأكيد، تسليم)</span></li>
-          <li class="feature-item"><span class="check">✓</span><span>طباعة بوالص الشحن وباركود القطع</span></li>
-          <li class="feature-item"><span class="check">✓</span><span>كول سنتر بسيط لموظفي التأكيد</span></li>
+        <p class="tier-caption">للمحلات التي تمتلك حركة بيع وتريد ضبط كل شحنة.</p>
+        <div class="price-monument">
+          <span class="price-figure mono">1</span>
+          <span class="price-currency-unit">ج.م / لكل أوردر</span>
+        </div>
+        <ul class="specs-stack">
+          <li class="spec-line"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>كافة خصائص المتجر المجاني بالكامل</span></li>
+          <li class="spec-line"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>تتبع دورة حياة الأوردر (استلام، تأكيد، تسليم)</span></li>
+          <li class="spec-line"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>طباعة بوالص الشحن وملصقات الباركود</span></li>
+          <li class="spec-line"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>لوحة كول سنتر لموظفي تأكيد الطلبات</span></li>
         </ul>
-        <a href="#lead" class="btn btn-outline" style="width:100%;">ابدأ بنظام 1 ج.م</a>
+        <a href="#lead" class="btn btn-machined" style="width:100%;">ابدأ بنظام 1 ج.م</a>
       </div>
 
-      <!-- Tier 3: Complete Bundle 999 (Hero Card) -->
-      <div class="price-card price-card-hero">
-        <div class="badge-featured">الباقة الأكثر طلباً للمحلات</div>
-        <h3 class="price-tier-name" style="color:#fff;">باقة المتجر الكاملة</h3>
-        <p class="price-tier-desc" style="color:#cbd5e1;">النظام الشامل لبراندات ومحلات الملابس: الـ 17 أداة في لوحة تحكم واحدة.</p>
-        <div class="price-tag">
-          <span class="price-amount num" style="color:#10b981;">999</span>
-          <span class="price-unit">ج.م / شهريًا</span>
+      <!-- Tier 3: Complete 999 Bundle -->
+      <div class="pricing-panel pricing-panel-command">
+        <div class="panel-featured-pill mono">الباقة المتكاملة للمحلات</div>
+        <div class="tier-title-bar">
+          <h3 class="tier-label" style="color:#fff;">باقة المتجر الكاملة</h3>
         </div>
-        
-        <div class="bundle-highlight-badge">
-          💡 قيمة الـ 17 أداة لو ركبتها فرادى تصل لـ <b>2,936 ج.م</b> في الشهر — مجمعة هنا في اشتراك واحد بنظام متكامل.
+        <p class="tier-caption" style="color:var(--text-secondary);">النظام الشامل لبراندات ومحلات الملابس: الـ 17 أداة في بيئة واحدة.</p>
+        <div class="price-monument">
+          <span class="price-figure mono" style="color:var(--emerald-400);">999</span>
+          <span class="price-currency-unit">ج.م / شهريًا</span>
         </div>
 
-        <ul class="feature-list">
-          <li class="feature-item"><span class="check">✓</span><span><strong>تأكيد واتساب الذكي الآلي</strong> بدون تدخل بشري</span></li>
-          <li class="feature-item"><span class="check">✓</span><span><strong>مصفوفة المقاسات والألوان</strong> المتزامنة مع المحل</span></li>
-          <li class="feature-item"><span class="check">✓</span><span><strong>الإنبوكس الموحد</strong> (واتساب + ماسنجر + إنستجرام)</span></li>
-          <li class="feature-item"><span class="check">✓</span><span><strong>ربط شركات الشحن في مصر</strong> ومتابعة المندوبين</span></li>
-          <li class="feature-item"><span class="check">✓</span><span><strong>رادار تتبع أسباب المرتجعات</strong> لكل محافظة ومقاس</span></li>
-          <li class="feature-item"><span class="check">✓</span><span><strong>تقارير الأرباح بالقرش</strong> وكاشير المحل (POS)</span></li>
-          <li class="feature-item"><span class="check">✓</span><span><strong>الـ 17 أداة كاملة</strong> مفعلة فوراً بدون برامج خارجية</span></li>
+        <div class="bundle-arbitrage-box">
+          تكلفة الـ 17 أداة لو تم تشغيلها عبر منصات منفصلة تبلغ <b class="mono">2,936 ج.م</b> شهرياً — مجمعة هنا في اشتراك موحد.
+        </div>
+
+        <ul class="specs-stack">
+          <li class="spec-line"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><strong>تأكيد واتساب الآلي</strong> الذكي للعنوان والمقاس</span></li>
+          <li class="spec-line"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><strong>مصفوفة المقاسات والألوان</strong> المتزامنة مع المحل</span></li>
+          <li class="spec-line"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><strong>الإنبوكس الموحد</strong> (واتساب، ماسنجر، إنستجرام)</span></li>
+          <li class="spec-line"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><strong>توليد بوالص شركات الشحن في مصر</strong> والمتابعة</span></li>
+          <li class="spec-line"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><strong>رادار تشخيص أسباب المرتجعات</strong> بالمحافظات</span></li>
+          <li class="spec-line"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><strong>كاشير المحل (POS)</strong> وحساب الأرباح بالقرش</span></li>
+          <li class="spec-line"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><strong>الـ 17 أداة كاملة</strong> بدون أي برامج خارجية</span></li>
         </ul>
         <a href="#lead" class="btn btn-emerald" style="width:100%;">اشترك في الباقة الكاملة 999 ج.م</a>
       </div>
@@ -1002,149 +1041,149 @@ footer {
   </div>
 </section>
 
-<!-- The 17 Tools Grid -->
+<!-- The 17 Tools Architectural Index -->
 <section class="section" id="tools">
   <div class="wrap">
-    <div class="section-header">
-      <div class="section-tag">البنية التحتية</div>
-      <h2 class="section-title">الـ 17 أداة التي يحتاجها محل الملابس</h2>
-      <p class="section-desc">مصممة خصيصاً لتفاصيل تجارة الفاشن والأزياء في السوق المصري، مدمجة في شاشة واحدة.</p>
+    <div class="section-meta">
+      <div class="section-tag-label mono">SYSTEM ARCHITECTURE // 17 COMPONENTS</div>
+      <h2 class="section-headline">مصفوفة الـ 17 أداة لمحل الملابس</h2>
+      <p class="section-summary">تم تصميم وهندسة كل مكون ليحل عقدة تشغيلية محددة في بيع وإدارة وتوزيع الملابس في السوق المصري.</p>
     </div>
 
-    <div class="tools-grid">
-      <div class="tool-tile">
-        <span class="tool-tile-num">01</span>
-        <div class="tool-tile-content">
+    <div class="tools-quad-grid">
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">01</span>
+        <div class="tool-body">
           <h4>المتجر الإلكتروني السريع</h4>
-          <p>واجهة موبايل سريعة تفتح في أقل من ثانية، مصممة لكولكشن الملابس.</p>
+          <p>واجهة تفتح في أقل من ثانية، مهيأة لعرض كولكشن الملابس والصور عالية الدقة.</p>
         </div>
       </div>
 
-      <div class="tool-tile">
-        <span class="tool-tile-num">02</span>
-        <div class="tool-tile-content">
-          <h4>تأكيد واتساب التلقائي</h4>
-          <p>روبوت محادثة يؤكد العنوان والمقاس ويرسل لوكيشن التسليم آلياً.</p>
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">02</span>
+        <div class="tool-body">
+          <h4>تأكيد واتساب الآلي</h4>
+          <p>محرك محادثة يؤكد العنوان واختيار المقاس ويرسل لوكيشن التسليم تلقائياً.</p>
         </div>
       </div>
 
-      <div class="tool-tile">
-        <span class="tool-tile-num">03</span>
-        <div class="tool-tile-content">
-          <h4>الإنبوكس الموحد للرسائل</h4>
-          <p>رد على رسائل واتساب وفيسبوك وإنستجرام من شاشة واحدة لكل موظفيك.</p>
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">03</span>
+        <div class="tool-body">
+          <h4>الإنبوكس الموحد</h4>
+          <p>إدارة محادثات واتساب وإنستجرام وفيسبوك من شاشة واحدة لجميع موظفي المبيعات.</p>
         </div>
       </div>
 
-      <div class="tool-tile">
-        <span class="tool-tile-num">04</span>
-        <div class="tool-tile-content">
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">04</span>
+        <div class="tool-body">
           <h4>مصفوفة المقاسات والألوان</h4>
-          <p>جرد دقيق لكل قطعة (S/M/L/XL/XXL) بالألوان لمنع البيع المزدوج.</p>
+          <p>جرد دقيق لكل قطعة (S/M/L/XL/XXL) لمنع تكرار البيع أو نفاد المقاس دون علم.</p>
         </div>
       </div>
 
-      <div class="tool-tile">
-        <span class="tool-tile-num">05</span>
-        <div class="tool-tile-content">
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">05</span>
+        <div class="tool-body">
           <h4>كاشير نقطة البيع للمحل (POS)</h4>
-          <p>بيع مباشر في المحل يخصم فوراً من نفس مخزون المتجر الإلكتروني.</p>
+          <p>نظام كاشير فرع المحل متزامن لحظياً مع جرد المتجر الإلكتروني.</p>
         </div>
       </div>
 
-      <div class="tool-tile">
-        <span class="tool-tile-num">06</span>
-        <div class="tool-tile-content">
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">06</span>
+        <div class="tool-body">
           <h4>توليد باركود القطع</h4>
-          <p>طباعة ليبل واستيكر باركود لكل قطعة ومقاس لتسهيل الجرد السريع.</p>
+          <p>طباعة ملصقات الباركود لكل قطعة ومقاس لتسريع عملية الجرد والتسليم.</p>
         </div>
       </div>
 
-      <div class="tool-tile">
-        <span class="tool-tile-num">07</span>
-        <div class="tool-tile-content">
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">07</span>
+        <div class="tool-body">
           <h4>ربط شركات الشحن المصرية</h4>
-          <p>إرسال الشحنات وطباعة البوالص مع كبرى شركات الشحن بضغطة زر.</p>
+          <p>إرسال الشحنات وتوليد البوالص مع كبرى شركات الشحن بضغطة زر واحدة.</p>
         </div>
       </div>
 
-      <div class="tool-tile">
-        <span class="tool-tile-num">08</span>
-        <div class="tool-tile-content">
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">08</span>
+        <div class="tool-body">
           <h4>تتبع حالات الشحنات الحية</h4>
-          <p>معرفة مكان كل أوردر ومتابعة المندوب حتى تسليم الكاش للمحل.</p>
+          <p>متابعة موقع وحالة كل أوردر حتى تحصيل النقد وتوريده لخزينة المحل.</p>
         </div>
       </div>
 
-      <div class="tool-tile">
-        <span class="tool-tile-num">09</span>
-        <div class="tool-tile-content">
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">09</span>
+        <div class="tool-body">
           <h4>رادار تحليل أسباب المرتجعات</h4>
-          <p>معرفة هل المرتجع بسبب المقاس، الخامة، أو تأخير المندوب بالمحافظات.</p>
+          <p>رصد هل المرتجع ناتج عن عيب مقاس، خامة، أو تأخير مندوب بكل محافظة.</p>
         </div>
       </div>
 
-      <div class="tool-tile">
-        <span class="tool-tile-num">10</span>
-        <div class="tool-tile-content">
-          <h4>حساب ربح الأوردر بالقرش</h4>
-          <p>خصم سعر القماش/القطعة ومصاريف الشحن والإعلانات لمعرفة الصافي الحقيقي.</p>
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">10</span>
+        <div class="tool-body">
+          <h4>حساب صافي الأرباح بالقرش</h4>
+          <p>خصم سعر تكلفة القطعة، الشحن، والإعلانات لاحتساب الهامش الفعلي لكل أوردر.</p>
         </div>
       </div>
 
-      <div class="tool-tile">
-        <span class="tool-tile-num">11</span>
-        <div class="tool-tile-content">
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">11</span>
+        <div class="tool-body">
           <h4>تنبيهات نواقص المقاسات</h4>
-          <p>إشعار فوري لما يوشك مقاس معين على النفاد لتجهيز تشغيلة جديدة.</p>
+          <p>إشعار استباقي بمجرد انخفاض رصيد مقاس أو لون معين لتجهيز تشغيلة جديدة.</p>
         </div>
       </div>
 
-      <div class="tool-tile">
-        <span class="tool-tile-num">12</span>
-        <div class="tool-tile-content">
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">12</span>
+        <div class="tool-body">
           <h4>إدارة فروع ومخازن المحل</h4>
-          <p>توزيع قطع الكولكشن بين الفرع الرئيسي والمخازن بدقة وسهولة.</p>
+          <p>توزيع قطع الكولكشن وتتبع مناقلات البضاعة بين الفرع والمخزن بدقة.</p>
         </div>
       </div>
 
-      <div class="tool-tile">
-        <span class="tool-tile-num">13</span>
-        <div class="tool-tile-content">
-          <h4>أدوار وصلاحيات الموظفين</h4>
-          <p>صلاحيات منفصلة للكاشير، وموظف التأكيد، ومسؤول التجهيز والشحن.</p>
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">13</span>
+        <div class="tool-body">
+          <h4>أدوار وصلاحيات الفريق</h4>
+          <p>صلاحيات منفصلة للكاشير، مسؤول التأكيد، وإدارة التجهيز والتعبئة.</p>
         </div>
       </div>
 
-      <div class="tool-tile">
-        <span class="tool-tile-num">14</span>
-        <div class="tool-tile-content">
-          <h4>برنامج نقاط وولاء العملاء</h4>
-          <p>تشجيع الزباين على تكرار الشراء من محلك بنظام نقاط واضح ومحفز.</p>
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">14</span>
+        <div class="tool-body">
+          <h4>برنامج ولاء العملاء</h4>
+          <p>تحفيز زبائن المحل على تكرار الشراء بنظام نقاط وخصومات مسجلة بالهاتف.</p>
         </div>
       </div>
 
-      <div class="tool-tile">
-        <span class="tool-tile-num">15</span>
-        <div class="tool-tile-content">
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">15</span>
+        <div class="tool-body">
           <h4>ربط بيكسل إعلانات ميتا وتيك توك</h4>
-          <p>تتبع الأحداث الدقيق (Purchase, AddToCart) لتحسين أداء الحملات.</p>
+          <p>تتبع دقيق لأحداث الشراء (Conversions) لتحسين نتائج الحملات الإعلانية.</p>
         </div>
       </div>
 
-      <div class="tool-tile">
-        <span class="tool-tile-num">16</span>
-        <div class="tool-tile-content">
-          <h4>تقارير القطع الأكثر مبيعاً</h4>
-          <p>إحصائيات تفصيلية عن الموديلات والألوان اللي بتحقق أعلى مبيعات وهامش ربح.</p>
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">16</span>
+        <div class="tool-body">
+          <h4>تقارير الكولكشن الأكثر طلباً</h4>
+          <p>إحصائيات الموديلات والألوان التي تحقق أعلى سرعة دوران وربحية.</p>
         </div>
       </div>
 
-      <div class="tool-tile">
-        <span class="tool-tile-num">17</span>
-        <div class="tool-tile-content">
-          <h4>تطبيق موبايل للتاجر</h4>
-          <p>متابعة حركة الأوردرات والكاش من موبايلك وأنت خارج المحل في أي وقت.</p>
+      <div class="tool-capsule">
+        <span class="tool-index-tag mono">17</span>
+        <div class="tool-body">
+          <h4>تطبيق إدارة المحل من الموبايل</h4>
+          <p>متابعة حركة البيع ومطابقة الخزينة وأنت خارج المحل في أي وقت.</p>
         </div>
       </div>
     </div>
@@ -1152,62 +1191,62 @@ footer {
 </section>
 
 <!-- 3 Steps Section -->
-<section class="section" style="background: rgba(255,255,255,0.015);">
+<section class="section">
   <div class="wrap">
-    <div class="section-header">
-      <div class="section-tag">البداية السهلة</div>
-      <h2 class="section-title">كيف تبدأ في 3 خطوات بسيطة؟</h2>
-      <p class="section-desc">مش محتاج تغير طريقة شغلك الحالية، النظام بيتركب على شغلك في 10 دقائق.</p>
+    <div class="section-meta">
+      <div class="section-tag-label mono">DEPLOYMENT PIPELINE</div>
+      <h2 class="section-headline">خطوات البدء الثلاث</h2>
+      <p class="section-summary">النظام يندمج مع طريقة عملك الحالية دون الحاجة لتغيير موظفيك أو طريقة إدارتك.</p>
     </div>
 
-    <div class="steps-grid">
-      <div class="step-card">
-        <div class="step-number">01</div>
-        <h3 class="bento-title">سجل متجرك المجاني</h3>
-        <p class="bento-desc">اكتب اسم محلك ورقم واتسابك، وهيتم إنشاء المتجر فوراً بـ 0 ج.م وبدون أي بطاقة بنكية.</p>
+    <div class="deployment-steps-row">
+      <div class="step-terminal-box">
+        <div class="step-numeric-id mono">01</div>
+        <h3 style="font-size:1.15rem; font-weight:800; margin-bottom:8px;">تسجيل المتجر المجاني</h3>
+        <p style="font-size:0.9rem; color:var(--text-secondary);">إنشاء بيئة المتجر في دقائق معدودة بـ 0 ج.م ودون الحاجة لبطاقات ائتمان.</p>
       </div>
 
-      <div class="step-card">
-        <div class="step-number">02</div>
-        <h3 class="bento-title">ارفع كولكشن الملابس</h3>
-        <p class="bento-desc">حط صور الموديلات، وحدد المقاسات المتاحة وألوانها وأسعارها في دقائق معدودة.</p>
+      <div class="step-terminal-box">
+        <div class="step-numeric-id mono">02</div>
+        <h3 style="font-size:1.15rem; font-weight:800; margin-bottom:8px;">إدخال كولكشن المقاسات</h3>
+        <p style="font-size:0.9rem; color:var(--text-secondary);">رفع صور القطع، تحديد المقاسات والألوان المتاحة بالمخزن، وتحديد الأسعار.</p>
       </div>
 
-      <div class="step-card">
-        <div class="step-number">03</div>
-        <h3 class="bento-title">شغّل تأكيد الواتساب والشحن</h3>
-        <p class="bento-desc">اربط رقم واتسابك، واستقبل أوردراتك مؤكدة وجاهزة للطباعة والتسليم لشركة الشحن.</p>
+      <div class="step-terminal-box">
+        <div class="step-numeric-id mono">03</div>
+        <h3 style="font-size:1.15rem; font-weight:800; margin-bottom:8px;">ربط الواتساب والشحن</h3>
+        <p style="font-size:0.9rem; color:var(--text-secondary);">تفعيل بوابة التأكيد واستقبال أول أوردر مؤكد وجاهز للطباعة والتسليم للشركة.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Lead Capture Section -->
-<section class="section lead-section" id="lead">
+<!-- Lead Section -->
+<section class="section lead-console-section" id="lead">
   <div class="wrap">
-    <div class="lead-box">
-      <div style="text-align:center; margin-bottom: 26px;">
-        <span class="live-pill">🚀 انضم لمحلات الملابس المنظمة</span>
-        <h2 style="font-size:1.8rem; font-weight:800; margin-top:10px;">افتح متجرك وابدأ فوراً</h2>
-        <p style="color:var(--text-muted); font-size:0.9rem;">
-          سجل بياناتك وهيتواصل معاك مهندس تشغيل يشرحلك النظام ويجهز متجرك على مقاس شغلك.
+    <div class="lead-intake-card">
+      <div style="text-align:right; margin-bottom: 24px;">
+        <span class="telemetry-chip mono">INTAKE // STARTUP</span>
+        <h2 style="font-size:1.7rem; font-weight:800; margin-top:8px;">ابدأ إعداد متجرك الآن</h2>
+        <p style="color:var(--text-secondary); font-size:0.9rem;">
+          سجل بياناتك للتواصل المباشر عبر واتساب وبدء تشغيل النظام وفق حجم محلك.
         </p>
       </div>
 
       <form id="storeLeadForm" onsubmit="handleLeadSubmit(event)">
-        <div class="form-group">
-          <label class="form-label" for="merchantName">اسم التاجر / المسؤول</label>
-          <input class="form-input" type="text" id="merchantName" required placeholder="مثال: أحمد مصطفى">
+        <div class="input-block">
+          <label class="input-legend" for="merchantName">اسم المسؤول / التاجر</label>
+          <input class="machined-control" type="text" id="merchantName" required placeholder="مثال: كريم السيد">
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="merchantPhone">رقم الموبايل / واتساب</label>
-          <input class="form-input mono" type="tel" id="merchantPhone" required placeholder="01xxxxxxxxx" dir="ltr">
+        <div class="input-block">
+          <label class="input-legend" for="merchantPhone">رقم الهاتف / واتساب</label>
+          <input class="machined-control mono" type="tel" id="merchantPhone" required placeholder="01xxxxxxxxx" dir="ltr">
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="storeType">نوع النشاط</label>
-          <select class="form-input" id="storeType" required style="cursor:pointer;">
+        <div class="input-block">
+          <label class="input-legend" for="storeType">طبيعة النشاط التجاري</label>
+          <select class="machined-control" id="storeType" required style="cursor:pointer;">
             <option value="محل ملابس + بيع أونلاين">محل ملابس + بيع أونلاين</option>
             <option value="براند ملابس أونلاين فقط">براند ملابس أونلاين فقط</option>
             <option value="محل تجزئة / كولكشن ملابس">محل تجزئة / كولكشن ملابس</option>
@@ -1215,22 +1254,22 @@ footer {
           </select>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="selectedTier">المستوى المطلوب للبدء</label>
-          <select class="form-input" id="selectedTier" required style="cursor:pointer;">
+        <div class="input-block">
+          <label class="input-legend" for="selectedTier">المستوى المطلوب</label>
+          <select class="machined-control" id="selectedTier" required style="cursor:pointer;">
             <option value="متجر مجاني (0 ج.م)">متجر مجاني (0 ج.م)</option>
             <option value="إدارة الأوردر (1 ج.م)">إدارة الأوردر (1 ج.م)</option>
             <option value="باقة المتجر الكاملة (999 ج.م/شهر)" selected>باقة المتجر الكاملة (999 ج.م/شهر - 17 أداة)</option>
           </select>
         </div>
 
-        <button type="submit" class="btn btn-emerald" style="width:100%; height:50px; font-size:1.05rem; margin-top:8px;">
-          افتح متجرك وتواصل عبر واتساب 💬
+        <button type="submit" class="btn btn-emerald" style="width:100%; height:50px; font-size:1.02rem; margin-top:10px;">
+          فتح المتجر والتواصل المباشر عبر واتساب
         </button>
       </form>
       
-      <p style="text-align:center; font-size:0.78rem; color:var(--text-dim); margin-top:14px;">
-        🔒 لا توجد أي التزامات سنوية أو شروط جزائية. بياناتك مشفرة ومحمية بالكامل.
+      <p style="text-align:right; font-size:0.76rem; color:var(--text-tertiary); margin-top:14px;">
+        لا توجد أي التزامات سنوية أو شروط جزائية. بياناتك وبيانات عملائك مشفرة ومحمية بالكامل.
       </p>
     </div>
   </div>
@@ -1239,31 +1278,22 @@ footer {
 <!-- Footer -->
 <footer>
   <div class="wrap">
-    <p><b>MaxP</b> — نظام التشغيل المتكامل للتجارة وإدارة متاجر الملابس في مصر.</p>
-    <p style="margin-top:6px;">هذه صفحة معاينة داخلية (noindex). الأسعار والمستويات المعتمدة: 0 ج.م · 1 ج.م · 999 ج.م · قيمة الأدوات 2,936 ج.م فرادى.</p>
+    <p><b>MaxP</b> — نظام التشغيل المتكامل للتجارة وإدارة محلات الملابس في مصر.</p>
+    <p style="margin-top:6px;">هذه مسودة مراجعة داخلية (noindex). المستويات المعتمدة: متجر مجاني 0 ج.م · إدارة أوردر 1 ج.م · باقة كاملة 999 ج.م · قيمة الأدوات فرادى 2,936 ج.م.</p>
   </div>
 </footer>
 
 <!-- Sticky Mobile Action Bar -->
-<div class="sticky-bar">
-  <div class="sticky-info">
-    <b>متجر مجاني 0 ج.م</b>
-    <span>أو باقة المتجر الكاملة 999 ج.م/شهر</span>
+<div class="mobile-fixed-bar">
+  <div style="text-align:right;">
+    <div style="font-size:0.9rem; font-weight:800; color:var(--text-primary);">متجر مجاني 0 ج.م</div>
+    <div style="font-size:0.72rem; color:var(--text-secondary);">أو باقة المتجر 999 ج.م/شهر</div>
   </div>
-  <a href="#lead" class="btn btn-emerald" style="padding:9px 18px; font-size:0.88rem;">ابدأ الآن</a>
+  <a href="#lead" class="btn btn-emerald" style="padding:9px 18px; font-size:0.86rem;">ابدأ الآن</a>
 </div>
 
 <script>
-// Simulator confirmation trigger
-function simulateConfirm(btn) {
-  btn.style.display = 'none';
-  const status = document.getElementById('simulatedStatus');
-  if (status) {
-    status.style.display = 'block';
-  }
-}
-
-// Lead form submit handler (Redirects straight to official WhatsApp with formatted lead message)
+// Lead Form Submission via WhatsApp Direct Bridge
 function handleLeadSubmit(e) {
   e.preventDefault();
   const name = document.getElementById('merchantName').value.trim();
@@ -1271,12 +1301,11 @@ function handleLeadSubmit(e) {
   const storeType = document.getElementById('storeType').value;
   const tier = document.getElementById('selectedTier').value;
 
-  const msg = `أهلاً بك، أنا ${name} (%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81: ${phone})%0A` +
+  const msg = `أهلاً بك، أنا ${name} (الهاتف: ${phone})%0A` +
               `النشاط: ${storeType}%0A` +
               `المستوى المطلوب: ${tier}%0A` +
               `مهتم ببدء نظام MaxP لمحل الملابس ووقف نزيف الأوردرات والمرتجعات.`;
   
-  // Official MaxP Support WhatsApp
   const waUrl = `https://wa.me/201123087745?text=${msg}`;
   window.open(waUrl, '_blank');
 }
