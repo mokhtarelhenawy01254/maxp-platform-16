@@ -62,7 +62,7 @@ interface PreparationFiltersProps {
   sortBy: SortBy;
   sortOrder: SortOrder;
   warehouses: WarehouseOption[];
-  visibleFilterSections: PreparationFilterSection[];
+  visibleFilterSections?: PreparationFilterSection[];
   onFilterChange: (filter: string) => void;
   onSearchChange: (value: string) => void;
   onSelectedWarehouseChange: (value: string) => void;
@@ -117,7 +117,7 @@ const PreparationFilters = ({
   sortBy,
   sortOrder,
   warehouses,
-  visibleFilterSections,
+  visibleFilterSections = ["tabs", "search", "toggleButtons", "advanced"],
   onFilterChange,
   onSearchChange,
   onSelectedWarehouseChange,
@@ -273,7 +273,7 @@ const PreparationFilters = ({
   // (e.g. 'CONFIRMED' orders that map to 'WAITING' stage and appear inside 'PENDING_PREPARATION' tab)
   const unrepresentedCountsByStage = useMemo(() => {
     const counts: Record<string, number> = {};
-    Object.entries(statusCounts).forEach(([statusCode, count]) => {
+    Object.entries(statusCounts || {}).forEach(([statusCode, count]) => {
       if (!tabCodes.has(statusCode)) {
         const stage = normalizeStatusToStage(statusCode);
         if (stage) {
@@ -291,18 +291,18 @@ const PreparationFilters = ({
         
         {/* Horizontal Scrollable Tabs */}
         {visibleFilterSections.includes("tabs") && (
-          <div className="flex min-w-0 flex-1 items-center overflow-x-auto pb-1 sm:pb-0">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-0.5 sm:gap-2 sm:pb-0 no-scrollbar">
             <button
               onClick={() => onFilterChange("ALL")}
-              className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition active:scale-[0.98] ${
                 activeFilter === "ALL"
-                  ? "bg-slate-900 text-white shadow-sm dark:bg-slate-700"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                  ? "bg-slate-900 text-white shadow-sm dark:bg-slate-100 dark:text-slate-900"
+                  : "bg-gray-100/90 text-gray-600 hover:bg-gray-200/80 dark:bg-gray-700/80 dark:text-gray-300 dark:hover:bg-gray-600"
               }`}
             >
               <span>{t("preparation.filters.allStages", { count: "" }).replace(/\(\s*\)/, "").trim()}</span>
-              <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                activeFilter === "ALL" ? "bg-white/20 text-white" : "bg-gray-200/80 text-gray-700 dark:bg-gray-600 dark:text-gray-300"
+              <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums ${
+                activeFilter === "ALL" ? "bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900" : "bg-gray-200/80 text-gray-700 dark:bg-gray-600 dark:text-gray-300"
               }`}>
                 {visibleOrdersCount}
               </span>
@@ -327,18 +327,18 @@ const PreparationFilters = ({
                 <button
                   key={tab.statusCode}
                   onClick={() => onFilterChange(tab.statusCode)}
-                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition active:scale-[0.98] ${
                     isActive
-                      ? `${display.colorClass} border border-current shadow-sm`
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                      ? `${display.colorClass} border border-current shadow-sm ring-1 ring-current/20`
+                      : "bg-gray-100/90 text-gray-600 hover:bg-gray-200/80 dark:bg-gray-700/80 dark:text-gray-300 dark:hover:bg-gray-600"
                   }`}
                   title={tab.name}
                 >
                   <span>{tab.name}</span>
                   <span
-                    className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums ${
                       isActive
-                        ? "bg-white/25 text-current"
+                        ? "bg-black/10 text-current dark:bg-white/20"
                         : count > 0
                         ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
                         : "bg-gray-200/70 text-gray-500 dark:bg-gray-600 dark:text-gray-400"
@@ -422,7 +422,7 @@ const PreparationFilters = ({
             </button>
           </div>
 
-          <div className="relative mr-auto w-full sm:min-w-[180px] sm:max-w-[260px] max-sm:mt-1">
+          <div className="relative w-full sm:ms-auto sm:min-w-[180px] sm:max-w-[260px] max-sm:mt-1">
             <input
               ref={productInputRef}
               value={localProductFilter}

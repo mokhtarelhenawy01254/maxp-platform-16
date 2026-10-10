@@ -137,10 +137,10 @@ const PreparationOrdersTable = ({
   const totalCols = visibleColumns.length + 3;
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <div className="overflow-x-auto">
       <table className="w-full table-auto text-right text-sm">
         <thead>
-          <tr className="border-b border-gray-100 bg-gray-50/80 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:border-gray-700 dark:bg-gray-700/50 dark:text-gray-400">
+          <tr className="border-b border-gray-200/70 bg-gray-50/80 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:border-gray-700 dark:bg-gray-700/50 dark:text-gray-400">
             <th className="w-10 px-3 py-2.5">
               <span className="sr-only">{t("preparation.table.selectColumn")}</span>
             </th>
@@ -303,7 +303,7 @@ const PreparationOrdersTable = ({
                   {/* Units */}
                   {visibleColumns.includes("units") && (
                     <td className="px-3 py-2.5">
-                      <span className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                      <span className="text-sm font-bold tabular-nums text-gray-800 dark:text-gray-200">
                         {order.totalUnits}
                       </span>
                     </td>
@@ -312,7 +312,7 @@ const PreparationOrdersTable = ({
                   {/* Value */}
                   {visibleColumns.includes("value") && (
                     <td className="px-3 py-2.5">
-                      <span className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                      <span className="text-sm font-bold tabular-nums text-gray-800 dark:text-gray-200">
                         {formatPrice(order.totalValue)}
                       </span>
                     </td>

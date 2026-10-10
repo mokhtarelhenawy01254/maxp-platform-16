@@ -2060,34 +2060,7 @@ const PreparationQueue: React.FC = () => {
         />
       )}
 
-      <div className="border-t border-gray-100 px-4 py-3 dark:border-gray-700">
-          <PreparationBulkActions
-            compact
-            selectedOrdersCount={selectedOrders.length}
-            bulkStatus={bulkStatus}
-            statusOptions={statusOptions}
-            statusLabelMap={statusLabelMap}
-            bulkUpdating={bulkUpdating}
-            preparationEnabled={preparationSettings.enabled}
-            bulkStatusUpdateEnabled={preparationSettings.enableBulkStatusUpdate}
-            allVisibleSelected={allVisibleSelected}
-            totalVisibleOrders={pagination.total}
-            sendingToTurbo={sendingToTurbo}
-            printingInvoices={printingInvoices}
-            onBulkStatusChange={uiActions.setBulkStatus}
-            onApply={() => void handleBulkUpdate()}
-            onApplyToAll={() => void handleBulkUpdateAll()}
-            onClear={uiActions.clearBulkControls}
-            onSelectAll={toggleSelectAllVisible}
-            onClearSelection={() => uiActions.clearBulkControls()}
-            onSendToTurbo={() => void handleOpenDispatchModal()}
-            onSendToShipping={() => void handleOpenDispatchModal()}
-            onSendToInternalCourier={isInternalCourierAppActive ? () => setShowInternalCourierModal(true) : undefined}
-            onPrintInvoices={() => void handlePrintInvoices()}
-          />
-        </div>
-
-      <section className="rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:shadow-gray-900/30">
+      <section className="rounded-2xl border border-gray-200/80 bg-white shadow-sm overflow-hidden dark:border-gray-700/80 dark:bg-gray-800 dark:shadow-gray-900/30">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-gray-100 px-3 py-2 sm:px-4 sm:py-2.5 dark:border-gray-700">
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-600 transition hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
             <input
@@ -2098,7 +2071,12 @@ const PreparationQueue: React.FC = () => {
             />
             {t('preparation.selectAllCheckbox')}
           </label>
-          <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">{t('preparation.k_4')}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">{t('preparation.k_4')}</span>
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-bold tabular-nums text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+              {pagination.total}
+            </span>
+          </div>
           {inventoryLoading && (
             <div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
               <div className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
@@ -2109,9 +2087,7 @@ const PreparationQueue: React.FC = () => {
             <div className="h-3 w-3 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
           )}
 
-          <div className="mr-auto hidden sm:block" />
-
-          <div className="relative flex items-center gap-2" data-column-settings>
+          <div className="ms-auto flex items-center gap-2" data-column-settings>
             <button
               type="button"
               onClick={() => setShowFilters((prev) => !prev)}
@@ -2188,6 +2164,35 @@ const PreparationQueue: React.FC = () => {
           </div>
         </div>
 
+        {selectedOrders.length > 0 && (
+          <div className="animate-in fade-in-0 slide-in-from-top-2 border-b border-amber-200/80 bg-amber-50/80 px-3 py-2.5 duration-200 sm:px-4 sm:py-3 dark:border-amber-800/60 dark:bg-amber-950/20">
+            <PreparationBulkActions
+              compact
+              selectedOrdersCount={selectedOrders.length}
+              bulkStatus={bulkStatus}
+              statusOptions={statusOptions}
+              statusLabelMap={statusLabelMap}
+              bulkUpdating={bulkUpdating}
+              preparationEnabled={preparationSettings.enabled}
+              bulkStatusUpdateEnabled={preparationSettings.enableBulkStatusUpdate}
+              allVisibleSelected={allVisibleSelected}
+              totalVisibleOrders={pagination.total}
+              sendingToTurbo={sendingToTurbo}
+              printingInvoices={printingInvoices}
+              onBulkStatusChange={uiActions.setBulkStatus}
+              onApply={() => void handleBulkUpdate()}
+              onApplyToAll={() => void handleBulkUpdateAll()}
+              onClear={uiActions.clearBulkControls}
+              onSelectAll={toggleSelectAllVisible}
+              onClearSelection={() => uiActions.clearBulkControls()}
+              onSendToTurbo={() => void handleOpenDispatchModal()}
+              onSendToShipping={() => void handleOpenDispatchModal()}
+              onSendToInternalCourier={isInternalCourierAppActive ? () => setShowInternalCourierModal(true) : undefined}
+              onPrintInvoices={() => void handlePrintInvoices()}
+            />
+          </div>
+        )}
+
         {loading ? (
           <div className="space-y-0">
             {[1, 2, 3, 4, 5].map((row) => (
@@ -2215,7 +2220,7 @@ const PreparationQueue: React.FC = () => {
         ) : (
           <>
             {/* Mobile card view */}
-            <div className="space-y-3 md:hidden">
+            <div className="space-y-2.5 p-2.5 sm:p-3 md:hidden">
               {enrichedOrders.map((order) => {
                 const shortageHoldDetails =
                   shortageHoldDrafts[order.orderNumber] ||
@@ -2326,7 +2331,7 @@ const PreparationQueue: React.FC = () => {
             </div>
 
             {/* Desktop table view */}
-            <div className="mt-3 hidden md:block">
+            <div className="hidden md:block">
               <PreparationOrdersTable
                 orders={enrichedOrders}
                 statusSelections={statusSelections}
