@@ -217,17 +217,28 @@ const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUp
 };
 
 // مطابقة عداد السلات مع قائمة /orders-new/incomplete?hasPhone=true:
-// سلة بدأ checkout فيها خلال آخر 24 ساعة ومعها رقم هاتف فعلي في checkoutData،
+// سلة نشطة لم تنتهِ مدتها ومعها رقم هاتف فعلي في checkoutData،
 // مع استبعاد السلات المستبعدة يدويًا (cartContactLog method=dismissed) والمحولة (cartConversionLog)
 const countWorkspaceIncompleteCarts = async (prisma, companyId) => {
   if (!prisma.guestCart || typeof prisma.guestCart.count !== 'function') {
     return 0;
   }
   try {
+    let lostAfterHours = 24;
+    try {
+      const settings = await orderService.getOrderSettings(companyId);
+      const parsed = parseInt(settings?.incompleteOrderLostAfterHours, 10);
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        lostAfterHours = parsed;
+      }
+    } catch (_settingsError) {
+      // غياب الإعدادات لا يوقف العدّ
+    }
+
     const PHONE_KEYS = ['guestPhone', 'customerPhone', 'phoneNumber', 'mobileNumber', 'phone', 'mobile'];
     const phoneKeyClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}"` } })) };
     const emptyPhoneClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}":""` } })) };
-    const lostThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const lostThreshold = new Date(Date.now() - lostAfterHours * 60 * 60 * 1000);
 
     let excludedCartIds = [];
     if (prisma.cartContactLog && typeof prisma.cartContactLog.findMany === 'function') {
@@ -259,10 +270,18 @@ const countWorkspaceIncompleteCarts = async (prisma, companyId) => {
       }
     }
 
+    const activeClause = {
+      OR: [
+        { checkoutUpdatedAt: { gte: lostThreshold } },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: { gte: lostThreshold } }] },
+        { AND: [{ checkoutUpdatedAt: null }, { checkoutStartedAt: null }, { updatedAt: { gte: lostThreshold } }] }
+      ]
+    };
+
     return await prisma.guestCart.count({
       where: {
         companyId,
-        checkoutStartedAt: { gte: lostThreshold },
+        ...activeClause,
         AND: [phoneKeyClause, { NOT: emptyPhoneClause }],
         ...(excludedCartIds.length ? { cartId: { notIn: excludedCartIds } } : {})
       }

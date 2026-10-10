@@ -1703,7 +1703,7 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
     const merchant = isMerchantUser(req.user)
       ? await requireMerchantAccountForUser(req.user)
       : null;
-    const companyId = merchant?.companyId || req.user?.companyId;
+    const companyId = merchant?.companyId || req.user?.effectiveCompanyId || req.user?.companyId;
     if (!companyId) {
       return res.status(403).json({
         success: false,
@@ -1780,6 +1780,21 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
         filterClauses.push({ cartId: { notIn: dismissedCartIds } });
       }
     } catch (_dismissError) {
+      // غياب الجدول في بيئات قديمة لا يوقف القائمة
+    }
+
+    // السلات المحولة لطلبات حقيقية — تُستبعد من الطابور
+    try {
+      const convertedLogs = await getSharedPrismaClient().cartConversionLog.findMany({
+        where: { companyId },
+        select: { cartId: true },
+        distinct: ['cartId']
+      });
+      const convertedIds = convertedLogs.map((l) => l.cartId).filter(Boolean);
+      if (convertedIds.length) {
+        filterClauses.push({ cartId: { notIn: convertedIds } });
+      }
+    } catch (_convError) {
       // غياب الجدول في بيئات قديمة لا يوقف القائمة
     }
 
@@ -1963,7 +1978,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     const merchant = isMerchantUser(req.user)
       ? await requireMerchantAccountForUser(req.user)
       : null;
-    const companyId = merchant?.companyId || req.user?.companyId;
+    const companyId = merchant?.companyId || req.user?.effectiveCompanyId || req.user?.companyId;
     if (!companyId) {
       return res.status(403).json({
         success: false,
@@ -2384,7 +2399,7 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
     const merchant = isMerchantUser(req.user)
       ? await requireMerchantAccountForUser(req.user)
       : null;
-    const companyId = merchant?.companyId || req.user?.companyId;
+    const companyId = merchant?.companyId || req.user?.effectiveCompanyId || req.user?.companyId;
     if (!companyId) {
       return res.status(403).json({
         success: false,
@@ -2546,7 +2561,7 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
     const merchant = isMerchantUser(req.user)
       ? await requireMerchantAccountForUser(req.user)
       : null;
-    const companyId = merchant?.companyId || req.user?.companyId;
+    const companyId = merchant?.companyId || req.user?.effectiveCompanyId || req.user?.companyId;
     if (!companyId) {
       return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
     }
@@ -2800,7 +2815,7 @@ router.post('/incomplete/:cartId/contact', verifyToken.authenticateToken, async 
     const merchant = isMerchantUser(req.user)
       ? await requireMerchantAccountForUser(req.user)
       : null;
-    const companyId = merchant?.companyId || req.user?.companyId;
+    const companyId = merchant?.companyId || req.user?.effectiveCompanyId || req.user?.companyId;
     if (!companyId) {
       return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
     }
@@ -2850,7 +2865,7 @@ router.post('/incomplete/:cartId/dismiss', verifyToken.authenticateToken, async 
     const merchant = isMerchantUser(req.user)
       ? await requireMerchantAccountForUser(req.user)
       : null;
-    const companyId = merchant?.companyId || req.user?.companyId;
+    const companyId = merchant?.companyId || req.user?.effectiveCompanyId || req.user?.companyId;
     if (!companyId) {
       return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
     }

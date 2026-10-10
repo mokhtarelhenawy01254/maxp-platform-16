@@ -170,6 +170,8 @@ export function useAgentWorkspace() {
 
       const nextParams = new URLSearchParams(searchParams);
       nextParams.set('tab', nextTab);
+      nextParams.delete('order');
+      setSelectedOrderId(null);
       setSearchParams(nextParams, { replace: true });
 
       skipNextTabFetchRef.current = true;
@@ -264,8 +266,7 @@ export function useAgentWorkspace() {
                 search: resolvedSearch ? resolvedSearch.trim() : undefined,
               },
               signal,
-            })
-            .catch(() => null),
+            }),
         ]);
         response = statsResponse;
         incRes = incompleteResponse;
@@ -292,6 +293,13 @@ export function useAgentWorkspace() {
       let nextPage = targetPage;
 
       if (activeTabForRequest === 'incomplete') {
+        if (incRes?.data && incRes.data.success === false) {
+          throw new Error(
+            (typeof incRes.data?.error === 'string' && incRes.data.error) ||
+              incRes.data?.message ||
+              t('orders.loadingFailed'),
+          );
+        }
         if (incRes?.data?.data && Array.isArray(incRes.data.data)) {
           nextOrders = (incRes.data.data as any[])
             .filter((cart: any) => cart && (cart.cartId || cart.id))
