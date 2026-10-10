@@ -10,6 +10,7 @@ import {
   PhoneIcon,
   ChatBubbleLeftRightIcon,
   QuestionMarkCircleIcon,
+  NoSymbolIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import type { TFunction } from "i18next";
@@ -19,6 +20,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 import { apiClient } from "../../services/apiClient";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
+import IncompleteCancelModal from "./components/IncompleteCancelModal";
 import OrderAttributionCard from "./components/OrderAttributionCard";
 import OrderSessionDetailsCard from "./components/OrderSessionDetailsCard";
 import {
@@ -130,6 +132,7 @@ const IncompleteOrderDetails: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [converting, setConverting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
 
   const isRTL = getDirection() === "rtl";
@@ -289,20 +292,32 @@ const IncompleteOrderDetails: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           {order && (
-            <button
-              type="button"
-              onClick={() => setShowConfirm(true)}
-              disabled={converting || !customerInfo.phone}
-              className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 transition-colors"
-              title={!customerInfo.phone ? t("orders.incompleteConvertNoPhone") : ""}
-            >
-              {converting ? (
-                <ArrowPathIcon className="h-4 w-4 animate-spin" />
-              ) : (
-                <ArrowRightIcon className="h-4 w-4" />
-              )}
-              {converting ? t("orders.incompleteConverting") : t("orders.incompleteConvertToOrder")}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setShowConfirm(true)}
+                disabled={converting || !customerInfo.phone}
+                className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 transition-colors"
+                title={!customerInfo.phone ? t("orders.incompleteConvertNoPhone") : ""}
+              >
+                {converting ? (
+                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ArrowRightIcon className="h-4 w-4" />
+                )}
+                {converting ? t("orders.incompleteConverting") : t("orders.incompleteConvertToOrder")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCancelModalOpen(true)}
+                disabled={converting}
+                className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed dark:border-red-800 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/30 transition-colors"
+                title={t("orders.incompleteCancelOrder")}
+              >
+                <NoSymbolIcon className="h-4 w-4" />
+                {t("orders.incompleteCancelOrder")}
+              </button>
+            </>
           )}
           <Link
             to="/orders/incomplete"
@@ -607,6 +622,18 @@ const IncompleteOrderDetails: React.FC = () => {
         confirmColor="success"
         onConfirm={handleConvertToOrder}
         onCancel={() => setShowConfirm(false)}
+      />
+
+      <IncompleteCancelModal
+        open={cancelModalOpen}
+        cartId={decodedCartId || null}
+        customerName={customerInfo.name || null}
+        customerPhone={customerInfo.phone || null}
+        cartTotal={order?.total}
+        onClose={() => setCancelModalOpen(false)}
+        onSuccess={() => {
+          navigate("/orders/incomplete");
+        }}
       />
     </div>
   );

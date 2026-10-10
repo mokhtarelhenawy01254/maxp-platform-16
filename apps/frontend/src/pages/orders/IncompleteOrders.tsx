@@ -20,6 +20,7 @@ import {
   Cog6ToothIcon,
   DocumentTextIcon,
   XMarkIcon,
+  NoSymbolIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -28,6 +29,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 import { apiClient } from "../../services/apiClient";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
+import IncompleteCancelModal from "./components/IncompleteCancelModal";
 import {
   ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS,
   getCurrentCompanyActiveApps,
@@ -165,6 +167,8 @@ const IncompleteOrders: React.FC = () => {
   const [contactResult, setContactResult] = useState("");
   const [contactNote, setContactNote] = useState("");
   const [savingContact, setSavingContact] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [selectedCancelOrder, setSelectedCancelOrder] = useState<IncompleteOrder | null>(null);
 
   const isRTL = getDirection() === "rtl";
   const lang = i18n.language;
@@ -341,17 +345,28 @@ const IncompleteOrders: React.FC = () => {
     if (!contactCartId) return;
     setSavingContact(true);
     try {
+      const isCancelled = contactResult === "cancelled";
       const response = await apiClient.post<{ success: boolean; message?: string }>(
         `/orders-new/incomplete/${encodeURIComponent(contactCartId)}/contact`,
         {
           method: contactMethod,
           result: contactResult,
           note: contactNote,
+          dismissCart: isCancelled,
         },
       );
       if (response.data?.success) {
-        toast.success(t("orders.incompleteContactLogged"));
+        toast.success(
+          isCancelled
+            ? t("orders.incompleteCancelSuccess")
+            : t("orders.incompleteContactLogged")
+        );
+        const savedCartId = contactCartId;
         setContactCartId(null);
+        if (isCancelled) {
+          setOrders((prev) => prev.filter((o) => o.cartId !== savedCartId));
+          setRefreshKey((prev) => prev + 1);
+        }
       } else {
         toast.error(response.data?.message || t("orders.incompleteContactFailed"));
       }
@@ -983,6 +998,19 @@ const IncompleteOrders: React.FC = () => {
                           >
                             <DocumentTextIcon className="h-4 w-4" />
                           </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCancelOrder(order);
+                              setCancelModalOpen(true);
+                            }}
+                            className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                            title={t("orders.incompleteCancelOrder") as string}
+                            aria-label={t("orders.incompleteCancelOrder") as string}
+                          >
+                            <NoSymbolIcon className="h-4 w-4" />
+                          </button>
                           <Link
                             to={`/orders/incomplete/${encodeURIComponent(order.cartId)}`}
                             onClick={(e) => e.stopPropagation()}
@@ -1139,8 +1167,45 @@ const IncompleteOrders: React.FC = () => {
                   <option value="no_reply">{t("orders.incompleteContactResultNoReply")}</option>
                   <option value="busy">{t("orders.incompleteContactResultBusy")}</option>
                   <option value="wrong_number">{t("orders.incompleteContactResultWrongNumber")}</option>
+                  <option value="cancelled">{t("orders.incompleteContactResultCancelled")}</option>
                 </select>
               </div>
+
+              {contactResult === "cancelled" && (
+                <div className="rounded-xl border border-red-200/80 bg-red-50/70 p-3 space-y-2 dark:border-red-900/40 dark:bg-red-900/15">
+                  <p className="text-xs text-red-700 dark:text-red-300">
+                    {t("orders.incompleteContactCancelledNotice")}
+                  </p>
+                  <div className="space-y-1">
+                    <span className="block text-[11px] font-medium text-red-800 dark:text-red-300">
+                      {t("orders.incompleteCancelReasonPrompt")}:
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {[
+                        t("orders.incompleteCancelReasonHighShipping"),
+                        t("orders.incompleteCancelReasonBoughtElsewhere"),
+                        t("orders.incompleteCancelReasonNotInterested"),
+                        t("orders.incompleteCancelReasonPriceHigh"),
+                        t("orders.incompleteCancelReasonChangedMind"),
+                        t("orders.incompleteCancelReasonOther"),
+                      ].map((reason) => (
+                        <button
+                          key={reason}
+                          type="button"
+                          onClick={() => {
+                            setContactNote((prev) =>
+                              prev ? `${reason} - ${prev}` : reason
+                            );
+                          }}
+                          className="rounded-lg border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 dark:border-red-800 dark:bg-gray-800 dark:text-red-300 transition-colors shadow-2xs"
+                        >
+                          {reason}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label htmlFor="contact-note" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
@@ -1181,6 +1246,24 @@ const IncompleteOrders: React.FC = () => {
           </div>
         </div>
       )}
+
+      <IncompleteCancelModal
+        open={cancelModalOpen}
+        cartId={selectedCancelOrder?.cartId || null}
+        customerName={selectedCancelOrder ? getCustomerName(selectedCancelOrder.checkoutData) : null}
+        customerPhone={selectedCancelOrder ? getCustomerContact(selectedCancelOrder.checkoutData)?.phone : null}
+        cartTotal={selectedCancelOrder?.total}
+        onClose={() => {
+          setCancelModalOpen(false);
+          setSelectedCancelOrder(null);
+        }}
+        onSuccess={() => {
+          if (selectedCancelOrder) {
+            setOrders((prev) => prev.filter((o) => o.cartId !== selectedCancelOrder.cartId));
+          }
+          setRefreshKey((prev) => prev + 1);
+        }}
+      />
     </div>
   );
 };

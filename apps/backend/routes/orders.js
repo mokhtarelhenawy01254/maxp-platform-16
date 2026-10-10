@@ -2825,8 +2825,8 @@ router.post('/incomplete/:cartId/contact', verifyToken.authenticateToken, async 
       return res.status(400).json({ success: false, message: 'معرف السلة مطلوب' });
     }
 
-    const allowedMethods = ['call', 'whatsapp', 'email'];
-    const method = (req.body?.method || 'call').toString().toLowerCase();
+    const allowedMethods = ['call', 'whatsapp', 'email', 'dismissed'];
+    let method = (req.body?.method || 'call').toString().toLowerCase();
     if (!allowedMethods.includes(method)) {
       return res.status(400).json({ success: false, message: 'طريقة التواصل غير صالحة' });
     }
@@ -2834,6 +2834,10 @@ router.post('/incomplete/:cartId/contact', verifyToken.authenticateToken, async 
     const result = (req.body?.result || '').toString().trim().slice(0, 80) || null;
     const note = (req.body?.note || '').toString().trim().slice(0, 500) || null;
     const employee = req.user || {};
+
+    if (result === 'cancelled' || req.body?.dismissCart === true) {
+      method = 'dismissed';
+    }
 
     const log = await getSharedPrismaClient().cartContactLog.create({
       data: {
@@ -2875,7 +2879,7 @@ router.post('/incomplete/:cartId/dismiss', verifyToken.authenticateToken, async 
       return res.status(400).json({ success: false, message: 'معرف السلة مطلوب' });
     }
 
-    const reason = (req.body?.reason || '').toString().trim().slice(0, 500);
+    const reason = (req.body?.reason || req.body?.note || '').toString().trim().slice(0, 500);
     if (!reason) {
       return res.status(400).json({ success: false, message: 'سبب الاستبعاد مطلوب' });
     }
@@ -2886,6 +2890,8 @@ router.post('/incomplete/:cartId/dismiss', verifyToken.authenticateToken, async 
       return res.status(404).json({ success: false, message: 'السلة غير موجودة' });
     }
 
+    const result = (req.body?.result || 'cancelled').toString().trim().slice(0, 80);
+
     const log = await prisma.cartContactLog.create({
       data: {
         cartId,
@@ -2893,10 +2899,10 @@ router.post('/incomplete/:cartId/dismiss', verifyToken.authenticateToken, async 
         employeeId: req.user.id || null,
         employeeName: req.user.name || req.user.username || req.user.email || null,
         method: 'dismissed',
-        result: 'dismissed',
+        result,
         note: reason,
       },
-      select: { id: true, cartId: true, createdAt: true }
+      select: { id: true, cartId: true, method: true, result: true, createdAt: true }
     });
 
     return res.json({ success: true, message: 'تم استبعاد السلة المتروكة', data: log });
