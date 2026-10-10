@@ -1162,6 +1162,10 @@ class OrderConfirmationService {
       });
     });
 
+    if (settings) {
+      settings.lastAssignedUserId = selected.id;
+    }
+
     return selected;
   }
 
@@ -1210,6 +1214,10 @@ class OrderConfirmationService {
       where: { companyId },
       data: { lastAssignedUserId: selected.id }
     });
+
+    if (settings) {
+      settings.lastAssignedUserId = selected.id;
+    }
 
     return selected;
   }
