@@ -333,6 +333,7 @@ model ProductLandingPage {
   generationStatus String    @default("NEEDS_IMAGES")
   aiPrompt         String?   @db.Text
   slices           String?   @db.Text
+  sections         String?   @db.Text
   formConfig       String?   @db.Text
   seo              String?   @db.Text
   /// Landing style preset + overrides as JSON: { preset, brandColor, buttonRadius, headingFont }
@@ -556,8 +557,8 @@ model FacebookAdsAiChatSession {
   company   Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   messages  FacebookAdsAiChatMessage[]
 
-  @@index([companyId, updatedAt])
-  @@index([companyId, status, updatedAt])
+  @@index([companyId, updatedAt(sort: Desc)], map: "facebook_ads_ai_chat_sessions_companyid_updatedat_idx")
+  @@index([companyId, status, updatedAt(sort: Desc)], map: "facebook_ads_ai_chat_sessions_companyid_status_updatedat_idx")
   @@map("facebook_ads_ai_chat_sessions")
 }
 
@@ -568,6 +569,8 @@ model FacebookAdsAiChatMessage {
   content     String?                  @db.Text
   toolCalls   Json?
   toolResults Json?
+  isDeleted   Boolean                  @default(false)
+  deletedAt   DateTime?
   createdAt   DateTime                 @default(now())
   session     FacebookAdsAiChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
@@ -1359,7 +1362,7 @@ model LpPage {
   bundleSlug     String?
   activationType String?  @default("SINGLE")
   createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime @default(now()) @updatedAt
 
   @@map("lp_pages")
 }

@@ -1,0 +1,29 @@
+/// Per-company Risk Scoring Settings (fraud/fake order prevention)
+model OrderRiskSettings {
+  id                 String   @id @default(cuid())
+  companyId          String   @unique
+  enabled            Boolean  @default(false)
+  highThreshold      Int      @default(70)
+  mediumThreshold    Int      @default(40)
+  highValueThreshold Int      @default(5000)
+  historyWindowDays  Int      @default(180)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now()) @updatedAt
+
+  @@map("order_risk_settings")
+}
+
+/// Evaluated Risk Scores per Order
+model OrderRiskScore {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  companyId String
+  score     Int
+  level     String
+  reasons   Json
+  signals   Json?
+  createdAt DateTime @default(now())
+
+  @@index([companyId, level], map: "order_risk_scores_company_level_idx")
+  @@map("order_risk_scores")
+}
