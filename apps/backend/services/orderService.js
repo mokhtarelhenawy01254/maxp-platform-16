@@ -2381,15 +2381,36 @@ class OrderService {
         nextGuestMetadata = JSON.stringify(rest);
       }
 
+      // عند الإلغاء، التأكد من حفظ سبب الإلغاء الجديد في notes حتى لو كان هناك ملاحظة قديمة (دمج السبب مع الملاحظة القديمة بدلاً من تجاهله)، وحفظه في metadata.cancellationReason
+      const isGuestCancellation = status === 'CANCELLED' || status === 'cancelled' || status === 'PENDING_CANCELLATION' || String(status || '').toUpperCase() === 'CANCELLED';
+      if (isGuestCancellation && notes && String(notes).trim()) {
+        const guestMetaObj = nextGuestMetadata ? JSON.parse(nextGuestMetadata) : (currentGuestMetadata ? { ...currentGuestMetadata } : {});
+        guestMetaObj.cancellationReason = String(notes).trim();
+        nextGuestMetadata = JSON.stringify(guestMetaObj);
+      }
+
+      let finalGuestNotes = notes || undefined;
+      if (guestOrder.notes && String(guestOrder.notes).trim().length > 0 && !options?.overwriteNotes) {
+        if (isGuestCancellation && notes && String(notes).trim()) {
+          const oldNote = String(guestOrder.notes).trim();
+          const newReason = String(notes).trim();
+          if (!oldNote.includes(newReason)) {
+            finalGuestNotes = `${oldNote} | سبب الإلغاء: ${newReason}`;
+          } else {
+            finalGuestNotes = oldNote;
+          }
+        } else {
+          finalGuestNotes = guestOrder.notes;
+        }
+      }
+
       const updatedGuestOrder = await safeQuery(async () => {
         const prisma = this.getPrisma();
         return await prisma.guestOrder.update({
           where: { id: guestOrder.id },
           data: {
             status,
-            notes: (guestOrder.notes && String(guestOrder.notes).trim().length > 0)
-              ? guestOrder.notes
-              : (notes || undefined),
+            notes: finalGuestNotes,
             ...((status === 'RETURNED' || status === 'PARTIALLY_RETURNED' || String(status || '').toUpperCase().includes('RETURN')) && notes ? { turboReturnReason: notes } : {}),
             ...(nextGuestMetadata ? { metadata: nextGuestMetadata } : {}),
             OrderStatusHistory: {
@@ -2417,6 +2438,7 @@ class OrderService {
             },
             data: {
               status: status,
+              notes: finalGuestNotes || undefined,
               ...((status === 'RETURNED' || status === 'PARTIALLY_RETURNED' || String(status || '').toUpperCase().includes('RETURN')) && notes ? { turboReturnReason: notes } : {}),
               updatedAt: new Date()
             }
