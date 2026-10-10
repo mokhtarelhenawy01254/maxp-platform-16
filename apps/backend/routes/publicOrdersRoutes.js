@@ -1448,6 +1448,9 @@ router.post('/', async (req, res) => {
 
     // Apply coupon
     let discountAmount = 0;
+    if (req.headers['x-admin-convert'] && req.body?.discountAmount !== undefined) {
+      discountAmount = Number(req.body.discountAmount) || 0;
+    }
     let appliedCoupon = null;
     if (couponCode) {
       const now = new Date();
@@ -2115,11 +2118,18 @@ router.post('/', async (req, res) => {
           totalDiscount: discountAmount
         });
 
-        if (requireDiscountApproval) {
+        if (requireDiscountApproval && !req.headers['x-admin-convert']) {
           orderMetadata.needsDiscountApproval = true;
           orderMetadata.discountApprovalStatus = 'PENDING_APPROVAL';
           orderMetadata.discountApprovalRequestedAt = new Date().toISOString();
         }
+      }
+
+      if (req.body?.appliedDiscount) {
+        orderMetadata.appliedDiscount = req.body.appliedDiscount;
+      }
+      if (req.body?.bundleItems) {
+        orderMetadata.bundleItems = req.body.bundleItems;
       }
 
       if (sanitizedAttribution) {
@@ -2740,6 +2750,12 @@ router.post('/', async (req, res) => {
       }
       if (promoDiscount > 0) {
         regularOrderMetadata.storePromotion = { discount: promoDiscount, label: promoLabel };
+      }
+      if (metadata?.appliedDiscount) {
+        regularOrderMetadata.appliedDiscount = metadata.appliedDiscount;
+      }
+      if (metadata?.bundleItems) {
+        regularOrderMetadata.bundleItems = metadata.bundleItems;
       }
       // Wallet payment metadata (proof screenshot + transfer details + discounts)
       if (walletPaymentProofMetadata) {

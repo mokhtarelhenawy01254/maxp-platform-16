@@ -2532,8 +2532,12 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
   }
 });
 
+// قفل تزامن للطلبات غير المكتملة أثناء التحويل لمنع التكرار
+const activeIncompleteCartConversions = new Set();
+
 // تحويل طلب غير مكتمل إلى طلب حقيقي
 router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async (req, res) => {
+  let conversionKey = null;
   try {
     if (!req.user) {
       return res.status(401).json({ success: false, message: 'غير مصرح - يجب تسجيل الدخول' });
@@ -2550,6 +2554,30 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
     const cartId = (req.params.cartId || '').toString().trim();
     if (!cartId) {
       return res.status(400).json({ success: false, message: 'معرف السلة مطلوب' });
+    }
+
+    conversionKey = `${companyId}:${cartId}`;
+    if (activeIncompleteCartConversions.has(conversionKey)) {
+      return res.status(409).json({
+        success: false,
+        code: 'CONVERSION_IN_PROGRESS',
+        message: 'جاري تحويل هذا الطلب بالفعل، يرجى الانتظار...'
+      });
+    }
+    activeIncompleteCartConversions.add(conversionKey);
+
+    // 🛡️ فحص عدم تكرار التحويل (Idempotency) في حال تم تحويل السلة مسبقاً
+    const alreadyConverted = await getSharedPrismaClient().cartConversionLog.findFirst({
+      where: { companyId, cartId }
+    });
+    if (alreadyConverted) {
+      return res.status(409).json({
+        success: false,
+        code: 'CART_ALREADY_CONVERTED',
+        message: 'تم تحويل هذه السلة إلى طلب بالفعل مسبقاً',
+        orderNumber: alreadyConverted.orderNumber,
+        orderId: alreadyConverted.orderId
+      });
     }
 
     // 🚧 تحويل السلة غير المكتملة لطلب محظور أثناء وجود تعليق فوترة
@@ -2647,6 +2675,19 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
 
     const cartAttribution = extractAttributionFromCheckoutData(checkoutData);
 
+    const couponCode = req.body?.couponCode || checkoutData.couponCode || checkoutData.coupon?.code || cart.couponCode || undefined;
+    const discountAmount = req.body?.discountAmount !== undefined
+      ? Number(req.body.discountAmount)
+      : (checkoutData.discountAmount !== undefined
+        ? Number(checkoutData.discountAmount)
+        : (cart.discountAmount !== undefined ? Number(cart.discountAmount) : undefined));
+    const appliedDiscount = req.body?.appliedDiscount || checkoutData.appliedDiscount || undefined;
+    const bundleItems = req.body?.bundleItems || checkoutData.bundleItems || cart.bundleItems || undefined;
+
+    const resolvedItems = (Array.isArray(req.body?.items) && req.body.items.length > 0)
+      ? req.body.items
+      : items;
+
     const orderPayload = {
       guestName,
       guestPhone,
@@ -2660,6 +2701,11 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
         address,
         addressLine1: address,
       },
+      ...(resolvedItems && resolvedItems.length > 0 ? { items: resolvedItems } : {}),
+      ...(couponCode ? { couponCode } : {}),
+      ...(discountAmount !== undefined && !isNaN(discountAmount) ? { discountAmount } : {}),
+      ...(appliedDiscount ? { appliedDiscount } : {}),
+      ...(bundleItems ? { bundleItems } : {}),
       ...(cartAttribution ? { attribution: cartAttribution } : {}),
       _skipPixel: true,
     };
@@ -2737,6 +2783,10 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
       success: false,
       message: detail || 'خطأ في تحويل الطلب غير المكتمل',
     });
+  } finally {
+    if (conversionKey) {
+      activeIncompleteCartConversions.delete(conversionKey);
+    }
   }
 });
 

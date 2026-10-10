@@ -66,7 +66,7 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
         count = stats?.today;
         break;
       case 'pending':
-        count = stats?.pending;
+        count = stats ? (stats.pending || 0) + (stats.incomplete || 0) : undefined;
         break;
       case 'processing':
         count = stats?.processing;

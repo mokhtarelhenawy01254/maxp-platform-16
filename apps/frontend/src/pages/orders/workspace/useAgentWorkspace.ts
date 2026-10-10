@@ -68,7 +68,9 @@ export function useAgentWorkspace() {
   const [activeTab, setActiveTab] = useState<FilterTab>(() =>
     normalizeWorkspaceTab(searchParams.get('tab')),
   );
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(() => {
+    return searchParams.get('order') || null;
+  });
   // العدسة تلقائية حسب الدور — لا مفتاح يدوي (توحيد قوائم التحكم مع باقي الموقع)
   const perspective: PerspectiveMode = isManager ? 'supervisor' : 'operator';
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,7 +86,11 @@ export function useAgentWorkspace() {
   const [isDistributing, setIsDistributing] = useState(false);
 
   const [busyOrders, setBusyOrders] = useState<Record<string, OrderAction>>({});
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState<number>(() => {
+    const rawPage = searchParams.get('page');
+    const parsed = rawPage ? parseInt(rawPage, 10) : 1;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  });
   const [stats, setStats] = useState<WorkspaceStats | null>(null);
   // آخر جلب ناجح — يغذي شارة «حدث قبل X» في الشريط العلوي
   const [lastFetchedAt, setLastFetchedAt] = useState<number | null>(null);
@@ -103,6 +109,8 @@ export function useAgentWorkspace() {
   const [selectedOrderForModal, setSelectedOrderForModal] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const ordersRef = useRef<WorkspaceOrder[]>(orders);
+  const selectedOrderIdRef = useRef<string | null>(selectedOrderId);
   const activeTabRef = useRef<FilterTab>(activeTab);
   const isModalOpenRef = useRef(isModalOpen);
   const skipNextTabFetchRef = useRef(false);
@@ -115,6 +123,14 @@ export function useAgentWorkspace() {
   const sortOptionRef = useRef(sortOption);
   const selectedAgentIdRef = useRef(selectedAgentId);
   const searchQueryRef = useRef(searchQuery);
+
+  useEffect(() => {
+    ordersRef.current = orders;
+  }, [orders]);
+
+  useEffect(() => {
+    selectedOrderIdRef.current = selectedOrderId;
+  }, [selectedOrderId]);
 
   const setOrderBusyState = (orderId: string, action: OrderAction | null) => {
     setBusyOrders((current) => {
@@ -307,6 +323,10 @@ export function useAgentWorkspace() {
             if (prev && nextOrders.some((o) => o.id === prev)) {
               return prev;
             }
+            const urlOrder = searchParams.get('order');
+            if (urlOrder && nextOrders.some((o) => o.id === urlOrder)) {
+              return urlOrder;
+            }
             return nextOrders[0].id;
           });
         } else {
@@ -427,14 +447,15 @@ export function useAgentWorkspace() {
         return;
       }
       if (action === 'cancel') {
-        // استبعاد حقيقي: السبب الإلزامي من المودال يُسجل في cartContactLog
-        // والسلة تُستبعد من القائمة على الخادم — لم تعد تعود مع الـ poll
         const reason = (explicitNotes ?? '').trim();
         if (!reason) {
           toast.error(t('orders.cancellationReasonRequired'));
           return;
         }
 
+        const prevOrders = [...ordersRef.current];
+        const prevSelectedId = selectedOrderIdRef.current;
+        advanceToNextOrder(order.id);
         setOrderBusyState(order.id, 'cancel');
         try {
           const response = await apiClient.post(
@@ -443,15 +464,18 @@ export function useAgentWorkspace() {
           );
           if (response.data?.success) {
             toast.success(isArabic ? 'تم استبعاد السلة المتروكة' : 'Incomplete cart dismissed');
-            advanceToNextOrder(order.id);
             await fetchOrders({ silent: true });
           } else {
+            setOrders(prevOrders);
+            setSelectedOrderId(prevSelectedId);
             toast.error(
               extractApiErrorMessage(response.data) ||
                 (isArabic ? 'فشل استبعاد السلة المتروكة' : 'Failed to dismiss cart'),
             );
           }
         } catch (error) {
+          setOrders(prevOrders);
+          setSelectedOrderId(prevSelectedId);
           toast.error(
             extractApiErrorMessage(error) ||
               (isArabic ? 'فشل استبعاد السلة المتروكة' : 'Failed to dismiss cart'),
@@ -474,6 +498,9 @@ export function useAgentWorkspace() {
       actionNotes = reason;
     }
 
+    const prevOrders = [...ordersRef.current];
+    const prevSelectedId = selectedOrderIdRef.current;
+    advanceToNextOrder(order.id);
     setOrderBusyState(order.id, action);
 
     try {
@@ -489,7 +516,8 @@ export function useAgentWorkspace() {
         const workflowPending =
           (response.data as any)?.data?.workflowStatus === 'pending';
         if (workflowPending) {
-          // الطلب لم يتغير فعليًا — بلا تقديم للطلب التالي وإلا عاد مع الجلب وومض أمام الموظف
+          setOrders(prevOrders);
+          setSelectedOrderId(prevSelectedId);
           toast.info(t('orders.workspacePendingApproval'));
           await fetchOrders({ silent: true });
         } else {
@@ -498,18 +526,19 @@ export function useAgentWorkspace() {
             cancel: t('orders.orderCancelled'),
           };
           toast.success(messages[action] || t('orders.actionSuccess'));
-
-          // Instant zero-delay disappearance from active stream
-          advanceToNextOrder(order.id);
           await Promise.all([
             fetchOrders({ silent: true }),
             isManager ? fetchTeamWorkload() : Promise.resolve(),
           ]);
         }
       } else {
+        setOrders(prevOrders);
+        setSelectedOrderId(prevSelectedId);
         toast.error(extractApiErrorMessage(response.data) || t('orders.actionFailed'));
       }
     } catch (error) {
+      setOrders(prevOrders);
+      setSelectedOrderId(prevSelectedId);
       toast.error(extractApiErrorMessage(error) || t('orders.actionFailed'));
     } finally {
       setOrderBusyState(order.id, null);
@@ -521,6 +550,9 @@ export function useAgentWorkspace() {
     result: string = 'unreached',
     explicitNotes?: string,
   ) => {
+    const prevOrders = [...ordersRef.current];
+    const prevSelectedId = selectedOrderIdRef.current;
+    advanceToNextOrder(order.id);
     setOrderBusyState(order.id, 'log-call');
 
     try {
@@ -534,12 +566,15 @@ export function useAgentWorkspace() {
 
       if ((response.data as any)?.success) {
         toast.success(t('orders.callLogged'));
-        advanceToNextOrder(order.id);
         await fetchOrders({ silent: true });
       } else {
+        setOrders(prevOrders);
+        setSelectedOrderId(prevSelectedId);
         toast.error(extractApiErrorMessage(response.data) || t('orders.logCallFailed'));
       }
     } catch (error) {
+      setOrders(prevOrders);
+      setSelectedOrderId(prevSelectedId);
       toast.error(extractApiErrorMessage(error) || t('orders.logCallFailed'));
     } finally {
       setOrderBusyState(order.id, null);
@@ -570,6 +605,9 @@ export function useAgentWorkspace() {
       return;
     }
 
+    const prevOrders = [...ordersRef.current];
+    const prevSelectedId = selectedOrderIdRef.current;
+    advanceToNextOrder(followUpOrder.id);
     setOrderBusyState(followUpOrder.id, 'follow-up');
 
     try {
@@ -584,27 +622,25 @@ export function useAgentWorkspace() {
         toast.success(t('orders.followUpScheduled'));
         setFollowUpOrder(null);
         setFollowUpDateValue('');
-        advanceToNextOrder(followUpOrder.id);
         await fetchOrders({ silent: true });
       } else {
+        setOrders(prevOrders);
+        setSelectedOrderId(prevSelectedId);
         toast.error(extractApiErrorMessage(response.data) || t('orders.actionFailed'));
       }
     } catch (error) {
+      setOrders(prevOrders);
+      setSelectedOrderId(prevSelectedId);
       toast.error(extractApiErrorMessage(error) || t('orders.actionFailed'));
     } finally {
       setOrderBusyState(followUpOrder.id, null);
     }
   };
 
-  // Keyboard shortcuts (j/k, ArrowDown/ArrowUp) — مع التركيز الفعلي في WorkspaceOrderQueue
-  useWorkspaceShortcuts({
-    orders,
-    selectedOrderId,
-    onSelect: setSelectedOrderId,
-    blocked: Boolean(cancellingOrder || followUpOrder || isModalOpen),
-  });
-
   const handleConvertIncomplete = async (cartId: string) => {
+    const prevOrders = [...ordersRef.current];
+    const prevSelectedId = selectedOrderIdRef.current;
+    advanceToNextOrder(cartId);
     try {
       setOrderBusyState(cartId, 'confirm');
       const response = await apiClient.post(`/orders-new/incomplete/${cartId}/convert`);
@@ -614,17 +650,20 @@ export function useAgentWorkspace() {
             ? '⚡ تم استرجاع وتحويل السلة بنجاح إلى طلب مؤكد!'
             : 'Cart recovered and converted to order!',
         );
-        advanceToNextOrder(cartId);
         await Promise.all([
           fetchOrders({ silent: true }),
           isManager ? fetchTeamWorkload() : Promise.resolve(),
         ]);
       } else {
+        setOrders(prevOrders);
+        setSelectedOrderId(prevSelectedId);
         toast.error(
           extractApiErrorMessage(response.data) || (isArabic ? 'فشل تحويل السلة المتروكة' : 'Failed to convert cart'),
         );
       }
     } catch (err) {
+      setOrders(prevOrders);
+      setSelectedOrderId(prevSelectedId);
       toast.error(
         extractApiErrorMessage(err) || (isArabic ? 'فشل تحويل السلة المتروكة' : 'Failed to convert cart'),
       );
@@ -783,6 +822,62 @@ export function useAgentWorkspace() {
     }
     return filteredOrders.find((o) => o.id === selectedOrderId) || filteredOrders[0] || null;
   }, [filteredOrders, selectedOrderId]);
+
+  // Keyboard shortcuts (j/k, ArrowDown/ArrowUp, c/Space, 1-5)
+  useWorkspaceShortcuts({
+    orders: filteredOrders,
+    selectedOrderId: activeSelectedOrder?.id || null,
+    onSelect: setSelectedOrderId,
+    onConfirm: () => {
+      if (activeSelectedOrder) {
+        void handleQuickAction(activeSelectedOrder, 'confirm');
+      }
+    },
+    onLogCall: (result) => {
+      if (activeSelectedOrder) {
+        void handleLogCall(activeSelectedOrder, result);
+      }
+    },
+    blocked: Boolean(cancellingOrder || followUpOrder || isModalOpen),
+  });
+
+  // Protect selection from stale orders after filter changes
+  useEffect(() => {
+    if (selectedOrderId && filteredOrders.length > 0 && !filteredOrders.some((o) => o.id === selectedOrderId)) {
+      setSelectedOrderId(filteredOrders[0].id);
+    }
+  }, [filteredOrders, selectedOrderId]);
+
+  // Synchronize URL query params (order and page) for deep linking and refresh preservation
+  useEffect(() => {
+    const nextParams = new URLSearchParams(searchParams);
+    let changed = false;
+
+    const currentOrderId = activeSelectedOrder?.id || null;
+    if (currentOrderId) {
+      if (nextParams.get('order') !== currentOrderId) {
+        nextParams.set('order', currentOrderId);
+        changed = true;
+      }
+    } else if (nextParams.has('order')) {
+      nextParams.delete('order');
+      changed = true;
+    }
+
+    if (page > 1) {
+      if (nextParams.get('page') !== String(page)) {
+        nextParams.set('page', String(page));
+        changed = true;
+      }
+    } else if (nextParams.has('page')) {
+      nextParams.delete('page');
+      changed = true;
+    }
+
+    if (changed) {
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [activeSelectedOrder?.id, page, searchParams, setSearchParams]);
 
   return {
     t,

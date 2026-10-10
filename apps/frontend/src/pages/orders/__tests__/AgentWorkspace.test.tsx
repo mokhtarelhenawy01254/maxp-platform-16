@@ -6,6 +6,10 @@ import { MemoryRouter } from "react-router-dom";
 import { toast } from "sonner";
 import AgentWorkspace from "../AgentWorkspace";
 import { apiClient } from "../../../services/apiClient";
+import {
+  normalizeArabicDigits,
+  sanitizeWhatsAppPhone,
+} from "../workspace/WorkspaceWhatsAppDrawer";
 
 afterEach(() => {
   cleanup();
@@ -16,6 +20,24 @@ vi.mock("react-i18next", () => ({
     t: (key: string) => key,
     i18n: { language: "en" },
   }),
+}));
+
+vi.mock("../../../components/ui/GovernorateAreaSearch", () => ({
+  GovernorateAreaSearch: ({ value, onChange, placeholder }: any) => (
+    <div data-testid="mock-gov-search">
+      <input
+        data-testid="gov-input"
+        placeholder={placeholder}
+        value={value?.governorate || ""}
+        onChange={(e) =>
+          onChange({
+            governorate: e.target.value,
+            area: value?.area || "",
+          })
+        }
+      />
+    </div>
+  ),
 }));
 
 vi.mock("../../../services/apiClient", () => ({
@@ -621,6 +643,157 @@ describe("AgentWorkspace", () => {
     expect(screen.getByText("15")).toBeInTheDocument();
     expect(screen.getByText("12")).toBeInTheDocument();
     expect(screen.getByText("8")).toBeInTheDocument();
+  });
+
+  it("rolls back optimistic removal and shows error toast when quick action fails", async () => {
+    const order1 = makeOrder({ id: "o1", orderNumber: "ORD-1", customerName: "Customer One" });
+    const order2 = makeOrder({ id: "o2", orderNumber: "ORD-2", customerName: "Customer Two" });
+    setMockOrdersData([order1, order2]);
+
+    mockPost.mockImplementation(async (url: string) => {
+      if (url.includes("/quick-action")) {
+        return { data: { success: false, error: "Network error approving order" } };
+      }
+      return { data: { success: true } };
+    });
+
+    renderWorkspace();
+
+    await screen.findAllByText(/#?ORD-1/);
+    expect(screen.getAllByText("Customer One").length).toBeGreaterThanOrEqual(1);
+
+    const confirmBtn = screen.getAllByRole("button", {
+      name: /اعتماد وتأكيد الطلب|Confirm Order|confirmOrder/i,
+    })[0];
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Network error approving order");
+    });
+
+    // The order should be restored to the queue via rollback
+    expect(screen.getAllByText("Customer One").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("rolls back optimistic removal and shows error toast when log-call fails", async () => {
+    const order1 = makeOrder({ id: "o1", orderNumber: "ORD-1", customerName: "Customer One" });
+    const order2 = makeOrder({ id: "o2", orderNumber: "ORD-2", customerName: "Customer Two" });
+    setMockOrdersData([order1, order2]);
+
+    mockPost.mockImplementation(async (url: string) => {
+      if (url.includes("/log-call")) {
+        return { data: { success: false, error: "Call log failed on server" } };
+      }
+      return { data: { success: true } };
+    });
+
+    renderWorkspace();
+
+    await screen.findAllByText(/#?ORD-1/);
+    const unreachedBtn = screen.getAllByRole("button", {
+      name: /لم يرد|Unreached|unreached/i,
+    })[0];
+    fireEvent.click(unreachedBtn);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Call log failed on server");
+    });
+
+    // The order should be restored
+    expect(screen.getAllByText("Customer One").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("preserves URL query param and selects deep-linked order on initial load", async () => {
+    const order1 = makeOrder({ id: "o1", orderNumber: "ORD-1", customerName: "Customer One" });
+    const order2 = makeOrder({ id: "o2", orderNumber: "ORD-2", customerName: "Customer Two" });
+    setMockOrdersData([order1, order2]);
+
+    render(
+      <MemoryRouter initialEntries={["/orders/workspace?order=o2"]}>
+        <AgentWorkspace />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Customer Two").length).toBeGreaterThanOrEqual(1);
+    });
+
+    // Customer Two should be active in inspector
+    expect(screen.getAllByText("Customer Two").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("normalizes Arabic-Indic numerals and handles KSA/EG prefixes in WhatsApp sanitizer", () => {
+    expect(normalizeArabicDigits("٠١٠١٢٣٤٥٦٧٨")).toBe("01012345678");
+    expect(normalizeArabicDigits("٠٥١٢٣٤٥٦٧٨")).toBe("0512345678");
+
+    const ksaResult = sanitizeWhatsAppPhone("٠٥١٢٣٤٥٦٧٨");
+    expect(ksaResult.standardPhone).toBe("966512345678");
+
+    const egResult = sanitizeWhatsAppPhone("٠١٠١٢٣٤٥٦٧٨");
+    expect(egResult.standardPhone).toBe("201012345678");
+
+    const rawKsa = sanitizeWhatsAppPhone("+966 51 234 5678");
+    expect(rawKsa.standardPhone).toBe("966512345678");
+  });
+
+  it("triggers confirmation on 'c' key and log call on '1' key when not focused in input", async () => {
+    const order1 = makeOrder({ id: "o1", orderNumber: "ORD-1", customerName: "Customer One" });
+    setMockOrdersData([order1]);
+
+    renderWorkspace();
+
+    await screen.findAllByText(/#?ORD-1/);
+
+    // Press 'c' to confirm order
+    fireEvent.keyDown(window, { key: "c" });
+
+    await waitFor(() => {
+      expect(mockPost).toHaveBeenCalledWith(
+        "/agent-workspace/orders/o1/quick-action",
+        expect.objectContaining({ action: "confirm" }),
+      );
+    });
+
+    // Press '1' to log unreached call
+    fireEvent.keyDown(window, { key: "1" });
+
+    await waitFor(() => {
+      expect(mockPost).toHaveBeenCalledWith(
+        "/agent-workspace/orders/o1/log-call",
+        expect.objectContaining({ result: "unreached" }),
+      );
+    });
+  });
+
+  it("shows recalculate shipping alert when governorate is changed in customer editor", async () => {
+    const order1 = makeOrder({
+      id: "o1",
+      orderNumber: "ORD-1",
+      customerName: "Customer One",
+      governorate: "Cairo",
+      city: "Nasr City",
+    });
+    setMockOrdersData([order1]);
+
+    renderWorkspace();
+
+    await screen.findAllByText(/#?ORD-1/);
+
+    // Click edit customer button
+    const editBtn = screen.getByTitle(/Edit Customer|تعديل بيانات العميل/i);
+    fireEvent.click(editBtn);
+
+    // Locate governorate input from mock
+    const govInput = screen.getByTestId("gov-input");
+    expect(govInput).toHaveValue("Cairo");
+
+    // Change governorate to Alexandria
+    fireEvent.change(govInput, { target: { value: "Alexandria" } });
+
+    // Warning alert should appear
+    await waitFor(() => {
+      expect(screen.getByTestId("governorate-shipping-warning")).toBeInTheDocument();
+    });
   });
 });
 

@@ -66,6 +66,42 @@ const getCancellationReasonError = () => 'سبب إلغاء الطلب مطلو�
 
 const parseBooleanParam = (value) => value === true || value === 'true' || value === '1';
 
+const normalizeDigits = (value) => {
+  if (!value) return '';
+  return String(value)
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776));
+};
+
+const getPhoneSearchVariants = (raw) => {
+  const normalized = normalizeDigits(raw);
+  const digits = normalized.replace(/\D/g, '');
+  if (!digits || digits.length < 3) {
+    return digits ? [digits] : [];
+  }
+  const variants = new Set([digits]);
+
+  if (digits.startsWith('0020')) {
+    const localWithout0 = digits.slice(4);
+    variants.add(localWithout0);
+    variants.add('0' + localWithout0);
+    variants.add('20' + localWithout0);
+  } else if (digits.startsWith('20') && digits.length >= 10) {
+    const localWithout0 = digits.slice(2);
+    variants.add(localWithout0);
+    variants.add('0' + localWithout0);
+  } else if (digits.startsWith('0') && digits.length >= 10) {
+    const localWithout0 = digits.slice(1);
+    variants.add(localWithout0);
+    variants.add('20' + localWithout0);
+  } else if (digits.length >= 9) {
+    variants.add('0' + digits);
+    variants.add('20' + digits);
+  }
+
+  return Array.from(variants);
+};
+
 const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUpOnly = false, todayOnly = false, assignedTo = '', isManager = false, search = '' } = {}) => {
   const where = { companyId, isActive: true };
 
@@ -87,7 +123,7 @@ const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUp
     statusCondition = {
       OR: [
         { order: { status: requestedStatus } },
-        { guestOrder: { status: requestedStatus } }
+        { guestOrder: { status: { in: [requestedStatus.toUpperCase(), requestedStatus.toLowerCase()] } } }
       ]
     };
   } else if (followUpOnly) {
@@ -120,25 +156,48 @@ const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUp
   }
 
   const cleanSearch = String(search || '').trim().replace(/^[#№]/, '').trim();
-  const searchCondition = cleanSearch
-    ? {
-        OR: [
-          { order: { orderNumber: { contains: cleanSearch, mode: 'insensitive' } } },
-          { order: { customerName: { contains: cleanSearch, mode: 'insensitive' } } },
-          { order: { customerPhone: { contains: cleanSearch.replace(/\D/g, '') || cleanSearch, mode: 'insensitive' } } },
-          { order: { customer: { firstName: { contains: cleanSearch, mode: 'insensitive' } } } },
-          { order: { customer: { lastName: { contains: cleanSearch, mode: 'insensitive' } } } },
-          { order: { customer: { phone: { contains: cleanSearch.replace(/\D/g, '') || cleanSearch, mode: 'insensitive' } } } },
-          { order: { shippingAddress: { contains: cleanSearch, mode: 'insensitive' } } },
-          { order: { notes: { contains: cleanSearch, mode: 'insensitive' } } },
-          { guestOrder: { orderNumber: { contains: cleanSearch, mode: 'insensitive' } } },
-          { guestOrder: { guestName: { contains: cleanSearch, mode: 'insensitive' } } },
-          { guestOrder: { guestPhone: { contains: cleanSearch.replace(/\D/g, '') || cleanSearch, mode: 'insensitive' } } },
-          { guestOrder: { shippingAddress: { contains: cleanSearch, mode: 'insensitive' } } },
-          { guestOrder: { notes: { contains: cleanSearch, mode: 'insensitive' } } }
-        ]
+  const normalizedSearch = normalizeDigits(cleanSearch);
+  const phoneVariants = getPhoneSearchVariants(cleanSearch);
+
+  let searchCondition = null;
+  if (cleanSearch) {
+    const searchOrList = [
+      { order: { orderNumber: { contains: cleanSearch, mode: 'insensitive' } } },
+      { order: { customerName: { contains: cleanSearch, mode: 'insensitive' } } },
+      { order: { customer: { firstName: { contains: cleanSearch, mode: 'insensitive' } } } },
+      { order: { customer: { lastName: { contains: cleanSearch, mode: 'insensitive' } } } },
+      { order: { shippingAddress: { contains: cleanSearch, mode: 'insensitive' } } },
+      { order: { notes: { contains: cleanSearch, mode: 'insensitive' } } },
+      { guestOrder: { orderNumber: { contains: cleanSearch, mode: 'insensitive' } } },
+      { guestOrder: { guestName: { contains: cleanSearch, mode: 'insensitive' } } },
+      { guestOrder: { shippingAddress: { contains: cleanSearch, mode: 'insensitive' } } },
+      { guestOrder: { notes: { contains: cleanSearch, mode: 'insensitive' } } }
+    ];
+
+    if (normalizedSearch && normalizedSearch !== cleanSearch) {
+      searchOrList.push(
+        { order: { orderNumber: { contains: normalizedSearch, mode: 'insensitive' } } },
+        { guestOrder: { orderNumber: { contains: normalizedSearch, mode: 'insensitive' } } }
+      );
+    }
+
+    if (phoneVariants.length > 0) {
+      for (const variant of phoneVariants) {
+        searchOrList.push(
+          { order: { customerPhone: { contains: variant, mode: 'insensitive' } } },
+          { order: { customer: { phone: { contains: variant, mode: 'insensitive' } } } },
+          { guestOrder: { guestPhone: { contains: variant, mode: 'insensitive' } } }
+        );
       }
-    : null;
+    } else {
+      searchOrList.push(
+        { order: { customerPhone: { contains: cleanSearch, mode: 'insensitive' } } },
+        { guestOrder: { guestPhone: { contains: cleanSearch, mode: 'insensitive' } } }
+      );
+    }
+
+    searchCondition = { OR: searchOrList };
+  }
 
   const andClauses = [statusCondition];
   if (todayCondition) {
@@ -158,9 +217,8 @@ const buildWorkspaceWhere = (companyId, userId, { requestedStatus = '', followUp
 };
 
 // مطابقة عداد السلات مع قائمة /orders-new/incomplete?hasPhone=true:
-// سلة بدأ checkout فيها ومعها رقم هاتف فعلي في checkoutData، مع استبعاد
-// السلات المستبعدة يدويًا (cartContactLog method=dismissed) — بدل عدّاد يعدّ
-// سلالًا بلا هاتف لا تظهر في القائمة أصلًا
+// سلة بدأ checkout فيها خلال آخر 24 ساعة ومعها رقم هاتف فعلي في checkoutData،
+// مع استبعاد السلات المستبعدة يدويًا (cartContactLog method=dismissed) والمحولة (cartConversionLog)
 const countWorkspaceIncompleteCarts = async (prisma, companyId) => {
   if (!prisma.guestCart || typeof prisma.guestCart.count !== 'function') {
     return 0;
@@ -169,8 +227,9 @@ const countWorkspaceIncompleteCarts = async (prisma, companyId) => {
     const PHONE_KEYS = ['guestPhone', 'customerPhone', 'phoneNumber', 'mobileNumber', 'phone', 'mobile'];
     const phoneKeyClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}"` } })) };
     const emptyPhoneClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}":""` } })) };
+    const lostThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    let dismissedCartIds = [];
+    let excludedCartIds = [];
     if (prisma.cartContactLog && typeof prisma.cartContactLog.findMany === 'function') {
       try {
         const dismissLogs = await prisma.cartContactLog.findMany({
@@ -178,8 +237,24 @@ const countWorkspaceIncompleteCarts = async (prisma, companyId) => {
           select: { cartId: true },
           distinct: ['cartId']
         });
-        dismissedCartIds = dismissLogs.map((l) => l.cartId);
+        excludedCartIds = dismissLogs.map((l) => l.cartId).filter(Boolean);
       } catch (_dismissError) {
+        // غياب الجدول في بيئات قديمة لا يوقف العدّ
+      }
+    }
+
+    if (prisma.cartConversionLog && typeof prisma.cartConversionLog.findMany === 'function') {
+      try {
+        const convertedLogs = await prisma.cartConversionLog.findMany({
+          where: { companyId },
+          select: { cartId: true },
+          distinct: ['cartId']
+        });
+        const convertedIds = convertedLogs.map((l) => l.cartId).filter(Boolean);
+        if (convertedIds.length > 0) {
+          excludedCartIds = Array.from(new Set([...excludedCartIds, ...convertedIds]));
+        }
+      } catch (_convError) {
         // غياب الجدول في بيئات قديمة لا يوقف العدّ
       }
     }
@@ -187,9 +262,9 @@ const countWorkspaceIncompleteCarts = async (prisma, companyId) => {
     return await prisma.guestCart.count({
       where: {
         companyId,
-        checkoutStartedAt: { not: null },
+        checkoutStartedAt: { gte: lostThreshold },
         AND: [phoneKeyClause, { NOT: emptyPhoneClause }],
-        ...(dismissedCartIds.length ? { cartId: { notIn: dismissedCartIds } } : {})
+        ...(excludedCartIds.length ? { cartId: { notIn: excludedCartIds } } : {})
       }
     });
   } catch (_e) {
@@ -526,7 +601,8 @@ const getMyOrders = async (req, res) => {
     // Unassigned Pool View for Managers
     if (isManager && assignedTo === 'unassigned') {
       const cleanSearch = String(search || '').trim().replace(/^[#№]/, '').trim();
-      const cleanDigits = cleanSearch.replace(/\D/g, '');
+      const normalizedSearch = normalizeDigits(cleanSearch);
+      const phoneVariants = getPhoneSearchVariants(cleanSearch);
 
       const regularWhere = {
         companyId,
@@ -548,78 +624,110 @@ const getMyOrders = async (req, res) => {
       }
 
       if (cleanSearch) {
-        regularWhere.AND = [
-          {
-            OR: [
-              { orderNumber: { contains: cleanSearch, mode: 'insensitive' } },
-              { customerName: { contains: cleanSearch, mode: 'insensitive' } },
-              { customerPhone: { contains: cleanDigits || cleanSearch, mode: 'insensitive' } },
-              { customer: { firstName: { contains: cleanSearch, mode: 'insensitive' } } },
-              { customer: { lastName: { contains: cleanSearch, mode: 'insensitive' } } },
-              { customer: { phone: { contains: cleanDigits || cleanSearch, mode: 'insensitive' } } },
-              { shippingAddress: { contains: cleanSearch, mode: 'insensitive' } },
-              { notes: { contains: cleanSearch, mode: 'insensitive' } }
-            ]
-          }
+        const regularSearchList = [
+          { orderNumber: { contains: cleanSearch, mode: 'insensitive' } },
+          { customerName: { contains: cleanSearch, mode: 'insensitive' } },
+          { customer: { firstName: { contains: cleanSearch, mode: 'insensitive' } } },
+          { customer: { lastName: { contains: cleanSearch, mode: 'insensitive' } } },
+          { shippingAddress: { contains: cleanSearch, mode: 'insensitive' } },
+          { notes: { contains: cleanSearch, mode: 'insensitive' } }
         ];
-        guestWhere.AND = [
-          {
-            OR: [
-              { orderNumber: { contains: cleanSearch, mode: 'insensitive' } },
-              { guestName: { contains: cleanSearch, mode: 'insensitive' } },
-              { guestPhone: { contains: cleanDigits || cleanSearch, mode: 'insensitive' } },
-              { shippingAddress: { contains: cleanSearch, mode: 'insensitive' } },
-              { notes: { contains: cleanSearch, mode: 'insensitive' } }
-            ]
-          }
+        const guestSearchList = [
+          { orderNumber: { contains: cleanSearch, mode: 'insensitive' } },
+          { guestName: { contains: cleanSearch, mode: 'insensitive' } },
+          { shippingAddress: { contains: cleanSearch, mode: 'insensitive' } },
+          { notes: { contains: cleanSearch, mode: 'insensitive' } }
         ];
+
+        if (normalizedSearch && normalizedSearch !== cleanSearch) {
+          regularSearchList.push({ orderNumber: { contains: normalizedSearch, mode: 'insensitive' } });
+          guestSearchList.push({ orderNumber: { contains: normalizedSearch, mode: 'insensitive' } });
+        }
+
+        if (phoneVariants.length > 0) {
+          for (const variant of phoneVariants) {
+            regularSearchList.push(
+              { customerPhone: { contains: variant, mode: 'insensitive' } },
+              { customer: { phone: { contains: variant, mode: 'insensitive' } } }
+            );
+            guestSearchList.push(
+              { guestPhone: { contains: variant, mode: 'insensitive' } }
+            );
+          }
+        } else {
+          regularSearchList.push(
+            { customerPhone: { contains: cleanSearch, mode: 'insensitive' } }
+          );
+          guestSearchList.push(
+            { guestPhone: { contains: cleanSearch, mode: 'insensitive' } }
+          );
+        }
+
+        regularWhere.AND = [{ OR: regularSearchList }];
+        guestWhere.AND = [{ OR: guestSearchList }];
       }
 
-      const [regularOrders, guestOrders, totalRegular, totalGuest] = await Promise.all([
-        prisma.order.findMany({
-          where: regularWhere,
-          include: {
-            customer: {
-              select: {
-                id: true, firstName: true, lastName: true, phone: true,
-                deliveryRate: true, totalDelivered: true, totalOrdersCount: true, customerRating: true,
-              }
-            },
-            orderItems: { include: { product: true } },
-            callAttemptLogs: {
-              include: { user: { select: { firstName: true, lastName: true } } },
-              orderBy: { createdAt: 'desc' },
-              take: 10
-            }
-          },
-          orderBy: { createdAt: sort === 'oldest' ? 'asc' : 'desc' },
-          skip,
-          take: limit
-        }),
-        prisma.guestOrder.findMany({
-          where: guestWhere,
-          include: {
-            orderNotes: true,
-            callAttemptLogs: {
-              include: { user: { select: { firstName: true, lastName: true } } },
-              orderBy: { createdAt: 'desc' },
-              take: 10
-            }
-          },
-          orderBy: { createdAt: sort === 'oldest' ? 'asc' : 'desc' },
-          skip,
-          take: limit
-        }),
+      const [totalRegular, totalGuest] = await Promise.all([
         prisma.order.count({ where: regularWhere }),
         prisma.guestOrder.count({ where: guestWhere })
       ]);
-
-      const formattedOrders = [
-        ...regularOrders.map((o) => formatWorkspaceOrderRecord(o, false, null, null, null)),
-        ...guestOrders.map((g) => formatWorkspaceOrderRecord(g, true, null, null, null))
-      ].slice(0, limit);
-
       const total = totalRegular + totalGuest;
+
+      // إصلاح الـ Pagination المزدوج: جلب العناصر حتى (skip + limit) من كل جدول ودمجها وفرزها بدقة
+      const fetchTake = skip + limit;
+
+      const [regularOrders, guestOrders] = await Promise.all([
+        totalRegular > 0 && skip < total
+          ? prisma.order.findMany({
+              where: regularWhere,
+              include: {
+                customer: {
+                  select: {
+                    id: true, firstName: true, lastName: true, phone: true,
+                    deliveryRate: true, totalDelivered: true, totalOrdersCount: true, customerRating: true,
+                  }
+                },
+                orderItems: { include: { product: true } },
+                callAttemptLogs: {
+                  include: { user: { select: { firstName: true, lastName: true } } },
+                  orderBy: { createdAt: 'desc' },
+                  take: 10
+                }
+              },
+              orderBy: { createdAt: sort === 'oldest' ? 'asc' : 'desc' },
+              take: fetchTake
+            })
+          : Promise.resolve([]),
+        totalGuest > 0 && skip < total
+          ? prisma.guestOrder.findMany({
+              where: guestWhere,
+              include: {
+                orderNotes: true,
+                callAttemptLogs: {
+                  include: { user: { select: { firstName: true, lastName: true } } },
+                  orderBy: { createdAt: 'desc' },
+                  take: 10
+                }
+              },
+              orderBy: { createdAt: sort === 'oldest' ? 'asc' : 'desc' },
+              take: fetchTake
+            })
+          : Promise.resolve([])
+      ]);
+
+      const formattedRegular = regularOrders.map((o) => formatWorkspaceOrderRecord(o, false, null, null, null));
+      const formattedGuest = guestOrders.map((g) => formatWorkspaceOrderRecord(g, true, null, null, null));
+      const combined = [...formattedRegular, ...formattedGuest];
+
+      if (sort === 'oldest') {
+        combined.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      } else if (sort === 'attempts') {
+        combined.sort((a, b) => (b.callAttempts || 0) - (a.callAttempts || 0));
+      } else {
+        combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+
+      const paginatedOrders = combined.slice(skip, skip + limit);
 
       let stats = null;
       if (withStats) {
@@ -628,8 +736,8 @@ const getMyOrders = async (req, res) => {
 
       return res.json({
         success: true,
-        data: formattedOrders,
-        pagination: { total, page, limit, pages: Math.ceil(total / limit) },
+        data: paginatedOrders,
+        pagination: { total, page, limit, pages: Math.ceil(total / limit) || 1 },
         stats
       });
     }

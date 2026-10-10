@@ -253,11 +253,41 @@ export const WorkspaceCustomerEditor: React.FC<WorkspaceCustomerEditorProps> = (
                 area: city || '',
               }}
               onChange={(next) => {
+                const prevGov = governorate;
                 setGovernorate(next.governorate);
                 setCity(next.area);
+                if (next.governorate && next.governorate !== prevGov) {
+                  void calculateSuggestedShipping(next.governorate, next.area);
+                }
               }}
               placeholder={isArabic ? 'ابحث عن المحافظة أو المنطقة…' : 'Search governorate / area…'}
             />
+            {isGovernorateChanged && (
+              <div
+                data-testid="governorate-shipping-warning"
+                className="mt-1.5 flex items-start gap-1.5 rounded border border-amber-500/40 bg-amber-500/10 p-2 text-[11px] text-amber-800 dark:text-amber-300"
+              >
+                <ExclamationTriangleIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                <div className="space-y-0.5">
+                  <p className="font-bold">
+                    {isArabic
+                      ? `⚠️ تم تعديل المحافظة من (${order.governorate}) إلى (${governorate})`
+                      : `⚠️ Governorate changed from (${order.governorate}) to (${governorate})`}
+                  </p>
+                  <p className="text-[10px] text-amber-700/90 dark:text-amber-400/90">
+                    {suggestedShipping !== null
+                      ? isArabic
+                        ? `سعر الشحن التقديري للمحافظة الجديدة: ${suggestedShipping} ج.م (الحالي بالطلب: ${order.shipping || 0} ج.م). يُرجى تعديل الشحن في بنود الطلب لتفادي فرق السعر.`
+                        : `Estimated shipping for new governorate: ${suggestedShipping} (Current: ${order.shipping || 0}). Please update shipping in order items.`
+                      : isCalculatingShipping
+                      ? (isArabic ? 'جارٍ احتساب تسعيرة الشحن المقترحة…' : 'Calculating suggested shipping rate…')
+                      : (isArabic
+                        ? 'تنبيه: يُرجى مراجعة وتحديث مصاريف الشحن في قسم المنتجات لتفادي خسارة فارق سعر التوصيل.'
+                        : 'Reminder: Please review shipping fee in order items to avoid freight discrepancies.')}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>

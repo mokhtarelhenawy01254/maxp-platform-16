@@ -237,7 +237,7 @@ describe('agentWorkspaceController.getMyOrders', () => {
     const findManyArg = findMany.mock.calls[0][0];
     expect(findManyArg.where.OR).toEqual([
       { order: { status: 'CANCELLED' } },
-      { guestOrder: { status: 'CANCELLED' } }
+      { guestOrder: { status: { in: ['CANCELLED', 'cancelled'] } } }
     ]);
   });
 
@@ -422,7 +422,7 @@ describe('agentWorkspaceController.getMyOrders', () => {
     expect(res.payload.stats.incomplete).toBe(4);
     // عدّاد السلات استبعد المستبعدة يدويًا (method=dismissed)
     const countWhere = prismaMock.guestCart.count.mock.calls[0][0].where;
-    expect(countWhere.checkoutStartedAt).toEqual({ not: null });
+    expect(countWhere.checkoutStartedAt.gte).toBeInstanceOf(Date);
     expect(countWhere.cartId).toEqual({ notIn: ['cart-x', 'cart-y'] });
     expect(countWhere.AND).toBeDefined();
   });
@@ -1185,7 +1185,7 @@ describe('agentWorkspaceController.assignOrder', () => {
       expect(res.statusCode).toBe(200);
       const findManyArg = findMany.mock.calls[0][0];
       expect(findManyArg.where.AND).toBeDefined();
-      const searchClause = findManyArg.where.AND.find((c) => c.OR);
+      const searchClause = findManyArg.where.AND.find((c) => c.OR && c.OR.some((o) => o.order?.customerPhone));
       expect(searchClause).toBeDefined();
       const orConditions = searchClause.OR;
       // Phone variants: 01012345678, 1012345678, 201012345678

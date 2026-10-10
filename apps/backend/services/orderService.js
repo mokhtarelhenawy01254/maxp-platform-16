@@ -1850,17 +1850,36 @@ class OrderService {
         nextMetadata = JSON.stringify(rest);
       }
 
+      // عند الإلغاء، التأكد من حفظ سبب الإلغاء الجديد في notes حتى لو كان هناك ملاحظة قديمة (دمج السبب مع الملاحظة القديمة بدلاً من تجاهله)، وحفظه في metadata.cancellationReason
+      const isCancellation = status === 'CANCELLED' || status === 'PENDING_CANCELLATION' || String(status || '').toUpperCase() === 'CANCELLED';
+      if (isCancellation && notes && String(notes).trim()) {
+        const metaObj = nextMetadata ? JSON.parse(nextMetadata) : (currentMetadata ? { ...currentMetadata } : {});
+        metaObj.cancellationReason = String(notes).trim();
+        nextMetadata = JSON.stringify(metaObj);
+      }
+
+      let finalOrderNotes = notes || undefined;
+      if (order.notes && String(order.notes).trim().length > 0 && !options?.overwriteNotes) {
+        if (isCancellation && notes && String(notes).trim()) {
+          const oldNote = String(order.notes).trim();
+          const newReason = String(notes).trim();
+          if (!oldNote.includes(newReason)) {
+            finalOrderNotes = `${oldNote} | سبب الإلغاء: ${newReason}`;
+          } else {
+            finalOrderNotes = oldNote;
+          }
+        } else {
+          finalOrderNotes = order.notes;
+        }
+      }
+
       const updatedOrder = await safeQuery(async () => {
         const prisma = this.getPrisma();
         return await prisma.order.update({
           where: { id: order.id },
           data: {
             status: status,
-            // 🛡️ PRODUCTION-FIX (notes-preservation): لا يتم مسح أو استبدال ملاحظات العميل ومواصفات طلبه
-            // (مثل نوع وموديل وسنة صنع السيارة) بسبب نصوص تحديث الحالة (مثل تأكيد الواتساب أو التحديث الجماعي).
-            notes: (order.notes && String(order.notes).trim().length > 0 && !options?.overwriteNotes)
-              ? order.notes
-              : (notes || undefined),
+            notes: finalOrderNotes,
             ...((status === 'RETURNED' || status === 'PARTIALLY_RETURNED' || String(originalRequestedStatus || '').toUpperCase().includes('RETURN')) && notes ? { turboReturnReason: notes } : {}),
             ...(nextMetadata ? { metadata: nextMetadata } : {}),
             ...confirmationData,
@@ -1910,7 +1929,7 @@ class OrderService {
             },
             data: {
               status: status,
-              notes: notes || undefined,
+              notes: finalOrderNotes || undefined,
               updatedAt: new Date()
             }
           });
