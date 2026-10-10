@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useLocation } from "react-router-dom";
-import { PlayCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Link, useLocation } from "react-router-dom";
+import { PlayCircleIcon, XMarkIcon, BookOpenIcon } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import DOMPurify from "dompurify";
 
@@ -131,6 +131,19 @@ const PageExplanations: React.FC<PageExplanationsProps> = ({ className }) => {
             <span className="truncate">{exp.title}</span>
           </button>
         ))}
+        {/* مدخل دائم لصفحة «شرح المنصة» الكاملة — التاجر كان مالوش أي لينك ليها */}
+        <Link
+          to="/app-explanations"
+          title="كل الشروحات"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full
+            bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800
+            text-blue-700 dark:text-blue-300
+            hover:bg-blue-100 dark:hover:bg-blue-900/50
+            transition-all duration-200 no-underline shrink-0"
+        >
+          <BookOpenIcon className="h-4 w-4 flex-shrink-0" />
+          <span className="whitespace-nowrap">كل الشروحات</span>
+        </Link>
       </div>
 
       {/* Modal */}
