@@ -80,7 +80,7 @@ const BostaRecords: React.FC = () => {
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t("orders.customer")}</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t("orders.total")}</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t("orders.trackingNumber")}</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t("orders.status")}</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t("orders.orderStatus")}</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t("orders.date")}</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">{t("orders.actions")}</th>
               </tr>

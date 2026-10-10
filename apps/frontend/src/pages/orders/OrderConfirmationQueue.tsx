@@ -1072,7 +1072,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
             </div>
             <div className="space-y-3">
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
-                {t('orders.status')}
+                {t('orders.orderStatus')}
                 <select
                   value={statusFilter}
                   onChange={(e) => {

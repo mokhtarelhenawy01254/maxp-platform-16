@@ -178,7 +178,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
               )}
               {columns.includes("status") && (
                 <th className={`${headerPadding} text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
-                  {t("orders.status")}
+                  {t("orders.orderStatus")}
                 </th>
               )}
               {columns.includes("payment") && (

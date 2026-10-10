@@ -145,7 +145,7 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
           (s) => s.code.toLowerCase() === statusCode.toLowerCase(),
         );
         list.push({
-          key: t("orders.status"),
+          key: t("orders.orderStatus"),
           value: match?.name ?? statusCode,
           tone: "primary",
           remove: () =>

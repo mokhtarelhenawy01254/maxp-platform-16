@@ -86,7 +86,15 @@
   "customer": "العميل",
   "customerRating": "تقييم العملاء",
   "amount": "المبلغ",
-  "status": "الحالة",
+  "status": {
+    "pending": "قيد الانتظار",
+    "processing": "قيد التنفيذ",
+    "shipped": "تم الشحن",
+    "delivered": "تم التسليم",
+    "cancelled": "ملغي",
+    "completed": "مكتمل",
+      "change": "تغيير الحالة"
+    },
   "payment": "الدفع",
   "date": "التاريخ",
   "actions": "إجراءات",

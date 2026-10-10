@@ -86,7 +86,15 @@
   "customer": "Customer",
   "customerRating": "Customer Rating",
   "amount": "Amount",
-  "status": "Status",
+  "status": {
+    "pending": "Pending",
+    "processing": "Processing",
+    "shipped": "Shipped",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled",
+    "completed": "Completed",
+      "change": "Change status"
+    },
   "payment": "Payment",
   "date": "Date",
   "actions": "Actions",

@@ -419,7 +419,7 @@ const IncompleteOrders: React.FC = () => {
         t("orders.governorate"),
         t("orders.itemsCount"),
         t("orders.total"),
-        t("orders.status"),
+        t("orders.orderStatus"),
         t("orders.incompleteReasonColumn"),
         t("orders.lastUpdated"),
         t("orders.incompleteAdSource"),
@@ -732,7 +732,7 @@ const IncompleteOrders: React.FC = () => {
                   {t("orders.incompleteReasonColumn")}
                 </th>
                 <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {t("orders.status")}
+                  {t("orders.orderStatus")}
                 </th>
                 <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   {t("orders.incompleteActions")}

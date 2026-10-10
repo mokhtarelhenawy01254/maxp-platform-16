@@ -354,7 +354,7 @@ const IncompleteOrderDetails: React.FC = () => {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                {t("orders.status")}
+                {t("orders.orderStatus")}
               </div>
               <div className="mt-2">
                 <span
