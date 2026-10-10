@@ -5453,7 +5453,7 @@ router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken
         }
       });
 
-      if (paymentStatus.toUpperCase() === 'COMPLETED') {
+      if (paymentStatus.toUpperCase() === 'COMPLETED' || paymentStatus.toUpperCase() === 'PAID') {
         try {
           await cashbackService.applyCashbackForPaidOrder({
             orderId: existingRegularOrder.id,
@@ -5466,6 +5466,19 @@ router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken
             companyId,
             error: e?.message
           });
+        }
+
+        // 🎓 أكاديمية: تسجيل تلقائي في الكورسات المرتبطة بالطلب المسدد
+        try {
+          const academyService = require('../services/academyService');
+          await academyService.processOrderAutoEnrollment({
+            orderId: existingRegularOrder.id,
+            orderNumber: existingRegularOrder.orderNumber,
+            companyId,
+            changedBy: userId,
+          }).catch(e => console.warn('[academy-payment-hook] auto-enroll failed:', e.message));
+        } catch (academyErr) {
+          console.warn('[academy-payment-hook] error:', academyErr.message);
         }
       }
 

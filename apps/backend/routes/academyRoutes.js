@@ -14,6 +14,8 @@ router.get('/courses', instructorAuth, controller.getCourses);
 router.get('/courses/:id', instructorAuth, controller.getCourseDetails);
 router.put('/courses/:id', instructorAuth, controller.updateCourse);
 router.delete('/courses/:id', instructorAuth, controller.deleteCourse);
+router.get('/store-products', instructorAuth, controller.getStoreProducts);
+router.post('/sync-order-enrollment', instructorAuth, controller.syncOrderEnrollment);
 
 // Modules & Lessons
 router.post('/courses/:courseId/modules', instructorAuth, controller.addModule);

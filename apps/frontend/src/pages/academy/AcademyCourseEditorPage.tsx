@@ -19,11 +19,12 @@ import {
   Tag,
   Globe,
 } from "lucide-react";
-import { academyApi, Course, Module, Lesson, Quiz, Question } from "./academyApi";
+import { academyApi, Course, Module, Lesson, Quiz, Question, AcademyStoreProduct } from "./academyApi";
 
 export default function AcademyCourseEditorPage() {
   const { id } = useParams<{ id: string }>();
   const [course, setCourse] = useState<Course | null>(null);
+  const [storeProducts, setStoreProducts] = useState<AcademyStoreProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,7 +68,15 @@ export default function AcademyCourseEditorPage() {
 
   useEffect(() => {
     if (id) loadCourse();
+    loadStoreProducts();
   }, [id]);
+
+  const loadStoreProducts = async () => {
+    try {
+      const prods = await academyApi.getStoreProducts();
+      setStoreProducts(prods);
+    } catch (_) {}
+  };
 
   const loadCourse = async () => {
     if (!id) return;
@@ -854,17 +863,56 @@ export default function AcademyCourseEditorPage() {
                 </div>
               </div>
 
-              <div>
+              <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
-                  معرف منتج المتجر (Store Product ID للاشتراك التلقائي عند الشراء)
+                  ربط بمنتج المتجر (للاشتراك والتسجيل التلقائي فور الدفع)
                 </label>
-                <input
-                  type="text"
-                  value={editStoreProductId}
-                  onChange={(e) => setEditStoreProductId(e.target.value)}
-                  placeholder="ID المنتج في المتجر"
-                  className="w-full px-3.5 py-2 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono placeholder:text-muted-foreground"
-                />
+                {storeProducts.length > 0 ? (
+                  <select
+                    value={editStoreProductId}
+                    onChange={(e) => {
+                      const selId = e.target.value;
+                      setEditStoreProductId(selId);
+                      const prod = storeProducts.find((p) => p.id === selId);
+                      if (prod && (!editCoursePrice || editCoursePrice === "0")) {
+                        setEditCoursePrice(String(prod.price));
+                      }
+                    }}
+                    className="w-full px-3.5 py-2 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  >
+                    <option value="">-- بدون ربط بمنتج متجر --</option>
+                    {storeProducts.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.price} EGP {p.sku ? `- SKU: ${p.sku}` : ""})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={editStoreProductId}
+                    onChange={(e) => setEditStoreProductId(e.target.value)}
+                    placeholder="ID المنتج في المتجر"
+                    className="w-full px-3.5 py-2 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono placeholder:text-muted-foreground"
+                  />
+                )}
+                {storeProducts.length > 0 && (
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground px-1">
+                    <span>
+                      {editStoreProductId ? "⚡ التسجيل التلقائي مفعّل فور تأكيد وسداد طلب هذا المنتج" : "اختر المنتج الذي عند شرائه يتم تسجيل الطالب تلقائياً"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const customId = prompt("أدخل معرف المنتج (Store Product ID) يدوياً:", editStoreProductId);
+                        if (customId !== null) setEditStoreProductId(customId.trim());
+                      }}
+                      className="text-primary hover:underline text-[11px]"
+                    >
+                      إدخال ID يدوي
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Privacy & Visibility Settings */}

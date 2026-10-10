@@ -224,7 +224,7 @@ class AcademyService {
 
   async getCourses(companyId) {
     const db = this.getDb();
-    return db.academyCourse.findMany({
+    const courses = await db.academyCourse.findMany({
       where: { companyId },
       include: {
         modules: {
@@ -253,6 +253,25 @@ class AcademyService {
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    const storeProductIds = courses.map((c) => c.storeProductId).filter(Boolean);
+    if (storeProductIds.length > 0) {
+      try {
+        const products = await db.product.findMany({
+          where: { id: { in: storeProductIds } },
+          select: { id: true, name: true, price: true, mainImage: true, sku: true },
+        });
+        const prodMap = new Map(products.map((p) => [p.id, p]));
+        return courses.map((c) => ({
+          ...c,
+          storeProduct: c.storeProductId ? prodMap.get(c.storeProductId) || null : null,
+        }));
+      } catch (_) {
+        return courses;
+      }
+    }
+
+    return courses;
   }
 
   async getCourseDetails(courseId, companyId) {
@@ -613,33 +632,51 @@ class AcademyService {
     const targetCompanyId = companyId || course.companyId;
     if (!targetCompanyId) throw new Error('معرف الشركة مطلوب لإتمام التسجيل');
 
-    // ─── فحص التسجيل المكرر ───────────────────────────────────────────────
-    const existing = await db.academyEnrollment.findFirst({
-      where: {
-        courseId,
-        companyId: targetCompanyId,
-        OR: [
-          ...(studentUserId ? [{ studentUserId }] : []),
-          ...(customerId ? [{ customerId }] : []),
-          ...(studentPhone ? [{ studentPhone }] : []),
-        ],
-      },
-    });
-
-    if (existing) {
-      if (existing.status !== 'ACTIVE') {
-        return db.academyEnrollment.update({
-          where: { id: existing.id },
-          data: { status: 'ACTIVE' },
-        });
-      }
-      return existing; // مسجّل بالفعل — لا نعمل تسجيل مكرر
-    }
-
     // ─── حساب تاريخ انتهاء الاشتراك ──────────────────────────────────────
     const subDays = (subscriptionDays && Number(subscriptionDays) > 0)
       ? Number(subscriptionDays)
       : (course.subscriptionDays ? Number(course.subscriptionDays) : null);
+
+    // ─── فحص التسجيل المكرر ───────────────────────────────────────────────
+    const orConditions = [
+      ...(studentUserId ? [{ studentUserId }] : []),
+      ...(customerId ? [{ customerId }] : []),
+      ...(studentPhone ? [{ studentPhone }] : []),
+    ];
+
+    let existing = null;
+    if (orConditions.length > 0) {
+      existing = await db.academyEnrollment.findFirst({
+        where: {
+          courseId,
+          companyId: targetCompanyId,
+          OR: orConditions,
+        },
+      });
+    }
+
+    if (existing) {
+      const isExpired = existing.expiresAt ? new Date(existing.expiresAt) < new Date() : false;
+      // إذا كان الاشتراك معطلاً أو منتهي الصلاحية، يُعاد تفعيله وتجديد مدته
+      if (existing.status !== 'ACTIVE' || isExpired) {
+        let renewedExpiresAt = null;
+        if (subDays && subDays > 0) {
+          renewedExpiresAt = new Date();
+          renewedExpiresAt.setDate(renewedExpiresAt.getDate() + subDays);
+        }
+        return db.academyEnrollment.update({
+          where: { id: existing.id },
+          data: {
+            status: 'ACTIVE',
+            orderId: orderId || existing.orderId,
+            expiresAt: renewedExpiresAt,
+            subscriptionDays: subDays || existing.subscriptionDays,
+          },
+        });
+      }
+      return existing; // مسجّل بالفعل ونشط — لا نعمل تسجيل مكرر
+    }
+
     let expiresAt = null;
     if (subDays && subDays > 0) {
       expiresAt = new Date();
@@ -669,53 +706,278 @@ class AcademyService {
   async autoEnrollFromPaidOrder({ companyId, customerId, storeProductId, orderId, customerName, customerPhone, customerEmail }) {
     if (!storeProductId) return null;
     const db = this.getDb();
-    const course = await db.academyCourse.findFirst({
-      where: { companyId, storeProductId },
-    });
-    if (!course) return null;
-
-    // ─── منع التسجيل المكرر لنفس الطلب ──────────────────────────────────
-    const alreadyEnrolled = await db.academyEnrollment.findFirst({
+    const courses = await db.academyCourse.findMany({
       where: {
-        courseId: course.id,
-        companyId,
-        orderId,
+        storeProductId,
+        OR: [
+          ...(companyId ? [{ companyId }] : []),
+          { isGlobal: true },
+        ],
       },
     });
-    if (alreadyEnrolled) {
-      console.log(`[academy] skip duplicate auto-enroll: orderId=${orderId}, courseId=${course.id}`);
-      return alreadyEnrolled;
+    if (!courses || courses.length === 0) return null;
+
+    let lastEnrollment = null;
+    for (const course of courses) {
+      const targetCompanyId = course.companyId || companyId;
+      // ─── منع التسجيل المكرر لنفس الطلب ──────────────────────────────────
+      const alreadyEnrolled = await db.academyEnrollment.findFirst({
+        where: {
+          courseId: course.id,
+          orderId,
+        },
+      });
+      if (alreadyEnrolled) {
+        console.log(`[academy] skip duplicate auto-enroll: orderId=${orderId}, courseId=${course.id}`);
+        lastEnrollment = alreadyEnrolled;
+        continue;
+      }
+
+      const enrollment = await this.enrollStudent({
+        companyId: targetCompanyId,
+        courseId: course.id,
+        customerId,
+        orderId,
+        studentName: customerName,
+        studentPhone: customerPhone,
+        studentEmail: customerEmail,
+        subscriptionDays: course.subscriptionDays,
+        byAdmin: false, // بعد دفع — orderId موجود يتجاوز الحارس
+      });
+
+      lastEnrollment = enrollment;
+
+      // ─── إشعار الطالب بعد التسجيل التلقائي ──────────────────────────────
+      try {
+        const notificationService = require('./notificationService');
+        if (notificationService?.createNotification) {
+          await notificationService.createNotification({
+            companyId: targetCompanyId,
+            title: `تم تسجيلك في كورس: ${course.title}`,
+            body: `مبروك! تم تسجيلك تلقائياً في دورة "${course.title}" بعد إتمام الدفع. يمكنك الوصول للكورس من الأكاديمية الآن.`,
+            type: 'ACADEMY_ENROLLMENT',
+            recipientCustomerId: customerId || null,
+            metadata: { courseId: course.id, enrollmentId: enrollment?.id },
+          });
+        }
+      } catch (notifErr) {
+        console.warn('[academy] auto-enroll notification skipped:', notifErr.message);
+      }
     }
 
-    const enrollment = await this.enrollStudent({
-      companyId,
-      courseId: course.id,
-      customerId,
-      orderId,
-      studentName: customerName,
-      studentPhone: customerPhone,
-      studentEmail: customerEmail,
-      byAdmin: false, // بعد دفع — orderId موجود يتجاوز الحارس
+    return lastEnrollment;
+  }
+
+  /**
+   * 🎓 معالجة التسجيل التلقائي الشامل لطلب مدفوع (Idempotent & Multi-course)
+   * يفحص الطلب وبنوده، ويربط الطالب بجميع الكورسات المطابقة للمنتجات،
+   * ويسجل إشعاراً وسجل تاريخ في الطلب ليراه التاجر في التفاصيل.
+   */
+  async processOrderAutoEnrollment({ orderId, orderNumber, companyId, changedBy = null, orderData = null }) {
+    const db = this.getDb();
+    let order = orderData;
+
+    if (!order) {
+      if (!orderId && !orderNumber) return { success: false, enrolled: 0, reason: 'No order identifier provided' };
+      order = await db.order.findFirst({
+        where: {
+          OR: [
+            ...(orderId ? [{ id: orderId }] : []),
+            ...(orderNumber ? [{ orderNumber: String(orderNumber) }] : []),
+          ],
+          ...(companyId ? { companyId } : {}),
+        },
+        include: {
+          customer: true,
+          orderItems: {
+            include: { product: true },
+          },
+        },
+      });
+
+      if (!order) {
+        order = await db.guestOrder.findFirst({
+          where: {
+            OR: [
+              ...(orderId ? [{ id: orderId }] : []),
+              ...(orderNumber ? [{ orderNumber: String(orderNumber) }] : []),
+            ],
+            ...(companyId ? { companyId } : {}),
+          },
+          include: {
+            orderItems: true,
+          },
+        }).catch(() => null);
+      }
+    }
+
+    if (!order) return { success: false, enrolled: 0, reason: 'Order not found' };
+
+    const resolvedCompanyId = companyId || order.companyId;
+    const items = order.orderItems || [];
+    if (items.length === 0) return { success: true, enrolled: 0, reason: 'Order has no items' };
+
+    const productIds = items.map((it) => it.productId || it.product?.id).filter(Boolean);
+    if (productIds.length === 0) return { success: true, enrolled: 0, reason: 'No products in items' };
+
+    const matchingCourses = await db.academyCourse.findMany({
+      where: {
+        storeProductId: { in: productIds },
+        OR: [
+          ...(resolvedCompanyId ? [{ companyId: resolvedCompanyId }] : []),
+          { isGlobal: true },
+        ],
+      },
     });
 
-    // ─── إشعار الطالب بعد التسجيل التلقائي ──────────────────────────────
-    try {
-      const notificationService = require('./notificationService');
-      if (notificationService?.createNotification) {
-        await notificationService.createNotification({
-          companyId,
-          title: `تم تسجيلك في كورس: ${course.title}`,
-          body: `مبروك! تم تسجيلك تلقائياً في دورة "${course.title}" بعد إتمام الدفع. يمكنك الوصول للكورس من الأكاديمية الآن.`,
-          type: 'ACADEMY_ENROLLMENT',
-          recipientCustomerId: customerId || null,
-          metadata: { courseId: course.id, enrollmentId: enrollment?.id },
-        });
-      }
-    } catch (notifErr) {
-      console.warn('[academy] auto-enroll notification skipped:', notifErr.message);
+    if (matchingCourses.length === 0) {
+      return { success: true, enrolled: 0, reason: 'No courses linked to ordered products' };
     }
 
-    return enrollment;
+    const customerName = order.customerName || `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim() || 'طالب جديد';
+    const customerPhone = order.customerPhone || order.customer?.phone || null;
+    const customerEmail = order.customerEmail || order.customer?.email || null;
+    const customerId = order.customerId || order.customer?.id || null;
+
+    let studentUserId = null;
+    if (customerPhone || customerEmail) {
+      const matchedUser = await db.user.findFirst({
+        where: {
+          OR: [
+            ...(customerPhone ? [{ phone: customerPhone }] : []),
+            ...(customerEmail ? [{ email: customerEmail }] : []),
+          ],
+        },
+        select: { id: true },
+      }).catch(() => null);
+      if (matchedUser) studentUserId = matchedUser.id;
+    }
+
+    const enrollments = [];
+
+    for (const course of matchingCourses) {
+      const targetCompanyId = course.companyId || resolvedCompanyId;
+      const alreadyForOrder = await db.academyEnrollment.findFirst({
+        where: {
+          courseId: course.id,
+          orderId: order.id,
+        },
+      });
+
+      if (alreadyForOrder) {
+        console.log(`[academy] Order ${order.orderNumber || order.id} already enrolled in course ${course.id}`);
+        enrollments.push(alreadyForOrder);
+        continue;
+      }
+
+      const enr = await this.enrollStudent({
+        companyId: targetCompanyId,
+        courseId: course.id,
+        studentUserId,
+        customerId,
+        orderId: order.id,
+        studentName: customerName,
+        studentPhone: customerPhone,
+        studentEmail: customerEmail,
+        subscriptionDays: course.subscriptionDays,
+        byAdmin: false,
+      });
+
+      if (enr) {
+        enrollments.push(enr);
+
+        try {
+          const notificationService = require('./notificationService');
+          if (notificationService?.createNotification) {
+            await notificationService.createNotification({
+              companyId: targetCompanyId,
+              title: `تم تسجيلك في كورس: ${course.title}`,
+              body: `مبروك! تم تسجيلك تلقائياً في دورة "${course.title}" بعد إتمام الدفع. يمكنك الوصول للكورس من الأكاديمية الآن.`,
+              type: 'ACADEMY_ENROLLMENT',
+              recipientCustomerId: customerId || null,
+              metadata: { courseId: course.id, enrollmentId: enr.id },
+            });
+          }
+        } catch (notifErr) {
+          console.warn('[academy] auto-enroll notification skipped:', notifErr.message);
+        }
+      }
+    }
+
+    // إضافة سجل في تاريخ الطلب ليظهر في تفاصيل الطلب بلوحة التحكم
+    if (enrollments.length > 0 && order.id) {
+      try {
+        const titles = matchingCourses.map((c) => c.title).join('، ');
+        await db.orderStatusHistory.create({
+          data: {
+            orderId: order.id,
+            status: order.status || 'CONFIRMED',
+            oldStatus: order.status || 'CONFIRMED',
+            reason: `🎓 تسجيل تلقائي في الأكاديمية: تم تسجيل الطالب (${customerName}) في دورة [${titles}] بنجاح`,
+            changedBy: changedBy || 'SYSTEM',
+            userName: 'MaxP Academy Auto-Enroll',
+          },
+        });
+      } catch (histErr) {
+        console.warn('[academy] order status history recording skipped:', histErr.message);
+      }
+    }
+
+    return {
+      success: true,
+      enrolled: enrollments.length,
+      courses: matchingCourses.map((c) => ({ id: c.id, title: c.title })),
+      enrollments,
+    };
+  }
+
+  /**
+   * جلب منتجات المتجر النشطة للشركة لربطها بالكورسات
+   */
+  async getStoreProducts(companyId) {
+    const db = this.getDb();
+    if (!companyId) return [];
+    try {
+      const products = await db.product.findMany({
+        where: {
+          companyId,
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          comparePrice: true,
+          mainImage: true,
+          images: true,
+          sku: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 150,
+      });
+
+      return products.map((p) => {
+        let image = p.mainImage || null;
+        if (!image && p.images) {
+          try {
+            const parsed = JSON.parse(p.images);
+            image = Array.isArray(parsed) ? parsed[0] : parsed;
+          } catch (_) {
+            image = typeof p.images === 'string' ? p.images : null;
+          }
+        }
+        return {
+          id: p.id,
+          name: p.name,
+          price: Number(p.price) || 0,
+          image,
+          sku: p.sku || '',
+        };
+      });
+    } catch (e) {
+      console.warn('[academy] getStoreProducts failed:', e.message);
+      return [];
+    }
   }
 
   // ─── الأدمن يوقف اشتراك طالب ───────────────────────────────────────────
@@ -1600,6 +1862,7 @@ ${studentUrl || 'لا يوجد رابط'}`;
         studentPhone: en.studentPhone,
         studentEmail: en.studentEmail,
         status: en.status,
+        orderId: en.orderId || null,
         enrolledAt: en.enrolledAt,
         completedAt: en.completedAt,
         expiresAt: en.expiresAt || null,

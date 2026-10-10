@@ -60,6 +60,13 @@ export interface Course {
   isGlobal?: boolean;
   freePreviewLessons: number;
   storeProductId?: string | null;
+  storeProduct?: {
+    id: string;
+    name: string;
+    price: number;
+    mainImage?: string;
+    sku?: string;
+  } | null;
   visibility?: "PUBLIC" | "UNLISTED" | "INVITE_ONLY" | "TAG_GATED";
   allowedTags?: string[];
   enableWatermark?: boolean;
@@ -70,6 +77,14 @@ export interface Course {
   _count?: {
     enrollments?: number;
   };
+}
+
+export interface AcademyStoreProduct {
+  id: string;
+  name: string;
+  price: number;
+  image?: string | null;
+  sku?: string;
 }
 
 export interface MyEnrollment {
@@ -90,6 +105,7 @@ export interface StudentProgressRow {
   studentPhone?: string;
   studentEmail?: string;
   status: string;
+  orderId?: string | null;
   enrolledAt: string;
   completedAt?: string | null;
   expiresAt?: string | null;
@@ -325,5 +341,16 @@ export const academyApi = {
   async reactivateEnrollment(enrollmentId: string): Promise<any> {
     const res = await apiClient.post<any>(`/api/v1/academy/enrollments/${enrollmentId}/reactivate`);
     return (res.data as any)?.enrollment;
+  },
+
+  // Store Products linking & Manual order sync
+  async getStoreProducts(): Promise<AcademyStoreProduct[]> {
+    const res = await apiClient.get<any>("/api/v1/academy/store-products");
+    return (res.data as any)?.products || [];
+  },
+
+  async syncOrderEnrollment(orderNumber: string): Promise<{ success: boolean; enrolled: number; message?: string; courses?: any[] }> {
+    const res = await apiClient.post<any>("/api/v1/academy/sync-order-enrollment", { orderNumber });
+    return res.data;
   },
 };

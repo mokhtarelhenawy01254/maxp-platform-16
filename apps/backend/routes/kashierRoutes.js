@@ -561,6 +561,21 @@ router.post('/kashier/webhook', async (req, res) => {
       }
     }
 
+    // 🎓 أكاديمية: تسجيل تلقائي فوري بعد إتمام السداد الإلكتروني عبر كاشير
+    if (isSuccess) {
+      try {
+        const academyService = require('../services/academyService');
+        await academyService.processOrderAutoEnrollment({
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          companyId: order.companyId,
+          changedBy: 'KASHIER_WEBHOOK',
+        }).catch((e) => console.warn('[KASHIER-WEBHOOK] academy auto-enroll failed:', e.message));
+      } catch (academyErr) {
+        console.warn('[KASHIER-WEBHOOK] academy error:', academyErr.message);
+      }
+    }
+
     console.log(`✅ [KASHIER-WEBHOOK] Order ${order.orderNumber} updated to ${paymentStatus} via ${resolvedPaymentMethod} (Tx: ${transactionId})`);
     return res.json({
       success: true,

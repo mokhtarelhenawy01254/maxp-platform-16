@@ -533,6 +533,11 @@ export default function AcademyStudentsPage() {
                                     {st.studentEmail && (
                                       <div className="text-[10px] text-muted-foreground font-normal">{st.studentEmail}</div>
                                     )}
+                                    {st.orderId && (
+                                      <div className="text-[10px] text-sky-600 dark:text-sky-400 font-mono mt-0.5" title={`مسجل عبر الطلب: ${st.orderId}`}>
+                                        طلب رقم: {st.orderId.slice(-8)}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               </td>

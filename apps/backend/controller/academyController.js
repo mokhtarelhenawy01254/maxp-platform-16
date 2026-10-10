@@ -534,3 +534,32 @@ exports.reviewSubmission = async (req, res) => {
   }
 };
 
+exports.getStoreProducts = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    const products = await academyService.getStoreProducts(companyId);
+    res.json({ success: true, products });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+exports.syncOrderEnrollment = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    const { orderNumber, orderId } = req.body;
+    if (!orderNumber && !orderId) {
+      return res.status(400).json({ success: false, error: 'رقم الطلب مطلوب لإجراء المزامنة' });
+    }
+    const result = await academyService.processOrderAutoEnrollment({
+      orderId: orderId || null,
+      orderNumber: orderNumber || null,
+      companyId,
+      changedBy: req.user?.id || 'INSTRUCTOR',
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+

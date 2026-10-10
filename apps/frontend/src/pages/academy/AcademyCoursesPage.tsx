@@ -15,11 +15,13 @@ import {
   Tag,
   Globe,
   MoreHorizontal,
+  RefreshCw,
 } from "lucide-react";
-import { academyApi, Course } from "./academyApi";
+import { academyApi, Course, AcademyStoreProduct } from "./academyApi";
 
 export default function AcademyCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
+  const [storeProducts, setStoreProducts] = useState<AcademyStoreProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,9 +37,25 @@ export default function AcademyCoursesPage() {
   const [newEnableWatermark, setNewEnableWatermark] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  // Manual Sync Order Modal
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [syncOrderNumber, setSyncOrderNumber] = useState("");
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ success: boolean; message: string } | null>(null);
+
   useEffect(() => {
     loadCourses();
+    loadStoreProducts();
   }, []);
+
+  const loadStoreProducts = async () => {
+    try {
+      const prods = await academyApi.getStoreProducts();
+      setStoreProducts(prods);
+    } catch (_) {
+      // Non-blocking
+    }
+  };
 
   const loadCourses = async () => {
     try {
@@ -105,6 +123,40 @@ export default function AcademyCoursesPage() {
     }
   };
 
+  const handleSyncOrder = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!syncOrderNumber.trim()) return;
+    try {
+      setSyncing(true);
+      setSyncResult(null);
+      const res = await academyApi.syncOrderEnrollment(syncOrderNumber.trim());
+      if (res.success && res.enrolled > 0) {
+        setSyncResult({
+          success: true,
+          message: `تم بنجاح! تم تسجيل الطالب في ${res.enrolled} دورة مرتبطة بالطلب.`,
+        });
+        loadCourses();
+      } else if (res.success) {
+        setSyncResult({
+          success: false,
+          message: res.message || "الطلب لا يحتوي على منتجات مرتبطة بكورسات، أو تم تسجيل الطالب مسبقاً.",
+        });
+      } else {
+        setSyncResult({
+          success: false,
+          message: res.message || "تعذر إتمام المزامنة",
+        });
+      }
+    } catch (err: any) {
+      setSyncResult({
+        success: false,
+        message: err?.response?.data?.error || "فشل مزامنة الطلب. تأكد من صحة رقم الطلب.",
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <div className="w-full bg-background text-foreground p-3.5 sm:p-6 space-y-6" dir="rtl">
       {/* Header */}
@@ -118,18 +170,33 @@ export default function AcademyCoursesPage() {
               إدارة الدورات التدريبية
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              أنشئ المناهج، وحدد أسعار البيع، واضبط الخصوصية والدروس التجريبية المجانية
+              أنشئ المناهج، واربطها بمنتجات المتجر للتسجيل التلقائي فور الدفع، واضبط الخصوصية
             </p>
           </div>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm shadow-primary/20 transition-all active:scale-[0.98]"
-        >
-          <Plus className="w-4 h-4" />
-          <span>إنشاء كورس جديد</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <button
+            onClick={() => {
+              setSyncResult(null);
+              setSyncOrderNumber("");
+              setIsSyncModalOpen(true);
+            }}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-secondary hover:bg-secondary/80 text-secondary-foreground border border-border/70 transition-all active:scale-[0.98]"
+            title="مزامنة تسجيل طالب يدوياً لطلب تم سداده"
+          >
+            <RefreshCw className="w-4 h-4 text-primary" />
+            <span>مزامنة طلب سداد</span>
+          </button>
+
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm shadow-primary/20 transition-all active:scale-[0.98]"
+          >
+            <Plus className="w-4 h-4" />
+            <span>إنشاء كورس جديد</span>
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -225,10 +292,16 @@ export default function AcademyCoursesPage() {
                       </span>
 
                       {course.storeProductId && (
-                        <span className="text-[11px] font-medium text-sky-600 dark:text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
-                          <ShoppingCart className="w-3 h-3" />
-                          <span>مربوط بالمتجر</span>
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[11px] font-medium text-sky-600 dark:text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2.5 py-0.5 rounded-md flex items-center gap-1">
+                            <ShoppingCart className="w-3 h-3" />
+                            <span>مربوط بمنتج: {course.storeProduct?.name || course.storeProductId}</span>
+                          </span>
+                          <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                            <CheckCircle2 className="w-2.5 h-2.5" />
+                            <span>تسجيل تلقائي عند الدفع</span>
+                          </span>
+                        </div>
                       )}
                     </div>
 
@@ -349,17 +422,56 @@ export default function AcademyCoursesPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  معرف منتج المتجر (اختياري للربط التلقائي)
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-foreground">
+                  ربط بمنتج من المتجر (للتسجيل التلقائي فور الدفع)
                 </label>
-                <input
-                  type="text"
-                  value={newStoreProductId}
-                  onChange={(e) => setNewStoreProductId(e.target.value)}
-                  placeholder="ID المنتج في المتجر للاشتراك التلقائي فور الدفع"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-sm text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
+                {storeProducts.length > 0 ? (
+                  <select
+                    value={newStoreProductId}
+                    onChange={(e) => {
+                      const selId = e.target.value;
+                      setNewStoreProductId(selId);
+                      const prod = storeProducts.find((p) => p.id === selId);
+                      if (prod && (!newPrice || newPrice === "0" || newPrice === "1499")) {
+                        setNewPrice(String(prod.price));
+                      }
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  >
+                    <option value="">-- بدون ربط بمنتج متجر --</option>
+                    {storeProducts.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.price} EGP {p.sku ? `- SKU: ${p.sku}` : ""})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={newStoreProductId}
+                    onChange={(e) => setNewStoreProductId(e.target.value)}
+                    placeholder="ID المنتج في المتجر للاشتراك التلقائي فور الدفع"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-sm text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                )}
+                {storeProducts.length > 0 && (
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground px-1">
+                    <span>
+                      {newStoreProductId ? "⚡ التسجيل التلقائي مفعّل فور تأكيد وسداد طلب هذا المنتج" : "اختر المنتج الذي عند شرائه يتم تسجيل الطالب تلقائياً"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const customId = prompt("أدخل معرف المنتج (Store Product ID) يدوياً:", newStoreProductId);
+                        if (customId !== null) setNewStoreProductId(customId.trim());
+                      }}
+                      className="text-primary hover:underline text-[11px]"
+                    >
+                      إدخال ID يدوي
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Privacy & Visibility */}
@@ -429,6 +541,85 @@ export default function AcademyCoursesPage() {
                   className="px-5 py-2.5 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:opacity-50"
                 >
                   {submitting ? "جاري الإنشاء..." : "إنشاء الدورة"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Sync Paid Order Modal */}
+      {isSyncModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-card border border-border rounded-3xl p-6 shadow-2xl space-y-4" dir="rtl">
+            <div className="flex items-center justify-between pb-3 border-b border-border/60">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                  <RefreshCw className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-foreground">مزامنة طلب مدفوع</h2>
+                  <p className="text-xs text-muted-foreground">تسجيل الطالب تلقائياً لطلب تم سداده مسبقاً</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsSyncModalOpen(false)}
+                className="w-8 h-8 rounded-full hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSyncOrder} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
+                  رقم الطلب (Order Number أو ID)
+                </label>
+                <input
+                  type="text"
+                  value={syncOrderNumber}
+                  onChange={(e) => setSyncOrderNumber(e.target.value)}
+                  placeholder="مثال: ORD-1002 أو رقم الأوردر"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-sm text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  required
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  يقوم النظام بالبحث في بنود الطلب عن أي كورس مرتبط بمنتجات الطلب، وتسجيل الطالب فوراً دون تكرار.
+                </p>
+              </div>
+
+              {syncResult && (
+                <div
+                  className={`p-3.5 rounded-xl text-xs flex items-start gap-2 ${
+                    syncResult.success
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                      : "bg-destructive/10 text-destructive border border-destructive/20"
+                  }`}
+                >
+                  {syncResult.success ? (
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  )}
+                  <span>{syncResult.message}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-border/60">
+                <button
+                  type="button"
+                  onClick={() => setIsSyncModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground transition"
+                >
+                  إغلاق
+                </button>
+                <button
+                  type="submit"
+                  disabled={syncing || !syncOrderNumber.trim()}
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition active:scale-[0.98] disabled:opacity-50"
+                >
+                  {syncing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                  <span>{syncing ? "جاري المزامنة..." : "بدء المزامنة"}</span>
                 </button>
               </div>
             </form>
