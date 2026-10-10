@@ -3,10 +3,10 @@ import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  AlertTriangle, ArrowRightCircle, ArrowRightLeft, Calendar, Check, CheckCircle2, CheckSquare, ChevronDown, Clock, Columns3, CreditCard, ExternalLink, Eye, FileSpreadsheet, Filter, FilterX, Flame, Layers, List, Loader2, PackageCheck, Pencil, Printer, RefreshCw, RotateCcw, ScanLine, Search, Square, Stethoscope, Trash2, Upload, UserPlus, Users, X as XMarkIcon, Zap,
+  AlertTriangle, ArrowRightCircle, ArrowRightLeft, ChevronDown, Clock, Columns3, ExternalLink, Eye, FileSpreadsheet, Filter, FilterX, Flame, Layers, List, Loader2, PackageCheck, Pencil, Printer, RefreshCw, RotateCcw, ScanLine, Search, Stethoscope, Trash2, UserPlus, X as XMarkIcon, Zap,
 } from "lucide-react";
 import {
-  CASE_STATUS_MAP, CASE_STATUSES, PRIORITY_CONFIG, ROLE_CONFIG, PAYMENT_STATUS_MAP,
+  CASE_STATUS_MAP, CASE_STATUSES, PRIORITY_CONFIG, ROLE_CONFIG,
   DentalLabCase, DentalLabDoctor, DentalTechnician, DentalWorkType, DentalCasePriority, DentalTechnicianRole,
   fetchCases, fetchDoctors, fetchWorkTypes, fetchTechnicians, fetchDoctorPricing,
   createCase, updateCase, advanceCase, assignCase, removeCaseAssignment, uploadCaseAttachment, uploadCaseAttachments,
@@ -20,6 +20,7 @@ import {
 import { exportToExcel } from "@/utils/exportHelpers";
 import QuickOrderModal from "./QuickOrderModal";
 import OdontogramChart from "./OdontogramChart";
+import DentalCaseInspector from "./DentalCaseInspector";
 
 const FALLBACK_BADGE = { label: "", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" };
 
@@ -135,7 +136,7 @@ function CreateCaseModal({ initial, doctors, workTypes, technicians, onClose, on
         }
         const target = new Date(receivedDate || Date.now());
         target.setDate(target.getDate() + leadDays);
-        setDueDate(target.toISOString().split("T")[0]);
+        setDueDate(target.toISOString().split("T")[0] || "");
       }
     }
   }, [workTypeId, priority, receivedDate]);
@@ -680,7 +681,7 @@ function AssignModal({ caseData, technicians, onClose, onSaved }: AssignModalPro
             </label>
             <select className={inputCls} value={role} onChange={e => setRole(e.target.value)}>
               {(Object.keys(ROLE_CONFIG) as (keyof typeof ROLE_CONFIG)[]).map(k => (
-                <option key={k} value={k}>{ROLE_CONFIG[k].label}</option>
+                <option key={k} value={k}>{ROLE_CONFIG[k]?.label || k}</option>
               ))}
             </select>
           </div>
@@ -1016,8 +1017,6 @@ export default function DentalCasesTab() {
   const [layoutMode, setLayoutMode] = useState<"TABLE" | "KANBAN">(() => {
     return (searchParams.get("layout") || "").toUpperCase() === "KANBAN" ? "KANBAN" : "TABLE";
   });
-  // Mobile app-like filters: collapsed by default below md, always visible on md+
-  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // URL searchParams two-way filter sync helper
   const applyFilter = useCallback(
@@ -1036,17 +1035,6 @@ export default function DentalCasesTab() {
         } else {
           next.delete(key);
         }
-        return next;
-      });
-    },
-    [setSearchParams]
-  );
-
-  const clearFilter = useCallback(
-    (key: string) => {
-      setSearchParams(prev => {
-        const next = new URLSearchParams(prev);
-        next.delete(key);
         return next;
       });
     },
@@ -1113,6 +1101,26 @@ export default function DentalCasesTab() {
   const [invoiceCase, setInvoiceCase] = useState<DentalLabCase | null>(null);
   const [quickOrderOpen, setQuickOrderOpen] = useState(false);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+
+  // Split-Pane Master-Detail Cockpit (معايير 2026 لقمرة القيادة المزدوجة)
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState<boolean>(true);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (cases && cases.length > 0) {
+      if (!selectedCaseId || !cases.some(c => c.id === selectedCaseId)) {
+        setSelectedCaseId(cases[0]?.id ?? null);
+      }
+    } else {
+      setSelectedCaseId(null);
+    }
+  }, [cases, selectedCaseId]);
+
+  const selectedCase = useMemo(() => {
+    if (!cases || cases.length === 0) return null;
+    return cases.find(c => c.id === selectedCaseId) ?? cases[0] ?? null;
+  }, [cases, selectedCaseId]);
 
   // Bulk Selection & Batch Operations (معايير 2026 للإجراءات الجماعية)
   const [selectedCaseIds, setSelectedCaseIds] = useState<Set<string>>(new Set());
@@ -1502,504 +1510,430 @@ export default function DentalCasesTab() {
     Boolean(agendaDate) || dateRangePreset !== "ALL",
     Boolean(searchInput.trim()),
   ].filter(Boolean).length;
-  // Badge count for the mobile filters toggle: selects off their default + date fields (search excluded)
-  const mobileFilterBadgeCount = activeFiltersCount - (searchInput.trim() ? 1 : 0);
 
-  const resetFilters = () => {
-    clearAllFilters();
-  };
-
-  const filterCls = "border dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100";
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold">{t("dentalLab.cases.title")}</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">إدارة ومتابعة مراحل الشغل وحالات المعمل</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Table / Kanban View Toggle */}
-          <div className="flex items-center bg-gray-100 dark:bg-gray-800 p-0.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs">
-            <button
-              type="button"
-              onClick={() => setLayoutMode("TABLE")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-all ${
-                layoutMode === "TABLE"
-                  ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm"
-                  : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
-              }`}
-              title="عرض جدول الحالات"
-            >
-              <List className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">جدول</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setLayoutMode("KANBAN")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-all ${
-                layoutMode === "KANBAN"
-                  ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm"
-                  : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
-              }`}
-              title="عرض لوحة مراحل التشغيل (كانبان)"
-            >
-              <Columns3 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">كانبان</span>
-            </button>
-          </div>
-
-          <button
-            onClick={() => setKioskOpen(true)}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-blue-300 dark:border-blue-700 bg-blue-50/70 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 text-sm font-semibold shadow-sm"
-            title="فتح محطة المسح السريع بالباركود للإنتاج"
-          >
-            <ScanLine className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            محطة الباركود (Kiosk)
-          </button>
-          <button onClick={() => refresh()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
-            <RefreshCw className="w-4 h-4" />{t("dentalLab.common.refresh")}
-          </button>
-          <button
-            onClick={handleExportCasesExcel}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-emerald-300 dark:border-emerald-700 bg-emerald-50/70 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-sm font-semibold shadow-sm"
-            title="تصدير الحالات المعروضة إلى ملف Excel (.xlsx)"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>تصدير Excel</span>
-          </button>
-          <button
-            onClick={() => setQuickOrderOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-l from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 text-sm font-medium shadow-sm"
-          >
-            <Stethoscope className="w-4 h-4" />{t("dentalLab.cases.quickOrder")}
-          </button>
-        </div>
-      </div>
-
-      <div className="space-y-3 pb-3 border-b dark:border-gray-800">
-        {/* Main Tabs (Active / Overdue / Trash) */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm">
-            <button
-              onClick={() => { setViewMode("ACTIVE"); setPage(1); }}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${viewMode === "ACTIVE" ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm" : "text-gray-500 hover:text-gray-900 dark:text-gray-400"}`}
-            >
-              الحالات النشطة
-            </button>
-            <button
-              onClick={() => { setViewMode("OVERDUE"); setPage(1); }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${viewMode === "OVERDUE" ? "bg-rose-600 text-white shadow-sm" : "text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40"}`}
-            >
-              <AlertTriangle className="w-3.5 h-3.5" />
-              الحالات المتأخرة
-            </button>
-            <button
-              onClick={() => { setViewMode("TRASH"); setPage(1); }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${viewMode === "TRASH" ? "bg-gray-700 dark:bg-gray-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-900 dark:text-gray-400"}`}
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              سلة المهملات
-              {trashCount > 0 && (
-                <span className={`px-1.5 py-0.5 rounded-full text-[11px] font-bold ${viewMode === "TRASH" ? "bg-white/20 text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"}`}>
-                  {trashCount}
+    <div className="space-y-3">
+      {/* 2026 Unified Cockpit Command Bar */}
+      <div className="bg-white dark:bg-gray-800/90 border border-slate-200 dark:border-gray-700/80 rounded-2xl p-2.5 sm:p-3 shadow-2xs space-y-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          {/* Title & View Mode Tabs */}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                <span>{t("dentalLab.cases.title")}</span>
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-slate-300">
+                  {total}
                 </span>
-              )}
-            </button>
-          </div>
+              </h2>
+            </div>
 
-          {activeFiltersCount > 0 && (
-            <button
-              onClick={resetFilters}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 rounded-lg text-xs font-semibold border border-rose-200 dark:border-rose-800 transition-colors"
-              title="إلغاء وتفريغ جميع الفلاتر"
-            >
-              <FilterX className="w-3.5 h-3.5" />
-              <span>إعادة ضبط الفلاتر ({activeFiltersCount})</span>
-            </button>
-          )}
-        </div>
-
-        {/* Smart Filter Pills (معايير 2026 للفلترة السريعة اللحظية) */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs border-t dark:border-gray-800/80 pt-2.5">
-          <span className="text-gray-400 dark:text-gray-500 font-semibold flex items-center gap-1 shrink-0">
-            <Layers className="w-3.5 h-3.5" /> فلاتر سريعة:
-          </span>
-          <button
-            type="button"
-            onClick={() => { setViewMode("ACTIVE"); setPriority(""); setDateRangePreset("ALL"); setTechnicianId(""); setStatus(""); setPage(1); }}
-            className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 ${viewMode === "ACTIVE" && !priority && dateRangePreset === "ALL" && !technicianId && !status ? "bg-blue-600 text-white shadow-sm" : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
-          >
-            الكل
-          </button>
-          <button
-            type="button"
-            onClick={() => { setViewMode("ACTIVE"); setPriority(""); setDateRangePreset("received_today"); setTechnicianId(""); setStatus(""); setPage(1); }}
-            className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 ${dateRangePreset === "received_today" ? "bg-blue-600 text-white shadow-sm" : "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 border border-blue-200 dark:border-blue-900"}`}
-          >
-            <PackageCheck className="w-3.5 h-3.5 text-blue-500" />
-            <span>وارد اليوم (مستلم)</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setViewMode("OVERDUE"); setPage(1); }}
-            className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 ${viewMode === "OVERDUE" ? "bg-rose-600 text-white shadow-sm" : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 border border-rose-200 dark:border-rose-900"}`}
-          >
-            <Flame className="w-3.5 h-3.5 text-rose-500" />
-            <span>متأخرة عن موعدها</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setViewMode("ACTIVE"); setDateRangePreset("today"); setPage(1); }}
-            className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 ${dateRangePreset === "today" ? "bg-amber-600 text-white shadow-sm" : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 border border-amber-200 dark:border-amber-900"}`}
-          >
-            <Clock className="w-3.5 h-3.5 text-amber-500" />
-            <span>تسليم اليوم</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setViewMode("ACTIVE"); setPriority(priority === "URGENT" ? "" : "URGENT"); setPage(1); }}
-            className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 ${priority === "URGENT" ? "bg-purple-600 text-white shadow-sm" : "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 hover:bg-purple-100 border border-purple-200 dark:border-purple-900"}`}
-          >
-            <Zap className="w-3.5 h-3.5 text-purple-500" />
-            <span>مستعجل</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setViewMode("ACTIVE"); setPriority(priority === "STAT" ? "" : "STAT"); setPage(1); }}
-            className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 ${priority === "STAT" ? "bg-red-600 text-white shadow-sm" : "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 hover:bg-red-100 border border-red-200 dark:border-red-900"}`}
-          >
-            <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
-            <span>طارئ فوري</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setViewMode("ACTIVE"); setStatus(status === "OUTSOURCED" ? "" : "OUTSOURCED"); setPage(1); }}
-            className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 ${status === "OUTSOURCED" ? "bg-amber-600 text-white shadow-sm" : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 border border-amber-200 dark:border-amber-900"}`}
-          >
-            <ExternalLink className="w-3.5 h-3.5 text-amber-500" />
-            <span>بره المعمل (خارجي)</span>
-          </button>
-        </div>
-
-        {/* Mobile Filters Toggle (app-like: collapsed by default below md, always visible on md+) */}
-        <button
-          type="button"
-          onClick={() => setFiltersOpen(o => !o)}
-          className="md:hidden flex items-center justify-between w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-200 active:scale-[0.99] transition-transform"
-          aria-expanded={filtersOpen}
-          aria-label="إظهار أو إخفاء الفلاتر المتقدمة"
-        >
-          <span className="flex items-center gap-2">
-            <Filter className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-            <span>الفلاتر</span>
-            {mobileFilterBadgeCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[10px] font-bold tabular-nums">
-                {mobileFilterBadgeCount}
-              </span>
-            )}
-          </span>
-          <ChevronDown className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${filtersOpen ? "rotate-180" : ""}`} />
-        </button>
-
-        {/* Comprehensive Filters Bar */}
-        <div className={`flex flex-wrap items-center gap-2.5 pt-1 ${filtersOpen ? "" : "hidden"} md:flex`}>
-          {viewMode !== "TRASH" && (
-            <select
-              className={`${filterCls} text-xs`}
-              value={status}
-              onChange={e => applyFilter("status", e.target.value)}
-              title="فلترة بحالة المرحلة"
-            >
-              <option value="">{t("dentalLab.cases.allStatuses")}</option>
-              {CASE_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-            </select>
-          )}
-
-          <select
-            className={`${filterCls} text-xs`}
-            value={doctorId}
-            onChange={e => applyFilter("doctorId", e.target.value)}
-            title="فلترة بالطبيب"
-          >
-            <option value="">{t("dentalLab.cases.allDoctors")}</option>
-            {doctors.filter(d => d.isActive).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-          </select>
-
-          <select
-            className={`${filterCls} text-xs`}
-            value={workTypeId}
-            onChange={e => applyFilter("workTypeId", e.target.value)}
-            title="فلترة بنوع الشغل"
-          >
-            <option value="">كل أنواع الشغل</option>
-            {workTypes.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-          </select>
-
-          <select
-            className={`${filterCls} text-xs`}
-            value={priority}
-            onChange={e => applyFilter("priority", e.target.value)}
-            title="فلترة بدرجة الأولوية"
-          >
-            <option value="">كل الأولويات</option>
-            <option value="NORMAL">عادي (Normal)</option>
-            <option value="URGENT">مستعجل (Urgent)</option>
-            <option value="STAT">طارئ وفوري (Stat)</option>
-          </select>
-
-          <select
-            className={`${filterCls} text-xs`}
-            value={technicianId}
-            onChange={e => applyFilter("technicianId", e.target.value)}
-            title="فلترة بالفني المسند"
-          >
-            <option value="">كل الفنيين</option>
-            {technicians.filter(t => t.isActive).map(t => (
-              <option key={t.id} value={t.id}>{t.name} ({String(ROLE_CONFIG[t.role]?.label || t.role || "").replace(/\s*\/\s*(Master|QC)\s*$/i, "")})</option>
-            ))}
-          </select>
-
-          <select
-            className={`${filterCls} text-xs`}
-            value={paymentStatus}
-            onChange={e => applyFilter("paymentStatus", e.target.value)}
-            title="فلترة بحالة السداد"
-          >
-            <option value="">كل حالات السداد</option>
-            <option value="UNPAID">غير مسدد (Unpaid)</option>
-            <option value="PARTIAL">مسدد جزئياً (Partial)</option>
-            <option value="PAID">مسدد بالكامل (Paid)</option>
-          </select>
-
-          {/* فلتر الأجندة والبحث بالتاريخ المحدد */}
-          <div className="flex items-center gap-1 bg-white dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700 shadow-2xs">
-            <span className="flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 px-1.5" title="فلتر الأجندة">
-              <Calendar className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">الأجندة:</span>
-            </span>
-            <select
-              className="bg-transparent text-xs font-medium text-gray-700 dark:text-gray-300 focus:outline-none cursor-pointer py-1"
-              value={agendaField}
-              onChange={e => { setAgendaField(e.target.value as "receivedDate" | "dueDate"); setPage(1); }}
-              title="نوع التاريخ للفلترة"
-            >
-              <option value="receivedDate">تاريخ الدخول</option>
-              <option value="dueDate">تاريخ التسليم</option>
-            </select>
-            <input
-              type="date"
-              className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-1 text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              value={agendaDate}
-              onChange={e => {
-                const val = e.target.value;
-                setAgendaDate(val);
-                setDateRangePreset(val ? "CUSTOM" : "ALL");
-                setPage(1);
-              }}
-              title="اختر تاريخ محدد للبحث كأجندة"
-            />
-            {agendaDate ? (
+            {/* Segmented Mode Selector: Active / Overdue / Trash */}
+            <div className="flex items-center bg-slate-100 dark:bg-gray-700/60 p-0.5 rounded-xl text-xs font-semibold">
               <button
                 type="button"
-                onClick={() => { setAgendaDate(""); setDateRangePreset("ALL"); setPage(1); }}
-                className="p-1 text-gray-400 hover:text-red-500 rounded"
-                title="إلغاء تاريخ الأجندة"
+                onClick={() => { setViewMode("ACTIVE"); setPage(1); }}
+                className={`px-3 py-1 rounded-lg transition-all ${
+                  viewMode === "ACTIVE"
+                    ? "bg-white dark:bg-gray-800 text-slate-900 dark:text-slate-100 shadow-2xs"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                }`}
               >
-                <XMarkIcon className="w-3.5 h-3.5" />
+                النشطة
               </button>
-            ) : (
-              <div className="flex items-center gap-0.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const today = new Date().toISOString().split("T")[0];
-                    setAgendaDate(today);
-                    setDateRangePreset("CUSTOM");
-                    setPage(1);
-                  }}
-                  className="px-1.5 py-0.5 text-[11px] font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"
-                  title="حالات اليوم"
-                >
-                  اليوم
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const y = new Date();
-                    y.setDate(y.getDate() - 1);
-                    setAgendaDate(y.toISOString().split("T")[0]);
-                    setDateRangePreset("CUSTOM");
-                    setPage(1);
-                  }}
-                  className="px-1.5 py-0.5 text-[11px] font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"
-                  title="حالات أمس"
-                >
-                  أمس
-                </button>
-              </div>
-            )}
+              <button
+                type="button"
+                onClick={() => { setViewMode("OVERDUE"); setPage(1); }}
+                className={`flex items-center gap-1 px-3 py-1 rounded-lg transition-all ${
+                  viewMode === "OVERDUE"
+                    ? "bg-rose-600 text-white shadow-2xs"
+                    : "text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                }`}
+              >
+                <AlertTriangle className="w-3 h-3" />
+                <span>المتأخرة</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setViewMode("TRASH"); setPage(1); }}
+                className={`flex items-center gap-1 px-3 py-1 rounded-lg transition-all ${
+                  viewMode === "TRASH"
+                    ? "bg-slate-700 dark:bg-slate-600 text-white shadow-2xs"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
+                }`}
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>سلة المهملات</span>
+                {trashCount > 0 && (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200">
+                    {trashCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
-          <select
-            className={`${filterCls} text-xs`}
-            value={dateRangePreset}
-            onChange={e => {
-              const val = e.target.value;
-              setDateRangePreset(val);
-              if (val !== "CUSTOM") setAgendaDate("");
-              setPage(1);
-            }}
-            title="فترات سريعة للمواعيد"
-          >
-            <option value="ALL">كل المواعيد العامة</option>
-            <option value="received_today">وارد اليوم (استلام اليوم)</option>
-            <option value="today">تسليم اليوم</option>
-            <option value="this_week">تسليم هذا الأسبوع</option>
-          </select>
-
-          <div className="relative flex-1 min-w-[200px] max-w-xs">
-            <Search className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" />
+          {/* Quick Search Input */}
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search className="w-3.5 h-3.5 absolute right-3 top-2.5 text-slate-400" />
             <input
-              className={`${filterCls} pr-9 w-full text-xs`}
-              placeholder={t("dentalLab.cases.searchPlaceholder")}
+              className="w-full bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl pr-8 pl-8 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="بحث سريع (رقم الحالة، المريض، الطبيب)..."
               value={searchInput}
               onChange={e => { setSearchInput(e.target.value); setPage(1); }}
             />
             {searchInput && (
               <button
                 onClick={() => { setSearchInput(""); setSearch(""); applyFilter("search", ""); setPage(1); }}
-                className="absolute left-2.5 top-2.5 text-gray-400 hover:text-gray-600"
+                className="absolute left-2.5 top-2 text-slate-400 hover:text-slate-600"
                 title="مسح البحث"
               >
-                <XMarkIcon className="w-3.5 h-3.5" />
+                <XMarkIcon className="w-3 h-3" />
               </button>
             )}
           </div>
+
+          {/* Controls & Action Buttons */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {/* Table / Kanban Toggle */}
+            <div className="flex items-center bg-slate-100 dark:bg-gray-700/60 p-0.5 rounded-xl text-xs">
+              <button
+                type="button"
+                onClick={() => setLayoutMode("TABLE")}
+                className={`p-1.5 rounded-lg transition-all ${
+                  layoutMode === "TABLE"
+                    ? "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-2xs font-bold"
+                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400"
+                }`}
+                title="عرض جدول الحالات"
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setLayoutMode("KANBAN")}
+                className={`p-1.5 rounded-lg transition-all ${
+                  layoutMode === "KANBAN"
+                    ? "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-2xs font-bold"
+                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400"
+                }`}
+                title="عرض لوحة مراحل التشغيل (كانبان)"
+              >
+                <Columns3 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Split Inspector Toggle (Option A) */}
+            {layoutMode === "TABLE" && (
+              <button
+                type="button"
+                onClick={() => setInspectorOpen(o => !o)}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                  inspectorOpen
+                    ? "bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
+                    : "bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50"
+                }`}
+                title={inspectorOpen ? "إخفاء لوحة المعاينة الجانبية" : "إظهار لوحة المعاينة الجانبية"}
+              >
+                <Eye className="w-3.5 h-3.5 text-blue-600" />
+                <span className="hidden sm:inline">لوحة المعاينة</span>
+              </button>
+            )}
+
+            {/* Advanced Filters Toggle */}
+            <button
+              type="button"
+              onClick={() => setShowAdvancedFilters(o => !o)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                showAdvancedFilters || activeFiltersCount > 0
+                  ? "bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300"
+                  : "bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50"
+              }`}
+              title="تصفية وفلاتر متقدمة"
+            >
+              <Filter className="w-3.5 h-3.5 text-indigo-500" />
+              <span className="hidden sm:inline">فلاتر متقدمة</span>
+              {activeFiltersCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center">
+                  {activeFiltersCount}
+                </span>
+              )}
+              <ChevronDown className={`w-3 h-3 transition-transform ${showAdvancedFilters ? "rotate-180" : ""}`} />
+            </button>
+
+            {/* Kiosk Button */}
+            <button
+              type="button"
+              onClick={() => setKioskOpen(true)}
+              className="flex items-center gap-1 px-2.5 py-1.5 border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors"
+              title="فتح محطة المسح السريع بالباركود"
+            >
+              <ScanLine className="w-3.5 h-3.5 text-blue-500" />
+              <span className="hidden md:inline">الكشك</span>
+            </button>
+
+            {/* Refresh */}
+            <button
+              type="button"
+              onClick={() => refresh()}
+              className="p-1.5 border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700 text-slate-600 dark:text-slate-300 rounded-xl transition-colors"
+              title={String(t("dentalLab.common.refresh"))}
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Export Excel */}
+            <button
+              type="button"
+              onClick={handleExportCasesExcel}
+              className="p-1.5 border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700 text-emerald-600 rounded-xl transition-colors"
+              title="تصدير الحالات المعروضة إلى Excel"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+            </button>
+
+            {/* New Quick Order Primary CTA */}
+            <button
+              type="button"
+              onClick={() => setQuickOrderOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white rounded-xl text-xs font-bold transition-all shadow-xs"
+            >
+              <Stethoscope className="w-3.5 h-3.5" />
+              <span>طلب سريع</span>
+            </button>
+          </div>
         </div>
+
+        {/* Quick Filter Pills Row */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs border-t border-slate-100 dark:border-gray-700/60 pt-2">
+          <span className="text-slate-400 font-semibold flex items-center gap-1 shrink-0 text-[11px]">
+            <Layers className="w-3 h-3 text-slate-400" /> فلاتر سريعة:
+          </span>
+          <button
+            type="button"
+            onClick={() => { setViewMode("ACTIVE"); setPriority(""); setDateRangePreset("ALL"); setTechnicianId(""); setStatus(""); setPage(1); }}
+            className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 text-xs ${viewMode === "ACTIVE" && !priority && dateRangePreset === "ALL" && !technicianId && !status ? "bg-blue-600 text-white shadow-2xs" : "bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"}`}
+          >
+            الكل
+          </button>
+          <button
+            type="button"
+            onClick={() => { setViewMode("ACTIVE"); setPriority(""); setDateRangePreset("received_today"); setTechnicianId(""); setStatus(""); setPage(1); }}
+            className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 text-xs ${dateRangePreset === "received_today" ? "bg-blue-600 text-white shadow-2xs" : "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 border border-blue-200/80 dark:border-blue-900"}`}
+          >
+            <PackageCheck className="w-3 h-3 text-blue-500" />
+            <span>وارد اليوم</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setViewMode("OVERDUE"); setPage(1); }}
+            className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 text-xs ${viewMode === "OVERDUE" ? "bg-rose-600 text-white shadow-2xs" : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 border border-rose-200/80 dark:border-rose-900"}`}
+          >
+            <Flame className="w-3 h-3 text-rose-500" />
+            <span>متأخرة عن موعدها</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setViewMode("ACTIVE"); setDateRangePreset("today"); setPage(1); }}
+            className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 text-xs ${dateRangePreset === "today" ? "bg-amber-600 text-white shadow-2xs" : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 border border-amber-200/80 dark:border-amber-900"}`}
+          >
+            <Clock className="w-3 h-3 text-amber-500" />
+            <span>تسليم اليوم</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setViewMode("ACTIVE"); setPriority(priority === "URGENT" ? "" : "URGENT"); setPage(1); }}
+            className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 text-xs ${priority === "URGENT" ? "bg-purple-600 text-white shadow-2xs" : "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 hover:bg-purple-100 border border-purple-200/80 dark:border-purple-900"}`}
+          >
+            <Zap className="w-3 h-3 text-purple-500" />
+            <span>مستعجل</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setViewMode("ACTIVE"); setPriority(priority === "STAT" ? "" : "STAT"); setPage(1); }}
+            className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 text-xs ${priority === "STAT" ? "bg-red-600 text-white shadow-2xs" : "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 hover:bg-red-100 border border-red-200/80 dark:border-red-900"}`}
+          >
+            <AlertTriangle className="w-3 h-3 text-red-500" />
+            <span>طارئ فوري</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setViewMode("ACTIVE"); setStatus(status === "OUTSOURCED" ? "" : "OUTSOURCED"); setPage(1); }}
+            className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 text-xs ${status === "OUTSOURCED" ? "bg-amber-600 text-white shadow-2xs" : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 border border-amber-200/80 dark:border-amber-900"}`}
+          >
+            <ExternalLink className="w-3 h-3 text-amber-500" />
+            <span>بره المعمل</span>
+          </button>
+        </div>
+
+        {/* Collapsible Advanced Filters Drawer */}
+        {showAdvancedFilters && (
+          <div className="pt-2.5 border-t border-slate-100 dark:border-gray-700/60 flex flex-wrap items-center gap-2 animate-in fade-in duration-150">
+            {viewMode !== "TRASH" && (
+              <select
+                className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
+                value={status}
+                onChange={e => applyFilter("status", e.target.value)}
+                title="فلترة بحالة المرحلة"
+              >
+                <option value="">{String(t("dentalLab.cases.allStatuses"))}</option>
+                {CASE_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+              </select>
+            )}
+
+            <select
+              className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
+              value={doctorId}
+              onChange={e => applyFilter("doctorId", e.target.value)}
+              title="فلترة بالطبيب"
+            >
+              <option value="">{String(t("dentalLab.cases.allDoctors"))}</option>
+              {doctors.filter(d => d.isActive).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+
+            <select
+              className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
+              value={workTypeId}
+              onChange={e => applyFilter("workTypeId", e.target.value)}
+              title="فلترة بنوع الشغل"
+            >
+              <option value="">كل أنواع الشغل</option>
+              {workTypes.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+            </select>
+
+            <select
+              className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
+              value={priority}
+              onChange={e => applyFilter("priority", e.target.value)}
+              title="فلترة بدرجة الأولوية"
+            >
+              <option value="">كل الأولويات</option>
+              <option value="NORMAL">عادي</option>
+              <option value="URGENT">مستعجل</option>
+              <option value="STAT">طارئ فوري</option>
+            </select>
+
+            <select
+              className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
+              value={technicianId}
+              onChange={e => applyFilter("technicianId", e.target.value)}
+              title="فلترة بالفني المسند"
+            >
+              <option value="">كل الفنيين</option>
+              {technicians.filter(t => t.isActive).map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+
+            <select
+              className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
+              value={paymentStatus}
+              onChange={e => applyFilter("paymentStatus", e.target.value)}
+              title="فلترة بحالة السداد"
+            >
+              <option value="">كل حالات السداد</option>
+              <option value="UNPAID">غير مسدد</option>
+              <option value="PARTIAL">مسدد جزئياً</option>
+              <option value="PAID">مسدد بالكامل</option>
+            </select>
+
+            {/* Agenda Date Range */}
+            <div className="flex items-center gap-1 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2 py-0.5 text-xs">
+              <span className="text-slate-400 font-medium">الأجندة:</span>
+              <select
+                className="bg-transparent text-xs text-slate-700 dark:text-slate-300 focus:outline-none"
+                value={agendaField}
+                onChange={e => { setAgendaField(e.target.value as "receivedDate" | "dueDate"); setPage(1); }}
+              >
+                <option value="receivedDate">تاريخ الدخول</option>
+                <option value="dueDate">تاريخ التسليم</option>
+              </select>
+              <input
+                type="date"
+                className="bg-transparent text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
+                value={agendaDate}
+                onChange={e => {
+                  const val = e.target.value;
+                  setAgendaDate(val);
+                  setDateRangePreset(val ? "CUSTOM" : "ALL");
+                  setPage(1);
+                }}
+              />
+            </div>
+
+            {activeFiltersCount > 0 && (
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="text-rose-600 dark:text-rose-400 hover:underline font-bold text-xs flex items-center gap-1 mr-auto"
+              >
+                <FilterX className="w-3.5 h-3.5" />
+                <span>إلغاء كل الفلاتر ({activeFiltersCount})</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Active Filter Indicators Bar (معايير 2026 لتصفية الحالات السريعة) */}
-      {(status || doctorId || workTypeId || technicianId || priority || paymentStatus || search || (dateRangePreset && dateRangePreset !== "ALL") || agendaDate) && (
-        <div className="flex flex-wrap items-center gap-2 p-2.5 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/50 rounded-xl text-xs transition-all">
+      {/* Active Filter Indicators Bar */}
+      {activeFiltersCount > 0 && (
+        <div className="flex flex-wrap items-center gap-2 p-2 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/50 rounded-xl text-xs">
           <span className="font-semibold text-blue-950 dark:text-blue-200 flex items-center gap-1.5 shrink-0">
             <Filter className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-            <span>تصفية مخصصة ({total} حالة معروضة):</span>
+            <span>تصفية نشطة ({total} حالة):</span>
           </span>
 
           {doctorId && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-medium shadow-2xs">
-              <Stethoscope className="w-3.5 h-3.5 text-blue-500" />
-              <span>الطبيب: {doctors.find(d => d.id === doctorId)?.name || doctorId}</span>
-              {doctors.some(d => d.id === doctorId) && (
-                <Link
-                  to={`/dental-lab/doctors/${doctorId}`}
-                  className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                  title="فتح الملف الشامل والمالي للطبيب"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                </Link>
-              )}
-              <button
-                type="button"
-                onClick={() => applyFilter("doctorId", "")}
-                className="text-gray-400 hover:text-red-600 transition-colors mr-0.5"
-                title="إلغاء فلترة الطبيب"
-              >
-                <XMarkIcon className="w-3.5 h-3.5" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-gray-800 border border-blue-200 text-blue-700 dark:text-blue-300 font-medium">
+              <span>طبيب: {doctors.find(d => d.id === doctorId)?.name || doctorId}</span>
+              <button type="button" onClick={() => applyFilter("doctorId", "")} className="hover:text-red-600">
+                <XMarkIcon className="w-3 h-3" />
               </button>
             </span>
           )}
 
           {workTypeId && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 font-medium shadow-2xs">
-              <Layers className="w-3.5 h-3.5 text-indigo-500" />
-              <span>نوع الشغل: {workTypes.find(w => w.id === workTypeId)?.name || workTypeId}</span>
-              <button
-                type="button"
-                onClick={() => applyFilter("workTypeId", "")}
-                className="text-gray-400 hover:text-red-600 transition-colors mr-0.5"
-                title="إلغاء فلترة نوع الشغل"
-              >
-                <XMarkIcon className="w-3.5 h-3.5" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-gray-800 border border-indigo-200 text-indigo-700 dark:text-indigo-300 font-medium">
+              <span>شغل: {workTypes.find(w => w.id === workTypeId)?.name || workTypeId}</span>
+              <button type="button" onClick={() => applyFilter("workTypeId", "")} className="hover:text-red-600">
+                <XMarkIcon className="w-3 h-3" />
               </button>
             </span>
           )}
 
           {technicianId && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 font-medium shadow-2xs">
-              <Users className="w-3.5 h-3.5 text-purple-500" />
-              <span>الفني: {technicians.find(t => t.id === technicianId)?.name || technicianId}</span>
-              <button
-                type="button"
-                onClick={() => applyFilter("technicianId", "")}
-                className="text-gray-400 hover:text-red-600 transition-colors mr-0.5"
-                title="إلغاء فلترة الفني"
-              >
-                <XMarkIcon className="w-3.5 h-3.5" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-gray-800 border border-purple-200 text-purple-700 dark:text-purple-300 font-medium">
+              <span>فني: {technicians.find(t => t.id === technicianId)?.name || technicianId}</span>
+              <button type="button" onClick={() => applyFilter("technicianId", "")} className="hover:text-red-600">
+                <XMarkIcon className="w-3 h-3" />
               </button>
             </span>
           )}
 
           {status && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-medium shadow-2xs">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-              <span>الحالة: {CASE_STATUS_MAP[status]?.label || status}</span>
-              <button
-                type="button"
-                onClick={() => applyFilter("status", "")}
-                className="text-gray-400 hover:text-red-600 transition-colors mr-0.5"
-                title="إلغاء فلترة الحالة"
-              >
-                <XMarkIcon className="w-3.5 h-3.5" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-gray-800 border border-emerald-200 text-emerald-700 dark:text-emerald-300 font-medium">
+              <span>حالة: {CASE_STATUS_MAP[status]?.label || status}</span>
+              <button type="button" onClick={() => applyFilter("status", "")} className="hover:text-red-600">
+                <XMarkIcon className="w-3 h-3" />
               </button>
             </span>
           )}
 
           {priority && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 font-medium shadow-2xs">
-              <span>الأولوية: {priority === "URGENT" ? "مستعجل" : priority === "STAT" ? "طارئ" : "عادي"}</span>
-              <button
-                type="button"
-                onClick={() => applyFilter("priority", "")}
-                className="text-gray-400 hover:text-red-600 transition-colors mr-0.5"
-                title="إلغاء فلترة الأولوية"
-              >
-                <XMarkIcon className="w-3.5 h-3.5" />
-              </button>
-            </span>
-          )}
-
-          {paymentStatus && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium shadow-2xs">
-              <span>السداد: {paymentStatus === "PAID" ? "مسدد" : paymentStatus === "PARTIAL" ? "جزئي" : "غير مسدد"}</span>
-              <button
-                type="button"
-                onClick={() => applyFilter("paymentStatus", "")}
-                className="text-gray-400 hover:text-red-600 transition-colors mr-0.5"
-                title="إلغاء فلترة السداد"
-              >
-                <XMarkIcon className="w-3.5 h-3.5" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-gray-800 border border-amber-200 text-amber-700 dark:text-amber-300 font-medium">
+              <span>أولوية: {priority === "URGENT" ? "مستعجل" : priority === "STAT" ? "طارئ" : "عادي"}</span>
+              <button type="button" onClick={() => applyFilter("priority", "")} className="hover:text-red-600">
+                <XMarkIcon className="w-3 h-3" />
               </button>
             </span>
           )}
 
           {search && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium shadow-2xs">
-              <Search className="w-3 h-3 text-gray-400" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 text-gray-700 dark:text-gray-300 font-medium">
               <span>بحث: "{search}"</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchInput("");
-                  setSearch("");
-                  applyFilter("search", "");
-                }}
-                className="text-gray-400 hover:text-red-600 transition-colors mr-0.5"
-                title="إلغاء البحث"
-              >
-                <XMarkIcon className="w-3.5 h-3.5" />
+              <button type="button" onClick={() => { setSearchInput(""); setSearch(""); applyFilter("search", ""); }} className="hover:text-red-600">
+                <XMarkIcon className="w-3 h-3" />
               </button>
             </span>
           )}
@@ -2007,9 +1941,9 @@ export default function DentalCasesTab() {
           <button
             type="button"
             onClick={clearAllFilters}
-            className="text-red-600 dark:text-red-400 hover:underline font-semibold text-xs mr-auto flex items-center gap-1 py-1 px-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+            className="text-red-600 dark:text-red-400 hover:underline font-semibold text-xs mr-auto flex items-center gap-1 py-0.5 px-2 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
           >
-            <FilterX className="w-3.5 h-3.5" />
+            <FilterX className="w-3 h-3" />
             <span>إلغاء كل الفلاتر</span>
           </button>
         </div>
@@ -2022,291 +1956,237 @@ export default function DentalCasesTab() {
           <p>{viewMode === "TRASH" ? "سلة المهملات فارغة لا توجد بها حالات" : t("dentalLab.common.noResults")}</p>
         </div>
       ) : layoutMode === "TABLE" ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1000px] text-sm">
-              <thead>
-                <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">
-                  <th className="w-10 py-3 px-3 text-center">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer align-middle"
-                      checked={cases.length > 0 && cases.every(c => selectedCaseIds.has(c.id))}
-                      onChange={toggleSelectAllPage}
-                      title="تحديد كل الحالات في هذه الصفحة"
-                    />
-                  </th>
-                  {[
-                    t("dentalLab.cases.caseNumber"),
-                    t("dentalLab.cases.patient"),
-                    t("dentalLab.cases.doctor"),
-                    t("dentalLab.cases.workType"),
-                    t("dentalLab.cases.priority"),
-                    "الفني المسند",
-                    t("dentalLab.cases.status"),
-                    "تاريخ الدخول",
-                    t("dentalLab.cases.dueDate"),
-                    t("dentalLab.cases.amounts"),
-                    t("dentalLab.common.actions"),
-                  ].map(h => (
-                    <th key={h} className="text-right py-3 px-4 whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {cases.map(c => {
-                  const next = nextStatusOf(c.status);
-                  const overdue = isCaseOverdue(c);
-                  const daysOverdue = overdue ? getDaysOverdue(c) : 0;
-                  const isBusy = actionBusyId === c.id;
-                  const isSelected = selectedCaseIds.has(c.id);
+        <div className="flex flex-col lg:flex-row items-start gap-3">
+          {/* Master Table Panel */}
+          <div className={`w-full ${inspectorOpen && selectedCase ? "lg:flex-1 min-w-0" : ""} bg-white dark:bg-gray-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-gray-700 overflow-hidden transition-all`}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-gray-700 bg-slate-50/90 dark:bg-gray-800/90 text-slate-600 dark:text-slate-300 font-semibold">
+                    <th className="w-8 py-2.5 px-2 text-center">
+                      <input
+                        type="checkbox"
+                        className="rounded border-slate-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer align-middle"
+                        checked={cases.length > 0 && cases.every(c => selectedCaseIds.has(c.id))}
+                        onChange={toggleSelectAllPage}
+                        title="تحديد كل الحالات في هذه الصفحة"
+                      />
+                    </th>
+                    <th className="text-right py-2.5 px-3 whitespace-nowrap">رقم الحالة</th>
+                    <th className="text-right py-2.5 px-3 whitespace-nowrap">المريض والطبيب</th>
+                    <th className="text-right py-2.5 px-3 whitespace-nowrap">نوع الشغل</th>
+                    <th className="text-right py-2.5 px-3 whitespace-nowrap">الأولوية</th>
+                    <th className="text-right py-2.5 px-3 whitespace-nowrap">الفني</th>
+                    <th className="text-right py-2.5 px-3 whitespace-nowrap">الحالة</th>
+                    <th className="text-right py-2.5 px-3 whitespace-nowrap">التسليم</th>
+                    <th className="text-right py-2.5 px-3 whitespace-nowrap">المستحقات</th>
+                    <th className="text-right py-2.5 px-3 whitespace-nowrap">إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cases.map(c => {
+                    const next = nextStatusOf(c.status);
+                    const overdue = isCaseOverdue(c);
+                    const daysOverdue = overdue ? getDaysOverdue(c) : 0;
+                    const isBusy = actionBusyId === c.id;
+                    const isSelected = selectedCaseIds.has(c.id);
+                    const isCurrentInspected = selectedCaseId === c.id;
 
-                  return (
-                    <tr
-                      key={c.id}
-                      className={`border-b dark:border-gray-700 transition-colors ${
-                        isSelected
-                          ? "bg-blue-50/80 dark:bg-blue-950/40 hover:bg-blue-100/60 dark:hover:bg-blue-900/40"
-                          : overdue
-                            ? "bg-rose-50/40 dark:bg-rose-950/20 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                            : "hover:bg-gray-50 dark:hover:bg-gray-700"
-                      }`}
-                    >
-                      <td className="w-10 py-3 px-3 text-center" onClick={e => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer align-middle"
-                          checked={isSelected}
-                          onChange={() => toggleSelect(c.id)}
-                        />
-                      </td>
-                      <td className="py-3 px-4 font-medium" dir="ltr">
-                        <Link
-                          to={`/dental-lab/cases/${c.id}`}
-                          className="font-mono font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline inline-flex items-center gap-1 group"
-                          title="فتح تفاصيل الحالة / الأوردر"
-                        >
-                          <span>{c.caseNumber || c.id.slice(0, 8)}</span>
-                        </Link>
-                      </td>
-                      <td className="py-3 px-4 font-medium">
-                        {c.patientName}
-                        {c.patientPhone ? <span className="block text-xs text-gray-400" dir="ltr">{c.patientPhone}</span> : null}
-                      </td>
-                      <td className="py-3 px-4 font-medium">
-                        {c.doctorName ? (
-                          <div className="flex items-center gap-1.5 group/doc">
-                            <Link
-                              to={c.doctorId ? `/dental-lab/cases?doctorId=${c.doctorId}` : `/dental-lab/cases?search=${encodeURIComponent(c.doctorName)}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (c.doctorId) applyFilter("doctorId", c.doctorId, true);
-                                else applyFilter("search", c.doctorName || "", true);
-                              }}
-                              className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer inline-flex items-center gap-1 transition-colors"
-                              title={`عرض كل حالات د. ${c.doctorName} فقط`}
-                            >
-                              <Stethoscope className="w-3.5 h-3.5 text-blue-500 shrink-0 opacity-70 group-hover/doc:opacity-100" />
-                              <span>{c.doctorName}</span>
-                            </Link>
-                            {c.doctorId && (
-                              <Link
-                                to={`/dental-lab/doctors/${c.doctorId}`}
-                                className="opacity-0 group-hover/doc:opacity-100 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-opacity p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                                title="فتح الملف الشامل والمالي للطبيب"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <ExternalLink className="w-3 h-3" />
-                              </Link>
+                    return (
+                      <tr
+                        key={c.id}
+                        onClick={() => { setSelectedCaseId(c.id); setInspectorOpen(true); }}
+                        className={`border-b border-slate-100 dark:border-gray-700/60 cursor-pointer transition-colors ${
+                          isCurrentInspected
+                            ? "bg-blue-50/90 dark:bg-blue-950/60 font-medium"
+                            : isSelected
+                            ? "bg-blue-50/40 dark:bg-blue-950/20 hover:bg-blue-50/70"
+                            : overdue
+                            ? "bg-rose-50/30 dark:bg-rose-950/15 hover:bg-rose-50/60"
+                            : "hover:bg-slate-50/80 dark:hover:bg-gray-750"
+                        }`}
+                      >
+                        <td className="w-8 py-2 px-2 text-center" onClick={e => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            className="rounded border-slate-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer align-middle"
+                            checked={isSelected}
+                            onChange={() => toggleSelect(c.id)}
+                          />
+                        </td>
+                        <td className="py-2 px-3 font-mono font-bold text-xs whitespace-nowrap text-blue-600 dark:text-blue-400" dir="ltr">
+                          <div className="flex items-center gap-1.5">
+                            {isCurrentInspected && (
+                              <span className="w-1.5 h-3.5 bg-blue-600 rounded-full shrink-0" />
                             )}
+                            <Link
+                              to={`/dental-lab/cases/${c.id}`}
+                              onClick={e => e.stopPropagation()}
+                              className="hover:underline"
+                              title="فتح صفحة الحالة"
+                            >
+                              {c.caseNumber || c.id.slice(0, 8)}
+                            </Link>
                           </div>
-                        ) : (
-                          <span className="text-gray-400 dark:text-gray-500">—</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        {c.workTypeName ? (
-                          <Link
-                            to={c.workTypeId ? `/dental-lab/cases?workTypeId=${c.workTypeId}` : `/dental-lab/cases?search=${encodeURIComponent(c.workTypeName)}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (c.workTypeId) applyFilter("workTypeId", c.workTypeId, true);
-                              else applyFilter("search", c.workTypeName || "", true);
-                            }}
-                            className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline cursor-pointer inline-flex items-center gap-1 transition-colors group/wt"
-                            title={`عرض كل حالات نوع الشغل: ${c.workTypeName} فقط`}
-                          >
-                            <Layers className="w-3.5 h-3.5 text-indigo-500 shrink-0 opacity-70 group-hover/wt:opacity-100" />
-                            <span>{c.workTypeName}</span>
-                          </Link>
-                        ) : (
-                          <span className="text-gray-400 dark:text-gray-500">—</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">{statusBadge(PRIORITY_CONFIG, c.priority)}</td>
-                      <td className="py-3 px-4">
-                        {c.assignments && c.assignments.length > 0 ? (
-                          <div className="flex flex-wrap gap-1 items-center max-w-[170px]">
-                            {c.assignments.map((a) => {
-                              const techName = a.technician?.name || a.technicianId;
-                              const targetTechId = a.technicianId;
-                              return (
-                                <Link
-                                  key={a.id}
-                                  to={`/dental-lab/cases?technicianId=${targetTechId}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    applyFilter("technicianId", targetTechId, true);
-                                  }}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/60 hover:border-purple-300 transition-colors cursor-pointer group/tech"
-                                  title={`عرض كل حالات الفني: ${techName} فقط (${ROLE_CONFIG[a.role]?.label || a.role})`}
-                                >
-                                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500 group-hover/tech:scale-125 transition-transform" />
-                                  <span>{techName}</span>
-                                </Link>
-                              );
-                            })}
+                        </td>
+                        <td className="py-2 px-3">
+                          <div className="font-bold text-slate-800 dark:text-slate-100 truncate max-w-[140px]">
+                            {c.patientName}
                           </div>
-                        ) : (c.stages && c.stages.some((s) => s.assigneeName || (s.assignees && s.assignees.length > 0))) ? (
-                          <div className="flex flex-wrap gap-1 items-center max-w-[170px]">
-                            {c.stages.filter((s) => s.assigneeName || (s.assignees && s.assignees.length > 0)).map((s) => {
-                              const sTechId = s.assigneeId || s.assignees?.[0]?.technicianId;
-                              const sTechName = s.assigneeName || s.assignees?.[0]?.technician?.name;
-                              if (!sTechId && !sTechName) return null;
-                              return sTechId ? (
-                                <Link
-                                  key={s.id || s.name}
-                                  to={`/dental-lab/cases?technicianId=${sTechId}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    applyFilter("technicianId", sTechId, true);
-                                  }}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors cursor-pointer"
-                                  title={`عرض كل حالات فني المرحلة: ${sTechName} فقط (${s.name})`}
-                                >
-                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                  <span>{sTechName}</span>
-                                </Link>
-                              ) : (
-                                <span
-                                  key={s.id || s.name}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
-                                  title={`فني المرحلة: ${s.name}`}
-                                >
-                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                  <span>{sTechName}</span>
-                                </span>
-                              );
-                            })}
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[140px] flex items-center gap-1">
+                            <Stethoscope className="w-3 h-3 text-blue-500 shrink-0 opacity-70" />
+                            <span>{c.doctorName ? `د. ${c.doctorName}` : "—"}</span>
                           </div>
-                        ) : (
-                          <span className="text-xs text-gray-400 dark:text-gray-500">غير مسند</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex flex-col gap-1 items-start">
-                          {c.isDeleted ? (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                              🗑️ محذوفة
+                        </td>
+                        <td className="py-2 px-3 whitespace-nowrap">
+                          {c.workTypeName ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-900/40">
+                              <Layers className="w-3 h-3 text-indigo-500 shrink-0" />
+                              <span className="truncate max-w-[110px]">{c.workTypeName}</span>
                             </span>
                           ) : (
-                            <Link
-                              to={`/dental-lab/cases?status=${c.status}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                applyFilter("status", c.status, true);
-                              }}
-                              className="cursor-pointer hover:opacity-85 hover:scale-105 transition-all inline-block"
-                              title={`عرض كل حالات مرحلة: ${CASE_STATUS_MAP[c.status]?.label || c.status} فقط`}
-                            >
-                              {statusBadge(CASE_STATUS_MAP, c.status)}
-                            </Link>
+                            <span className="text-slate-400">—</span>
                           )}
-                          {overdue && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800 animate-pulse whitespace-nowrap">
-                              <AlertTriangle className="w-3 h-3" /> متأخر {daysOverdue} يوم
-                            </span>
+                        </td>
+                        <td className="py-2 px-3 whitespace-nowrap">
+                          {c.priority !== "NORMAL" ? (
+                            statusBadge(PRIORITY_CONFIG, c.priority)
+                          ) : (
+                            <span className="text-slate-400 dark:text-slate-500 text-[11px]">عادي</span>
                           )}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 whitespace-nowrap text-xs text-gray-700 dark:text-gray-300 font-medium">
-                        {fmtDate(c.receivedDate)}
-                      </td>
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <span className={overdue ? "text-rose-600 dark:text-rose-400 font-bold" : "text-gray-500 dark:text-gray-400"}>
-                          {fmtDate(c.dueDate)}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-gray-600 dark:text-gray-300 whitespace-nowrap">
-                        <span dir="ltr">{fmtMoney(c.total)} / {fmtMoney(c.paid)} / {fmtMoney(c.remaining)}</span>
-                      </td>
-                      <td className="py-3 px-4">
-                        {viewMode === "TRASH" ? (
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <button
-                              onClick={() => handleRestoreCase(c)}
-                              disabled={isBusy}
-                              className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded hover:bg-blue-100 disabled:opacity-50"
-                              title="استعادة الحالة من سلة المهملات"
-                            >
-                              <RotateCcw className="w-3.5 h-3.5" /> استعادة
-                            </button>
-                            <button
-                              onClick={() => handlePermanentDelete(c)}
-                              disabled={isBusy}
-                              className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 rounded hover:bg-red-100 disabled:opacity-50"
-                              title="حذف الحالة نهائياً من النظام"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" /> حذف نهائي
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 flex-wrap">
-                            <Link to={`/dental-lab/cases/${c.id}`} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("dentalLab.cases.open")}>
-                              <Eye className="w-4 h-4" />
-                            </Link>
-                            <button onClick={() => { setEditingCase(c); setCreateOpen(true); }} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title="تعديل سريع بالدرج الجانبي">
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            {next && (
-                              <button onClick={() => setAdvanceCaseData(c)} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded" title={t("dentalLab.cases.advance")}>
-                                <ArrowRightCircle className="w-4 h-4" />
-                              </button>
+                        </td>
+                        <td className="py-2 px-3">
+                          {c.assignments && c.assignments.length > 0 ? (
+                            <div className="flex items-center gap-1 text-[11px] text-purple-700 dark:text-purple-300 font-medium">
+                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
+                              <span className="truncate max-w-[90px]">{c.assignments[0]?.technician?.name || c.assignments[0]?.technicianId}</span>
+                              {c.assignments.length > 1 && (
+                                <span className="text-[10px] text-purple-500 font-bold">+{c.assignments.length - 1}</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-slate-400">غير مسند</span>
+                          )}
+                        </td>
+                        <td className="py-2 px-3 whitespace-nowrap">
+                          <div className="flex items-center gap-1">
+                            {statusBadge(CASE_STATUS_MAP, c.status)}
+                            {overdue && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800 animate-pulse" title={`متأخر ${daysOverdue} يوم`}>
+                                <AlertTriangle className="w-2.5 h-2.5" />
+                                <span>{daysOverdue}ي</span>
+                              </span>
                             )}
-                            <button onClick={() => setAssignCaseData(c)} className="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded" title={t("dentalLab.cases.assign")}>
-                              <UserPlus className="w-4 h-4" />
-                            </button>
-                            <label className="p-1.5 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded cursor-pointer" title={t("dentalLab.cases.uploadMulti")}>
-                              {uploadingId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                              <input type="file" multiple className="hidden" onChange={e => handleUpload(c, e)} />
-                            </label>
-                            <button onClick={() => setInvoiceCase(c)} className="p-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded" title={t("dentalLab.cases.createInvoice")}>
-                              <CreditCard className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handlePrintPanLabel(c)}
-                              className="p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-850 rounded"
-                              title="طباعة تيكت صينية المعمل (Pan Label)"
-                            >
-                              <Printer className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleTrashCase(c)}
-                              disabled={isBusy}
-                              className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded disabled:opacity-50"
-                              title="نقل الحالة إلى سلة المهملات"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
                           </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="py-2 px-3 whitespace-nowrap text-[11px]">
+                          <span className={overdue ? "text-rose-600 dark:text-rose-400 font-bold" : "text-slate-600 dark:text-slate-300"}>
+                            {fmtDate(c.dueDate)}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 whitespace-nowrap font-mono text-[11px]" dir="ltr">
+                          <div className="font-semibold text-slate-800 dark:text-slate-200">{fmtMoney(c.total)}</div>
+                          {Number(c.remaining) > 0 ? (
+                            <div className="text-[10px] text-rose-600 dark:text-rose-400 font-medium">باقي {fmtMoney(c.remaining)}</div>
+                          ) : (
+                            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">خالص ✓</div>
+                          )}
+                        </td>
+                        <td className="py-2 px-3 whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                          {viewMode === "TRASH" ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleRestoreCase(c)}
+                                disabled={isBusy}
+                                className="p-1 text-xs font-semibold bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
+                                title="استعادة"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handlePermanentDelete(c)}
+                                disabled={isBusy}
+                                className="p-1 text-xs font-semibold bg-red-50 text-red-700 rounded hover:bg-red-100"
+                                title="حذف نهائي"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() => { setSelectedCaseId(c.id); setInspectorOpen(true); }}
+                                className={`p-1.5 rounded-lg transition-colors ${isCurrentInspected ? "bg-blue-600 text-white" : "hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"}`}
+                                title="معاينة في اللوحة الجانبية"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                              {next && (
+                                <button
+                                  type="button"
+                                  onClick={() => setAdvanceCaseData(c)}
+                                  className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-lg transition-colors"
+                                  title={`نقل إلى: ${CASE_STATUS_MAP[next]?.label || next}`}
+                                >
+                                  <ArrowRightCircle className="w-3.5 h-3.5 rtl:rotate-180" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => { setEditingCase(c); setCreateOpen(true); }}
+                                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 rounded-lg transition-colors"
+                                title="تعديل سريع"
+                              >
+                                <Pencil className="w-3.5 h-3.5 text-blue-500" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handlePrintPanLabel(c)}
+                                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 rounded-lg transition-colors"
+                                title="طباعة تيكت صينية"
+                              >
+                                <Printer className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleTrashCase(c)}
+                                disabled={isBusy}
+                                className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-500 rounded-lg transition-colors disabled:opacity-50"
+                                title="نقل إلى سلة المهملات"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
+
+          {/* Live Case Inspector Panel (Option A) */}
+          {inspectorOpen && selectedCase && (
+            <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 lg:sticky lg:top-4 self-start">
+              <DentalCaseInspector
+                caseData={selectedCase}
+                onClose={() => setInspectorOpen(false)}
+                onAdvance={setAdvanceCaseData}
+                onAssign={setAssignCaseData}
+                onEdit={(c) => { setEditingCase(c); setCreateOpen(true); }}
+                onInvoice={setInvoiceCase}
+                onUpload={handleUpload}
+                onPrintPanLabel={handlePrintPanLabel}
+                onPrintWorkOrder={handlePrintWorkOrder}
+                onTrash={handleTrashCase}
+                isBusy={actionBusyId === selectedCase.id}
+                uploadingId={uploadingId}
+              />
+            </div>
+          )}
         </div>
       ) : (
         /* Kanban Pipeline View (معايير 2026 للوحة مراحل التشغيل) */
