@@ -1350,53 +1350,56 @@ class MonitorService {
     const employeeIds = Array.from(rawIds);
     const empMap = new Map();
 
-    if (employeeIds.length > 0) {
-      const employees = await this.prisma.employee.findMany({
-        where: {
-          companyId,
-          OR: [{ id: { in: employeeIds } }, { userId: { in: employeeIds } }]
-        },
-        include: { department: true, position: true }
-      });
+    const employeeWhere = {
+      companyId,
+      OR: [
+        { status: { not: 'TERMINATED' } },
+        ...(employeeIds.length > 0 ? [{ id: { in: employeeIds } }, { userId: { in: employeeIds } }] : [])
+      ]
+    };
 
-      employees.forEach(e => {
-        empMap.set(e.id, e);
-        if (e.userId) {
-          empMap.set(e.userId, e);
-          if (attendanceMap.has(e.userId) && !attendanceMap.has(e.id)) {
-            attendanceMap.set(e.id, attendanceMap.get(e.userId));
-          }
-          if (attendanceMap.has(e.id) && !attendanceMap.has(e.userId)) {
-            attendanceMap.set(e.userId, attendanceMap.get(e.id));
-          }
-          if (activeTimerMap.has(e.userId) && !activeTimerMap.has(e.id)) {
-            activeTimerMap.set(e.id, activeTimerMap.get(e.userId));
-          }
-          if (activeTimerMap.has(e.id) && !activeTimerMap.has(e.userId)) {
-            activeTimerMap.set(e.userId, activeTimerMap.get(e.id));
-          }
+    const employees = await this.prisma.employee.findMany({
+      where: employeeWhere,
+      include: { department: true, position: true }
+    }).catch(() => []);
+
+    employees.forEach(e => {
+      empMap.set(e.id, e);
+      if (e.userId) {
+        empMap.set(e.userId, e);
+        if (attendanceMap.has(e.userId) && !attendanceMap.has(e.id)) {
+          attendanceMap.set(e.id, attendanceMap.get(e.userId));
         }
-      });
-
-      const missingIds = employeeIds.filter(id => !empMap.has(id));
-      if (missingIds.length > 0) {
-        const users = await this.prisma.user.findMany({
-          where: { companyId, id: { in: missingIds } },
-          select: { id: true, firstName: true, lastName: true, email: true, role: true }
-        });
-
-        users.forEach(u => {
-          const fullName = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email;
-          empMap.set(u.id, {
-            id: u.id,
-            firstName: fullName,
-            lastName: '',
-            email: u.email,
-            department: { name: u.role === 'COMPANY_ADMIN' ? 'الإدارة العامة' : 'فريق العمل' },
-            position: { title: 'موظف' }
-          });
-        });
+        if (attendanceMap.has(e.id) && !attendanceMap.has(e.userId)) {
+          attendanceMap.set(e.userId, attendanceMap.get(e.id));
+        }
+        if (activeTimerMap.has(e.userId) && !activeTimerMap.has(e.id)) {
+          activeTimerMap.set(e.id, activeTimerMap.get(e.userId));
+        }
+        if (activeTimerMap.has(e.id) && !activeTimerMap.has(e.userId)) {
+          activeTimerMap.set(e.userId, activeTimerMap.get(e.id));
+        }
       }
+    });
+
+    const missingIds = employeeIds.filter(id => !empMap.has(id));
+    if (missingIds.length > 0) {
+      const users = await this.prisma.user.findMany({
+        where: { companyId, id: { in: missingIds } },
+        select: { id: true, firstName: true, lastName: true, email: true, role: true }
+      }).catch(() => []);
+
+      users.forEach(u => {
+        const fullName = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email;
+        empMap.set(u.id, {
+          id: u.id,
+          firstName: fullName,
+          lastName: '',
+          email: u.email,
+          department: { name: u.role === 'COMPANY_ADMIN' ? 'الإدارة العامة' : 'فريق العمل' },
+          position: { title: 'موظف' }
+        });
+      });
     }
 
     // Top apps per employee
@@ -1560,6 +1563,82 @@ class MonitorService {
       }
     }
 
+    // 5. Ensure anyone with an active running timer is represented
+    for (const [key] of activeTimerMap.entries()) {
+      const empObj = empMap.get(key) || { id: key, firstName: key };
+      const canonicalKey = empObj.id || empObj.userId || key;
+
+      if (!grouped.has(canonicalKey)) {
+        grouped.set(canonicalKey, {
+          employeeId: canonicalKey,
+          employee: empObj,
+          totalActiveSeconds: 0,
+          totalIdleSeconds: 0,
+          totalProductiveSeconds: 0,
+          totalUnproductiveSeconds: 0,
+          productivityScores: [],
+          lastActivityTime: null,
+          firstActivityTime: null,
+          clockInTime: null,
+          clockOutTime: null,
+          checkInMethod: null,
+          status: 'active',
+          topApp: empTopApp.get(canonicalKey) || empTopApp.get(empObj.userId) || 'سطح المكتب',
+          createdTasksCount: createdTaskCountMap.get(canonicalKey) || createdTaskCountMap.get(empObj.userId) || 0,
+        });
+      }
+    }
+
+    // 6. Ensure anyone with an active device session is represented
+    for (const [key] of sessionMap.entries()) {
+      const empObj = empMap.get(key) || { id: key, firstName: key };
+      const canonicalKey = empObj.id || empObj.userId || key;
+
+      if (!grouped.has(canonicalKey)) {
+        grouped.set(canonicalKey, {
+          employeeId: canonicalKey,
+          employee: empObj,
+          totalActiveSeconds: 0,
+          totalIdleSeconds: 0,
+          totalProductiveSeconds: 0,
+          totalUnproductiveSeconds: 0,
+          productivityScores: [],
+          lastActivityTime: null,
+          firstActivityTime: null,
+          clockInTime: null,
+          clockOutTime: null,
+          checkInMethod: null,
+          status: 'idle',
+          topApp: empTopApp.get(canonicalKey) || empTopApp.get(empObj.userId) || 'سطح المكتب',
+          createdTasksCount: createdTaskCountMap.get(canonicalKey) || createdTaskCountMap.get(empObj.userId) || 0,
+        });
+      }
+    }
+
+    // 7. Ensure all active company employees are represented (defaults to offline if not yet active)
+    for (const emp of employees) {
+      const canonicalKey = emp.id || emp.userId;
+      if (canonicalKey && !grouped.has(canonicalKey) && (!emp.userId || !grouped.has(emp.userId))) {
+        grouped.set(canonicalKey, {
+          employeeId: canonicalKey,
+          employee: emp,
+          totalActiveSeconds: 0,
+          totalIdleSeconds: 0,
+          totalProductiveSeconds: 0,
+          totalUnproductiveSeconds: 0,
+          productivityScores: [],
+          lastActivityTime: null,
+          firstActivityTime: null,
+          clockInTime: null,
+          clockOutTime: null,
+          checkInMethod: null,
+          status: 'offline',
+          topApp: 'سطح المكتب',
+          createdTasksCount: createdTaskCountMap.get(canonicalKey) || (emp.userId ? createdTaskCountMap.get(emp.userId) : 0) || 0,
+        });
+      }
+    }
+
     // Build activity logs map by employee
     const empLogsMap = new Map();
     for (const log of (activeLogs || [])) {
@@ -1708,6 +1787,22 @@ class MonitorService {
         overdueTasksCount,
       });
 
+      // Active timer and task lookup (must precede evaluateOperationalSignal to avoid TDZ ReferenceError)
+      const activeTimer = activeTimerMap.get(item.employeeId) || activeTimerMap.get(item.employee?.userId) || activeTimerMap.get(item.employee?.id);
+      let activeTask = null;
+      if (activeTimer && activeTimer.task) {
+        const startMs = new Date(activeTimer.startTime).getTime();
+        const elapsedSec = !isNaN(startMs) && Date.now() > startMs ? Math.floor((Date.now() - startMs) / 1000) : 0;
+        activeTask = {
+          entryId: activeTimer.id,
+          taskId: activeTimer.taskId,
+          title: activeTimer.task.title,
+          priority: activeTimer.task.priority,
+          startTime: activeTimer.startTime,
+          elapsedSeconds: elapsedSec,
+        };
+      }
+
       // Layer 3: Operational Signal
       const operationalSignal = evaluateOperationalSignal({
         totalActiveSeconds: boundedActive,
@@ -1725,21 +1820,6 @@ class MonitorService {
       const untrackedSeconds = (totalClockSeconds > trackedDeviceSeconds)
         ? (totalClockSeconds - trackedDeviceSeconds)
         : 0;
-
-      const activeTimer = activeTimerMap.get(item.employeeId) || activeTimerMap.get(item.employee?.userId) || activeTimerMap.get(item.employee?.id);
-      let activeTask = null;
-      if (activeTimer && activeTimer.task) {
-        const startMs = new Date(activeTimer.startTime).getTime();
-        const elapsedSec = !isNaN(startMs) && Date.now() > startMs ? Math.floor((Date.now() - startMs) / 1000) : 0;
-        activeTask = {
-          entryId: activeTimer.id,
-          taskId: activeTimer.taskId,
-          title: activeTimer.task.title,
-          priority: activeTimer.task.priority,
-          startTime: activeTimer.startTime,
-          elapsedSeconds: elapsedSec,
-        };
-      }
 
       const hasMissingClockOut = item.clockInTime && !item.clockOutTime && !isToday;
 

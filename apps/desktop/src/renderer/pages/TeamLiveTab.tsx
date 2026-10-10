@@ -93,6 +93,13 @@ export const TeamLiveTab: React.FC = () => {
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const [, setTick] = useState(0);
 
+  const liveElapsed = useCallback((t: TeamTimer): number => {
+    const base = Number(t.elapsedSeconds || 0);
+    const startMs = t.startTime ? new Date(t.startTime).getTime() : fetchedAt;
+    const drifted = Math.max(0, Math.floor((Date.now() - Math.max(startMs, fetchedAt)) / 1000));
+    return base + drifted;
+  }, [fetchedAt]);
+
   const loadData = useCallback(async (showSpinner = false) => {
     if (showSpinner) setLoading(true);
     try {
@@ -173,7 +180,73 @@ export const TeamLiveTab: React.FC = () => {
           };
         });
 
+        // Defensive synthesis: ensure any user with an active running timer appears even if not yet in daily overview
+        const existingIds = new Set(mapped.map((m) => String(m.employeeId).toLowerCase()));
+        for (const t of activeTimersList) {
+          const uId = String(t.userId || '');
+          const uName = String(t.userName || '').trim().toLowerCase();
+          const alreadyExists = (uId && existingIds.has(uId.toLowerCase())) || (uName && existingIds.has(uName));
+          if (!alreadyExists && (uId || uName)) {
+            existingIds.add((uId || uName).toLowerCase());
+            mapped.push({
+              employeeId: uId || `timer_${t.id}`,
+              employeeName: t.userName || 'عضو الفريق',
+              departmentName: t.userDepartment || 'فريق العمل',
+              jobTitle: t.userJobTitle || 'موظف',
+              status: 'active',
+              breakReason: null,
+              isCurrentlyOnBreak: false,
+              totalActiveSeconds: liveElapsed(t),
+              totalIdleSeconds: 0,
+              totalBreaksCount: 0,
+              totalBreakSeconds: 0,
+              totalBreakMinutes: 0,
+              totalSleepSeconds: 0,
+              productivityScore: 100,
+              clockInTime: t.startTime || null,
+              clockOutTime: null,
+              deviceName: null,
+              lastSeenTime: new Date().toISOString(),
+              activeTimers: timersByUser.get(uId) || (uName ? timersByUser.get(uName) : null) || [t],
+            });
+          }
+        }
+
         setMembers(mapped);
+      } else if (activeTimersList.length > 0) {
+        // Fallback: If overview API returned empty/failed, synthesize members from active running timers
+        const fallbackMembers: TeamMember[] = [];
+        const seen = new Set<string>();
+        for (const t of activeTimersList) {
+          const uId = String(t.userId || t.id);
+          const uName = String(t.userName || '').trim().toLowerCase();
+          const key = (uId || uName).toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            fallbackMembers.push({
+              employeeId: uId,
+              employeeName: t.userName || 'عضو الفريق',
+              departmentName: t.userDepartment || 'فريق العمل',
+              jobTitle: t.userJobTitle || 'موظف',
+              status: 'active',
+              breakReason: null,
+              isCurrentlyOnBreak: false,
+              totalActiveSeconds: liveElapsed(t),
+              totalIdleSeconds: 0,
+              totalBreaksCount: 0,
+              totalBreakSeconds: 0,
+              totalBreakMinutes: 0,
+              totalSleepSeconds: 0,
+              productivityScore: 100,
+              clockInTime: t.startTime || null,
+              clockOutTime: null,
+              deviceName: null,
+              lastSeenTime: new Date().toISOString(),
+              activeTimers: timersByUser.get(uId) || (uName ? timersByUser.get(uName) : null) || [t],
+            });
+          }
+        }
+        setMembers(fallbackMembers);
       } else {
         setMembers([]);
       }
@@ -183,7 +256,7 @@ export const TeamLiveTab: React.FC = () => {
     } finally {
       if (showSpinner) setLoading(false);
     }
-  }, []);
+  }, [liveElapsed]);
 
   // Initial load + 8s polling
   useEffect(() => {
@@ -197,13 +270,6 @@ export const TeamLiveTab: React.FC = () => {
     const t = setInterval(() => setTick((v) => v + 1), 1000);
     return () => clearInterval(t);
   }, []);
-
-  const liveElapsed = (t: TeamTimer): number => {
-    const base = Number(t.elapsedSeconds || 0);
-    const startMs = t.startTime ? new Date(t.startTime).getTime() : fetchedAt;
-    const drifted = Math.max(0, Math.floor((Date.now() - Math.max(startMs, fetchedAt)) / 1000));
-    return base + drifted;
-  };
 
   const stopTimer = async (entryId: string, userName: string) => {
     if (!window.confirm(`إيقاف مؤقت ${userName}؟`)) return;
