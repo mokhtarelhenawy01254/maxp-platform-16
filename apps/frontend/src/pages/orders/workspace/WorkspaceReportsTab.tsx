@@ -212,7 +212,7 @@ export const WorkspaceReportsTab: React.FC<WorkspaceReportsTabProps> = ({ isMana
       )}
 
       {/* KPI Cards Bento Grid */}
-      {data && (
+      {data && data.kpis && (
         <div className="space-y-5">
           {/* 8 Primary Operational Metrics */}
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
@@ -365,128 +365,132 @@ export const WorkspaceReportsTab: React.FC<WorkspaceReportsTabProps> = ({ isMana
           </div>
 
           {/* Daily Trend Chart Section */}
-          <ReportsTrendChart data={data.dailyTrend} isArabic={isArabic} />
+          {Array.isArray(data.dailyTrend) && data.dailyTrend.length > 0 && (
+            <ReportsTrendChart data={data.dailyTrend} isArabic={isArabic} />
+          )}
 
           {/* Detailed Performance Table */}
-          <div className="rounded-lg border border-border/50 bg-card shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border/40 px-4 py-2.5 bg-muted/20">
-              <span className="text-xs font-bold text-foreground">
-                {isManager
-                  ? isArabic ? 'تفاصيل أداء فريق التأكيد' : 'Confirmation Team Breakdown'
-                  : isArabic ? 'تفاصيل أدائي الفردي' : 'My Individual Performance'}
-              </span>
-              <span className="text-[11px] font-medium text-muted-foreground tabular-nums">
-                {data.agentBreakdown.length} {isArabic ? 'وكيل' : 'agents'}
-              </span>
-            </div>
+          {Array.isArray(data.agentBreakdown) && (
+            <div className="rounded-lg border border-border/50 bg-card shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between border-b border-border/40 px-4 py-2.5 bg-muted/20">
+                <span className="text-xs font-bold text-foreground">
+                  {isManager
+                    ? isArabic ? 'تفاصيل أداء فريق التأكيد' : 'Confirmation Team Breakdown'
+                    : isArabic ? 'تفاصيل أدائي الفردي' : 'My Individual Performance'}
+                </span>
+                <span className="text-[11px] font-medium text-muted-foreground tabular-nums">
+                  {data.agentBreakdown.length} {isArabic ? 'وكيل' : 'agents'}
+                </span>
+              </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-start text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-border/40 bg-muted/30 text-muted-foreground font-semibold">
-                    <th className="py-2.5 px-3 text-start">{isArabic ? 'الوكيل' : 'Agent'}</th>
-                    <th className="py-2.5 px-3 text-center">{isArabic ? 'تواصل بها' : 'Contacted'}</th>
-                    <th className="py-2.5 px-3 text-center">{isArabic ? 'مؤكدة' : 'Confirmed'}</th>
-                    <th className="py-2.5 px-3 text-center">{isArabic ? 'نسبة التأكيد' : 'Conf. Rate'}</th>
-                    <th className="py-2.5 px-3 text-center">{isArabic ? 'مؤجلة' : 'Follow-up'}</th>
-                    <th className="py-2.5 px-3 text-center">{isArabic ? 'ملغية' : 'Cancelled'}</th>
-                    <th className="py-2.5 px-3 text-center">{isArabic ? 'مفتوحة الآن' : 'Open'}</th>
-                    <th className="py-2.5 px-3 text-center">{isArabic ? 'المكالمات' : 'Calls'}</th>
-                    <th className="py-2.5 px-3 text-center">{isArabic ? 'المدة' : 'Duration'}</th>
-                    <th className="py-2.5 px-3 text-center">{isArabic ? 'المحاولات/طلب' : 'Attempts/Ord'}</th>
-                    <th className="py-2.5 px-3 text-center">{isArabic ? 'زمن المعالجة' : 'Handling Time'}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/30">
-                  {data.agentBreakdown.map((row) => (
-                    <tr
-                      key={row.agentId}
-                      className="hover:bg-muted/40 transition-colors"
-                    >
-                      <td className="py-2.5 px-3 font-semibold text-foreground">
-                        <div className="flex items-center gap-1.5">
-                          <span>{row.agentName}</span>
-                          {row.role && (
-                            <span className="rounded bg-muted px-1.5 py-0.2 text-[10px] text-muted-foreground font-normal">
-                              {row.role}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-2.5 px-3 text-center font-bold tabular-nums text-foreground">
-                        {row.contactedOrders}
-                      </td>
-                      <td className="py-2.5 px-3 text-center font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                        {row.confirmedOrders}
-                      </td>
-                      <td className="py-2.5 px-3 text-center font-bold tabular-nums">
-                        {row.confirmationRate}%
-                      </td>
-                      <td className="py-2.5 px-3 text-center font-medium tabular-nums text-amber-600 dark:text-amber-400">
-                        {row.followUpOrders}
-                      </td>
-                      <td className="py-2.5 px-3 text-center font-medium tabular-nums text-rose-600 dark:text-rose-400">
-                        {row.cancelledOrders}
-                      </td>
-                      <td className="py-2.5 px-3 text-center font-medium tabular-nums text-foreground">
-                        {row.openOrders}
-                      </td>
-                      <td className="py-2.5 px-3 text-center font-medium tabular-nums text-foreground">
-                        {row.totalCalls}
-                      </td>
-                      <td className="py-2.5 px-3 text-center font-medium tabular-nums text-muted-foreground">
-                        {formatSeconds(row.totalDurationSeconds)}
-                      </td>
-                      <td className="py-2.5 px-3 text-center font-medium tabular-nums text-foreground">
-                        {row.avgAttemptsPerOrder}
-                      </td>
-                      <td className="py-2.5 px-3 text-center font-medium tabular-nums text-muted-foreground">
-                        {formatHandlingMinutes(row.avgHandlingTimeMinutes)}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-start text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/40 bg-muted/30 text-muted-foreground font-semibold">
+                      <th className="py-2.5 px-3 text-start">{isArabic ? 'الوكيل' : 'Agent'}</th>
+                      <th className="py-2.5 px-3 text-center">{isArabic ? 'تواصل بها' : 'Contacted'}</th>
+                      <th className="py-2.5 px-3 text-center">{isArabic ? 'مؤكدة' : 'Confirmed'}</th>
+                      <th className="py-2.5 px-3 text-center">{isArabic ? 'نسبة التأكيد' : 'Conf. Rate'}</th>
+                      <th className="py-2.5 px-3 text-center">{isArabic ? 'مؤجلة' : 'Follow-up'}</th>
+                      <th className="py-2.5 px-3 text-center">{isArabic ? 'ملغية' : 'Cancelled'}</th>
+                      <th className="py-2.5 px-3 text-center">{isArabic ? 'مفتوحة الآن' : 'Open'}</th>
+                      <th className="py-2.5 px-3 text-center">{isArabic ? 'المكالمات' : 'Calls'}</th>
+                      <th className="py-2.5 px-3 text-center">{isArabic ? 'المدة' : 'Duration'}</th>
+                      <th className="py-2.5 px-3 text-center">{isArabic ? 'المحاولات/طلب' : 'Attempts/Ord'}</th>
+                      <th className="py-2.5 px-3 text-center">{isArabic ? 'زمن المعالجة' : 'Handling Time'}</th>
                     </tr>
-                  ))}
-                </tbody>
-                {/* Table Footer: Totals */}
-                {data.agentBreakdown.length > 1 && (
-                  <tfoot>
-                    <tr className="border-t-2 border-border/60 bg-muted/20 font-bold">
-                      <td className="py-2.5 px-3 text-foreground">{isArabic ? 'إجمالي الفريق' : 'Team Total'}</td>
-                      <td className="py-2.5 px-3 text-center tabular-nums text-foreground">
-                        {data.kpis.contactedOrders.value}
-                      </td>
-                      <td className="py-2.5 px-3 text-center tabular-nums text-emerald-600 dark:text-emerald-400">
-                        {data.kpis.confirmedOrders.value}
-                      </td>
-                      <td className="py-2.5 px-3 text-center tabular-nums text-foreground">
-                        {data.kpis.confirmationRate.value}%
-                      </td>
-                      <td className="py-2.5 px-3 text-center tabular-nums text-amber-600 dark:text-amber-400">
-                        {data.kpis.followUpOrders.value}
-                      </td>
-                      <td className="py-2.5 px-3 text-center tabular-nums text-rose-600 dark:text-rose-400">
-                        {data.kpis.cancelledOrders.value}
-                      </td>
-                      <td className="py-2.5 px-3 text-center tabular-nums text-foreground">
-                        {data.kpis.openOrders.value}
-                      </td>
-                      <td className="py-2.5 px-3 text-center tabular-nums text-foreground">
-                        {data.kpis.totalCalls.value}
-                      </td>
-                      <td className="py-2.5 px-3 text-center tabular-nums text-muted-foreground">
-                        {formatSeconds(data.kpis.totalDurationSeconds.value)}
-                      </td>
-                      <td className="py-2.5 px-3 text-center tabular-nums text-foreground">
-                        {data.kpis.avgAttemptsPerOrder.value}
-                      </td>
-                      <td className="py-2.5 px-3 text-center tabular-nums text-muted-foreground">
-                        {formatHandlingMinutes(data.kpis.avgHandlingTimeMinutes.value)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                )}
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-border/30">
+                    {data.agentBreakdown.map((row) => (
+                      <tr
+                        key={row.agentId}
+                        className="hover:bg-muted/40 transition-colors"
+                      >
+                        <td className="py-2.5 px-3 font-semibold text-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <span>{row.agentName}</span>
+                            {row.role && (
+                              <span className="rounded bg-muted px-1.5 py-0.2 text-[10px] text-muted-foreground font-normal">
+                                {row.role}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-bold tabular-nums text-foreground">
+                          {row.contactedOrders}
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                          {row.confirmedOrders}
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-bold tabular-nums">
+                          {row.confirmationRate}%
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-medium tabular-nums text-amber-600 dark:text-amber-400">
+                          {row.followUpOrders}
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-medium tabular-nums text-rose-600 dark:text-rose-400">
+                          {row.cancelledOrders}
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-medium tabular-nums text-foreground">
+                          {row.openOrders}
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-medium tabular-nums text-foreground">
+                          {row.totalCalls}
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-medium tabular-nums text-muted-foreground">
+                          {formatSeconds(row.totalDurationSeconds)}
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-medium tabular-nums text-foreground">
+                          {row.avgAttemptsPerOrder}
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-medium tabular-nums text-muted-foreground">
+                          {formatHandlingMinutes(row.avgHandlingTimeMinutes)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  {/* Table Footer: Totals */}
+                  {data.agentBreakdown.length > 1 && (
+                    <tfoot>
+                      <tr className="border-t-2 border-border/60 bg-muted/20 font-bold">
+                        <td className="py-2.5 px-3 text-foreground">{isArabic ? 'إجمالي الفريق' : 'Team Total'}</td>
+                        <td className="py-2.5 px-3 text-center tabular-nums text-foreground">
+                          {data.kpis.contactedOrders.value}
+                        </td>
+                        <td className="py-2.5 px-3 text-center tabular-nums text-emerald-600 dark:text-emerald-400">
+                          {data.kpis.confirmedOrders.value}
+                        </td>
+                        <td className="py-2.5 px-3 text-center tabular-nums text-foreground">
+                          {data.kpis.confirmationRate.value}%
+                        </td>
+                        <td className="py-2.5 px-3 text-center tabular-nums text-amber-600 dark:text-amber-400">
+                          {data.kpis.followUpOrders.value}
+                        </td>
+                        <td className="py-2.5 px-3 text-center tabular-nums text-rose-600 dark:text-rose-400">
+                          {data.kpis.cancelledOrders.value}
+                        </td>
+                        <td className="py-2.5 px-3 text-center tabular-nums text-foreground">
+                          {data.kpis.openOrders.value}
+                        </td>
+                        <td className="py-2.5 px-3 text-center tabular-nums text-foreground">
+                          {data.kpis.totalCalls.value}
+                        </td>
+                        <td className="py-2.5 px-3 text-center tabular-nums text-muted-foreground">
+                          {formatSeconds(data.kpis.totalDurationSeconds.value)}
+                        </td>
+                        <td className="py-2.5 px-3 text-center tabular-nums text-foreground">
+                          {data.kpis.avgAttemptsPerOrder.value}
+                        </td>
+                        <td className="py-2.5 px-3 text-center tabular-nums text-muted-foreground">
+                          {formatHandlingMinutes(data.kpis.avgHandlingTimeMinutes.value)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

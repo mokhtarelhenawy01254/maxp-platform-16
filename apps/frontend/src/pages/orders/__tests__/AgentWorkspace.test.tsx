@@ -778,5 +778,19 @@ describe("AgentWorkspace", () => {
       expect(screen.getByTestId("governorate-shipping-warning")).toBeInTheDocument();
     });
   });
+
+  it("renders reports tab button in top bar and switches to reports tab on click", async () => {
+    setMockOrdersData([makeOrder({ id: "o1", orderNumber: "ORD-1" })]);
+    renderWorkspace();
+
+    const reportsTab = screen.getByRole("tab", { name: /Reports|التقارير/i });
+    expect(reportsTab).toBeInTheDocument();
+
+    fireEvent.click(reportsTab);
+
+    // Clicking reports tab should switch active tab to reports
+    expect(reportsTab).toHaveAttribute("aria-selected", "true");
+  });
 });
+
 

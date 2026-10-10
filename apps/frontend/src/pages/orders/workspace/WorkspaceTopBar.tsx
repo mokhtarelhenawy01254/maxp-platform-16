@@ -4,6 +4,7 @@ import {
   ArrowPathIcon,
   MagnifyingGlassIcon,
   XMarkIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline';
 import { FilterTab, WorkspaceStats } from './types';
 
@@ -67,16 +68,17 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
     }
   };
 
-  // تابات الفلتر السريع الحصرية: قيد الانتظار والسلات المتروكة فقط
-  const tabs: { key: FilterTab; label: string; count?: number }[] = [
+  // تابات الفلتر السريع والتقارير في الكابينة التشغيلية:
+  const tabs: { key: FilterTab; label: string; count?: number; icon?: React.ElementType }[] = [
     { key: 'pending', label: isArabic ? 'قيد الانتظار' : 'Pending', count: getTabCount('pending') },
     { key: 'incomplete', label: isArabic ? 'السلات المتروكة' : 'Abandoned Carts', count: getTabCount('incomplete') },
+    { key: 'reports', label: isArabic ? 'التقارير' : 'Reports', icon: ChartBarIcon },
   ];
 
   return (
     <header className="border-b border-border/40 bg-card/95 px-3 py-2 backdrop-blur-sm sm:px-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        {/* Quick Filter Tabs — شريط التابات السريع الفعلي */}
+        {/* Quick Filter Tabs — شريط التابات السريع والتقارير */}
         <div
           role="tablist"
           aria-label={isArabic ? 'فلترة سريعة للطلبات' : 'Quick order filters'}
@@ -98,6 +100,7 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
                       : 'border border-border/70 bg-card/60 text-muted-foreground hover:bg-muted/80 hover:text-foreground'
                   }`}
                 >
+                  {tab.icon && <tab.icon className="h-3.5 w-3.5 shrink-0" />}
                   <span>{tab.label}</span>
                   {hasCount && (
                     <span
