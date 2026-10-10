@@ -372,7 +372,7 @@ export default function AcademyCatalogPage() {
                           </Link>
                         ) : course.price > 0 && course.storeProductId ? (
                           <a
-                            href={`/store/products/${course.storeProductId}`}
+                            href={`/products/${course.storeProductId}`}
                             className="px-5 py-2.5 sm:py-3 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition active:scale-[0.97]"
                           >
                             شراء الدورة
