@@ -43,11 +43,11 @@ export function buildQueueParams({
   }
 
   switch (activeTab) {
+    case 'incomplete':
+      // تاب مستقل للسلات المتروكة فقط
+      break;
     case 'today':
       params['todayOnly'] = 'true';
-      break;
-    case 'pending':
-      params['status'] = 'PENDING';
       break;
     case 'processing':
       params['status'] = 'PROCESSING';
@@ -61,12 +61,13 @@ export function buildQueueParams({
     case 'followup':
       params['followUpOnly'] = 'true';
       break;
-    case 'all':
+    case 'pending':
     default:
+      params['status'] = 'PENDING';
       break;
   }
 
-  const fetchIncomplete = (activeTab === 'pending' || activeTab === 'all') && page === 1;
+  const fetchIncomplete = activeTab === 'incomplete';
 
   return { params, fetchIncomplete };
 }

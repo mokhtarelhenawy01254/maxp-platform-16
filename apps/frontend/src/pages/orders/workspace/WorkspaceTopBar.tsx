@@ -57,46 +57,20 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
   };
 
   const getTabCount = (tabKey: FilterTab): number | undefined => {
-    let count: number | undefined;
     switch (tabKey) {
-      case 'all':
-        count = stats?.all ?? stats?.total;
-        break;
-      case 'today':
-        count = stats?.today;
-        break;
       case 'pending':
-        count = stats ? (stats.pending || 0) + (stats.incomplete || 0) : undefined;
-        break;
-      case 'processing':
-        count = stats?.processing;
-        break;
-      case 'cancelled':
-        count = stats?.cancelled;
-        break;
-      case 'followup':
-        count = stats?.followup;
-        break;
-      case 'reports':
-        count = undefined;
-        break;
+        return stats?.pending;
+      case 'incomplete':
+        return stats?.incomplete;
       default:
-        count = undefined;
+        return undefined;
     }
-    if (count === undefined && activeTab === tabKey && typeof totalOrdersCount === 'number' && tabKey !== 'reports') {
-      return totalOrdersCount;
-    }
-    return count;
   };
 
-  // تابات الفلتر السريع والتقارير المطابقة لتصميم الكابينة مع العداد الفعلي:
+  // تابات الفلتر السريع الحصرية: قيد الانتظار والسلات المتروكة فقط
   const tabs: { key: FilterTab; label: string; count?: number }[] = [
-    { key: 'all', label: isArabic ? 'كل الطلبات' : 'All Orders', count: getTabCount('all') },
-    { key: 'today', label: isArabic ? 'اليوم' : 'Today', count: getTabCount('today') },
     { key: 'pending', label: isArabic ? 'قيد الانتظار' : 'Pending', count: getTabCount('pending') },
-    { key: 'processing', label: isArabic ? 'قيد التنفيذ' : 'In Progress', count: getTabCount('processing') },
-    { key: 'cancelled', label: isArabic ? 'ملغي' : 'Cancelled', count: getTabCount('cancelled') },
-    { key: 'reports', label: isArabic ? 'تقارير' : 'Reports' },
+    { key: 'incomplete', label: isArabic ? 'السلات المتروكة' : 'Abandoned Carts', count: getTabCount('incomplete') },
   ];
 
   return (

@@ -474,7 +474,7 @@ describe("AgentWorkspace", () => {
     expect(screen.getByText("(15)")).toBeInTheDocument();
   });
 
-  it("fetches abandoned carts and merges them into pending queue", async () => {
+  it("fetches abandoned carts and isolates them under incomplete tab", async () => {
     mockCurrentUser = { id: "u1", role: "AGENT" };
     mockGet.mockImplementation((url: string) => {
       if (url.includes("/orders-new/incomplete")) {
@@ -523,9 +523,15 @@ describe("AgentWorkspace", () => {
       </MemoryRouter>,
     );
 
-    // Verify both normal pending order and incomplete cart are loaded in pending queue
+    // Verify pending queue displays normal pending order
     const normalNames = await screen.findAllByText("محمود حسن");
     expect(normalNames.length).toBeGreaterThanOrEqual(1);
+
+    // Switch to Abandoned Carts tab
+    const incompleteTab = screen.getByRole("tab", { name: /Abandoned Carts|السلات المتروكة/i });
+    fireEvent.click(incompleteTab);
+
+    // Verify incomplete cart is displayed under incomplete tab
     const nameElements = await screen.findAllByText("سارة أحمد");
     expect(nameElements.length).toBeGreaterThanOrEqual(1);
     expect(
@@ -555,57 +561,38 @@ describe("AgentWorkspace", () => {
     expect(screen.getByText(/Edit Order Items|تعديل بنود وعروض الطلب/i)).toBeInTheDocument();
   });
 
-  it("renders the 5 quick filter tabs and switches filters on click", async () => {
+  it("renders the 2 quick filter tabs and switches filters on click", async () => {
     setMockOrdersData([makeOrder({ id: "o1", orderNumber: "ORD-1" })]);
     renderWorkspace();
 
-    // Verify all 5 quick tabs exist
-    const allTab = screen.getByRole("tab", { name: /All Orders|كل الطلبات/i });
-    const todayTab = screen.getByRole("tab", { name: /Today|اليوم/i });
+    // Verify the 2 quick tabs exist
     const pendingTab = screen.getByRole("tab", { name: /Pending|قيد الانتظار/i });
-    const processingTab = screen.getByRole("tab", { name: /In Progress|قيد التنفيذ/i });
-    const cancelledTab = screen.getByRole("tab", { name: /Cancelled|ملغي/i });
+    const incompleteTab = screen.getByRole("tab", { name: /Abandoned Carts|السلات المتروكة/i });
 
-    expect(allTab).toBeInTheDocument();
-    expect(todayTab).toBeInTheDocument();
     expect(pendingTab).toBeInTheDocument();
-    expect(processingTab).toBeInTheDocument();
-    expect(cancelledTab).toBeInTheDocument();
+    expect(incompleteTab).toBeInTheDocument();
 
-    // Clicking Today triggers fetch with todayOnly: "true"
-    fireEvent.click(todayTab);
+    // Clicking Abandoned Carts triggers fetch for incomplete carts
+    fireEvent.click(incompleteTab);
     await waitFor(() => {
       expect(mockGet).toHaveBeenCalledWith(
-        "/agent-workspace/my-orders",
+        "/orders-new/incomplete",
         expect.objectContaining({
           params: expect.objectContaining({
-            todayOnly: "true",
+            hasPhone: "true",
           }),
         }),
       );
     });
 
-    // Clicking In Progress triggers fetch with status: "PROCESSING"
-    fireEvent.click(processingTab);
+    // Clicking Pending triggers fetch with status: "PENDING"
+    fireEvent.click(pendingTab);
     await waitFor(() => {
       expect(mockGet).toHaveBeenCalledWith(
         "/agent-workspace/my-orders",
         expect.objectContaining({
           params: expect.objectContaining({
-            status: "PROCESSING",
-          }),
-        }),
-      );
-    });
-
-    // Clicking Cancelled triggers fetch with status: "CANCELLED"
-    fireEvent.click(cancelledTab);
-    await waitFor(() => {
-      expect(mockGet).toHaveBeenCalledWith(
-        "/agent-workspace/my-orders",
-        expect.objectContaining({
-          params: expect.objectContaining({
-            status: "CANCELLED",
+            status: "PENDING",
           }),
         }),
       );
@@ -624,8 +611,9 @@ describe("AgentWorkspace", () => {
         cancelled: 8,
         confirmed: 0,
         followup: 0,
+        incomplete: 25,
       },
-      { total: 42, page: 1, limit: 50, pages: 1 },
+      { total: 15, page: 1, limit: 50, pages: 1 },
     );
 
     render(
@@ -635,14 +623,9 @@ describe("AgentWorkspace", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("42")).toBeInTheDocument();
+      expect(screen.getByText("15")).toBeInTheDocument();
+      expect(screen.getByText("25")).toBeInTheDocument();
     });
-
-    // Check count numbers are visible inside the tabs
-    expect(screen.getByText("7")).toBeInTheDocument();
-    expect(screen.getByText("15")).toBeInTheDocument();
-    expect(screen.getByText("12")).toBeInTheDocument();
-    expect(screen.getByText("8")).toBeInTheDocument();
   });
 
   it("rolls back optimistic removal and shows error toast when quick action fails", async () => {

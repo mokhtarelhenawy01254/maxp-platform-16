@@ -123,11 +123,9 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
         <p className="mt-3 text-sm font-semibold text-foreground text-balance">
           {fetchError
             ? fetchError
-            : activeTab === 'all'
-            ? t('orders.noAssignedOrders')
-            : isArabic
-            ? 'لا توجد طلبات في هذا القسم'
-            : 'No orders in this category'}
+            : activeTab === 'incomplete'
+            ? (isArabic ? 'لا توجد سلات متروكة' : 'No abandoned carts')
+            : (isArabic ? 'لا توجد طلبات قيد الانتظار' : 'No pending orders')}
         </p>
         {fetchError && (
           <button
@@ -153,7 +151,7 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
       <div className="flex items-center justify-between border-b border-border/30 bg-muted/15 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground shrink-0">
         <span className="font-mono tabular-nums">
           {isArabic
-            ? `معروض ${orders.length} من ${pagination.total || orders.length} طلب`
+            ? `معروض ${orders.length} من ${pagination.total || orders.length} ${activeTab === 'incomplete' ? 'سلة' : 'طلب'}`
             : `Showing ${orders.length} of ${pagination.total || orders.length}`}
         </span>
         <button

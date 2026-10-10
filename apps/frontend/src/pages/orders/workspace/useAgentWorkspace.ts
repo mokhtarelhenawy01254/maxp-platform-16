@@ -22,12 +22,11 @@ import {
 } from './types';
 
 function normalizeWorkspaceTab(value: string | null): FilterTab {
-  if (!value) return 'all';
+  if (!value) return 'pending';
   const val = value.toLowerCase();
-  if (val === 'confirmation') return 'pending';
-  return WORKSPACE_TAB_KEYS.includes(val as FilterTab)
-    ? (val as FilterTab)
-    : 'all';
+  if (val === 'incomplete' || val === 'abandoned' || val === 'carts') return 'incomplete';
+  if (val === 'reports') return 'reports';
+  return 'pending';
 }
 
 function getHoursSince(dateStr: string | null): number {
@@ -170,11 +169,7 @@ export function useAgentWorkspace() {
       activeTabRef.current = nextTab;
 
       const nextParams = new URLSearchParams(searchParams);
-      if (nextTab === 'all') {
-        nextParams.delete('tab');
-      } else {
-        nextParams.set('tab', nextTab);
-      }
+      nextParams.set('tab', nextTab);
       setSearchParams(nextParams, { replace: true });
 
       skipNextTabFetchRef.current = true;
@@ -252,25 +247,38 @@ export function useAgentWorkspace() {
         withStats: options?.withStats !== false,
       });
 
-      const [response, incRes] = await Promise.all([
-        apiClient.get('/agent-workspace/my-orders', { params, signal }),
-        fetchIncomplete
-          ? apiClient
-              .get('/orders-new/incomplete', {
-                params: {
-                  limit: 50,
-                  hasPhone: 'true',
-                  search: resolvedSearch ? resolvedSearch.trim() : undefined,
-                },
-                signal,
-              })
-              .catch(() => null)
-          : Promise.resolve(null),
-      ]);
+      let response: any = null;
+      let incRes: any = null;
+
+      if (activeTabForRequest === 'incomplete') {
+        const [statsResponse, incompleteResponse] = await Promise.all([
+          apiClient
+            .get('/agent-workspace/my-orders', { params: { withStats: 1, limit: 1 }, signal })
+            .catch(() => null),
+          apiClient
+            .get('/orders-new/incomplete', {
+              params: {
+                limit: 50,
+                hasPhone: 'true',
+                page: targetPage,
+                search: resolvedSearch ? resolvedSearch.trim() : undefined,
+              },
+              signal,
+            })
+            .catch(() => null),
+        ]);
+        response = statsResponse;
+        incRes = incompleteResponse;
+      } else {
+        const [ordersResponse] = await Promise.all([
+          apiClient.get('/agent-workspace/my-orders', { params, signal }),
+        ]);
+        response = ordersResponse;
+      }
 
       const payload = response?.data as any;
 
-      if (!payload?.success) {
+      if (activeTabForRequest !== 'incomplete' && !payload?.success) {
         throw new Error(
           (typeof payload?.error === 'string' && payload.error) ||
             payload?.message ||
@@ -278,23 +286,27 @@ export function useAgentWorkspace() {
         );
       }
 
-      let nextOrders: WorkspaceOrder[] = Array.isArray(payload?.data)
-        ? payload.data
-        : [];
+      let nextOrders: WorkspaceOrder[] = [];
+      let nextTotal = 0;
+      let nextPages = 1;
+      let nextPage = targetPage;
 
-      let extraIncompleteCount = 0;
-      // Merge incomplete carts into pending and all queues
-      if (incRes?.data?.data && Array.isArray(incRes.data.data)) {
-        const incompleteOrders: WorkspaceOrder[] = (incRes.data.data as any[])
-          .filter((cart: any) => cart && (cart.cartId || cart.id))
-          .map((cart: any) => mapIncompleteCart(cart, isArabic));
-
-        if (incompleteOrders.length > 0) {
-          const existingIds = new Set(nextOrders.map((o) => o.id));
-          const distinctIncomplete = incompleteOrders.filter((inc) => !existingIds.has(inc.id));
-          extraIncompleteCount = distinctIncomplete.length;
-          nextOrders = [...nextOrders, ...distinctIncomplete];
+      if (activeTabForRequest === 'incomplete') {
+        if (incRes?.data?.data && Array.isArray(incRes.data.data)) {
+          nextOrders = (incRes.data.data as any[])
+            .filter((cart: any) => cart && (cart.cartId || cart.id))
+            .map((cart: any) => mapIncompleteCart(cart, isArabic));
         }
+        const incPagination = incRes?.data?.pagination;
+        nextTotal = Number(incPagination?.total) || nextOrders.length;
+        nextPages = Number(incPagination?.pages) || 1;
+        nextPage = Number(incPagination?.page) || targetPage;
+      } else {
+        nextOrders = Array.isArray(payload?.data) ? payload.data : [];
+        const paginationData: any = payload?.pagination;
+        nextTotal = Number(paginationData?.total) || 0;
+        nextPages = Number(paginationData?.pages) || 1;
+        nextPage = Number(paginationData?.page) || targetPage;
       }
 
       if (resolvedSort === 'oldest') {
@@ -304,11 +316,6 @@ export function useAgentWorkspace() {
       } else {
         nextOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       }
-
-      const paginationData: any = payload?.pagination;
-      const nextTotal = Number(paginationData?.total) || 0;
-      const nextPages = Number(paginationData?.pages) || 1;
-      const nextPage = Number(paginationData?.page) || targetPage;
 
       if (append) {
         setOrders((prev) => {
@@ -336,9 +343,9 @@ export function useAgentWorkspace() {
 
       setPage(append ? nextPage : 1);
       setPagination({
-        total: nextTotal + extraIncompleteCount,
+        total: nextTotal,
         page: nextPage,
-        limit: Number(paginationData?.limit) || 50,
+        limit: 50,
         pages: nextPages,
       });
 
@@ -352,7 +359,7 @@ export function useAgentWorkspace() {
           confirmed: Number(payload.stats.confirmed) || 0,
           cancelled: Number(payload.stats.cancelled) || 0,
           followup: Number(payload.stats.followup) || 0,
-          incomplete: Number(payload.stats.incomplete) || 0,
+          incomplete: Number(incRes?.data?.pagination?.total ?? payload.stats.incomplete) || 0,
         });
       }
       // عند الاستبعاد المتعمد للإحصائيات (poll خفيف) نُبقي العدادات السابقة كما هي
