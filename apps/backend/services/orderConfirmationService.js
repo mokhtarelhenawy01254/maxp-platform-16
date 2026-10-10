@@ -24,7 +24,7 @@ const DEFAULT_SETTINGS = {
   specialtyRules: '{}',
   orderValueRules: '[]',
   workloadMaxOpen: null,
-  workloadStatuses: '["PENDING","CONFIRMED","PROCESSING"]',
+  workloadStatuses: '["PENDING","PROCESSING"]',
   maxCallsNoAnswer: 3,
   intervalMinutes: 30,
   lastAssignedUserId: null,
@@ -975,7 +975,7 @@ class OrderConfirmationService {
 
   async pickByWorkload(companyId, eligibleUsers, settings) {
     if (!eligibleUsers.length) return null;
-    const statuses = settings.workloadStatuses.length ? settings.workloadStatuses.map((s) => String(s).toUpperCase()) : ['PENDING', 'CONFIRMED', 'PROCESSING'];
+    const statuses = settings.workloadStatuses.length ? settings.workloadStatuses.map((s) => String(s).toUpperCase()) : ['PENDING', 'PROCESSING'];
 
     const userIds = eligibleUsers.map((user) => user.id);
     const cacheKey = `workload:${companyId}:${statuses.join('|')}`;

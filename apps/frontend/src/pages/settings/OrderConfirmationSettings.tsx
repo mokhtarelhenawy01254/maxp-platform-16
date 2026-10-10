@@ -19,13 +19,15 @@ const SOURCE_OPTIONS = [
   { value: 'unknown', label: 'غير معروف' }
 ];
 
-const STATUS_OPTIONS = [
+const REQUIRE_STATUS_OPTIONS = [
   { value: 'PENDING', label: 'جديد / قيد الانتظار' },
-  { value: 'CONFIRMED', label: 'مؤكد' },
-  { value: 'PROCESSING', label: 'قيد المعالجة' },
-  { value: 'SHIPPED', label: 'تم الشحن' },
-  { value: 'DELIVERED', label: 'تم التسليم' },
-  { value: 'CANCELLED', label: 'ملغي' }
+  { value: 'PROCESSING', label: 'قيد المعالجة المبدئية' }
+];
+
+const CONFIRM_TARGET_STATUS_OPTIONS = [
+  { value: 'CONFIRMED', label: 'مؤكد (الافتراضي للمستودع)' },
+  { value: 'PROCESSING', label: 'قيد التجهيز بالمستودع' },
+  { value: 'READY_TO_SHIP', label: 'جاهز للشحن' }
 ];
 
 const MATCH_MODE_OPTIONS = [
@@ -418,9 +420,9 @@ const OrderConfirmationSettings: React.FC = () => {
         </div>
 
         <div>
-          <h4 className="font-medium mb-2">حالات تحتاج تأكيد</h4>
+          <h4 className="font-medium mb-2">حالات تحتاج تأكيد (طابور التأكيد)</h4>
           <div className="flex flex-wrap gap-2">
-            {STATUS_OPTIONS.map((status) => (
+            {REQUIRE_STATUS_OPTIONS.map((status) => (
               <label key={status.value} className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -431,6 +433,9 @@ const OrderConfirmationSettings: React.FC = () => {
               </label>
             ))}
           </div>
+          <p className="mt-1 text-xs text-gray-500">
+            الطلبات التي ما زالت في مرحلة التأكيد فقط (يُستبعد تلقائيًا أي طلب تم شحنه أو تسليمه أو إلغاؤه).
+          </p>
         </div>
 
         <div>
@@ -468,12 +473,12 @@ const OrderConfirmationSettings: React.FC = () => {
               onChange={(e) => setSettings({ ...settings, confirmStatus: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-sm"
             >
-              {STATUS_OPTIONS.map((status) => (
+              {CONFIRM_TARGET_STATUS_OPTIONS.map((status) => (
                 <option key={status.value} value={status.value}>
                   {status.label}
                 </option>
               ))}
-              {!STATUS_OPTIONS.some((status) => status.value === settings.confirmStatus) && (
+              {!CONFIRM_TARGET_STATUS_OPTIONS.some((status) => status.value === settings.confirmStatus) && (
                 <option value={settings.confirmStatus}>{settings.confirmStatus}</option>
               )}
             </select>
