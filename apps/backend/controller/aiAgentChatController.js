@@ -87,6 +87,7 @@ async function sendMessage(req, res) {
     // Retrieve recent conversation history and session context for multi-turn continuity (prevent Conversational Amnesia)
     let sessionRecentMessages = [];
     let sessionContext = {};
+    let pastSessionsSummary = [];
     try {
       const sessionData = await aiSessionService.getHistory(companyId, userId, activeSessionId);
       if (sessionData) {
@@ -107,6 +108,24 @@ async function sendMessage(req, res) {
             .filter(m => m.content);
         }
       }
+
+      // Fetch other recent historical sessions for this merchant so agent is aware of past conversations across sessions
+      try {
+        const allSessions = await agentStudioSessionService.listSessions(companyId, 'copilot', 10);
+        if (Array.isArray(allSessions) && allSessions.length > 0) {
+          pastSessionsSummary = allSessions
+            .filter(s => s.id !== activeSessionId)
+            .slice(0, 5)
+            .map(s => {
+              const msgCount = (s.messages || []).length;
+              const lastMsgs = (s.messages || []).slice(-2).map(m => `[${m.role === 'user' ? 'التاجر' : 'المساعد'}]: ${m.content ? m.content.slice(0, 100) : ''}`).join(' | ');
+              return `جلسة بعنوان "${s.title || 'جلسة سابقة'}" (${msgCount} رسائل) - آخر حوار: ${lastMsgs}`;
+            })
+            .filter(Boolean);
+        }
+      } catch (sessListErr) {
+        // non-blocking
+      }
     } catch (memErr) {
       console.warn('[AI-CHAT-CTRL] Could not load prior messages for context:', memErr.message);
     }
@@ -116,6 +135,7 @@ async function sendMessage(req, res) {
     const combinedMemoryContext = {
       ...(sessionContext || {}),
       ...(sessionRecentMessages.length > 0 ? { recentMessages: sessionRecentMessages } : {}),
+      ...(pastSessionsSummary.length > 0 ? { pastSessionsSummary } : {}),
       ...(memoryContext || {}),
       ...(memory_context || {}),
       ...(executiveContext ? { executiveContext } : {}),

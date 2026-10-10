@@ -81,8 +81,8 @@ class ContextAssembler:
 
         return None
 
-    async def fetch_message_history(self, ctx: PipelineContext, limit: int = 15) -> list[dict[str, Any]]:
-        """Fetch recent message history for the active conversation from public.messages."""
+    async def fetch_message_history(self, ctx: PipelineContext, limit: int = 30) -> list[dict[str, Any]]:
+        """Fetch recent message history for the active conversation from public.messages or external memory."""
         external_memory = getattr(ctx, "external_memory_context", None) or {}
         memory_history = external_memory.get("recentMessages")
         if isinstance(memory_history, list):
@@ -563,6 +563,20 @@ You are continuing an existing conversation on Facebook Messenger that was previ
                     "or ask for summary/actions on the current page, use this context immediately without asking for the entity ID or URL again."
                 )
                 working_memory_lines.append("  </merchant_screen_context>")
+
+            # Anchor Past Sessions Summary (Cross-Session Historical Awareness)
+            past_sessions = session_state.get("pastSessionsSummary")
+            if isinstance(past_sessions, list) and past_sessions:
+                working_memory_lines.append("  <merchant_past_sessions>")
+                for p_idx, p_text in enumerate(past_sessions, 1):
+                    working_memory_lines.append(f"    {p_idx}. {p_text}")
+                working_memory_lines.append(
+                    "    Directive: These are recent prior chat sessions with the merchant. "
+                    "When the merchant asks about previous conversations ('المحادثات السابقة', 'الجلسات القديمة', 'اتكلمنا في ايه قبل كده'), "
+                    "summarize them using this information or invoke 'session_search' for deeper message logs. "
+                    "Never say 'ليس لدي وصول للمحادثات السابقة'!"
+                )
+                working_memory_lines.append("  </merchant_past_sessions>")
 
             working_memory_lines.append("</session_working_memory>")
 
