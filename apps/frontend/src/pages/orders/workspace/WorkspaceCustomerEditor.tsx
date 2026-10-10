@@ -5,8 +5,10 @@ import {
   CheckIcon,
   MapPinIcon,
   ClipboardDocumentIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
+import { apiClient } from '../../../services/apiClient';
 import { GovernorateAreaSearch } from '../../../components/ui/GovernorateAreaSearch';
 import { WorkspaceOrder, AgentWorkload } from './types';
 
@@ -65,6 +67,12 @@ export const WorkspaceCustomerEditor: React.FC<WorkspaceCustomerEditorProps> = (
   const [shippingAddress, setShippingAddress] = useState(parseCleanAddress(order.shippingAddress));
   const [notes, setNotes] = useState(order.notes || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [suggestedShipping, setSuggestedShipping] = useState<number | null>(null);
+  const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
+
+  const isGovernorateChanged = Boolean(
+    order.governorate && governorate && governorate.trim() !== order.governorate.trim(),
+  );
 
   useEffect(() => {
     setIsEditing(false);
@@ -75,7 +83,35 @@ export const WorkspaceCustomerEditor: React.FC<WorkspaceCustomerEditorProps> = (
     setCity(order.city || '');
     setShippingAddress(parseCleanAddress(order.shippingAddress));
     setNotes(order.notes || '');
+    setSuggestedShipping(null);
   }, [order.id]);
+
+  const calculateSuggestedShipping = async (targetGov: string, targetCity?: string) => {
+    if (!targetGov) return;
+    try {
+      setIsCalculatingShipping(true);
+      const response = await apiClient.post('/turbo/calculate', {
+        weight: 1,
+        governorate: targetGov,
+        city: targetCity || targetGov,
+        address: shippingAddress || '',
+        orderId: order.id,
+        cod: order.total,
+      });
+
+      if (response.data?.success) {
+        const data = response.data.data;
+        const cost = Number(data?.cost || data?.price || data?.shippingCost);
+        if (Number.isFinite(cost)) {
+          setSuggestedShipping(cost);
+        }
+      }
+    } catch {
+      // Graceful fallback: UI displays reminder warning
+    } finally {
+      setIsCalculatingShipping(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!onSaveCustomer) return;
@@ -92,6 +128,13 @@ export const WorkspaceCustomerEditor: React.FC<WorkspaceCustomerEditorProps> = (
         shippingAddress: shippingAddress.trim(),
         notes: notes.trim(),
       });
+      if (isGovernorateChanged) {
+        toast.warning(
+          isArabic
+            ? 'تنبيه: تم تعديل المحافظة. يرجى التأكد من تحديث سعر الشحن للطلب لتفادي فرق السعر.'
+            : 'Notice: Governorate updated. Please verify and update order shipping rate.',
+        );
+      }
       setIsEditing(false);
     } finally {
       setIsSaving(false);
