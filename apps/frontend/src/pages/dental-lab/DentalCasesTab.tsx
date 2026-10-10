@@ -2555,7 +2555,7 @@ export default function DentalCasesTab() {
       {/* On-Demand Slide-over Quick Inspector Drawer (شاشة فحص منبثقة عند الطلب) */}
       {inspectorOpen && selectedCase && (
         <div
-          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex justify-end animate-in fade-in duration-200"
+          className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-xs flex justify-end animate-in fade-in duration-200"
           onClick={() => setInspectorOpen(false)}
         >
           <div
