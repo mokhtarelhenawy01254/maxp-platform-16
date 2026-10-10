@@ -1172,6 +1172,97 @@ describe('agentWorkspaceController.assignOrder', () => {
       expect(res.payload.data.agentBreakdown[0].agentId).toBe('agent-1');
     });
   });
+
+  describe('agentWorkspaceController root fixes validation', () => {
+    test('converts Arabic-Indic digits and checks phone variations in search', async () => {
+      const { findMany } = mockOrderAssignment({ assignments: [] });
+      const res = createResponse();
+      await agentWorkspaceController.getMyOrders({
+        user: { id: 'user-1', effectiveCompanyId: 'company-1' },
+        query: { search: '٠١٠١٢٣٤٥٦٧٨' }
+      }, res);
+
+      expect(res.statusCode).toBe(200);
+      const findManyArg = findMany.mock.calls[0][0];
+      expect(findManyArg.where.AND).toBeDefined();
+      const searchClause = findManyArg.where.AND.find((c) => c.OR);
+      expect(searchClause).toBeDefined();
+      const orConditions = searchClause.OR;
+      // Phone variants: 01012345678, 1012345678, 201012345678
+      const hasLocalPhone = orConditions.some((c) => c.order?.customerPhone?.contains === '01012345678');
+      const hasIntlPhone = orConditions.some((c) => c.order?.customerPhone?.contains === '201012345678');
+      expect(hasLocalPhone).toBe(true);
+      expect(hasIntlPhone).toBe(true);
+    });
+
+    test('countWorkspaceIncompleteCarts excludes converted carts from cartConversionLog', async () => {
+      const prismaMock = {
+        orderAssignment: {
+          findMany: jest.fn().mockResolvedValue([]),
+          count: jest.fn().mockResolvedValue(0)
+        },
+        guestCart: {
+          count: jest.fn().mockResolvedValue(2)
+        },
+        cartContactLog: {
+          findMany: jest.fn().mockResolvedValue([{ cartId: 'dismissed-1' }])
+        },
+        cartConversionLog: {
+          findMany: jest.fn().mockResolvedValue([{ cartId: 'converted-1' }])
+        }
+      };
+      getSharedPrismaClient.mockReturnValue(prismaMock);
+
+      const res = createResponse();
+      await agentWorkspaceController.getMyOrders({
+        user: { id: 'user-1', effectiveCompanyId: 'company-1' },
+        query: { withStats: 'true' }
+      }, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.stats.incomplete).toBe(2);
+      const countWhere = prismaMock.guestCart.count.mock.calls[0][0].where;
+      expect(countWhere.cartId.notIn).toContain('dismissed-1');
+      expect(countWhere.cartId.notIn).toContain('converted-1');
+      expect(countWhere.checkoutStartedAt.gte).toBeInstanceOf(Date);
+    });
+
+    test('properly paginates and merges unassigned regular and guest orders without dropping guest orders', async () => {
+      const now = new Date();
+      const regular1 = createOrder('reg-1', 'PENDING', { createdAt: new Date(now.getTime() - 1000) });
+      const guest1 = createGuestOrder('gst-1', 'PENDING', { createdAt: new Date(now.getTime() - 500) });
+      const regular2 = createOrder('reg-2', 'PENDING', { createdAt: new Date(now.getTime() - 2000) });
+
+      const prismaMock = {
+        order: {
+          findMany: jest.fn().mockResolvedValue([regular1, regular2]),
+          count: jest.fn().mockResolvedValue(2)
+        },
+        guestOrder: {
+          findMany: jest.fn().mockResolvedValue([guest1]),
+          count: jest.fn().mockResolvedValue(1)
+        },
+        orderAssignment: {
+          count: jest.fn().mockResolvedValue(0)
+        }
+      };
+      getSharedPrismaClient.mockReturnValue(prismaMock);
+
+      const res = createResponse();
+      await agentWorkspaceController.getMyOrders({
+        user: { id: 'manager-1', role: 'MANAGER', effectiveCompanyId: 'company-1' },
+        query: { assignedTo: 'unassigned', page: '1', limit: '2' }
+      }, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(res.payload.pagination.total).toBe(3);
+      expect(res.payload.data).toHaveLength(2);
+      // Newest first: guest1 (-500) is newer than regular1 (-1000)
+      expect(res.payload.data[0].id).toBe('gst-1');
+      expect(res.payload.data[1].id).toBe('reg-1');
+    });
+  });
 });
 
 
