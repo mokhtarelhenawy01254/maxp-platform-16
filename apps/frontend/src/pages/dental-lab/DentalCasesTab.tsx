@@ -1102,10 +1102,9 @@ export default function DentalCasesTab() {
   const [quickOrderOpen, setQuickOrderOpen] = useState(false);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
 
-  // Split-Pane Master-Detail Cockpit (معايير 2026 لقمرة القيادة المزدوجة)
+  // On-Demand Case Inspector Drawer
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
-  const [inspectorOpen, setInspectorOpen] = useState<boolean>(true);
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
+  const [inspectorOpen, setInspectorOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (cases && cases.length > 0) {
@@ -1624,44 +1623,6 @@ export default function DentalCasesTab() {
               </button>
             </div>
 
-            {/* Split Inspector Toggle (Option A) */}
-            {layoutMode === "TABLE" && (
-              <button
-                type="button"
-                onClick={() => setInspectorOpen(o => !o)}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                  inspectorOpen
-                    ? "bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
-                    : "bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50"
-                }`}
-                title={inspectorOpen ? "إخفاء لوحة المعاينة الجانبية" : "إظهار لوحة المعاينة الجانبية"}
-              >
-                <Eye className="w-3.5 h-3.5 text-blue-600" />
-                <span className="hidden sm:inline">لوحة المعاينة</span>
-              </button>
-            )}
-
-            {/* Advanced Filters Toggle */}
-            <button
-              type="button"
-              onClick={() => setShowAdvancedFilters(o => !o)}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                showAdvancedFilters || activeFiltersCount > 0
-                  ? "bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300"
-                  : "bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50"
-              }`}
-              title="تصفية وفلاتر متقدمة"
-            >
-              <Filter className="w-3.5 h-3.5 text-indigo-500" />
-              <span className="hidden sm:inline">فلاتر متقدمة</span>
-              {activeFiltersCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center">
-                  {activeFiltersCount}
-                </span>
-              )}
-              <ChevronDown className={`w-3 h-3 transition-transform ${showAdvancedFilters ? "rotate-180" : ""}`} />
-            </button>
-
             {/* Kiosk Button */}
             <button
               type="button"
@@ -1712,8 +1673,8 @@ export default function DentalCasesTab() {
           </span>
           <button
             type="button"
-            onClick={() => { setViewMode("ACTIVE"); setPriority(""); setDateRangePreset("ALL"); setTechnicianId(""); setStatus(""); setPage(1); }}
-            className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 text-xs ${viewMode === "ACTIVE" && !priority && dateRangePreset === "ALL" && !technicianId && !status ? "bg-blue-600 text-white shadow-2xs" : "bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"}`}
+            onClick={() => { setViewMode("ACTIVE"); setPriority(""); setDateRangePreset("ALL"); setTechnicianId(""); setStatus(""); setAgendaDate(""); setDoctorId(""); setWorkTypeId(""); setPaymentStatus(""); setPage(1); }}
+            className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 text-xs ${viewMode === "ACTIVE" && !priority && dateRangePreset === "ALL" && !technicianId && !status && !agendaDate && !doctorId && !workTypeId && !paymentStatus ? "bg-blue-600 text-white shadow-2xs" : "bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"}`}
           >
             الكل
           </button>
@@ -1763,191 +1724,167 @@ export default function DentalCasesTab() {
             className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 text-xs ${status === "OUTSOURCED" ? "bg-amber-600 text-white shadow-2xs" : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 border border-amber-200/80 dark:border-amber-900"}`}
           >
             <ExternalLink className="w-3 h-3 text-amber-500" />
-            <span>بره المعمل</span>
+            <span>بره المعمل (خارجي)</span>
           </button>
         </div>
 
-        {/* Collapsible Advanced Filters Drawer */}
-        {showAdvancedFilters && (
-          <div className="pt-2.5 border-t border-slate-100 dark:border-gray-700/60 flex flex-wrap items-center gap-2 animate-in fade-in duration-150">
-            {viewMode !== "TRASH" && (
-              <select
-                className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
-                value={status}
-                onChange={e => applyFilter("status", e.target.value)}
-                title="فلترة بحالة المرحلة"
-              >
-                <option value="">{String(t("dentalLab.cases.allStatuses"))}</option>
-                {CASE_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-              </select>
-            )}
-
+        {/* All Direct Dropdown Filters & Agenda — Always Visible & Compact */}
+        <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-100 dark:border-gray-700/60 pt-2 text-xs">
+          {viewMode !== "TRASH" && (
             <select
-              className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
-              value={doctorId}
-              onChange={e => applyFilter("doctorId", e.target.value)}
-              title="فلترة بالطبيب"
+              className="bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 hover:bg-white"
+              value={status}
+              onChange={e => applyFilter("status", e.target.value)}
+              title="فلترة بحالة المرحلة"
             >
-              <option value="">{String(t("dentalLab.cases.allDoctors"))}</option>
-              {doctors.filter(d => d.isActive).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+              <option value="">كل الحالات</option>
+              {CASE_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
+          )}
 
+          <select
+            className="bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 hover:bg-white max-w-[150px]"
+            value={doctorId}
+            onChange={e => applyFilter("doctorId", e.target.value)}
+            title="فلترة بالطبيب أو العيادة"
+          >
+            <option value="">كل الدكاترة</option>
+            {doctors.filter(d => d.isActive).map(d => (
+              <option key={d.id} value={d.id}>{d.name} {d.clinicName ? `(${d.clinicName})` : ""}</option>
+            ))}
+          </select>
+
+          <select
+            className="bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 hover:bg-white max-w-[140px]"
+            value={workTypeId}
+            onChange={e => applyFilter("workTypeId", e.target.value)}
+            title="فلترة بنوع الشغل"
+          >
+            <option value="">كل أنواع الشغل</option>
+            {workTypes.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+          </select>
+
+          <select
+            className="bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 hover:bg-white"
+            value={priority}
+            onChange={e => applyFilter("priority", e.target.value)}
+            title="فلترة بدرجة الأولوية"
+          >
+            <option value="">كل الأولويات</option>
+            <option value="NORMAL">عادي</option>
+            <option value="URGENT">مستعجل</option>
+            <option value="STAT">طارئ فوري</option>
+          </select>
+
+          <select
+            className="bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 hover:bg-white max-w-[130px]"
+            value={technicianId}
+            onChange={e => applyFilter("technicianId", e.target.value)}
+            title="فلترة بالفني المسند"
+          >
+            <option value="">كل الفنيين</option>
+            {technicians.filter(t => t.isActive).map(t => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+
+          <select
+            className="bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 hover:bg-white"
+            value={paymentStatus}
+            onChange={e => applyFilter("paymentStatus", e.target.value)}
+            title="فلترة بحالة السداد"
+          >
+            <option value="">كل حالات السداد</option>
+            <option value="UNPAID">غير مسدد</option>
+            <option value="PARTIAL">مسدد جزئياً</option>
+            <option value="PAID">مسدد بالكامل</option>
+          </select>
+
+          {/* Agenda Date Range & Shortcuts */}
+          <div className="flex items-center gap-1 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2 py-0.5 text-xs">
+            <span className="text-slate-400 font-medium text-[11px]">الأجندة:</span>
             <select
-              className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
-              value={workTypeId}
-              onChange={e => applyFilter("workTypeId", e.target.value)}
-              title="فلترة بنوع الشغل"
+              className="bg-transparent text-xs text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer"
+              value={agendaField}
+              onChange={e => { setAgendaField(e.target.value as "receivedDate" | "dueDate"); setPage(1); }}
             >
-              <option value="">كل أنواع الشغل</option>
-              {workTypes.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+              <option value="receivedDate">تاريخ الدخول</option>
+              <option value="dueDate">تاريخ التسليم</option>
             </select>
-
-            <select
-              className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
-              value={priority}
-              onChange={e => applyFilter("priority", e.target.value)}
-              title="فلترة بدرجة الأولوية"
-            >
-              <option value="">كل الأولويات</option>
-              <option value="NORMAL">عادي</option>
-              <option value="URGENT">مستعجل</option>
-              <option value="STAT">طارئ فوري</option>
-            </select>
-
-            <select
-              className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
-              value={technicianId}
-              onChange={e => applyFilter("technicianId", e.target.value)}
-              title="فلترة بالفني المسند"
-            >
-              <option value="">كل الفنيين</option>
-              {technicians.filter(t => t.isActive).map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-
-            <select
-              className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
-              value={paymentStatus}
-              onChange={e => applyFilter("paymentStatus", e.target.value)}
-              title="فلترة بحالة السداد"
-            >
-              <option value="">كل حالات السداد</option>
-              <option value="UNPAID">غير مسدد</option>
-              <option value="PARTIAL">مسدد جزئياً</option>
-              <option value="PAID">مسدد بالكامل</option>
-            </select>
-
-            {/* Agenda Date Range */}
-            <div className="flex items-center gap-1 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2 py-0.5 text-xs">
-              <span className="text-slate-400 font-medium">الأجندة:</span>
-              <select
-                className="bg-transparent text-xs text-slate-700 dark:text-slate-300 focus:outline-none"
-                value={agendaField}
-                onChange={e => { setAgendaField(e.target.value as "receivedDate" | "dueDate"); setPage(1); }}
-              >
-                <option value="receivedDate">تاريخ الدخول</option>
-                <option value="dueDate">تاريخ التسليم</option>
-              </select>
-              <input
-                type="date"
-                className="bg-transparent text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
-                value={agendaDate}
-                onChange={e => {
-                  const val = e.target.value;
-                  setAgendaDate(val);
-                  setDateRangePreset(val ? "CUSTOM" : "ALL");
-                  setPage(1);
-                }}
-              />
-            </div>
-
-            {activeFiltersCount > 0 && (
+            <input
+              type="date"
+              className="bg-transparent text-xs text-slate-800 dark:text-slate-200 focus:outline-none w-[110px]"
+              value={agendaDate}
+              onChange={e => {
+                const val = e.target.value;
+                setAgendaDate(val);
+                setDateRangePreset(val ? "CUSTOM" : "ALL");
+                setPage(1);
+              }}
+            />
+            {agendaDate && (
               <button
                 type="button"
-                onClick={clearAllFilters}
-                className="text-rose-600 dark:text-rose-400 hover:underline font-bold text-xs flex items-center gap-1 mr-auto"
+                onClick={() => { setAgendaDate(""); setDateRangePreset("ALL"); setPage(1); }}
+                className="text-slate-400 hover:text-slate-600"
+                title="مسح التاريخ"
               >
-                <FilterX className="w-3.5 h-3.5" />
-                <span>إلغاء كل الفلاتر ({activeFiltersCount})</span>
+                <XMarkIcon className="w-3 h-3" />
               </button>
             )}
           </div>
-        )}
-      </div>
 
-      {/* Active Filter Indicators Bar */}
-      {activeFiltersCount > 0 && (
-        <div className="flex flex-wrap items-center gap-2 p-2 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/50 rounded-xl text-xs">
-          <span className="font-semibold text-blue-950 dark:text-blue-200 flex items-center gap-1.5 shrink-0">
-            <Filter className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-            <span>تصفية نشطة ({total} حالة):</span>
-          </span>
-
-          {doctorId && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-gray-800 border border-blue-200 text-blue-700 dark:text-blue-300 font-medium">
-              <span>طبيب: {doctors.find(d => d.id === doctorId)?.name || doctorId}</span>
-              <button type="button" onClick={() => applyFilter("doctorId", "")} className="hover:text-red-600">
-                <XMarkIcon className="w-3 h-3" />
+          <div className="flex items-center bg-slate-100 dark:bg-gray-800 p-0.5 rounded-lg text-[11px]">
+            <button
+              type="button"
+              onClick={() => {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yStr = yesterday.toISOString().split("T")[0];
+                setAgendaDate(yStr);
+                setDateRangePreset("CUSTOM");
+                setPage(1);
+              }}
+              className={`px-2 py-0.5 rounded transition-colors ${agendaDate === new Date(Date.now() - 86400000).toISOString().split("T")[0] ? "bg-white dark:bg-gray-700 font-bold shadow-2xs text-blue-600" : "text-slate-600 dark:text-slate-400 hover:text-slate-900"}`}
+            >
+              أمس
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const tStr = new Date().toISOString().split("T")[0];
+                setAgendaDate(tStr);
+                setDateRangePreset("CUSTOM");
+                setPage(1);
+              }}
+              className={`px-2 py-0.5 rounded transition-colors ${agendaDate === new Date().toISOString().split("T")[0] ? "bg-white dark:bg-gray-700 font-bold shadow-2xs text-blue-600" : "text-slate-600 dark:text-slate-400 hover:text-slate-900"}`}
+            >
+              اليوم
+            </button>
+            {(agendaDate || dateRangePreset !== "ALL") && (
+              <button
+                type="button"
+                onClick={() => { setAgendaDate(""); setDateRangePreset("ALL"); setPage(1); }}
+                className="px-2 py-0.5 rounded text-slate-500 hover:text-slate-800"
+              >
+                كل المواعيد
               </button>
-            </span>
-          )}
+            )}
+          </div>
 
-          {workTypeId && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-gray-800 border border-indigo-200 text-indigo-700 dark:text-indigo-300 font-medium">
-              <span>شغل: {workTypes.find(w => w.id === workTypeId)?.name || workTypeId}</span>
-              <button type="button" onClick={() => applyFilter("workTypeId", "")} className="hover:text-red-600">
-                <XMarkIcon className="w-3 h-3" />
-              </button>
-            </span>
+          {activeFiltersCount > 0 && (
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-bold text-xs flex items-center gap-1 px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-900 transition-colors mr-auto"
+              title="إلغاء كل الفلاتر وإعادة ضبط الجدول"
+            >
+              <FilterX className="w-3.5 h-3.5" />
+              <span>إلغاء كل الفلاتر ({activeFiltersCount})</span>
+            </button>
           )}
-
-          {technicianId && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-gray-800 border border-purple-200 text-purple-700 dark:text-purple-300 font-medium">
-              <span>فني: {technicians.find(t => t.id === technicianId)?.name || technicianId}</span>
-              <button type="button" onClick={() => applyFilter("technicianId", "")} className="hover:text-red-600">
-                <XMarkIcon className="w-3 h-3" />
-              </button>
-            </span>
-          )}
-
-          {status && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-gray-800 border border-emerald-200 text-emerald-700 dark:text-emerald-300 font-medium">
-              <span>حالة: {CASE_STATUS_MAP[status]?.label || status}</span>
-              <button type="button" onClick={() => applyFilter("status", "")} className="hover:text-red-600">
-                <XMarkIcon className="w-3 h-3" />
-              </button>
-            </span>
-          )}
-
-          {priority && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-gray-800 border border-amber-200 text-amber-700 dark:text-amber-300 font-medium">
-              <span>أولوية: {priority === "URGENT" ? "مستعجل" : priority === "STAT" ? "طارئ" : "عادي"}</span>
-              <button type="button" onClick={() => applyFilter("priority", "")} className="hover:text-red-600">
-                <XMarkIcon className="w-3 h-3" />
-              </button>
-            </span>
-          )}
-
-          {search && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 text-gray-700 dark:text-gray-300 font-medium">
-              <span>بحث: "{search}"</span>
-              <button type="button" onClick={() => { setSearchInput(""); setSearch(""); applyFilter("search", ""); }} className="hover:text-red-600">
-                <XMarkIcon className="w-3 h-3" />
-              </button>
-            </span>
-          )}
-
-          <button
-            type="button"
-            onClick={clearAllFilters}
-            className="text-red-600 dark:text-red-400 hover:underline font-semibold text-xs mr-auto flex items-center gap-1 py-0.5 px-2 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
-          >
-            <FilterX className="w-3 h-3" />
-            <span>إلغاء كل الفلاتر</span>
-          </button>
         </div>
-      )}
+      </div>
 
       {loading && !cases ? (
         <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
@@ -1956,237 +1893,218 @@ export default function DentalCasesTab() {
           <p>{viewMode === "TRASH" ? "سلة المهملات فارغة لا توجد بها حالات" : t("dentalLab.common.noResults")}</p>
         </div>
       ) : layoutMode === "TABLE" ? (
-        <div className="flex flex-col lg:flex-row items-start gap-3">
-          {/* Master Table Panel */}
-          <div className={`w-full ${inspectorOpen && selectedCase ? "lg:flex-1 min-w-0" : ""} bg-white dark:bg-gray-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-gray-700 overflow-hidden transition-all`}>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-gray-700 bg-slate-50/90 dark:bg-gray-800/90 text-slate-600 dark:text-slate-300 font-semibold">
-                    <th className="w-8 py-2.5 px-2 text-center">
-                      <input
-                        type="checkbox"
-                        className="rounded border-slate-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer align-middle"
-                        checked={cases.length > 0 && cases.every(c => selectedCaseIds.has(c.id))}
-                        onChange={toggleSelectAllPage}
-                        title="تحديد كل الحالات في هذه الصفحة"
-                      />
-                    </th>
-                    <th className="text-right py-2.5 px-3 whitespace-nowrap">رقم الحالة</th>
-                    <th className="text-right py-2.5 px-3 whitespace-nowrap">المريض والطبيب</th>
-                    <th className="text-right py-2.5 px-3 whitespace-nowrap">نوع الشغل</th>
-                    <th className="text-right py-2.5 px-3 whitespace-nowrap">الأولوية</th>
-                    <th className="text-right py-2.5 px-3 whitespace-nowrap">الفني</th>
-                    <th className="text-right py-2.5 px-3 whitespace-nowrap">الحالة</th>
-                    <th className="text-right py-2.5 px-3 whitespace-nowrap">التسليم</th>
-                    <th className="text-right py-2.5 px-3 whitespace-nowrap">المستحقات</th>
-                    <th className="text-right py-2.5 px-3 whitespace-nowrap">إجراءات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cases.map(c => {
-                    const next = nextStatusOf(c.status);
-                    const overdue = isCaseOverdue(c);
-                    const daysOverdue = overdue ? getDaysOverdue(c) : 0;
-                    const isBusy = actionBusyId === c.id;
-                    const isSelected = selectedCaseIds.has(c.id);
-                    const isCurrentInspected = selectedCaseId === c.id;
+        <div className="w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-gray-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-gray-700 bg-slate-50/90 dark:bg-gray-800/90 text-slate-600 dark:text-slate-300 font-semibold">
+                  <th className="w-8 py-2.5 px-2 text-center">
+                    <input
+                      type="checkbox"
+                      className="rounded border-slate-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer align-middle"
+                      checked={cases.length > 0 && cases.every(c => selectedCaseIds.has(c.id))}
+                      onChange={toggleSelectAllPage}
+                      title="تحديد كل الحالات في هذه الصفحة"
+                    />
+                  </th>
+                  <th className="text-right py-2.5 px-3 whitespace-nowrap">رقم الحالة</th>
+                  <th className="text-right py-2.5 px-3 whitespace-nowrap">المريض</th>
+                  <th className="text-right py-2.5 px-3 whitespace-nowrap">الطبيب / العيادة</th>
+                  <th className="text-right py-2.5 px-3 whitespace-nowrap">نوع الشغل</th>
+                  <th className="text-right py-2.5 px-3 whitespace-nowrap">الأولوية</th>
+                  <th className="text-right py-2.5 px-3 whitespace-nowrap">الفني</th>
+                  <th className="text-right py-2.5 px-3 whitespace-nowrap">الحالة</th>
+                  <th className="text-right py-2.5 px-3 whitespace-nowrap">تاريخ الدخول</th>
+                  <th className="text-right py-2.5 px-3 whitespace-nowrap">تاريخ الاستحقاق</th>
+                  <th className="text-right py-2.5 px-3 whitespace-nowrap">المستحقات</th>
+                  <th className="text-center py-2.5 px-3 whitespace-nowrap">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cases.map(c => {
+                  const next = nextStatusOf(c.status);
+                  const overdue = isCaseOverdue(c);
+                  const daysOverdue = overdue ? getDaysOverdue(c) : 0;
+                  const isBusy = actionBusyId === c.id;
+                  const isSelected = selectedCaseIds.has(c.id);
 
-                    return (
-                      <tr
-                        key={c.id}
-                        onClick={() => { setSelectedCaseId(c.id); setInspectorOpen(true); }}
-                        className={`border-b border-slate-100 dark:border-gray-700/60 cursor-pointer transition-colors ${
-                          isCurrentInspected
-                            ? "bg-blue-50/90 dark:bg-blue-950/60 font-medium"
-                            : isSelected
-                            ? "bg-blue-50/40 dark:bg-blue-950/20 hover:bg-blue-50/70"
-                            : overdue
-                            ? "bg-rose-50/30 dark:bg-rose-950/15 hover:bg-rose-50/60"
-                            : "hover:bg-slate-50/80 dark:hover:bg-gray-750"
-                        }`}
-                      >
-                        <td className="w-8 py-2 px-2 text-center" onClick={e => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            className="rounded border-slate-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer align-middle"
-                            checked={isSelected}
-                            onChange={() => toggleSelect(c.id)}
-                          />
-                        </td>
-                        <td className="py-2 px-3 font-mono font-bold text-xs whitespace-nowrap text-blue-600 dark:text-blue-400" dir="ltr">
-                          <div className="flex items-center gap-1.5">
-                            {isCurrentInspected && (
-                              <span className="w-1.5 h-3.5 bg-blue-600 rounded-full shrink-0" />
-                            )}
-                            <Link
-                              to={`/dental-lab/cases/${c.id}`}
-                              onClick={e => e.stopPropagation()}
-                              className="hover:underline"
-                              title="فتح صفحة الحالة"
-                            >
-                              {c.caseNumber || c.id.slice(0, 8)}
-                            </Link>
+                  return (
+                    <tr
+                      key={c.id}
+                      onClick={() => { setSelectedCaseId(c.id); setInspectorOpen(true); }}
+                      className={`border-b border-slate-100 dark:border-gray-700/60 cursor-pointer transition-colors ${
+                        isSelected
+                          ? "bg-blue-50/40 dark:bg-blue-950/20 hover:bg-blue-50/70"
+                          : overdue
+                          ? "bg-rose-50/30 dark:bg-rose-950/15 hover:bg-rose-50/60"
+                          : "hover:bg-slate-50/80 dark:hover:bg-gray-750"
+                      }`}
+                    >
+                      <td className="w-8 py-2 px-2 text-center" onClick={e => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="rounded border-slate-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer align-middle"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(c.id)}
+                        />
+                      </td>
+                      <td className="py-2 px-3 font-mono font-bold text-xs whitespace-nowrap text-blue-600 dark:text-blue-400" dir="ltr">
+                        <Link
+                          to={`/dental-lab/cases/${c.id}`}
+                          onClick={e => e.stopPropagation()}
+                          className="hover:underline flex items-center gap-1"
+                          title="فتح صفحة الحالة"
+                        >
+                          <span>{c.caseNumber || c.id.slice(0, 8)}</span>
+                        </Link>
+                      </td>
+                      <td className="py-2 px-3">
+                        <div className="font-bold text-slate-800 dark:text-slate-100 truncate max-w-[130px]">
+                          {c.patientName}
+                        </div>
+                        {c.patientPhone && (
+                          <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono" dir="ltr">
+                            {c.patientPhone}
                           </div>
-                        </td>
-                        <td className="py-2 px-3">
-                          <div className="font-bold text-slate-800 dark:text-slate-100 truncate max-w-[140px]">
-                            {c.patientName}
-                          </div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[140px] flex items-center gap-1">
-                            <Stethoscope className="w-3 h-3 text-blue-500 shrink-0 opacity-70" />
-                            <span>{c.doctorName ? `د. ${c.doctorName}` : "—"}</span>
-                          </div>
-                        </td>
-                        <td className="py-2 px-3 whitespace-nowrap">
-                          {c.workTypeName ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-900/40">
-                              <Layers className="w-3 h-3 text-indigo-500 shrink-0" />
-                              <span className="truncate max-w-[110px]">{c.workTypeName}</span>
-                            </span>
-                          ) : (
-                            <span className="text-slate-400">—</span>
-                          )}
-                        </td>
-                        <td className="py-2 px-3 whitespace-nowrap">
-                          {c.priority !== "NORMAL" ? (
-                            statusBadge(PRIORITY_CONFIG, c.priority)
-                          ) : (
-                            <span className="text-slate-400 dark:text-slate-500 text-[11px]">عادي</span>
-                          )}
-                        </td>
-                        <td className="py-2 px-3">
-                          {c.assignments && c.assignments.length > 0 ? (
-                            <div className="flex items-center gap-1 text-[11px] text-purple-700 dark:text-purple-300 font-medium">
-                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
-                              <span className="truncate max-w-[90px]">{c.assignments[0]?.technician?.name || c.assignments[0]?.technicianId}</span>
-                              {c.assignments.length > 1 && (
-                                <span className="text-[10px] text-purple-500 font-bold">+{c.assignments.length - 1}</span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-[11px] text-slate-400">غير مسند</span>
-                          )}
-                        </td>
-                        <td className="py-2 px-3 whitespace-nowrap">
-                          <div className="flex items-center gap-1">
-                            {statusBadge(CASE_STATUS_MAP, c.status)}
-                            {overdue && (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800 animate-pulse" title={`متأخر ${daysOverdue} يوم`}>
-                                <AlertTriangle className="w-2.5 h-2.5" />
-                                <span>{daysOverdue}ي</span>
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-2 px-3 whitespace-nowrap text-[11px]">
-                          <span className={overdue ? "text-rose-600 dark:text-rose-400 font-bold" : "text-slate-600 dark:text-slate-300"}>
-                            {fmtDate(c.dueDate)}
+                        )}
+                      </td>
+                      <td className="py-2 px-3">
+                        <div className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate max-w-[130px] flex items-center gap-1">
+                          <Stethoscope className="w-3 h-3 text-blue-500 shrink-0 opacity-70" />
+                          <span>{c.doctorName ? `د. ${c.doctorName}` : "—"}</span>
+                        </div>
+                      </td>
+                      <td className="py-2 px-3 whitespace-nowrap">
+                        {c.workTypeName ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-900/40">
+                            <Layers className="w-3 h-3 text-indigo-500 shrink-0" />
+                            <span className="truncate max-w-[120px]">{c.workTypeName}</span>
                           </span>
-                        </td>
-                        <td className="py-2 px-3 whitespace-nowrap font-mono text-[11px]" dir="ltr">
-                          <div className="font-semibold text-slate-800 dark:text-slate-200">{fmtMoney(c.total)}</div>
-                          {Number(c.remaining) > 0 ? (
-                            <div className="text-[10px] text-rose-600 dark:text-rose-400 font-medium">باقي {fmtMoney(c.remaining)}</div>
-                          ) : (
-                            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">خالص ✓</div>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="py-2 px-3 whitespace-nowrap">
+                        {c.priority !== "NORMAL" ? (
+                          statusBadge(PRIORITY_CONFIG, c.priority)
+                        ) : (
+                          <span className="text-slate-400 dark:text-slate-500 text-[11px]">عادي</span>
+                        )}
+                      </td>
+                      <td className="py-2 px-3">
+                        {c.assignments && c.assignments.length > 0 ? (
+                          <div className="flex items-center gap-1 text-[11px] text-purple-700 dark:text-purple-300 font-medium">
+                            <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
+                            <span className="truncate max-w-[100px]">{c.assignments[0]?.technician?.name || c.assignments[0]?.technicianId}</span>
+                            {c.assignments.length > 1 && (
+                              <span className="text-[10px] px-1 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-600 font-bold">+{c.assignments.length - 1}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-slate-400">غير مسند</span>
+                        )}
+                      </td>
+                      <td className="py-2 px-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1">
+                          {statusBadge(CASE_STATUS_MAP, c.status)}
+                          {overdue && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800 animate-pulse" title={`متأخر ${daysOverdue} يوم`}>
+                              <AlertTriangle className="w-2.5 h-2.5" />
+                              <span>{daysOverdue}ي</span>
+                            </span>
                           )}
-                        </td>
-                        <td className="py-2 px-3 whitespace-nowrap" onClick={e => e.stopPropagation()}>
-                          {viewMode === "TRASH" ? (
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => handleRestoreCase(c)}
-                                disabled={isBusy}
-                                className="p-1 text-xs font-semibold bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
-                                title="استعادة"
-                              >
-                                <RotateCcw className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handlePermanentDelete(c)}
-                                disabled={isBusy}
-                                className="p-1 text-xs font-semibold bg-red-50 text-red-700 rounded hover:bg-red-100"
-                                title="حذف نهائي"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-0.5">
-                              <button
-                                type="button"
-                                onClick={() => { setSelectedCaseId(c.id); setInspectorOpen(true); }}
-                                className={`p-1.5 rounded-lg transition-colors ${isCurrentInspected ? "bg-blue-600 text-white" : "hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"}`}
-                                title="معاينة في اللوحة الجانبية"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </button>
-                              {next && (
-                                <button
-                                  type="button"
-                                  onClick={() => setAdvanceCaseData(c)}
-                                  className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-lg transition-colors"
-                                  title={`نقل إلى: ${CASE_STATUS_MAP[next]?.label || next}`}
-                                >
-                                  <ArrowRightCircle className="w-3.5 h-3.5 rtl:rotate-180" />
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => { setEditingCase(c); setCreateOpen(true); }}
-                                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 rounded-lg transition-colors"
-                                title="تعديل سريع"
-                              >
-                                <Pencil className="w-3.5 h-3.5 text-blue-500" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handlePrintPanLabel(c)}
-                                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 rounded-lg transition-colors"
-                                title="طباعة تيكت صينية"
-                              >
-                                <Printer className="w-3.5 h-3.5" />
-                              </button>
+                        </div>
+                      </td>
+                      <td className="py-2 px-3 whitespace-nowrap text-[11px] text-slate-500 dark:text-slate-400 font-mono" dir="ltr">
+                        {fmtDate(c.receivedDate)}
+                      </td>
+                      <td className="py-2 px-3 whitespace-nowrap text-[11px] font-mono" dir="ltr">
+                        <span className={overdue ? "text-rose-600 dark:text-rose-400 font-bold" : "text-slate-600 dark:text-slate-300"}>
+                          {fmtDate(c.dueDate)}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 whitespace-nowrap font-mono text-[11px]" dir="ltr">
+                        <div className="font-semibold text-slate-800 dark:text-slate-200 tabular-nums">{fmtMoney(c.total)}</div>
+                        {Number(c.remaining) > 0 ? (
+                          <div className="text-[10px] text-rose-600 dark:text-rose-400 font-medium tabular-nums">باقي {fmtMoney(c.remaining)}</div>
+                        ) : (
+                          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">خالص ✓</div>
+                        )}
+                      </td>
+                      <td className="py-2 px-3 whitespace-nowrap text-center" onClick={e => e.stopPropagation()}>
+                        {viewMode === "TRASH" ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => handleRestoreCase(c)}
+                              disabled={isBusy}
+                              className="p-1 text-xs font-semibold bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
+                              title="استعادة"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handlePermanentDelete(c)}
+                              disabled={isBusy}
+                              className="p-1 text-xs font-semibold bg-red-50 text-red-700 rounded hover:bg-red-100"
+                              title="حذف نهائي"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center gap-0.5">
+                            <button
+                              type="button"
+                              onClick={() => { setSelectedCaseId(c.id); setInspectorOpen(true); }}
+                              className="p-1.5 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-lg transition-colors"
+                              title="معاينة سريعة منبثقة (درج فحص)"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                            {next && (
                               <button
                                 type="button"
-                                onClick={() => handleTrashCase(c)}
-                                disabled={isBusy}
-                                className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-500 rounded-lg transition-colors disabled:opacity-50"
-                                title="نقل إلى سلة المهملات"
+                                onClick={() => setAdvanceCaseData(c)}
+                                className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-lg transition-colors"
+                                title={`نقل إلى: ${CASE_STATUS_MAP[next]?.label || next}`}
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <ArrowRightCircle className="w-3.5 h-3.5 rtl:rotate-180" />
                               </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => { setEditingCase(c); setCreateOpen(true); }}
+                              className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 rounded-lg transition-colors"
+                              title="تعديل سريع"
+                            >
+                              <Pencil className="w-3.5 h-3.5 text-blue-500" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handlePrintPanLabel(c)}
+                              className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 rounded-lg transition-colors"
+                              title="طباعة تيكت صينية"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleTrashCase(c)}
+                              disabled={isBusy}
+                              className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-500 rounded-lg transition-colors disabled:opacity-50"
+                              title="نقل إلى سلة المهملات"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-
-          {/* Live Case Inspector Panel (Option A) */}
-          {inspectorOpen && selectedCase && (
-            <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 lg:sticky lg:top-4 self-start">
-              <DentalCaseInspector
-                caseData={selectedCase}
-                onClose={() => setInspectorOpen(false)}
-                onAdvance={setAdvanceCaseData}
-                onAssign={setAssignCaseData}
-                onEdit={(c) => { setEditingCase(c); setCreateOpen(true); }}
-                onInvoice={setInvoiceCase}
-                onUpload={handleUpload}
-                onPrintPanLabel={handlePrintPanLabel}
-                onPrintWorkOrder={handlePrintWorkOrder}
-                onTrash={handleTrashCase}
-                isBusy={actionBusyId === selectedCase.id}
-                uploadingId={uploadingId}
-              />
-            </div>
-          )}
         </div>
       ) : (
         /* Kanban Pipeline View (معايير 2026 للوحة مراحل التشغيل) */
@@ -2632,6 +2550,34 @@ export default function DentalCasesTab() {
       )}
       {invoiceCase && (
         <InvoiceModal caseData={invoiceCase} onClose={() => setInvoiceCase(null)} onSaved={() => { setInvoiceCase(null); refresh({ silent: true }); }} />
+      )}
+
+      {/* On-Demand Slide-over Quick Inspector Drawer (شاشة فحص منبثقة عند الطلب) */}
+      {inspectorOpen && selectedCase && (
+        <div
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex justify-end animate-in fade-in duration-200"
+          onClick={() => setInspectorOpen(false)}
+        >
+          <div
+            className="w-full sm:w-[500px] md:w-[540px] bg-white dark:bg-gray-900 h-full shadow-2xl flex flex-col border-r dark:border-gray-800 animate-in slide-in-from-left duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            <DentalCaseInspector
+              caseData={selectedCase}
+              onClose={() => setInspectorOpen(false)}
+              onAdvance={setAdvanceCaseData}
+              onAssign={setAssignCaseData}
+              onEdit={(c) => { setEditingCase(c); setCreateOpen(true); }}
+              onInvoice={setInvoiceCase}
+              onUpload={handleUpload}
+              onPrintPanLabel={handlePrintPanLabel}
+              onPrintWorkOrder={handlePrintWorkOrder}
+              onTrash={handleTrashCase}
+              isBusy={actionBusyId === selectedCase.id}
+              uploadingId={uploadingId}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
