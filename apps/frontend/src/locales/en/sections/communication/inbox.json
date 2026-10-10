@@ -11,5 +11,8 @@
   },
   "searchPlaceholder": "Search conversations...",
   "advancedFilters": "Advanced Filters",
-  "statistics": "Statistics"
+  "statistics": "Statistics",
+  "conversationLink": "Conversation link",
+  "noMessages": "No messages",
+  "notes": "Notes"
 }

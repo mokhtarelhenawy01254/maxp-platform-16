@@ -101,5 +101,14 @@
   "footer": "مستوحى من",
   "EGP": "جنيه مصري",
   "SAR": "ريال سعودي",
-  "USD": "دولار أمريكي"
+  "USD": "دولار أمريكي",
+  "metric": "المؤشر",
+  "value": "القيمة",
+  "monthlyOrdersPlaced": "الطلبات الشهرية (المعلنة)",
+  "ordersConfirmed": "الطلبات المؤكدة",
+  "ordersDelivered": "الطلبات الموصلة",
+  "ordersRTO": "المرتجعات (RTO)",
+  "totalVariableCost": "إجمالي التكاليف المتغيرة",
+  "netProfitMargin": "هامش صافي الربح",
+  "safeCAC": "تكلفة الاكتساب الآمنة"
 }

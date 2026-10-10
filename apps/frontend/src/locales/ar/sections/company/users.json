@@ -84,10 +84,21 @@
     "emailInvalid": "البريد الإلكتروني غير صحيح",
     "passwordRequired": "كلمة المرور مطلوبة",
     "passwordMinLength": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
-    "roleRequired": "الدور مطلوب"
+    "roleRequired": "الدور مطلوب",
+    "cannotDeactivateSelf": "لا يمكنك إلغاء تفعيل حسابك الخاص",
+    "phoneInvalid": "رقم الهاتف غير صحيح",
+    "salaryInvalid": "الراتب الأساسي غير صحيح"
   },
   "noUsers": "لا يوجد مستخدمين",
   "unlimited": "غير محدود",
   "editUser": "تعديل المستخدم",
-  "inviteNewUser": "دعوة مستخدم جديد"
+  "inviteNewUser": "دعوة مستخدم جديد",
+  "activate": "تفعيل",
+  "bulkActionsDescription": "طبّق إجراءً جماعياً على المستخدمين المحددين.",
+  "clearSelection": "مسح التحديد",
+  "deactivate": "إلغاء التفعيل",
+  "deleteSelected": "حذف المحدد",
+  "invitationsDescription": "متابعة الدعوات المُرسلة وأعضاء الفريق بانتظار الانضمام.",
+  "pendingInvitations": "الدعوات المعلقة ({{count}})",
+  "selectedUsers": "المستخدمون المحددون ({{count}})"
 }

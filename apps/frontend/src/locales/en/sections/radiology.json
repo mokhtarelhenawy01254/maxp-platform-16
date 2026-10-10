@@ -131,7 +131,11 @@
     "referralSource": "Referral source",
     "marketingRep": "Marketing rep",
     "externalReferral": "External referral",
-    "externalReferralBadge": "External partner"
+    "externalReferralBadge": "External partner",
+    "billingType": {
+      "INSURANCE": "Insurance billed",
+      "PATIENT": "Patient billed"
+    }
   },
   "appointmentDetails": {
     "title": "Booking details",
@@ -1331,7 +1335,8 @@
     "delivered": "Delivered",
     "revenue": "Revenue",
     "sources": "Sources",
-    "physicians": "Physicians"
+    "physicians": "Physicians",
+    "name": "Name"
   },
   "externalPartners": {
     "title": "External Partners",
@@ -1359,5 +1364,6 @@
     "edit": "Edit",
     "activate": "Activate",
     "deactivate": "Deactivate"
-  }
+  },
+  "stageLabel": "Stage"
 }

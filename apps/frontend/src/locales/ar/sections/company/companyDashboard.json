@@ -26,7 +26,9 @@
     "last90Days": "آخر 90 يوم",
     "thisMonth": "هذا الشهر",
     "lastMonth": "الشهر الماضي",
-    "custom": "فترة مخصصة"
+    "custom": "فترة مخصصة",
+    "thisWeek": "هذا الأسبوع",
+    "thisYear": "هذه السنة"
   },
   "rangeStats": {
     "title": "ملخص الفترة",
@@ -45,7 +47,8 @@
     "title": "إحصائيات سريعة",
     "products": "المنتجات",
     "orders": "الطلبات",
-    "activeApps": "التطبيقات النشطة"
+    "activeApps": "التطبيقات النشطة",
+    "customers": "العملاء"
   },
   "activity": {
     "title": "النشاط الأخير (7 أيام)",
@@ -86,7 +89,9 @@
   },
   "inventory": {
     "outOfStockCount": "{{count}} منتج نفذ من المخزون",
-    "lowStockCount": "{{count}} منتج أوشك على النفاد"
+    "lowStockCount": "{{count}} منتج أوشك على النفاد",
+    "lowStock": "مخزون منخفض",
+    "outOfStock": "نفذ من المخزون"
   },
   "metrics": {
     "totalOrders": "إجمالي الطلبات",

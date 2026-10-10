@@ -110,5 +110,7 @@
   "page_profile": "الملف الشخصي",
   "page_settings": "الإعدادات",
   "page_marketplace": "المتجر",
-  "page_whatsapp": "واتساب"
+  "page_whatsapp": "واتساب",
+  "deposit_fixed_summary": "دفعة مقدمة بمبلغ {{value}} جنيه",
+  "deposit_percentage_summary": "دفعة مقدمة بنسبة {{value}}%"
 }

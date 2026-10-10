@@ -1,4 +1,8 @@
 {
+  "activeUsers": "Active Users",
+  "agencyInvoices": "Invoices & Profit",
+  "quickFunnel": "Quick Funnel",
+  "taskSettings": "Task Settings",
   "marketingAgencySection": "Marketing Agency (Agency OS)",
   "agencyOverview": "Agency Dashboard",
   "agencyClients": "Clients & Ad Spend",

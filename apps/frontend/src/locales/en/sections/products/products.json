@@ -62,7 +62,10 @@
     "quantity": "Available Quantity *",
     "lowStockThreshold": "Low Stock Alert",
     "lowStockThresholdHint": "You will be alerted when inventory drops below this level",
-    "noTracking": "Inventory will not be tracked for this product. It will always appear as available to customers."
+    "noTracking": "Inventory will not be tracked for this product. It will always appear as available to customers.",
+    "description": "Manage product identifiers and inventory",
+    "identifiers": "Product Identifiers",
+    "barcode": "Barcode (Barcode / GTIN)"
   },
   "media": {
     "title": "Product Images",
@@ -195,7 +198,9 @@
     "dateRangeError": "⚠️ End date must be after start date",
     "variantNameRequired": "⚠️ Please enter variant name #{{number}}",
     "variantPriceError": "⚠️ Price for variant \"{{name}}\" cannot be negative",
-    "variantStockError": "⚠️ Stock for variant \"{{name}}\" cannot be negative"
+    "variantStockError": "⚠️ Stock for variant \"{{name}}\" cannot be negative",
+    "nameRequired": "⚠️ Please enter the product name",
+    "comparePriceInvalid": "⚠️ The compare-at price must be greater than the sale price"
   },
   "messages": {
     "savingProduct": "Saving...",
@@ -213,7 +218,8 @@
     "selectSize": "Size",
     "selectMaterial": "Material",
     "selectStyle": "Style",
-    "selectOther": "Other"
+    "selectOther": "Other",
+    "loadingCategories": "Loading categories..."
   },
   "error_error_1879": "حدث خطأ أثناء الحذف",
   "success_update_fdb7": "تم تحديث المنتج بنجاح",
@@ -223,5 +229,8 @@
   "msg_bd2e": "تم تصدير المنتجات بنجاح!",
   "msg_0437": "فشل التصدير",
   "error_error_7d31": "حدث خطأ أثناء استيراد الملف",
-  "error_error_e01c": "حدث خطأ أثناء حذف المنتجات"
+  "error_error_e01c": "حدث خطأ أثناء حذف المنتجات",
+  "tooltips": {
+    "slugTooltip": "A unique product link shown in the address (URL)"
+  }
 }

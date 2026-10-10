@@ -131,7 +131,11 @@
     "referralSource": "جهة الإحالة",
     "marketingRep": "مندوب التسويق",
     "externalReferral": "إحالة خارجية",
-    "externalReferralBadge": "شريك خارجي"
+    "externalReferralBadge": "شريك خارجي",
+    "billingType": {
+      "INSURANCE": "شركة تأمين",
+      "PATIENT": "مدفوعات المريض"
+    }
   },
   "appointmentDetails": {
     "title": "تفاصيل الحجز",
@@ -1331,7 +1335,8 @@
     "delivered": "مسلَّمة",
     "revenue": "الإيراد",
     "sources": "جهات",
-    "physicians": "أطباء"
+    "physicians": "أطباء",
+    "name": "الاسم"
   },
   "externalPartners": {
     "title": "الشركاء الخارجيون",
@@ -1359,5 +1364,6 @@
     "edit": "تعديل",
     "activate": "تفعيل",
     "deactivate": "تعطيل"
-  }
+  },
+  "stageLabel": "المرحلة"
 }

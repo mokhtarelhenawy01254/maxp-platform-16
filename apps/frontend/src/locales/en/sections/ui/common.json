@@ -56,5 +56,23 @@
     "medium": "Medium",
     "high": "High",
     "critical": "Critical"
-  }
+  },
+  "backToList": "Back to List",
+  "days": "days",
+  "errorLoadingData": "Failed to load data, please try again",
+  "go": "Go",
+  "loadError": "Failed to load",
+  "loadMore": "Load More",
+  "maxp": "MaxP",
+  "open": "Open",
+  "page": "Page",
+  "platform": "Platform",
+  "saveError": "Failed to save",
+  "savedSuccessfully": "Saved successfully",
+  "saving": "Saving...",
+  "settings": "Settings",
+  "system": "System",
+  "tryAgain": "Please try again",
+  "updateData": "Update Data",
+  "upload": "Upload"
 }

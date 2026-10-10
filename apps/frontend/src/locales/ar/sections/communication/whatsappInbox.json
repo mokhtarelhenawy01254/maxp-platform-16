@@ -238,5 +238,11 @@
     "userNotFound": "لم يتم العثور على المستخدم المطلوب.",
     "userRequired": "يجب اختيار مستخدم أولًا.",
     "usersLoad": "تعذر تحميل المستخدمين الآن."
-  }
+  },
+  "routingPreviewTitle": "معاينة التوزيع التلقائي",
+  "nextAssignmentWillGoTo": "التوزيع القادم سيكون إلى {{name}}",
+  "routingPreviewNoCandidate": "لا يوجد مرشح متاح للتوزيع",
+  "routingPreviewCandidates": "{{count}} مرشح",
+  "routingPreviewSkippedOffline": "{{count}} غير متصل (تم تخطيه)",
+  "routingPreviewSkippedCapacity": "{{count}} تجاوز السعة (تم تخطيه)"
 }

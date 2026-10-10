@@ -131,5 +131,8 @@
   "k_126": "You can download CSV directly or Excel from the system.",
   "k_127": "Download Excel",
   "k_128": "Preparing file...",
-  "k_129": "After downloading: Open Google Sheets and choose \"File → Import\" and upload the file."
+  "k_129": "After downloading: Open Google Sheets and choose \"File → Import\" and upload the file.",
+  "import_success": "Imported successfully from {{type}}",
+  "products_variants_summary": "{{products}} products · {{variants}} variants",
+  "variants_count": "{{count}} variants"
 }

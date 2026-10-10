@@ -162,7 +162,8 @@
     "approved": "Design approved successfully",
     "changesSent": "Change request sent to the lab",
     "changesPrompt": "Write the requested changes",
-    "approvalError": "Could not record approval"
+    "approvalError": "Could not record approval",
+    "uploadTotal": "Total files"
   },
   "invoices": {
     "title": "My Invoices",

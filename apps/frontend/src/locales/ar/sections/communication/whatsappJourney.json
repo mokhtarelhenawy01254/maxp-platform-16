@@ -66,7 +66,15 @@
     "showPreview": "عرض المعاينة",
     "send": "إرسال",
     "noIssues": "لا توجد مشاكل",
-    "timelineCount_plural": "[AR] Flow timeline · {{count}} steps"
+    "timelineCount_plural": "[AR] Flow timeline · {{count}} steps",
+    "buttons": "أزرار الخطوة (Quick Replies)",
+    "expectReply": "انتظار رد العميل",
+    "expectReplyHint": "الخطوة تستنى رد العميل وتتفرع حسب الكلمات",
+    "nextStep": "الخطوة التالية عند المطابقة",
+    "nextStepAuto": "تلقائي (الخطوة اللي بعدها)",
+    "replyKeywords": "كلمات الرد (مفصولة بفاصلة)",
+    "replyKeywordsPlaceholder": "مثال: سعر، السعر، تسعير",
+    "timeout": "المدة القصوى بالساعات (اختياري)"
   },
   "monitoring": {
     "customer": "العميل",

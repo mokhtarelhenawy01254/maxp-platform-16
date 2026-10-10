@@ -74,5 +74,6 @@
   "onReturnedShipments": "on returned shipments",
   "tableMetricsLegend": "Note: Closed rate is computed on resolved parcels (Delivered ÷ Resolved) to gauge courier success | Return rate is computed on total shipped to monitor overall pipeline leakage.",
   "compositionSubtitle": "Status breakdown of all dispatched parcels (100% of Shipped)",
-  "closedSummaryStrip": "Resolved Shipments (Closed): {closed} orders (Closed Delivery Rate: {rate}%)"
+  "closedSummaryStrip": "Resolved Shipments (Closed): {closed} orders (Closed Delivery Rate: {rate}%)",
+  "totalOrders": "Total Orders"
 }

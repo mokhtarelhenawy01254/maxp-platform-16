@@ -29,6 +29,7 @@
     "date": "التاريخ",
     "noLogs": "لا توجد سجلات",
     "rowsPerPage": "عدد الصفوف:",
-    "displayedRows": "{{from}}-{{to}} من {{count}}"
+    "displayedRows": "{{from}}-{{to}} من {{count}}",
+    "error": "الخطأ"
   }
 }

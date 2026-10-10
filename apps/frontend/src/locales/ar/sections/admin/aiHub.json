@@ -110,7 +110,11 @@
       "messagePlaceholder": "رسالة {{agentName}}...",
       "selectCentralModel": "اختر موديل مركزي لبدء المحادثة",
       "configureApiKey": "اضبط مفتاح API من الشريط العلوي",
-      "sendMessage": "إرسال الرسالة"
+      "sendMessage": "إرسال الرسالة",
+      "browse": "تصفح",
+      "dragDropImage": "اسحب الصورة وأفلتها هنا أو",
+      "orPasteUrl": "أو الصق رابط صورة",
+      "supportedFormats": "PNG أو JPG أو WEBP حتى 5 ميجابايت"
     },
     "trace": {
       "title": "مسار التشغيل",

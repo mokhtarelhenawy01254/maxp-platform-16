@@ -192,5 +192,21 @@
   "carrierDelayReason": "ملاحظة الشحن / التأخير المسبق:",
   "returnSource": "المصدر:",
   "editReturnReason": "تعديل سبب المرتجع",
-  "addReturnReason": "تحديد سبب المرتجع"
+  "addReturnReason": "تحديد سبب المرتجع",
+  "apartment": "الشقة",
+  "building": "المبنى",
+  "exchangeOrder": "طلب استبدال",
+  "floor": "الطابق",
+  "invoice": "الفاتورة",
+  "invoicePrintError": "فشل طباعة الفاتورة: {{error}}",
+  "loading": "جاري التحميل...",
+  "noAreasAvailable": "لا توجد مناطق متاحة",
+  "preparationSlip": "ورقة التجهيز",
+  "preparationSlipError": "فشل تحميل ورقة التجهيز: {{error}}",
+  "returnReasonLine": "سبب المرتجع: {{reason}}",
+  "returnedAt": "تاريخ التسجيل:",
+  "returnedFromOrder": "مرتجع من الطلب {{orderNumber}}",
+  "supportTickets": "تذاكر الدعم",
+  "titlePrefix": "تفاصيل الطلب",
+  "whatsapp": "واتساب المنصة"
 }

@@ -99,7 +99,8 @@
     "supportSettings": "إعدادات الدعم",
     "kanbanBoard": "لوحة المهام",
     "brandName": "التحكم الذكي",
-    "brandSubtitle": "الإدارة المركزية"
+    "brandSubtitle": "الإدارة المركزية",
+    "dailyOrders": "متابعة الطلبات اليومية"
   },
   "aiProviders": {
     "embedding": {
@@ -228,7 +229,10 @@
     "aiProviders": "مفاتيح ومزودي النماذج",
     "providerLogs": "لوج المزودين",
     "aiTemplates": "قوالب الذكاء الاصطناعي",
-    "agentProfiles": "الوكلاء الجاهزون"
+    "agentProfiles": "الوكلاء الجاهزون",
+    "metrics": {
+      "goalsAchieved": "الأهداف المحققة"
+    }
   },
   "globalSearchPlaceholder": "ابحث في النظام بالكامل...",
   "globalSearchHint": "اكتب أي كلمة أو حرف للبحث في جميع أقسام النظام",
@@ -423,6 +427,71 @@
         "openWorkspace": "فتح المساحة",
         "notifications": "الإشعارات"
       }
+    },
+    "logs": {
+      "title": "سجلات واتساب",
+      "description": "مراقبة رسائل تسجيل الشركات والاشتراك التي تمر عبر مساحة السوبر أدمن فقط.",
+      "filtersTitle": "فلاتر السجلات",
+      "searchPlaceholder": "ابحث بالرقم أو المحتوى أو الشركة",
+      "statusAll": "كل الحالات",
+      "companyAll": "كل الشركات",
+      "listTitle": "سجل onboarding للشركات",
+      "listDescription": "أحدث رسائل تسجيل الشركات والاشتراك الخارجة من نطاق السوبر أدمن.",
+      "empty": "لا توجد سجلات مطابقة للفلاتر الحالية.",
+      "columns": {
+        "company": "الشركة",
+        "event": "الحدث",
+        "status": "الحالة",
+        "error": "الخطأ",
+        "recipient": "المستلم",
+        "time": "الوقت"
+      },
+      "statusPlaceholder": "الحالة",
+      "companyPlaceholder": "الشركة"
+    },
+    "workspace": {
+      "title": "مساحة شركة واتساب",
+      "titleWithName": "مساحة واتساب · {{name}}",
+      "loadingDescription": "تحميل بيانات الشركة...",
+      "description": "ملخص سريع لرسائل تسجيل الشركة والاشتراك قبل فتح الجلسات أو شاشة إشعارات onboarding.",
+      "backLabel": "الرجوع للشركات",
+      "actions": {
+        "linkSession": "ربط السيشن",
+        "settings": "الإعدادات",
+        "notifications": "إشعارات التسجيل",
+        "inbox": "صندوق الوارد",
+        "analytics": "التحليلات",
+        "openSessions": "فتح الجلسات"
+      },
+      "noSessionAlert": {
+        "title": "الشركة تحتاج ربط سيشن أولًا",
+        "description": "قبل تشغيل الأتمتة أو الاعتماد على الإشعارات، افتح تبويب الجلسات واربط session متصلة واجعلها افتراضية."
+      },
+      "metrics": {
+        "sessions": "الجلسات",
+        "sessionsHint": "{{connected}} جلسة متصلة",
+        "notifications": "الإشعارات",
+        "notificationsEnabled": "مفعلة",
+        "notificationsDisabled": "معطلة",
+        "notificationsHint": "حالة محرك الإشعارات",
+        "templates": "القوالب",
+        "templatesHint": "{{total}} رسالة onboarding خلال 30 يوم",
+        "failures": "الفشل",
+        "failuresHint": "{{read}} رسالة مقروءة"
+      },
+      "sessionsCard": {
+        "title": "الجلسات الحالية",
+        "description": "الجلسات المتاحة للشركة، مع توضيح الجلسة الافتراضية.",
+        "empty": "لا توجد جلسات واتساب لهذه الشركة حتى الآن.",
+        "defaultBadge": "افتراضية"
+      },
+      "templatesCard": {
+        "title": "أحدث القوالب",
+        "description": "آخر قوالب تسجيل الشركات والاشتراكات التي يراجعها السوبر أدمن لهذه الشركة.",
+        "empty": "لا توجد قوالب محفوظة لهذه الشركة بعد.",
+        "active": "نشط",
+        "inactive": "غير نشط"
+      }
     }
   },
   "selfReview": {
@@ -500,5 +569,7 @@
     "serviceDisabled": "تم إيقاف الخدمة",
     "originalReply": "الرد الأصلي",
     "correctedReply": "الرد بعد التصحيح"
-  }
+  },
+  "profileMenu": "قائمة الملف الشخصي",
+  "toggleSidebar": "طي/فتح القائمة الجانبية"
 }

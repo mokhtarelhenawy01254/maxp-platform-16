@@ -50,5 +50,7 @@
   "bulkUpdateSuccess": "{{count}} order(s) updated successfully",
   "bulkUpdatePartial": "Updated {{success}} order(s), {{failed}} failed",
   "bulkUpdateFailed": "Failed to update orders",
-  "bulkUpdateError": "An error occurred during update"
+  "bulkUpdateError": "An error occurred during update",
+  "cancellationReasonPrompt": "Enter the order cancellation reason:",
+  "cancellationReasonRequired": "Order cancellation reason is required"
 }

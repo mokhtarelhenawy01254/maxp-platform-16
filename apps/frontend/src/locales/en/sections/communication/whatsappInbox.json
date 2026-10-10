@@ -238,5 +238,11 @@
     "userNotFound": "The requested user could not be found.",
     "userRequired": "Please select a user first.",
     "usersLoad": "We could not load the users right now."
-  }
+  },
+  "routingPreviewTitle": "Auto-assignment preview",
+  "nextAssignmentWillGoTo": "Next assignment will go to {{name}}",
+  "routingPreviewNoCandidate": "No candidate available for assignment",
+  "routingPreviewCandidates": "{{count}} candidates",
+  "routingPreviewSkippedOffline": "{{count}} offline (skipped)",
+  "routingPreviewSkippedCapacity": "{{count}} over capacity (skipped)"
 }

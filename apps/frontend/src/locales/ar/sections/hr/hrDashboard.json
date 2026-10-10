@@ -51,5 +51,8 @@
     "documents": "المستندات",
     "salary": "سجل الرواتب",
     "performance": "الأداء"
+  },
+  "errors": {
+    "fetchFailed": "فشل تحميل لوحة التحكم"
   }
 }

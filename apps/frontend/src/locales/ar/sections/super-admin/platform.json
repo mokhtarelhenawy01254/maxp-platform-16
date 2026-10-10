@@ -131,5 +131,8 @@
   "k_126": "يمكنك تنزيل CSV مباشرة أو Excel من النظام.",
   "k_127": "تنزيل Excel",
   "k_128": "جاري تجهيز الملف...",
-  "k_129": "بعد التنزيل: افتح Google Sheets واختر \"File → Import\" ثم ارفع الملف."
+  "k_129": "بعد التنزيل: افتح Google Sheets واختر \"File → Import\" ثم ارفع الملف.",
+  "import_success": "تم الاستيراد بنجاح من {{type}}",
+  "products_variants_summary": "{{products}} منتج · {{variants}} خيار",
+  "variants_count": "{{count}} خيار"
 }

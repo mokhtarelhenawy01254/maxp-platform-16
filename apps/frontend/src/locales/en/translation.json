@@ -1194,7 +1194,8 @@
     "onReturnedShipments": "on returned shipments",
     "tableMetricsLegend": "Note: Closed rate is computed on resolved parcels (Delivered ÷ Resolved) to gauge courier success | Return rate is computed on total shipped to monitor overall pipeline leakage.",
     "compositionSubtitle": "Status breakdown of all dispatched parcels (100% of Shipped)",
-    "closedSummaryStrip": "Resolved Shipments (Closed): {closed} orders (Closed Delivery Rate: {rate}%)"
+    "closedSummaryStrip": "Resolved Shipments (Closed): {closed} orders (Closed Delivery Rate: {rate}%)",
+    "totalOrders": "Total Orders"
   },
   "dentalPortal": {
     "portalName": "Dental Lab Portal",
@@ -1360,7 +1361,8 @@
       "approved": "Design approved successfully",
       "changesSent": "Change request sent to the lab",
       "changesPrompt": "Write the requested changes",
-      "approvalError": "Could not record approval"
+      "approvalError": "Could not record approval",
+      "uploadTotal": "Total files"
     },
     "invoices": {
       "title": "My Invoices",
@@ -2334,7 +2336,8 @@
       "submitError": "Failed to submit request",
       "pendingStatus": "Under Review",
       "approvedStatus": "Approved",
-      "rejectedStatus": "Rejected"
+      "rejectedStatus": "Rejected",
+      "management": "Management"
     },
     "activity": {
       "title": "My Activity",
@@ -2426,7 +2429,8 @@
       "filter": "Filter",
       "refresh": "Refresh",
       "export": "Export",
-      "print": "Print"
+      "print": "Print",
+      "day": "day"
     },
     "profile": {
       "loading": "Loading your profile...",
@@ -2530,7 +2534,10 @@
       "noCustody": "No assets assigned to you yet",
       "statusAssigned": "Assigned",
       "acknowledgedOn": "Acknowledged on {{date}}",
-      "noDepartment": "No Department"
+      "noDepartment": "No Department",
+      "annualLeaveBalance": "Annual leave balance",
+      "maritalStatus": "Marital status",
+      "sickLeaveBalance": "Sick leave balance"
     }
   },
   "EmployeeDetails": {
@@ -3018,7 +3025,11 @@
   },
   "OrderModal": {
     "msg_fe97": "خطأ غير معروف",
-    "error_error_430a": "حدث خطأ أثناء إنشاء الطلب"
+    "error_error_430a": "حدث خطأ أثناء إنشاء الطلب",
+    "msg_a03a": "Please select a city",
+    "msg_f4e5": "Please enter the phone number",
+    "msg_f9fe": "Please log in first",
+    "failed_create_ff97": "Failed to create order"
   },
   "OrderModalEnhanced": {
     "msg_1ca3": "خطأ غير معروف",
@@ -3654,7 +3665,14 @@
     },
     "fallbackCustomerName": "Unknown Customer",
     "fallbackWarehouseName": "Unnamed Warehouse",
-    "k_10": "Ready to Ship"
+    "k_10": "Ready to Ship",
+    "k_1": "Preparation Queue Disabled",
+    "k_2": "— Can be re-enabled from Order Settings.",
+    "k_3": "— Use reason or assignee filter for quick access.",
+    "k_4": "Execution Queue",
+    "k_9": "On Hold (Shortage)",
+    "k_20": "Selected order not found",
+    "k_26": "All visible orders violate current preparation rules"
   },
   "PrivacySettingsDialog": {
     "failed_fetch_6cd1": "فشل جلب قائمة المحظورين",
@@ -3966,7 +3984,11 @@
       "referralSource": "Referral source",
       "marketingRep": "Marketing rep",
       "externalReferral": "External referral",
-      "externalReferralBadge": "External partner"
+      "externalReferralBadge": "External partner",
+      "billingType": {
+        "INSURANCE": "Insurance billed",
+        "PATIENT": "Patient billed"
+      }
     },
     "appointmentDetails": {
       "title": "Booking details",
@@ -5166,7 +5188,8 @@
       "delivered": "Delivered",
       "revenue": "Revenue",
       "sources": "Sources",
-      "physicians": "Physicians"
+      "physicians": "Physicians",
+      "name": "Name"
     },
     "externalPartners": {
       "title": "External Partners",
@@ -5194,7 +5217,8 @@
       "edit": "Edit",
       "activate": "Activate",
       "deactivate": "Deactivate"
-    }
+    },
+    "stageLabel": "Stage"
   },
   "RatingButtons": {
     "error_error_1ca7": "حدث خطأ في إرسال التقييم. يرجى المحاولة مرة أخرى."
@@ -6309,6 +6333,7 @@
       "disableAll": "Disable All",
       "search": "Search",
       "empty": "No tools",
+      "emptyDesc": "No tool permissions have been granted to {{agentName}} yet. You can grant permissions from the Tools panel.",
       "readOnly": "Read",
       "write": "Write",
       "addDialogTitle": "Add Tools",
@@ -6321,6 +6346,7 @@
       "disableAll": "Disable All",
       "search": "Search",
       "empty": "No skills",
+      "emptyDesc": "No skills have been assigned to {{agentName}} yet. You can grant skills from the Skills Hub.",
       "addDialogTitle": "Add Skills",
       "addSearch": "Search skills..."
     },
@@ -6724,7 +6750,11 @@
         "messagePlaceholder": "Message {{agentName}}...",
         "selectCentralModel": "Select a central model to start chatting",
         "configureApiKey": "Configure your API key in the HeaderBar",
-        "sendMessage": "Send message"
+        "sendMessage": "Send message",
+        "browse": "browse",
+        "dragDropImage": "Drag & drop an image here or",
+        "orPasteUrl": "or paste an image URL",
+        "supportedFormats": "PNG, JPG, WEBP up to 5 MB"
       },
       "trace": {
         "title": "Run trace",
@@ -6790,6 +6820,150 @@
     "answerSubmitted": "Answer submitted successfully",
     "answeredBy": "Answered by",
     "showContext": "Show additional details"
+  },
+  "sandbox": {
+    "scenarios": [
+      {
+        "id": "greeting",
+        "label": "Greeting",
+        "icon": "👋",
+        "prompt": "Hello! Who are you and what can you do?",
+        "category": "Basics"
+      },
+      {
+        "id": "product_search",
+        "label": "Search Products",
+        "icon": "🔍",
+        "prompt": "Search for laptops under 30000 EGP. Show me all available options with their specs and ratings.",
+        "category": "Products"
+      },
+      {
+        "id": "top_selling",
+        "label": "Top Selling",
+        "icon": "🏆",
+        "prompt": "Show me the top selling products this period with revenue numbers.",
+        "category": "Products"
+      },
+      {
+        "id": "low_stock",
+        "label": "Low Stock Alert",
+        "icon": "⚠️",
+        "prompt": "Check which products are low in stock or out of stock. Alert me if any are below 10 units.",
+        "category": "Inventory"
+      },
+      {
+        "id": "adjust_stock",
+        "label": "Adjust Stock",
+        "icon": "📦",
+        "prompt": "Product PROD_001 is running low. I need to increase its stock by 50 units.",
+        "category": "Inventory"
+      },
+      {
+        "id": "create_draft_order",
+        "label": "Draft Order",
+        "icon": "📝",
+        "prompt": "Create a draft order for customer TEST_CUSTOMER_ID. They want 2 MacBook Pro laptops and 1 iPhone 15.",
+        "category": "Orders"
+      },
+      {
+        "id": "order_lookup",
+        "label": "Order Lookup",
+        "icon": "📋",
+        "prompt": "Show me the details of order #ORD_001. I need the status, items, and total.",
+        "category": "Orders"
+      },
+      {
+        "id": "recent_orders",
+        "label": "Recent Orders",
+        "icon": "🕐",
+        "prompt": "Show me the recent orders from today. How many orders and what is the total revenue?",
+        "category": "Orders"
+      },
+      {
+        "id": "cancel_order",
+        "label": "Cancel Order",
+        "icon": "❌",
+        "prompt": "The customer wants to cancel order #ORD_002. Handle this cancellation professionally.",
+        "category": "Orders"
+      },
+      {
+        "id": "handle_refund",
+        "label": "Handle Refund",
+        "icon": "💬",
+        "prompt": "A customer is complaining about order #ORD_003. The product arrived damaged and he wants a full refund. Handle this professionally.",
+        "category": "Support"
+      },
+      {
+        "id": "customer_info",
+        "label": "Customer Info",
+        "icon": "👤",
+        "prompt": "Find customer information for TEST_CUSTOMER_ID. Show me their profile, order history, and loyalty points.",
+        "category": "Customers"
+      },
+      {
+        "id": "top_buyers",
+        "label": "Top Buyers",
+        "icon": "⭐",
+        "prompt": "Who are our top 5 customers? Show me their names and total spending.",
+        "category": "Customers"
+      },
+      {
+        "id": "shipping_rates",
+        "label": "Shipping Rates",
+        "icon": "🚚",
+        "prompt": "What are the available shipping options and rates to Egypt?",
+        "category": "Shipping"
+      },
+      {
+        "id": "apply_discount",
+        "label": "Apply Discount",
+        "icon": "🏷️",
+        "prompt": "Apply a 10% discount to order #ORD_001 for customer loyalty.",
+        "category": "Discounts"
+      },
+      {
+        "id": "sales_report",
+        "label": "Sales Report",
+        "icon": "📊",
+        "prompt": "Generate a sales report for this week. Show me the top 5 products by revenue and compare with last week.",
+        "category": "Analytics"
+      },
+      {
+        "id": "company_snapshot",
+        "label": "Company Snapshot",
+        "icon": "🏢",
+        "prompt": "Show me a quick dashboard snapshot of the company. Revenue, orders, customers, and inventory status.",
+        "category": "Analytics"
+      },
+      {
+        "id": "multi_tool",
+        "label": "Complex Task",
+        "icon": "🧩",
+        "prompt": "I need to: 1) Find customer Mohamed on phone 01001111111, 2) Create a draft order for 2x Product X and 1x Product Y, 3) Apply a 10% loyalty discount. Handle this step by step.",
+        "category": "Advanced"
+      },
+      {
+        "id": "agent_introspection",
+        "label": "Agent Capabilities",
+        "icon": "🤖",
+        "prompt": "List all the tools you have access to. Categorize them into read tools and write tools.",
+        "category": "Advanced"
+      },
+      {
+        "id": "faq_entry",
+        "label": "Create FAQ",
+        "icon": "📖",
+        "prompt": "I want to add a new FAQ entry: customers often ask 'How do I return a product?' The answer should explain the 14-day return policy.",
+        "category": "Knowledge"
+      },
+      {
+        "id": "schedule_job",
+        "label": "Schedule Task",
+        "icon": "⏰",
+        "prompt": "I need to schedule a daily task at 9 AM to check low stock products and alert the team.",
+        "category": "Admin"
+      }
+    ]
   },
   "subAgents": {
     "title": "Sub-Agents",
@@ -7506,7 +7680,53 @@
     "socialPasswordPlaceholder": "Enter password",
     "founderLinkPlaceholder": "https://...",
     "pricePlaceholder": "0.00",
-    "currencySymbol": "$"
+    "currencySymbol": "$",
+    "activeCampaigns": "Active Campaigns",
+    "address": "Address",
+    "amazonProducts": "Amazon Products",
+    "avgCTR": "Avg. CTR",
+    "avgComments": "Avg. Comments",
+    "avgEngagement": "Avg. Engagement",
+    "avgLikes": "Avg. Likes",
+    "avgViews": "Avg. Views",
+    "budget": "Budget",
+    "businessInfo": "Business Info",
+    "campaignName": "Campaign Name",
+    "campaigns": "Campaigns",
+    "categories": "Categories",
+    "clicks": "Clicks",
+    "confidence": "Confidence",
+    "conversions": "Conversions",
+    "easierToUse": "Easier to use?",
+    "engagementComparison": "Engagement Comparison",
+    "engagementRate": "Engagement Rate",
+    "filterPlatform": "Filter by Platform",
+    "followers": "Followers",
+    "googleRating": "Google Rating",
+    "high": "High",
+    "impressions": "Impressions",
+    "low": "Low",
+    "medium": "Medium",
+    "noGoogleData": "No Google data",
+    "noTechData": "No tech data",
+    "phone": "Phone",
+    "platformBreakdown": "Platform Breakdown",
+    "posts": "Posts",
+    "primeLabel": "Prime",
+    "product": "Product",
+    "rating": "Rating",
+    "ratings": "Ratings",
+    "reviews": "Reviews",
+    "shopifyProducts": "Shopify Products",
+    "spend": "Spend",
+    "standardLabel": "Standard",
+    "technologies": "Technologies",
+    "technology": "Technology",
+    "topCreatives": "Top Creatives",
+    "totalCampaigns": "Total Campaigns",
+    "totalTechnologies": "Total Technologies",
+    "version": "Version",
+    "website": "Website"
   },
   "conversionAnalytics": {
     "title": "Conversion Rate Analytics",
@@ -7790,7 +8010,16 @@
     "footer": "Inspired by",
     "EGP": "Egyptian Pound",
     "SAR": "Saudi Riyal",
-    "USD": "US Dollar"
+    "USD": "US Dollar",
+    "metric": "Metric",
+    "value": "Value",
+    "monthlyOrdersPlaced": "Monthly Orders Placed",
+    "ordersConfirmed": "Orders Confirmed",
+    "ordersDelivered": "Orders Delivered",
+    "ordersRTO": "Orders RTO",
+    "totalVariableCost": "Total Variable Cost",
+    "netProfitMargin": "Net Profit Margin",
+    "safeCAC": "Safe CAC"
   },
   "profitAnalytics": {
     "title": "Profit Analytics",
@@ -8649,7 +8878,10 @@
     },
     "searchPlaceholder": "Search conversations...",
     "advancedFilters": "Advanced Filters",
-    "statistics": "Statistics"
+    "statistics": "Statistics",
+    "conversationLink": "Conversation link",
+    "noMessages": "No messages",
+    "notes": "Notes"
   },
   "instagramSettings": {
     "title": "Instagram Settings",
@@ -9041,7 +9273,8 @@
       "location": "Location",
       "today": "Today",
       "yesterday": "Yesterday",
-      "goToMessage": "Go to message"
+      "goToMessage": "Go to message",
+      "channel": "Channel"
     },
     "dialogs": {
       "deleteChatTitle": "Delete Chat",
@@ -9111,7 +9344,8 @@
       "date": "Date",
       "noLogs": "No logs found",
       "rowsPerPage": "Rows per page:",
-      "displayedRows": "{{from}}-{{to}} of {{count}}"
+      "displayedRows": "{{from}}-{{to}} of {{count}}",
+      "error": "Error"
     }
   },
   "whatsappInbox": {
@@ -9354,7 +9588,13 @@
       "userNotFound": "The requested user could not be found.",
       "userRequired": "Please select a user first.",
       "usersLoad": "We could not load the users right now."
-    }
+    },
+    "routingPreviewTitle": "Auto-assignment preview",
+    "nextAssignmentWillGoTo": "Next assignment will go to {{name}}",
+    "routingPreviewNoCandidate": "No candidate available for assignment",
+    "routingPreviewCandidates": "{{count}} candidates",
+    "routingPreviewSkippedOffline": "{{count}} offline (skipped)",
+    "routingPreviewSkippedCapacity": "{{count}} over capacity (skipped)"
   },
   "whatsappJourney": {
     "title": "Post-Purchase Message Journeys",
@@ -9424,7 +9664,15 @@
       "hidePreview": "Hide preview",
       "showPreview": "Show preview",
       "send": "Send",
-      "noIssues": "No issues"
+      "noIssues": "No issues",
+      "buttons": "Step buttons (Quick Replies)",
+      "expectReply": "Wait for customer reply",
+      "expectReplyHint": "The step waits for the customer reply and branches by keywords",
+      "nextStep": "Next step on match",
+      "nextStepAuto": "Automatic (the next step)",
+      "replyKeywords": "Reply keywords (comma separated)",
+      "replyKeywordsPlaceholder": "e.g. price, cost, pricing",
+      "timeout": "Max duration in hours (optional)"
     },
     "monitoring": {
       "customer": "Customer",
@@ -10162,7 +10410,9 @@
       "last90Days": "Last 90 days",
       "thisMonth": "This month",
       "lastMonth": "Last month",
-      "custom": "Custom range"
+      "custom": "Custom range",
+      "thisWeek": "This week",
+      "thisYear": "This year"
     },
     "rangeStats": {
       "title": "Period Summary",
@@ -10181,7 +10431,8 @@
       "title": "Quick Stats",
       "products": "Products",
       "orders": "Orders",
-      "activeApps": "Active Apps"
+      "activeApps": "Active Apps",
+      "customers": "Customers"
     },
     "activity": {
       "title": "Recent Activity (7 days)",
@@ -10222,7 +10473,9 @@
     },
     "inventory": {
       "outOfStockCount": "{{count}} out of stock",
-      "lowStockCount": "{{count}} low on stock"
+      "lowStockCount": "{{count}} low on stock",
+      "lowStock": "Low stock",
+      "outOfStock": "Out of stock"
     },
     "metrics": {
       "totalOrders": "Total Orders",
@@ -10696,12 +10949,23 @@
       "emailInvalid": "Invalid email format",
       "passwordRequired": "Password is required",
       "passwordMinLength": "Password must be at least 6 characters",
-      "roleRequired": "Role is required"
+      "roleRequired": "Role is required",
+      "cannotDeactivateSelf": "You cannot deactivate your own account",
+      "phoneInvalid": "Invalid phone number",
+      "salaryInvalid": "Invalid base salary"
     },
     "noUsers": "No users found",
     "unlimited": "Unlimited",
     "editUser": "Edit User",
-    "inviteNewUser": "Invite New User"
+    "inviteNewUser": "Invite New User",
+    "activate": "Activate",
+    "bulkActionsDescription": "Apply a bulk action to the selected users.",
+    "clearSelection": "Clear Selection",
+    "deactivate": "Deactivate",
+    "deleteSelected": "Delete Selected",
+    "invitationsDescription": "Track sent invitations and team members awaiting to join.",
+    "pendingInvitations": "Pending Invitations ({{count}})",
+    "selectedUsers": "Selected Users ({{count}})"
   },
   "customerAnalytics": {
     "title": "Customer Analytics",
@@ -10876,7 +11140,10 @@
       "tabPaste": "Paste Direct Data",
       "pastePlaceholder": "Copy rows and columns from Excel and paste them here...\nName,Phone,Email,Status\nJohn Doe,01012345678,john@example.com,LEAD",
       "parseButton": "Preview and Parse Data"
-    }
+    },
+    "deleteConfirmMessage": "Are you sure you want to delete customer {{name}}?",
+    "deleteWarning": "This action cannot be undone",
+    "loadError": "Failed to load customer data"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -11853,6 +12120,9 @@
       "documents": "Documents",
       "salary": "Salary History",
       "performance": "Performance"
+    },
+    "errors": {
+      "fetchFailed": "Failed to load dashboard"
     }
   },
   "rewards": {
@@ -11909,7 +12179,8 @@
       "cancel": "Cancel",
       "loading": "Saving...",
       "success": "Saved successfully",
-      "error": "Error while saving"
+      "error": "Error while saving",
+      "currency": "EGP"
     },
     "delete": {
       "title": "Delete Reward",
@@ -11919,7 +12190,15 @@
       "confirmButton": "Delete",
       "loading": "Deleting...",
       "success": "Reward deleted successfully",
-      "error": "Error while deleting"
+      "error": "Error while deleting",
+      "confirmTitle": "Delete reward type",
+      "confirmDescription": "Are you sure you want to delete this type? This action cannot be undone.",
+      "confirmText": "Delete",
+      "irreversible": "This action cannot be undone",
+      "linkedRecords": "All records linked to this type will be deleted",
+      "disableInstead": "You can disable the type instead of deleting it",
+      "errorLinked": "Delete failed: this type is linked to other records",
+      "tooltip": "Delete"
     },
     "toast": {
       "approveSuccess": "Reward approved successfully",
@@ -11929,7 +12208,15 @@
       "deleteSuccess": "Reward deleted successfully",
       "deleteError": "Failed to delete reward",
       "createSuccess": "Reward created successfully",
-      "updateSuccess": "Reward updated successfully"
+      "updateSuccess": "Reward updated successfully",
+      "created": "Type created successfully",
+      "updated": "Type updated successfully",
+      "deleted": "Type deleted successfully",
+      "loadError": "Failed to load types",
+      "nameRequired": "Type name is required",
+      "saveError": "Failed to save",
+      "statusChanged": "Status changed successfully",
+      "statusChangeFailed": "Failed to change status"
     },
     "table": {
       "employee": "Employee",
@@ -11938,7 +12225,8 @@
       "value": "Value",
       "status": "Status",
       "date": "Date",
-      "actions": "Actions"
+      "actions": "Actions",
+      "name": "Name"
     }
   },
   "clvCalculator": {
@@ -13519,7 +13807,9 @@
     "bulkUpdateSuccess": "{{count}} order(s) updated successfully",
     "bulkUpdatePartial": "Updated {{success}} order(s), {{failed}} failed",
     "bulkUpdateFailed": "Failed to update orders",
-    "bulkUpdateError": "An error occurred during update"
+    "bulkUpdateError": "An error occurred during update",
+    "cancellationReasonPrompt": "Enter the order cancellation reason:",
+    "cancellationReasonRequired": "Order cancellation reason is required"
   },
   "cancellations": {
     "k_1": "Client",
@@ -13945,7 +14235,23 @@
     "carrierDelayReason": "Carrier / Prior Delay Note:",
     "returnSource": "Source:",
     "editReturnReason": "Edit Return Reason",
-    "addReturnReason": "Add Return Reason"
+    "addReturnReason": "Add Return Reason",
+    "apartment": "Apartment",
+    "building": "Building",
+    "exchangeOrder": "Exchange Order",
+    "floor": "Floor",
+    "invoice": "Invoice",
+    "invoicePrintError": "Failed to print the invoice: {{error}}",
+    "loading": "Loading...",
+    "noAreasAvailable": "No areas available",
+    "preparationSlip": "Preparation Slip",
+    "preparationSlipError": "Failed to load the preparation slip: {{error}}",
+    "returnReasonLine": "Return reason: {{reason}}",
+    "returnedAt": "Recorded at:",
+    "returnedFromOrder": "Returned from order {{orderNumber}}",
+    "supportTickets": "Support Tickets",
+    "titlePrefix": "Order Details",
+    "whatsapp": "Platform WhatsApp"
   },
   "orderInvoices": {
     "k_1": "Review order invoices with quick search, payment statuses, and clearer navigation.",
@@ -14113,6 +14419,11 @@
     "k_99": "Visible Content, Template & Dispatch",
     "k_100": "Internal Copy Prior to Courier Handoff",
     "k_101": "Basic View"
+  },
+  "orderNumbering": {
+    "invalidNumber": "Please enter a valid number (1 or more)",
+    "resetSuccess": "Counter reset successfully ✅",
+    "saveSuccess": "Settings saved successfully ✅"
   },
   "orders": {
     "title": "Orders",
@@ -15187,7 +15498,39 @@
     },
     "noOrderSelected": "No order selected",
     "selectOrderFromList": "Pick an order from the list to view its details and act on it",
-    "orderItems": "Order items"
+    "orderItems": "Order items",
+    "bulkDownloadTemplate": "Download Template",
+    "bulkDuplicateFailed": "Failed to duplicate the operation",
+    "bulkExecuteFailed": "Failed to execute the operation",
+    "bulkExecuted": "Operation executed successfully",
+    "bulkExecutedPartial": "{{success}} executed, {{failed}} failed",
+    "bulkExportFailed": "Failed to export data",
+    "bulkFileWillUploadAfterSave": "The file will be uploaded after saving",
+    "bulkItemAddress": "Address",
+    "bulkItemArea": "Area",
+    "bulkUploadFailed": "Failed to upload the file",
+    "confidence": "Confidence",
+    "confirm": "Confirm",
+    "incompleteConvertFailed": "Failed to convert the order",
+    "incompleteConvertNoPhone": "No phone number to convert the order",
+    "incompleteConvertSuccess": "Order converted successfully",
+    "invoiceError": "Invoice error",
+    "invoiceGenerationFailed": "Failed to generate the invoice",
+    "items": "Items",
+    "jumpToPage": "Click to jump to a page",
+    "metaBodyTooLong": "The text exceeds Meta's limit — shorten it before publishing",
+    "metaSyncDone": "Templates synced successfully",
+    "metaSyncRejected": "Some templates were rejected by Meta — review them",
+    "notifyDisabled": "Notification disabled",
+    "notifyEnabled": "Notification enabled",
+    "order": "Order",
+    "orderInvoices_noResults": "No matching results",
+    "ordersCountLabel": "orders",
+    "pageLabel": "Page",
+    "saveFailed": "Failed to save",
+    "statusUpdated": "Status updated successfully",
+    "totalAssigned": "Total Assigned",
+    "unseenHint": "Show unread orders only"
   },
   "orderSettings": {
     "title": "Order Settings",
@@ -15887,7 +16230,27 @@
     "k_41": "The sender number will be sent as api_followup_phone with every Turbo shipment",
     "k_42": "If automatic shipping is disabled, you must create shipments manually from the order details page",
     "k_43": "Optional Webhook URL - used to automatically receive shipment status updates",
-    "k_44": "When automatic shipping is enabled, a shipment will be automatically created when any order is confirmed"
+    "k_44": "When automatic shipping is enabled, a shipment will be automatically created when any order is confirmed",
+    "cancelFailed": "Failed to cancel the shipment",
+    "createFailed": "Failed to create the shipment",
+    "preparingWaybill": "Preparing the waybill...",
+    "printWindowError": "Failed to open the print window",
+    "recreateFailed": "Failed to recreate the shipment",
+    "selectGovernorate": "Please select a governorate",
+    "shipmentCancelled": "Shipment cancelled",
+    "shipmentCancelledSuccess": "Shipment cancelled successfully",
+    "shipmentCreated": "Shipment created — tracking number: {{trackingNumber}}",
+    "shipmentDelivered": "Shipment delivered",
+    "shipmentRecreated": "Shipment recreated — tracking number: {{trackingNumber}}",
+    "shipmentReturned": "Shipment returned",
+    "statusUpdate": "Shipment status update: {{status}}",
+    "unlinkFailed": "Failed to unlink the Turbo shipment",
+    "unlinkSuccess": "Turbo shipment unlinked successfully",
+    "waybillEmpty": "The waybill file is empty",
+    "waybillFailed": "Could not load the waybill",
+    "waybillLoadFailed": "Failed to load the waybill",
+    "waybillOpened": "Waybill opened",
+    "waybillPrintOpened": "Waybill print window opened"
   },
   "pos": {
     "k_1": "All",
@@ -16446,7 +16809,8 @@
     "msg_b0b0": "تم رفض التقييم بنجاح",
     "error_error_b208": "حدث خطأ في رفض التقييم",
     "success_delete_9520": "تم حذف التقييم بنجاح",
-    "error_error_e0c6": "حدث خطأ في حذف التقييم"
+    "error_error_e0c6": "حدث خطأ في حذف التقييم",
+    "confirm_bulk_delete": "Are you sure you want to delete {{count}} review(s)?"
   },
   "products": {
     "title": "Products",
@@ -16512,7 +16876,10 @@
       "quantity": "Available Quantity *",
       "lowStockThreshold": "Low Stock Alert",
       "lowStockThresholdHint": "You will be alerted when inventory drops below this level",
-      "noTracking": "Inventory will not be tracked for this product. It will always appear as available to customers."
+      "noTracking": "Inventory will not be tracked for this product. It will always appear as available to customers.",
+      "description": "Manage product identifiers and inventory",
+      "identifiers": "Product Identifiers",
+      "barcode": "Barcode (Barcode / GTIN)"
     },
     "media": {
       "title": "Product Images",
@@ -16645,7 +17012,9 @@
       "dateRangeError": "⚠️ End date must be after start date",
       "variantNameRequired": "⚠️ Please enter variant name #{{number}}",
       "variantPriceError": "⚠️ Price for variant \"{{name}}\" cannot be negative",
-      "variantStockError": "⚠️ Stock for variant \"{{name}}\" cannot be negative"
+      "variantStockError": "⚠️ Stock for variant \"{{name}}\" cannot be negative",
+      "nameRequired": "⚠️ Please enter the product name",
+      "comparePriceInvalid": "⚠️ The compare-at price must be greater than the sale price"
     },
     "messages": {
       "savingProduct": "Saving...",
@@ -16663,7 +17032,8 @@
       "selectSize": "Size",
       "selectMaterial": "Material",
       "selectStyle": "Style",
-      "selectOther": "Other"
+      "selectOther": "Other",
+      "loadingCategories": "Loading categories..."
     },
     "error_error_1879": "حدث خطأ أثناء الحذف",
     "success_update_fdb7": "تم تحديث المنتج بنجاح",
@@ -16673,7 +17043,10 @@
     "msg_bd2e": "تم تصدير المنتجات بنجاح!",
     "msg_0437": "فشل التصدير",
     "error_error_7d31": "حدث خطأ أثناء استيراد الملف",
-    "error_error_e01c": "حدث خطأ أثناء حذف المنتجات"
+    "error_error_e01c": "حدث خطأ أثناء حذف المنتجات",
+    "tooltips": {
+      "slugTooltip": "A unique product link shown in the address (URL)"
+    }
   },
   "stockAnalytics": {
     "title": "Stock Analytics",
@@ -16807,7 +17180,8 @@
     "k_52": "Open order",
     "k_53": "page",
     "k_54": "the previous",
-    "k_55": "the next"
+    "k_55": "the next",
+    "items_count": "{{count}} items"
   },
   "customDomain": {
     "pageTitle": "Custom Domain",
@@ -17047,7 +17421,9 @@
     "page_profile": "Profile",
     "page_settings": "Settings",
     "page_marketplace": "Store",
-    "page_whatsapp": "WhatsApp"
+    "page_whatsapp": "WhatsApp",
+    "deposit_fixed_summary": "{{value}} EGP deposit",
+    "deposit_percentage_summary": "{{value}}% deposit"
   },
   "settingsPrimitives": {
     "alertSuccess": "Completed successfully",
@@ -17057,6 +17433,10 @@
     "loadingDescription": "Please wait while we load your settings."
   },
   "sidebar": {
+    "activeUsers": "Active Users",
+    "agencyInvoices": "Invoices & Profit",
+    "quickFunnel": "Quick Funnel",
+    "taskSettings": "Task Settings",
     "marketingAgencySection": "Marketing Agency (Agency OS)",
     "agencyOverview": "Agency Dashboard",
     "agencyClients": "Clients & Ad Spend",
@@ -18501,7 +18881,10 @@
     "k_126": "You can download CSV directly or Excel from the system.",
     "k_127": "Download Excel",
     "k_128": "Preparing file...",
-    "k_129": "After downloading: Open Google Sheets and choose \"File → Import\" and upload the file."
+    "k_129": "After downloading: Open Google Sheets and choose \"File → Import\" and upload the file.",
+    "import_success": "Imported successfully from {{type}}",
+    "products_variants_summary": "{{products}} products · {{variants}} variants",
+    "variants_count": "{{count}} variants"
   },
   "platformPartner": {
     "dashboard": {
@@ -18852,7 +19235,8 @@
       "supportSettings": "Support Settings",
       "kanbanBoard": "Kanban Board",
       "brandName": "Smart Control",
-      "brandSubtitle": "Super Admin"
+      "brandSubtitle": "Super Admin",
+      "dailyOrders": "Daily Orders"
     },
     "aiProviders": {
       "embedding": {
@@ -18981,7 +19365,10 @@
       "aiProviders": "AI Providers & Keys",
       "providerLogs": "Provider Logs",
       "aiTemplates": "AI Templates",
-      "agentProfiles": "Ready Agent Profiles"
+      "agentProfiles": "Ready Agent Profiles",
+      "metrics": {
+        "goalsAchieved": "Goals Achieved"
+      }
     },
     "globalSearchPlaceholder": "Search the entire system...",
     "globalSearchHint": "Type any word or letter to search across all system sections",
@@ -19176,6 +19563,71 @@
           "openWorkspace": "Open Workspace",
           "notifications": "Notifications"
         }
+      },
+      "logs": {
+        "title": "WhatsApp Logs",
+        "description": "Monitor company registration and subscription messages going through the super admin scope only.",
+        "filtersTitle": "Log Filters",
+        "searchPlaceholder": "Search by phone, content, or company",
+        "statusAll": "All Statuses",
+        "companyAll": "All Companies",
+        "listTitle": "Company Onboarding Log",
+        "listDescription": "Latest registration and subscription messages sent from the super admin scope.",
+        "empty": "No logs match the current filters.",
+        "columns": {
+          "company": "Company",
+          "event": "Event",
+          "status": "Status",
+          "error": "Error",
+          "recipient": "Recipient",
+          "time": "Time"
+        },
+        "statusPlaceholder": "Status",
+        "companyPlaceholder": "Company"
+      },
+      "workspace": {
+        "title": "WhatsApp Company Workspace",
+        "titleWithName": "WhatsApp Workspace · {{name}}",
+        "loadingDescription": "Loading company data...",
+        "description": "Quick summary of company registration and subscription messages before opening sessions or onboarding notifications.",
+        "backLabel": "Back to Companies",
+        "actions": {
+          "linkSession": "Link Session",
+          "settings": "Settings",
+          "notifications": "Registration Notifications",
+          "inbox": "Inbox",
+          "analytics": "Analytics",
+          "openSessions": "Open Sessions"
+        },
+        "noSessionAlert": {
+          "title": "Company needs a session linked first",
+          "description": "Before enabling automation or relying on notifications, open the sessions tab and link a connected session, then make it default."
+        },
+        "metrics": {
+          "sessions": "Sessions",
+          "sessionsHint": "{{connected}} Connected",
+          "notifications": "Notifications",
+          "notificationsEnabled": "Enabled",
+          "notificationsDisabled": "Disabled",
+          "notificationsHint": "Notifications engine status",
+          "templates": "Templates",
+          "templatesHint": "{{total}} onboarding messages in 30 days",
+          "failures": "Failures",
+          "failuresHint": "{{read}} Read"
+        },
+        "sessionsCard": {
+          "title": "Current Sessions",
+          "description": "Available sessions for the company, with the default session highlighted.",
+          "empty": "No WhatsApp sessions for this company yet.",
+          "defaultBadge": "Default"
+        },
+        "templatesCard": {
+          "title": "Recent Templates",
+          "description": "Latest company registration and subscription templates reviewed by the super admin for this company.",
+          "empty": "No templates saved for this company yet.",
+          "active": "Active",
+          "inactive": "Inactive"
+        }
       }
     },
     "selfReview": {
@@ -19253,7 +19705,9 @@
       "serviceDisabled": "Service disabled",
       "originalReply": "Original Reply",
       "correctedReply": "Corrected Reply"
-    }
+    },
+    "profileMenu": "Profile Menu",
+    "toggleSidebar": "Toggle Sidebar"
   },
   "superAdminDefaultSidebar": {
     "title": "Default Sidebar",
@@ -19608,7 +20062,25 @@
       "medium": "Medium",
       "high": "High",
       "critical": "Critical"
-    }
+    },
+    "backToList": "Back to List",
+    "days": "days",
+    "errorLoadingData": "Failed to load data, please try again",
+    "go": "Go",
+    "loadError": "Failed to load",
+    "loadMore": "Load More",
+    "maxp": "MaxP",
+    "open": "Open",
+    "page": "Page",
+    "platform": "Platform",
+    "saveError": "Failed to save",
+    "savedSuccessfully": "Saved successfully",
+    "saving": "Saving...",
+    "settings": "Settings",
+    "system": "System",
+    "tryAgain": "Please try again",
+    "updateData": "Update Data",
+    "upload": "Upload"
   },
   "header": {
     "dashboard": "Dashboard",
@@ -19623,7 +20095,8 @@
     "notifications": "Notifications",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "platformName": "Communication Platform"
+    "platformName": "Communication Platform",
+    "whatsapp": "WhatsApp Support"
   },
   "language": {
     "current": "English",
@@ -19634,6 +20107,34 @@
     "markAllRead": "Mark All as Read",
     "noNotifications": "No notifications",
     "newNotification": "New Notification"
+  },
+  "palette": {
+    "close": "Close",
+    "createBulkOrder": "Bulk Import Orders",
+    "createManualOrder": "Create Manual Order",
+    "description": "Search for a command or navigate to a page",
+    "groupBulk": "Bulk Actions",
+    "groupCreate": "Create",
+    "groupNavigation": "Navigation",
+    "groupView": "View",
+    "navAnalytics": "Orders Analytics",
+    "navCustomers": "Customers",
+    "navOrders": "Orders",
+    "navOrdersKeywords": "orders",
+    "navOrdersPrep": "Order Preparation",
+    "navOrdersWorkspace": "Confirmation & Follow-up Center",
+    "navProducts": "Products",
+    "navReturns": "Returns Review",
+    "navSettings": "Settings",
+    "navigate": "Navigate",
+    "noResults": "No results found",
+    "open": "Open",
+    "openPalette": "Open Command Palette",
+    "placeholder": "Type a command or search...",
+    "quickSearch": "Quick Search",
+    "title": "Command Palette",
+    "viewInvoices": "Order Invoices",
+    "viewSearch": "Bulk Search"
   },
   "profile": {
     "title": "Profile",

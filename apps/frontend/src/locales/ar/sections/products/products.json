@@ -62,7 +62,10 @@
     "quantity": "الكمية المتاحة *",
     "lowStockThreshold": "حد التنبيه",
     "lowStockThresholdHint": "سيتم تنبيهك عند انخفاض المخزون لهذا الحد",
-    "noTracking": "لن يتم تتبع المخزون لهذا المنتج. سيظهر كمتوفر دائماً للعملاء."
+    "noTracking": "لن يتم تتبع المخزون لهذا المنتج. سيظهر كمتوفر دائماً للعملاء.",
+    "description": "إدارة معرفات المنتج والمخزون",
+    "identifiers": "معرفات المنتج",
+    "barcode": "الباركود (Barcode / GTIN)"
   },
   "media": {
     "title": "صور المنتج",
@@ -195,7 +198,9 @@
     "dateRangeError": "⚠️ تاريخ انتهاء العرض يجب أن يكون بعد تاريخ البداية",
     "variantNameRequired": "⚠️ من فضلك أدخل اسم المتغير رقم {{number}}",
     "variantPriceError": "⚠️ سعر المتغير \"{{name}}\" لا يمكن أن يكون سالباً",
-    "variantStockError": "⚠️ مخزون المتغير \"{{name}}\" لا يمكن أن يكون سالباً"
+    "variantStockError": "⚠️ مخزون المتغير \"{{name}}\" لا يمكن أن يكون سالباً",
+    "nameRequired": "⚠️ من فضلك أدخل اسم المنتج",
+    "comparePriceInvalid": "⚠️ سعر المقارنة يجب أن يكون أكبر من سعر البيع"
   },
   "messages": {
     "savingProduct": "جاري الحفظ...",
@@ -213,7 +218,8 @@
     "selectSize": "حجم",
     "selectMaterial": "مادة",
     "selectStyle": "نمط",
-    "selectOther": "أخرى"
+    "selectOther": "أخرى",
+    "loadingCategories": "جاري تحميل الفئات..."
   },
   "error_error_1879": "حدث خطأ أثناء الحذف",
   "success_update_fdb7": "تم تحديث المنتج بنجاح",
@@ -223,5 +229,8 @@
   "msg_bd2e": "تم تصدير المنتجات بنجاح!",
   "msg_0437": "فشل التصدير",
   "error_error_7d31": "حدث خطأ أثناء استيراد الملف",
-  "error_error_e01c": "حدث خطأ أثناء حذف المنتجات"
+  "error_error_e01c": "حدث خطأ أثناء حذف المنتجات",
+  "tooltips": {
+    "slugTooltip": "رابط فريد للمنتج يظهر في العنوان (URL)"
+  }
 }

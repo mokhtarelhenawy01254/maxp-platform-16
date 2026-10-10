@@ -848,7 +848,8 @@
     "submitError": "فشل في تقديم الطلب",
     "pendingStatus": "قيد المراجعة",
     "approvedStatus": "تمت الموافقة",
-    "rejectedStatus": "مرفوض"
+    "rejectedStatus": "مرفوض",
+    "management": "الإدارة"
   },
   "activity": {
     "title": "📊 نشاطاتي",
@@ -940,7 +941,8 @@
     "filter": "فلتر",
     "refresh": "تحديث",
     "export": "تصدير",
-    "print": "طباعة"
+    "print": "طباعة",
+    "day": "يوم"
   },
   "profile": {
     "loading": "جاري تحميل ملفك الشخصي...",
@@ -1044,6 +1046,9 @@
     "noCustody": "لا توجد عهدة مسلمة لك حالياً",
     "statusAssigned": "مُسلّم",
     "acknowledgedOn": "تم تأكيد الاستلام في {{date}}",
-    "noDepartment": "بدون قسم"
+    "noDepartment": "بدون قسم",
+    "annualLeaveBalance": "رصيد الإجازة السنوية",
+    "maritalStatus": "الحالة الاجتماعية",
+    "sickLeaveBalance": "رصيد الإجازة المرضية"
   }
 }

@@ -110,5 +110,7 @@
   "page_profile": "Profile",
   "page_settings": "Settings",
   "page_marketplace": "Store",
-  "page_whatsapp": "WhatsApp"
+  "page_whatsapp": "WhatsApp",
+  "deposit_fixed_summary": "{{value}} EGP deposit",
+  "deposit_percentage_summary": "{{value}}% deposit"
 }

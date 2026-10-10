@@ -84,10 +84,21 @@
     "emailInvalid": "Invalid email format",
     "passwordRequired": "Password is required",
     "passwordMinLength": "Password must be at least 6 characters",
-    "roleRequired": "Role is required"
+    "roleRequired": "Role is required",
+    "cannotDeactivateSelf": "You cannot deactivate your own account",
+    "phoneInvalid": "Invalid phone number",
+    "salaryInvalid": "Invalid base salary"
   },
   "noUsers": "No users found",
   "unlimited": "Unlimited",
   "editUser": "Edit User",
-  "inviteNewUser": "Invite New User"
+  "inviteNewUser": "Invite New User",
+  "activate": "Activate",
+  "bulkActionsDescription": "Apply a bulk action to the selected users.",
+  "clearSelection": "Clear Selection",
+  "deactivate": "Deactivate",
+  "deleteSelected": "Delete Selected",
+  "invitationsDescription": "Track sent invitations and team members awaiting to join.",
+  "pendingInvitations": "Pending Invitations ({{count}})",
+  "selectedUsers": "Selected Users ({{count}})"
 }

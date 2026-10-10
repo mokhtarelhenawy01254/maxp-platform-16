@@ -1,0 +1,5 @@
+{
+  "invalidNumber": "Please enter a valid number (1 or more)",
+  "resetSuccess": "Counter reset successfully ✅",
+  "saveSuccess": "Settings saved successfully ✅"
+}

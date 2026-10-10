@@ -52,7 +52,8 @@
     "cancel": "Cancel",
     "loading": "Saving...",
     "success": "Saved successfully",
-    "error": "Error while saving"
+    "error": "Error while saving",
+    "currency": "EGP"
   },
   "delete": {
     "title": "Delete Reward",
@@ -62,7 +63,15 @@
     "confirmButton": "Delete",
     "loading": "Deleting...",
     "success": "Reward deleted successfully",
-    "error": "Error while deleting"
+    "error": "Error while deleting",
+    "confirmTitle": "Delete reward type",
+    "confirmDescription": "Are you sure you want to delete this type? This action cannot be undone.",
+    "confirmText": "Delete",
+    "irreversible": "This action cannot be undone",
+    "linkedRecords": "All records linked to this type will be deleted",
+    "disableInstead": "You can disable the type instead of deleting it",
+    "errorLinked": "Delete failed: this type is linked to other records",
+    "tooltip": "Delete"
   },
   "toast": {
     "approveSuccess": "Reward approved successfully",
@@ -72,7 +81,15 @@
     "deleteSuccess": "Reward deleted successfully",
     "deleteError": "Failed to delete reward",
     "createSuccess": "Reward created successfully",
-    "updateSuccess": "Reward updated successfully"
+    "updateSuccess": "Reward updated successfully",
+    "created": "Type created successfully",
+    "updated": "Type updated successfully",
+    "deleted": "Type deleted successfully",
+    "loadError": "Failed to load types",
+    "nameRequired": "Type name is required",
+    "saveError": "Failed to save",
+    "statusChanged": "Status changed successfully",
+    "statusChangeFailed": "Failed to change status"
   },
   "table": {
     "employee": "Employee",
@@ -81,6 +98,7 @@
     "value": "Value",
     "status": "Status",
     "date": "Date",
-    "actions": "Actions"
+    "actions": "Actions",
+    "name": "Name"
   }
 }

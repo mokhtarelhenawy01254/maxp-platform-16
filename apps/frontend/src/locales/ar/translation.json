@@ -1194,7 +1194,8 @@
     "onReturnedShipments": "على الشحنات المرتجعة",
     "tableMetricsLegend": "ملاحظة: نسبة الحسم مقاسة على الشحنات المنتهية فقط (المحسومة) لتقييم كفاءة إتمام الطرود المفتوحة | نسبة المرتجع مقاسة على إجمالي ما تم شحنه لمعرفة حجم الهدر الكلي.",
     "compositionSubtitle": "توزيع الشحنات التي خرجت للتوصيل (100% من المشحون)",
-    "closedSummaryStrip": "الشحنات المحسومة (المنتهية): {closed} طرد (معدل حسم التسليم: {rate}%)"
+    "closedSummaryStrip": "الشحنات المحسومة (المنتهية): {closed} طرد (معدل حسم التسليم: {rate}%)",
+    "totalOrders": "إجمالي الطلبات"
   },
   "dentalPortal": {
     "portalName": "بوابة معمل الأسنان",
@@ -1360,7 +1361,8 @@
       "approved": "تم اعتماد التصميم بنجاح",
       "changesSent": "تم إرسال طلب التعديل للمعمل",
       "changesPrompt": "اكتب ملاحظات التعديل المطلوبة",
-      "approvalError": "تعذر تسجيل الاعتماد"
+      "approvalError": "تعذر تسجيل الاعتماد",
+      "uploadTotal": "إجمالي الملفات"
     },
     "invoices": {
       "title": "فواتيري",
@@ -2334,7 +2336,8 @@
       "submitError": "فشل في تقديم الطلب",
       "pendingStatus": "قيد المراجعة",
       "approvedStatus": "تمت الموافقة",
-      "rejectedStatus": "مرفوض"
+      "rejectedStatus": "مرفوض",
+      "management": "الإدارة"
     },
     "activity": {
       "title": "📊 نشاطاتي",
@@ -2426,7 +2429,8 @@
       "filter": "فلتر",
       "refresh": "تحديث",
       "export": "تصدير",
-      "print": "طباعة"
+      "print": "طباعة",
+      "day": "يوم"
     },
     "profile": {
       "loading": "جاري تحميل ملفك الشخصي...",
@@ -2530,7 +2534,10 @@
       "noCustody": "لا توجد عهدة مسلمة لك حالياً",
       "statusAssigned": "مُسلّم",
       "acknowledgedOn": "تم تأكيد الاستلام في {{date}}",
-      "noDepartment": "بدون قسم"
+      "noDepartment": "بدون قسم",
+      "annualLeaveBalance": "رصيد الإجازة السنوية",
+      "maritalStatus": "الحالة الاجتماعية",
+      "sickLeaveBalance": "رصيد الإجازة المرضية"
     }
   },
   "EmployeeDetails": {
@@ -3018,7 +3025,11 @@
   },
   "OrderModal": {
     "msg_fe97": "خطأ غير معروف",
-    "error_error_430a": "حدث خطأ أثناء إنشاء الطلب"
+    "error_error_430a": "حدث خطأ أثناء إنشاء الطلب",
+    "msg_a03a": "الرجاء اختيار المدينة",
+    "msg_f4e5": "الرجاء إدخال رقم الهاتف",
+    "msg_f9fe": "يرجى تسجيل الدخول أولاً",
+    "failed_create_ff97": "فشل في إنشاء الطلب"
   },
   "OrderModalEnhanced": {
     "msg_1ca3": "خطأ غير معروف",
@@ -3654,7 +3665,14 @@
     },
     "fallbackCustomerName": "عميل غير معروف",
     "fallbackWarehouseName": "مخزن غير مسمى",
-    "k_10": "جاهز للشحن"
+    "k_10": "جاهز للشحن",
+    "k_1": "قائمة التجهيز معطّلة",
+    "k_2": "— يمكن إعادة تفعيلها من إعدادات الطلبات.",
+    "k_3": "— استخدم فلتر السبب أو المسؤول للوصول السريع.",
+    "k_4": "قائمة التنفيذ",
+    "k_9": "معلّق (نقص)",
+    "k_20": "الطلب المحدد غير موجود",
+    "k_26": "كل الطلبات الظاهرة تخالف قواعد التجهيز الحالية"
   },
   "PrivacySettingsDialog": {
     "failed_fetch_6cd1": "فشل جلب قائمة المحظورين",
@@ -3966,7 +3984,11 @@
       "referralSource": "جهة الإحالة",
       "marketingRep": "مندوب التسويق",
       "externalReferral": "إحالة خارجية",
-      "externalReferralBadge": "شريك خارجي"
+      "externalReferralBadge": "شريك خارجي",
+      "billingType": {
+        "INSURANCE": "شركة تأمين",
+        "PATIENT": "مدفوعات المريض"
+      }
     },
     "appointmentDetails": {
       "title": "تفاصيل الحجز",
@@ -5166,7 +5188,8 @@
       "delivered": "مسلَّمة",
       "revenue": "الإيراد",
       "sources": "جهات",
-      "physicians": "أطباء"
+      "physicians": "أطباء",
+      "name": "الاسم"
     },
     "externalPartners": {
       "title": "الشركاء الخارجيون",
@@ -5194,7 +5217,8 @@
       "edit": "تعديل",
       "activate": "تفعيل",
       "deactivate": "تعطيل"
-    }
+    },
+    "stageLabel": "المرحلة"
   },
   "RatingButtons": {
     "error_error_1ca7": "حدث خطأ في إرسال التقييم. يرجى المحاولة مرة أخرى."
@@ -6309,6 +6333,7 @@
       "disableAll": "تعطيل الكل",
       "search": "بحث",
       "empty": "لا توجد أدوات",
+      "emptyDesc": "لم يتم منح أي صلاحيات أدوات لـ {{agentName}} حتى الآن. يمكنك تزويده بصلاحيات من لوحة الأدوات.",
       "readOnly": "قراءة",
       "write": "كتابة",
       "addDialogTitle": "إضافة أدوات",
@@ -6321,6 +6346,7 @@
       "disableAll": "تعطيل الكل",
       "search": "بحث",
       "empty": "لا توجد مهارات",
+      "emptyDesc": "لم يتم تعيين أي مهارات لـ {{agentName}} حتى الآن. يمكنك تزويده بمهارات من مركز المهارات.",
       "addDialogTitle": "إضافة مهارات",
       "addSearch": "بحث في المهارات..."
     },
@@ -6724,7 +6750,11 @@
         "messagePlaceholder": "رسالة {{agentName}}...",
         "selectCentralModel": "اختر موديل مركزي لبدء المحادثة",
         "configureApiKey": "اضبط مفتاح API من الشريط العلوي",
-        "sendMessage": "إرسال الرسالة"
+        "sendMessage": "إرسال الرسالة",
+        "browse": "تصفح",
+        "dragDropImage": "اسحب الصورة وأفلتها هنا أو",
+        "orPasteUrl": "أو الصق رابط صورة",
+        "supportedFormats": "PNG أو JPG أو WEBP حتى 5 ميجابايت"
       },
       "trace": {
         "title": "مسار التشغيل",
@@ -6790,6 +6820,150 @@
     "answerSubmitted": "تم إرسال الإجابة بنجاح",
     "answeredBy": "تمت الإجابة بواسطة",
     "showContext": "عرض التفاصيل الإضافية"
+  },
+  "sandbox": {
+    "scenarios": [
+      {
+        "id": "greeting",
+        "label": "تحية",
+        "icon": "👋",
+        "prompt": "أهلاً! من أنت وما الذي يمكنك فعله؟",
+        "category": "الأساسيات"
+      },
+      {
+        "id": "product_search",
+        "label": "البحث عن منتجات",
+        "icon": "🔍",
+        "prompt": "ابحث عن لابتوبات أقل من 30000 جنيه. اعرض كل الخيارات المتاحة مع مواصفاتها وتقييماتها.",
+        "category": "المنتجات"
+      },
+      {
+        "id": "top_selling",
+        "label": "الأكثر مبيعاً",
+        "icon": "🏆",
+        "prompt": "اعرض لي المنتجات الأكثر مبيعاً في هذه الفترة مع أرقام الإيرادات.",
+        "category": "المنتجات"
+      },
+      {
+        "id": "low_stock",
+        "label": "تنبيه المخزون المنخفض",
+        "icon": "⚠️",
+        "prompt": "تحقق من المنتجات التي انخفض مخزونها أو نفدت. نبهني إذا قل أي منها عن 10 وحدات.",
+        "category": "المخزون"
+      },
+      {
+        "id": "adjust_stock",
+        "label": "تعديل المخزون",
+        "icon": "📦",
+        "prompt": "المنتج PROD_001 مخزونه منخفض. أحتاج زيادة مخزونه بمقدار 50 وحدة.",
+        "category": "المخزون"
+      },
+      {
+        "id": "create_draft_order",
+        "label": "طلب مسودة",
+        "icon": "📝",
+        "prompt": "أنشئ طلب مسودة للعميل TEST_CUSTOMER_ID. يريد 2 لابتوب MacBook Pro و1 آيفون 15.",
+        "category": "الطلبات"
+      },
+      {
+        "id": "order_lookup",
+        "label": "الاستعلام عن طلب",
+        "icon": "📋",
+        "prompt": "اعرض لي تفاصيل الطلب رقم #ORD_001. أحتاج الحالة والمنتجات والإجمالي.",
+        "category": "الطلبات"
+      },
+      {
+        "id": "recent_orders",
+        "label": "أحدث الطلبات",
+        "icon": "🕐",
+        "prompt": "اعرض لي أحدث طلبات اليوم. كم عددها وما إجمالي الإيرادات؟",
+        "category": "الطلبات"
+      },
+      {
+        "id": "cancel_order",
+        "label": "إلغاء طلب",
+        "icon": "❌",
+        "prompt": "العميل يريد إلغاء الطلب رقم #ORD_002. تعامل مع هذا الإلغاء باحترافية.",
+        "category": "الطلبات"
+      },
+      {
+        "id": "handle_refund",
+        "label": "التعامل مع الاسترداد",
+        "icon": "💬",
+        "prompt": "عميل يشتكي من الطلب رقم #ORD_003. المنتج وصل تالفاً ويريد استرداد المبلغ بالكامل. تعامل مع الأمر باحترافية.",
+        "category": "الدعم"
+      },
+      {
+        "id": "customer_info",
+        "label": "بيانات العميل",
+        "icon": "👤",
+        "prompt": "ابحث عن بيانات العميل TEST_CUSTOMER_ID. اعرض ملفه وسجل طلباته ونقاط الولاء.",
+        "category": "العملاء"
+      },
+      {
+        "id": "top_buyers",
+        "label": "أفضل المشترين",
+        "icon": "⭐",
+        "prompt": "من هم أفضل 5 عملاء لدينا؟ اعرض أسماءهم وإجمالي مشترياتهم.",
+        "category": "العملاء"
+      },
+      {
+        "id": "shipping_rates",
+        "label": "أسعار الشحن",
+        "icon": "🚚",
+        "prompt": "ما خيارات الشحن المتاحة وأسعارها إلى مصر؟",
+        "category": "الشحن"
+      },
+      {
+        "id": "apply_discount",
+        "label": "تطبيق خصم",
+        "icon": "🏷️",
+        "prompt": "طبّق خصم 10% على الطلب رقم #ORD_001 تقديراً لولاء العميل.",
+        "category": "الخصومات"
+      },
+      {
+        "id": "sales_report",
+        "label": "تقرير المبيعات",
+        "icon": "📊",
+        "prompt": "أنشئ تقرير مبيعات لهذا الأسبوع. اعرض أفضل 5 منتجات بالإيرادات وقارنها بالأسبوع الماضي.",
+        "category": "التحليلات"
+      },
+      {
+        "id": "company_snapshot",
+        "label": "ملخص الشركة",
+        "icon": "🏢",
+        "prompt": "اعرض لي ملخصاً سريعاً للوحة تحكم الشركة: الإيرادات، الطلبات، العملاء، وحالة المخزون.",
+        "category": "التحليلات"
+      },
+      {
+        "id": "multi_tool",
+        "label": "مهمة معقدة",
+        "icon": "🧩",
+        "prompt": "أحتاج أن: 1) أجد العميل محمد على رقم 01001111111، 2) أنشئ طلب مسودة لـ 2× منتج X و1× منتج Y، 3) أطبّق خصم ولاء 10%. تعامل مع هذا خطوة بخطوة.",
+        "category": "متقدم"
+      },
+      {
+        "id": "agent_introspection",
+        "label": "قدرات الوكيل",
+        "icon": "🤖",
+        "prompt": "اذكر كل الأدوات التي لديك صلاحية الوصول إليها. صنّفها إلى أدوات قراءة وأدوات كتابة.",
+        "category": "متقدم"
+      },
+      {
+        "id": "faq_entry",
+        "label": "إنشاء سؤال شائع",
+        "icon": "📖",
+        "prompt": "أريد إضافة سؤال شائع جديد: العملاء يسألون كثيراً \"كيف أرجع منتجاً؟\" والإجابة يجب أن تشرح سياسة الاسترجاع خلال 14 يوماً.",
+        "category": "المعرفة"
+      },
+      {
+        "id": "schedule_job",
+        "label": "جدولة مهمة",
+        "icon": "⏰",
+        "prompt": "أحتاج جدولة مهمة يومية الساعة 9 صباحاً للتحقق من المنتجات منخفضة المخزون وتنبيه الفريق.",
+        "category": "الإدارة"
+      }
+    ]
   },
   "subAgents": {
     "title": "الوكلاء الفرعيون",
@@ -7506,7 +7680,53 @@
     "socialPasswordPlaceholder": "أدخل كلمة المرور",
     "founderLinkPlaceholder": "https://...",
     "pricePlaceholder": "0.00",
-    "currencySymbol": "ر.س"
+    "currencySymbol": "ر.س",
+    "activeCampaigns": "الحملات النشطة",
+    "address": "العنوان",
+    "amazonProducts": "منتجات أمازون",
+    "avgCTR": "متوسط نسبة النقر",
+    "avgComments": "متوسط التعليقات",
+    "avgEngagement": "متوسط التفاعل",
+    "avgLikes": "متوسط اللايكات",
+    "avgViews": "متوسط المشاهدات",
+    "budget": "الميزانية",
+    "businessInfo": "معلومات النشاط",
+    "campaignName": "اسم الحملة",
+    "campaigns": "الحملات",
+    "categories": "التصنيفات",
+    "clicks": "النقرات",
+    "confidence": "الثقة",
+    "conversions": "التحويلات",
+    "easierToUse": "الأسهل استخداماً؟",
+    "engagementComparison": "مقارنة التفاعل",
+    "engagementRate": "معدل التفاعل",
+    "filterPlatform": "تصفية حسب المنصة",
+    "followers": "المتابعين",
+    "googleRating": "تقييم Google",
+    "high": "عالية",
+    "impressions": "مرات الظهور",
+    "low": "منخفضة",
+    "medium": "متوسطة",
+    "noGoogleData": "لا توجد بيانات Google",
+    "noTechData": "لا توجد بيانات تقنية",
+    "phone": "الهاتف",
+    "platformBreakdown": "تفصيل المنصات",
+    "posts": "المنشورات",
+    "primeLabel": "بريميم",
+    "product": "المنتج",
+    "rating": "التقييم",
+    "ratings": "التقييمات",
+    "reviews": "المراجعات",
+    "shopifyProducts": "منتجات Shopify",
+    "spend": "الإنفاق",
+    "standardLabel": "قياسي",
+    "technologies": "التقنيات",
+    "technology": "التقنية",
+    "topCreatives": "أفضل الإعلانات",
+    "totalCampaigns": "إجمالي الحملات",
+    "totalTechnologies": "إجمالي التقنيات",
+    "version": "الإصدار",
+    "website": "الموقع"
   },
   "conversionAnalytics": {
     "title": "تحليلات معدل التحويل",
@@ -7790,7 +8010,16 @@
     "footer": "مستوحى من",
     "EGP": "جنيه مصري",
     "SAR": "ريال سعودي",
-    "USD": "دولار أمريكي"
+    "USD": "دولار أمريكي",
+    "metric": "المؤشر",
+    "value": "القيمة",
+    "monthlyOrdersPlaced": "الطلبات الشهرية (المعلنة)",
+    "ordersConfirmed": "الطلبات المؤكدة",
+    "ordersDelivered": "الطلبات الموصلة",
+    "ordersRTO": "المرتجعات (RTO)",
+    "totalVariableCost": "إجمالي التكاليف المتغيرة",
+    "netProfitMargin": "هامش صافي الربح",
+    "safeCAC": "تكلفة الاكتساب الآمنة"
   },
   "profitAnalytics": {
     "title": "تحليلات الربحية",
@@ -8649,7 +8878,10 @@
     },
     "searchPlaceholder": "بحث في المحادثات...",
     "advancedFilters": "فلاتر متقدمة",
-    "statistics": "الإحصائيات"
+    "statistics": "الإحصائيات",
+    "conversationLink": "رابط المحادثة",
+    "noMessages": "لا توجد رسائل",
+    "notes": "ملاحظات"
   },
   "instagramSettings": {
     "title": "إعدادات Instagram",
@@ -9041,7 +9273,8 @@
       "location": "موقع",
       "today": "اليوم",
       "yesterday": "أمس",
-      "goToMessage": "الذهاب إلى الرسالة"
+      "goToMessage": "الذهاب إلى الرسالة",
+      "channel": "قناة"
     },
     "dialogs": {
       "deleteChatTitle": "حذف المحادثة",
@@ -9111,7 +9344,8 @@
       "date": "التاريخ",
       "noLogs": "لا توجد سجلات",
       "rowsPerPage": "عدد الصفوف:",
-      "displayedRows": "{{from}}-{{to}} من {{count}}"
+      "displayedRows": "{{from}}-{{to}} من {{count}}",
+      "error": "الخطأ"
     }
   },
   "whatsappInbox": {
@@ -9354,7 +9588,13 @@
       "userNotFound": "لم يتم العثور على المستخدم المطلوب.",
       "userRequired": "يجب اختيار مستخدم أولًا.",
       "usersLoad": "تعذر تحميل المستخدمين الآن."
-    }
+    },
+    "routingPreviewTitle": "معاينة التوزيع التلقائي",
+    "nextAssignmentWillGoTo": "التوزيع القادم سيكون إلى {{name}}",
+    "routingPreviewNoCandidate": "لا يوجد مرشح متاح للتوزيع",
+    "routingPreviewCandidates": "{{count}} مرشح",
+    "routingPreviewSkippedOffline": "{{count}} غير متصل (تم تخطيه)",
+    "routingPreviewSkippedCapacity": "{{count}} تجاوز السعة (تم تخطيه)"
   },
   "whatsappJourney": {
     "title": "سلاسل رسائل ما بعد الاستلام",
@@ -9424,7 +9664,15 @@
       "showPreview": "عرض المعاينة",
       "send": "إرسال",
       "noIssues": "لا توجد مشاكل",
-      "timelineCount_plural": "[AR] Flow timeline · {{count}} steps"
+      "timelineCount_plural": "[AR] Flow timeline · {{count}} steps",
+      "buttons": "أزرار الخطوة (Quick Replies)",
+      "expectReply": "انتظار رد العميل",
+      "expectReplyHint": "الخطوة تستنى رد العميل وتتفرع حسب الكلمات",
+      "nextStep": "الخطوة التالية عند المطابقة",
+      "nextStepAuto": "تلقائي (الخطوة اللي بعدها)",
+      "replyKeywords": "كلمات الرد (مفصولة بفاصلة)",
+      "replyKeywordsPlaceholder": "مثال: سعر، السعر، تسعير",
+      "timeout": "المدة القصوى بالساعات (اختياري)"
     },
     "monitoring": {
       "customer": "العميل",
@@ -10162,7 +10410,9 @@
       "last90Days": "آخر 90 يوم",
       "thisMonth": "هذا الشهر",
       "lastMonth": "الشهر الماضي",
-      "custom": "فترة مخصصة"
+      "custom": "فترة مخصصة",
+      "thisWeek": "هذا الأسبوع",
+      "thisYear": "هذه السنة"
     },
     "rangeStats": {
       "title": "ملخص الفترة",
@@ -10181,7 +10431,8 @@
       "title": "إحصائيات سريعة",
       "products": "المنتجات",
       "orders": "الطلبات",
-      "activeApps": "التطبيقات النشطة"
+      "activeApps": "التطبيقات النشطة",
+      "customers": "العملاء"
     },
     "activity": {
       "title": "النشاط الأخير (7 أيام)",
@@ -10222,7 +10473,9 @@
     },
     "inventory": {
       "outOfStockCount": "{{count}} منتج نفذ من المخزون",
-      "lowStockCount": "{{count}} منتج أوشك على النفاد"
+      "lowStockCount": "{{count}} منتج أوشك على النفاد",
+      "lowStock": "مخزون منخفض",
+      "outOfStock": "نفذ من المخزون"
     },
     "metrics": {
       "totalOrders": "إجمالي الطلبات",
@@ -10696,12 +10949,23 @@
       "emailInvalid": "البريد الإلكتروني غير صحيح",
       "passwordRequired": "كلمة المرور مطلوبة",
       "passwordMinLength": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
-      "roleRequired": "الدور مطلوب"
+      "roleRequired": "الدور مطلوب",
+      "cannotDeactivateSelf": "لا يمكنك إلغاء تفعيل حسابك الخاص",
+      "phoneInvalid": "رقم الهاتف غير صحيح",
+      "salaryInvalid": "الراتب الأساسي غير صحيح"
     },
     "noUsers": "لا يوجد مستخدمين",
     "unlimited": "غير محدود",
     "editUser": "تعديل المستخدم",
-    "inviteNewUser": "دعوة مستخدم جديد"
+    "inviteNewUser": "دعوة مستخدم جديد",
+    "activate": "تفعيل",
+    "bulkActionsDescription": "طبّق إجراءً جماعياً على المستخدمين المحددين.",
+    "clearSelection": "مسح التحديد",
+    "deactivate": "إلغاء التفعيل",
+    "deleteSelected": "حذف المحدد",
+    "invitationsDescription": "متابعة الدعوات المُرسلة وأعضاء الفريق بانتظار الانضمام.",
+    "pendingInvitations": "الدعوات المعلقة ({{count}})",
+    "selectedUsers": "المستخدمون المحددون ({{count}})"
   },
   "customerAnalytics": {
     "title": "تحليلات العملاء",
@@ -10876,7 +11140,10 @@
       "tabPaste": "لصق مباشر للبيانات",
       "pastePlaceholder": "انسخ الصفوف والأعمدة من ملف Excel أو اكتبها هنا بالفاصلة...\nالاسم,الهاتف,البريد الإلكتروني,الحالة\nمحمد أحمد,01012345678,mohamed@example.com,LEAD",
       "parseButton": "معاينة وتحليل البيانات"
-    }
+    },
+    "deleteConfirmMessage": "هل أنت متأكد من حذف العميل {{name}}؟",
+    "deleteWarning": "لا يمكن التراجع عن هذا الإجراء",
+    "loadError": "حدث خطأ أثناء تحميل بيانات العميل"
   },
   "dashboard": {
     "title": "لوحة التحكم",
@@ -11853,6 +12120,9 @@
       "documents": "المستندات",
       "salary": "سجل الرواتب",
       "performance": "الأداء"
+    },
+    "errors": {
+      "fetchFailed": "فشل تحميل لوحة التحكم"
     }
   },
   "rewards": {
@@ -11909,7 +12179,8 @@
       "cancel": "إلغاء",
       "loading": "جاري الحفظ...",
       "success": "تم الحفظ بنجاح",
-      "error": "حدث خطأ أثناء الحفظ"
+      "error": "حدث خطأ أثناء الحفظ",
+      "currency": "ج.م"
     },
     "delete": {
       "title": "حذف المكافأة",
@@ -11919,7 +12190,15 @@
       "confirmButton": "حذف",
       "loading": "جاري الحذف...",
       "success": "تم حذف المكافأة بنجاح",
-      "error": "حدث خطأ أثناء الحذف"
+      "error": "حدث خطأ أثناء الحذف",
+      "confirmTitle": "حذف نوع المكافأة",
+      "confirmDescription": "هل أنت متأكد من حذف هذا النوع؟ لا يمكن التراجع عن هذا الإجراء.",
+      "confirmText": "حذف",
+      "irreversible": "لا يمكن التراجع عن هذا الإجراء",
+      "linkedRecords": "سيتم حذف جميع السجلات المرتبطة بهذا النوع",
+      "disableInstead": "يمكنك تعطيل النوع بدلاً من حذفه",
+      "errorLinked": "تعذر الحذف: هذا النوع مرتبط بسجلات أخرى",
+      "tooltip": "حذف"
     },
     "toast": {
       "approveSuccess": "تم اعتماد المكافأة بنجاح",
@@ -11929,7 +12208,15 @@
       "deleteSuccess": "تم حذف المكافأة بنجاح",
       "deleteError": "فشل في حذف المكافأة",
       "createSuccess": "تم إنشاء المكافأة بنجاح",
-      "updateSuccess": "تم تحديث المكافأة بنجاح"
+      "updateSuccess": "تم تحديث المكافأة بنجاح",
+      "created": "تم إنشاء النوع بنجاح",
+      "updated": "تم تحديث النوع بنجاح",
+      "deleted": "تم حذف النوع بنجاح",
+      "loadError": "فشل في تحميل الأنواع",
+      "nameRequired": "اسم النوع مطلوب",
+      "saveError": "حدث خطأ أثناء الحفظ",
+      "statusChanged": "تم تغيير الحالة بنجاح",
+      "statusChangeFailed": "فشل في تغيير الحالة"
     },
     "table": {
       "employee": "الموظف",
@@ -11938,7 +12225,8 @@
       "value": "القيمة",
       "status": "الحالة",
       "date": "التاريخ",
-      "actions": "الإجراءات"
+      "actions": "الإجراءات",
+      "name": "الاسم"
     }
   },
   "clvCalculator": {
@@ -13519,7 +13807,9 @@
     "bulkUpdateSuccess": "تم تحديث {{count}} طلب بنجاح",
     "bulkUpdatePartial": "تم تحديث {{success}} طلب وفشل {{failed}} طلب",
     "bulkUpdateFailed": "فشل تحديث الطلبات",
-    "bulkUpdateError": "حدث خطأ أثناء التحديث"
+    "bulkUpdateError": "حدث خطأ أثناء التحديث",
+    "cancellationReasonPrompt": "اكتب سبب إلغاء الطلب:",
+    "cancellationReasonRequired": "سبب إلغاء الطلب مطلوب"
   },
   "cancellations": {
     "k_1": "العميل",
@@ -13945,7 +14235,23 @@
     "carrierDelayReason": "ملاحظة الشحن / التأخير المسبق:",
     "returnSource": "المصدر:",
     "editReturnReason": "تعديل سبب المرتجع",
-    "addReturnReason": "تحديد سبب المرتجع"
+    "addReturnReason": "تحديد سبب المرتجع",
+    "apartment": "الشقة",
+    "building": "المبنى",
+    "exchangeOrder": "طلب استبدال",
+    "floor": "الطابق",
+    "invoice": "الفاتورة",
+    "invoicePrintError": "فشل طباعة الفاتورة: {{error}}",
+    "loading": "جاري التحميل...",
+    "noAreasAvailable": "لا توجد مناطق متاحة",
+    "preparationSlip": "ورقة التجهيز",
+    "preparationSlipError": "فشل تحميل ورقة التجهيز: {{error}}",
+    "returnReasonLine": "سبب المرتجع: {{reason}}",
+    "returnedAt": "تاريخ التسجيل:",
+    "returnedFromOrder": "مرتجع من الطلب {{orderNumber}}",
+    "supportTickets": "تذاكر الدعم",
+    "titlePrefix": "تفاصيل الطلب",
+    "whatsapp": "واتساب المنصة"
   },
   "orderInvoices": {
     "k_1": "مراجعة فواتير الطلبات مع بحث سريع، حالات الدفع، والتنقل بين النتائج بشكل أوضح.",
@@ -14113,6 +14419,11 @@
     "k_99": "المحتوى الظاهر، القالب، والإرسال",
     "k_100": "النسخة الداخلية قبل التسليم للشحن",
     "k_101": "عرض أساسي"
+  },
+  "orderNumbering": {
+    "invalidNumber": "الرجاء إدخال رقم صحيح (1 أو أكثر)",
+    "resetSuccess": "تم إعادة تعيين العداد بنجاح ✅",
+    "saveSuccess": "تم حفظ الإعدادات بنجاح ✅"
   },
   "orders": {
     "title": "الطلبات",
@@ -15188,7 +15499,39 @@
     },
     "noOrderSelected": "لا يوجد طلب محدد",
     "selectOrderFromList": "اختر طلبًا من القائمة لعرض تفاصيله والتعامل معه",
-    "orderItems": "عناصر الطلب"
+    "orderItems": "عناصر الطلب",
+    "bulkDownloadTemplate": "تحميل القالب",
+    "bulkDuplicateFailed": "فشل نسخ العملية",
+    "bulkExecuteFailed": "فشل تنفيذ العملية",
+    "bulkExecuted": "تم تنفيذ العملية بنجاح",
+    "bulkExecutedPartial": "تم تنفيذ {{success}} وفشل {{failed}}",
+    "bulkExportFailed": "فشل تصدير البيانات",
+    "bulkFileWillUploadAfterSave": "سيتم رفع الملف بعد الحفظ",
+    "bulkItemAddress": "العنوان",
+    "bulkItemArea": "المنطقة",
+    "bulkUploadFailed": "فشل رفع الملف",
+    "confidence": "الثقة",
+    "confirm": "تأكيد",
+    "incompleteConvertFailed": "فشل تحويل الطلب",
+    "incompleteConvertNoPhone": "لا يوجد رقم هاتف لتحويل الطلب",
+    "incompleteConvertSuccess": "تم تحويل الطلب بنجاح",
+    "invoiceError": "خطأ في الفاتورة",
+    "invoiceGenerationFailed": "فشل إنشاء الفاتورة",
+    "items": "العناصر",
+    "jumpToPage": "انقر للانتقال السريع لصفحة",
+    "metaBodyTooLong": "النص أطول من حد ميتا — قلّل النص قبل النشر",
+    "metaSyncDone": "تمت مزامنة القوالب بنجاح",
+    "metaSyncRejected": "بعض القوالب اترفضت من ميتا — راجعها",
+    "notifyDisabled": "تم إيقاف الإشعار",
+    "notifyEnabled": "تم تفعيل الإشعار",
+    "order": "الطلب",
+    "orderInvoices_noResults": "لا توجد نتائج مطابقة",
+    "ordersCountLabel": "طلب",
+    "pageLabel": "صفحة",
+    "saveFailed": "فشل الحفظ",
+    "statusUpdated": "تم تحديث الحالة بنجاح",
+    "totalAssigned": "إجمالي التوزيع",
+    "unseenHint": "عرض الطلبات غير المقروءة فقط"
   },
   "orderSettings": {
     "title": "إعدادات الطلبات",
@@ -15888,7 +16231,27 @@
     "k_41": "رقم الراسل سيتم إرساله كـ api_followup_phone مع كل شحنة Turbo",
     "k_42": "إذا كان الشحن التلقائي معطلاً، يجب إنشاء الشحنات يدوياً من صفحة تفاصيل الطلب",
     "k_43": "Webhook URL اختياري - يستخدم لتلقي تحديثات حالة الشحنات تلقائياً",
-    "k_44": "عند تفعيل الشحن التلقائي، سيتم إنشاء شحنة تلقائياً عند تأكيد أي طلب"
+    "k_44": "عند تفعيل الشحن التلقائي، سيتم إنشاء شحنة تلقائياً عند تأكيد أي طلب",
+    "cancelFailed": "فشل إلغاء الشحنة",
+    "createFailed": "فشل إنشاء الشحنة",
+    "preparingWaybill": "جاري تجهيز بوليصة الشحن...",
+    "printWindowError": "فشل فتح نافذة الطباعة",
+    "recreateFailed": "فشل إعادة إنشاء الشحنة",
+    "selectGovernorate": "يرجى اختيار المحافظة",
+    "shipmentCancelled": "تم إلغاء الشحنة",
+    "shipmentCancelledSuccess": "تم إلغاء الشحنة بنجاح",
+    "shipmentCreated": "تم إنشاء الشحنة — رقم التتبع: {{trackingNumber}}",
+    "shipmentDelivered": "تم تسليم الشحنة",
+    "shipmentRecreated": "تم إعادة إنشاء الشحنة — رقم التتبع: {{trackingNumber}}",
+    "shipmentReturned": "تم إرجاع الشحنة",
+    "statusUpdate": "تحديث حالة الشحنة: {{status}}",
+    "unlinkFailed": "فشل فصل شحنة تربو",
+    "unlinkSuccess": "تم فصل شحنة تربو بنجاح",
+    "waybillEmpty": "بوليصة الشحن فارغة",
+    "waybillFailed": "تعذر تحميل بوليصة الشحن",
+    "waybillLoadFailed": "فشل تحميل بوليصة الشحن",
+    "waybillOpened": "تم فتح بوليصة الشحن",
+    "waybillPrintOpened": "تم فتح بوليصة الشحن للطباعة"
   },
   "pos": {
     "k_1": "الكل",
@@ -16447,7 +16810,8 @@
     "msg_b0b0": "تم رفض التقييم بنجاح",
     "error_error_b208": "حدث خطأ في رفض التقييم",
     "success_delete_9520": "تم حذف التقييم بنجاح",
-    "error_error_e0c6": "حدث خطأ في حذف التقييم"
+    "error_error_e0c6": "حدث خطأ في حذف التقييم",
+    "confirm_bulk_delete": "هل أنت متأكد من حذف {{count}} تقييم؟"
   },
   "products": {
     "title": "المنتجات",
@@ -16513,7 +16877,10 @@
       "quantity": "الكمية المتاحة *",
       "lowStockThreshold": "حد التنبيه",
       "lowStockThresholdHint": "سيتم تنبيهك عند انخفاض المخزون لهذا الحد",
-      "noTracking": "لن يتم تتبع المخزون لهذا المنتج. سيظهر كمتوفر دائماً للعملاء."
+      "noTracking": "لن يتم تتبع المخزون لهذا المنتج. سيظهر كمتوفر دائماً للعملاء.",
+      "description": "إدارة معرفات المنتج والمخزون",
+      "identifiers": "معرفات المنتج",
+      "barcode": "الباركود (Barcode / GTIN)"
     },
     "media": {
       "title": "صور المنتج",
@@ -16646,7 +17013,9 @@
       "dateRangeError": "⚠️ تاريخ انتهاء العرض يجب أن يكون بعد تاريخ البداية",
       "variantNameRequired": "⚠️ من فضلك أدخل اسم المتغير رقم {{number}}",
       "variantPriceError": "⚠️ سعر المتغير \"{{name}}\" لا يمكن أن يكون سالباً",
-      "variantStockError": "⚠️ مخزون المتغير \"{{name}}\" لا يمكن أن يكون سالباً"
+      "variantStockError": "⚠️ مخزون المتغير \"{{name}}\" لا يمكن أن يكون سالباً",
+      "nameRequired": "⚠️ من فضلك أدخل اسم المنتج",
+      "comparePriceInvalid": "⚠️ سعر المقارنة يجب أن يكون أكبر من سعر البيع"
     },
     "messages": {
       "savingProduct": "جاري الحفظ...",
@@ -16664,7 +17033,8 @@
       "selectSize": "حجم",
       "selectMaterial": "مادة",
       "selectStyle": "نمط",
-      "selectOther": "أخرى"
+      "selectOther": "أخرى",
+      "loadingCategories": "جاري تحميل الفئات..."
     },
     "error_error_1879": "حدث خطأ أثناء الحذف",
     "success_update_fdb7": "تم تحديث المنتج بنجاح",
@@ -16674,7 +17044,10 @@
     "msg_bd2e": "تم تصدير المنتجات بنجاح!",
     "msg_0437": "فشل التصدير",
     "error_error_7d31": "حدث خطأ أثناء استيراد الملف",
-    "error_error_e01c": "حدث خطأ أثناء حذف المنتجات"
+    "error_error_e01c": "حدث خطأ أثناء حذف المنتجات",
+    "tooltips": {
+      "slugTooltip": "رابط فريد للمنتج يظهر في العنوان (URL)"
+    }
   },
   "stockAnalytics": {
     "title": "تحليلات المخزون",
@@ -16808,7 +17181,8 @@
     "k_52": "فتح الطلب",
     "k_53": "صفحة",
     "k_54": "السابق",
-    "k_55": "التالي"
+    "k_55": "التالي",
+    "items_count": "{{count}} قطعة"
   },
   "customDomain": {
     "pageTitle": "الدومين المخصص (Custom Domain)",
@@ -17048,7 +17422,9 @@
     "page_profile": "الملف الشخصي",
     "page_settings": "الإعدادات",
     "page_marketplace": "المتجر",
-    "page_whatsapp": "واتساب"
+    "page_whatsapp": "واتساب",
+    "deposit_fixed_summary": "دفعة مقدمة بمبلغ {{value}} جنيه",
+    "deposit_percentage_summary": "دفعة مقدمة بنسبة {{value}}%"
   },
   "settingsPrimitives": {
     "alertSuccess": "تم التنفيذ",
@@ -17058,6 +17434,10 @@
     "loadingDescription": "برجاء الانتظار أثناء تحميل الإعدادات."
   },
   "sidebar": {
+    "activeUsers": "المستخدمون النشطون",
+    "agencyInvoices": "الفواتير والأرباح",
+    "quickFunnel": "مسار تحويل سريع",
+    "taskSettings": "إعدادات المهام",
     "marketingAgencySection": "وكالة التسويق (Agency OS)",
     "agencyOverview": "لوحة تحكم الوكالة",
     "agencyClients": "العملاء وميزانيات الإعلانات",
@@ -18504,7 +18884,10 @@
     "k_126": "يمكنك تنزيل CSV مباشرة أو Excel من النظام.",
     "k_127": "تنزيل Excel",
     "k_128": "جاري تجهيز الملف...",
-    "k_129": "بعد التنزيل: افتح Google Sheets واختر \"File → Import\" ثم ارفع الملف."
+    "k_129": "بعد التنزيل: افتح Google Sheets واختر \"File → Import\" ثم ارفع الملف.",
+    "import_success": "تم الاستيراد بنجاح من {{type}}",
+    "products_variants_summary": "{{products}} منتج · {{variants}} خيار",
+    "variants_count": "{{count}} خيار"
   },
   "platformPartner": {
     "dashboard": {
@@ -18855,7 +19238,8 @@
       "supportSettings": "إعدادات الدعم",
       "kanbanBoard": "لوحة المهام",
       "brandName": "التحكم الذكي",
-      "brandSubtitle": "الإدارة المركزية"
+      "brandSubtitle": "الإدارة المركزية",
+      "dailyOrders": "متابعة الطلبات اليومية"
     },
     "aiProviders": {
       "embedding": {
@@ -18984,7 +19368,10 @@
       "aiProviders": "مفاتيح ومزودي النماذج",
       "providerLogs": "لوج المزودين",
       "aiTemplates": "قوالب الذكاء الاصطناعي",
-      "agentProfiles": "الوكلاء الجاهزون"
+      "agentProfiles": "الوكلاء الجاهزون",
+      "metrics": {
+        "goalsAchieved": "الأهداف المحققة"
+      }
     },
     "globalSearchPlaceholder": "ابحث في النظام بالكامل...",
     "globalSearchHint": "اكتب أي كلمة أو حرف للبحث في جميع أقسام النظام",
@@ -19179,6 +19566,71 @@
           "openWorkspace": "فتح المساحة",
           "notifications": "الإشعارات"
         }
+      },
+      "logs": {
+        "title": "سجلات واتساب",
+        "description": "مراقبة رسائل تسجيل الشركات والاشتراك التي تمر عبر مساحة السوبر أدمن فقط.",
+        "filtersTitle": "فلاتر السجلات",
+        "searchPlaceholder": "ابحث بالرقم أو المحتوى أو الشركة",
+        "statusAll": "كل الحالات",
+        "companyAll": "كل الشركات",
+        "listTitle": "سجل onboarding للشركات",
+        "listDescription": "أحدث رسائل تسجيل الشركات والاشتراك الخارجة من نطاق السوبر أدمن.",
+        "empty": "لا توجد سجلات مطابقة للفلاتر الحالية.",
+        "columns": {
+          "company": "الشركة",
+          "event": "الحدث",
+          "status": "الحالة",
+          "error": "الخطأ",
+          "recipient": "المستلم",
+          "time": "الوقت"
+        },
+        "statusPlaceholder": "الحالة",
+        "companyPlaceholder": "الشركة"
+      },
+      "workspace": {
+        "title": "مساحة شركة واتساب",
+        "titleWithName": "مساحة واتساب · {{name}}",
+        "loadingDescription": "تحميل بيانات الشركة...",
+        "description": "ملخص سريع لرسائل تسجيل الشركة والاشتراك قبل فتح الجلسات أو شاشة إشعارات onboarding.",
+        "backLabel": "الرجوع للشركات",
+        "actions": {
+          "linkSession": "ربط السيشن",
+          "settings": "الإعدادات",
+          "notifications": "إشعارات التسجيل",
+          "inbox": "صندوق الوارد",
+          "analytics": "التحليلات",
+          "openSessions": "فتح الجلسات"
+        },
+        "noSessionAlert": {
+          "title": "الشركة تحتاج ربط سيشن أولًا",
+          "description": "قبل تشغيل الأتمتة أو الاعتماد على الإشعارات، افتح تبويب الجلسات واربط session متصلة واجعلها افتراضية."
+        },
+        "metrics": {
+          "sessions": "الجلسات",
+          "sessionsHint": "{{connected}} جلسة متصلة",
+          "notifications": "الإشعارات",
+          "notificationsEnabled": "مفعلة",
+          "notificationsDisabled": "معطلة",
+          "notificationsHint": "حالة محرك الإشعارات",
+          "templates": "القوالب",
+          "templatesHint": "{{total}} رسالة onboarding خلال 30 يوم",
+          "failures": "الفشل",
+          "failuresHint": "{{read}} رسالة مقروءة"
+        },
+        "sessionsCard": {
+          "title": "الجلسات الحالية",
+          "description": "الجلسات المتاحة للشركة، مع توضيح الجلسة الافتراضية.",
+          "empty": "لا توجد جلسات واتساب لهذه الشركة حتى الآن.",
+          "defaultBadge": "افتراضية"
+        },
+        "templatesCard": {
+          "title": "أحدث القوالب",
+          "description": "آخر قوالب تسجيل الشركات والاشتراكات التي يراجعها السوبر أدمن لهذه الشركة.",
+          "empty": "لا توجد قوالب محفوظة لهذه الشركة بعد.",
+          "active": "نشط",
+          "inactive": "غير نشط"
+        }
       }
     },
     "selfReview": {
@@ -19256,7 +19708,9 @@
       "serviceDisabled": "تم إيقاف الخدمة",
       "originalReply": "الرد الأصلي",
       "correctedReply": "الرد بعد التصحيح"
-    }
+    },
+    "profileMenu": "قائمة الملف الشخصي",
+    "toggleSidebar": "طي/فتح القائمة الجانبية"
   },
   "superAdminDefaultSidebar": {
     "title": "الشريط الجانبي الافتراضي",
@@ -19611,7 +20065,25 @@
       "medium": "متوسط",
       "high": "مرتفع",
       "critical": "حرج"
-    }
+    },
+    "backToList": "العودة للقائمة",
+    "days": "أيام",
+    "errorLoadingData": "تعذر تحميل البيانات، يرجى المحاولة مرة أخرى",
+    "go": "انتقال",
+    "loadError": "تعذر التحميل",
+    "loadMore": "تحميل المزيد",
+    "maxp": "MaxP",
+    "open": "فتح",
+    "page": "صفحة",
+    "platform": "المنصة",
+    "saveError": "فشل الحفظ",
+    "savedSuccessfully": "تم الحفظ بنجاح",
+    "saving": "جاري الحفظ...",
+    "settings": "الإعدادات",
+    "system": "النظام",
+    "tryAgain": "يرجى المحاولة مرة أخرى",
+    "updateData": "تحديث البيانات",
+    "upload": "رفع"
   },
   "header": {
     "dashboard": "لوحة التحكم",
@@ -19626,7 +20098,8 @@
     "notifications": "الإشعارات",
     "openMenu": "فتح القائمة",
     "closeMenu": "إغلاق القائمة",
-    "platformName": "منصة التواصل"
+    "platformName": "منصة التواصل",
+    "whatsapp": "الدعم عبر واتساب"
   },
   "language": {
     "current": "العربية",
@@ -19637,6 +20110,34 @@
     "markAllRead": "تحديد الكل كمقروء",
     "noNotifications": "لا توجد إشعارات",
     "newNotification": "إشعار جديد"
+  },
+  "palette": {
+    "close": "إغلاق",
+    "createBulkOrder": "استيراد طلبات جماعية",
+    "createManualOrder": "إنشاء طلب يدوي",
+    "description": "ابحث عن أمر أو انتقل لصفحة",
+    "groupBulk": "إجراءات جماعية",
+    "groupCreate": "إنشاء",
+    "groupNavigation": "التنقل",
+    "groupView": "عرض",
+    "navAnalytics": "تحليلات الطلبات",
+    "navCustomers": "العملاء",
+    "navOrders": "الطلبات",
+    "navOrdersKeywords": "orders",
+    "navOrdersPrep": "تجهيز الطلبات",
+    "navOrdersWorkspace": "مركز التأكيد والمتابعة",
+    "navProducts": "المنتجات",
+    "navReturns": "مراجعة المرتجعات",
+    "navSettings": "الإعدادات",
+    "navigate": "تنقل",
+    "noResults": "لا توجد نتائج",
+    "open": "فتح",
+    "openPalette": "فتح لوحة الأوامر",
+    "placeholder": "اكتب أمراً أو ابحث...",
+    "quickSearch": "بحث سريع",
+    "title": "لوحة الأوامر",
+    "viewInvoices": "فواتير الطلبات",
+    "viewSearch": "البحث المجمع"
   },
   "profile": {
     "title": "الملف الشخصي",

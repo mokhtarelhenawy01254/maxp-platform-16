@@ -848,7 +848,8 @@
     "submitError": "Failed to submit request",
     "pendingStatus": "Under Review",
     "approvedStatus": "Approved",
-    "rejectedStatus": "Rejected"
+    "rejectedStatus": "Rejected",
+    "management": "Management"
   },
   "activity": {
     "title": "My Activity",
@@ -940,7 +941,8 @@
     "filter": "Filter",
     "refresh": "Refresh",
     "export": "Export",
-    "print": "Print"
+    "print": "Print",
+    "day": "day"
   },
   "profile": {
     "loading": "Loading your profile...",
@@ -1044,6 +1046,9 @@
     "noCustody": "No assets assigned to you yet",
     "statusAssigned": "Assigned",
     "acknowledgedOn": "Acknowledged on {{date}}",
-    "noDepartment": "No Department"
+    "noDepartment": "No Department",
+    "annualLeaveBalance": "Annual leave balance",
+    "maritalStatus": "Marital status",
+    "sickLeaveBalance": "Sick leave balance"
   }
 }

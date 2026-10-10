@@ -51,7 +51,8 @@
     "location": "موقع",
     "today": "اليوم",
     "yesterday": "أمس",
-    "goToMessage": "الذهاب إلى الرسالة"
+    "goToMessage": "الذهاب إلى الرسالة",
+    "channel": "قناة"
   },
   "dialogs": {
     "deleteChatTitle": "حذف المحادثة",

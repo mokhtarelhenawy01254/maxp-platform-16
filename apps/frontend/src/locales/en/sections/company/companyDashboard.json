@@ -26,7 +26,9 @@
     "last90Days": "Last 90 days",
     "thisMonth": "This month",
     "lastMonth": "Last month",
-    "custom": "Custom range"
+    "custom": "Custom range",
+    "thisWeek": "This week",
+    "thisYear": "This year"
   },
   "rangeStats": {
     "title": "Period Summary",
@@ -45,7 +47,8 @@
     "title": "Quick Stats",
     "products": "Products",
     "orders": "Orders",
-    "activeApps": "Active Apps"
+    "activeApps": "Active Apps",
+    "customers": "Customers"
   },
   "activity": {
     "title": "Recent Activity (7 days)",
@@ -86,7 +89,9 @@
   },
   "inventory": {
     "outOfStockCount": "{{count}} out of stock",
-    "lowStockCount": "{{count}} low on stock"
+    "lowStockCount": "{{count}} low on stock",
+    "lowStock": "Low stock",
+    "outOfStock": "Out of stock"
   },
   "metrics": {
     "totalOrders": "Total Orders",

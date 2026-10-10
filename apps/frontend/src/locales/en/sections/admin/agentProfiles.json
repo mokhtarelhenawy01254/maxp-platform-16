@@ -213,6 +213,7 @@
     "disableAll": "Disable All",
     "search": "Search",
     "empty": "No tools",
+    "emptyDesc": "No tool permissions have been granted to {{agentName}} yet. You can grant permissions from the Tools panel.",
     "readOnly": "Read",
     "write": "Write",
     "addDialogTitle": "Add Tools",
@@ -225,6 +226,7 @@
     "disableAll": "Disable All",
     "search": "Search",
     "empty": "No skills",
+    "emptyDesc": "No skills have been assigned to {{agentName}} yet. You can grant skills from the Skills Hub.",
     "addDialogTitle": "Add Skills",
     "addSearch": "Search skills..."
   },

@@ -1,4 +1,8 @@
 {
   "msg_fe97": "خطأ غير معروف",
-  "error_error_430a": "حدث خطأ أثناء إنشاء الطلب"
+  "error_error_430a": "حدث خطأ أثناء إنشاء الطلب",
+  "msg_a03a": "Please select a city",
+  "msg_f4e5": "Please enter the phone number",
+  "msg_f9fe": "Please log in first",
+  "failed_create_ff97": "Failed to create order"
 }

@@ -99,7 +99,8 @@
     "supportSettings": "Support Settings",
     "kanbanBoard": "Kanban Board",
     "brandName": "Smart Control",
-    "brandSubtitle": "Super Admin"
+    "brandSubtitle": "Super Admin",
+    "dailyOrders": "Daily Orders"
   },
   "aiProviders": {
     "embedding": {
@@ -228,7 +229,10 @@
     "aiProviders": "AI Providers & Keys",
     "providerLogs": "Provider Logs",
     "aiTemplates": "AI Templates",
-    "agentProfiles": "Ready Agent Profiles"
+    "agentProfiles": "Ready Agent Profiles",
+    "metrics": {
+      "goalsAchieved": "Goals Achieved"
+    }
   },
   "globalSearchPlaceholder": "Search the entire system...",
   "globalSearchHint": "Type any word or letter to search across all system sections",
@@ -423,6 +427,71 @@
         "openWorkspace": "Open Workspace",
         "notifications": "Notifications"
       }
+    },
+    "logs": {
+      "title": "WhatsApp Logs",
+      "description": "Monitor company registration and subscription messages going through the super admin scope only.",
+      "filtersTitle": "Log Filters",
+      "searchPlaceholder": "Search by phone, content, or company",
+      "statusAll": "All Statuses",
+      "companyAll": "All Companies",
+      "listTitle": "Company Onboarding Log",
+      "listDescription": "Latest registration and subscription messages sent from the super admin scope.",
+      "empty": "No logs match the current filters.",
+      "columns": {
+        "company": "Company",
+        "event": "Event",
+        "status": "Status",
+        "error": "Error",
+        "recipient": "Recipient",
+        "time": "Time"
+      },
+      "statusPlaceholder": "Status",
+      "companyPlaceholder": "Company"
+    },
+    "workspace": {
+      "title": "WhatsApp Company Workspace",
+      "titleWithName": "WhatsApp Workspace · {{name}}",
+      "loadingDescription": "Loading company data...",
+      "description": "Quick summary of company registration and subscription messages before opening sessions or onboarding notifications.",
+      "backLabel": "Back to Companies",
+      "actions": {
+        "linkSession": "Link Session",
+        "settings": "Settings",
+        "notifications": "Registration Notifications",
+        "inbox": "Inbox",
+        "analytics": "Analytics",
+        "openSessions": "Open Sessions"
+      },
+      "noSessionAlert": {
+        "title": "Company needs a session linked first",
+        "description": "Before enabling automation or relying on notifications, open the sessions tab and link a connected session, then make it default."
+      },
+      "metrics": {
+        "sessions": "Sessions",
+        "sessionsHint": "{{connected}} Connected",
+        "notifications": "Notifications",
+        "notificationsEnabled": "Enabled",
+        "notificationsDisabled": "Disabled",
+        "notificationsHint": "Notifications engine status",
+        "templates": "Templates",
+        "templatesHint": "{{total}} onboarding messages in 30 days",
+        "failures": "Failures",
+        "failuresHint": "{{read}} Read"
+      },
+      "sessionsCard": {
+        "title": "Current Sessions",
+        "description": "Available sessions for the company, with the default session highlighted.",
+        "empty": "No WhatsApp sessions for this company yet.",
+        "defaultBadge": "Default"
+      },
+      "templatesCard": {
+        "title": "Recent Templates",
+        "description": "Latest company registration and subscription templates reviewed by the super admin for this company.",
+        "empty": "No templates saved for this company yet.",
+        "active": "Active",
+        "inactive": "Inactive"
+      }
     }
   },
   "selfReview": {
@@ -500,5 +569,7 @@
     "serviceDisabled": "Service disabled",
     "originalReply": "Original Reply",
     "correctedReply": "Corrected Reply"
-  }
+  },
+  "profileMenu": "Profile Menu",
+  "toggleSidebar": "Toggle Sidebar"
 }

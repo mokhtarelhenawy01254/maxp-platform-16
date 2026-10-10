@@ -1,4 +1,8 @@
 {
+  "activeUsers": "المستخدمون النشطون",
+  "agencyInvoices": "الفواتير والأرباح",
+  "quickFunnel": "مسار تحويل سريع",
+  "taskSettings": "إعدادات المهام",
   "marketingAgencySection": "وكالة التسويق (Agency OS)",
   "agencyOverview": "لوحة تحكم الوكالة",
   "agencyClients": "العملاء وميزانيات الإعلانات",

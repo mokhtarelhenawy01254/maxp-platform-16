@@ -56,5 +56,23 @@
     "medium": "متوسط",
     "high": "مرتفع",
     "critical": "حرج"
-  }
+  },
+  "backToList": "العودة للقائمة",
+  "days": "أيام",
+  "errorLoadingData": "تعذر تحميل البيانات، يرجى المحاولة مرة أخرى",
+  "go": "انتقال",
+  "loadError": "تعذر التحميل",
+  "loadMore": "تحميل المزيد",
+  "maxp": "MaxP",
+  "open": "فتح",
+  "page": "صفحة",
+  "platform": "المنصة",
+  "saveError": "فشل الحفظ",
+  "savedSuccessfully": "تم الحفظ بنجاح",
+  "saving": "جاري الحفظ...",
+  "settings": "الإعدادات",
+  "system": "النظام",
+  "tryAgain": "يرجى المحاولة مرة أخرى",
+  "updateData": "تحديث البيانات",
+  "upload": "رفع"
 }

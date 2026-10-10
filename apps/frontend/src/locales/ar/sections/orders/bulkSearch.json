@@ -50,5 +50,7 @@
   "bulkUpdateSuccess": "تم تحديث {{count}} طلب بنجاح",
   "bulkUpdatePartial": "تم تحديث {{success}} طلب وفشل {{failed}} طلب",
   "bulkUpdateFailed": "فشل تحديث الطلبات",
-  "bulkUpdateError": "حدث خطأ أثناء التحديث"
+  "bulkUpdateError": "حدث خطأ أثناء التحديث",
+  "cancellationReasonPrompt": "اكتب سبب إلغاء الطلب:",
+  "cancellationReasonRequired": "سبب إلغاء الطلب مطلوب"
 }

@@ -1,0 +1,144 @@
+{
+  "scenarios": [
+    {
+      "id": "greeting",
+      "label": "Greeting",
+      "icon": "👋",
+      "prompt": "Hello! Who are you and what can you do?",
+      "category": "Basics"
+    },
+    {
+      "id": "product_search",
+      "label": "Search Products",
+      "icon": "🔍",
+      "prompt": "Search for laptops under 30000 EGP. Show me all available options with their specs and ratings.",
+      "category": "Products"
+    },
+    {
+      "id": "top_selling",
+      "label": "Top Selling",
+      "icon": "🏆",
+      "prompt": "Show me the top selling products this period with revenue numbers.",
+      "category": "Products"
+    },
+    {
+      "id": "low_stock",
+      "label": "Low Stock Alert",
+      "icon": "⚠️",
+      "prompt": "Check which products are low in stock or out of stock. Alert me if any are below 10 units.",
+      "category": "Inventory"
+    },
+    {
+      "id": "adjust_stock",
+      "label": "Adjust Stock",
+      "icon": "📦",
+      "prompt": "Product PROD_001 is running low. I need to increase its stock by 50 units.",
+      "category": "Inventory"
+    },
+    {
+      "id": "create_draft_order",
+      "label": "Draft Order",
+      "icon": "📝",
+      "prompt": "Create a draft order for customer TEST_CUSTOMER_ID. They want 2 MacBook Pro laptops and 1 iPhone 15.",
+      "category": "Orders"
+    },
+    {
+      "id": "order_lookup",
+      "label": "Order Lookup",
+      "icon": "📋",
+      "prompt": "Show me the details of order #ORD_001. I need the status, items, and total.",
+      "category": "Orders"
+    },
+    {
+      "id": "recent_orders",
+      "label": "Recent Orders",
+      "icon": "🕐",
+      "prompt": "Show me the recent orders from today. How many orders and what is the total revenue?",
+      "category": "Orders"
+    },
+    {
+      "id": "cancel_order",
+      "label": "Cancel Order",
+      "icon": "❌",
+      "prompt": "The customer wants to cancel order #ORD_002. Handle this cancellation professionally.",
+      "category": "Orders"
+    },
+    {
+      "id": "handle_refund",
+      "label": "Handle Refund",
+      "icon": "💬",
+      "prompt": "A customer is complaining about order #ORD_003. The product arrived damaged and he wants a full refund. Handle this professionally.",
+      "category": "Support"
+    },
+    {
+      "id": "customer_info",
+      "label": "Customer Info",
+      "icon": "👤",
+      "prompt": "Find customer information for TEST_CUSTOMER_ID. Show me their profile, order history, and loyalty points.",
+      "category": "Customers"
+    },
+    {
+      "id": "top_buyers",
+      "label": "Top Buyers",
+      "icon": "⭐",
+      "prompt": "Who are our top 5 customers? Show me their names and total spending.",
+      "category": "Customers"
+    },
+    {
+      "id": "shipping_rates",
+      "label": "Shipping Rates",
+      "icon": "🚚",
+      "prompt": "What are the available shipping options and rates to Egypt?",
+      "category": "Shipping"
+    },
+    {
+      "id": "apply_discount",
+      "label": "Apply Discount",
+      "icon": "🏷️",
+      "prompt": "Apply a 10% discount to order #ORD_001 for customer loyalty.",
+      "category": "Discounts"
+    },
+    {
+      "id": "sales_report",
+      "label": "Sales Report",
+      "icon": "📊",
+      "prompt": "Generate a sales report for this week. Show me the top 5 products by revenue and compare with last week.",
+      "category": "Analytics"
+    },
+    {
+      "id": "company_snapshot",
+      "label": "Company Snapshot",
+      "icon": "🏢",
+      "prompt": "Show me a quick dashboard snapshot of the company. Revenue, orders, customers, and inventory status.",
+      "category": "Analytics"
+    },
+    {
+      "id": "multi_tool",
+      "label": "Complex Task",
+      "icon": "🧩",
+      "prompt": "I need to: 1) Find customer Mohamed on phone 01001111111, 2) Create a draft order for 2x Product X and 1x Product Y, 3) Apply a 10% loyalty discount. Handle this step by step.",
+      "category": "Advanced"
+    },
+    {
+      "id": "agent_introspection",
+      "label": "Agent Capabilities",
+      "icon": "🤖",
+      "prompt": "List all the tools you have access to. Categorize them into read tools and write tools.",
+      "category": "Advanced"
+    },
+    {
+      "id": "faq_entry",
+      "label": "Create FAQ",
+      "icon": "📖",
+      "prompt": "I want to add a new FAQ entry: customers often ask 'How do I return a product?' The answer should explain the 14-day return policy.",
+      "category": "Knowledge"
+    },
+    {
+      "id": "schedule_job",
+      "label": "Schedule Task",
+      "icon": "⏰",
+      "prompt": "I need to schedule a daily task at 9 AM to check low stock products and alert the team.",
+      "category": "Admin"
+    }
+  ]
+}

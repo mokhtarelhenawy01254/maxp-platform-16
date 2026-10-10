@@ -51,7 +51,8 @@
     "location": "Location",
     "today": "Today",
     "yesterday": "Yesterday",
-    "goToMessage": "Go to message"
+    "goToMessage": "Go to message",
+    "channel": "Channel"
   },
   "dialogs": {
     "deleteChatTitle": "Delete Chat",

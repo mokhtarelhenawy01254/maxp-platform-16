@@ -51,5 +51,8 @@
     "documents": "Documents",
     "salary": "Salary History",
     "performance": "Performance"
+  },
+  "errors": {
+    "fetchFailed": "Failed to load dashboard"
   }
 }

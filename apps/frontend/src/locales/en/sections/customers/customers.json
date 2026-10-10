@@ -85,5 +85,8 @@
     "tabPaste": "Paste Direct Data",
     "pastePlaceholder": "Copy rows and columns from Excel and paste them here...\nName,Phone,Email,Status\nJohn Doe,01012345678,john@example.com,LEAD",
     "parseButton": "Preview and Parse Data"
-  }
+  },
+  "deleteConfirmMessage": "Are you sure you want to delete customer {{name}}?",
+  "deleteWarning": "This action cannot be undone",
+  "loadError": "Failed to load customer data"
 }

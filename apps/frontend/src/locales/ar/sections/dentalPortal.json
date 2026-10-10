@@ -162,7 +162,8 @@
     "approved": "تم اعتماد التصميم بنجاح",
     "changesSent": "تم إرسال طلب التعديل للمعمل",
     "changesPrompt": "اكتب ملاحظات التعديل المطلوبة",
-    "approvalError": "تعذر تسجيل الاعتماد"
+    "approvalError": "تعذر تسجيل الاعتماد",
+    "uploadTotal": "إجمالي الملفات"
   },
   "invoices": {
     "title": "فواتيري",

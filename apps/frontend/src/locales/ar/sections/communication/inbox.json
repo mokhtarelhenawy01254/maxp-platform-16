@@ -11,5 +11,8 @@
   },
   "searchPlaceholder": "بحث في المحادثات...",
   "advancedFilters": "فلاتر متقدمة",
-  "statistics": "الإحصائيات"
+  "statistics": "الإحصائيات",
+  "conversationLink": "رابط المحادثة",
+  "noMessages": "لا توجد رسائل",
+  "notes": "ملاحظات"
 }

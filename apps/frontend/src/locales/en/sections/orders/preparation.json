@@ -425,5 +425,12 @@
   },
   "fallbackCustomerName": "Unknown Customer",
   "fallbackWarehouseName": "Unnamed Warehouse",
-  "k_10": "Ready to Ship"
+  "k_10": "Ready to Ship",
+  "k_1": "Preparation Queue Disabled",
+  "k_2": "— Can be re-enabled from Order Settings.",
+  "k_3": "— Use reason or assignee filter for quick access.",
+  "k_4": "Execution Queue",
+  "k_9": "On Hold (Shortage)",
+  "k_20": "Selected order not found",
+  "k_26": "All visible orders violate current preparation rules"
 }

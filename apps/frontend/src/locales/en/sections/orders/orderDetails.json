@@ -192,5 +192,21 @@
   "carrierDelayReason": "Carrier / Prior Delay Note:",
   "returnSource": "Source:",
   "editReturnReason": "Edit Return Reason",
-  "addReturnReason": "Add Return Reason"
+  "addReturnReason": "Add Return Reason",
+  "apartment": "Apartment",
+  "building": "Building",
+  "exchangeOrder": "Exchange Order",
+  "floor": "Floor",
+  "invoice": "Invoice",
+  "invoicePrintError": "Failed to print the invoice: {{error}}",
+  "loading": "Loading...",
+  "noAreasAvailable": "No areas available",
+  "preparationSlip": "Preparation Slip",
+  "preparationSlipError": "Failed to load the preparation slip: {{error}}",
+  "returnReasonLine": "Return reason: {{reason}}",
+  "returnedAt": "Recorded at:",
+  "returnedFromOrder": "Returned from order {{orderNumber}}",
+  "supportTickets": "Support Tickets",
+  "titlePrefix": "Order Details",
+  "whatsapp": "Platform WhatsApp"
 }

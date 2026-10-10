@@ -101,5 +101,14 @@
   "footer": "Inspired by",
   "EGP": "Egyptian Pound",
   "SAR": "Saudi Riyal",
-  "USD": "US Dollar"
+  "USD": "US Dollar",
+  "metric": "Metric",
+  "value": "Value",
+  "monthlyOrdersPlaced": "Monthly Orders Placed",
+  "ordersConfirmed": "Orders Confirmed",
+  "ordersDelivered": "Orders Delivered",
+  "ordersRTO": "Orders RTO",
+  "totalVariableCost": "Total Variable Cost",
+  "netProfitMargin": "Net Profit Margin",
+  "safeCAC": "Safe CAC"
 }
