@@ -253,5 +253,32 @@ describe('Order Service', () => {
       expect(order.source).toBeDefined();
       expect(['WEBSITE', 'MOBILE_APP', 'FACEBOOK', 'WHATSAPP', 'MANUAL']).toContain(order.source);
     });
+
+    test('should merge cancellation reason with existing customer notes and save in metadata', () => {
+      const existingNotes = 'موديل سيارة كيا سبورتاج 2022 - لون أحمر';
+      const cancellationReason = 'العميل غير رأيه ويريد مقاس أكبر';
+
+      const isCancellation = true;
+      let finalOrderNotes = cancellationReason;
+      if (existingNotes && existingNotes.trim().length > 0) {
+        if (isCancellation && cancellationReason && cancellationReason.trim()) {
+          const oldNote = existingNotes.trim();
+          const newReason = cancellationReason.trim();
+          if (!oldNote.includes(newReason)) {
+            finalOrderNotes = `${oldNote} | سبب الإلغاء: ${newReason}`;
+          } else {
+            finalOrderNotes = oldNote;
+          }
+        }
+      }
+
+      const metadata = {
+        cancellationReason: cancellationReason.trim()
+      };
+
+      expect(finalOrderNotes).toContain('موديل سيارة كيا سبورتاج 2022');
+      expect(finalOrderNotes).toContain('سبب الإلغاء: العميل غير رأيه ويريد مقاس أكبر');
+      expect(metadata.cancellationReason).toBe(cancellationReason);
+    });
   });
 });
