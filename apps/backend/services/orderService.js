@@ -1938,6 +1938,28 @@ class OrderService {
         }
       }
 
+      // 🛡️ Deactivate workspace assignment when order reaches a terminal / fulfilled / cancelled status
+      const TERMINAL_WORKSPACE_STATUSES = [
+        'DELIVERED', 'RETURNED', 'CANCELLED', 'SHIPPED', 'OUT_FOR_DELIVERY',
+        'TRASH', 'DUPLICATE_ORDER', 'REFUNDED', 'LOST', 'PARTIALLY_DELIVERED',
+        'PARTIALLY_RETURNED'
+      ];
+      if (TERMINAL_WORKSPACE_STATUSES.includes(status)) {
+        try {
+          const prisma = this.getPrisma();
+          await prisma.orderAssignment.updateMany({
+            where: {
+              companyId: order.companyId,
+              isActive: true,
+              OR: [{ orderId: order.id }, { guestOrderId: order.id }]
+            },
+            data: { isActive: false }
+          });
+        } catch (assignErr) {
+          console.warn(`⚠️ [ORDER-SERVICE] Failed to deactivate orderAssignment for #${order.orderNumber}:`, assignErr.message);
+        }
+      }
+
       // 🚀 SPEED: Return result immediately to the user
       // All other operations (Turbo, Returns, Commissions, Notifications) happen in the background
       (async () => {
@@ -2464,6 +2486,28 @@ class OrderService {
           });
         } catch (syncErr) {
           console.warn(`⚠️ [ORDER-SERVICE] Failed to sync status to twin regular order for #${guestOrder.orderNumber}:`, syncErr.message);
+        }
+      }
+
+      // 🛡️ Deactivate workspace assignment when guest order reaches a terminal / fulfilled / cancelled status
+      const TERMINAL_WORKSPACE_STATUSES = [
+        'DELIVERED', 'RETURNED', 'CANCELLED', 'SHIPPED', 'OUT_FOR_DELIVERY',
+        'TRASH', 'DUPLICATE_ORDER', 'REFUNDED', 'LOST', 'PARTIALLY_DELIVERED',
+        'PARTIALLY_RETURNED'
+      ];
+      if (TERMINAL_WORKSPACE_STATUSES.includes(status)) {
+        try {
+          const prisma = this.getPrisma();
+          await prisma.orderAssignment.updateMany({
+            where: {
+              companyId: guestOrder.companyId,
+              isActive: true,
+              OR: [{ orderId: guestOrder.id }, { guestOrderId: guestOrder.id }]
+            },
+            data: { isActive: false }
+          });
+        } catch (assignErr) {
+          console.warn(`⚠️ [ORDER-SERVICE] Failed to deactivate orderAssignment for guest #${guestOrder.orderNumber}:`, assignErr.message);
         }
       }
 
