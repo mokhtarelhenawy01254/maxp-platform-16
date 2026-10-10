@@ -1336,6 +1336,14 @@ router.get(
       const { companyId, popup } = req.query;
       const returnOrigin = getRequestedFrontendOrigin(req);
 
+      if (!appId) {
+        return res.status(400).json({
+          success: false,
+          error: "Facebook App ID is not configured",
+          message: "لم يتم تهيئة معرّف تطبيق فيسبوك (Facebook App ID) في النظام. يرجى مراجعة إعدادات السوبر أدمن.",
+        });
+      }
+
       if (!companyId) {
         return res.status(400).json({
           success: false,
@@ -1394,6 +1402,14 @@ router.get("/authorize", verifyToken.authenticateToken, async (req, res) => {
     const { appId } = getFacebookOAuthConfig();
     const { companyId, popup } = req.query;
     const returnOrigin = getRequestedFrontendOrigin(req);
+
+    if (!appId) {
+      return res.status(400).json({
+        success: false,
+        error: "Facebook App ID is not configured",
+        message: "لم يتم تهيئة معرّف تطبيق فيسبوك (Facebook App ID) في النظام. يرجى مراجعة إعدادات السوبر أدمن.",
+      });
+    }
 
     if (!companyId) {
       return res.status(400).json({
@@ -1667,6 +1683,13 @@ router.post("/reauthorize-consent", verifyToken.authenticateToken, async (req, r
     }
 
     const { appId } = getFacebookOAuthConfig();
+    if (!appId) {
+      return res.status(400).json({
+        success: false,
+        error: "Facebook App ID is not configured",
+        message: "لم يتم تهيئة معرّف تطبيق فيسبوك (Facebook App ID) في النظام. يرجى مراجعة إعدادات السوبر أدمن.",
+      });
+    }
     const returnOrigin = getRequestedFrontendOrigin(req);
     const encodedState = buildFacebookOAuthState({
       companyId,
@@ -3105,6 +3128,14 @@ router.get(["/pixel-authorize", "/auth"], verifyToken.authenticateToken, async (
     const { appId } = getFacebookOAuthConfig();
     const companyId = req.query?.companyId || req.user?.companyId;
     const returnOrigin = getRequestedFrontendOrigin(req);
+
+    if (!appId) {
+      return res.status(400).json({
+        success: false,
+        error: "Facebook App ID is not configured",
+        message: "لم يتم تهيئة معرّف تطبيق فيسبوك (Facebook App ID) في النظام. يرجى مراجعة إعدادات السوبر أدمن.",
+      });
+    }
 
     if (!companyId) {
       return res.status(400).json({

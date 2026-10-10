@@ -368,6 +368,16 @@ if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
     echo "✅ Restored Firebase Service Account key"
   fi
 
+  # 🔑 Restore/Persist Facebook OAuth config from persistent /var/www/shared
+  if [ -f "/var/www/backend2/data/facebook-oauth-config.json" ]; then
+    sudo cp /var/www/backend2/data/facebook-oauth-config.json /var/www/shared/facebook-oauth-config.json || true
+  elif [ -f "/var/www/shared/facebook-oauth-config.json" ]; then
+    sudo mkdir -p /var/www/backend2/data
+    sudo cp /var/www/shared/facebook-oauth-config.json /var/www/backend2/data/facebook-oauth-config.json
+    sudo chown $USER:$USER /var/www/backend2/data/facebook-oauth-config.json
+    echo "✅ Restored Facebook OAuth config from persistent storage"
+  fi
+
   # 🔑 Sync MAXP_SERVICE_TOKEN from ai-service .env (real token) to backend .env
   # This ensures BackendClient tools (offers_list_active, etc.) can authenticate
   AI_SVC_TOKEN=""
