@@ -80,15 +80,9 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
         <div
           role="tablist"
           aria-label={isArabic ? 'فلترة سريعة للطلبات' : 'Quick order filters'}
-          className="flex items-center gap-2 overflow-x-auto py-0.5 scrollbar-none"
+          className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-0.5 scrollbar-none"
         >
-          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground shrink-0 select-none">
-            <span>{isArabic ? 'سريع' : 'Quick'}</span>
-            <span className="text-border/80">|</span>
-          </div>
-
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {tabs.map((tab) => {
+          {tabs.map((tab) => {
               const isActive = activeTab === tab.key;
               const hasCount = typeof tab.count === 'number';
               return (
@@ -119,7 +113,6 @@ export const WorkspaceTopBar: React.FC<WorkspaceTopBarProps> = ({
                 </button>
               );
             })}
-          </div>
         </div>
 
         {/* End (Left in RTL): Search + Sort + Freshness + Refresh */}
