@@ -2079,18 +2079,15 @@ const getApiError = (error: unknown): ApiErrorLike => {
           });
         }
       } catch (error: unknown) {
-        // Silently fail if 404 (post details not found) - it's optional
-        const status = getApiError(error).response?.status;
-        if (status === 404 || status === 400) {
-          updateSelectedConversation({
-            postDetails: null,
-            postDetailsUnavailable: true,
-          });
-          return;
-        }
+        // Silently handle if post details not found or unavailable - it's optional lazy enrichment
+        updateSelectedConversation({
+          postDetails: null,
+          postDetailsUnavailable: true,
+        });
 
-        if (status !== 404) {
-          console.error("Error fetching post details:", error);
+        const status = getApiError(error).response?.status;
+        if (status !== 404 && status !== 400) {
+          console.warn("⚠️ Post details unavailable:", error);
         }
       }
     },

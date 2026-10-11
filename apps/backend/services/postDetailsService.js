@@ -93,10 +93,17 @@ class PostDetailsService {
       
       return result;
     } catch (error) {
-      console.error(`❌ [POST-DETAILS] Error fetching Facebook post details for postId ${postId}:`, error.message);
+      const isExpectedNotFound = error.response && (error.response.status === 400 || error.response.status === 404);
+      if (isExpectedNotFound) {
+        console.warn(`⚠️ [POST-DETAILS] Post details unavailable for postId ${postId}:`, error.message);
+      } else {
+        console.error(`❌ [POST-DETAILS] Error fetching Facebook post details for postId ${postId}:`, error.message);
+      }
       if (error.response) {
         const errorData = error.response.data;
-        console.error(`❌ [POST-DETAILS] Error response:`, JSON.stringify(errorData, null, 2));
+        if (!isExpectedNotFound) {
+          console.error(`❌ [POST-DETAILS] Error response:`, JSON.stringify(errorData, null, 2));
+        }
         
         // If error is about deprecated API or invalid post ID, try alternative format
         if ((errorData?.error?.code === 12 || errorData?.error?.message?.includes('deprecated')) && pageId) {

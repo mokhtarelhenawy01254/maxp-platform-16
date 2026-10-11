@@ -227,6 +227,48 @@ describe('orderController - getAllOrders & getOneOrder', () => {
       expect(guestWhere.status).toEqual({ in: ['CONFIRMED', 'confirmed'] });
     });
 
+    test('handles status=ALL or ANY without filtering out active orders', async () => {
+      mockPrisma.order.findMany.mockResolvedValueOnce([]);
+      mockPrisma.guestOrder.findMany.mockResolvedValueOnce([]);
+      mockPrisma.order.count.mockResolvedValueOnce(0);
+      mockPrisma.guestOrder.count.mockResolvedValueOnce(0);
+
+      const req = {
+        user: { companyId: 'comp-100' },
+        query: { status: 'all' },
+      };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+      };
+
+      await getAllOrders(req, res);
+
+      const orderWhere = mockPrisma.order.findMany.mock.calls[0][0].where;
+      expect(orderWhere.status).toEqual({ not: 'TRASH' });
+    });
+
+    test('handles unknown/unrecognized status safely without throwing PrismaClientValidationError', async () => {
+      mockPrisma.order.findMany.mockResolvedValueOnce([]);
+      mockPrisma.guestOrder.findMany.mockResolvedValueOnce([]);
+      mockPrisma.order.count.mockResolvedValueOnce(0);
+      mockPrisma.guestOrder.count.mockResolvedValueOnce(0);
+
+      const req = {
+        user: { companyId: 'comp-100' },
+        query: { status: 'invalid_status_xyz' },
+      };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+      };
+
+      await getAllOrders(req, res);
+
+      const orderWhere = mockPrisma.order.findMany.mock.calls[0][0].where;
+      expect(orderWhere.status).toEqual({ in: [] });
+    });
+
     test('excludes TRASH orders by default when status is omitted', async () => {
       mockPrisma.order.findMany.mockResolvedValueOnce([]);
       mockPrisma.guestOrder.findMany.mockResolvedValueOnce([]);

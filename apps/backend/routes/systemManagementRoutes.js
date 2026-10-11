@@ -131,11 +131,32 @@ router.get('/dashboard/aggregated', authenticateToken, requireSuperAdmin, async 
       prisma.company.count({ where: { createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } }),
       prisma.user.count({ where: { createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } }),
       prisma.customer.count({ where: { createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } }),
-      prisma.$queryRaw`SELECT DATE(createdAt) as date, CAST(COUNT(*) AS SIGNED) as count FROM companies WHERE createdAt >= ${thirtyDaysAgo} GROUP BY DATE(createdAt) ORDER BY date ASC`,
-      prisma.$queryRaw`SELECT DATE(createdAt) as date, CAST(COUNT(*) AS SIGNED) as count FROM users WHERE createdAt >= ${thirtyDaysAgo} GROUP BY DATE(createdAt) ORDER BY date ASC`,
-      prisma.$queryRaw`SELECT DATE(createdAt) as date, CAST(COUNT(*) AS SIGNED) as count FROM customers WHERE createdAt >= ${thirtyDaysAgo} GROUP BY DATE(createdAt) ORDER BY date ASC`,
-      prisma.systemSettings.findMany({ orderBy: [{ category: 'asc' }, { displayName: 'asc' }] }),
-      prisma.activityLog.findMany({ where: { severity: { in: ['HIGH', 'CRITICAL'] } }, orderBy: { createdAt: 'desc' }, take: 5 })
+      (async () => {
+        try {
+          return await prisma.$queryRaw`SELECT CAST("createdAt" AS DATE) as date, CAST(COUNT(*) AS INTEGER) as count FROM "companies" WHERE "createdAt" >= ${thirtyDaysAgo} GROUP BY CAST("createdAt" AS DATE) ORDER BY date ASC`;
+        } catch (err) {
+          console.warn('⚠️ [Dashboard] Trend companies query warning:', err.message);
+          return [];
+        }
+      })(),
+      (async () => {
+        try {
+          return await prisma.$queryRaw`SELECT CAST("createdAt" AS DATE) as date, CAST(COUNT(*) AS INTEGER) as count FROM "users" WHERE "createdAt" >= ${thirtyDaysAgo} GROUP BY CAST("createdAt" AS DATE) ORDER BY date ASC`;
+        } catch (err) {
+          console.warn('⚠️ [Dashboard] Trend users query warning:', err.message);
+          return [];
+        }
+      })(),
+      (async () => {
+        try {
+          return await prisma.$queryRaw`SELECT CAST("createdAt" AS DATE) as date, CAST(COUNT(*) AS INTEGER) as count FROM "customers" WHERE "createdAt" >= ${thirtyDaysAgo} GROUP BY CAST("createdAt" AS DATE) ORDER BY date ASC`;
+        } catch (err) {
+          console.warn('⚠️ [Dashboard] Trend customers query warning:', err.message);
+          return [];
+        }
+      })(),
+      prisma.systemSettings.findMany({ orderBy: [{ category: 'asc' }, { displayName: 'asc' }] }).catch(() => []),
+      prisma.activityLog.findMany({ where: { severity: { in: ['HIGH', 'CRITICAL'] } }, orderBy: { createdAt: 'desc' }, take: 5 }).catch(() => [])
     ]);
 
     const calcGrowth = (current, previous) => {

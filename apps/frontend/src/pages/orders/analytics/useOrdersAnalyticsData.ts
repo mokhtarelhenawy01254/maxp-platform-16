@@ -112,6 +112,29 @@ export const useOrdersAnalyticsData = () => {
     [t]
   );
 
+  // Synchronize period & dateRange when URL searchParams change externally or via back/forward
+  useEffect(() => {
+    const p = searchParams.get("period");
+    if (p === "custom") {
+      const s = searchParams.get("start");
+      const e = searchParams.get("end");
+      if (s && e && (s !== dateRange.start || e !== dateRange.end || period !== "custom")) {
+        setPeriod("custom");
+        setDateRange({ start: s, end: e });
+      }
+    } else if (isValidPeriodKey(p)) {
+      if (p !== period) {
+        const preset = getPresetRange(p);
+        setPeriod(p);
+        setDateRange({ start: preset.start, end: preset.end });
+      }
+    } else if (!p && period !== "today") {
+      const preset = getPresetRange("today");
+      setPeriod("today");
+      setDateRange({ start: preset.start, end: preset.end });
+    }
+  }, [searchParams, period, dateRange.start, dateRange.end]);
+
   useEffect(() => {
     if (dateRange.start && dateRange.end && dateRange.start <= dateRange.end) {
       loadData(dateRange.start, dateRange.end);

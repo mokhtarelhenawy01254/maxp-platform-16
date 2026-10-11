@@ -3,11 +3,16 @@ const { getSharedPrismaClient } = require("../services/sharedDatabase");
 const { requireSuperAdmin, authenticateToken } = require("../middleware/superAdminMiddleware");
 
 const router = express.Router();
-const prisma = getSharedPrismaClient();
+
+const getPrisma = () => getSharedPrismaClient();
 
 // Get all active explanations (public)
 router.get("/public", async (req, res) => {
   try {
+    const prisma = getPrisma();
+    if (!prisma?.appExplanation) {
+      return res.json({ success: true, explanations: [] });
+    }
     const explanations = await prisma.appExplanation.findMany({
       where: {
         isActive: true,
@@ -28,6 +33,11 @@ router.get("/by-route", async (req, res) => {
   try {
     const { route } = req.query;
     if (!route) {
+      return res.json({ success: true, explanations: [] });
+    }
+
+    const prisma = getPrisma();
+    if (!prisma?.appExplanation) {
       return res.json({ success: true, explanations: [] });
     }
 
@@ -65,14 +75,15 @@ router.get("/by-route", async (req, res) => {
 
     res.json({ success: true, explanations: filtered });
   } catch (error) {
-    console.error("Error fetching explanations by route:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    console.warn("⚠️ [AppExplanations] Error fetching explanations by route:", error.message);
+    res.json({ success: true, explanations: [] });
   }
 });
 
 // Admin: get all explanations
 router.get("/admin", authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
+    const prisma = getPrisma();
     const explanations = await prisma.appExplanation.findMany({
       orderBy: {
         createdAt: "desc",
@@ -88,6 +99,7 @@ router.get("/admin", authenticateToken, requireSuperAdmin, async (req, res) => {
 // Get a single explanation by slug
 router.get("/public/:slug", async (req, res) => {
   try {
+    const prisma = getPrisma();
     const { slug } = req.params;
     const explanation = await prisma.appExplanation.findUnique({
       where: { slug },
@@ -107,6 +119,7 @@ router.get("/public/:slug", async (req, res) => {
 // Admin: create explanation
 router.post("/admin", authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
+    const prisma = getPrisma();
     const { title, content, slug, targetRoute, videoUrl, isActive, order } = req.body;
     
     const newExplanation = await prisma.appExplanation.create({
@@ -134,6 +147,7 @@ router.post("/admin", authenticateToken, requireSuperAdmin, async (req, res) => 
 // Admin: update explanation
 router.put("/admin/:id", authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
+    const prisma = getPrisma();
     const { id } = req.params;
     const { title, content, slug, targetRoute, videoUrl, isActive, order } = req.body;
     
@@ -163,6 +177,7 @@ router.put("/admin/:id", authenticateToken, requireSuperAdmin, async (req, res) 
 // Admin: delete explanation
 router.delete("/admin/:id", authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
+    const prisma = getPrisma();
     const { id } = req.params;
     
     await prisma.appExplanation.delete({

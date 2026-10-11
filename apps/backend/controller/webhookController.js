@@ -218,15 +218,11 @@ const postWebhook = async (req, res) => {
     String(getFacebookAppSecret() || '').trim()
   );
 
-    if (!signatureCheck.ok) {
-    const statusCode = signatureCheck.reason === 'missing_secret'
-      ? 503
-      : signatureCheck.reason === 'missing_raw_body'
-        ? 500
-        : 401;
+  if (!signatureCheck.ok) {
+    const statusCode = signatureCheck.reason === 'missing_raw_body' ? 400 : 401;
 
     if (shouldStrictlyEnforceFacebookWebhookSignature()) {
-      console.warn(`🔒 [WEBHOOK] Strict mode enabled - rejecting unsigned webhook`);
+      console.warn(`🔒 [WEBHOOK] Strict mode enabled - rejecting unsigned webhook (${signatureCheck.reason})`);
       return res.status(statusCode).json({
         success: false,
         error: 'Invalid webhook signature',

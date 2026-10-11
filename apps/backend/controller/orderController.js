@@ -22,6 +22,15 @@ const getCompanyTimezone = async (companyId) => {
   }
 };
 
+const VALID_ORDER_STATUSES = new Set([
+  'PENDING', 'CONFIRMED', 'SCHEDULED', 'READY_FOR_PROCESSING', 'PROCESSING',
+  'SHIPPED', 'DELIVERED', 'CANCELLED', 'DUPLICATE_ORDER', 'REFUNDED',
+  'RETURNED', 'PARTIALLY_RETURNED', 'EXCHANGED', 'PARTIALLY_REFUNDED',
+  'WOO_TAGHEZ', 'DRAFT', 'TRASH', 'READY_TO_SHIP', 'ON_HOLD',
+  'NOT_SHIPPED', 'OUT_FOR_DELIVERY', 'LOST', 'PENDING_PREPARATION',
+  'PREPARING', 'READY'
+]);
+
 const getAllOrders = async (req, res) => {
   try {
     const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
@@ -46,8 +55,17 @@ const getAllOrders = async (req, res) => {
     if (status) {
       const statusUpper = status.toUpperCase();
       const statusLower = status.toLowerCase();
-      where.status = statusUpper;
-      guestWhere.status = { in: [statusUpper, statusLower] };
+      if (statusUpper === 'ALL' || statusUpper === 'ANY') {
+        where.status = { not: 'TRASH' };
+        guestWhere.status = { notIn: ['TRASH', 'trash', 'deleted'] };
+      } else if (VALID_ORDER_STATUSES.has(statusUpper)) {
+        where.status = statusUpper;
+        guestWhere.status = { in: [statusUpper, statusLower] };
+      } else {
+        // Prevent invalid enum crash (PrismaClientValidationError)
+        where.status = { in: [] };
+        guestWhere.status = { in: [statusUpper, statusLower] };
+      }
     } else {
       // Default: exclude TRASH orders unless specifically requested
       where.status = { not: 'TRASH' };

@@ -24,25 +24,53 @@ const getSalesReport = async (req, res) => {
             ? endOfDay(fromZonedTime(endDate, timeZone))
             : new Date();
 
-        // جلب الطلبات في الفترة المحددة
-        const orders = await getSharedPrismaClient().order.findMany({
-            where: {
-                companyId,
-                createdAt: {
-                    gte: start,
-                    lte: end
+        // جلب الطلبات في الفترة المحددة (عادية + زوار)
+        const [orders, guestOrders] = await Promise.all([
+            getSharedPrismaClient().order.findMany({
+                where: {
+                    companyId,
+                    createdAt: { gte: start, lte: end },
+                    status: { not: 'TRASH' }
+                },
+                select: {
+                    orderNumber: true,
+                    createdAt: true,
+                    total: true,
+                    status: true
                 }
-            },
-            select: {
-                createdAt: true,
-                total: true,
-                status: true
-            }
+            }),
+            getSharedPrismaClient().guestOrder.findMany({
+                where: {
+                    companyId,
+                    createdAt: { gte: start, lte: end },
+                    status: { notIn: ['TRASH', 'trash', 'deleted'] }
+                },
+                select: {
+                    orderNumber: true,
+                    createdAt: true,
+                    total: true,
+                    finalTotal: true,
+                    status: true
+                }
+            })
+        ]);
+
+        const regularNumbers = new Set(
+            orders.map(o => String(o.orderNumber || '').trim().toLowerCase()).filter(Boolean)
+        );
+        const filteredGuests = (Array.isArray(guestOrders) ? guestOrders : []).filter(g => {
+            const key = String(g.orderNumber || '').trim().toLowerCase();
+            return !key || !regularNumbers.has(key);
         });
+
+        const allSalesOrders = [
+            ...orders.map(o => ({ createdAt: o.createdAt, total: parseFloat(o.total || 0) })),
+            ...filteredGuests.map(g => ({ createdAt: g.createdAt, total: parseFloat(g.finalTotal || g.total || 0) }))
+        ];
 
         // تجميع البيانات حسب التاريخ
         const salesByDate = {};
-        orders.forEach(order => {
+        allSalesOrders.forEach(order => {
             const date = formatInTimeZone(order.createdAt, timeZone, 'yyyy-MM-dd');
             if (!salesByDate[date]) {
                 salesByDate[date] = {
@@ -687,8 +715,11 @@ const normalizeGovName = (name) => {
 
 const getDetailedOrderReport = async (req, res) => {
     try {
-        const { companyId } = req.user;
-        const { startDate, endDate } = req.query;
+        const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
+        if (!companyId) {
+            return res.status(401).json({ success: false, message: 'Unauthorized: missing companyId' });
+        }
+        const { startDate, endDate, period } = req.query;
 
         const prisma = getSharedPrismaClient();
         const company = await prisma.company.findUnique({
@@ -697,10 +728,42 @@ const getDetailedOrderReport = async (req, res) => {
         });
         const timeZone = company?.timezone || 'Africa/Cairo';
 
-        const start = startDate ? startOfDay(fromZonedTime(startDate, timeZone)) : subDays(new Date(), 30);
-        const end = endDate ? endOfDay(fromZonedTime(endDate, timeZone)) : new Date();
+        let start;
+        let end;
 
-        const [ordersList, piecesAgg] = await Promise.all([
+        if (startDate && endDate) {
+            start = startOfDay(fromZonedTime(startDate, timeZone));
+            end = endOfDay(fromZonedTime(endDate, timeZone));
+        } else if (startDate) {
+            start = startOfDay(fromZonedTime(startDate, timeZone));
+            end = endOfDay(fromZonedTime(new Date(), timeZone));
+        } else if (period) {
+            const p = String(period).trim();
+            const now = new Date();
+            if (p === 'today') {
+                const todayStr = formatInTimeZone(now, timeZone, 'yyyy-MM-dd');
+                start = startOfDay(fromZonedTime(todayStr, timeZone));
+                end = endOfDay(fromZonedTime(todayStr, timeZone));
+            } else if (p === 'yesterday') {
+                const yesterdayStr = formatInTimeZone(subDays(now, 1), timeZone, 'yyyy-MM-dd');
+                start = startOfDay(fromZonedTime(yesterdayStr, timeZone));
+                end = endOfDay(fromZonedTime(yesterdayStr, timeZone));
+            } else {
+                const numDays = parseInt(p, 10);
+                if (!isNaN(numDays) && numDays > 0) {
+                    start = startOfDay(subDays(now, numDays));
+                    end = endOfDay(now);
+                } else {
+                    start = subDays(now, 30);
+                    end = now;
+                }
+            }
+        } else {
+            start = subDays(new Date(), 30);
+            end = new Date();
+        }
+
+        const [ordersList, guestOrdersList, piecesAgg] = await Promise.all([
             prisma.order.findMany({
                 where: {
                     companyId,
@@ -735,6 +798,32 @@ const getDetailedOrderReport = async (req, res) => {
                 },
                 orderBy: { createdAt: 'asc' }
             }),
+            prisma.guestOrder.findMany({
+                where: {
+                    companyId,
+                    createdAt: { gte: start, lte: end },
+                    status: { notIn: ['TRASH', 'trash', 'deleted'] }
+                },
+                select: {
+                    id: true,
+                    orderNumber: true,
+                    status: true,
+                    paymentMethod: true,
+                    paymentStatus: true,
+                    total: true,
+                    finalTotal: true,
+                    shippingCost: true,
+                    shippingAddress: true,
+                    turboBranchName: true,
+                    turboShipmentId: true,
+                    turboShipmentStatus: true,
+                    turboTrackingNumber: true,
+                    createdAt: true,
+                    items: true,
+                    metadata: true
+                },
+                orderBy: { createdAt: 'asc' }
+            }),
             prisma.orderItem.aggregate({
                 where: {
                     order: {
@@ -746,6 +835,74 @@ const getDetailedOrderReport = async (req, res) => {
                 _sum: { quantity: true }
             }).catch(() => ({ _sum: { quantity: 0 } }))
         ]);
+
+        const regularOrderNumbers = new Set(
+            ordersList.map(o => String(o.orderNumber || '').trim().toLowerCase()).filter(Boolean)
+        );
+
+        let guestPiecesTotal = 0;
+        const guestPiecesByStatus = {};
+
+        const filteredGuestOrders = (Array.isArray(guestOrdersList) ? guestOrdersList : []).filter(g => {
+            const key = String(g.orderNumber || '').trim().toLowerCase();
+            return !key || !regularOrderNumbers.has(key);
+        });
+
+        const mappedGuestOrders = filteredGuestOrders.map(guest => {
+            let parsedItems = [];
+            try {
+                parsedItems = typeof guest.items === 'string' ? JSON.parse(guest.items) : (guest.items || []);
+            } catch (_) { parsedItems = []; }
+
+            let parsedAddress = {};
+            try {
+                parsedAddress = typeof guest.shippingAddress === 'string' ? JSON.parse(guest.shippingAddress) : (guest.shippingAddress || {});
+            } catch (_) { parsedAddress = {}; }
+
+            const rawGov = parsedAddress.governorate || parsedAddress.state || parsedAddress.region || '';
+            const rawCity = parsedAddress.city || '';
+
+            let orderPieces = 0;
+            if (Array.isArray(parsedItems)) {
+                parsedItems.forEach(item => {
+                    const q = Number(item.quantity) || 1;
+                    orderPieces += q;
+                    guestPiecesTotal += q;
+                });
+            }
+
+            const guestRawStatus = String(guest.status || 'PENDING').toUpperCase().trim();
+            guestPiecesByStatus[guestRawStatus] = (guestPiecesByStatus[guestRawStatus] || 0) + orderPieces;
+
+            const guestTotal = guest.finalTotal ? Number(guest.finalTotal) : Number(guest.total || 0);
+            const guestSubtotal = Number(guest.total || guestTotal);
+            const guestShipping = Number(guest.shippingCost || 0);
+
+            return {
+                id: guest.orderNumber || guest.id,
+                orderNumber: guest.orderNumber,
+                status: guestRawStatus,
+                customStatusCode: null,
+                paymentMethod: guest.paymentMethod || 'cash_on_delivery',
+                paymentStatus: guest.paymentStatus || 'PENDING',
+                total: guestTotal,
+                subtotal: guestSubtotal,
+                shipping: guestShipping,
+                governorate: rawGov,
+                city: rawCity,
+                turboBranchName: guest.turboBranchName || null,
+                turboShipmentId: guest.turboShipmentId || null,
+                turboShipmentStatus: guest.turboShipmentStatus || null,
+                turboTrackingNumber: guest.turboTrackingNumber || null,
+                createdAt: guest.createdAt,
+                shipments: [],
+                _orderPieces: orderPieces
+            };
+        });
+
+        const unifiedOrdersList = [...ordersList, ...mappedGuestOrders].sort(
+            (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+        );
 
         const statusDistribution = {};
         const statusPiecesDistribution = {};
@@ -782,9 +939,9 @@ const getDetailedOrderReport = async (req, res) => {
 
         const branchMap = {};
 
-        const totalOrders = ordersList.length;
+        const totalOrders = unifiedOrdersList.length;
 
-        ordersList.forEach(order => {
+        unifiedOrdersList.forEach(order => {
             const rawStatus = String(order.status || '').toUpperCase().trim();
             const rawCustom = String(order.customStatusCode || '').toUpperCase().trim();
             const turboStatus = String(order.turboShipmentStatus || '').toLowerCase().trim();
@@ -805,7 +962,7 @@ const getDetailedOrderReport = async (req, res) => {
             const pm = order.paymentMethod || 'UNKNOWN';
             paymentStats[pm] = (paymentStats[pm] || 0) + 1;
 
-            const isCOD = ['CASH', 'COD'].includes(String(pm).toUpperCase().trim());
+            const isCOD = ['CASH', 'COD', 'CASH_ON_DELIVERY', 'CASH-ON-DELIVERY', 'الدفع عند الاستلام'].includes(String(pm).toUpperCase().trim());
             if (isCOD) {
                 codOrdersCount += 1;
                 codOrdersRevenue += total;
@@ -1032,7 +1189,12 @@ const getDetailedOrderReport = async (req, res) => {
             }
         }
 
-        const totalPieces = Number(piecesAgg._sum?.quantity || 0);
+        // دمج قطع طلبات الزوار في توزيع القطع لكل حالة
+        Object.entries(guestPiecesByStatus).forEach(([st, pieces]) => {
+            statusPiecesDistribution[st] = (statusPiecesDistribution[st] || 0) + pieces;
+        });
+
+        const totalPieces = Number(piecesAgg._sum?.quantity || 0) + guestPiecesTotal;
         const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
         const avgPiecesPerOrder = totalOrders > 0 ? Number((totalPieces / totalOrders).toFixed(1)) : 0;
 
