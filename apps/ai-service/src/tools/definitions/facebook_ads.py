@@ -1392,19 +1392,22 @@ async def orders_campaign_attribution_report(input_data: OrdersCampaignAttributi
         cancelled_cnt = 0
 
         for o in orders:
-            total_cnt += 1
-            rev = float(o.total or 0)
-            total_rev += rev
-            status = str(o.status or "").upper()
-            if status == "DELIVERED":
-                delivered_cnt += 1
-                delivered_rev += rev
-            elif status in ("CANCELLED", "RETURNED", "DUPLICATE_ORDER"):
-                cancelled_cnt += 1
+            meta = o.metadata
+            if isinstance(meta, str):
+                try:
+                    meta = json.loads(meta)
+                except Exception:
+                    meta = {}
+            elif not isinstance(meta, dict):
+                meta = {}
 
-            meta = o.metadata if isinstance(o.metadata, dict) else {}
             attr = meta.get("attribution") if isinstance(meta, dict) else {}
-            if not isinstance(attr, dict):
+            if isinstance(attr, str):
+                try:
+                    attr = json.loads(attr)
+                except Exception:
+                    attr = {}
+            elif not isinstance(attr, dict):
                 attr = {}
 
             src = str(attr.get("source") or attr.get("utm_source") or "direct").strip().lower()
@@ -1414,6 +1417,16 @@ async def orders_campaign_attribution_report(input_data: OrdersCampaignAttributi
                 continue
             if input_data.campaign_name and input_data.campaign_name.lower() not in cmp.lower():
                 continue
+
+            total_cnt += 1
+            rev = float(o.total or 0)
+            total_rev += rev
+            status = str(o.status or "").upper()
+            if status == "DELIVERED":
+                delivered_cnt += 1
+                delivered_rev += rev
+            elif status in ("CANCELLED", "RETURNED", "DUPLICATE_ORDER"):
+                cancelled_cnt += 1
 
             if src not in source_map:
                 source_map[src] = {"source": src, "orders_count": 0, "revenue": 0.0}

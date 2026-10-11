@@ -152,6 +152,14 @@ const hasValidLocalBridgeSecret = (provided, expected) => {
 };
 
 const requireLocalBridgeSecret = (req, res, next) => {
+    // 🤖 Allow AI service authenticated calls
+    const authHeader = req.headers.authorization;
+    const bearerToken = (authHeader && authHeader.split(' ')[1]) || req.query?.token;
+    const serviceToken = process.env.AI_SERVICE_TOKEN || process.env.MAXP_SERVICE_TOKEN || '';
+    if (serviceToken && bearerToken && bearerToken === serviceToken) {
+        return next();
+    }
+
     const expectedSecret = String(process.env.LOCAL_WHATSAPP_BRIDGE_SECRET || '').trim();
     if (!expectedSecret) {
         return res.status(503).json({

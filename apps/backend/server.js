@@ -1045,6 +1045,10 @@ app.use("/api/v1/facebook/ads", facebookAdsRoutes);
 app.use("/api/v1/facebook-ads", facebookAdsRoutes);
 app.use("/api/v1/facebook/integration", facebookIntegrationRoutes);
 app.use("/api/v1/integrations", facebookIntegrationRoutes);
+app.use("/api/v1/facebook/connected", (req, res, next) => {
+  req.url = "/facebook/connected";
+  return facebookIntegrationRoutes(req, res, next);
+});
 app.use("/api/v1/facebook/posts", facebookPostRoutes);
 app.use("/api/v1/agency", agencyRoutes);
 app.use("/api/agency", agencyRoutes);

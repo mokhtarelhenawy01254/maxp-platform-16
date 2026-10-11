@@ -240,10 +240,14 @@ async def facebook_pages_connected_list(input_data: FacebookPagesConnectedListIn
     client = get_backend_client()
     params = {"companyId": company_id} if company_id else None
     try:
-        res = await client._request("GET", "/api/v1/facebook/connected", params=params)
+        try:
+            res = await client._request("GET", "/api/v1/facebook/connected", params=params)
+        except Exception:
+            res = await client._request("GET", "/api/v1/integrations/facebook/connected", params=params)
+        pages = res.get("pages") if isinstance(res.get("pages"), list) else (res.get("data") if isinstance(res.get("data"), list) else res)
         return {
             "success": True,
-            "pages": res.get("data", res),
+            "pages": pages,
             "message": "تم جلب الصفحات المتصلة بحساب فيسبوك بنجاح",
         }
     except Exception as exc:
