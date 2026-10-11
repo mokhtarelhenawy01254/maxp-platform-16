@@ -162,13 +162,13 @@ describe('Executive Assistant Agent (Saleem) — Complete Store Bundle (17 Apps)
 
     const scenarioIds = evalsJson.evalScenarios.map(s => s.id);
     expect(scenarioIds).toContain('scenario_bulk_orders_update');
-    expect(scenarioIds).toContain('scenario_order_preparation_hold');
-    expect(scenarioIds).toContain('scenario_whatsapp_customer_outreach');
-    expect(scenarioIds).toContain('scenario_campaign_attribution');
-    expect(scenarioIds).toContain('scenario_bot_automation_config');
-    expect(scenarioIds).toContain('scenario_returns_policy_settings');
-    expect(scenarioIds).toContain('scenario_unified_inbox_monitoring');
-    expect(scenarioIds).toContain('scenario_facebook_connected_pages');
+    expect(scenarioIds).toContain('scenario_order_hold_preparation');
+    expect(scenarioIds).toContain('scenario_whatsapp_customer_send');
+    expect(scenarioIds).toContain('scenario_campaign_attribution_report');
+    expect(scenarioIds).toContain('scenario_bot_automation_settings');
+    expect(scenarioIds).toContain('scenario_returns_settings_check');
+    expect(scenarioIds).toContain('scenario_unified_inbox_telemetry');
+    expect(scenarioIds).toContain('scenario_facebook_pages_list');
   });
 
   // =========================================================================
