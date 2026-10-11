@@ -5,6 +5,7 @@ import {
   XMarkIcon,
   BookOpenIcon,
   QuestionMarkCircleIcon,
+  ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/outline";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
@@ -188,31 +189,38 @@ const PageExplanations: React.FC<PageExplanationsProps> = ({
       {/* Modal */}
       {selectedExp && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6"
           onClick={() => setSelectedExp(null)}
         >
           <div
-            className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-[95vw] max-w-3xl max-h-[90vh] overflow-hidden"
+            className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden border border-gray-200 dark:border-gray-800"
             onClick={(e) => e.stopPropagation()}
             dir="rtl"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                {selectedExp.title}
-              </h3>
+            {/* Header - permanently pinned */}
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-gray-200 dark:border-gray-800 shrink-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm">
+              <div className="flex items-center gap-2.5 min-w-0">
+                {selectedExp.videoUrl ? (
+                  <PlayCircleIcon className="h-5 w-5 text-red-500 shrink-0" />
+                ) : (
+                  <BookOpenIcon className="h-5 w-5 text-blue-500 shrink-0" />
+                )}
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
+                  {selectedExp.title}
+                </h3>
+              </div>
               <button
                 type="button"
                 onClick={() => setSelectedExp(null)}
-                className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 transition-colors shrink-0"
                 aria-label="إغلاق"
               >
-                <XMarkIcon className="h-5 w-5 text-gray-500" />
+                <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
 
             {/* Content */}
-            <div className="overflow-y-auto max-h-[calc(90vh-60px)] p-5">
+            <div className="overflow-y-auto p-4 sm:p-6 flex-1 space-y-4">
               {/* Video */}
               {selectedExp.videoUrl && (
                 <VideoBlock videoUrl={selectedExp.videoUrl} title={selectedExp.title} />
@@ -240,39 +248,73 @@ const VideoBlock: React.FC<{ videoUrl: string; title: string }> = ({ videoUrl, t
   return (
     <>
       {embedUrl && (
-        <div className="relative w-full pb-[56.25%] mb-4 rounded-xl overflow-hidden bg-black">
-          <iframe
-            className="absolute inset-0 w-full h-full"
-            src={embedUrl}
-            title={title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+        <div className="space-y-2 mb-4">
+          <div className="w-full aspect-video max-h-[340px] mx-auto rounded-xl overflow-hidden bg-black shadow-md border border-gray-800">
+            <iframe
+              className="w-full h-full border-0"
+              src={embedUrl}
+              title={title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
+          <div className="flex items-center justify-between px-1 text-xs text-gray-500 dark:text-gray-400">
+            <span className="flex items-center gap-1.5">
+              <PlayCircleIcon className="h-3.5 w-3.5 text-red-500 shrink-0" />
+              <span>فيديو توضيحي</span>
+            </span>
+            <a
+              href={videoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline font-medium"
+            >
+              <span>فتح على يوتيوب</span>
+              <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" />
+            </a>
+          </div>
         </div>
       )}
 
       {directVideoUrl && (
-        <div className="w-full mb-4 rounded-xl overflow-hidden bg-black">
-          <video
-            className="w-full max-h-[60vh]"
-            src={directVideoUrl}
-            controls
-            playsInline
-            preload="metadata"
-          />
+        <div className="space-y-2 mb-4">
+          <div className="w-full aspect-video max-h-[340px] mx-auto rounded-xl overflow-hidden bg-black shadow-md border border-gray-800">
+            <video
+              className="w-full h-full object-contain"
+              src={directVideoUrl}
+              controls
+              playsInline
+              preload="metadata"
+            />
+          </div>
+          <div className="flex items-center justify-end px-1 text-xs">
+            <a
+              href={directVideoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline font-medium"
+            >
+              <span>فتح الفيديو في نافذة جديدة</span>
+              <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" />
+            </a>
+          </div>
         </div>
       )}
 
       {!embedUrl && !directVideoUrl && (
-        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+        <div className="mb-4 p-3.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl flex items-center justify-between">
+          <span className="text-sm font-medium text-blue-900 dark:text-blue-200">
+            يوجد فيديو توضيحي لهذه الصفحة
+          </span>
           <a
             href={videoUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-2 text-sm font-medium"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 dark:text-blue-300 hover:underline"
           >
-            <PlayCircleIcon className="h-5 w-5" />
-            {t("explanations.watchVideo", "شاهد الفيديو التوضيحي")}
+            <PlayCircleIcon className="h-4 w-4 text-red-500" />
+            <span>{t("explanations.watchVideo", "شاهد الفيديو التوضيحي")}</span>
+            <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
           </a>
         </div>
       )}

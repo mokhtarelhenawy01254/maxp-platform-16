@@ -4,25 +4,47 @@
  */
 
 /**
- * Extracts a YouTube embed URL from various YouTube URL formats.
+ * Extracts a privacy-friendly YouTube embed URL from various YouTube URL formats.
+ * Uses youtube-nocookie.com with modestbranding and playsinline flags.
  */
 export function getYouTubeEmbedUrl(url: string): string | null {
   try {
     const u = new URL(url);
-    // youtube.com/watch?v=ID
-    if (
-      (u.hostname === "www.youtube.com" || u.hostname === "youtube.com") &&
-      u.searchParams.get("v")
-    ) {
-      return `https://www.youtube.com/embed/${u.searchParams.get("v")}`;
+    const host = u.hostname.toLowerCase();
+
+    // youtube.com, www.youtube.com, m.youtube.com
+    if (host.includes("youtube.com")) {
+      const v = u.searchParams.get("v");
+      if (v) {
+        return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(v)}?rel=0&modestbranding=1&playsinline=1`;
+      }
+      if (u.pathname.startsWith("/shorts/")) {
+        const id = u.pathname.split("/")[2];
+        if (id) {
+          return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?rel=0&modestbranding=1&playsinline=1`;
+        }
+      }
+      if (u.pathname.startsWith("/embed/")) {
+        const id = u.pathname.split("/")[2];
+        if (id) {
+          return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?rel=0&modestbranding=1&playsinline=1`;
+        }
+        return url;
+      }
+      if (u.pathname.startsWith("/live/")) {
+        const id = u.pathname.split("/")[2];
+        if (id) {
+          return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?rel=0&modestbranding=1&playsinline=1`;
+        }
+      }
     }
+
     // youtu.be/ID
-    if (u.hostname === "youtu.be") {
-      return `https://www.youtube.com/embed${u.pathname}`;
-    }
-    // Already an embed URL
-    if (u.pathname.startsWith("/embed/")) {
-      return url;
+    if (host === "youtu.be") {
+      const id = u.pathname.replace(/^\/+/, "").split("/")[0];
+      if (id) {
+        return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?rel=0&modestbranding=1&playsinline=1`;
+      }
     }
   } catch {
     // not a valid URL

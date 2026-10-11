@@ -353,7 +353,7 @@ const securityHeaders = (req, res, next) => {
     "font-src 'self' data: https://fonts.gstatic.com",
     "object-src 'none'",
     "media-src 'self' data: blob: https:",
-    "frame-src 'self' https://www.facebook.com",
+    "frame-src 'self' https://www.facebook.com https://connect.facebook.net https://web.facebook.com https://www.youtube.com https://youtube.com https://m.youtube.com https://www.youtube-nocookie.com https://youtube-nocookie.com",
     "frame-ancestors 'none'",
   ].join('; ');
 

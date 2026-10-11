@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import { BookOpen, PlayCircle, ChevronDown, Search } from "lucide-react";
+import { BookOpen, PlayCircle, ChevronDown, Search, ExternalLink } from "lucide-react";
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -110,7 +110,7 @@ const AppExplanationsPage: React.FC = () => {
     };
 
     fetchExplanations();
-  }, [t]);
+  }, []);
 
   const toggleSlug = (slug: string, open: boolean) => {
     setOpenSlugs((prev) => {
@@ -341,37 +341,68 @@ const CardVideoBlock: React.FC<{ exp: AppExplanation; watchVideoLabel: string }>
   return (
     <>
       {yt && (
-        <div className="relative w-full pb-[56.25%] mb-4 rounded-xl overflow-hidden bg-black">
-          <iframe
-            className="absolute inset-0 w-full h-full"
-            src={yt}
-            title={exp.title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+        <div className="space-y-2 mb-4">
+          <div className="w-full aspect-video max-h-[380px] mx-auto rounded-xl overflow-hidden bg-black border border-border shadow-sm">
+            <iframe
+              className="w-full h-full border-0"
+              src={yt}
+              title={exp.title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
+          <div className="flex items-center justify-end px-1">
+            <a
+              href={exp.videoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-medium"
+            >
+              <ExternalLink className="size-3.5" />
+              <span>فتح على يوتيوب ↗</span>
+            </a>
+          </div>
         </div>
       )}
 
       {direct && (
-        <video
-          className="w-full mb-4 rounded-xl bg-black"
-          src={direct}
-          controls
-          playsInline
-          preload="metadata"
-        />
+        <div className="space-y-2 mb-4">
+          <div className="w-full aspect-video max-h-[380px] mx-auto rounded-xl overflow-hidden bg-black border border-border shadow-sm">
+            <video
+              className="w-full h-full object-contain"
+              src={direct}
+              controls
+              playsInline
+              preload="metadata"
+            />
+          </div>
+          <div className="flex items-center justify-end px-1">
+            <a
+              href={direct}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-medium"
+            >
+              <ExternalLink className="size-3.5" />
+              <span>فتح الفيديو في نافذة جديدة</span>
+            </a>
+          </div>
+        </div>
       )}
 
       {!yt && !direct && (
-        <a
-          href={exp.videoUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline"
-        >
-          <PlayCircle className="size-5" aria-hidden="true" />
-          {watchVideoLabel}
-        </a>
+        <div className="mb-4">
+          <a
+            href={exp.videoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            <PlayCircle className="size-5" aria-hidden="true" />
+            <span>{watchVideoLabel}</span>
+            <ExternalLink className="size-3.5" />
+          </a>
+        </div>
       )}
     </>
   );
