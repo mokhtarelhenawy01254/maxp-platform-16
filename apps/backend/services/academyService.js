@@ -777,13 +777,16 @@ class AcademyService {
     const db = this.getDb();
     let order = orderData;
 
-    if (!order) {
-      if (!orderId && !orderNumber) return { success: false, enrolled: 0, reason: 'No order identifier provided' };
+    if (!order || !order.orderItems || order.orderItems.length === 0) {
+      const targetOrderId = order?.id || orderId;
+      const targetOrderNumber = order?.orderNumber || orderNumber;
+      if (!targetOrderId && !targetOrderNumber) return { success: false, enrolled: 0, reason: 'No order identifier provided' };
+
       order = await db.order.findFirst({
         where: {
           OR: [
-            ...(orderId ? [{ id: orderId }] : []),
-            ...(orderNumber ? [{ orderNumber: String(orderNumber) }] : []),
+            ...(targetOrderId ? [{ id: targetOrderId }] : []),
+            ...(targetOrderNumber ? [{ orderNumber: String(targetOrderNumber) }] : []),
           ],
           ...(companyId ? { companyId } : {}),
         },
@@ -799,13 +802,10 @@ class AcademyService {
         order = await db.guestOrder.findFirst({
           where: {
             OR: [
-              ...(orderId ? [{ id: orderId }] : []),
-              ...(orderNumber ? [{ orderNumber: String(orderNumber) }] : []),
+              ...(targetOrderId ? [{ id: targetOrderId }] : []),
+              ...(targetOrderNumber ? [{ orderNumber: String(targetOrderNumber) }] : []),
             ],
             ...(companyId ? { companyId } : {}),
-          },
-          include: {
-            orderItems: true,
           },
         }).catch(() => null);
       }
@@ -814,10 +814,17 @@ class AcademyService {
     if (!order) return { success: false, enrolled: 0, reason: 'Order not found' };
 
     const resolvedCompanyId = companyId || order.companyId;
-    const items = order.orderItems || [];
-    if (items.length === 0) return { success: true, enrolled: 0, reason: 'Order has no items' };
+    let items = order.orderItems || [];
+    if ((!items || items.length === 0) && order.items) {
+      try {
+        items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+      } catch (_) {
+        items = [];
+      }
+    }
+    if (!Array.isArray(items) || items.length === 0) return { success: true, enrolled: 0, reason: 'Order has no items' };
 
-    const productIds = items.map((it) => it.productId || it.product?.id).filter(Boolean);
+    const productIds = items.map((it) => it.productId || it.product?.id || it.id).filter(Boolean);
     if (productIds.length === 0) return { success: true, enrolled: 0, reason: 'No products in items' };
 
     const matchingCourses = await db.academyCourse.findMany({
@@ -834,9 +841,9 @@ class AcademyService {
       return { success: true, enrolled: 0, reason: 'No courses linked to ordered products' };
     }
 
-    const customerName = order.customerName || `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim() || 'طالب جديد';
-    const customerPhone = order.customerPhone || order.customer?.phone || null;
-    const customerEmail = order.customerEmail || order.customer?.email || null;
+    const customerName = order.customerName || order.guestName || `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim() || 'طالب جديد';
+    const customerPhone = order.customerPhone || order.guestPhone || order.customer?.phone || null;
+    const customerEmail = order.customerEmail || order.guestEmail || order.customer?.email || null;
     const customerId = order.customerId || order.customer?.id || null;
 
     let studentUserId = null;
@@ -894,6 +901,7 @@ class AcademyService {
               title: `تم تسجيلك في كورس: ${course.title}`,
               body: `مبروك! تم تسجيلك تلقائياً في دورة "${course.title}" بعد إتمام الدفع. يمكنك الوصول للكورس من الأكاديمية الآن.`,
               type: 'ACADEMY_ENROLLMENT',
+              userId: studentUserId || null,
               recipientCustomerId: customerId || null,
               metadata: { courseId: course.id, enrollmentId: enr.id },
             });
@@ -907,10 +915,12 @@ class AcademyService {
     // إضافة سجل في تاريخ الطلب ليظهر في تفاصيل الطلب بلوحة التحكم
     if (enrollments.length > 0 && order.id) {
       try {
+        const isGuest = Boolean(order.guestPhone || order.guestName || (order.items && !order.orderItems));
         const titles = matchingCourses.map((c) => c.title).join('، ');
         await db.orderStatusHistory.create({
           data: {
-            orderId: order.id,
+            orderId: isGuest ? null : order.id,
+            guestOrderId: isGuest ? order.id : null,
             status: order.status || 'CONFIRMED',
             oldStatus: order.status || 'CONFIRMED',
             reason: `🎓 تسجيل تلقائي في الأكاديمية: تم تسجيل الطالب (${customerName}) في دورة [${titles}] بنجاح`,
