@@ -1,0 +1,21 @@
+{
+  "id": "chat-inbox-telemetry",
+  "displayName": "Chat Inbox Telemetry",
+  "version": "1.0.0",
+  "description": "تيليمتري صندوق الوارد الموحد: إحصائيات الرسائل، المحادثات النشطة، والتواصل مع العميل.",
+  "triggerPhrases": [
+    "الصندوق الوارد",
+    "المحادثات النشطة",
+    "إحصائيات الرسائل",
+    "رسائل واتساب",
+    "رسائل مسنجر",
+    "ابعت واتساب للعميل"
+  ],
+  "allowedTools": [
+    "unified_inbox_manage",
+    "whatsapp_send",
+    "facebook_pages_connected_list"
+  ],
+  "requiresHumanApproval": false,
+  "maxToolCount": 3
+}

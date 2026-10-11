@@ -1,0 +1,25 @@
+{
+  "id": "bulk-order-operations",
+  "displayName": "Bulk Order Operations",
+  "version": "1.0.0",
+  "description": "تنفيذ عمليات الطلبات الجماعية وتجهيز/تعليق الأوردرات دفعة واحدة مع بوابة اعتماد.",
+  "triggerPhrases": [
+    "الطلبات الجماعية",
+    "أكد الطلبات",
+    "حول الطلبات للشحن",
+    "الغي الطلبات",
+    "علق الطلب",
+    "جهز الطلب",
+    "فك التعليق"
+  ],
+  "allowedTools": [
+    "orders_bulk_status_update",
+    "order_set_preparation_hold",
+    "order_lookup",
+    "order_summary",
+    "order_recent_list",
+    "order_cancel"
+  ],
+  "requiresHumanApproval": true,
+  "maxToolCount": 4
+}

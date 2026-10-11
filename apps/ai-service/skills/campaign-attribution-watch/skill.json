@@ -1,0 +1,23 @@
+{
+  "id": "campaign-attribution-watch",
+  "displayName": "Campaign Attribution Watch",
+  "version": "1.0.0",
+  "description": "قراءة تقارير إسناد الطلبات للحملات ومراقبة اقتصاديات الإعلانات وقرار Scale/Kill/Watch.",
+  "triggerPhrases": [
+    "تقرير الحملات",
+    "إسناد الطلبات",
+    "الحملة الأكثر مبيعا",
+    "UTM",
+    "حساب الإعلانات",
+    "قرار الإعلان",
+    "Scale أو Kill"
+  ],
+  "allowedTools": [
+    "orders_campaign_attribution_report",
+    "facebook_ad_account_info",
+    "facebook_ad_analyze_product",
+    "facebook_ad_get_decision"
+  ],
+  "requiresHumanApproval": false,
+  "maxToolCount": 4
+}

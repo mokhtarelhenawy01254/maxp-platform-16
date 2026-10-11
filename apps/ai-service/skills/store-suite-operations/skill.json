@@ -1,0 +1,23 @@
+{
+  "id": "store-suite-operations",
+  "displayName": "Store Suite Operations",
+  "version": "1.0.0",
+  "description": "تشغيل إعدادات باقة المتجر: أتمتة المحادثات، إعدادات المرتجعات، وصفحات فيسبوك المربوطة.",
+  "triggerPhrases": [
+    "أتمتة المحادثات",
+    "الرد الآلي",
+    "رسائل الترحيب",
+    "إعدادات المرتجع",
+    "نافذة الإرجاع",
+    "أسباب المرتجعات",
+    "الصفحات المربوطة",
+    "فيسبوك متصل"
+  ],
+  "allowedTools": [
+    "bot_automation_manage",
+    "returns_settings_manage",
+    "facebook_pages_connected_list"
+  ],
+  "requiresHumanApproval": true,
+  "maxToolCount": 3
+}
