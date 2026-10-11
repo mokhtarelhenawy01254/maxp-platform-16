@@ -30,7 +30,7 @@ const ROUTE_GROUPS: { key: string; labelKey: string; labelFallback: string; pref
     key: "start",
     labelKey: "explanations.groupStart",
     labelFallback: "البداية والإعدادات",
-    prefixes: ["/company-dashboard", "/apps", "/settings", "/payments"],
+    prefixes: ["/company-dashboard", "/apps", "/settings", "/payments", "/marketplace", "/notifications"],
   },
   {
     key: "products",
@@ -48,19 +48,25 @@ const ROUTE_GROUPS: { key: string; labelKey: string; labelFallback: string; pref
     key: "customers",
     labelKey: "explanations.groupCustomers",
     labelFallback: "العملاء والمحادثات",
-    prefixes: ["/customers", "/whatsapp"],
+    prefixes: ["/customers", "/whatsapp", "/unified-inbox"],
   },
   {
     key: "marketing",
     labelKey: "explanations.groupMarketing",
     labelFallback: "التسويق والعروض",
-    prefixes: ["/advertising", "/coupons", "/wholesale"],
+    prefixes: ["/advertising", "/coupons", "/wholesale", "/affiliates"],
   },
   {
     key: "finance",
     labelKey: "explanations.groupFinance",
     labelFallback: "المالية والتقارير",
     prefixes: ["/analytics", "/reports", "/treasury-expenses", "/invoices"],
+  },
+  {
+    key: "team",
+    labelKey: "explanations.groupTeam",
+    labelFallback: "الفريق والتشغيل",
+    prefixes: ["/hr", "/admin/agent-profiles", "/academy"],
   },
 ];
 

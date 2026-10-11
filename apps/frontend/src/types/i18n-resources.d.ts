@@ -2593,6 +2593,7 @@ declare module 'react-i18next' {
         groupCustomers: string;
         groupMarketing: string;
         groupFinance: string;
+        groupTeam: string;
         groupOther: string;
       };
       FacebookAdsConnection: {
