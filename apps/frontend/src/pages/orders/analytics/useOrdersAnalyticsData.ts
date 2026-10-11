@@ -82,6 +82,10 @@ export const useOrdersAnalyticsData = () => {
           hasSuccess = true;
         } else if (statsRes.status === "rejected" && statsRes.reason?.name !== "CanceledError") {
           console.error("Error fetching order stats:", statsRes.reason);
+          setError(String(t("common.errorLoadingData") || "تعذر تحميل بيانات الطلبات"));
+        } else if (statsRes.status === "fulfilled" && !(statsRes.value as any)?.data?.success) {
+          console.error("Order stats returned failure:", (statsRes.value as any)?.data?.message);
+          setError((statsRes.value as any)?.data?.message || String(t("common.errorLoadingData") || "تعذر تحميل بيانات الطلبات"));
         }
 
         if (productsRes.status === "fulfilled" && (productsRes.value as any)?.success) {
@@ -92,7 +96,7 @@ export const useOrdersAnalyticsData = () => {
           console.error("Error fetching product stats:", productsRes.reason);
         }
 
-        if (!hasSuccess && statsRes.status === "rejected" && productsRes.status === "rejected") {
+        if (!hasSuccess && !error) {
           setError(String(t("common.errorLoadingData") || "تعذر تحميل البيانات، يرجى المحاولة مرة أخرى"));
         } else {
           setLastRefreshedAt(new Date());

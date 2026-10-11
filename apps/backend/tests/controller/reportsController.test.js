@@ -126,6 +126,11 @@ describe('reportsController - getDetailedOrderReport & getSalesReport', () => {
       await getDetailedOrderReport(req, res);
 
       expect(res.json).toHaveBeenCalled();
+      expect(mockPrisma.guestOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: expect.not.objectContaining({ paymentStatus: true }),
+        })
+      );
       const responseData = res.json.mock.calls[0][0];
 
       expect(responseData.success).toBe(true);

@@ -809,7 +809,6 @@ const getDetailedOrderReport = async (req, res) => {
                     orderNumber: true,
                     status: true,
                     paymentMethod: true,
-                    paymentStatus: true,
                     total: true,
                     finalTotal: true,
                     shippingCost: true,
