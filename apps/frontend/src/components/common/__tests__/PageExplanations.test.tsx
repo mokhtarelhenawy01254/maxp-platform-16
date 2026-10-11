@@ -127,4 +127,42 @@ describe("PageExplanations Component", () => {
     const link = screen.getByRole("link", { name: /فتح الفيديو في نافذة جديدة/i });
     expect(link).toHaveAttribute("href", "https://storage.example.com/videos/tutorial.mp4");
   });
+
+  it("closes modal on Escape key press", async () => {
+    (apiClient.get as jest.Mock).mockResolvedValueOnce({
+      data: {
+        success: true,
+        explanations: [
+          {
+            id: "exp-esc",
+            title: "شرح تجريبي",
+            slug: "test-guide",
+            content: "محتوى تجريبي",
+            videoUrl: null,
+          },
+        ],
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/orders"]}>
+        <PageExplanations />
+      </MemoryRouter>
+    );
+
+    const trigger = await screen.findByRole("button", { name: /شرح الصفحة/i });
+    fireEvent.click(trigger);
+
+    const itemButton = await screen.findByRole("button", { name: /شرح تجريبي/i });
+    fireEvent.click(itemButton);
+
+    expect(screen.getByRole("heading", { name: /شرح تجريبي/i })).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: /شرح تجريبي/i })).not.toBeInTheDocument();
+    });
+  });
 });
+

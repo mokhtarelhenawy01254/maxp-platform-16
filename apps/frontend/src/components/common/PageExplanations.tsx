@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
 import {
   PlayCircleIcon,
@@ -71,10 +72,23 @@ const PageExplanations: React.FC<PageExplanationsProps> = ({
     fetchExplanations();
   }, [fetchExplanations]);
 
-  // الانتقال بين الصفحات يقفل الـ popover المفتوح
+  // الانتقال بين الصفحات يقفل الـ popover والمودال المفتوح
   useEffect(() => {
     setOpen(false);
+    setSelectedExp(null);
   }, [location.pathname]);
+
+  // إغلاق المودال بزر Escape
+  useEffect(() => {
+    if (!selectedExp) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedExp(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedExp]);
 
   const hasExplanations = explanations.length > 0;
 
@@ -107,7 +121,7 @@ const PageExplanations: React.FC<PageExplanationsProps> = ({
       </PopoverTrigger>
     ) : (
       <PopoverTrigger
-        className={`relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg
+        className={`business-icon-button relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full
           text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white
           hover:bg-gray-100 dark:hover:bg-gray-800
           transition-all active:scale-95 cursor-pointer
@@ -118,12 +132,67 @@ const PageExplanations: React.FC<PageExplanationsProps> = ({
         <QuestionMarkCircleIcon className="h-5 w-5" aria-hidden="true" />
         {hasExplanations && (
           <span
-            className="absolute top-1 end-1 h-2 w-2 rounded-full bg-sky-500 ring-2 ring-white dark:ring-gray-900"
+            className="absolute top-1.5 end-1.5 h-2 w-2 rounded-full bg-sky-500 ring-2 ring-white dark:ring-gray-900"
             aria-hidden="true"
           />
         )}
       </PopoverTrigger>
     );
+
+  const modalContent = selectedExp ? (
+    <div
+      className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto flex items-center justify-center"
+      onClick={() => setSelectedExp(null)}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="explanation-modal-title"
+    >
+      <div
+        className="relative my-auto bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden border border-gray-200 dark:border-gray-800 shrink-0"
+        onClick={(e) => e.stopPropagation()}
+        dir="rtl"
+      >
+        {/* Header - permanently pinned */}
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-gray-200 dark:border-gray-800 shrink-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {selectedExp.videoUrl ? (
+              <PlayCircleIcon className="h-5 w-5 text-red-500 shrink-0" />
+            ) : (
+              <BookOpenIcon className="h-5 w-5 text-blue-500 shrink-0" />
+            )}
+            <h3
+              id="explanation-modal-title"
+              className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate"
+            >
+              {selectedExp.title}
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSelectedExp(null)}
+            className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 transition-colors shrink-0 cursor-pointer"
+            aria-label="إغلاق"
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="overflow-y-auto p-4 sm:p-6 flex-1 space-y-4">
+          {/* Video */}
+          {selectedExp.videoUrl && (
+            <VideoBlock videoUrl={selectedExp.videoUrl} title={selectedExp.title} />
+          )}
+
+          {/* Text content */}
+          <div
+            className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedExp.content) }}
+          />
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   return (
     <>
@@ -186,55 +255,10 @@ const PageExplanations: React.FC<PageExplanationsProps> = ({
         </PopoverContent>
       </Popover>
 
-      {/* Modal */}
-      {selectedExp && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6"
-          onClick={() => setSelectedExp(null)}
-        >
-          <div
-            className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden border border-gray-200 dark:border-gray-800"
-            onClick={(e) => e.stopPropagation()}
-            dir="rtl"
-          >
-            {/* Header - permanently pinned */}
-            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-gray-200 dark:border-gray-800 shrink-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm">
-              <div className="flex items-center gap-2.5 min-w-0">
-                {selectedExp.videoUrl ? (
-                  <PlayCircleIcon className="h-5 w-5 text-red-500 shrink-0" />
-                ) : (
-                  <BookOpenIcon className="h-5 w-5 text-blue-500 shrink-0" />
-                )}
-                <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
-                  {selectedExp.title}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedExp(null)}
-                className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 transition-colors shrink-0"
-                aria-label="إغلاق"
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="overflow-y-auto p-4 sm:p-6 flex-1 space-y-4">
-              {/* Video */}
-              {selectedExp.videoUrl && (
-                <VideoBlock videoUrl={selectedExp.videoUrl} title={selectedExp.title} />
-              )}
-
-              {/* Text content */}
-              <div
-                className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedExp.content) }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal with Portal to document.body */}
+      {modalContent && typeof document !== "undefined"
+        ? createPortal(modalContent, document.body)
+        : null}
     </>
   );
 };
