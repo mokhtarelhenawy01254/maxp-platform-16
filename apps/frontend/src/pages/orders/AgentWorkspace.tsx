@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAgentWorkspace } from './workspace/useAgentWorkspace';
 import { WorkspaceTopBar } from './workspace/WorkspaceTopBar';
 import { SupervisorDispatchStrip } from './workspace/SupervisorDispatchStrip';
@@ -9,6 +10,8 @@ import { WorkspaceCancelModal } from './workspace/WorkspaceCancelModal';
 import { WorkspaceFollowUpModal } from './workspace/WorkspaceFollowUpModal';
 import { WorkspaceOrder } from './workspace/types';
 import { WorkspaceReportsTab } from './workspace/WorkspaceReportsTab';
+
+export type WorkspaceView = 'queue' | 'inspector' | 'intelligence';
 
 const EnhancedOrderModal = React.lazy(
   () => import('../../components/orders/EnhancedOrderModal'),
@@ -64,14 +67,56 @@ export const AgentWorkspace: React.FC = () => {
     handleUpdateCustomer,
   } = useAgentWorkspace();
 
+  const { i18n } = useTranslation();
+  const isArabic = i18n.language.toLowerCase().startsWith('ar');
+
   const [activeModalOrder, setActiveModalOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [mobileView, setMobileView] = useState<'queue' | 'inspector'>('queue');
+
+  // Active view on mobile/narrow screens: default to 'inspector' if order deep-link exists
+  const [activeView, setActiveView] = useState<WorkspaceView>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('order')) return 'inspector';
+    }
+    return 'queue';
+  });
+
+  // Track if intelligence rail is open on desktop/tablet (defaults to true)
+  const [isRailOpen, setIsRailOpen] = useState<boolean>(() => {
+    try {
+      const saved = window.localStorage.getItem('workspace-rail-open');
+      if (saved !== null) return saved === 'true';
+    } catch {
+      // storage unavailable (private mode / non-browser env) → keep default
+    }
+    return true;
+  });
+
+  const handleToggleRail = () => {
+    setIsRailOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('workspace-rail-open', String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   const handleSelectOrder = (orderId: string) => {
     setSelectedOrderId(orderId);
-    setMobileView('inspector');
+    setActiveView('inspector');
   };
+
+  // Synchronize active view when order is deep-linked via URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('order') && activeView === 'queue') {
+        setActiveView('inspector');
+      }
+    }
+  }, [selectedOrderId]);
 
   const handleOpenDetailsModal = (order: WorkspaceOrder) => {
     setActiveModalOrder(order);
@@ -116,6 +161,50 @@ export const AgentWorkspace: React.FC = () => {
         />
       )}
 
+      {/* 2.5 Mobile / Narrow View Switcher (< md) */}
+      {activeTab !== 'reports' && (
+        <div className="flex items-center justify-between border-b border-border/30 bg-muted/15 px-3 py-1.5 md:hidden shrink-0">
+          <div className="flex items-center gap-1 rounded-lg bg-background/80 p-0.5 border border-border/40 text-xs font-semibold">
+            <button
+              type="button"
+              data-testid="workspace-view-queue"
+              onClick={() => setActiveView('queue')}
+              className={`rounded-md px-2.5 py-1 transition-all ${
+                activeView === 'queue'
+                  ? 'bg-primary text-primary-foreground shadow-xs font-bold'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {isArabic ? 'الطابور' : 'Queue'} ({pagination.total || orders.length})
+            </button>
+            <button
+              type="button"
+              data-testid="workspace-view-inspector"
+              onClick={() => setActiveView('inspector')}
+              className={`rounded-md px-2.5 py-1 transition-all ${
+                activeView === 'inspector'
+                  ? 'bg-primary text-primary-foreground shadow-xs font-bold'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {isArabic ? 'التفاصيل' : 'Inspector'} {selectedOrder ? `(#${selectedOrder.orderNumber})` : ''}
+            </button>
+            <button
+              type="button"
+              data-testid="workspace-view-intelligence"
+              onClick={() => setActiveView('intelligence')}
+              className={`rounded-md px-2.5 py-1 transition-all ${
+                activeView === 'intelligence'
+                  ? 'bg-primary text-primary-foreground shadow-xs font-bold'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {isArabic ? 'سجل العميل' : 'Intelligence'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 3. Main Operational Cockpit Chassis */}
       <main className="flex min-h-0 flex-1 overflow-hidden">
         {activeTab === 'reports' ? (
@@ -124,8 +213,8 @@ export const AgentWorkspace: React.FC = () => {
           <>
             {/* Stream Pane (Queue) */}
             <div
-              className={`h-full w-full border-e border-border/40 overflow-hidden md:w-[280px] lg:w-[320px] xl:w-[380px] shrink-0 ${
-                mobileView === 'inspector' ? 'hidden md:block' : 'block'
+              className={`h-full border-e border-border/40 overflow-hidden shrink-0 flex-1 md:flex-none md:w-[250px] lg:w-[280px] xl:w-[320px] ${
+                activeView === 'queue' ? 'block' : 'hidden md:block'
               }`}
             >
               <WorkspaceOrderQueue
@@ -143,25 +232,32 @@ export const AgentWorkspace: React.FC = () => {
               />
             </div>
 
-            {/* Center Execution Stage */}
+            {/* Center Execution Stage (Inspector) */}
             <div
               className={`h-full min-w-0 flex-1 overflow-hidden ${
-                mobileView === 'queue' ? 'hidden md:block' : 'block'
+                activeView === 'inspector' ? 'block' : 'hidden md:block'
               }`}
             >
-              {/* Mobile back to queue button */}
-              {mobileView === 'inspector' && (
-                <div className="border-b border-border/40 bg-card p-2 md:hidden">
-                  <button
-                    type="button"
-                    onClick={() => setMobileView('queue')}
-                    className="flex items-center gap-1.5 text-xs font-bold text-primary"
-                  >
-                    <span>←</span>
-                    <span>{t('orders.workspaceSection')}</span>
-                  </button>
-                </div>
-              )}
+              {/* Mobile navigation strip */}
+              <div className="flex items-center justify-between border-b border-border/40 bg-card p-2 md:hidden">
+                <button
+                  type="button"
+                  onClick={() => setActiveView('queue')}
+                  className="flex items-center gap-1.5 text-xs font-bold text-primary"
+                >
+                  <span>←</span>
+                  <span>{t('orders.workspaceSection')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveView('intelligence')}
+                  className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground"
+                >
+                  <span>{isArabic ? 'سجل العميل والرادار' : 'Customer Dossier'}</span>
+                  <span>→</span>
+                </button>
+              </div>
+
               <WorkspaceInspector
                 order={selectedOrder}
                 busyAction={selectedOrder ? busyOrders[selectedOrder.id] : undefined}
@@ -180,16 +276,27 @@ export const AgentWorkspace: React.FC = () => {
                 onSaveItems={handleUpdateOrderItems}
                 onSaveCustomer={handleUpdateCustomer}
                 onRefreshOrder={() => void fetchOrders({ silent: true })}
+                isRailOpen={isRailOpen}
+                onToggleRail={handleToggleRail}
+                onOpenIntelligence={() => setActiveView('intelligence')}
               />
             </div>
 
-            {/* Right Intelligence Rail — من lg فقط: عند md كان يأكل 260px من مركز
-                التنفيذ فيتبقى له ~205px وتتكسر شبكة الأزرار */}
-            <div className="hidden h-full w-[280px] xl:w-[320px] shrink-0 overflow-hidden lg:block">
+            {/* Right Intelligence Rail */}
+            <div
+              className={`h-full shrink-0 overflow-hidden border-s border-border/40 transition-all duration-150 ${
+                activeView === 'intelligence'
+                  ? 'block w-full'
+                  : isRailOpen
+                  ? 'hidden md:block md:w-[250px] lg:w-[270px] xl:w-[300px]'
+                  : 'hidden'
+              }`}
+            >
               <WorkspaceIntelligenceRail
                 order={selectedOrder}
                 perspective={perspective}
                 stats={stats}
+                onClose={() => setActiveView('inspector')}
               />
             </div>
           </>

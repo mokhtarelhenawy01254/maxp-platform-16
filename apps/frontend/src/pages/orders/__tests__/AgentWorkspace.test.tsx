@@ -177,9 +177,9 @@ const setMockOrdersData = (orders: TestOrder[], stats?: any, pagination?: any) =
   });
 };
 
-const renderWorkspace = () =>
+const renderWorkspace = (initialEntries = ["/orders/workspace?tab=pending"]) =>
   render(
-    <MemoryRouter initialEntries={["/orders/workspace?tab=pending"]}>
+    <MemoryRouter initialEntries={initialEntries}>
       <AgentWorkspace />
     </MemoryRouter>,
   );
@@ -790,6 +790,50 @@ describe("AgentWorkspace", () => {
 
     // Clicking reports tab should switch active tab to reports
     expect(reportsTab).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("renders 3-way view switcher and switches between queue, inspector, and intelligence", async () => {
+    const order1 = makeOrder({ id: "o1", orderNumber: "ORD-1", customerName: "Test Customer" });
+    setMockOrdersData([order1]);
+    renderWorkspace();
+
+    await screen.findAllByText(/#?ORD-1/);
+
+    const queueBtn = screen.getByTestId("workspace-view-queue");
+    const inspectorBtn = screen.getByTestId("workspace-view-inspector");
+    const intelligenceBtn = screen.getByTestId("workspace-view-intelligence");
+
+    expect(queueBtn).toBeInTheDocument();
+    expect(inspectorBtn).toBeInTheDocument();
+    expect(intelligenceBtn).toBeInTheDocument();
+
+    // Click inspector view
+    fireEvent.click(inspectorBtn);
+    expect(inspectorBtn).toHaveClass("bg-primary");
+
+    // Click intelligence view
+    fireEvent.click(intelligenceBtn);
+    expect(intelligenceBtn).toHaveClass("bg-primary");
+
+    // Click queue view
+    fireEvent.click(queueBtn);
+    expect(queueBtn).toHaveClass("bg-primary");
+  });
+
+  it("toggles intelligence rail in inspector", async () => {
+    const order1 = makeOrder({ id: "o1", orderNumber: "ORD-1", customerName: "Test Customer" });
+    setMockOrdersData([order1]);
+    renderWorkspace();
+
+    await screen.findAllByText(/#?ORD-1/);
+
+    const dossierToggleBtn = screen.getByTitle(/Toggle customer trust dossier|عرض\/إخفاء سجل العميل/i);
+    expect(dossierToggleBtn).toBeInTheDocument();
+
+    // Toggle off
+    fireEvent.click(dossierToggleBtn);
+    // Toggle back on
+    fireEvent.click(dossierToggleBtn);
   });
 });
 

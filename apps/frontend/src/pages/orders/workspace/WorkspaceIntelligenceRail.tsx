@@ -13,12 +13,14 @@ interface WorkspaceIntelligenceRailProps {
   order: WorkspaceOrder | null;
   perspective: PerspectiveMode;
   stats: WorkspaceStats | null;
+  onClose?: () => void;
 }
 
 export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps> = ({
   order,
   perspective,
   stats,
+  onClose,
 }) => {
   const { i18n } = useTranslation();
   const isArabic = i18n.language.toLowerCase().startsWith('ar');
@@ -30,6 +32,18 @@ export const WorkspaceIntelligenceRail: React.FC<WorkspaceIntelligenceRailProps>
 
   return (
     <aside className="flex h-full flex-col overflow-y-auto border-s border-border/40 bg-card/60 p-3.5 text-xs">
+      {onClose && (
+        <div className="flex items-center justify-between border-b border-border/30 pb-2 mb-2 md:hidden">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+          >
+            <span>←</span>
+            <span>{isArabic ? 'العودة إلى تفاصيل الطلب' : 'Back to Order Details'}</span>
+          </button>
+        </div>
+      )}
       {/* ─── Mode 1: Operator / Execution Intelligence ─────────────────────── */}
       {/* سطح واحد بفواصل شعرية — لا بوكسات داخلية (قاعدة Ergonomic Workspace Design) */}
       {perspective === 'operator' && (

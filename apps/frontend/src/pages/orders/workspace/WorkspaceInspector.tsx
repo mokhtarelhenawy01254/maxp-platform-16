@@ -10,6 +10,7 @@ import {
   PencilSquareIcon,
   BoltIcon,
   CheckIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 import { useCurrency } from '../../../hooks/useCurrency';
 import { OrderAction, WorkspaceOrder, AgentWorkload, WorkspaceOrderItem } from './types';
@@ -50,6 +51,9 @@ interface WorkspaceInspectorProps {
       notes?: string;
     }
   ) => Promise<void>;
+  isRailOpen?: boolean;
+  onToggleRail?: () => void;
+  onOpenIntelligence?: () => void;
 }
 
 export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
@@ -67,6 +71,9 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
   onConvertIncomplete,
   onSaveItems,
   onSaveCustomer,
+  isRailOpen,
+  onToggleRail,
+  onOpenIntelligence,
 }) => {
   const { t, i18n } = useTranslation();
   const { formatPrice } = useCurrency();
@@ -182,6 +189,23 @@ export const WorkspaceInspector: React.FC<WorkspaceInspectorProps> = ({
                 onCancel={() => onCancel(order)}
                 onCallFinished={onRefreshOrder}
               />
+            )}
+
+            {/* Toggle Intelligence Rail on tablet / desktop */}
+            {onToggleRail && (
+              <button
+                type="button"
+                onClick={onToggleRail}
+                className={`inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs font-bold transition-transform active:scale-[0.98] ${
+                  isRailOpen
+                    ? 'border-primary/40 bg-primary/10 text-primary'
+                    : 'border-border/60 bg-muted/30 text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                }`}
+                title={isArabic ? 'عرض/إخفاء سجل العميل والرادار' : 'Toggle customer trust dossier'}
+              >
+                <ShieldCheckIcon className="h-4 w-4" />
+                <span className="hidden sm:inline">{isArabic ? 'سجل العميل' : 'Dossier'}</span>
+              </button>
             )}
           </div>
         </div>
