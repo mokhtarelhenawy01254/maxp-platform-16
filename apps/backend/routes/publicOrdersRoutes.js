@@ -2780,6 +2780,40 @@ router.post('/', async (req, res) => {
         regularOrderMetadata.guestOrderId = order.id;
       }
 
+      // Check if affiliateReferralId is already bound to another Order (prevent P2002 @unique collision)
+      if (affiliateReferralId) {
+        try {
+          const existingOrderWithReferral = await prisma.order.findUnique({
+            where: { affiliateReferralId },
+            select: { id: true, orderNumber: true }
+          });
+          if (existingOrderWithReferral) {
+            console.warn(`⚠️ [ORDER-CREATE] affiliateReferralId ${affiliateReferralId} already bound to order ${existingOrderWithReferral.orderNumber} (${existingOrderWithReferral.id}). Detaching from new Order to prevent unique constraint crash.`);
+            affiliateReferralId = null;
+          }
+        } catch (chkErr) {
+          console.warn('⚠️ [ORDER-CREATE] Failed to check affiliateReferralId collision:', chkErr.message);
+        }
+      }
+
+      // Defensive check: ensure variantId exists in DB before attaching to avoid foreign key errors
+      for (const item of orderItems) {
+        if (item.variantId) {
+          try {
+            const vExists = await prisma.productVariant.findUnique({
+              where: { id: item.variantId },
+              select: { id: true }
+            });
+            if (!vExists) {
+              console.warn(`⚠️ [ORDER-CREATE] variantId ${item.variantId} does not exist in DB, clearing to prevent foreign key violation.`);
+              item.variantId = null;
+            }
+          } catch (_) {
+            item.variantId = null;
+          }
+        }
+      }
+
       console.log('🔍 [ORDER-CREATE] About to create Order with data:', {
         orderNumber: order.orderNumber,
         customerId: customer.id,
@@ -2951,9 +2985,9 @@ router.post('/', async (req, res) => {
         console.log('⚠️ [GUEST-ORDER] Duplicate order detected, skipping external sync.');
       }
     } catch (wooError) {
-      // لا نوقف العملية إذا فشل التصدير
-      console.log('⚠️ [GUEST-ORDER] WooCommerce auto-export skipped:', wooError.message);
-      console.error('❌ [ORDER-CREATE] Full error:', wooError);
+      // لا نوقف العملية إذا فشل التصدير ولكن نسجل تفاصيل الخطأ بدقة
+      console.error('❌ [ORDER-CREATE-MIRROR] Error during order mirroring / WooCommerce export:', wooError.message);
+      console.error('❌ [ORDER-CREATE-MIRROR] Full stack trace:', wooError);
     }
 
     if (dropshippingRoutingError) {
