@@ -2569,6 +2569,27 @@
     "timeout_error": "Request timeout",
     "generic": "Something went wrong"
   },
+  "explanations": {
+    "pageHelp": "Page guide",
+    "noPageExplanations": "No guide for this page yet",
+    "allExplanations": "All guides",
+    "watchVideo": "Watch the video",
+    "pageTitle": "Platform Guide",
+    "pageSubtitle": "Your complete guide to the platform's pages and apps",
+    "guidesCount": "guides",
+    "searchPlaceholder": "Search guides…",
+    "searchEmpty": "No results",
+    "videoBadge": "Video",
+    "emptyState": "No guides available yet",
+    "loadError": "Failed to load guides. Please try again later.",
+    "groupStart": "Getting started",
+    "groupProducts": "Products & inventory",
+    "groupOrders": "Orders & shipping",
+    "groupCustomers": "Customers & chats",
+    "groupMarketing": "Marketing & offers",
+    "groupFinance": "Finance & reports",
+    "groupOther": "Other"
+  },
   "FacebookAdsConnection": {
     "msg_261d": "معرف الشركة غير متوفر",
     "msg_375c": "فشل بدء ربط الإعلانات",
@@ -18162,7 +18183,8 @@
     "academyCourses": "Course Management",
     "academyCatalog": "Student Portal & Catalog",
     "academyStudents": "Students & Progress",
-    "academySection": "MaxP Academy"
+    "academySection": "MaxP Academy",
+    "platformExplanations": "Platform Guide"
   },
   "storeBranches": {
     "branchesTitle": "Branches & Warehouses",

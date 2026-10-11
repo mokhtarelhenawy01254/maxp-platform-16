@@ -830,9 +830,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
               </svg>
             </a>
 
-            <div className="inline-flex max-w-[46%] overflow-hidden">
-              <PageExplanations />
-            </div>
+            <PageExplanations />
 
             {isSuperAdmin && (
               <button
@@ -962,7 +960,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     return (
       <div className="app-dashboard-app-root" data-theme={BUSINESS_THEME_ID} data-visual-theme={shellThemeId} data-template={templateId}>
         {headerBlock}
-        <AppShell allSections={menuSections} showMobileHeader={false}>
+        <AppShell allSections={menuSections} showMobileHeader={false} showPageExplanations={false}>
           {children}
         </AppShell>
       </div>

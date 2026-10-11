@@ -16,9 +16,16 @@ interface AppShellProps {
   allSections: SidebarSection[];
   /** Set to false when an outer header already provides mobile navigation (e.g. classic layouts wrapping /apps/:appId). */
   showMobileHeader?: boolean;
+  /** اعرض مدخل شروحات الصفحة في السايدبار/هيدر الموبايل (يُعطَّل عندما يوفّر هيدر خارجي المدخل نفسه). */
+  showPageExplanations?: boolean;
 }
 
-const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHeader = true }) => {
+const AppShell: React.FC<AppShellProps> = ({
+  children,
+  allSections,
+  showMobileHeader = true,
+  showPageExplanations = true,
+}) => {
   const { i18n, t } = useTranslation();
   const { appId } = useParams<{ appId: string }>();
   const navigate = useNavigate();
@@ -213,7 +220,7 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
           </button>
           <div className="app-shell-mobile-header-title">{appName}</div>
           <div className="flex items-center gap-1.5 ms-auto">
-            <PageExplanations />
+            {showPageExplanations && <PageExplanations />}
             <button
               type="button"
               onClick={handleBack}
@@ -234,6 +241,7 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
             appColor={app.color}
             sections={appSections}
             onBack={handleBack}
+            showPageExplanations={showPageExplanations}
           />
         </div>
 
@@ -270,6 +278,7 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
             sections={appSections}
             onBack={handleBack}
             onNavigate={() => setIsSidebarOpen(false)}
+            showPageExplanations={showPageExplanations}
           />
         </div>
 

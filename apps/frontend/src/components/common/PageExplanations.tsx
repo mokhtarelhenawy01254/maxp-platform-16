@@ -1,7 +1,18 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { PlayCircleIcon, XMarkIcon, BookOpenIcon } from "@heroicons/react/24/outline";
+import {
+  PlayCircleIcon,
+  XMarkIcon,
+  BookOpenIcon,
+  QuestionMarkCircleIcon,
+} from "@heroicons/react/24/outline";
+import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
+import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
+import {
+  getYouTubeEmbedUrl,
+  getDirectVideoUrl,
+} from "../../utils/explanationVideo";
 import DOMPurify from "dompurify";
 
 interface Explanation {
@@ -12,55 +23,29 @@ interface Explanation {
   slug: string;
 }
 
-/**
- * Extracts a YouTube embed URL from various YouTube URL formats.
- */
-function getYouTubeEmbedUrl(url: string): string | null {
-  try {
-    const u = new URL(url);
-    // youtube.com/watch?v=ID
-    if (
-      (u.hostname === "www.youtube.com" || u.hostname === "youtube.com") &&
-      u.searchParams.get("v")
-    ) {
-      return `https://www.youtube.com/embed/${u.searchParams.get("v")}`;
-    }
-    // youtu.be/ID
-    if (u.hostname === "youtu.be") {
-      return `https://www.youtube.com/embed${u.pathname}`;
-    }
-    // Already an embed URL
-    if (u.pathname.startsWith("/embed/")) {
-      return url;
-    }
-  } catch {
-    // not a valid URL
-  }
-  return null;
-}
-
-/**
- * Detects a self-hosted video file (mp4/webm/ogg/mov/m3u8) that can play in a native <video>.
- */
-function getDirectVideoUrl(url: string): string | null {
-  try {
-    const u = new URL(url);
-    const path = u.pathname + u.search;
-    if (/\.(mp4|webm|ogg|ogv|mov|m4v|m3u8)(\?|#|$)/i.test(path)) return url;
-  } catch {
-    // not a valid URL
-  }
-  return null;
-}
-
 export interface PageExplanationsProps {
   className?: string;
+  /**
+   * icon  — زر أيقونة مضغوط لصف أدوات الهيدر (الافتراضي)
+   * block — زر بعرض كامل لشريط جانبي (AppSidebar)
+   */
+  variant?: "icon" | "block";
 }
 
-const PageExplanations: React.FC<PageExplanationsProps> = ({ className }) => {
+/**
+ * المدخل الموحّد لشروحات الصفحات: زر «؟» دائم يفتح popover فيه
+ * شروحات الصفحة الحالية + رابط «كل الشروحات». يظهر حتى لو الصفحة
+ * الحالية مكونلهاش شروحات — المدخل لازم يفضل موجود في كل مكان.
+ */
+const PageExplanations: React.FC<PageExplanationsProps> = ({
+  className = "",
+  variant = "icon",
+}) => {
+  const { t } = useTranslation();
   const location = useLocation();
   const [explanations, setExplanations] = useState<Explanation[]>([]);
   const [selectedExp, setSelectedExp] = useState<Explanation | null>(null);
+  const [open, setOpen] = useState(false);
 
   const fetchExplanations = useCallback(async () => {
     try {
@@ -85,66 +70,120 @@ const PageExplanations: React.FC<PageExplanationsProps> = ({ className }) => {
     fetchExplanations();
   }, [fetchExplanations]);
 
-  if (!Array.isArray(explanations) || explanations.length === 0) return null;
+  // الانتقال بين الصفحات يقفل الـ popover المفتوح
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
 
-  const embedUrl = selectedExp?.videoUrl
-    ? getYouTubeEmbedUrl(selectedExp.videoUrl)
-    : null;
-  const directVideoUrl =
-    selectedExp?.videoUrl && !embedUrl
-      ? getDirectVideoUrl(selectedExp.videoUrl)
-      : null;
+  const hasExplanations = explanations.length > 0;
+
+  const openExplanation = (exp: Explanation) => {
+    setSelectedExp(exp);
+    setOpen(false);
+  };
+
+  const trigger =
+    variant === "block" ? (
+      <PopoverTrigger
+        className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2
+          text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white
+          hover:bg-gray-100 dark:hover:bg-gray-800
+          transition-colors cursor-pointer
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 ${className}`}
+      >
+        <QuestionMarkCircleIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
+        <span className="text-sm font-medium truncate">
+          {t("explanations.pageHelp", "شرح الصفحة")}
+        </span>
+        {hasExplanations && (
+          <span
+            className="ms-auto shrink-0 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 px-2 py-0.5 text-[11px] font-semibold tabular-nums"
+            aria-hidden="true"
+          >
+            {explanations.length}
+          </span>
+        )}
+      </PopoverTrigger>
+    ) : (
+      <PopoverTrigger
+        className={`relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg
+          text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white
+          hover:bg-gray-100 dark:hover:bg-gray-800
+          transition-all active:scale-95 cursor-pointer
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 ${className}`}
+        title={t("explanations.pageHelp", "شرح الصفحة")}
+        aria-label={t("explanations.pageHelp", "شرح الصفحة")}
+      >
+        <QuestionMarkCircleIcon className="h-5 w-5" aria-hidden="true" />
+        {hasExplanations && (
+          <span
+            className="absolute top-1 end-1 h-2 w-2 rounded-full bg-sky-500 ring-2 ring-white dark:ring-gray-900"
+            aria-hidden="true"
+          />
+        )}
+      </PopoverTrigger>
+    );
 
   return (
     <>
-      {/* Buttons in the header */}
-      <div className={`flex items-center gap-1.5 flex-wrap ${className || ""}`}>
-        {explanations.map((exp) => (
-          <button
-            key={exp.id}
-            type="button"
-            onClick={() => setSelectedExp(exp)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full
-              bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700
-              text-gray-700 dark:text-gray-200
-              hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700
-              dark:hover:bg-blue-900/30 dark:hover:border-blue-600 dark:hover:text-blue-300
-              transition-all duration-200 cursor-pointer max-w-full"
-          >
-            {exp.videoUrl ? (
-              <PlayCircleIcon className="h-4 w-4 text-red-500 flex-shrink-0" />
-            ) : (
-              <svg
-                className="h-4 w-4 text-blue-500 flex-shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
-                />
-              </svg>
-            )}
-            <span className="truncate">{exp.title}</span>
-          </button>
-        ))}
-        {/* مدخل دائم لصفحة «شرح المنصة» الكاملة — التاجر كان مالوش أي لينك ليها */}
-        <Link
-          to="/app-explanations"
-          title="كل الشروحات"
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full
-            bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800
-            text-blue-700 dark:text-blue-300
-            hover:bg-blue-100 dark:hover:bg-blue-900/50
-            transition-all duration-200 no-underline shrink-0"
+      <Popover open={open} onOpenChange={(nextOpen: boolean) => setOpen(nextOpen)}>
+        {variant === "block" ? (
+          <div className="px-3 pb-2">{trigger}</div>
+        ) : (
+          trigger
+        )}
+        <PopoverContent
+          align="end"
+          dir="rtl"
+          className="w-80 max-w-[calc(100vw-1.5rem)] p-0 overflow-hidden"
         >
-          <BookOpenIcon className="h-4 w-4 flex-shrink-0" />
-          <span className="whitespace-nowrap">كل الشروحات</span>
-        </Link>
-      </div>
+          {hasExplanations ? (
+            <div className="max-h-72 overflow-y-auto py-1.5">
+              {explanations.map((exp) => (
+                <button
+                  key={exp.id}
+                  type="button"
+                  onClick={() => openExplanation(exp)}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 mx-0 text-start
+                    text-[13px] font-medium text-gray-700 dark:text-gray-200
+                    hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70"
+                >
+                  {exp.videoUrl ? (
+                    <PlayCircleIcon
+                      className="h-4 w-4 shrink-0 text-red-500"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <BookOpenIcon
+                      className="h-4 w-4 shrink-0 text-blue-500"
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span className="truncate min-w-0">{exp.title}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="px-4 py-3 text-[13px] text-gray-400 dark:text-gray-500">
+              {t("explanations.noPageExplanations", "مفيش شرح مخصوص للصفحة دي")}
+            </div>
+          )}
+
+          <div className="border-t border-gray-100 dark:border-gray-800 p-1.5">
+            <Link
+              to="/app-explanations"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2
+                text-[13px] font-semibold text-blue-600 dark:text-blue-400
+                hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors no-underline"
+            >
+              <BookOpenIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {t("explanations.allExplanations", "كل الشروحات")}
+            </Link>
+          </div>
+        </PopoverContent>
+      </Popover>
 
       {/* Modal */}
       {selectedExp && (
@@ -165,7 +204,8 @@ const PageExplanations: React.FC<PageExplanationsProps> = ({ className }) => {
               <button
                 type="button"
                 onClick={() => setSelectedExp(null)}
-                className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                aria-label="إغلاق"
               >
                 <XMarkIcon className="h-5 w-5 text-gray-500" />
               </button>
@@ -174,44 +214,8 @@ const PageExplanations: React.FC<PageExplanationsProps> = ({ className }) => {
             {/* Content */}
             <div className="overflow-y-auto max-h-[calc(90vh-60px)] p-5">
               {/* Video */}
-              {selectedExp.videoUrl && embedUrl && (
-                <div className="relative w-full pb-[56.25%] mb-4 rounded-xl overflow-hidden bg-black">
-                  <iframe
-                    className="absolute inset-0 w-full h-full"
-                    src={embedUrl}
-                    title={selectedExp.title}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              )}
-
-              {/* If video URL exists but can't be embedded, show link */}
-              {/* Direct video file (self-hosted mp4/webm/ogg) — native player */}
-              {directVideoUrl && (
-                <div className="w-full mb-4 rounded-xl overflow-hidden bg-black">
-                  <video
-                    className="w-full max-h-[60vh]"
-                    src={directVideoUrl}
-                    controls
-                    playsInline
-                    preload="metadata"
-                  />
-                </div>
-              )}
-
-              {selectedExp.videoUrl && !embedUrl && !directVideoUrl && (
-                <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                  <a
-                    href={selectedExp.videoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-2 text-sm font-medium"
-                  >
-                    <PlayCircleIcon className="h-5 w-5" />
-                    شاهد الفيديو التوضيحي
-                  </a>
-                </div>
+              {selectedExp.videoUrl && (
+                <VideoBlock videoUrl={selectedExp.videoUrl} title={selectedExp.title} />
               )}
 
               {/* Text content */}
@@ -221,6 +225,55 @@ const PageExplanations: React.FC<PageExplanationsProps> = ({ className }) => {
               />
             </div>
           </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+/** بلوك الفيديو المشترك داخل المودال (يوتيوب embed / ملف مباشر / لينك خارجي) */
+const VideoBlock: React.FC<{ videoUrl: string; title: string }> = ({ videoUrl, title }) => {
+  const { t } = useTranslation();
+  const embedUrl = getYouTubeEmbedUrl(videoUrl);
+  const directVideoUrl = embedUrl ? null : getDirectVideoUrl(videoUrl);
+
+  return (
+    <>
+      {embedUrl && (
+        <div className="relative w-full pb-[56.25%] mb-4 rounded-xl overflow-hidden bg-black">
+          <iframe
+            className="absolute inset-0 w-full h-full"
+            src={embedUrl}
+            title={title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      )}
+
+      {directVideoUrl && (
+        <div className="w-full mb-4 rounded-xl overflow-hidden bg-black">
+          <video
+            className="w-full max-h-[60vh]"
+            src={directVideoUrl}
+            controls
+            playsInline
+            preload="metadata"
+          />
+        </div>
+      )}
+
+      {!embedUrl && !directVideoUrl && (
+        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+          <a
+            href={videoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-2 text-sm font-medium"
+          >
+            <PlayCircleIcon className="h-5 w-5" />
+            {t("explanations.watchVideo", "شاهد الفيديو التوضيحي")}
+          </a>
         </div>
       )}
     </>

@@ -1200,6 +1200,7 @@ declare module 'react-i18next' {
         tableMetricsLegend: string;
         compositionSubtitle: string;
         closedSummaryStrip: string;
+        totalOrders: string;
       };
       dentalPortal: {
         portalName: string;
@@ -1366,6 +1367,7 @@ declare module 'react-i18next' {
           changesSent: string;
           changesPrompt: string;
           approvalError: string;
+          uploadTotal: string;
         };
         invoices: {
           title: string;
@@ -2340,6 +2342,7 @@ declare module 'react-i18next' {
           pendingStatus: string;
           approvedStatus: string;
           rejectedStatus: string;
+          management: string;
         };
         activity: {
           title: string;
@@ -2432,6 +2435,7 @@ declare module 'react-i18next' {
           refresh: string;
           export: string;
           print: string;
+          day: string;
         };
         profile: {
           loading: string;
@@ -2536,6 +2540,9 @@ declare module 'react-i18next' {
           statusAssigned: string;
           acknowledgedOn: string;
           noDepartment: string;
+          annualLeaveBalance: string;
+          maritalStatus: string;
+          sickLeaveBalance: string;
         };
       };
       EmployeeDetails: {
@@ -2566,6 +2573,27 @@ declare module 'react-i18next' {
         fetch_failed: string;
         timeout_error: string;
         generic: string;
+      };
+      explanations: {
+        pageHelp: string;
+        noPageExplanations: string;
+        allExplanations: string;
+        watchVideo: string;
+        pageTitle: string;
+        pageSubtitle: string;
+        guidesCount: string;
+        searchPlaceholder: string;
+        searchEmpty: string;
+        videoBadge: string;
+        emptyState: string;
+        loadError: string;
+        groupStart: string;
+        groupProducts: string;
+        groupOrders: string;
+        groupCustomers: string;
+        groupMarketing: string;
+        groupFinance: string;
+        groupOther: string;
       };
       FacebookAdsConnection: {
         msg_261d: string;
@@ -3024,6 +3052,10 @@ declare module 'react-i18next' {
       OrderModal: {
         msg_fe97: string;
         error_error_430a: string;
+        msg_a03a: string;
+        msg_f4e5: string;
+        msg_f9fe: string;
+        failed_create_ff97: string;
       };
       OrderModalEnhanced: {
         msg_1ca3: string;
@@ -3660,6 +3692,13 @@ declare module 'react-i18next' {
         fallbackCustomerName: string;
         fallbackWarehouseName: string;
         k_10: string;
+        k_1: string;
+        k_2: string;
+        k_3: string;
+        k_4: string;
+        k_9: string;
+        k_20: string;
+        k_26: string;
       };
       PrivacySettingsDialog: {
         failed_fetch_6cd1: string;
@@ -3972,6 +4011,10 @@ declare module 'react-i18next' {
           marketingRep: string;
           externalReferral: string;
           externalReferralBadge: string;
+          billingType: {
+            INSURANCE: string;
+            PATIENT: string;
+          };
         };
         appointmentDetails: {
           title: string;
@@ -5172,6 +5215,7 @@ declare module 'react-i18next' {
           revenue: string;
           sources: string;
           physicians: string;
+          name: string;
         };
         externalPartners: {
           title: string;
@@ -5200,6 +5244,7 @@ declare module 'react-i18next' {
           activate: string;
           deactivate: string;
         };
+        stageLabel: string;
       };
       RatingButtons: {
         error_error_1ca7: string;
@@ -6302,6 +6347,7 @@ declare module 'react-i18next' {
           disableAll: string;
           search: string;
           empty: string;
+          emptyDesc: string;
           readOnly: string;
           write: string;
           addDialogTitle: string;
@@ -6314,6 +6360,7 @@ declare module 'react-i18next' {
           disableAll: string;
           search: string;
           empty: string;
+          emptyDesc: string;
           addDialogTitle: string;
           addSearch: string;
         };
@@ -6718,6 +6765,10 @@ declare module 'react-i18next' {
             selectCentralModel: string;
             configureApiKey: string;
             sendMessage: string;
+            browse: string;
+            dragDropImage: string;
+            orPasteUrl: string;
+            supportedFormats: string;
           };
           trace: {
             title: string;
@@ -6784,6 +6835,9 @@ declare module 'react-i18next' {
         answeredBy: string;
         showContext: string;
       };
+      sandbox: {
+        scenarios: string;
+      };
       subAgents: {
         title: string;
         loadFailed: string;
@@ -6826,6 +6880,27 @@ declare module 'react-i18next' {
         itemsCount: string;
         cartValue: string;
         lastUpdated: string;
+        actions: string;
+        cartDetailsTitle: string;
+        customer: string;
+        exportCsv: string;
+        filterActive: string;
+        filterAll: string;
+        filterExpired: string;
+        filterFresh: string;
+        filterWithPhone: string;
+        funnelTitle: string;
+        goToReports: string;
+        goToWhatsApp: string;
+        goToWorkbench: string;
+        guestCustomer: string;
+        noData: string;
+        noDataDesc: string;
+        products: string;
+        recoveredRevenue: string;
+        searchPlaceholder: string;
+        status: string;
+        viewItems: string;
       };
       adBudgetPlanner: {
         title: string;
@@ -7479,6 +7554,52 @@ declare module 'react-i18next' {
         founderLinkPlaceholder: string;
         pricePlaceholder: string;
         currencySymbol: string;
+        activeCampaigns: string;
+        address: string;
+        amazonProducts: string;
+        avgCTR: string;
+        avgComments: string;
+        avgEngagement: string;
+        avgLikes: string;
+        avgViews: string;
+        budget: string;
+        businessInfo: string;
+        campaignName: string;
+        campaigns: string;
+        categories: string;
+        clicks: string;
+        confidence: string;
+        conversions: string;
+        easierToUse: string;
+        engagementComparison: string;
+        engagementRate: string;
+        filterPlatform: string;
+        followers: string;
+        googleRating: string;
+        high: string;
+        impressions: string;
+        low: string;
+        medium: string;
+        noGoogleData: string;
+        noTechData: string;
+        phone: string;
+        platformBreakdown: string;
+        posts: string;
+        primeLabel: string;
+        product: string;
+        rating: string;
+        ratings: string;
+        reviews: string;
+        shopifyProducts: string;
+        spend: string;
+        standardLabel: string;
+        technologies: string;
+        technology: string;
+        topCreatives: string;
+        totalCampaigns: string;
+        totalTechnologies: string;
+        version: string;
+        website: string;
       };
       conversionAnalytics: {
         title: string;
@@ -7763,6 +7884,15 @@ declare module 'react-i18next' {
         EGP: string;
         SAR: string;
         USD: string;
+        metric: string;
+        value: string;
+        monthlyOrdersPlaced: string;
+        ordersConfirmed: string;
+        ordersDelivered: string;
+        ordersRTO: string;
+        totalVariableCost: string;
+        netProfitMargin: string;
+        safeCAC: string;
       };
       profitAnalytics: {
         title: string;
@@ -8622,6 +8752,9 @@ declare module 'react-i18next' {
         searchPlaceholder: string;
         advancedFilters: string;
         statistics: string;
+        conversationLink: string;
+        noMessages: string;
+        notes: string;
       };
       instagramSettings: {
         title: string;
@@ -9014,6 +9147,7 @@ declare module 'react-i18next' {
           today: string;
           yesterday: string;
           goToMessage: string;
+          channel: string;
         };
         dialogs: {
           deleteChatTitle: string;
@@ -9084,6 +9218,7 @@ declare module 'react-i18next' {
           noLogs: string;
           rowsPerPage: string;
           displayedRows: string;
+          error: string;
         };
       };
       whatsappInbox: {
@@ -9327,6 +9462,12 @@ declare module 'react-i18next' {
           userRequired: string;
           usersLoad: string;
         };
+        routingPreviewTitle: string;
+        nextAssignmentWillGoTo: string;
+        routingPreviewNoCandidate: string;
+        routingPreviewCandidates: string;
+        routingPreviewSkippedOffline: string;
+        routingPreviewSkippedCapacity: string;
       };
       whatsappJourney: {
         title: string;
@@ -9397,6 +9538,14 @@ declare module 'react-i18next' {
           showPreview: string;
           send: string;
           noIssues: string;
+          buttons: string;
+          expectReply: string;
+          expectReplyHint: string;
+          nextStep: string;
+          nextStepAuto: string;
+          replyKeywords: string;
+          replyKeywordsPlaceholder: string;
+          timeout: string;
         };
         monitoring: {
           customer: string;
@@ -10135,6 +10284,8 @@ declare module 'react-i18next' {
           thisMonth: string;
           lastMonth: string;
           custom: string;
+          thisWeek: string;
+          thisYear: string;
         };
         rangeStats: {
           title: string;
@@ -10154,6 +10305,7 @@ declare module 'react-i18next' {
           products: string;
           orders: string;
           activeApps: string;
+          customers: string;
         };
         activity: {
           title: string;
@@ -10195,6 +10347,8 @@ declare module 'react-i18next' {
         inventory: {
           outOfStockCount: string;
           lowStockCount: string;
+          lowStock: string;
+          outOfStock: string;
         };
         metrics: {
           totalOrders: string;
@@ -10669,11 +10823,22 @@ declare module 'react-i18next' {
           passwordRequired: string;
           passwordMinLength: string;
           roleRequired: string;
+          cannotDeactivateSelf: string;
+          phoneInvalid: string;
+          salaryInvalid: string;
         };
         noUsers: string;
         unlimited: string;
         editUser: string;
         inviteNewUser: string;
+        activate: string;
+        bulkActionsDescription: string;
+        clearSelection: string;
+        deactivate: string;
+        deleteSelected: string;
+        invitationsDescription: string;
+        pendingInvitations: string;
+        selectedUsers: string;
       };
       customerAnalytics: {
         title: string;
@@ -10849,6 +11014,9 @@ declare module 'react-i18next' {
           pastePlaceholder: string;
           parseButton: string;
         };
+        deleteConfirmMessage: string;
+        deleteWarning: string;
+        loadError: string;
       };
       dashboard: {
         title: string;
@@ -11826,6 +11994,9 @@ declare module 'react-i18next' {
           salary: string;
           performance: string;
         };
+        errors: {
+          fetchFailed: string;
+        };
       };
       rewards: {
         title: string;
@@ -11882,6 +12053,7 @@ declare module 'react-i18next' {
           loading: string;
           success: string;
           error: string;
+          currency: string;
         };
         delete: {
           title: string;
@@ -11892,6 +12064,14 @@ declare module 'react-i18next' {
           loading: string;
           success: string;
           error: string;
+          confirmTitle: string;
+          confirmDescription: string;
+          confirmText: string;
+          irreversible: string;
+          linkedRecords: string;
+          disableInstead: string;
+          errorLinked: string;
+          tooltip: string;
         };
         toast: {
           approveSuccess: string;
@@ -11902,6 +12082,14 @@ declare module 'react-i18next' {
           deleteError: string;
           createSuccess: string;
           updateSuccess: string;
+          created: string;
+          updated: string;
+          deleted: string;
+          loadError: string;
+          nameRequired: string;
+          saveError: string;
+          statusChanged: string;
+          statusChangeFailed: string;
         };
         table: {
           employee: string;
@@ -11911,6 +12099,7 @@ declare module 'react-i18next' {
           status: string;
           date: string;
           actions: string;
+          name: string;
         };
       };
       clvCalculator: {
@@ -13492,6 +13681,8 @@ declare module 'react-i18next' {
         bulkUpdatePartial: string;
         bulkUpdateFailed: string;
         bulkUpdateError: string;
+        cancellationReasonPrompt: string;
+        cancellationReasonRequired: string;
       };
       cancellations: {
         k_1: string;
@@ -13918,6 +14109,22 @@ declare module 'react-i18next' {
         returnSource: string;
         editReturnReason: string;
         addReturnReason: string;
+        apartment: string;
+        building: string;
+        exchangeOrder: string;
+        floor: string;
+        invoice: string;
+        invoicePrintError: string;
+        loading: string;
+        noAreasAvailable: string;
+        preparationSlip: string;
+        preparationSlipError: string;
+        returnReasonLine: string;
+        returnedAt: string;
+        returnedFromOrder: string;
+        supportTickets: string;
+        titlePrefix: string;
+        whatsapp: string;
       };
       orderInvoices: {
         k_1: string;
@@ -14086,6 +14293,11 @@ declare module 'react-i18next' {
         k_100: string;
         k_101: string;
       };
+      orderNumbering: {
+        invalidNumber: string;
+        resetSuccess: string;
+        saveSuccess: string;
+      };
       orders: {
         title: string;
         subtitle: string;
@@ -14174,7 +14386,15 @@ declare module 'react-i18next' {
         customer: string;
         customerRating: string;
         amount: string;
-        status: string;
+        status: {
+          pending: string;
+          processing: string;
+          shipped: string;
+          delivered: string;
+          cancelled: string;
+          completed: string;
+          change: string;
+        };
         payment: string;
         date: string;
         actions: string;
@@ -15160,6 +15380,38 @@ declare module 'react-i18next' {
         noOrderSelected: string;
         selectOrderFromList: string;
         orderItems: string;
+        bulkDownloadTemplate: string;
+        bulkDuplicateFailed: string;
+        bulkExecuteFailed: string;
+        bulkExecuted: string;
+        bulkExecutedPartial: string;
+        bulkExportFailed: string;
+        bulkFileWillUploadAfterSave: string;
+        bulkItemAddress: string;
+        bulkItemArea: string;
+        bulkUploadFailed: string;
+        confidence: string;
+        confirm: string;
+        incompleteConvertFailed: string;
+        incompleteConvertNoPhone: string;
+        incompleteConvertSuccess: string;
+        invoiceError: string;
+        invoiceGenerationFailed: string;
+        items: string;
+        jumpToPage: string;
+        metaBodyTooLong: string;
+        metaSyncDone: string;
+        metaSyncRejected: string;
+        notifyDisabled: string;
+        notifyEnabled: string;
+        order: string;
+        orderInvoices_noResults: string;
+        ordersCountLabel: string;
+        pageLabel: string;
+        saveFailed: string;
+        statusUpdated: string;
+        totalAssigned: string;
+        unseenHint: string;
       };
       orderSettings: {
         title: string;
@@ -15860,6 +16112,26 @@ declare module 'react-i18next' {
         k_42: string;
         k_43: string;
         k_44: string;
+        cancelFailed: string;
+        createFailed: string;
+        preparingWaybill: string;
+        printWindowError: string;
+        recreateFailed: string;
+        selectGovernorate: string;
+        shipmentCancelled: string;
+        shipmentCancelledSuccess: string;
+        shipmentCreated: string;
+        shipmentDelivered: string;
+        shipmentRecreated: string;
+        shipmentReturned: string;
+        statusUpdate: string;
+        unlinkFailed: string;
+        unlinkSuccess: string;
+        waybillEmpty: string;
+        waybillFailed: string;
+        waybillLoadFailed: string;
+        waybillOpened: string;
+        waybillPrintOpened: string;
       };
       pos: {
         k_1: string;
@@ -16419,6 +16691,7 @@ declare module 'react-i18next' {
         error_error_b208: string;
         success_delete_9520: string;
         error_error_e0c6: string;
+        confirm_bulk_delete: string;
       };
       products: {
         title: string;
@@ -16485,6 +16758,9 @@ declare module 'react-i18next' {
           lowStockThreshold: string;
           lowStockThresholdHint: string;
           noTracking: string;
+          description: string;
+          identifiers: string;
+          barcode: string;
         };
         media: {
           title: string;
@@ -16618,6 +16894,8 @@ declare module 'react-i18next' {
           variantNameRequired: string;
           variantPriceError: string;
           variantStockError: string;
+          nameRequired: string;
+          comparePriceInvalid: string;
         };
         messages: {
           savingProduct: string;
@@ -16636,6 +16914,7 @@ declare module 'react-i18next' {
           selectMaterial: string;
           selectStyle: string;
           selectOther: string;
+          loadingCategories: string;
         };
         error_error_1879: string;
         success_update_fdb7: string;
@@ -16646,6 +16925,9 @@ declare module 'react-i18next' {
         msg_0437: string;
         error_error_7d31: string;
         error_error_e01c: string;
+        tooltips: {
+          slugTooltip: string;
+        };
       };
       stockAnalytics: {
         title: string;
@@ -16780,6 +17062,7 @@ declare module 'react-i18next' {
         k_53: string;
         k_54: string;
         k_55: string;
+        items_count: string;
       };
       customDomain: {
         pageTitle: string;
@@ -17020,6 +17303,8 @@ declare module 'react-i18next' {
         page_settings: string;
         page_marketplace: string;
         page_whatsapp: string;
+        deposit_fixed_summary: string;
+        deposit_percentage_summary: string;
       };
       settingsPrimitives: {
         alertSuccess: string;
@@ -17029,6 +17314,10 @@ declare module 'react-i18next' {
         loadingDescription: string;
       };
       sidebar: {
+        activeUsers: string;
+        agencyInvoices: string;
+        quickFunnel: string;
+        taskSettings: string;
         marketingAgencySection: string;
         agencyOverview: string;
         agencyClients: string;
@@ -17747,6 +18036,7 @@ declare module 'react-i18next' {
         academyCatalog: string;
         academyStudents: string;
         academySection: string;
+        platformExplanations: string;
       };
       storeBranches: {
         branchesTitle: string;
@@ -18474,6 +18764,9 @@ declare module 'react-i18next' {
         k_127: string;
         k_128: string;
         k_129: string;
+        import_success: string;
+        products_variants_summary: string;
+        variants_count: string;
       };
       platformPartner: {
         dashboard: {
@@ -18825,6 +19118,7 @@ declare module 'react-i18next' {
           kanbanBoard: string;
           brandName: string;
           brandSubtitle: string;
+          dailyOrders: string;
         };
         aiProviders: {
           embedding: {
@@ -18954,6 +19248,9 @@ declare module 'react-i18next' {
           providerLogs: string;
           aiTemplates: string;
           agentProfiles: string;
+          metrics: {
+            goalsAchieved: string;
+          };
         };
         globalSearchPlaceholder: string;
         globalSearchHint: string;
@@ -19149,6 +19446,71 @@ declare module 'react-i18next' {
               notifications: string;
             };
           };
+          logs: {
+            title: string;
+            description: string;
+            filtersTitle: string;
+            searchPlaceholder: string;
+            statusAll: string;
+            companyAll: string;
+            listTitle: string;
+            listDescription: string;
+            empty: string;
+            columns: {
+              company: string;
+              event: string;
+              status: string;
+              error: string;
+              recipient: string;
+              time: string;
+            };
+            statusPlaceholder: string;
+            companyPlaceholder: string;
+          };
+          workspace: {
+            title: string;
+            titleWithName: string;
+            loadingDescription: string;
+            description: string;
+            backLabel: string;
+            actions: {
+              linkSession: string;
+              settings: string;
+              notifications: string;
+              inbox: string;
+              analytics: string;
+              openSessions: string;
+            };
+            noSessionAlert: {
+              title: string;
+              description: string;
+            };
+            metrics: {
+              sessions: string;
+              sessionsHint: string;
+              notifications: string;
+              notificationsEnabled: string;
+              notificationsDisabled: string;
+              notificationsHint: string;
+              templates: string;
+              templatesHint: string;
+              failures: string;
+              failuresHint: string;
+            };
+            sessionsCard: {
+              title: string;
+              description: string;
+              empty: string;
+              defaultBadge: string;
+            };
+            templatesCard: {
+              title: string;
+              description: string;
+              empty: string;
+              active: string;
+              inactive: string;
+            };
+          };
         };
         selfReview: {
           title: string;
@@ -19226,6 +19588,8 @@ declare module 'react-i18next' {
           originalReply: string;
           correctedReply: string;
         };
+        profileMenu: string;
+        toggleSidebar: string;
       };
       superAdminDefaultSidebar: {
         title: string;
@@ -19581,6 +19945,24 @@ declare module 'react-i18next' {
           high: string;
           critical: string;
         };
+        backToList: string;
+        days: string;
+        errorLoadingData: string;
+        go: string;
+        loadError: string;
+        loadMore: string;
+        maxp: string;
+        open: string;
+        page: string;
+        platform: string;
+        saveError: string;
+        savedSuccessfully: string;
+        saving: string;
+        settings: string;
+        system: string;
+        tryAgain: string;
+        updateData: string;
+        upload: string;
       };
       header: {
         dashboard: string;
@@ -19596,6 +19978,7 @@ declare module 'react-i18next' {
         openMenu: string;
         closeMenu: string;
         platformName: string;
+        whatsapp: string;
       };
       language: {
         current: string;
@@ -19606,6 +19989,34 @@ declare module 'react-i18next' {
         markAllRead: string;
         noNotifications: string;
         newNotification: string;
+      };
+      palette: {
+        close: string;
+        createBulkOrder: string;
+        createManualOrder: string;
+        description: string;
+        groupBulk: string;
+        groupCreate: string;
+        groupNavigation: string;
+        groupView: string;
+        navAnalytics: string;
+        navCustomers: string;
+        navOrders: string;
+        navOrdersKeywords: string;
+        navOrdersPrep: string;
+        navOrdersWorkspace: string;
+        navProducts: string;
+        navReturns: string;
+        navSettings: string;
+        navigate: string;
+        noResults: string;
+        open: string;
+        openPalette: string;
+        placeholder: string;
+        quickSearch: string;
+        title: string;
+        viewInvoices: string;
+        viewSearch: string;
       };
       profile: {
         title: string;

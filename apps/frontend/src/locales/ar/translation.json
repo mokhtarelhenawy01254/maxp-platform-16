@@ -2569,6 +2569,27 @@
     "timeout_error": "Request timeout",
     "generic": "Something went wrong"
   },
+  "explanations": {
+    "pageHelp": "شرح الصفحة",
+    "noPageExplanations": "مفيش شرح مخصوص للصفحة دي",
+    "allExplanations": "كل الشروحات",
+    "watchVideo": "شاهد الفيديو التوضيحي",
+    "pageTitle": "شرح المنصة",
+    "pageSubtitle": "دليلك الكامل لصفحات وتطبيقات المنصة",
+    "guidesCount": "شرح",
+    "searchPlaceholder": "ابحث في الشروحات…",
+    "searchEmpty": "مفيش نتائج للبحث",
+    "videoBadge": "فيديو",
+    "emptyState": "لا توجد شروحات متاحة حالياً",
+    "loadError": "تعذر تحميل الشروحات. يرجى المحاولة لاحقاً.",
+    "groupStart": "البداية والإعدادات",
+    "groupProducts": "المنتجات والمخزون",
+    "groupOrders": "الطلبات والشحن",
+    "groupCustomers": "العملاء والمحادثات",
+    "groupMarketing": "التسويق والعروض",
+    "groupFinance": "المالية والتقارير",
+    "groupOther": "أخرى"
+  },
   "FacebookAdsConnection": {
     "msg_261d": "معرف الشركة غير متوفر",
     "msg_375c": "فشل بدء ربط الإعلانات",
@@ -18165,7 +18186,8 @@
     "academyCourses": "إدارة الكورسات",
     "academyCatalog": "بوابة الطلاب والكتالوج",
     "academyStudents": "الطلاب والتقدم",
-    "academySection": "أكاديمية ماكس بي"
+    "academySection": "أكاديمية ماكس بي",
+    "platformExplanations": "شرح المنصة"
   },
   "storeBranches": {
     "branchesTitle": "الفروع والمخازن",

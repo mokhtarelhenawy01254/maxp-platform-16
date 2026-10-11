@@ -16,6 +16,8 @@ interface AppSidebarProps {
   onBack: () => void;
   onNavigate?: () => void;
   isCollapsed?: boolean;
+  /** اعرض مدخل شروحات الصفحة (يُعطَّل عندما يوفّر هيدر خارجي المدخل نفسه) */
+  showPageExplanations?: boolean;
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -50,6 +52,7 @@ const AppSidebarInner: React.FC<AppSidebarProps> = ({
   onBack,
   onNavigate,
   isCollapsed = false,
+  showPageExplanations = true,
 }) => {
   const { i18n, t } = useTranslation();
   const location = useLocation();
@@ -150,8 +153,8 @@ const AppSidebarInner: React.FC<AppSidebarProps> = ({
         </div>
       </div>
 
-      {!isCollapsed && (
-        <PageExplanations className="px-4 py-2 border-b border-gray-100 dark:border-gray-800/80" />
+      {!isCollapsed && showPageExplanations && (
+        <PageExplanations variant="block" />
       )}
 
       <nav ref={navRef} className="app-shell-sidebar-content">
