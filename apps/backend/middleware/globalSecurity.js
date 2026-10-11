@@ -501,14 +501,14 @@ const PUBLIC_ROUTES = [
   // MaxP Academy - Student Portal & Catalog (protected at route level by optionalAuth)
   'GET /api/v1/academy/catalog*',
   'GET /api/v1/academy/my-courses*',
-  'GET /api/v1/academy/courses/*/outline*',
-  'GET /api/v1/academy/lessons/*/content*',
-  'POST /api/v1/academy/courses/*/enroll*',
-  'POST /api/v1/academy/lessons/*/complete*',
-  'POST /api/v1/academy/lessons/*/submit-quiz*',
-  'POST /api/v1/academy/lessons/*/submit-exercise*',
-  'POST /api/v1/academy/lessons/*/coach-chat*',
-  'GET /api/v1/academy/certificates/*/view*',
+  'GET /api/v1/academy/courses/*/outline',
+  'GET /api/v1/academy/lessons/*/content',
+  'POST /api/v1/academy/courses/*/enroll',
+  'POST /api/v1/academy/lessons/*/complete',
+  'POST /api/v1/academy/lessons/*/submit-quiz',
+  'POST /api/v1/academy/lessons/*/submit-exercise',
+  'POST /api/v1/academy/lessons/*/coach-chat',
+  'GET /api/v1/academy/certificates/*/view',
 
   // Public Application Form Routes (للمتقدمين على الوظائف)
   'GET /api/v1/hr/recruitment/forms/public/*',
