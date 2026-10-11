@@ -103,6 +103,71 @@
         "bridge_get_treasury_expenses"
       ],
       "assertHonesty": true
+    },
+    {
+      "id": "scenario_bulk_orders_update",
+      "name": "تحديث حالات مجموعة طلبات دفعة واحدة",
+      "userMessage": "أكد الطلبات 101 و 102 وحولهم للشحن",
+      "expectedTools": [
+        "orders_bulk_status_update"
+      ],
+      "expectApprovalGate": true
+    },
+    {
+      "id": "scenario_order_hold_preparation",
+      "name": "تجهيز وتعليق الطلب في المستودع",
+      "userMessage": "علق الطلب ORD-999 وخاصة إنه مؤجل للأسبوع الجاي",
+      "expectedTools": [
+        "order_set_preparation_hold"
+      ]
+    },
+    {
+      "id": "scenario_whatsapp_customer_send",
+      "name": "إرسال رسالة واتساب رسمية للعميل",
+      "userMessage": "ابعت رسالة واتساب للعميل 01012345678 برقم الأوردر وميعاد الشحن",
+      "expectedTools": [
+        "whatsapp_send"
+      ]
+    },
+    {
+      "id": "scenario_campaign_attribution_report",
+      "name": "تقرير إسناد الحملات التسويقية ومصادر الـ UTMs",
+      "userMessage": "طلعلي تقرير إسناد الطلبات لحملات فيسبوك والـ UTMs",
+      "expectedTools": [
+        "orders_campaign_attribution_report"
+      ]
+    },
+    {
+      "id": "scenario_bot_automation_settings",
+      "name": "فحص وتعديل أتمتة المحادثات",
+      "userMessage": "شوف لي إعدادات الرد التلقائي ورسالة الترحيب في الشات",
+      "expectedTools": [
+        "bot_automation_manage"
+      ]
+    },
+    {
+      "id": "scenario_returns_settings_check",
+      "name": "استعراض سياسات المرتجعات وأسبابها",
+      "userMessage": "إيه شروط وسياسة المرتجعات وأكتر الأسباب الشائعة؟",
+      "expectedTools": [
+        "returns_settings_manage"
+      ]
+    },
+    {
+      "id": "scenario_unified_inbox_telemetry",
+      "name": "ملخص تيليمتري الصندوق الموحد",
+      "userMessage": "إحصائيات الصندوق الموحد والمحادثات النشطة عاملة إيه؟",
+      "expectedTools": [
+        "unified_inbox_manage"
+      ]
+    },
+    {
+      "id": "scenario_facebook_pages_list",
+      "name": "استعراض صفحات فيسبوك المربوطة",
+      "userMessage": "إيه صفحات فيسبوك المربوطة بالمتجر وحالة اتصالها؟",
+      "expectedTools": [
+        "facebook_pages_connected_list"
+      ]
     }
   ]
 }

@@ -110,6 +110,11 @@ ADVANCED_TOOL_NAMES: set[str] = {
     "order_target_progress",
     "inventory_variant_stock_scan",
     "inventory_burn_rate_forecast",
+    # Store Suite (Complete Store Bundle)
+    "bot_automation_manage",
+    "returns_settings_manage",
+    "unified_inbox_manage",
+    "facebook_pages_connected_list",
 }
 
 GATED_CORE_TOOL_NAMES: set[str] = {
@@ -190,6 +195,9 @@ WRITE_TOOL_NAMES: set[str] = {
     "booking_service_toggle",
     "booking_appointment_update_status",
     "booking_appointments_bulk_delete",
+    # Store Suite writes
+    "orders_bulk_status_update",
+    "order_set_preparation_hold",
 }
 
 DIRECT_WRITE_TOOL_NAMES: set[str] = {

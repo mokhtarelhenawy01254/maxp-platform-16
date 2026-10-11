@@ -85,13 +85,34 @@
     "employee_monitor_summary",
     "bridge_get_treasury_expenses",
     "bridge_get_treasury_expenses_stats",
-    "bridge_get_treasury_categories"
+    "bridge_get_treasury_categories",
+    "orders_bulk_status_update",
+    "order_set_preparation_hold",
+    "bot_automation_manage",
+    "returns_settings_manage",
+    "unified_inbox_manage",
+    "facebook_pages_connected_list",
+    "whatsapp_send",
+    "orders_campaign_attribution_report",
+    "facebook_ad_account_info",
+    "facebook_ad_analyze_product",
+    "facebook_ad_create_full_draft",
+    "facebook_ad_publish_draft",
+    "facebook_ad_get_decision",
+    "order_confirm",
+    "order_cancel",
+    "order_update_details",
+    "shipping_ticket_create"
   ],
   "allowedSkills": [
     "read-company-state",
     "catalog-search",
     "low-stock-watch",
-    "order-support"
+    "order-support",
+    "store-suite-operations",
+    "campaign-attribution-watch",
+    "bulk-order-operations",
+    "chat-inbox-telemetry"
   ],
   "channels": [
     "dashboard",

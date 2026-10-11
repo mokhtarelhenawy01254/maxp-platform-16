@@ -60,6 +60,27 @@ roles:
     - bridge_get_treasury_expenses
     - bridge_get_treasury_expenses_stats
     - bridge_get_treasury_categories
+    # Complete Store Bundle (17 Apps Coverage)
+    - orders_bulk_status_update
+    - order_set_preparation_hold
+    - bot_automation_manage
+    - returns_settings_manage
+    - unified_inbox_manage
+    - facebook_pages_connected_list
+    - whatsapp_send
+    - orders_campaign_attribution_report
+    - facebook_ad_account_info
+    - facebook_ad_analyze_product
+    - facebook_ad_create_full_draft
+    - facebook_ad_publish_draft
+    - facebook_ad_get_decision
+    - order_confirm
+    - order_cancel
+    - order_update_details
+    - shipping_company_connect
+    - shipping_company_toggle
+    - shipping_companies_list
+    - shipping_ticket_create
 
   BROWSER_COPILOT:
     - product_search
