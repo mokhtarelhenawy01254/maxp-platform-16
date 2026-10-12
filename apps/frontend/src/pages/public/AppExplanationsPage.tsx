@@ -328,7 +328,7 @@ const AppExplanationsPage: React.FC = () => {
             {/* قائمة الأقسام */}
             <nav
               aria-label="مجموعات الشروحات"
-              className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 md:grid md:gap-[3px] md:overflow-visible md:pb-0"
+              className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 md:flex-col md:gap-[3px] md:overflow-visible md:pb-0"
             >
               {grouped.map((group) => {
                 const isActive = activeGroup === group.key;
@@ -339,7 +339,7 @@ const AppExplanationsPage: React.FC = () => {
                     key={group.key}
                     href={`#${group.key}`}
                     onClick={(e) => handleNavClick(e, group.key)}
-                    className={`flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-[10px] px-2.5 py-2 text-[13.5px] font-semibold no-underline transition-colors ${
+                    className={`flex w-full shrink-0 items-center gap-2.5 whitespace-nowrap rounded-[10px] px-2.5 py-2 text-[13.5px] font-semibold no-underline transition-colors ${
                       isActive
                         ? "bg-primary/10 font-extrabold text-primary"
                         : "text-muted-foreground hover:bg-accent hover:text-foreground"
