@@ -6,6 +6,7 @@ import {
   ShoppingBagIcon,
   ChatBubbleLeftRightIcon,
   DocumentDuplicateIcon,
+  GiftIcon,
 } from "@heroicons/react/24/outline";
 import { summarizeOrderDocumentItems } from "../../../utils/orderDocumentQuantityOffers";
 import { OrdersSkeleton } from "./OrdersSkeleton";
@@ -285,7 +286,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                                 className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700/60 shadow-xs"
                                 title="يحتوي على عرض خاص بعد الشراء (Post-Purchase Upsell)"
                               >
-                                <span>🎁</span>
+                                <GiftIcon className="w-3 h-3 text-amber-700 dark:text-amber-300" />
                                 <span className="hidden sm:inline">عرض بعد الشراء</span>
                               </span>
                             )}

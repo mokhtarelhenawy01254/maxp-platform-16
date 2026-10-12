@@ -187,7 +187,7 @@ const PromoStrip: React.FC<PromoStripProps> = ({ section, settings }) => {
                 {chips.map((chip, index) => (
                   <span
                     key={`${chip}-${index}`}
-                    className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold ${
+                    className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold tabular-nums ${
                       index === 0
                         ? 'bg-[#fdece5] text-[#a04d3f]'
                         : 'border border-[#ecd7d0] bg-white text-[#6c565a]'
@@ -204,14 +204,14 @@ const PromoStrip: React.FC<PromoStripProps> = ({ section, settings }) => {
                       href={ctaHref}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center justify-center rounded-full border border-[#ecd7d0] bg-white px-4 py-2 text-xs font-black text-[#4c2d39] transition-all hover:-translate-y-0.5 hover:border-[#dcaea5]"
+                      className="inline-flex items-center justify-center rounded-full border border-[#ecd7d0] bg-white px-4 py-2 text-xs font-black text-[#4c2d39] active:scale-[0.97] transition-[transform,border-color,background-color] duration-150 hover:-translate-y-0.5 hover:border-[#dcaea5]"
                     >
                       {ctaText}
                     </a>
                   ) : (
                     <Link
                       to={ctaHref}
-                      className="inline-flex items-center justify-center rounded-full border border-[#ecd7d0] bg-white px-4 py-2 text-xs font-black text-[#4c2d39] transition-all hover:-translate-y-0.5 hover:border-[#dcaea5]"
+                      className="inline-flex items-center justify-center rounded-full border border-[#ecd7d0] bg-white px-4 py-2 text-xs font-black text-[#4c2d39] active:scale-[0.97] transition-[transform,border-color,background-color] duration-150 hover:-translate-y-0.5 hover:border-[#dcaea5]"
                     >
                       {ctaText}
                     </Link>

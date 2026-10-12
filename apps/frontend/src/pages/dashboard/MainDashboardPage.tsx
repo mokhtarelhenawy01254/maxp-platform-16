@@ -196,13 +196,13 @@ export default function MainDashboardPage() {
         </div>
 
         {/* Dashboard Mode Switcher */}
-        <div className="flex items-center gap-1.5 p-1 bg-muted/60 rounded-2xl border border-border/60 w-fit shrink-0">
+        <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl border border-border/60 w-fit shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab("specialty")}
-            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold active:scale-[0.97] transition-[background-color,color,transform] duration-150 ${
               activeTab === "specialty"
-                ? "bg-background text-foreground shadow-sm"
+                ? "bg-background text-foreground shadow-sm border border-border/40"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -213,14 +213,14 @@ export default function MainDashboardPage() {
           <button
             type="button"
             onClick={() => setActiveTab("installed-apps")}
-            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold active:scale-[0.97] transition-[background-color,color,transform] duration-150 ${
               activeTab === "installed-apps"
-                ? "bg-background text-foreground shadow-sm"
+                ? "bg-background text-foreground shadow-sm border border-border/40"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <CubeIcon className="w-4 h-4" />
-            <span>التطبيقات المثبتة ({installedApps.length})</span>
+            <span>التطبيقات المثبتة <span className="tabular-nums">({installedApps.length})</span></span>
           </button>
         </div>
       </div>

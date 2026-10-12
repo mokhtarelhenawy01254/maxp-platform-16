@@ -25,38 +25,47 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
   const installedApps = dashboard.installedApps || [];
   const specialtyMetrics = dashboard.specialtyMetrics || {};
 
-  // Detect vertical domain
-  const isMedical = specialtySlug.includes('medical') || installedApps.some(a => ['medical-system', 'booking-app'].includes(a.slug));
-  const isDental = specialtySlug.includes('dental') || installedApps.some(a => a.slug === 'dental-lab-app');
-  const isEducation = specialtySlug.includes('education') || installedApps.some(a => a.slug === 'education-app');
-  const isMarketing = specialtySlug.includes('marketing') || installedApps.some(a => ['facebook-ads-pro', 'campaign-attribution'].includes(a.slug));
-  const isMessaging = specialtySlug.includes('support') || specialtySlug.includes('customer') || installedApps.some(a => ['unified-inbox', 'whatsapp-business'].includes(a.slug));
+  // Detect vertical domain with clean priority resolution to prevent duplicate stacking
+  const primaryVertical = (() => {
+    if (specialtySlug.includes('medical') || installedApps.some(a => ['medical-system', 'booking-app'].includes(a.slug))) return 'medical';
+    if (specialtySlug.includes('dental') || installedApps.some(a => a.slug === 'dental-lab-app')) return 'dental';
+    if (specialtySlug.includes('education') || installedApps.some(a => a.slug === 'education-app')) return 'education';
+    if (specialtySlug.includes('marketing') || installedApps.some(a => ['facebook-ads-pro', 'campaign-attribution'].includes(a.slug))) return 'marketing';
+    if (specialtySlug.includes('support') || specialtySlug.includes('customer') || installedApps.some(a => ['unified-inbox', 'whatsapp-business'].includes(a.slug))) return 'messaging';
+    return null;
+  })();
 
-  if (!isMedical && !isDental && !isEducation && !isMarketing && !isMessaging) {
+  if (!primaryVertical) {
     return null; // Regular e-commerce uses standard view
   }
 
+  const isMedical = primaryVertical === 'medical';
+  const isDental = primaryVertical === 'dental';
+  const isEducation = primaryVertical === 'education';
+  const isMarketing = primaryVertical === 'marketing';
+  const isMessaging = primaryVertical === 'messaging';
+
   return (
-    <div className="bg-gradient-to-r from-card to-background border border-border/80 rounded-3xl p-5 sm:p-6 shadow-sm space-y-5">
+    <div className="bg-card border border-border/70 rounded-2xl p-4 sm:p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] space-y-4">
       {/* Header with Title & Badge */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 shadow-inner">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
             {isMedical ? (
-              <HeartIcon className="w-6 h-6 text-rose-500" />
+              <HeartIcon className="w-5 h-5 text-rose-500" />
             ) : isDental ? (
-              <WrenchScrewdriverIcon className="w-6 h-6 text-cyan-500" />
+              <WrenchScrewdriverIcon className="w-5 h-5 text-cyan-500" />
             ) : isEducation ? (
-              <AcademicCapIcon className="w-6 h-6 text-indigo-500" />
+              <AcademicCapIcon className="w-5 h-5 text-indigo-500" />
             ) : isMarketing ? (
-              <MegaphoneIcon className="w-6 h-6 text-amber-500" />
+              <MegaphoneIcon className="w-5 h-5 text-amber-500" />
             ) : (
-              <ChatBubbleLeftRightIcon className="w-6 h-6 text-emerald-500" />
+              <ChatBubbleLeftRightIcon className="w-5 h-5 text-emerald-500" />
             )}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-foreground">
+              <h2 className="text-base sm:text-lg font-bold text-foreground tracking-tight">
                 {isMedical
                   ? 'لوحة إدارة العيادات والمواعيد الطبية'
                   : isDental
@@ -68,7 +77,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
                   : 'لوحة إدارة المحادثات وخدمة العملاء'}
               </h2>
               {specialtyName && (
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
                   {specialtyName}
                 </span>
               )}
@@ -86,7 +95,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/appointments')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 active:scale-[0.97] transition-[transform,background-color] duration-150 shadow-sm shrink-0"
               >
                 <PlusIcon className="w-4 h-4" />
                 حجز موعد
@@ -94,7 +103,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/doctor/schedule')}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-card text-foreground hover:bg-muted/50 text-xs font-semibold transition-colors shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-background text-foreground hover:bg-muted/50 active:scale-[0.97] transition-[transform,background-color] duration-150 text-xs font-semibold shrink-0"
               >
                 <CalendarDaysIcon className="w-4 h-4 text-muted-foreground" />
                 الجدول الطبي
@@ -107,7 +116,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/dental-lab')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 active:scale-[0.97] transition-[transform,background-color] duration-150 shadow-sm shrink-0"
               >
                 <PlusIcon className="w-4 h-4" />
                 استلام حالة معمل
@@ -115,7 +124,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/dental-lab/doctors')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-border bg-card text-foreground hover:bg-muted/50 text-xs font-semibold transition-colors shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-background text-foreground hover:bg-muted/50 active:scale-[0.97] transition-[transform,background-color] duration-150 text-xs font-semibold shrink-0"
               >
                 <UsersIcon className="w-4 h-4 text-muted-foreground" />
                 أطباء الأسنان
@@ -128,7 +137,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/teacher/schedule')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 active:scale-[0.97] transition-[transform,background-color] duration-150 shadow-sm shrink-0"
               >
                 <PlusIcon className="w-4 h-4" />
                 إضافة حصة
@@ -136,7 +145,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/parent/children')}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-card text-foreground hover:bg-muted/50 text-xs font-semibold transition-colors shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-background text-foreground hover:bg-muted/50 active:scale-[0.97] transition-[transform,background-color] duration-150 text-xs font-semibold shrink-0"
               >
                 <UsersIcon className="w-4 h-4 text-muted-foreground" />
                 الطلاب
@@ -149,7 +158,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/advertising/facebook-ads')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 active:scale-[0.97] transition-[transform,background-color] duration-150 shadow-sm shrink-0"
               >
                 <PlusIcon className="w-4 h-4" />
                 حملة إعلانية
@@ -157,7 +166,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/marketing/facebook')}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-card text-foreground hover:bg-muted/50 text-xs font-semibold transition-colors shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-background text-foreground hover:bg-muted/50 active:scale-[0.97] transition-[transform,background-color] duration-150 text-xs font-semibold shrink-0"
               >
                 <BriefcaseIcon className="w-4 h-4 text-muted-foreground" />
                 الصفحات المتصلة
@@ -170,7 +179,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/unified-inbox')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 active:scale-[0.97] transition-[transform,background-color] duration-150 shadow-sm shrink-0"
               >
                 <ChatBubbleLeftRightIcon className="w-4 h-4" />
                 صندوق الوارد الموحد
@@ -178,7 +187,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/whatsapp')}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-card text-foreground hover:bg-muted/50 text-xs font-semibold transition-colors shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-background text-foreground hover:bg-muted/50 active:scale-[0.97] transition-[transform,background-color] duration-150 text-xs font-semibold shrink-0"
               >
                 قنوات الواتساب
               </button>
@@ -187,31 +196,31 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
         </div>
       </div>
 
-      {/* Specialty Metrics Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+      {/* Specialty Metrics Strip - Single Surface Chassis */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 rounded-xl border border-border/60 bg-muted/20 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden">
         {isMedical && (
           <>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">حجوزات اليوم</span>
-              <p className="text-2xl font-black text-rose-600 mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">حجوزات اليوم</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-rose-600 mt-1">
                 {specialtyMetrics.medical?.todayAppointments ?? 0}
               </p>
             </div>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">إجمالي الحجوزات</span>
-              <p className="text-2xl font-black text-foreground mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">إجمالي الحجوزات</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground mt-1">
                 {specialtyMetrics.medical?.appointmentsCount ?? 0}
               </p>
             </div>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">المرضى المسجلين</span>
-              <p className="text-2xl font-black text-foreground mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">المرضى المسجلين</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground mt-1">
                 {dashboard.counts?.customers ?? 0}
               </p>
             </div>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">الطاقم الطبي</span>
-              <p className="text-2xl font-black text-foreground mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">الطاقم الطبي</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground mt-1">
                 {dashboard.counts?.users ?? 0}
               </p>
             </div>
@@ -220,27 +229,27 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
 
         {isDental && (
           <>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">الحالات النشطة</span>
-              <p className="text-2xl font-black text-cyan-600 mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">الحالات النشطة</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-cyan-600 mt-1">
                 {specialtyMetrics.dentalLab?.activeCases ?? 0}
               </p>
             </div>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">أطباء الأسنان</span>
-              <p className="text-2xl font-black text-foreground mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">أطباء الأسنان</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground mt-1">
                 {specialtyMetrics.dentalLab?.totalDoctors ?? 0}
               </p>
             </div>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">العملاء والعيادات</span>
-              <p className="text-2xl font-black text-foreground mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">العملاء والعيادات</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground mt-1">
                 {dashboard.counts?.customers ?? 0}
               </p>
             </div>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">فريق المعمل</span>
-              <p className="text-2xl font-black text-foreground mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">فريق المعمل</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground mt-1">
                 {dashboard.counts?.users ?? 0}
               </p>
             </div>
@@ -249,27 +258,27 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
 
         {isEducation && (
           <>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">الطلاب المسجلين</span>
-              <p className="text-2xl font-black text-indigo-600 mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">الطلاب المسجلين</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-indigo-600 mt-1">
                 {dashboard.counts?.customers ?? 0}
               </p>
             </div>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">المعلمين والمدربين</span>
-              <p className="text-2xl font-black text-foreground mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">المعلمين والمدربين</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground mt-1">
                 {dashboard.counts?.users ?? 0}
               </p>
             </div>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">محادثات الطلاب</span>
-              <p className="text-2xl font-black text-foreground mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">محادثات الطلاب</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground mt-1">
                 {dashboard.counts?.conversations ?? 0}
               </p>
             </div>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">التطبيقات المفعلة</span>
-              <p className="text-2xl font-black text-foreground mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">التطبيقات المفعلة</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground mt-1">
                 {installedApps.length}
               </p>
             </div>
@@ -278,27 +287,27 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
 
         {isMarketing && (
           <>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">العملاء المحتملين (Leads)</span>
-              <p className="text-2xl font-black text-amber-600 mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">العملاء المحتملين (Leads)</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-amber-600 mt-1">
                 {dashboard.counts?.customers ?? 0}
               </p>
             </div>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">المحادثات الجارية</span>
-              <p className="text-2xl font-black text-foreground mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">المحادثات الجارية</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground mt-1">
                 {dashboard.counts?.conversations ?? 0}
               </p>
             </div>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">فريق الحملات</span>
-              <p className="text-2xl font-black text-foreground mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">فريق الحملات</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground mt-1">
                 {dashboard.counts?.users ?? 0}
               </p>
             </div>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">التطبيقات المرتبطة</span>
-              <p className="text-2xl font-black text-foreground mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">التطبيقات المرتبطة</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground mt-1">
                 {installedApps.length}
               </p>
             </div>
@@ -307,27 +316,27 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
 
         {isMessaging && (
           <>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">إجمالي المحادثات</span>
-              <p className="text-2xl font-black text-emerald-600 mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">إجمالي المحادثات</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-emerald-600 mt-1">
                 {dashboard.counts?.conversations ?? 0}
               </p>
             </div>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">محادثات جديدة</span>
-              <p className="text-2xl font-black text-foreground mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">محادثات جديدة</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground mt-1">
                 {dashboard.recentActivity?.newConversations ?? 0}
               </p>
             </div>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">العملاء وجهات الاتصال</span>
-              <p className="text-2xl font-black text-foreground mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">العملاء وجهات الاتصال</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground mt-1">
                 {dashboard.counts?.customers ?? 0}
               </p>
             </div>
-            <div className="bg-background/80 border border-border/60 rounded-2xl p-3 sm:p-4">
-              <span className="text-[11px] font-bold text-muted-foreground">فريق الرد</span>
-              <p className="text-2xl font-black text-foreground mt-1">
+            <div className="p-3 sm:p-3.5">
+              <span className="text-[11px] font-medium text-muted-foreground">فريق الرد</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-foreground mt-1">
                 {dashboard.counts?.users ?? 0}
               </p>
             </div>

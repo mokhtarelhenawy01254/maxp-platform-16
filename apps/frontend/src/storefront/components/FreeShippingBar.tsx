@@ -209,7 +209,7 @@ export const FreeShippingBar: React.FC = () => {
     <div
       role="region"
       aria-label={prefersArabicCopy ? "شريط الشحن المجاني" : "Free shipping progress bar"}
-      className={`w-full select-none transition-all duration-300 ${themeClasses} ${
+      className={`w-full select-none transition-[background-color,border-color] duration-200 ${themeClasses} ${
         barPosition === "bottom"
           ? "fixed inset-x-4 bottom-4 z-[70] rounded-2xl border px-4 py-3 shadow-2xl md:inset-x-auto md:right-6 md:w-[420px]"
           : "relative z-[45]"
@@ -229,7 +229,7 @@ export const FreeShippingBar: React.FC = () => {
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
-                <span className="truncate font-bold tracking-tight text-white/95">
+                <span className="truncate font-bold tracking-tight text-white/95 tabular-nums">
                   {freeShippingMessage}
                 </span>
                 <span className="shrink-0 hidden xs:inline text-[11px] font-bold tabular-nums opacity-80">
@@ -238,7 +238,7 @@ export const FreeShippingBar: React.FC = () => {
               </div>
               <div className={`mt-1.5 h-1.5 w-full overflow-hidden rounded-full ${progressTrackBg}`}>
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ease-out ${progressFillBg}`}
+                  className={`h-full rounded-full transition-[width] duration-300 ease-out ${progressFillBg}`}
                   style={{ width: `${Math.max(freeShippingProgress > 0 ? 5 : 0, freeShippingProgress)}%` }}
                 />
               </div>
@@ -248,7 +248,7 @@ export const FreeShippingBar: React.FC = () => {
           <div className="flex items-center gap-2 shrink-0">
             <Link
               to={ctaPath}
-              className={`inline-flex items-center justify-center rounded-full px-3 py-1 sm:px-4 sm:py-1.5 text-xs font-bold tracking-wide transition ${ctaClasses}`}
+              className={`inline-flex items-center justify-center rounded-full px-3 py-1 sm:px-4 sm:py-1.5 text-xs font-bold tracking-wide active:scale-[0.97] transition-[transform,background-color] duration-150 ${ctaClasses}`}
             >
               {ctaLabel}
             </Link>
