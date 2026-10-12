@@ -1127,15 +1127,14 @@ class AnalyticsService {
     try {
       const params: AnalyticsQueryParams = {};
 
-      if (period && !startDate) {
-        const days = parseInt(period) || 30;
-        const start = new Date();
-        start.setDate(start.getDate() - days);
-        params.startDate = start.toISOString().split("T")[0];
-        params.endDate = new Date().toISOString().split("T")[0];
-      } else {
-        if (startDate) params.startDate = startDate;
-        if (endDate) params.endDate = endDate;
+      if (period) {
+        params.period = period;
+      }
+      if (startDate) {
+        params.startDate = startDate;
+      }
+      if (endDate) {
+        params.endDate = endDate;
       }
 
       const response = await apiClient.get("/analytics/team-performance", {

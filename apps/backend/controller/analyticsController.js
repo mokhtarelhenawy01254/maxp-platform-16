@@ -4004,7 +4004,7 @@ const getTeamPerformanceAnalytics = async (req, res) => {
       return res.status(403).json({ success: false, message: 'غير مصرح' });
     }
 
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, period } = req.query;
     const prisma = getSharedPrismaClient();
 
     // Smart date handling
@@ -4012,10 +4012,13 @@ const getTeamPerformanceAnalytics = async (req, res) => {
       companyId: String(companyId)
     };
 
-    if (startDate && endDate) {
+    if (startDate || endDate || period) {
       try {
-        // endDate ياخد آخر اليوم (23:59:59.999) — قبل كده كان بياخد بداية اليوم فكان فلتر "اليوم" بيرجع صفر
-        const { start, end } = parseAnalyticsDateRange({ startDate, endDate });
+        const { start, end } = parseAnalyticsDateRange({
+          startDate,
+          endDate,
+          period: period || '30'
+        });
         whereClause.createdAt = {
           gte: start,
           lte: end
@@ -4059,34 +4062,90 @@ const getTeamPerformanceAnalytics = async (req, res) => {
         ordersConfirmed: 0,
         totalRevenue: 0,
         deliveredOrders: 0,
-        cancelledOrders: 0
+        cancelledOrders: 0,
+        successfulOrders: 0,
+        confirmedSuccessfulOrders: 0
       };
     });
 
+    const CONFIRMED_OR_FULFILLED_STATUSES = new Set([
+      'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED',
+      'READY_TO_SHIP', 'READY_FOR_PROCESSING', 'SCHEDULED',
+      'OUT_FOR_DELIVERY', 'PREPARING', 'READY', 'PACKAGED',
+      'EXCHANGED', 'PARTIALLY_DELIVERED', 'WOO_TAGHEZ'
+    ]);
+    const CANCELLED_STATUSES = new Set(['CANCELLED', 'DUPLICATE_ORDER', 'FAILED', 'REJECTED']);
+
     orders.forEach(order => {
+      const orderAmount = parseFloat(order.total) || 0;
+      const isConfirmedOrDelivered = CONFIRMED_OR_FULFILLED_STATUSES.has(order.status);
+      const isDelivered = order.status === 'DELIVERED';
+      const isCancelled = CANCELLED_STATUSES.has(order.status);
+
       if (order.createdBy && userPerformance[order.createdBy]) {
         userPerformance[order.createdBy].ordersCreated += 1;
-        if (order.status === 'DELIVERED') {
-          userPerformance[order.createdBy].totalRevenue += parseFloat(order.total) || 0;
+        if (isConfirmedOrDelivered) {
+          userPerformance[order.createdBy].totalRevenue += orderAmount;
+          userPerformance[order.createdBy].successfulOrders += 1;
+        }
+        if (isDelivered) {
           userPerformance[order.createdBy].deliveredOrders += 1;
         }
-        if (order.status === 'CANCELLED') {
+        if (isCancelled) {
           userPerformance[order.createdBy].cancelledOrders += 1;
         }
       }
+
       if (order.confirmedBy && userPerformance[order.confirmedBy]) {
         userPerformance[order.confirmedBy].ordersConfirmed += 1;
+        if (isConfirmedOrDelivered) {
+          userPerformance[order.confirmedBy].confirmedSuccessfulOrders += 1;
+        }
+        // If order has no internal creator (e.g. from storefront/chat), attribute revenue and success to confirmer
+        if (!order.createdBy || !userPerformance[order.createdBy]) {
+          if (isConfirmedOrDelivered) {
+            userPerformance[order.confirmedBy].totalRevenue += orderAmount;
+            userPerformance[order.confirmedBy].successfulOrders += 1;
+          }
+          if (isDelivered) {
+            userPerformance[order.confirmedBy].deliveredOrders += 1;
+          }
+          if (isCancelled) {
+            userPerformance[order.confirmedBy].cancelledOrders += 1;
+          }
+        }
       }
     });
 
     const teamStats = Object.values(userPerformance)
       .filter(u => u.ordersCreated > 0 || u.ordersConfirmed > 0)
-      .map(u => ({
-        ...u,
-        totalRevenue: parseFloat(u.totalRevenue.toFixed(2)),
-        successRate: u.ordersCreated > 0 ? parseFloat(((u.deliveredOrders / u.ordersCreated) * 100).toFixed(2)) : 0,
-        avgOrderValue: u.deliveredOrders > 0 ? parseFloat((u.totalRevenue / u.deliveredOrders).toFixed(2)) : 0
-      }))
+      .map(u => {
+        const totalActivity = u.ordersCreated > 0 ? u.ordersCreated : u.ordersConfirmed;
+        const relevantSuccess = u.ordersCreated > 0
+          ? (u.successfulOrders > 0 ? u.successfulOrders : u.deliveredOrders)
+          : (u.confirmedSuccessfulOrders > 0 ? u.confirmedSuccessfulOrders : u.successfulOrders);
+        const successRate = totalActivity > 0
+          ? parseFloat(Math.min(100, (relevantSuccess / totalActivity) * 100).toFixed(2))
+          : 0;
+        const avgDivisor = u.successfulOrders > 0 ? u.successfulOrders : (u.deliveredOrders > 0 ? u.deliveredOrders : u.confirmedSuccessfulOrders);
+        const avgOrderValue = avgDivisor > 0
+          ? parseFloat((u.totalRevenue / avgDivisor).toFixed(2))
+          : 0;
+
+        return {
+          userId: u.userId,
+          userName: u.userName,
+          email: u.email,
+          role: u.role,
+          ordersCreated: u.ordersCreated,
+          ordersConfirmed: u.ordersConfirmed,
+          totalRevenue: parseFloat(u.totalRevenue.toFixed(2)),
+          deliveredOrders: u.deliveredOrders,
+          cancelledOrders: u.cancelledOrders,
+          successRate,
+          avgOrderValue
+        };
+      })
       .sort((a, b) => b.totalRevenue - a.totalRevenue);
 
     res.json({

@@ -140,4 +140,33 @@ describe('analyticsController.getTeamPerformanceAnalytics', () => {
     expect(byName['Malak Test'].ordersCreated).toBe(1);
     expect(byName['Malak Test'].ordersConfirmed).toBe(1);
   });
+
+  test('supports period=yesterday and credits confirmation agent on storefront orders', async () => {
+    prismaMock.order.findMany.mockResolvedValue([
+      order('o-recent', 'PROCESSING', '750.00', null, 'user-2'),
+      order('o-shipped', 'SHIPPED', '250.00', 'user-1', 'user-2')
+    ]);
+
+    const req = createRequest({ period: 'yesterday' });
+    const res = createResponse();
+    await getTeamPerformanceAnalytics(req, res);
+
+    const where = prismaMock.order.findMany.mock.calls[0][0].where;
+    expect(where.createdAt).toBeDefined();
+
+    expect(res.payload.success).toBe(true);
+    const data = res.payload.data;
+    expect(data.totalOrdersProcessed).toBe(2);
+    expect(data.totalTeamRevenue).toBe(1000);
+
+    const byName = Object.fromEntries(data.teamMembers.map((m) => [m.userName, m]));
+    // user-2 confirmed storefront order o-recent -> gets 750 revenue
+    expect(byName['Malak Test'].ordersConfirmed).toBe(2);
+    expect(byName['Malak Test'].totalRevenue).toBe(750);
+    expect(byName['Malak Test'].successRate).toBe(100);
+
+    // user-1 created o-shipped -> gets 250 revenue
+    expect(byName['Swan Test'].ordersCreated).toBe(1);
+    expect(byName['Swan Test'].totalRevenue).toBe(250);
+  });
 });

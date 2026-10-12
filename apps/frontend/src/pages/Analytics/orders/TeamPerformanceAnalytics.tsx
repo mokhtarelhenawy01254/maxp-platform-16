@@ -7,7 +7,7 @@ import {
   TrophyIcon,
   CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
 import PeriodSelector, {
@@ -323,6 +323,23 @@ const TeamPerformanceAnalytics: React.FC = () => {
         </div>
       </div>
 
+      {(!stats?.teamMembers || stats.teamMembers.length === 0) && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-10 shadow-sm border border-gray-100 dark:border-gray-700 text-center">
+          <div className="inline-flex p-4 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 mb-4">
+            <UsersIcon className="h-8 w-8" />
+          </div>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+            {t("teamPerformance.noDataTitle", "لا توجد بيانات أداء للفريق")}
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+            {t(
+              "teamPerformance.noDataDescription",
+              "لم يتم تسجيل أي طلبات منشأة أو مؤكدة بواسطة أعضاء الفريق خلال الفترة المحددة."
+            )}
+          </p>
+        </div>
+      )}
+
       {stats?.teamMembers && stats.teamMembers.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -345,10 +362,17 @@ const TeamPerformanceAnalytics: React.FC = () => {
                   width={120}
                 />
                 <Tooltip />
+                <Legend verticalAlign="top" height={36} />
                 <Bar
                   dataKey="ordersCreated"
                   fill="#3B82F6"
-                  name={t("teamPerformance.ordersCreated")}
+                  name={t("teamPerformance.ordersCreated", "طلبات منشأة")}
+                  radius={[0, 4, 4, 0]}
+                />
+                <Bar
+                  dataKey="ordersConfirmed"
+                  fill="#10B981"
+                  name={t("teamPerformance.ordersConfirmed", "طلبات مؤكدة")}
                   radius={[0, 4, 4, 0]}
                 />
               </BarChart>
