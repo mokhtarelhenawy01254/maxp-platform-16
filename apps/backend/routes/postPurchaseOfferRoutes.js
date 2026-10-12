@@ -20,6 +20,13 @@ adminRouter.put(
   postPurchaseOfferController.updateOffer
 );
 
+adminRouter.get(
+  '/analytics',
+  verifyToken.authenticateToken,
+  verifyToken.requireCompanyAccess,
+  postPurchaseOfferController.getOfferAnalytics
+);
+
 // 🌐 Public Storefront Router (mounted at /api/v1/public/post-purchase-offer)
 const publicRouter = express.Router();
 publicRouter.use(extractSubdomainMiddleware);

@@ -351,6 +351,23 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                 {filters.onlyUnseen ? t("orders.showAll") : t("orders.unseen")}
               </span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => onFilterChange("onlyPostPurchaseOffer", !filters.onlyPostPurchaseOffer)}
+              aria-label={String(filters.onlyPostPurchaseOffer ? "عرض كل الطلبات" : "عروض بعد الشراء")}
+              title={filters.onlyPostPurchaseOffer ? "عرض كل الطلبات" : "تصفية: طلبات عروض بعد الشراء 🎁"}
+              className={`inline-flex h-10 flex-shrink-0 items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl border px-2.5 sm:px-3 text-xs sm:text-sm font-semibold transition active:scale-95 ${
+                filters.onlyPostPurchaseOffer
+                  ? "border-emerald-500 bg-emerald-600 text-white shadow-sm shadow-emerald-500/20"
+                  : "border-slate-200/80 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-900/90 dark:text-slate-200 dark:hover:bg-slate-800"
+              }`}
+            >
+              <span>🎁</span>
+              <span className="hidden sm:inline whitespace-nowrap">
+                {filters.onlyPostPurchaseOffer ? "عرض الكل" : "عروض بعد الشراء"}
+              </span>
+            </button>
           </div>
 
           {/* Row 2: Status Pill Capsule Rail & Saved Views */}

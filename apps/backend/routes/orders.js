@@ -3186,6 +3186,22 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       guestWhereClause.isViewed = false;
     }
 
+    // 0.1 Filter by Post-Purchase Offer
+    if (req.query.onlyPostPurchaseOffer === 'true') {
+      appendAnd(whereClause, {
+        OR: [
+          { metadata: { contains: 'postPurchaseOfferAccepted' } },
+          { orderItems: { some: { metadata: { contains: 'isPostPurchaseOffer' } } } }
+        ]
+      });
+      appendAnd(guestWhereClause, {
+        OR: [
+          { metadata: { contains: 'postPurchaseOfferAccepted' } },
+          { items: { contains: 'isPostPurchaseOffer' } }
+        ]
+      });
+    }
+
     // 1. Filter by Status (Safely handle Prisma OrderStatus enums, prep metadata,
     // and Turbo shipping aliases). `status` may be a comma-separated list so
     // users can combine multiple statuses at once.
@@ -7005,6 +7021,10 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             }
           }
 
+          const isPostPurchaseOffer = Boolean(item.isPostPurchaseOffer || item.metadata?.isPostPurchaseOffer);
+          const addedPostPurchase = Boolean(item.addedPostPurchase || item.metadata?.addedPostPurchase);
+          const originalPrice = item.originalPrice || item.metadata?.originalPrice || null;
+
           return {
             id: item.productId || item.id || '',
             productId: item.productId || '',
@@ -7018,8 +7038,14 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             quantity: item.quantity || 1,
             total: (item.price || 0) * (item.quantity || 1),
             productSku: item.sku || item.productSku || (item.metadata && item.metadata.sku) || '',
+            isPostPurchaseOffer,
+            addedPostPurchase,
+            originalPrice,
             metadata: {
               ...(item.metadata || {}),
+              isPostPurchaseOffer,
+              addedPostPurchase,
+              originalPrice,
               color: color,
               size: size,
               details: details,

@@ -38,6 +38,7 @@ export interface FilterChipsProps {
     extractionMethod: string;
     minConfidence: string;
     onlyUnseen: boolean;
+    onlyPostPurchaseOffer?: boolean;
     timeRange: string;
     startDate: string;
     endDate: string;
@@ -271,6 +272,14 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
         value: t("orders.showAll"),
         tone: "destructive",
         remove: () => onFilterChange("onlyUnseen", false),
+      });
+    }
+    if (filters.onlyPostPurchaseOffer) {
+      list.push({
+        key: "عروض بعد الشراء",
+        value: "🎁 الطلبات بالعرض",
+        tone: "primary",
+        remove: () => onFilterChange("onlyPostPurchaseOffer", false),
       });
     }
     if (filters.timeRange) {

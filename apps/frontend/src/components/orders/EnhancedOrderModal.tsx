@@ -23,6 +23,7 @@ import type { OrderDetailsType } from "../../pages/orders/types";
 import { Link } from "react-router-dom";
 import OrderPartnerOperationsCard from "./OrderPartnerOperationsCard";
 import { toStandardDigits } from "../../utils/validation";
+import { isPostPurchaseOfferItem } from "../../utils/postPurchaseOfferBadge";
 
 interface StatusOption {
   code: string;
@@ -638,11 +639,23 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                           >
                             <div className="flex justify-between items-start gap-4">
                               <div className="flex-1">
-                                <p className="font-medium text-foreground text-sm leading-tight mb-0.5">
-                                  {item.productName ||
-                                    item.name ||
-                                    t("orders.productNotSpecified")}
-                                </p>
+                                <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                                  <p className="font-medium text-foreground text-sm leading-tight">
+                                    {item.productName ||
+                                      item.name ||
+                                      t("orders.productNotSpecified")}
+                                  </p>
+                                  {isPostPurchaseOfferItem(item) && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 shadow-xs">
+                                      <span>🎁 عرض بعد الشراء</span>
+                                      {item.originalPrice && Number(item.originalPrice) > Number(item.price) && (
+                                        <span className="font-normal text-[10px] opacity-80 tabular-nums">
+                                          (سعر العرض {item.price} بدلاً من {item.originalPrice})
+                                        </span>
+                                      )}
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="text-xs text-muted-foreground">
                                   {t("orders.quantity")}: {item.quantity}
                                 </p>

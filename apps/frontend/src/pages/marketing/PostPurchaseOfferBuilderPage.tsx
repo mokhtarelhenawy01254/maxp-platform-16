@@ -26,7 +26,9 @@ import {
   Target,
   Trash2,
   Truck,
-  Zap
+  Zap,
+  BarChart3,
+  Settings2
 } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import { getDirection } from "../../i18n";
@@ -35,6 +37,7 @@ import type {
   PostPurchaseOfferProduct
 } from "../../types/postPurchaseOffer";
 import { DEFAULT_POST_PURCHASE_OFFER } from "../../types/postPurchaseOffer";
+import { PostPurchaseOfferAnalyticsTab } from "./components/PostPurchaseOfferAnalyticsTab";
 
 interface CatalogItem {
   id: string;
@@ -53,6 +56,7 @@ export default function PostPurchaseOfferBuilderPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [activeTab, setActiveTab] = useState<"builder" | "analytics">("builder");
 
   // Offer State
   const [offer, setOffer] = useState<PostPurchaseOfferConfig>(DEFAULT_POST_PURCHASE_OFFER);
@@ -319,26 +323,60 @@ export default function PostPurchaseOfferBuilderPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {lastSavedAt && (
-            <span className="text-xs text-muted-foreground hidden lg:inline tabular-nums">
-              آخر حفظ: {lastSavedAt.toLocaleTimeString()}
-            </span>
-          )}
-          <button
-            type="button"
-            disabled={saving}
-            onClick={handleSave}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span>حفظ الإعدادات</span>
-          </button>
-        </div>
+        {activeTab === "builder" && (
+          <div className="flex items-center gap-3">
+            {lastSavedAt && (
+              <span className="text-xs text-muted-foreground hidden lg:inline tabular-nums">
+                آخر حفظ: {lastSavedAt.toLocaleTimeString()}
+              </span>
+            )}
+            <button
+              type="button"
+              disabled={saving}
+              onClick={handleSave}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md hover:opacity-95 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              <span>حفظ الإعدادات</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Main 2-Column Bento Chassis */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* Tab Switcher: Builder vs Analytics */}
+      <div className="flex items-center gap-2 border-b border-border/80 pb-3">
+        <button
+          type="button"
+          onClick={() => setActiveTab("builder")}
+          className={`inline-flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition active:scale-95 ${
+            activeTab === "builder"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          <Settings2 className="w-4 h-4" />
+          <span>الإعدادات وتصميم العرض</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("analytics")}
+          className={`inline-flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition active:scale-95 ${
+            activeTab === "analytics"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span>التحليلات والأداء</span>
+        </button>
+      </div>
+
+      {activeTab === "analytics" ? (
+        <PostPurchaseOfferAnalyticsTab />
+      ) : (
+        /* Main 2-Column Bento Chassis */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
         {/* ──────────────── Left Column: Form Controls (7 cols) ──────────────── */}
         <div className="lg:col-span-7 space-y-6">
@@ -1049,6 +1087,7 @@ export default function PostPurchaseOfferBuilderPage() {
         </div>
 
       </div>
+      )}
 
     </div>
   );

@@ -13,6 +13,7 @@ import { useCurrency } from "../../../hooks/useCurrency";
 import { OrderItem } from "../types";
 import { validatePrice, validateQuantity } from "../../../utils/validation";
 import DeleteItemConfirmModal from "./DeleteItemConfirmModal";
+import { isPostPurchaseOfferItem } from "../../../utils/postPurchaseOfferBadge";
 
 const looksLikeSizeValue = (value: unknown): boolean => {
   if (value == null) return false;
@@ -561,9 +562,21 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="flex-1 min-w-0">
-                <h4 className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100 mb-0.5">
-                  {item.productName}
-                </h4>
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <h4 className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100">
+                    {item.productName}
+                  </h4>
+                  {isPostPurchaseOfferItem(item) && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 shadow-xs">
+                      <span>🎁 عرض بعد الشراء</span>
+                      {item.originalPrice && Number(item.originalPrice) > Number(item.price) && (
+                        <span className="font-normal text-[11px] opacity-80 tabular-nums">
+                          (سعر العرض {item.price} بدلاً من {item.originalPrice})
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </div>
 
                 {(item.productSku) && (
                   <div className="inline-flex items-center gap-1.5 rounded bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 mb-2">

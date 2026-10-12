@@ -2,6 +2,7 @@ import React from "react";
 import i18n from "../../i18n";
 import InvoiceBarcode from "./InvoiceBarcode";
 import { resolveCustomFieldsForDisplay } from "../../utils/orderCustomFields";
+import { isPostPurchaseOfferItem } from "../../utils/postPurchaseOfferBadge";
 
 export type { InvoicePrintSettings } from "../../types/invoiceSettings";
 export { DEFAULT_INVOICE_SETTINGS } from "../../types/invoiceSettings";
@@ -351,7 +352,14 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
                {items.map((item, idx) => (
                  <tr key={item.id || idx} style={{ borderBottom: idx < items.length - 1 ? "1.5px solid #000" : "none" }}>
                    <td style={{ padding: "4px 6px", borderLeft: innerBorderStyle, textAlign: "right" }}>
-                     <div style={{ fontSize: compact ? "12px" : "14px", fontWeight: 700, lineHeight: "1.2" }}>{item.productName}</div>
+                     <div style={{ fontSize: compact ? "12px" : "14px", fontWeight: 700, lineHeight: "1.2" }}>
+                       {item.productName}
+                       {isPostPurchaseOfferItem(item) && (
+                         <span style={{ fontSize: "10px", fontWeight: 800, padding: "1px 5px", borderRadius: "4px", backgroundColor: "#fef3c7", color: "#92400e", marginRight: "4px", display: "inline-block" }}>
+                           [🎁 عرض بعد الشراء]
+                         </span>
+                       )}
+                     </div>
                       {(item.productColor || item.productSize) && (
                         <div style={{ fontSize: compact ? "11px" : "13px", fontWeight: 700, color: "#000", marginTop: "2px" }}>
                           {[item.productColor, item.productSize].filter(Boolean).join(" | ")}

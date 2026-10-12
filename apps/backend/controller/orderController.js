@@ -155,12 +155,28 @@ const getAllOrders = async (req, res) => {
       status: (order.status || 'PENDING').toLowerCase(),
       paymentStatus: (order.paymentStatus || 'PENDING').toLowerCase(),
       createdAt: order.createdAt,
-      items: (order.orderItems || []).map(item => ({
-        id: item.id,
-        name: item.productName || item.product?.name || 'منتج غير محدد',
-        price: item.price,
-        quantity: item.quantity
-      }))
+      hasPostPurchaseOffer: Boolean(
+        (order.orderItems || []).some(item => {
+          if (!item.metadata) return false;
+          if (typeof item.metadata === 'string') return item.metadata.includes('isPostPurchaseOffer');
+          return Boolean(item.metadata.isPostPurchaseOffer);
+        })
+      ),
+      items: (order.orderItems || []).map(item => {
+        const isOffer = Boolean(
+          item.metadata &&
+          (typeof item.metadata === 'string'
+            ? item.metadata.includes('isPostPurchaseOffer')
+            : item.metadata.isPostPurchaseOffer)
+        );
+        return {
+          id: item.id,
+          name: item.productName || item.product?.name || 'منتج غير محدد',
+          price: item.price,
+          quantity: item.quantity,
+          isPostPurchaseOffer: isOffer
+        };
+      })
     }));
 
     // Format guest orders
@@ -171,6 +187,12 @@ const getAllOrders = async (req, res) => {
       } catch (_) {
         items = [];
       }
+      const hasOffer = Boolean(
+        (typeof order.metadata === 'string' && order.metadata.includes('postPurchaseOfferAccepted')) ||
+        (order.metadata && typeof order.metadata === 'object' && order.metadata.postPurchaseOfferAccepted) ||
+        (Array.isArray(items) && items.some(i => i.isPostPurchaseOffer || i.addedPostPurchase))
+      );
+
       return {
         id: order.id,
         orderNumber: order.orderNumber,
@@ -181,11 +203,13 @@ const getAllOrders = async (req, res) => {
         status: (order.status || 'PENDING').toLowerCase(),
         paymentStatus: (order.paymentStatus || 'PENDING').toLowerCase(),
         createdAt: order.createdAt,
+        hasPostPurchaseOffer: hasOffer,
         items: (Array.isArray(items) ? items : []).map(item => ({
           id: item.id || item.productId || '',
           name: item.name || item.productName || 'منتج غير محدد',
           price: item.price || 0,
-          quantity: item.quantity || 1
+          quantity: item.quantity || 1,
+          isPostPurchaseOffer: Boolean(item.isPostPurchaseOffer || item.addedPostPurchase)
         }))
       };
     });
@@ -368,13 +392,36 @@ const getOneOrder = async (req, res) => {
             phone: guestOrder.guestPhone,
             email: guestOrder.guestEmail
           },
-          orderItems: (Array.isArray(items) ? items : []).map(item => ({
-            id: item.id || item.productId || '',
-            productName: item.name || item.productName || 'منتج غير محدد',
-            price: item.price || 0,
-            quantity: item.quantity || 1,
-            product: { name: item.name || item.productName || 'منتج غير محدد' }
-          }))
+          metadata: guestOrder.metadata,
+          hasPostPurchaseOffer: Boolean(
+            (typeof guestOrder.metadata === 'string' && guestOrder.metadata.includes('postPurchaseOfferAccepted')) ||
+            (guestOrder.metadata && typeof guestOrder.metadata === 'object' && guestOrder.metadata.postPurchaseOfferAccepted) ||
+            (Array.isArray(items) && items.some(i => i.isPostPurchaseOffer || i.addedPostPurchase))
+          ),
+          orderItems: (Array.isArray(items) ? items : []).map(item => {
+            const isOffer = Boolean(item.isPostPurchaseOffer || item.addedPostPurchase || (item.metadata && (item.metadata.isPostPurchaseOffer || item.metadata.addedPostPurchase)));
+            const origPrice = item.originalPrice || item.metadata?.originalPrice || null;
+            return {
+              id: item.id || item.productId || '',
+              productName: item.name || item.productName || 'منتج غير محدد',
+              productColor: item.productColor || item.color || null,
+              productSize: item.productSize || item.size || null,
+              price: item.price || 0,
+              quantity: item.quantity || 1,
+              isPostPurchaseOffer: isOffer,
+              addedPostPurchase: Boolean(item.addedPostPurchase),
+              originalPrice: origPrice,
+              metadata: {
+                ...(typeof item.metadata === 'object' ? item.metadata : {}),
+                isPostPurchaseOffer: isOffer,
+                addedPostPurchase: Boolean(item.addedPostPurchase),
+                originalPrice: origPrice,
+                color: item.productColor || item.color || null,
+                size: item.productSize || item.size || null
+              },
+              product: { name: item.name || item.productName || 'منتج غير محدد' }
+            };
+          })
         };
       }
     }

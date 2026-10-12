@@ -12,6 +12,7 @@ import { OrdersSkeleton } from "./OrdersSkeleton";
 import { OrdersEmptyState } from "./OrdersEmptyState";
 import { OrdersPagination } from "./OrdersPagination";
 import { CustomerRatingBadge } from "../../../components/orders/CustomerRatingBadge";
+import { hasPostPurchaseOffer } from "../../../utils/postPurchaseOfferBadge";
 import type { Order } from "../Orders";
 
 const toStandardDigits = (str?: string | null): string => {
@@ -279,6 +280,15 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                             >
                               #{displayOrderNumber}
                             </span>
+                            {hasPostPurchaseOffer(order) && (
+                              <span
+                                className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700/60 shadow-xs"
+                                title="يحتوي على عرض خاص بعد الشراء (Post-Purchase Upsell)"
+                              >
+                                <span>🎁</span>
+                                <span className="hidden sm:inline">عرض بعد الشراء</span>
+                              </span>
+                            )}
                             {order.metadata?.isGuestOrder && (
                               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
                                 {t("orders.guest")}

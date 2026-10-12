@@ -32,6 +32,7 @@ import { BulkActionBar } from "./components/BulkActionBar";
 import { CommandPalette } from "../../components/common/CommandPalette";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
 import type { OrderDetailsType } from "./types";
+import { hasPostPurchaseOffer } from "../../utils/postPurchaseOfferBadge";
 
 const EnhancedOrderModal = React.lazy(
   () => import("../../components/orders/EnhancedOrderModal"),
@@ -292,6 +293,7 @@ export interface OrdersFilters {
   minConfidence: string;
   onlyUnseen: boolean;
   timeRange: string;
+  onlyPostPurchaseOffer: boolean;
 }
 
 interface OrdersListViewState {
@@ -758,6 +760,7 @@ const DEFAULT_ORDERS_FILTERS: OrdersFilters = {
   minConfidence: "",
   onlyUnseen: false,
   timeRange: "",
+  onlyPostPurchaseOffer: false,
 };
 const ORDERS_LIST_QUERY_KEYS = [
   "page",
@@ -777,6 +780,7 @@ const ORDERS_LIST_QUERY_KEYS = [
   "minConfidence",
   "onlyUnseen",
   "timeRange",
+  "onlyPostPurchaseOffer",
 ] as const;
 
 const parsePositiveInt = (value: unknown, fallback: number) => {
@@ -849,12 +853,13 @@ const getFiltersFromSearchParams = (searchParams: URLSearchParams): OrdersFilter
       searchParams.get("merchantSettlementStatus"),
     ),
     search: searchParams.get("search") || "",
-  startDate: searchParams.get("startDate") || "",
-  endDate: searchParams.get("endDate") || "",
-  extractionMethod: searchParams.get("extractionMethod") || "",
-  minConfidence: searchParams.get("minConfidence") || "",
-  onlyUnseen: searchParams.get("onlyUnseen") === "true",
-  timeRange: searchParams.get("timeRange") || "",
+    startDate: searchParams.get("startDate") || "",
+    endDate: searchParams.get("endDate") || "",
+    extractionMethod: searchParams.get("extractionMethod") || "",
+    minConfidence: searchParams.get("minConfidence") || "",
+    onlyUnseen: searchParams.get("onlyUnseen") === "true",
+    timeRange: searchParams.get("timeRange") || "",
+    onlyPostPurchaseOffer: searchParams.get("onlyPostPurchaseOffer") === "true",
   };
 };
 
@@ -900,6 +905,7 @@ const sanitizeStoredFilters = (value: unknown): OrdersFilters => {
       typeof candidate.minConfidence === "string" ? candidate.minConfidence : "",
     onlyUnseen: candidate.onlyUnseen === true,
     timeRange: typeof candidate.timeRange === "string" ? candidate.timeRange : "",
+    onlyPostPurchaseOffer: candidate.onlyPostPurchaseOffer === true,
   };
 };
 
@@ -1379,6 +1385,13 @@ const Orders: React.FC = () => {
         return;
       }
 
+      if (key === "onlyPostPurchaseOffer") {
+        if (value) {
+          params.onlyPostPurchaseOffer = "true";
+        }
+        return;
+      }
+
       if (typeof value === "string" && value) {
         params[key] = value;
       } else if (Array.isArray(value) && value.length > 0) {
@@ -1442,7 +1455,7 @@ const Orders: React.FC = () => {
   const activeFilterCount = useMemo(
     () =>
       Object.entries(filters).reduce((count, [key, value]) => {
-        if (key === "onlyUnseen") {
+        if (key === "onlyUnseen" || key === "onlyPostPurchaseOffer") {
           return count + (value ? 1 : 0);
         }
 
@@ -1740,7 +1753,8 @@ const Orders: React.FC = () => {
         f.search ||
         f.startDate ||
         f.endDate ||
-        f.onlyUnseen,
+        f.onlyUnseen ||
+        f.onlyPostPurchaseOffer,
       );
     };
 
@@ -1868,6 +1882,7 @@ const Orders: React.FC = () => {
           ...(filters.startDate && { dateFrom: filters.startDate }),
           ...(filters.endDate && { dateTo: filters.endDate }),
           ...(filters.onlyUnseen && { onlyUnseen: "true" }),
+          ...(filters.onlyPostPurchaseOffer && { onlyPostPurchaseOffer: "true" }),
         };
 
         const response = await apiClient.get("/orders-enhanced", {
@@ -1943,6 +1958,7 @@ const Orders: React.FC = () => {
         if (filters.startDate) queryParams.startDate = filters.startDate;
         if (filters.endDate) queryParams.endDate = filters.endDate;
         if (filters.onlyUnseen) queryParams.onlyUnseen = "true";
+        if (filters.onlyPostPurchaseOffer) queryParams.onlyPostPurchaseOffer = "true";
 
         const response = await apiClient.get("/orders-new/simple", {
           params: queryParams,
@@ -2213,9 +2229,14 @@ const Orders: React.FC = () => {
 
   const clearAllFilters = () => {
     clearAdvancedFilters();
-    setFilters((prev) => ({ ...prev, search: "", onlyUnseen: false }));
+    setFilters((prev) => ({ ...prev, search: "", onlyUnseen: false, onlyPostPurchaseOffer: false }));
     setPage(1);
   };
+
+  const displayedOrders = useMemo(() => {
+    if (!filters.onlyPostPurchaseOffer) return orders;
+    return orders.filter(hasPostPurchaseOffer);
+  }, [orders, filters.onlyPostPurchaseOffer]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -2237,10 +2258,10 @@ const Orders: React.FC = () => {
   };
 
   const toggleAllSelection = () => {
-    if (orders.every((o) => selectedOrders.includes(o.orderNumber))) {
+    if (displayedOrders.every((o) => selectedOrders.includes(o.orderNumber))) {
       setSelectedOrders([]);
     } else {
-      setSelectedOrders(orders.map((o) => o.orderNumber));
+      setSelectedOrders(displayedOrders.map((o) => o.orderNumber));
     }
   };
 
@@ -3218,7 +3239,7 @@ const Orders: React.FC = () => {
       />
 
       <OrdersMobileList
-        orders={orders}
+        orders={displayedOrders}
         loading={loading}
         ordersLoadError={ordersLoadError}
         selectedOrders={selectedOrders}
@@ -3236,7 +3257,7 @@ const Orders: React.FC = () => {
       />
 
       <OrdersTable
-        orders={orders}
+        orders={displayedOrders}
         loading={loading}
         ordersLoadError={ordersLoadError}
         selectedOrders={selectedOrders}
@@ -3263,7 +3284,7 @@ const Orders: React.FC = () => {
         onCustomerRatingChange={handleCustomerRatingChange}
       />
 
-      {!loading && orders.length > 0 && (
+      {!loading && displayedOrders.length > 0 && (
         <OrdersPagination
           variant="mobile"
           page={page}

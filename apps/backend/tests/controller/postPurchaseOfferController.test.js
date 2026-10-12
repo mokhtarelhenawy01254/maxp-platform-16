@@ -12,6 +12,12 @@ const mockPrisma = {
   },
   product: {
     findFirst: jest.fn()
+  },
+  order: {
+    findMany: jest.fn()
+  },
+  guestOrder: {
+    findMany: jest.fn()
   }
 };
 
@@ -194,6 +200,79 @@ describe('postPurchaseOfferController - Product Enrichment & Schema Safety', () 
       expect(responseData.success).toBe(true);
       expect(responseData.data.productImage).toBe('https://cdn.example.com/scarf-fallback.jpg');
       expect(responseData.data.product.imageUrl).toBe('https://cdn.example.com/scarf-fallback.jpg');
+    });
+  });
+
+  describe('getOfferAnalytics', () => {
+    it('returns structured KPIs, delivery outcomes, and variant breakdown', async () => {
+      const now = new Date();
+      mockPrisma.order.findMany.mockResolvedValue([
+        {
+          id: 'ord-1',
+          orderNumber: 'ORD-101',
+          customerName: 'سارة أحمد',
+          customerPhone: '01011111111',
+          status: 'DELIVERED',
+          total: 800,
+          createdAt: now,
+          metadata: {
+            postPurchaseOfferAccepted: true,
+            postPurchaseOffer: {
+              offerPrice: 350,
+              productColor: 'أبيض',
+              productSize: 'M',
+              acceptedAt: new Date(now.getTime() + 8000).toISOString()
+            }
+          },
+          orderItems: [
+            {
+              price: 350,
+              quantity: 1,
+              metadata: { isPostPurchaseOffer: true, addedPostPurchase: true }
+            }
+          ]
+        }
+      ]);
+
+      mockPrisma.guestOrder.findMany.mockResolvedValue([
+        {
+          id: 'guest-1',
+          orderNumber: 'ORD-102',
+          customerName: 'محمد علي',
+          customerPhone: '01022222222',
+          status: 'SHIPPED',
+          total: 450,
+          createdAt: now,
+          metadata: JSON.stringify({
+            postPurchaseOfferAccepted: false
+          }),
+          items: JSON.stringify([
+            { price: 450, quantity: 1 }
+          ])
+        }
+      ]);
+
+      const req = {
+        user: { companyId: 'company-swan' },
+        query: { period: 'today' }
+      };
+      const res = createResponse();
+
+      await postPurchaseOfferController.getOfferAnalytics(req, res);
+
+      const responseData = res.json.mock.calls[0][0];
+      expect(responseData.success).toBe(true);
+      expect(responseData.data.kpis.totalOrders).toBe(2);
+      expect(responseData.data.kpis.offerAcceptedOrders).toBe(1);
+      expect(responseData.data.kpis.acceptanceRate).toBe(50);
+      expect(responseData.data.kpis.offerRevenue).toBe(350);
+      expect(responseData.data.kpis.avgAcceptanceSeconds).toBe(8);
+      expect(responseData.data.deliveryOutcomes.deliveredOrders).toBe(1);
+      expect(responseData.data.deliveryOutcomes.deliveredOfferRevenue).toBe(350);
+      expect(responseData.data.variants).toHaveLength(1);
+      expect(responseData.data.variants[0].color).toBe('أبيض');
+      expect(responseData.data.variants[0].size).toBe('M');
+      expect(responseData.data.recentAcceptedOrders).toHaveLength(1);
     });
   });
 });
