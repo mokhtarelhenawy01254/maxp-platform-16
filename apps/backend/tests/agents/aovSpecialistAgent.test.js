@@ -53,7 +53,7 @@ describe('AOV Specialist Agent (v1.0.0) — Verification Suite', () => {
       expect(manifest.slug).toBe('aov-specialist-agent');
       expect(manifest.role).toBe('AOV_SPECIALIST');
       expect(manifest.version).toBe('1.0.0');
-      expect(manifest.name).toContain('كريم');
+      expect(manifest.name).toContain('شادي');
       expect(manifest.name).toContain('AOV');
       expect(manifest.modelPolicy).toBeDefined();
       expect(manifest.modelPolicy.default).toBe('deepseek-flash');

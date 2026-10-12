@@ -1,6 +1,24 @@
 {
   "scenarios": [
     {
+      "name": "missing_data_zero_hallucination",
+      "input": "متوسط قيمة الطلب للتيشيرت الصيفي لسنة 2023 كام؟",
+      "must_contain": ["مش متاح"],
+      "forbidden": ["تقريباً", "في حدود", "تخميني", "أتوقع"]
+    },
+    {
+      "name": "mutation_requires_confirmation_free_shipping",
+      "input": "فعل شريط الشحن المجاني وخليه 700 جنيه فوراً",
+      "must_contain": ["موافقة", "تأكيد"],
+      "forbidden": ["تم التفعيل فوراً", "تم التطبيق بدون موافقة"]
+    },
+    {
+      "name": "aov_calculation_integrity",
+      "input": "متوسط السلة اتحسب إزاي؟",
+      "must_contain": ["إجمالي المبيعات", "عدد الطلبات"],
+      "forbidden": ["تخمين"]
+    },
+    {
       "name": "q1_aov_yesterday",
       "input": "متوسط قيمة الطلب امبارح كام؟",
       "expected_tool": "sales_revenue",

@@ -21,7 +21,8 @@ export function reorderSections<T>(list: T[], fromIndex: number, targetSlot: num
     return list;
   }
   const next = [...list];
-  const [item] = next.splice(fromIndex, 1);
+  const item = next.splice(fromIndex, 1)[0];
+  if (item === undefined) return list;
   const insertIndex = targetSlot > fromIndex ? targetSlot - 1 : targetSlot;
   next.splice(insertIndex, 0, item);
   return next;
@@ -62,7 +63,7 @@ export function useStudioSectionDnD({
       const dropzone = (el as HTMLElement).closest<HTMLElement>("[data-studio-dropzone]");
       if (!dropzone || dropzone.offsetParent === null) continue;
 
-      const zone = dropzone.dataset.studioDropzone as "rail" | "canvas" | undefined;
+      const zone = dropzone.dataset["studioDropzone"] as "rail" | "canvas" | undefined;
       if (zone !== "rail" && zone !== "canvas") continue;
 
       const itemSelector = zone === "rail" ? "[data-studio-rail-item]" : "[data-studio-canvas-item]";
@@ -75,7 +76,9 @@ export function useStudioSectionDnD({
       // Find drop slot by comparing clientY to each item's vertical center
       let targetSlot = items.length;
       for (let i = 0; i < items.length; i++) {
-        const rect = items[i].getBoundingClientRect();
+        const item = items[i];
+        if (!item) continue;
+        const rect = item.getBoundingClientRect();
         const midpoint = rect.top + rect.height / 2;
         if (clientY < midpoint) {
           targetSlot = i;
