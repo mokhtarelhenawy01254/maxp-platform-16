@@ -1,0 +1,174 @@
+/* Scoped Styles for Taste-Skill Clothing Store Landing (.cst-*) */
+.cst-root {
+  background-color: #090a0f;
+  color: #f4f4f5;
+  font-family: 'IBM Plex Sans Arabic', 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
+  direction: rtl;
+  text-align: right;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.cst-root *,
+.cst-root *::before,
+.cst-root *::after {
+  box-sizing: border-box;
+  letter-spacing: normal !important;
+}
+
+.cst-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.cst-text-balance {
+  text-wrap: balance;
+}
+
+.cst-text-pretty {
+  text-wrap: pretty;
+}
+
+/* Subtle architectural grid pattern */
+.cst-grid-bg {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Hairline machined panels with specular top highlight */
+.cst-panel {
+  background: #111318;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.cst-panel:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.cst-panel-active {
+  background: linear-gradient(180deg, #161922 0%, #111318 100%);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 24px rgba(37, 99, 235, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Micro-haptics on buttons */
+.cst-btn-primary {
+  background: #ffffff;
+  color: #090a0f;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 160ms ease-out, background-color 160ms ease-out;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.cst-btn-primary:hover {
+  background: #e4e4e7;
+}
+
+.cst-btn-primary:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 639px) {
+  .cst-nav-cta-desktop {
+    display: none !important;
+  }
+}
+
+.cst-btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f4f4f5;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 12px 22px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 160ms ease-out, background-color 160ms ease-out, border-color 160ms ease-out;
+}
+
+.cst-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.cst-btn-secondary:active {
+  transform: scale(0.97);
+}
+
+/* Sticky mobile action bar */
+.cst-sticky-mobile {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(9, 10, 15, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 50;
+}
+
+@media (min-width: 768px) {
+  .cst-sticky-mobile {
+    display: none;
+  }
+}
+
+/* Slop Simulation Overrides (when user toggles to "slop" mode) */
+.cst-slop-mode {
+  background-color: #0b071e !important;
+  color: #ffffff !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+}
+
+.cst-slop-mode .cst-slop-mesh {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, rgba(59, 130, 246, 0.25) 45%, transparent 70%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cst-slop-mode .cst-panel {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(168, 85, 247, 0.35) !important;
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.15) !important;
+}
+
+.cst-slop-mode .cst-btn-primary {
+  background: linear-gradient(135deg, #a855f7 0%, #3b82f6 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.5) !important;
+  border-radius: 9999px !important;
+}
