@@ -29,6 +29,7 @@ const PromoStrip: React.FC<PromoStripProps> = ({ section, settings }) => {
   const isWomenFashion = theme.id === 'women-fashion-eg';
   const isFakhama = theme.id === 'fakhama-elite';
   const isSmartBazaar = theme.id === 'smart-bazaar';
+  const isKhemetLuxe = theme.id === 'khemet-luxe-eg' || theme.id === 'khemet-luxe-v2';
   const isBenefitRibbon =
     typeof section?.variant === 'string' &&
     section.variant.trim().toLowerCase() === 'benefit-ribbon';
@@ -280,30 +281,34 @@ const PromoStrip: React.FC<PromoStripProps> = ({ section, settings }) => {
             }`}>
               {message}
             </p>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2.5">
               {chips.map((chip, index) => (
                 <span
                   key={`${chip}-${index}`}
-                  className={`inline-flex items-center rounded-none px-4 py-1.5 text-xs font-bold tracking-tight ${
+                  className={`inline-flex items-center px-3.5 py-1 text-xs font-bold tracking-tight ${
                     isBenefitRibbon
                       ? index === 0
-                        ? 'bg-[#fee9e2] text-[#8b3d33] shadow-sm'
-                        : 'bg-white text-[#6d4c4a] ring-1 ring-[#f0d7d2]'
+                        ? 'rounded-full bg-[#fee9e2] text-[#8b3d33] shadow-sm'
+                        : 'rounded-full bg-white text-[#6d4c4a] ring-1 ring-[#f0d7d2]'
                       : isSoleaFemme
                       ? index === 0
-                        ? 'bg-accent/90 text-accent-foreground shadow-sm'
-                        : 'bg-background/90 text-foreground ring-1 ring-primary/10 backdrop-blur'
+                        ? 'rounded-full bg-accent/90 text-accent-foreground shadow-sm'
+                        : 'rounded-full bg-background/90 text-foreground ring-1 ring-primary/10 backdrop-blur'
                       : isSmartBazaar
                         ? index === 0
-                          ? 'bg-background text-foreground shadow-sm'
-                          : 'bg-white/10 text-white ring-1 ring-white/15 backdrop-blur'
+                          ? 'rounded-full bg-background text-foreground shadow-sm'
+                          : 'rounded-full bg-white/10 text-white ring-1 ring-white/15 backdrop-blur'
                       : isFakhama
                         ? index === 0
-                          ? 'bg-accent text-accent-foreground shadow-md'
-                          : 'bg-primary/5 text-primary border border-primary/20'
+                          ? 'rounded-none bg-accent text-accent-foreground shadow-md'
+                          : 'rounded-none bg-primary/5 text-primary border border-primary/20'
+                      : isKhemetLuxe
+                        ? index === 0
+                          ? 'rounded-full border border-[#c5a470]/50 bg-[#c5a470]/15 text-[#183f31] dark:text-[#f2d79b]'
+                          : 'rounded-full border border-border/60 bg-background/80 text-foreground/80'
                         : index === 0
-                          ? 'bg-accent text-accent-foreground'
-                          : 'bg-background text-muted-foreground ring-1 ring-border'
+                          ? 'rounded-full bg-accent text-accent-foreground'
+                          : 'rounded-full bg-background text-muted-foreground ring-1 ring-border'
                   }`}
                 >
                   {isBenefitRibbon ? (
@@ -312,6 +317,8 @@ const PromoStrip: React.FC<PromoStripProps> = ({ section, settings }) => {
                     <span className="me-2 inline-flex h-1.5 w-1.5 rounded-full bg-current opacity-70" />
                   ) : isFakhama ? (
                     <span className="me-2 inline-flex h-1 w-1 rounded-full bg-primary opacity-50" />
+                  ) : isKhemetLuxe ? (
+                    <span className="me-2 inline-flex h-1 w-1 rounded-full bg-[#c5a470]" />
                   ) : null}
                   {chip}
                 </span>
@@ -325,16 +332,18 @@ const PromoStrip: React.FC<PromoStripProps> = ({ section, settings }) => {
                 href={ctaHref}
                 target="_blank"
                 rel="noreferrer"
-                className={`inline-flex items-center justify-center rounded-none px-6 py-2.5 text-xs font-black uppercase tracking-[0.2em] transition-all ${
+                className={`inline-flex items-center justify-center px-5 py-2 text-xs font-black uppercase tracking-[0.15em] transition-all active:scale-[0.97] ${
                   isBenefitRibbon
                     ? 'rounded-full border border-[#f0d7d2] bg-[#3f2432] text-white shadow-[0_18px_48px_-28px_rgba(63,36,50,0.55)] hover:bg-[#5a3247]'
                     : isSoleaFemme
-                    ? 'border border-primary/15 bg-background/92 text-foreground shadow-sm hover:bg-primary hover:text-primary-foreground'
+                    ? 'rounded-full border border-primary/15 bg-background/92 text-foreground shadow-sm hover:bg-primary hover:text-primary-foreground'
                     : isSmartBazaar
-                      ? 'border border-white/15 bg-white/12 text-white backdrop-blur hover:bg-accent hover:text-accent-foreground'
+                      ? 'rounded-full border border-white/15 bg-white/12 text-white backdrop-blur hover:bg-accent hover:text-accent-foreground'
                     : isFakhama
-                      ? 'bg-foreground text-background hover:bg-primary hover:text-primary-foreground'
-                      : 'border border-primary/20 bg-background text-foreground hover:bg-primary hover:text-primary-foreground'
+                      ? 'rounded-none bg-foreground text-background hover:bg-primary hover:text-primary-foreground'
+                    : isKhemetLuxe
+                      ? 'rounded-full border border-[#183f31]/30 bg-[#183f31] text-[#fff8ee] hover:bg-[#112d23] shadow-xs'
+                      : 'rounded-full border border-primary/20 bg-background text-foreground hover:bg-primary hover:text-primary-foreground'
                 }`}
               >
                 {ctaText}
@@ -342,16 +351,18 @@ const PromoStrip: React.FC<PromoStripProps> = ({ section, settings }) => {
             ) : (
               <Link
                 to={ctaHref}
-                className={`inline-flex items-center justify-center rounded-none px-6 py-2.5 text-xs font-black uppercase tracking-[0.2em] transition-all ${
+                className={`inline-flex items-center justify-center px-5 py-2 text-xs font-black uppercase tracking-[0.15em] transition-all active:scale-[0.97] ${
                   isBenefitRibbon
                     ? 'rounded-full border border-[#f0d7d2] bg-[#3f2432] text-white shadow-[0_18px_48px_-28px_rgba(63,36,50,0.55)] hover:bg-[#5a3247]'
                     : isSoleaFemme
-                    ? 'border border-primary/15 bg-background/92 text-foreground shadow-sm hover:bg-primary hover:text-primary-foreground'
+                    ? 'rounded-full border border-primary/15 bg-background/92 text-foreground shadow-sm hover:bg-primary hover:text-primary-foreground'
                     : isSmartBazaar
-                      ? 'border border-white/15 bg-white/12 text-white backdrop-blur hover:bg-accent hover:text-accent-foreground'
+                      ? 'rounded-full border border-white/15 bg-white/12 text-white backdrop-blur hover:bg-accent hover:text-accent-foreground'
                     : isFakhama
-                      ? 'bg-foreground text-background hover:bg-primary hover:text-primary-foreground'
-                      : 'border border-primary/20 bg-background text-foreground hover:bg-primary hover:text-primary-foreground'
+                      ? 'rounded-none bg-foreground text-background hover:bg-primary hover:text-primary-foreground'
+                    : isKhemetLuxe
+                      ? 'rounded-full border border-[#183f31]/30 bg-[#183f31] text-[#fff8ee] hover:bg-[#112d23] shadow-xs'
+                      : 'rounded-full border border-primary/20 bg-background text-foreground hover:bg-primary hover:text-primary-foreground'
                 }`}
               >
                 {ctaText}

@@ -2921,34 +2921,25 @@ const CinematicPlinthHero: React.FC<HeroVariantProps> = (props) => {
               props.primaryHref,
               props.ctaText,
               isRedLine
-                ? 'inline-flex items-center justify-center rounded-full border border-primary/50 bg-primary px-9 py-3.5 text-sm font-bold text-white shadow-[0_14px_32px_-8px_rgba(225,29,72,0.7)] transition-all hover:bg-primary/90 hover:scale-[1.02]'
-                : 'inline-flex items-center justify-center border border-[#d9b56c] bg-[#173126] px-8 py-3 text-sm font-semibold text-[#fff4dc] transition hover:bg-[#204637]',
+                ? 'inline-flex items-center justify-center rounded-full border border-primary/50 bg-primary px-9 py-3.5 text-sm font-bold text-white shadow-[0_14px_32px_-8px_rgba(225,29,72,0.7)] transition-all hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.97]'
+                : 'inline-flex items-center justify-center rounded-full border border-[#d9b56c] bg-[#173126] px-9 py-3.5 text-sm font-bold text-[#fff4dc] shadow-[0_12px_28px_-6px_rgba(23,49,38,0.7)] transition-all hover:bg-[#204637] hover:scale-[1.02] active:scale-[0.97]',
             )}
             {renderHeroAction(
               props.secondaryHref,
               props.secondaryCtaText,
-              'inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 px-8 py-3.5 text-sm font-bold text-white backdrop-blur-md transition-all hover:bg-white/20 hover:border-white/40',
+              'inline-flex items-center justify-center rounded-full border border-white/30 bg-white/10 px-8 py-3.5 text-sm font-bold text-white backdrop-blur-md transition-all hover:bg-white/20 hover:border-white/50 active:scale-[0.97]',
             )}
           </div>
 
           {leadHighlights.length > 0 ? (
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-sm text-white/85 md:mt-14 md:text-base">
-              {leadHighlights.map((item, index) => (
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm text-white/90 md:mt-10">
+              {leadHighlights.map((item) => (
                 <span
                   key={`${item.label}-${item.value}`}
-                  className="inline-flex items-center gap-2"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.08] px-3.5 py-1.5 backdrop-blur-xs font-medium tracking-tight shadow-2xs"
                 >
-                  {index > 0 ? (
-                    <span
-                      aria-hidden
-                      className={`font-bold ${
-                        isRedLine ? 'text-primary' : 'text-[#d8b572]/70'
-                      }`}
-                    >
-                      •
-                    </span>
-                  ) : null}
-                  <span className="font-medium">{item.value}</span>
+                  <span className="text-[#f2d79b] font-bold text-xs">{item.label}:</span>
+                  <span>{item.value}</span>
                 </span>
               ))}
             </div>

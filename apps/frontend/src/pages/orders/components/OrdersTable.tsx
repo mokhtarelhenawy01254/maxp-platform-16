@@ -485,10 +485,10 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                             {order.isScheduled &&
                               order.scheduledDeliveryDate && (
                                 <span
-                                  className="text-xs text-slate-500 dark:text-slate-400 font-mono"
+                                  className="inline-flex items-center gap-1 text-xs text-muted-foreground font-mono tabular-nums"
                                   dir="ltr"
                                 >
-                                  📅{" "}
+                                  <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
                                   {new Date(
                                     order.scheduledDeliveryDate,
                                   ).toLocaleDateString("ar-EG", {
