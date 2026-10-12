@@ -154,7 +154,7 @@ Any design resembling typical LLM-generated output is strictly rejected. Audit a
 ## 🚀 Post-Task Automatic Git Push Rule (Conditional on Passing Browser Verification)
 
 - **Mandatory Quality Gate:** You MUST strictly pass the Browser Self-Verification above BEFORE executing this push rule. Pushing unverified code is strictly prohibited.
-- **Mandatory Action:** After passing verification for **ANY** task (feature, bug fix, configuration update, refactoring, or document edit), automatically commit all relevant changes and push directly to `https://github.com/mokhtar-el7/maxp-platform-13` (`origin` remote).
+- **Mandatory Action:** After passing verification for **ANY** task (feature, bug fix, configuration update, refactoring, or document edit), automatically commit all relevant changes and push directly to `https://github.com/shroukmagdi74-source/maxperformance14` (`origin` remote).
 - **Descriptive Commit Message:** Always write a clear, descriptive commit message explaining the exact task changes so the user can easily trace and identify what was updated.
 - **Workflow:**
   1. `git status`

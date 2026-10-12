@@ -31,7 +31,7 @@ Use this skill for the full ship loop: quality gate, GitHub publish, Actions fol
 4. Publish to GitHub
 - Stage only intended files.
 - Use a clear commit message that matches the shipped behavior and doc updates.
-- Push to the correct branch with `git push origin <branch>` after tests and docs pass. (Mandatory repo: https://github.com/mokhtar-el7/maxp-platform-13 - remote `origin`).
+- Push to the correct branch with `git push origin <branch>` after tests and docs pass. (Mandatory repo: https://github.com/shroukmagdi74-source/maxperformance14 - remote `origin`).
 - When production deploys are tied to `main`, treat a user request to deploy/publish as incomplete until the production branch is updated or the user explicitly chooses a PR-only loop.
 - If the user also asked for a PR, create or update it after the push.
 
