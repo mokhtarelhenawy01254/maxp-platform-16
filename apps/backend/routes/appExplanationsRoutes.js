@@ -120,7 +120,7 @@ router.get("/public/:slug", async (req, res) => {
 router.post("/admin", authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
     const prisma = getPrisma();
-    const { title, content, slug, targetRoute, videoUrl, isActive, order } = req.body;
+    const { title, content, slug, targetRoute, videoUrl, videoUrlMobile, isActive, order } = req.body;
     
     const newExplanation = await prisma.appExplanation.create({
       data: {
@@ -129,6 +129,7 @@ router.post("/admin", authenticateToken, requireSuperAdmin, async (req, res) => 
         slug,
         targetRoute: targetRoute || "",
         videoUrl: videoUrl || null,
+        videoUrlMobile: videoUrlMobile || null,
         isActive: isActive !== undefined ? isActive : true,
         order: order || 0,
       },
@@ -149,7 +150,7 @@ router.put("/admin/:id", authenticateToken, requireSuperAdmin, async (req, res) 
   try {
     const prisma = getPrisma();
     const { id } = req.params;
-    const { title, content, slug, targetRoute, videoUrl, isActive, order } = req.body;
+    const { title, content, slug, targetRoute, videoUrl, videoUrlMobile, isActive, order } = req.body;
     
     const updatedExplanation = await prisma.appExplanation.update({
       where: { id },
@@ -159,6 +160,7 @@ router.put("/admin/:id", authenticateToken, requireSuperAdmin, async (req, res) 
         slug,
         targetRoute,
         videoUrl,
+        videoUrlMobile,
         isActive,
         order,
       },

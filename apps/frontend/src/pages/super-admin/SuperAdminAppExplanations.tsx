@@ -52,6 +52,8 @@ interface AppExplanation {
     slug: string;
     targetRoute: string;
     videoUrl: string | null;
+    /** نسخة الموبايل الرأسية (9:16) */
+    videoUrlMobile: string | null;
     isActive: boolean;
     order: number;
     createdAt: string;
@@ -103,6 +105,7 @@ const SuperAdminAppExplanations: React.FC = () => {
         slug: "",
         targetRoute: "",
         videoUrl: "",
+        videoUrlMobile: "",
         isActive: true,
         order: 0,
     });
@@ -154,6 +157,7 @@ const SuperAdminAppExplanations: React.FC = () => {
                 slug: exp.slug,
                 targetRoute: exp.targetRoute,
                 videoUrl: exp.videoUrl || "",
+                videoUrlMobile: exp.videoUrlMobile || "",
                 isActive: exp.isActive,
                 order: exp.order,
             });
@@ -167,6 +171,7 @@ const SuperAdminAppExplanations: React.FC = () => {
                 slug: "",
                 targetRoute: "",
                 videoUrl: "",
+                videoUrlMobile: "",
                 isActive: true,
                 order: 0,
             });
@@ -382,6 +387,12 @@ const SuperAdminAppExplanations: React.FC = () => {
                             <Label>رابط الفيديو (اختياري - يوتيوب أو أي رابط)</Label>
                             <Input name="videoUrl" value={formData.videoUrl} onChange={handleChange} placeholder="https://www.youtube.com/watch?v=..." />
                             <p className="text-xs text-muted-foreground">إذا أضفت رابط فيديو، سيظهر أيقونة فيديو بجانب الزر. إذا تركته فارغاً سيظهر كشرح نصي.</p>
+                        </div>
+
+                        <div>
+                            <Label>رابط فيديو الموبايل — رأسي 9:16 (اختياري)</Label>
+                            <Input name="videoUrlMobile" value={formData.videoUrlMobile} onChange={handleChange} placeholder="https://www.youtube.com/watch?v=... (Short رأسي)" />
+                            <p className="text-xs text-muted-foreground">لو حطيت رابط هنا، الشرح بيعرض النسخة الرأسية تلقائيًا على الموبايل، وبيظهر زرار تبديل بين نسخة الموبايل واللابتوب.</p>
                         </div>
 
                         <div>

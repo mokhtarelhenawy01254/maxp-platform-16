@@ -5,6 +5,9 @@ model AppExplanation {
   slug        String   @unique
   targetRoute String   @default("")
   videoUrl    String?
+  // نسخة الموبايل (رأسية 9:16). لما تكون موجودة، المشغّل بيعرضها تلقائيًا على
+  // الموبايل وبيسيب زرار تبديل للنسخة الأفقية.
+  videoUrlMobile String?
   isActive    Boolean  @default(true)
   order       Int      @default(0)
   createdAt   DateTime @default(now())

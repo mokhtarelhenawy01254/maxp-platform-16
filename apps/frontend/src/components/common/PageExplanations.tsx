@@ -22,8 +22,28 @@ interface Explanation {
   title: string;
   content: string;
   videoUrl: string | null;
+  /** نسخة الموبايل الرأسية (9:16) — تُعرض تلقائيًا على الموبايل */
+  videoUrlMobile?: string | null;
   slug: string;
 }
+
+/**
+ * هل الجهاز الحالي موبايل؟ نفس نقطة الكسر المستخدمة في الشل (lg = 1024px).
+ * بنعتمد على matchMedia بدل الـCSS وحده عشان نختار الفيديو الصح فعلًا.
+ */
+const useIsMobileViewport = (): boolean => {
+  const [isMobile, setIsMobile] = useState<boolean>(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches,
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const onChange = () => setIsMobile(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return isMobile;
+};
 
 export interface PageExplanationsProps {
   className?: string;
@@ -179,9 +199,13 @@ const PageExplanations: React.FC<PageExplanationsProps> = ({
 
         {/* Content */}
         <div className="overflow-y-auto p-4 sm:p-6 flex-1 space-y-4">
-          {/* Video */}
-          {selectedExp.videoUrl && (
-            <VideoBlock videoUrl={selectedExp.videoUrl} title={selectedExp.title} />
+          {/* Video — نسخة الموبايل تلقائيًا على الموبايل، مع زرار تبديل للنسختين */}
+          {(selectedExp.videoUrl || selectedExp.videoUrlMobile) && (
+            <VideoBlock
+              videoUrl={selectedExp.videoUrl}
+              videoUrlMobile={selectedExp.videoUrlMobile}
+              title={selectedExp.title}
+            />
           )}
 
           {/* Text content */}
@@ -264,16 +288,55 @@ const PageExplanations: React.FC<PageExplanationsProps> = ({
 };
 
 /** بلوك الفيديو المشترك داخل المودال (يوتيوب embed / ملف مباشر / لينك خارجي) */
-const VideoBlock: React.FC<{ videoUrl: string; title: string }> = ({ videoUrl, title }) => {
+const VideoBlock: React.FC<{
+  videoUrl: string | null;
+  videoUrlMobile?: string | null;
+  title: string;
+}> = ({ videoUrl, videoUrlMobile, title }) => {
   const { t } = useTranslation();
-  const embedUrl = getYouTubeEmbedUrl(videoUrl);
-  const directVideoUrl = embedUrl ? null : getDirectVideoUrl(videoUrl);
+  const isMobileViewport = useIsMobileViewport();
+  const hasBoth = Boolean(videoUrl && videoUrlMobile);
+  // null = اتبع الجهاز تلقائيًا · true/false = اختيار صريح من زرار التبديل
+  const [override, setOverride] = useState<boolean | null>(null);
+  const showMobile = hasBoth
+    ? override === null
+      ? isMobileViewport
+      : override
+    : !videoUrl && Boolean(videoUrlMobile);
+  const activeUrl = (showMobile ? videoUrlMobile : videoUrl) || videoUrl || videoUrlMobile || "";
+  const embedUrl = getYouTubeEmbedUrl(activeUrl);
+  const directVideoUrl = embedUrl ? null : getDirectVideoUrl(activeUrl);
+  // النسخة الرأسية محتاجة نسبة 9:16 عشان متتقطعش
+  const frameClass = showMobile
+    ? "w-full aspect-[9/16] max-h-[420px] mx-auto rounded-xl overflow-hidden bg-black shadow-md border border-gray-800"
+    : "w-full aspect-video max-h-[340px] mx-auto rounded-xl overflow-hidden bg-black shadow-md border border-gray-800";
+
+  const toggleBtn = (active: boolean) =>
+    `px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer ${
+      active
+        ? "bg-blue-600 text-white"
+        : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+    }`;
 
   return (
     <>
+      {hasBoth && (
+        <div className="flex items-center gap-1.5 mb-2 justify-end" dir="rtl">
+          <span className="text-[11px] text-gray-500 dark:text-gray-400 me-1">
+            {t("explanations.watchHow", "شاهد الطريقة من:")}
+          </span>
+          <button type="button" className={toggleBtn(showMobile)} onClick={() => setOverride(true)}>
+            {t("explanations.mobileVersion", "الموبايل")}
+          </button>
+          <button type="button" className={toggleBtn(!showMobile)} onClick={() => setOverride(false)}>
+            {t("explanations.desktopVersion", "اللابتوب")}
+          </button>
+        </div>
+      )}
+
       {embedUrl && (
         <div className="space-y-2 mb-4">
-          <div className="w-full aspect-video max-h-[340px] mx-auto rounded-xl overflow-hidden bg-black shadow-md border border-gray-800">
+          <div className={frameClass}>
             <iframe
               className="w-full h-full border-0"
               src={embedUrl}
@@ -285,10 +348,10 @@ const VideoBlock: React.FC<{ videoUrl: string; title: string }> = ({ videoUrl, t
           <div className="flex items-center justify-between px-1 text-xs text-gray-500 dark:text-gray-400">
             <span className="flex items-center gap-1.5">
               <PlayCircleIcon className="h-3.5 w-3.5 text-red-500 shrink-0" />
-              <span>فيديو توضيحي</span>
+              <span>{showMobile ? "فيديو من الموبايل" : "فيديو من اللابتوب"}</span>
             </span>
             <a
-              href={videoUrl}
+              href={activeUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline font-medium"
@@ -302,7 +365,7 @@ const VideoBlock: React.FC<{ videoUrl: string; title: string }> = ({ videoUrl, t
 
       {directVideoUrl && (
         <div className="space-y-2 mb-4">
-          <div className="w-full aspect-video max-h-[340px] mx-auto rounded-xl overflow-hidden bg-black shadow-md border border-gray-800">
+          <div className={frameClass}>
             <video
               className="w-full h-full object-contain"
               src={directVideoUrl}
@@ -331,7 +394,7 @@ const VideoBlock: React.FC<{ videoUrl: string; title: string }> = ({ videoUrl, t
             يوجد فيديو توضيحي لهذه الصفحة
           </span>
           <a
-            href={videoUrl}
+            href={activeUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 dark:text-blue-300 hover:underline"
