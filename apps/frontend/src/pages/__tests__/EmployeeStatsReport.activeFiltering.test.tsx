@@ -58,6 +58,7 @@ const mockApiStatistics = [
     conversationsCount: 15,
     messagesCount: 45,
     ordersCount: 3,
+    piecesCount: 7,
     totalRevenue: 1500,
     conversionRate: 20.0,
   },
@@ -70,6 +71,7 @@ const mockApiStatistics = [
     conversationsCount: 8,
     messagesCount: 24,
     ordersCount: 2,
+    piecesCount: 4,
     totalRevenue: 850,
     conversionRate: 25.0,
   },
@@ -247,5 +249,48 @@ describe("EmployeeStatsReport - Active Employee Filtering", () => {
       expect(screen.queryByText("محمد أحمد")).not.toBeInTheDocument();
       expect(screen.queryByText("هاني عمار")).not.toBeInTheDocument();
     });
+  });
+
+  it("displays piecesCount column, Total Pieces card, and exports piecesCount column", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => ({
+        success: true,
+        data: {
+          statistics: mockApiStatistics,
+          totalUniqueConversations: 20,
+        },
+      }),
+    });
+
+    render(<EmployeeStatsReport />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText("محمد أحمد").length).toBeGreaterThan(0);
+    });
+
+    // 1. Column header "عدد القطع" must be present
+    expect(screen.getByText("عدد القطع")).toBeInTheDocument();
+
+    // 2. Total Pieces card: 7 + 4 = 11 pieces
+    expect(screen.getByText("إجمالي القطع")).toBeInTheDocument();
+    expect(screen.getByText("11")).toBeInTheDocument();
+
+    // 3. Employee row pieces values: 7 for Mohamed, 4 for Sara
+    expect(screen.getByText("7")).toBeInTheDocument();
+    expect(screen.getByText("4")).toBeInTheDocument();
+
+    // 4. Export columns includes piecesCount
+    const exportBtn = screen.getByRole("button", { name: /تصدير Excel/i });
+    fireEvent.click(exportBtn);
+
+    expect(mockExportToExcel).toHaveBeenCalledTimes(1);
+    const [exportedData, exportColumns] = mockExportToExcel.mock.calls[0];
+
+    const piecesCol = exportColumns.find((col: any) => col.key === "piecesCount");
+    expect(piecesCol).toBeDefined();
+    expect(piecesCol.label).toBe("عدد القطع");
+
+    expect(exportedData[0].piecesCount).toBe(7);
+    expect(exportedData[1].piecesCount).toBe(4);
   });
 });

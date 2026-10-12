@@ -12087,7 +12087,9 @@
     "conversionRate": "نسبة التحويل",
     "conversationsPerEmployee": "عدد المحادثات لكل موظف",
     "conversationsChart": "المحادثات",
-    "conversationsDistribution": "توزيع المحادثات"
+    "conversationsDistribution": "توزيع المحادثات",
+    "piecesCount": "عدد القطع",
+    "totalPieces": "إجمالي القطع"
   },
   "hrDashboard": {
     "pageTitle": "لوحة تحكم الموارد البشرية",

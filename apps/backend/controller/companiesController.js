@@ -3762,6 +3762,7 @@ const getUsersStatistics = async (req, res) => {
           conversationsCount: 0,
           messagesCount: 0,
           ordersCount: 0,
+          piecesCount: 0,
           convertedConversations: 0,
           totalRevenue: 0,
           conversionRate: 0,
@@ -3797,6 +3798,7 @@ const getUsersStatistics = async (req, res) => {
           conversationsCount: 0,
           messagesCount: 0,
           ordersCount: 0,
+          piecesCount: 0,
           convertedConversations: 0,
           totalRevenue: 0,
           conversionRate: 0,
@@ -3840,10 +3842,16 @@ const getUsersStatistics = async (req, res) => {
       SELECT 
         COALESCE(o."createdBy", c."assignedUserId") AS "userId",
         COUNT(o.id)::int AS "ordersCount",
+        COALESCE(SUM(oi_agg.pieces), 0)::int AS "piecesCount",
         COUNT(DISTINCT o."conversationId")::int AS "convertedConversations",
         COALESCE(SUM(o.total), 0)::float AS "totalRevenue"
       FROM "orders" o
       LEFT JOIN "conversations" c ON c.id = o."conversationId"
+      LEFT JOIN LATERAL (
+        SELECT COALESCE(SUM(oi.quantity), 0)::int AS pieces
+        FROM "order_items" oi
+        WHERE oi."orderId" = o.id
+      ) oi_agg ON true
       WHERE o."companyId" = ${companyId}
         AND o.status::text NOT IN ('CANCELLED', 'DUPLICATE_ORDER', 'REFUNDED', 'RETURNED', 'TRASH', 'LOST')
         ${startUtc ? PrismaModule.sql`AND o."createdAt" >= ${startUtc}` : PrismaModule.empty}
@@ -3866,6 +3874,7 @@ const getUsersStatistics = async (req, res) => {
       if (row.userId && usersMap.has(row.userId)) {
         const u = usersMap.get(row.userId);
         u.ordersCount = row.ordersCount || 0;
+        u.piecesCount = row.piecesCount || 0;
         u.convertedConversations = row.convertedConversations || 0;
         u.totalRevenue = Math.round((row.totalRevenue || 0) * 100) / 100;
       }

@@ -12087,7 +12087,9 @@
     "conversionRate": "Conversion Rate",
     "conversationsPerEmployee": "Conversations Per Employee",
     "conversationsChart": "Conversations",
-    "conversationsDistribution": "Conversations Distribution"
+    "conversationsDistribution": "Conversations Distribution",
+    "piecesCount": "Pieces Count",
+    "totalPieces": "Total Pieces"
   },
   "hrDashboard": {
     "pageTitle": "Human Resources Dashboard",

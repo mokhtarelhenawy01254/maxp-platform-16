@@ -50,6 +50,7 @@ import {
   ArrowUpDown,
   Filter,
   Send,
+  Package,
 } from "lucide-react";
 
 const COLORS = [
@@ -215,6 +216,7 @@ const EmployeeStatsReport = () => {
     const conversations = activeEmployees.reduce((s, st) => s + (st.conversationsCount || 0), 0);
     const messages = activeEmployees.reduce((s, st) => s + (st.messagesCount || 0), 0);
     const orders = activeEmployees.reduce((s, st) => s + (st.ordersCount || 0), 0);
+    const pieces = activeEmployees.reduce((s, st) => s + (st.piecesCount || 0), 0);
     const revenue = activeEmployees.reduce((s, st) => s + (st.totalRevenue || 0), 0);
     const converted = activeEmployees.reduce((s, st) => s + (st.convertedConversations || 0), 0);
 
@@ -228,6 +230,7 @@ const EmployeeStatsReport = () => {
       uniqueConversations: totalUniqueConversations || conversations,
       messages,
       orders,
+      pieces,
       revenue: Math.round(revenue),
       conversion,
     };
@@ -278,6 +281,7 @@ const EmployeeStatsReport = () => {
       { key: "conversationsCount", label: "المحادثات" },
       { key: "messagesCount", label: "الرسائل المرسلة" },
       { key: "ordersCount", label: "عدد الطلبات" },
+      { key: "piecesCount", label: t("employeeStatsReport.piecesCount", "عدد القطع") },
       { key: "totalRevenue", label: "إجمالي المبيعات (ج.م)" },
       { key: "conversionRate", label: "نسبة التحويل (%)" },
     ];
@@ -289,6 +293,7 @@ const EmployeeStatsReport = () => {
       conversationsCount: st.conversationsCount || 0,
       messagesCount: st.messagesCount || 0,
       ordersCount: st.ordersCount || 0,
+      piecesCount: st.piecesCount || 0,
       totalRevenue: st.totalRevenue || 0,
       conversionRate: `${st.conversionRate || 0}%`,
     }));
@@ -449,7 +454,7 @@ const EmployeeStatsReport = () => {
       </Card>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
         {/* Total Employees */}
         <Card>
           <CardContent className="pt-4 pb-4">
@@ -517,6 +522,25 @@ const EmployeeStatsReport = () => {
               </div>
               <div className="size-9 rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400 flex items-center justify-center">
                 <ShoppingCart className="size-4" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Pieces */}
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">
+                  {t("employeeStatsReport.totalPieces", "إجمالي القطع")}
+                </p>
+                <p className="text-2xl font-bold mt-1 text-teal-600 dark:text-teal-400 tabular-nums">
+                  {totals.pieces?.toLocaleString() || 0}
+                </p>
+              </div>
+              <div className="size-9 rounded-full bg-teal-50 text-teal-600 dark:bg-teal-950/50 dark:text-teal-400 flex items-center justify-center">
+                <Package className="size-4" />
               </div>
             </div>
           </CardContent>
@@ -656,6 +680,16 @@ const EmployeeStatsReport = () => {
 
                     <TableHead
                       className="text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => handleSort("piecesCount")}
+                    >
+                      <div className="flex items-center justify-center gap-1">
+                        <span>{t("employeeStatsReport.piecesCount", "عدد القطع")}</span>
+                        <ArrowUpDown className="size-3 text-muted-foreground" />
+                      </div>
+                    </TableHead>
+
+                    <TableHead
+                      className="text-center cursor-pointer hover:bg-muted/50 transition-colors"
                       onClick={() => handleSort("totalRevenue")}
                     >
                       <div className="flex items-center justify-center gap-1">
@@ -721,6 +755,10 @@ const EmployeeStatsReport = () => {
 
                       <TableCell className="text-center font-bold text-emerald-600 text-base tabular-nums">
                         {st.ordersCount || 0}
+                      </TableCell>
+
+                      <TableCell className="text-center font-bold text-teal-600 dark:text-teal-400 text-base tabular-nums">
+                        {st.piecesCount || 0}
                       </TableCell>
 
                       <TableCell className="text-center font-mono font-semibold text-sm tabular-nums">
