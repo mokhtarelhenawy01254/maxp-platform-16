@@ -30,16 +30,15 @@ export default function DateRangeToolbar({
   toLabel,
 }: DateRangeToolbarProps) {
   return (
-    <div className="flex flex-wrap items-end gap-3 sm:gap-4 rounded-lg bg-card text-card-foreground p-3 sm:p-4 shadow-sm">
-      <div className="flex flex-col gap-1 w-full sm:w-auto">
-        <Label className="text-xs text-muted-foreground">{rangeLabel}</Label>
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-2">
         <Select value={selectedFilterId} onValueChange={onSelectFilter}>
-          <SelectTrigger className="w-full sm:w-44 text-sm">
-            <SelectValue />
+          <SelectTrigger className="h-8 w-32 sm:w-36 text-xs bg-background/80 border-border/60 shadow-none font-medium">
+            <SelectValue placeholder={rangeLabel} />
           </SelectTrigger>
           <SelectContent>
             {presets.map((p) => (
-              <SelectItem key={p.id} value={p.id}>
+              <SelectItem key={p.id} value={p.id} className="text-xs">
                 {p.label}
               </SelectItem>
             ))}
@@ -48,35 +47,31 @@ export default function DateRangeToolbar({
       </div>
 
       {showCustomRangeInputs && (
-        <>
-          <div className="flex flex-col gap-1 flex-1 min-w-0">
-            <Label className="text-xs text-muted-foreground">
-              {fromLabel}
-            </Label>
-            <Input
-              type="date"
-              value={start}
-              onChange={(e) => onStartChange(e.target.value)}
-              className="h-9 w-full sm:w-40 text-sm"
-            />
-          </div>
-          <div className="flex flex-col gap-1 flex-1 min-w-0">
-            <Label className="text-xs text-muted-foreground">{toLabel}</Label>
-            <Input
-              type="date"
-              value={end}
-              onChange={(e) => onEndChange(e.target.value)}
-              className="h-9 w-full sm:w-40 text-sm"
-            />
-          </div>
-        </>
+        <div className="flex items-center gap-1.5">
+          <Input
+            type="date"
+            value={start}
+            onChange={(e) => onStartChange(e.target.value)}
+            className="h-8 w-32 sm:w-36 text-xs bg-background border-border/60"
+            aria-label={fromLabel}
+          />
+          <span className="text-xs text-muted-foreground">-</span>
+          <Input
+            type="date"
+            value={end}
+            onChange={(e) => onEndChange(e.target.value)}
+            className="h-8 w-32 sm:w-36 text-xs bg-background border-border/60"
+            aria-label={toLabel}
+          />
+        </div>
       )}
 
       <Button
-        variant="outline"
+        variant="ghost"
         size="sm"
         disabled={isRefreshing}
         onClick={onRefresh}
+        className="h-8 text-xs px-2.5 text-muted-foreground hover:text-foreground active:scale-[0.97]"
       >
         {refreshLabel}
       </Button>

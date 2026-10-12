@@ -236,8 +236,8 @@ export default function MainDashboardPage() {
         <>
           {dashboard && <SpecialtyDashboardHeader dashboard={dashboard} />}
 
-          {/* Date range toolbar for metrics */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {/* Date range toolbar & actions bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-2 rounded-xl bg-card border border-border/60 shadow-xs">
             <DateRangeToolbar
               start={customStart}
               end={customEnd}

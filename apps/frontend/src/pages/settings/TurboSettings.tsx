@@ -9,6 +9,7 @@ import {
   KeyIcon,
   LinkIcon,
   ArrowLeftIcon,
+  ArrowsRightLeftIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
@@ -153,20 +154,40 @@ const TurboSettings: React.FC = () => {
     <div className="w-full px-4 sm:px-6 lg:px-8 py-8 dark:bg-gray-900 min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <button
-          onClick={() => navigate("/store-settings")}
-          className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4"
-        >
-          <ArrowLeftIcon className="h-5 w-5 ml-2" />
-          {t('turbo.k_24')}
-        </button>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
-          <RocketLaunchIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400 ml-3" />
-          {t('turbo.k_25')}
-        </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          {t('turbo.k_26')}
-        </p>
+        <div className="flex items-center gap-3 mb-4 text-sm text-gray-500 dark:text-gray-400">
+          <button
+            onClick={() => navigate("/shipping-companies")}
+            className="flex items-center hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+          >
+            <ArrowLeftIcon className="h-4 w-4 ml-1" />
+            شركات الشحن
+          </button>
+          <span>/</span>
+          <button
+            onClick={() => navigate("/store-settings")}
+            className="hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+          >
+            {t('turbo.k_24')}
+          </button>
+        </div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
+              <RocketLaunchIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400 ml-3" />
+              {t('turbo.k_25')}
+            </h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
+              {t('turbo.k_26')}
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/settings/turbo/status-mapping")}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 font-medium text-sm transition-colors shadow-sm"
+          >
+            <ArrowsRightLeftIcon className="h-4 w-4" />
+            <span>ربط حالات Turbo بالنظام</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}

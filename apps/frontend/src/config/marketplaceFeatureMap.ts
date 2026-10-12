@@ -150,6 +150,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
       { path: "/orders/shipments", label: "سجلات الشحنات" },
       { path: "/shipping-settlement", label: "تسوية مستحقات الشحن" },
       { path: "/settings/turbo", label: "إعدادات Turbo" },
+      { path: "/settings/turbo/status-mapping", label: "ربط حالات الشحن (Turbo)" },
       { path: "/orders/turbo-records", label: "سجلات Turbo" },
       { path: "/orders/turbo-captains", label: "تقارير المندوبين" },
       { path: "/tickets", label: "تذاكر الدعم والشحن" },

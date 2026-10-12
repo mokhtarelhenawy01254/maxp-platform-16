@@ -162,13 +162,22 @@ const TurboStatusMapping: React.FC = () => {
     <div className="w-full px-4 sm:px-6 lg:px-8 py-8 dark:bg-gray-900 min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <button
-          onClick={() => navigate("/settings/turbo")}
-          className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4"
-        >
-          <ArrowLeftIcon className="h-5 w-5 ml-2" />
-          العودة لإعدادات Turbo
-        </button>
+        <div className="flex items-center gap-3 mb-4 text-sm text-gray-500 dark:text-gray-400">
+          <button
+            onClick={() => navigate("/shipping-companies")}
+            className="flex items-center hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+          >
+            <ArrowLeftIcon className="h-4 w-4 ml-1" />
+            شركات الشحن
+          </button>
+          <span>/</span>
+          <button
+            onClick={() => navigate("/settings/turbo")}
+            className="hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+          >
+            إعدادات Turbo
+          </button>
+        </div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           ربط حالات Turbo بحالات النظام
         </h1>

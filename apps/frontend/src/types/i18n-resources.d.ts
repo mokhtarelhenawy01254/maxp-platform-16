@@ -11940,6 +11940,8 @@ declare module 'react-i18next' {
         conversationsPerEmployee: string;
         conversationsChart: string;
         conversationsDistribution: string;
+        piecesCount: string;
+        totalPieces: string;
       };
       hrDashboard: {
         pageTitle: string;

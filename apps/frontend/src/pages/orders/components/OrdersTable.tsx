@@ -7,6 +7,7 @@ import {
   ChatBubbleLeftRightIcon,
   DocumentDuplicateIcon,
   GiftIcon,
+  CalendarIcon,
 } from "@heroicons/react/24/outline";
 import { summarizeOrderDocumentItems } from "../../../utils/orderDocumentQuantityOffers";
 import { OrdersSkeleton } from "./OrdersSkeleton";
@@ -136,18 +137,18 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
   return (
     <div
       data-orders-density={density}
-      className="hidden overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 lg:block"
+      className="hidden overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.04)] lg:block"
     >
       <div className="overflow-x-auto">
         <table className="w-full text-right border-collapse">
-          <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-md border-b border-slate-200/80 dark:bg-slate-900/95 dark:border-slate-800">
+          <thead className="sticky top-0 z-10 bg-muted/60 backdrop-blur-md border-b border-border/70">
             <tr>
               {canSelectOrders && (
                 <th className={`w-10 ${headerPadding}`}>
                   <input
                     type="checkbox"
                     aria-label={String(t("orders.selectAllOrders"))}
-                    className="h-4 w-4 text-blue-600 dark:text-blue-400 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 dark:bg-slate-700"
+                    className="h-4 w-4 text-primary border-border rounded focus:ring-primary/20 accent-primary"
                     onChange={onToggleAllSelection}
                     checked={
                       orders.length > 0 &&
@@ -159,48 +160,48 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                 </th>
               )}
               {columns.includes("orderNumber") && (
-                <th className={`${headerPadding} text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
+                <th className={`${headerPadding} text-[11px] font-semibold text-muted-foreground uppercase tracking-wider`}>
                   {t("orders.orderNumber")}
                 </th>
               )}
               {columns.includes("customer") && (
-                <th className={`${headerPadding} text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
+                <th className={`${headerPadding} text-[11px] font-semibold text-muted-foreground uppercase tracking-wider`}>
                   {t("orders.customer")}
                 </th>
               )}
               {columns.includes("customerRating") && (
-                <th className={`${headerPadding} whitespace-nowrap text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
+                <th className={`${headerPadding} whitespace-nowrap text-[11px] font-semibold text-muted-foreground uppercase tracking-wider`}>
                   {t("orders.customerRating", "تقييم العملاء")}
                 </th>
               )}
               {columns.includes("amount") && (
-                <th className={`${headerPadding} whitespace-nowrap text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
+                <th className={`${headerPadding} whitespace-nowrap text-[11px] font-semibold text-muted-foreground uppercase tracking-wider`}>
                   {t("orders.amount")}
                 </th>
               )}
               {columns.includes("status") && (
-                <th className={`${headerPadding} text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
+                <th className={`${headerPadding} text-[11px] font-semibold text-muted-foreground uppercase tracking-wider`}>
                   {t("orders.orderStatus")}
                 </th>
               )}
               {columns.includes("payment") && (
-                <th className={`${headerPadding} text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
+                <th className={`${headerPadding} text-[11px] font-semibold text-muted-foreground uppercase tracking-wider`}>
                   {t("orders.payment")}
                 </th>
               )}
               {columns.includes("date") && (
-                <th className={`hidden ${headerPadding} text-xs font-bold text-slate-500 uppercase tracking-wider dark:text-slate-400 xl:table-cell`}>
+                <th className={`hidden ${headerPadding} text-[11px] font-semibold text-muted-foreground uppercase tracking-wider xl:table-cell`}>
                   {t("orders.date")}
                 </th>
               )}
               {columns.includes("actions") && (
-                <th className={`${headerPadding} text-xs font-bold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
+                <th className={`${headerPadding} text-[11px] font-semibold text-muted-foreground uppercase tracking-wider`}>
                   {t("orders.actions")}
                 </th>
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+          <tbody className="divide-y divide-border/40">
             {loading ? (
               <OrdersSkeleton
                 variant="table"
@@ -212,7 +213,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
               <tr>
                 <td
                   colSpan={columnCount}
-                  className="px-6 py-10 text-center text-slate-500 dark:text-slate-400"
+                  className="px-6 py-10 text-center text-muted-foreground"
                 >
                   <OrdersEmptyState
                     variant="table"
@@ -246,10 +247,10 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                     }}
                     tabIndex={0}
                     aria-label={`${t("orders.viewDetails")} ${displayOrderNumber}`}
-                    className={`hover:bg-blue-50/40 dark:hover:bg-blue-900/15 cursor-pointer transition-colors duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/50 ${selectedOrders.includes(order.orderNumber)
-                      ? "bg-blue-50/60 dark:bg-blue-900/30"
+                    className={`hover:bg-muted/40 cursor-pointer transition-colors duration-100 group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/40 ${selectedOrders.includes(order.orderNumber)
+                      ? "bg-primary/5 dark:bg-primary/10"
                       : !order.isViewed
-                        ? "bg-blue-50/30 dark:bg-blue-900/10"
+                        ? "bg-primary/[0.02]"
                         : ""
                       }`}
                   >
@@ -277,34 +278,34 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                           <div className="flex items-center gap-1.5 whitespace-nowrap">
                             <span
                               dir="ltr"
-                              className="inline-block whitespace-nowrap font-mono text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100"
+                              className="inline-block whitespace-nowrap font-mono text-xs sm:text-[13px] font-bold tabular-nums text-foreground tracking-tight"
                             >
                               #{displayOrderNumber}
                             </span>
                             {hasPostPurchaseOffer(order) && (
                               <span
-                                className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700/60 shadow-xs"
+                                className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300 border border-amber-500/20"
                                 title="يحتوي على عرض خاص بعد الشراء (Post-Purchase Upsell)"
                               >
-                                <GiftIcon className="w-3 h-3 text-amber-700 dark:text-amber-300" />
+                                <GiftIcon className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                                 <span className="hidden sm:inline">عرض بعد الشراء</span>
                               </span>
                             )}
                             {order.metadata?.isGuestOrder && (
-                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                              <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground border border-border/50">
                                 {t("orders.guest")}
                               </span>
                             )}
                             {(order.status === "DUPLICATE_ORDER" || Boolean(order.metadata?.duplicate)) && (
                               <span
-                                className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-300/80 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/60"
+                                className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300 border border-amber-500/20"
                                 title={
                                   order.metadata?.duplicate?.duplicateOfOrderNumber
                                     ? `طلب مكرر من #${order.metadata.duplicate.duplicateOfOrderNumber}`
                                     : "طلب مكرر"
                                 }
                               >
-                                <DocumentDuplicateIcon className="w-3 h-3 text-amber-700 dark:text-amber-400" />
+                                <DocumentDuplicateIcon className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                                 <span>مكرر</span>
                                 {order.metadata?.duplicate?.duplicateOfOrderNumber && (
                                   <span className="font-mono text-[10px] opacity-80" dir="ltr">
@@ -314,7 +315,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                               </span>
                             )}
                             {!order.isViewed && (
-                              <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 border border-red-200/80 dark:bg-red-950/60 dark:text-red-300 dark:border-red-900/50">
+                              <span className="rounded-md bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-bold text-rose-700 dark:text-rose-400 border border-rose-500/20">
                                 {t("orders.newLabel")}
                               </span>
                             )}

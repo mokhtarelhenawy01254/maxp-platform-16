@@ -248,12 +248,12 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   return (
     <div className="mb-2 space-y-2 sm:mb-3 sm:space-y-2.5">
       {/* Filters Section: Single-surface on mobile without nested border padding, framed on desktop */}
-      <div className="space-y-2 sm:rounded-[22px] sm:border sm:border-slate-200/70 sm:bg-white/90 sm:p-2.5 sm:shadow-[0_18px_50px_-42px_rgba(15,23,42,0.35)] dark:sm:border-slate-700/70 dark:sm:bg-slate-950/55">
+      <div className="space-y-2 rounded-2xl border border-border/70 bg-card p-2 sm:p-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.04)]">
         <div className="flex flex-col gap-2 sm:gap-2.5">
           {/* Row 1: Unified Search & Action Bar */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             <div className="relative min-w-0 flex-1">
-              <MagnifyingGlassIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+              <MagnifyingGlassIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 sm:h-4.5 sm:w-4.5 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
                 aria-label={String(t("orders.searchPlaceholderUnified"))}
@@ -261,7 +261,7 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                className={`${fieldClassName} h-10 w-full rounded-xl sm:rounded-2xl border border-slate-200/80 bg-white/95 pr-9 pl-8 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700/80 dark:bg-slate-900/90 dark:text-slate-100 dark:placeholder:text-slate-500`}
+                className={`${fieldClassName} h-9 sm:h-10 w-full rounded-xl border border-border/70 bg-background/80 pr-9 pl-8 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:border-foreground/30 focus:outline-none focus:ring-2 focus:ring-foreground/5 transition-all`}
               />
               {localSearch && (
                 <button
@@ -271,7 +271,7 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                     onFilterChange("search", "");
                   }}
                   aria-label={String(t("common.clear", { defaultValue: "مسح" }))}
-                  className="absolute left-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 active:scale-95 transition dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95 transition"
                 >
                   <XMarkIcon className="h-3.5 w-3.5" />
                 </button>
@@ -280,13 +280,13 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                 <button
                   type="button"
                   onClick={() => navigate(`/orders/${trimmedSearch}`)}
-                  className="absolute right-0 top-full z-20 mt-1.5 flex w-full min-w-[240px] items-center justify-between gap-2 rounded-xl border border-blue-200/80 bg-white px-3 py-2 text-sm shadow-lg shadow-slate-900/5 transition hover:bg-blue-50/70 dark:border-blue-500/30 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                  className="absolute right-0 top-full z-20 mt-1.5 flex w-full min-w-[240px] items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm shadow-lg shadow-black/5 transition hover:bg-muted/80 text-foreground"
                 >
-                  <span className="flex items-center gap-2 font-semibold text-blue-600 dark:text-blue-300">
+                  <span className="flex items-center gap-2 font-semibold text-primary">
                     <ArrowLeftIcon className="h-4 w-4" />
                     {t("orders.openOrderHint")}: {trimmedSearch}
                   </span>
-                  <kbd className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+                  <kbd className="rounded-md border border-border bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
                     ↵
                   </kbd>
                 </button>
@@ -303,9 +303,9 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                 onClick={handleRefresh}
                 aria-label={String(t("orders.refreshOrders"))}
                 title={t("orders.refreshOrders")}
-                className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl sm:rounded-2xl border border-slate-200/80 bg-white/90 p-2.5 text-slate-700 transition hover:bg-slate-50 active:scale-95 dark:border-slate-700/80 dark:bg-slate-900/90 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="inline-flex h-9 sm:h-10 w-9 sm:w-10 flex-shrink-0 items-center justify-center rounded-xl border border-border/70 bg-background/80 p-2 text-foreground transition hover:bg-muted active:scale-[0.97]"
               >
-                <ArrowPathIcon className={`h-4 w-4 ${isSpinning ? "animate-spin text-blue-600 dark:text-blue-400" : ""}`} />
+                <ArrowPathIcon className={`h-4 w-4 ${isSpinning ? "animate-spin text-primary" : "text-muted-foreground"}`} />
               </button>
             )}
 
@@ -313,10 +313,10 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
               type="button"
               onClick={onToggleAdvancedFilters}
               aria-label={String(t("orders.filters"))}
-              className={`inline-flex h-10 flex-shrink-0 items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl border px-2.5 sm:px-3.5 text-xs sm:text-sm font-semibold transition active:scale-95 ${
+              className={`inline-flex h-9 sm:h-10 flex-shrink-0 items-center justify-center gap-1.5 rounded-xl border px-2.5 sm:px-3 text-xs sm:text-sm font-semibold transition active:scale-[0.97] ${
                 showAdvancedFilters || advancedFilterCount > 0
-                  ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-500/20"
-                  : "border-slate-200/80 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-900/90 dark:text-slate-200 dark:hover:bg-slate-800"
+                  ? "border-transparent bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs"
+                  : "border-border/70 bg-background/80 text-foreground hover:bg-muted"
               }`}
             >
               <AdjustmentsHorizontalIcon className="h-4 w-4" />
@@ -327,8 +327,8 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                 <span
                   className={`inline-flex min-w-[20px] h-5 items-center justify-center rounded-full px-1 text-[11px] font-bold tabular-nums ${
                     showAdvancedFilters || advancedFilterCount > 0
-                      ? "bg-white/90 text-blue-700 dark:bg-slate-900/80 dark:text-blue-200"
-                      : "bg-blue-600 text-white dark:bg-blue-500 dark:text-white"
+                      ? "bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900"
+                      : "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
                   }`}
                 >
                   {advancedFilterCount}
@@ -341,10 +341,10 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
               onClick={() => onFilterChange("onlyUnseen", !filters.onlyUnseen)}
               aria-label={String(filters.onlyUnseen ? t("orders.showAll") : t("orders.unseen"))}
               title={filters.onlyUnseen ? t("orders.showAll") : t("orders.unseen")}
-              className={`inline-flex h-10 flex-shrink-0 items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl border px-2.5 sm:px-3 text-xs sm:text-sm font-semibold transition active:scale-95 ${
+              className={`inline-flex h-9 sm:h-10 flex-shrink-0 items-center justify-center gap-1.5 rounded-xl border px-2.5 sm:px-3 text-xs sm:text-sm font-semibold transition active:scale-[0.97] ${
                 filters.onlyUnseen
-                  ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-500/20"
-                  : "border-slate-200/80 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-900/90 dark:text-slate-200 dark:hover:bg-slate-800"
+                  ? "border-transparent bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs"
+                  : "border-border/70 bg-background/80 text-foreground hover:bg-muted"
               }`}
             >
               <EyeIcon className="h-4 w-4" />
@@ -358,13 +358,13 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
               onClick={() => onFilterChange("onlyPostPurchaseOffer", !filters.onlyPostPurchaseOffer)}
               aria-label={String(filters.onlyPostPurchaseOffer ? "عرض كل الطلبات" : "عروض بعد الشراء")}
               title={filters.onlyPostPurchaseOffer ? "عرض كل الطلبات" : "تصفية: طلبات عروض بعد الشراء"}
-              className={`inline-flex h-10 flex-shrink-0 items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl border px-2.5 sm:px-3 text-xs sm:text-sm font-semibold transition active:scale-95 ${
+              className={`inline-flex h-9 sm:h-10 flex-shrink-0 items-center justify-center gap-1.5 rounded-xl border px-2.5 sm:px-3 text-xs sm:text-sm font-semibold transition active:scale-[0.97] ${
                 filters.onlyPostPurchaseOffer
-                  ? "border-emerald-500 bg-emerald-600 text-white shadow-sm shadow-emerald-500/20"
-                  : "border-slate-200/80 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-900/90 dark:text-slate-200 dark:hover:bg-slate-800"
+                  ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                  : "border-border/70 bg-background/80 text-foreground hover:bg-muted"
               }`}
             >
-              <GiftIcon className={`h-4 w-4 ${filters.onlyPostPurchaseOffer ? "text-white" : "text-emerald-600 dark:text-emerald-400"}`} />
+              <GiftIcon className={`h-4 w-4 ${filters.onlyPostPurchaseOffer ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`} />
               <span className="hidden sm:inline whitespace-nowrap">
                 {filters.onlyPostPurchaseOffer ? "عرض الكل" : "عروض بعد الشراء"}
               </span>
@@ -373,7 +373,7 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
 
           {/* Row 2: Status Pill Capsule Rail & Saved Views */}
           <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto py-0.5 sm:flex-wrap">
-            <span className="hidden items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 sm:inline-flex">
+            <span className="hidden items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:inline-flex">
               <BoltIcon className="h-3.5 w-3.5" />
               {t("orders.quickViews")}
             </span>
@@ -384,17 +384,17 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                   key={view.key}
                   type="button"
                   onClick={view.apply}
-                  className={`inline-flex h-8 min-h-[32px] flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold active:scale-95 transition ${
+                  className={`inline-flex h-7 sm:h-8 min-h-[28px] sm:min-h-[32px] flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-lg sm:rounded-xl border px-2.5 sm:px-3 text-xs font-semibold active:scale-[0.97] transition-all duration-150 ${
                     active
-                      ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-500/20"
-                      : "border-slate-200/80 bg-white/80 text-slate-600 hover:border-blue-300 hover:bg-blue-50/60 hover:text-blue-700 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-200"
+                      ? "border-transparent bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs"
+                      : "border-border/60 bg-background/70 text-muted-foreground hover:text-foreground hover:bg-muted/80 hover:border-border"
                   }`}
                 >
                   {view.label}
                 </button>
               );
             })}
-            <span className="mx-0.5 hidden h-5 w-px bg-slate-200 dark:bg-slate-700 sm:inline-block" />
+            <span className="mx-0.5 hidden h-4 w-px bg-border sm:inline-block" />
             <div className="flex-shrink-0">
               <SavedViews filters={filters} onApplyFilters={onApplyFilters} />
             </div>
