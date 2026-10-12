@@ -209,4 +209,27 @@ describe("AgentProfilesPage — Active / Archived tabs navigation", () => {
     });
     expect(screen.queryByText("استعادة الوكيل")).not.toBeInTheDocument();
   });
+
+  test("renders desktop static sidebar with w-64 fixed width and no w-full clash alongside main panel", async () => {
+    render(
+      <MemoryRouter initialEntries={["/admin/agent-profiles?agent=agent_active_1"]}>
+        <Routes>
+          <Route path="/admin/agent-profiles" element={<AgentProfilesPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("agent-settings-tab")).toHaveTextContent("Settings for سارة — خدمة العملاء");
+    });
+
+    const aside = document.querySelector("aside");
+    expect(aside).toBeInTheDocument();
+    expect(aside?.className).toContain("w-64");
+    expect(aside?.className).not.toContain("w-full");
+
+    const main = document.querySelector("main");
+    expect(main).toBeInTheDocument();
+    expect(main?.className).toContain("flex-1");
+  });
 });

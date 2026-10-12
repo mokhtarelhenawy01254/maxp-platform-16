@@ -529,8 +529,15 @@ export default function AgentProfilesPage() {
   });
 
   /* ── Sidebar Component ── */
-  const sidebarContent = (
-    <aside className="w-full lg:w-64 h-full shrink-0 border-e border-border/50 flex flex-col overflow-hidden bg-card/40">
+  const renderSidebar = (isDrawer = false) => (
+    <aside
+      className={cn(
+        "h-full flex flex-col overflow-hidden",
+        isDrawer
+          ? "w-full bg-card"
+          : "w-64 shrink-0 border-e border-border/50 bg-card/40"
+      )}
+    >
       <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Bot className="size-4 text-primary" />
@@ -659,13 +666,13 @@ export default function AgentProfilesPage() {
       {isMobile && (
         <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
           <SheetContent side="right" className="w-[85vw] max-w-[340px] p-0 flex flex-col h-full bg-card">
-            {sidebarContent}
+            {renderSidebar(true)}
           </SheetContent>
         </Sheet>
       )}
 
       {/* ── Desktop Static Sidebar ── */}
-      {!isMobile && sidebarContent}
+      {!isMobile && renderSidebar(false)}
 
       {/* ── Main Panel ── */}
       <main className="flex-1 flex flex-col overflow-hidden min-h-0 min-w-0">
