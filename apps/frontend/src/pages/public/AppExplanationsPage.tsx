@@ -455,14 +455,6 @@ const ExplanationRow: React.FC<{
           <span className="flex-1 min-w-0 text-[14.5px] font-bold leading-snug text-foreground">
             {exp.title}
           </span>
-          {exp.targetRoute && (
-            <span
-              dir="ltr"
-              className="hidden md:inline-block max-w-[230px] truncate rounded-md border bg-muted/40 px-2 py-0.5 text-[11.5px] text-muted-foreground tabular-nums"
-            >
-              {exp.targetRoute}
-            </span>
-          )}
           <ChevronDown
             className={`size-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
               open ? "rotate-180" : ""
