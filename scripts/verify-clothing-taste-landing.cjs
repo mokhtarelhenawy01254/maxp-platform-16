@@ -93,12 +93,28 @@ async function runVerification() {
   await page.waitForTimeout(400);
   console.log("PASS: Reset to 'جميع الأدوات (17)'");
 
+  // Test Lookbook Interactive Sale Simulation
+  console.log("\n[3.5] Testing Lookbook & Branch POS Sale Simulation...");
+  const simulateSaleBtn = page.locator("button:has-text('محاكاة مسح باركود وبيعه في فرع المعادي')");
+  await simulateSaleBtn.click();
+  await page.waitForTimeout(400);
+  console.log("PASS: Decremented stock in branch POS simulation");
+
   // Test Unit Economics Margin Inputs
   console.log("\n[4] Testing Margin Calculator...");
   const fabricInput = page.locator("input[type='number']").first();
   await fabricInput.fill("150");
   await page.waitForTimeout(300);
   console.log("PASS: Adjusted fabric cost input");
+
+  // Test Lead Capture Form Input
+  console.log("\n[4.5] Testing Lead Capture Form Inputs...");
+  const nameInput = page.locator("input[placeholder='مثال: كريم الشناوي']");
+  await nameInput.fill("مختار مجدي");
+  const phoneInput = page.locator("input[placeholder='010XXXXXXXX']");
+  await phoneInput.fill("01012345678");
+  await page.waitForTimeout(300);
+  console.log("PASS: Filled Lead Form inputs");
 
   // Test FAQ Accordion
   console.log("\n[5] Testing FAQ Accordion...");

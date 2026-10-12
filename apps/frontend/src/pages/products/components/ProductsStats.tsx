@@ -94,32 +94,35 @@ const ProductsStats: React.FC<ProductsStatsProps> = ({
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3.5 animate-slide-up">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
       {cards.map((card) => (
         <button
           key={card.type}
           type="button"
           onClick={() => onStatClick?.(card.type)}
-          className={`${isEn ? "text-left" : "text-right"} w-full backdrop-blur-sm rounded-xl border p-2.5 sm:p-4 transition-all duration-200 active:scale-[0.98] ${
+          className={`${isEn ? "text-left" : "text-right"} group relative w-full rounded-xl border p-3 sm:p-4 transition-all duration-150 ease-out active:scale-[0.97] ${
             card.isActive
-              ? "border-indigo-500/80 bg-indigo-50/70 dark:bg-indigo-950/40 shadow-sm ring-2 ring-indigo-500/20"
-              : "border-gray-200/80 dark:border-gray-700/60 bg-white/90 dark:bg-gray-800/90 hover:border-gray-300 dark:hover:border-gray-600 shadow-xs hover:shadow-sm"
+              ? "border-primary/60 bg-primary/[0.04] dark:bg-primary/[0.08] shadow-sm ring-1 ring-primary/30"
+              : "border-border/60 bg-card hover:border-border hover:bg-accent/40 shadow-xs"
           }`}
           title={isEn ? `Filter by: ${card.label}` : `تصفية حسب: ${card.label}`}
         >
-          <div className="flex items-center gap-2.5 sm:gap-3.5">
-            <div className={`p-2 sm:p-2.5 ${card.iconBg} rounded-lg sm:rounded-xl shrink-0`}>
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className={`p-2 sm:p-2.5 ${card.iconBg} rounded-lg shrink-0 transition-transform group-hover:scale-105`}>
               <card.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.iconColor}`} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">
+              <p className="text-[11px] font-medium text-muted-foreground truncate tracking-wide">
                 {card.label}
               </p>
-              <p className={`text-base sm:text-2xl font-black ${card.valueClass} leading-tight mt-0.5`}>
+              <p className={`text-lg sm:text-2xl font-black ${card.valueClass} leading-tight mt-0.5 tabular-nums font-mono`}>
                 {card.value}
               </p>
             </div>
           </div>
+          {card.isActive && (
+            <span className="absolute bottom-0 inset-x-4 h-0.5 bg-primary rounded-full" />
+          )}
         </button>
       ))}
     </div>

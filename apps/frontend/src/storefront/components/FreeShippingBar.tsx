@@ -91,7 +91,7 @@ export const FreeShippingBar: React.FC = () => {
     thresholdAmount > 0 &&
     !hasCheckoutLikePath(location.pathname) &&
     !(isRedlineAuto && isProductPage && subtotal === 0) &&
-    !(isKhemetLuxe && isHomePage);
+    !isKhemetLuxe;
 
   const remainingToFreeShipping = Math.max(thresholdAmount - subtotal, 0);
   const isQualified = subtotal >= thresholdAmount && thresholdAmount > 0;

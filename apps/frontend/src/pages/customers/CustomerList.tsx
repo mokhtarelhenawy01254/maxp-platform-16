@@ -344,8 +344,9 @@ const CustomerList: React.FC = () => {
               {t("customers.pageSubtitle")}
             </p>
             {availableDiscountCount !== null && availableDiscountCount > 0 && (
-              <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                🎟️ {availableDiscountCount} عميل عنده كوبون خصم متاح
+              <span className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-200/80 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-800/60 dark:text-emerald-300 tabular-nums">
+                <TagIcon className="h-3.5 w-3.5" />
+                <span>{availableDiscountCount} عميل مؤهل لخصم تلقائي</span>
               </span>
             )}
           </div>
@@ -353,14 +354,14 @@ const CustomerList: React.FC = () => {
             <div className="flex space-x-3 space-x-reverse">
               <button
                 onClick={() => setIsImportModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-transform active:scale-[0.97]"
               >
                 <ArrowUpTrayIcon className="h-4 w-4 ml-2" />
                 {t("customers.importCSV")}
               </button>
               <button
                 onClick={() => handleExport("csv")}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-transform active:scale-[0.97]"
               >
                 <ArrowDownTrayIcon className="h-4 w-4 ml-2" />
                 {t("customers.exportCSV")}
@@ -368,7 +369,7 @@ const CustomerList: React.FC = () => {
 
               <Link
                 to="/customers/new"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-transform active:scale-[0.97]"
               >
                 <PlusIcon className="h-4 w-4 ml-2" />
                 {t("customers.addCustomer")}
@@ -381,10 +382,10 @@ const CustomerList: React.FC = () => {
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
           {[
             { id: "", label: "الكل" },
-            { id: "LEAD", label: "عملاء محتملون", icon: "👤" },
-            { id: "ACTIVE", label: "نشطون", icon: "✅" },
-            { id: "INACTIVE", label: "غير نشطين", icon: "⏱️" },
-            { id: "BLOCKED", label: "محظورون", icon: "🚫" },
+            { id: "LEAD", label: "عملاء محتملون" },
+            { id: "ACTIVE", label: "نشطون" },
+            { id: "INACTIVE", label: "غير نشطين" },
+            { id: "BLOCKED", label: "محظورون" },
           ].map((tab) => {
             const currentStatus = searchParams.get("status") || "";
             const isActive = currentStatus === tab.id;
@@ -401,13 +402,12 @@ const CustomerList: React.FC = () => {
                   }
                   setSearchParams(newParams);
                 }}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-150 active:scale-[0.97] flex items-center gap-1.5 ${
                   isActive
                     ? "bg-indigo-600 text-white shadow-sm"
                     : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
                 }`}
               >
-                {tab.icon && <span>{tab.icon}</span>}
                 <span>{tab.label}</span>
               </button>
             );
@@ -614,10 +614,10 @@ const CustomerList: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 dark:text-gray-100">
-                        {customer.email || "—"}
+                        {customer.email || "-"}
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {customer.phone || "—"}
+                      <div className="text-sm text-gray-500 dark:text-gray-400 tabular-nums font-mono">
+                        {customer.phone || "-"}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -626,13 +626,18 @@ const CustomerList: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       <div>
                         {t("customers.conversations")}:{" "}
-                        {customer._count?.conversations || 0}
+                        <span className="tabular-nums font-mono font-medium text-gray-700 dark:text-gray-300">
+                          {customer._count?.conversations || 0}
+                        </span>
                       </div>
                       <div>
-                        {t("customers.orders")}: {customer._count?.orders || 0}
+                        {t("customers.orders")}:{" "}
+                        <span className="tabular-nums font-mono font-medium text-gray-700 dark:text-gray-300">
+                          {customer._count?.orders || 0}
+                        </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 tabular-nums">
                       {formatDate(customer.updatedAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

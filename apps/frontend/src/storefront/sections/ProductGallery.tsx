@@ -53,18 +53,31 @@ const getFallbackInitials = (productName?: string) => {
 const GalleryImageFallback: React.FC<{
   productName?: string;
   prefersArabicCopy?: boolean;
-}> = ({ productName, prefersArabicCopy }) => (
-  <div className="flex h-full w-full flex-col items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.96),_rgba(241,245,249,0.98))] px-4 text-center">
-    <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-background/90 text-sm font-black text-foreground/70">
-      {(productName?.trim().charAt(0) || "P").toUpperCase()}
+  isThumb?: boolean;
+}> = ({ productName, prefersArabicCopy, isThumb }) => {
+  if (isThumb) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-neutral-100 text-neutral-400">
+        <span className="text-xs font-bold uppercase tracking-wider">
+          {(productName?.trim().charAt(0) || "P").toUpperCase()}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.96),_rgba(241,245,249,0.98))] px-4 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-background/90 text-sm font-black text-foreground/70">
+        {(productName?.trim().charAt(0) || "P").toUpperCase()}
+      </div>
+      <p className="mt-3 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground">
+        {prefersArabic(prefersArabicCopy)
+          ? "المعاينة غير متاحة"
+          : "Preview unavailable"}
+      </p>
     </div>
-    <p className="mt-3 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground">
-      {prefersArabic(prefersArabicCopy)
-        ? "المعاينة غير متاحة"
-        : "Preview unavailable"}
-    </p>
-  </div>
-);
+  );
+};
 
 const CyberGalleryImageFallback: React.FC<{
   productName?: string;
@@ -227,6 +240,7 @@ const OptimizedGalleryImage: React.FC<OptimizedGalleryImageProps> = ({
           <GalleryImageFallback
             productName={productName}
             prefersArabicCopy={prefersArabicCopy}
+            isThumb={mode === "thumb"}
           />
         )
       }

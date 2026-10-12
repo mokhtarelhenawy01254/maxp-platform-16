@@ -3729,9 +3729,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const commonPrice = (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground">{displayPrice}</span>
+        <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground tabular-nums font-mono">{displayPrice}</span>
         {(originalPrice || productComparePriceDisplay) && (
-          <span className="text-base sm:text-lg lg:text-xl font-bold text-muted-foreground line-through decoration-red-400/70 decoration-2 opacity-70">
+          <span className="text-base sm:text-lg lg:text-xl font-bold text-muted-foreground line-through decoration-red-400/70 decoration-2 opacity-70 tabular-nums font-mono">
             {originalPrice || productComparePriceDisplay}
           </span>
         )}

@@ -3052,20 +3052,21 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
   if (variant === 'editorial-bare') {
     if (isKhemetLuxe) {
+      const sanitizedName = name.replace(/—/g, '·');
       return (
         <>
           <CardShell className="group relative flex h-full flex-col bg-transparent p-0 text-card-foreground transition-transform duration-200 hover:-translate-y-0.5">
             {discountPercentage ? (
-              <span className="absolute start-3 top-3 z-20 inline-flex rounded-full bg-[#7cae42] px-2.5 py-1 text-[10px] font-black text-white shadow-sm">
+              <span className="absolute start-3 top-3 z-20 inline-flex rounded-full bg-[#090b0e] border border-white/15 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-sm tabular-nums font-mono">
                 -{discountPercentage}%
               </span>
             ) : null}
 
-            <div className="overflow-hidden bg-[#f8f7f6]">
+            <div className="overflow-hidden bg-[#f8f7f6] rounded-sm">
               <div className="aspect-square overflow-hidden">
                 <StorefrontProductImage
                   candidates={imageCandidates}
-                  alt={name}
+                  alt={sanitizedName}
                   loading={resolvedImageLoading}
                   fetchpriority={resolvedImageFetchPriority}
                   requestedWidth={520}
@@ -3080,41 +3081,41 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
               </div>
             </div>
 
-            <div className="flex flex-1 flex-col px-4 pb-3 pt-4 text-start">
-              <h3 className="line-clamp-1 font-heading text-[0.95rem] font-bold leading-6 text-[#221a15]">
-                {name}
-              </h3>
-              <span className="mt-0.5 text-[11px] font-medium uppercase tracking-[0.12em] text-[#9d8a7b]">
+            <div className="flex flex-1 flex-col px-3.5 pb-3 pt-3.5 text-start">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-400">
                 {categoryLabel}
               </span>
-              <div dir="ltr" className="mt-2 font-sans leading-tight">
+              <h3 className="mt-1 line-clamp-1 font-heading text-[0.95rem] font-bold leading-6 text-[#121214]">
+                {sanitizedName}
+              </h3>
+              <div dir="ltr" className="mt-2 flex items-baseline gap-2 font-sans leading-tight">
                 {formattedComparePrice ? (
-                  <span className="text-sm text-[#b7a697] line-through me-1.5">
+                  <span className="text-xs text-neutral-400 line-through tabular-nums font-mono">
                     {formattedComparePrice}
                   </span>
                 ) : null}
-                <span className="text-[1rem] font-semibold text-[#7b5a2f]">
+                <span className="text-[1.05rem] font-bold text-[#090b0e] tabular-nums font-mono tracking-tight">
                   {formattedPrice}
                 </span>
               </div>
 
-              <div className="mt-3.5 flex w-full flex-col gap-1.5 pt-1">
+              <div className="mt-3 flex w-full flex-col gap-1.5 pt-1">
                 <button
                   onClick={handleAddToCart}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#201915] hover:bg-[#352a23] text-white px-3 py-2 text-xs font-bold shadow-sm transition-all active:scale-95"
+                  className="flex w-full items-center justify-center gap-2 rounded-full bg-[#090b0e] hover:bg-black text-white px-3.5 py-2 text-xs font-semibold shadow-sm transition-transform duration-150 active:scale-[0.97]"
                   title={actionLabel}
                   aria-label={actionLabel}
                 >
-                  <ShoppingCart size={14} />
-                  <span>{hasVariantChoices ? (isRtl ? 'اختيار المقاس / أضف' : 'Select Size') : (isRtl ? 'أضف للسلة' : 'Add to Cart')}</span>
+                  <ShoppingCart size={13} />
+                  <span>{hasVariantChoices ? (isRtl ? 'اختيار المقاس' : 'Select Size') : (isRtl ? 'أضف للسلة' : 'Add to Cart')}</span>
                 </button>
                 <button
                   onClick={handleQuickBuy}
-                  className="flex w-full items-center justify-center gap-1 rounded-full border border-amber-500/40 bg-amber-50 hover:bg-amber-100 text-amber-900 px-3 py-1.5 text-[11px] font-bold shadow-sm transition-all active:scale-95"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-neutral-800 px-3 py-1.5 text-[11px] font-semibold transition-transform duration-150 active:scale-[0.97]"
                   title={isRtl ? 'طلب سريع' : 'Fast Order'}
                   aria-label={isRtl ? 'طلب سريع' : 'Fast Order'}
                 >
-                  <Zap size={13} className="fill-amber-500 text-amber-500" />
+                  <Zap size={12} className="text-amber-600 fill-amber-500" />
                   <span>{isRtl ? 'طلب سريع' : 'Quick Order'}</span>
                 </button>
               </div>

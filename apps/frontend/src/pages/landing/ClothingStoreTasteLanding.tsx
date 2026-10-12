@@ -9,7 +9,9 @@ import { ClothingTasteHero } from "./clothing-taste/ClothingTasteHero";
 import { ClothingTasteTelemetry } from "./clothing-taste/ClothingTasteTelemetry";
 import { ClothingTasteBento } from "./clothing-taste/ClothingTasteBento";
 import { ClothingTasteToolsMatrix } from "./clothing-taste/ClothingTasteToolsMatrix";
+import { ClothingTasteLookbook } from "./clothing-taste/ClothingTasteLookbook";
 import { ClothingTastePricing } from "./clothing-taste/ClothingTastePricing";
+import { ClothingTasteLeadForm } from "./clothing-taste/ClothingTasteLeadForm";
 import { ClothingTasteFAQ } from "./clothing-taste/ClothingTasteFAQ";
 import { ClothingTasteFooter } from "./clothing-taste/ClothingTasteFooter";
 import { ClothingTasteAuditDrawer } from "./clothing-taste/ClothingTasteAuditDrawer";
@@ -199,6 +201,12 @@ export const ClothingStoreTasteLanding: React.FC = () => {
             mode={mode}
           />
 
+          {/* Interactive Lookbook & Size Matrix Live Sync */}
+          <ClothingTasteLookbook
+            onFreeRegister={handleFreeRegister}
+            mode={mode}
+          />
+
           {/* 17 Fashion Tools Suite Matrix */}
           <ClothingTasteToolsMatrix
             onPricingScroll={scrollToPricing}
@@ -211,6 +219,12 @@ export const ClothingStoreTasteLanding: React.FC = () => {
             onPaygRegister={handlePaygRegister}
             onBundleCheckout={handleBundleCheckout}
             mode={mode}
+          />
+
+          {/* Frictionless Merchant Consultation & Lead Capture Form */}
+          <ClothingTasteLeadForm
+            utm={utm}
+            onFreeRegister={handleFreeRegister}
           />
 
           {/* Merchant FAQ Section */}

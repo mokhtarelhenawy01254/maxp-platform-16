@@ -28,6 +28,27 @@ export const ClothingTasteToolsMatrix: React.FC<ClothingTasteToolsMatrixProps> =
       ? FASHION_TOOLS
       : FASHION_TOOLS.filter((t) => t.category === activeCategory);
 
+  if (mode === "slop") {
+    return (
+      <section className="py-16 border-b border-purple-500/20 bg-[#0d0722] text-center">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-xs text-purple-400 font-bold mb-2">🔥 ترسانة الأدوات الخارقة التي تغير التاريخ 🔥</div>
+          <h2 className="text-3xl font-black text-white mb-6">تطبيقات الذكاء الاصطناعي الأسطورية</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {["روبوت الأزياء الذكي 🤖", "محرك المبيعات الخارق 🚀", "عين الصقر لمراقبة المنافسين 👁️"].map((title, i) => (
+              <div key={i} className="p-6 rounded-2xl bg-purple-900/20 border border-purple-500/30">
+                <span className="text-3xl mb-3 block">✨</span>
+                <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
+                <p className="text-xs text-purple-200/70 mb-4">يقوم بالمهام المعقدة بدون أي تفكير ويعطيك نتائج بنسبة نجاح 1000%!</p>
+                <span className="text-[10px] bg-purple-500/30 text-purple-200 px-3 py-1 rounded-full">حصري ومجاني للأبد</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-16 border-b border-white/[0.08] bg-[#0c0e14]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">

@@ -16,6 +16,45 @@ export const ClothingTastePricing: React.FC<ClothingTastePricingProps> = ({
   onBundleCheckout,
   mode,
 }) => {
+  if (mode === "slop") {
+    return (
+      <section id="pricing" className="py-20 border-b border-purple-500/20 bg-[#0d0722] text-center">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="inline-block px-4 py-1.5 rounded-full bg-red-600/30 border border-red-500 text-red-200 text-xs font-bold mb-4 animate-pulse">
+            ⏳ تحذير: ينتهي العرض الخارق بعد 04:12 دقيقة فقط! ⏳
+          </div>
+          <h2 className="text-3xl font-black text-white mb-4">باقات الأسعار الذهبية الخارقة 💎</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {[
+              { name: "الباقة الفضية 🥈", price: "9,999", old: "99,000", popular: false },
+              { name: "الباقة الماسية الخارقة 💎", price: "19,999", old: "199,000", popular: true },
+              { name: "باقة الأساطير 👑", price: "49,999", old: "499,000", popular: false },
+            ].map((p, idx) => (
+              <div
+                key={idx}
+                className={`p-8 rounded-3xl border ${
+                  p.popular
+                    ? "bg-gradient-to-b from-purple-900/60 to-pink-900/40 border-purple-400 shadow-[0_0_30px_rgba(217,70,239,0.4)]"
+                    : "bg-purple-950/20 border-purple-500/30"
+                }`}
+              >
+                <h3 className="text-xl font-black text-white mb-2">{p.name}</h3>
+                <div className="text-xs text-purple-300 line-through mb-1">{p.old} ج.م</div>
+                <div className="text-4xl font-black text-yellow-300 mb-6">{p.price} ج.م</div>
+                <button
+                  onClick={onFreeRegister}
+                  className="w-full py-3.5 px-4 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 text-black font-black text-xs shadow-lg"
+                >
+                  🚀 اشترك الآن وكن مليارديراً 🚀
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="pricing" className="py-20 border-b border-white/[0.08] bg-[#090A0F]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
