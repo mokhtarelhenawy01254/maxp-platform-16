@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, Check, Smartphone, Store, PackageCheck, Zap } from "lucide-react";
+import { ArrowLeft, Check, Smartphone, Store, PackageCheck, Zap, MessageCircle } from "lucide-react";
 import { TasteMode } from "./types";
 import { WHATSAPP_CONSULT_URL } from "./clothingTasteData";
 
@@ -58,11 +58,6 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
               <span>شاهد الأسعار</span>
             </button>
           </div>
-          <div className="text-xs text-purple-300/60 flex items-center gap-4">
-            <span>⭐ تقييم 5/5 من 100,000 عميل سعيد</span>
-            <span>🔒 أمان بنكي خارق</span>
-            <span>⚡ سرعة تفوق سرعة الضوء</span>
-          </div>
         </div>
       </section>
     );
@@ -70,19 +65,19 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
 
   // ── Taste-Skill Architecture (Anti-Slop Discipline) ──
   return (
-    <section className="relative overflow-hidden pt-8 md:pt-14 pb-12 border-b border-white/[0.08] cst-grid-bg">
+    <section id="editorial-hero" className="relative overflow-hidden pt-8 md:pt-14 pb-12 border-b border-white/[0.08] cst-grid-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
-          {/* Main Hero Copy — Strictly Max 4 Text Elements (6 cols) */}
+          {/* Main Hero Copy — Single Focused Conversion Message (6 cols) */}
           <div className="lg:col-span-6 flex flex-col items-start text-right">
             
-            {/* 1. Eyebrow */}
+            {/* 1. Eyebrow: Trust & Platform Definition */}
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-white/5 border border-white/10 text-xs text-zinc-300 mb-4 font-sans">
               <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
               <span className="font-mono text-blue-400 font-semibold">MAXP APPAREL OS</span>
               <span className="text-zinc-500">•</span>
-              <span>منصة تشغيل متاجر وبراندات الأزياء</span>
+              <span>منظومة متكاملة لبراندات ومحلات الملابس</span>
             </div>
 
             {/* 2. Headline (Max 2 lines desktop) */}
@@ -95,44 +90,40 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
               منظومة متكاملة لبراندات الملابس: متجر مجاني، كاشير فروع، ربط شحن بوسطة، ومستشار مقاسات ذكي يخفض الاستبدال 60%.
             </p>
 
-            {/* 4. Action CTAs (1 Primary + 1 WhatsApp Link) */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto mb-6">
+            {/* 4. Single Dominant Primary CTA + Direct WhatsApp Link */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto mb-4">
               <button
                 onClick={onFreeRegister}
                 type="button"
-                className="cst-btn-primary text-sm py-3 px-6 font-bold shadow-md"
+                className="cst-btn-primary text-sm py-3.5 px-7 font-bold shadow-lg shadow-white/10"
               >
-                <span>افتح متجرك (0 ج.م)</span>
+                <span>ابدأ متجرك مجاناً (0 ج.م)</span>
                 <ArrowLeft className="w-4 h-4" />
-              </button>
-              
-              <button
-                onClick={onPricingScroll}
-                type="button"
-                className="cst-btn-secondary text-sm py-3 px-5"
-              >
-                <span>باقة 999 ج.م/شهر</span>
               </button>
 
               <a
                 href={WHATSAPP_CONSULT_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-bold text-zinc-300 transition-all whitespace-nowrap min-h-[44px]"
+                className="inline-flex items-center justify-center gap-2 py-3 px-5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs sm:text-sm font-semibold text-zinc-300 transition-all whitespace-nowrap min-h-[44px]"
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>استشارة واتساب</span>
+                <MessageCircle className="w-4 h-4 text-emerald-400" />
+                <span>استشارة واتساب مع خبير</span>
               </a>
             </div>
 
-            {/* Risk reversal (Simple, clean, single line) */}
-            <div className="flex items-center gap-4 text-xs text-zinc-400 font-mono">
+            {/* Explicit Risk Reversals (Zero Risk Assurance) */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-zinc-400 font-medium mb-2">
               <span className="flex items-center gap-1 text-emerald-400 font-bold">
                 <Check className="w-3.5 h-3.5" />
                 0% عمولة مبيعات
               </span>
-              <span>• بدون فيزا دولارية</span>
-              <span>• ربط جاهز مع بوسطة</span>
+              <span>• بدون فيزا دولارية وبدون شوبيفاي</span>
+              <span>• ربط رسمي بضغطة زر مع بوسطة</span>
+            </div>
+
+            <div className="text-[11px] text-zinc-500">
+              تفعيل المتجر متاح فوراً خلال دقيقة واحدة • مساعدة مجانية في رفع المنتجات
             </div>
 
           </div>
@@ -197,6 +188,7 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
                             type="button"
                             onClick={() => setTestHeight((h) => Math.max(150, h - 2))}
                             className="w-6 h-6 rounded bg-white/10 text-white flex items-center justify-center text-xs hover:bg-white/20"
+                            aria-label="تقليل الطول"
                           >
                             -
                           </button>
@@ -204,6 +196,7 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
                             type="button"
                             onClick={() => setTestHeight((h) => Math.min(205, h + 2))}
                             className="w-6 h-6 rounded bg-white/10 text-white flex items-center justify-center text-xs hover:bg-white/20"
+                            aria-label="زيادة الطول"
                           >
                             +
                           </button>
@@ -220,6 +213,7 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
                             type="button"
                             onClick={() => setTestWeight((w) => Math.max(45, w - 2))}
                             className="w-6 h-6 rounded bg-white/10 text-white flex items-center justify-center text-xs hover:bg-white/20"
+                            aria-label="تقليل الوزن"
                           >
                             -
                           </button>
@@ -227,6 +221,7 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
                             type="button"
                             onClick={() => setTestWeight((w) => Math.min(140, w + 2))}
                             className="w-6 h-6 rounded bg-white/10 text-white flex items-center justify-center text-xs hover:bg-white/20"
+                            aria-label="زيادة الوزن"
                           >
                             +
                           </button>

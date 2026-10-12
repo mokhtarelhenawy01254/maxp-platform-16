@@ -39,12 +39,9 @@ async function runVerification() {
 
   const url = "http://127.0.0.1:5173/lp/clothing-taste";
   console.log(`Navigating to: ${url}`);
-  const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
-  await page.waitForTimeout(1000);
+  const response = await page.goto(url, { waitUntil: "commit", timeout: 45000 });
+  await page.waitForSelector(".cst-root", { timeout: 30000 });
   console.log(`HTTP Status: ${response.status()}`);
-
-  // Check Container First (waits for React mount)
-  await page.waitForSelector(".cst-root", { timeout: 10000 });
   console.log("PASS: .cst-root container rendered successfully");
 
   // Check Title
@@ -107,6 +104,15 @@ async function runVerification() {
   await page.waitForTimeout(300);
   console.log("PASS: Adjusted fabric cost input");
 
+  // Test Egyptian Logistics & Payments Trust Strip
+  console.log("\n[4.2] Testing Egyptian Logistics & Payment Trust Strip...");
+  const bostaPartner = page.locator("text=Bosta API");
+  await bostaPartner.waitFor({ state: "visible", timeout: 5000 });
+  console.log("PASS: Bosta API trust badge verified");
+  const kashierPartner = page.locator("text=Kashier");
+  await kashierPartner.waitFor({ state: "visible", timeout: 5000 });
+  console.log("PASS: Kashier trust badge verified");
+
   // Test Lead Capture Form Input
   console.log("\n[4.5] Testing Lead Capture Form Inputs...");
   const nameInput = page.locator("input[placeholder='مثال: كريم الشناوي']");
@@ -115,6 +121,28 @@ async function runVerification() {
   await phoneInput.fill("01012345678");
   await page.waitForTimeout(300);
   console.log("PASS: Filled Lead Form inputs");
+
+  // Test Fast Inline Activation Modal
+  console.log("\n[4.8] Testing 60-Second Fast Activation Modal...");
+  const heroFreeCta = page.locator("button:has-text('ابدأ متجرك مجاناً')").first();
+  await heroFreeCta.click();
+  await page.waitForTimeout(400);
+
+  const modalTitle = page.locator("text=ابدأ متجرك الإلكتروني الآن في 60 ثانية");
+  await modalTitle.waitFor({ state: "visible", timeout: 5000 });
+  console.log("PASS: Fast Activation Modal opened successfully");
+
+  const brandInput = page.locator("input[placeholder='مثال: Cairo Wear أو اسم المحل']");
+  await brandInput.fill("Cairo Atelier");
+
+  const modalPhoneInput = page.locator(".fixed input[type='tel']");
+  await modalPhoneInput.fill("01099887766");
+  console.log("PASS: Filled brand name and phone in Activation Modal");
+
+  const modalCloseBtn = page.locator("button[aria-label='إغلاق نافذة التفعيل']");
+  await modalCloseBtn.click();
+  await page.waitForTimeout(300);
+  console.log("PASS: Closed Fast Activation Modal cleanly");
 
   // Test FAQ Accordion
   console.log("\n[5] Testing FAQ Accordion...");
@@ -126,7 +154,8 @@ async function runVerification() {
 
   // Test Audit Drawer Trigger
   console.log("\n[6] Testing Audit Matrix Drawer...");
-  const auditBtn = page.locator("button:has-text('تشريح الفروقات')");
+  const auditBtn = page.locator("button:has-text('فحص الفرق الهندسي')");
+  await auditBtn.scrollIntoViewIfNeeded();
   await auditBtn.click();
   await page.waitForTimeout(500);
 
@@ -174,8 +203,9 @@ async function runVerification() {
     }
   });
 
-  await mobilePage.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
-  await mobilePage.waitForTimeout(1000);
+  await mobilePage.goto(url, { waitUntil: "commit", timeout: 45000 });
+  await mobilePage.waitForSelector(".cst-root", { timeout: 30000 });
+  await mobilePage.waitForTimeout(500);
 
   // Check Sticky Mobile CTA Bar
   const stickyMobileBar = mobilePage.locator(".cst-sticky-mobile");

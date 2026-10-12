@@ -15,6 +15,8 @@ import { ClothingTasteLeadForm } from "./clothing-taste/ClothingTasteLeadForm";
 import { ClothingTasteFAQ } from "./clothing-taste/ClothingTasteFAQ";
 import { ClothingTasteFooter } from "./clothing-taste/ClothingTasteFooter";
 import { ClothingTasteAuditDrawer } from "./clothing-taste/ClothingTasteAuditDrawer";
+import { ClothingTasteTrustStrip } from "./clothing-taste/ClothingTasteTrustStrip";
+import { ClothingTasteActivationModal } from "./clothing-taste/ClothingTasteActivationModal";
 
 import { TasteMode, UtmData } from "./clothing-taste/types";
 import { WHATSAPP_CONSULT_URL } from "./clothing-taste/clothingTasteData";
@@ -30,6 +32,7 @@ export const ClothingStoreTasteLanding: React.FC = () => {
   const [, setIsCheckingOut] = useState(false);
   const [mode, setMode] = useState<TasteMode>("taste");
   const [isAuditOpen, setIsAuditOpen] = useState(false);
+  const [isActivationOpen, setIsActivationOpen] = useState(false);
 
   // ── First-touch UTM capture & SEO tags ──
   useEffect(() => {
@@ -120,9 +123,23 @@ export const ClothingStoreTasteLanding: React.FC = () => {
   );
 
   const handleFreeRegister = useCallback(() => {
-    const q = buildQueryString({ tier: "free", source: "clothing-taste", action: "free" });
-    navigate(`/auth/register?${q}`);
-  }, [navigate, buildQueryString]);
+    setIsActivationOpen(true);
+  }, []);
+
+  const handleContinueToRegister = useCallback(
+    (prefilled: { brandName: string; phone: string }) => {
+      const extraParams: Record<string, string> = {
+        tier: "free",
+        source: "clothing-taste",
+        action: "free",
+      };
+      if (prefilled?.brandName) extraParams.companyName = prefilled.brandName;
+      if (prefilled?.phone) extraParams.phone = prefilled.phone;
+      const q = buildQueryString(extraParams);
+      navigate(`/auth/register?${q}`);
+    },
+    [navigate, buildQueryString]
+  );
 
   const handlePaygRegister = useCallback(() => {
     const q = buildQueryString({ tier: "payg", source: "clothing-taste", action: "free" });
@@ -192,6 +209,9 @@ export const ClothingStoreTasteLanding: React.FC = () => {
             mode={mode}
           />
 
+          {/* Trusted Egyptian Integrations Strip (Bosta, Kashier, InstaPay) */}
+          <ClothingTasteTrustStrip />
+
           {/* Dedicated Telemetry Strip below Hero */}
           <ClothingTasteTelemetry mode={mode} />
 
@@ -243,6 +263,14 @@ export const ClothingStoreTasteLanding: React.FC = () => {
           onClose={() => setIsAuditOpen(false)}
           mode={mode}
           onToggleMode={setMode}
+        />
+
+        {/* 60-Second Fast Activation Modal */}
+        <ClothingTasteActivationModal
+          isOpen={isActivationOpen}
+          onClose={() => setIsActivationOpen(false)}
+          utm={utm}
+          onContinueToRegister={handleContinueToRegister}
         />
 
         {/* Sticky Mobile Conversion Bar */}
