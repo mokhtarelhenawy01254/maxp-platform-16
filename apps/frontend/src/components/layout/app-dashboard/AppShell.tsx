@@ -31,6 +31,18 @@ const AppShell: React.FC<AppShellProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // The mobile header is CSS-hidden on desktop (lg:hidden) but React still mounted its
+  // PageExplanations, so every desktop page fired the explanations request twice. Gate it
+  // on a real media query instead of relying on the CSS class alone.
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const onChange = () => setIsDesktop(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
   const isRtl = i18n.language?.startsWith('ar') ?? false;
   const touchStartX = useRef<number>(0);
   const touchStartY = useRef<number>(0);
@@ -220,7 +232,7 @@ const AppShell: React.FC<AppShellProps> = ({
           </button>
           <div className="app-shell-mobile-header-title">{appName}</div>
           <div className="flex items-center gap-1.5 ms-auto">
-            {showPageExplanations && <PageExplanations />}
+            {showPageExplanations && !isDesktop && <PageExplanations />}
             <button
               type="button"
               onClick={handleBack}
