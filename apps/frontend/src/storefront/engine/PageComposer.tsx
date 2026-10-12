@@ -435,7 +435,18 @@ export const PageComposer: React.FC<PageComposerProps> = ({
     return <div className="p-8 text-center text-muted-foreground">No sections configured for this page.</div>;
   }
 
-  const indexedSections = pageConfig.sections.map((sectionEntry, index) => ({
+  let rawSections = pageConfig.sections;
+  if (
+    rawSections.length >= 2 &&
+    typeof rawSections[0] !== 'string' &&
+    rawSections[0]?.type === 'promo-strip' &&
+    typeof rawSections[1] !== 'string' &&
+    (rawSections[1]?.type === 'hero-banner' || rawSections[1]?.type === 'hero-sidebar')
+  ) {
+    rawSections = [rawSections[1], rawSections[0], ...rawSections.slice(2)];
+  }
+
+  const indexedSections = rawSections.map((sectionEntry, index) => ({
     sectionEntry,
     index,
   })).filter(({ sectionEntry }) => {

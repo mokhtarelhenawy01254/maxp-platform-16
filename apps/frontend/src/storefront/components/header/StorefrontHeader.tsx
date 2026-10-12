@@ -288,27 +288,27 @@ const StorefrontHeader: React.FC<{
   );
   const hideUtilityBar = settings?.storefrontSettings?.hideUtilityBar === true;
   const khemetUtilityBar = isKhemetLuxe && !isMinimal && !hideUtilityBar ? (
-    <div className="border-t border-[#efe6dc] bg-[#fffaf4]" dir="rtl">
-      <div className="container px-0 md:px-6">
-        <div className="flex min-h-10 items-center gap-3 overflow-x-auto px-4 py-2 text-[11px] text-[#5e5045] [scrollbar-width:none] md:min-h-11 md:justify-center md:gap-5 md:text-xs">
+    <div className="border-t border-white/10 bg-[#090b0e] text-white" dir="rtl">
+      <div className="container px-4 md:px-6">
+        <div className="flex min-h-9 items-center justify-between text-xs text-white/80 [scrollbar-width:none]">
+          <div className="flex items-center gap-3 sm:gap-4 overflow-x-auto py-1">
+            {showKhemetFreeShippingSignal ? (
+              <span className="font-semibold text-white tracking-wide shrink-0">
+                شحن مجاني فوق <span className="tabular-nums">{khemetFreeShippingThresholdText}</span>
+              </span>
+            ) : null}
+            <span className="hidden sm:inline text-white/30 shrink-0">·</span>
+            <span className="shrink-0 text-white/70">معاينة واستبدال المقاس عند الاستلام</span>
+            <span className="hidden md:inline text-white/30 shrink-0">·</span>
+            <span className="hidden md:inline text-white/70">تأكيد الطلب قبل التجهيز</span>
+          </div>
           <Link
             to={khemetUtilityShopPath}
             reloadDocument={shouldForceDocumentNavigation}
-            className="inline-flex shrink-0 items-center rounded-full bg-[#183f31] px-3.5 py-2 font-black text-[#fff8ee] transition-colors hover:bg-[#112d23]"
+            className="inline-flex shrink-0 items-center rounded-full bg-white px-3.5 py-1 text-[11px] font-bold text-black transition-all hover:bg-neutral-200 active:scale-[0.97]"
           >
             ابدئي الطلب
           </Link>
-          {showKhemetFreeShippingSignal ? (
-            <>
-              <span className="shrink-0 font-semibold text-[#1f1916]">
-                شحن مجاني فوق {khemetFreeShippingThresholdText}
-              </span>
-              <span className="h-1 w-1 shrink-0 rounded-full bg-[#c5a470]" />
-            </>
-          ) : null}
-          <span className="shrink-0">تبديل مقاس خلال 14 يوم</span>
-          <span className="h-1 w-1 shrink-0 rounded-full bg-[#c5a470]" />
-          <span className="shrink-0">تأكيد الطلب قبل التجهيز</span>
         </div>
       </div>
     </div>

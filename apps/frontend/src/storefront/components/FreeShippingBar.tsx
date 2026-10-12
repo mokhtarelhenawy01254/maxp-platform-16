@@ -79,13 +79,19 @@ export const FreeShippingBar: React.FC = () => {
   const barPosition = ui["barPosition"] === "bottom" ? "bottom" : "top";
 
   const isProductPage = location.pathname.includes("/product/");
+  const isHomePage =
+    location.pathname === "/" ||
+    location.pathname === "" ||
+    location.pathname.endsWith("/store") ||
+    location.pathname.endsWith("/store/");
   const shouldRender =
     isEnabled &&
     attachToThemeShell &&
     freeShippingBarEnabled &&
     thresholdAmount > 0 &&
     !hasCheckoutLikePath(location.pathname) &&
-    !(isRedlineAuto && isProductPage && subtotal === 0);
+    !(isRedlineAuto && isProductPage && subtotal === 0) &&
+    !(isKhemetLuxe && isHomePage);
 
   const remainingToFreeShipping = Math.max(thresholdAmount - subtotal, 0);
   const isQualified = subtotal >= thresholdAmount && thresholdAmount > 0;

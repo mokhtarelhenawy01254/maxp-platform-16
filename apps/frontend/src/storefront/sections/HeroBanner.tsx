@@ -2870,7 +2870,7 @@ const CinematicPlinthHero: React.FC<HeroVariantProps> = (props) => {
   const leadHighlights = props.highlights.slice(0, 3);
 
   return (
-    <section className="relative overflow-hidden bg-[#0a0d10] text-white">
+    <section className="relative overflow-hidden bg-[#07080a] text-white">
       <div className="absolute inset-0">
         {heroImage ? (
           <StorefrontProductImage
@@ -2882,70 +2882,103 @@ const CinematicPlinthHero: React.FC<HeroVariantProps> = (props) => {
             requestedWidth={1280}
             responsiveWidths={[640, 960, 1280, 1600]}
             responsiveSizes="100vw"
-            imageQuality={82}
+            imageQuality={85}
             className="h-full w-full object-cover object-center"
           />
         ) : null}
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,13,16,0.22)_0%,rgba(10,13,16,0.58)_34%,rgba(10,13,16,0.92)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,8,10,0.35)_0%,rgba(7,8,10,0.65)_40%,rgba(7,8,10,0.94)_100%)]" />
         {isRedLine ? (
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(225,29,72,0.14),transparent_44%),radial-gradient(circle_at_bottom,rgba(225,29,72,0.22),transparent_54%)]" />
         ) : (
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(215,182,108,0.16),transparent_38%),radial-gradient(circle_at_bottom,rgba(19,57,44,0.55),transparent_48%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_45%)]" />
         )}
-        <div className="absolute inset-x-0 bottom-0 h-48 bg-[linear-gradient(180deg,transparent,rgba(10,13,16,0.85))]" />
       </div>
 
-      <div className="relative z-10 flex min-h-[34rem] items-center justify-center px-4 py-16 text-center md:min-h-[46rem] md:px-6 md:py-20">
-        <div className="mx-auto flex max-w-5xl flex-col items-center">
-          {(props.eyebrow || props.panel.eyebrow) && (
-            <span
-              className={`mb-5 inline-flex border-b pb-2 text-[11px] font-bold uppercase tracking-[0.32em] ${
-                isRedLine
-                  ? 'border-primary/60 text-primary drop-shadow-[0_2px_8px_rgba(225,29,72,0.4)]'
-                  : 'border-[#d8b572] text-[#f2d79b]'
-              }`}
-            >
-              {props.eyebrow || props.panel.eyebrow}
-            </span>
-          )}
-
-          <h1 className="max-w-[15ch] font-heading text-[2.6rem] font-black leading-[1.12] tracking-tight text-white drop-shadow-[0_18px_44px_rgba(0,0,0,0.5)] md:text-[4.5rem]">
-            {props.title}
-          </h1>
-          <p className="mt-5 max-w-2xl text-base leading-8 text-white/85 md:text-lg">
-            {props.subtitle}
-          </p>
-
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
-            {renderHeroAction(
-              props.primaryHref,
-              props.ctaText,
-              isRedLine
-                ? 'inline-flex items-center justify-center rounded-full border border-primary/50 bg-primary px-9 py-3.5 text-sm font-bold text-white shadow-[0_14px_32px_-8px_rgba(225,29,72,0.7)] transition-all hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.97]'
-                : 'inline-flex items-center justify-center rounded-full border border-[#d9b56c] bg-[#173126] px-9 py-3.5 text-sm font-bold text-[#fff4dc] shadow-[0_12px_28px_-6px_rgba(23,49,38,0.7)] transition-all hover:bg-[#204637] hover:scale-[1.02] active:scale-[0.97]',
-            )}
-            {renderHeroAction(
-              props.secondaryHref,
-              props.secondaryCtaText,
-              'inline-flex items-center justify-center rounded-full border border-white/30 bg-white/10 px-8 py-3.5 text-sm font-bold text-white backdrop-blur-md transition-all hover:bg-white/20 hover:border-white/50 active:scale-[0.97]',
-            )}
-          </div>
-
-          {leadHighlights.length > 0 ? (
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm text-white/90 md:mt-10">
-              {leadHighlights.map((item) => (
+      {/* Main Asymmetric Hero Stage */}
+      <div className="relative z-10 flex min-h-[32rem] sm:min-h-[38rem] lg:min-h-[44rem] items-center px-4 py-12 md:px-8 lg:px-12">
+        <div className="container mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            {/* Editorial Text Content (Start / Right in RTL) */}
+            <div className="lg:col-span-7 text-start space-y-6">
+              {(props.eyebrow || props.panel.eyebrow) && (
                 <span
-                  key={`${item.label}-${item.value}`}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.08] px-3.5 py-1.5 backdrop-blur-xs font-medium tracking-tight shadow-2xs"
+                  className={`inline-flex border-b pb-1.5 text-[11px] font-bold uppercase tracking-[0.28em] ${
+                    isRedLine
+                      ? 'border-primary/60 text-primary drop-shadow-[0_2px_8px_rgba(225,29,72,0.4)]'
+                      : 'border-white/30 text-white/80'
+                  }`}
                 >
-                  <span className="text-[#f2d79b] font-bold text-xs">{item.label}:</span>
-                  <span>{item.value}</span>
+                  {props.eyebrow || props.panel.eyebrow}
                 </span>
-              ))}
+              )}
+
+              <h1 className="font-heading text-4xl sm:text-6xl lg:text-[4.25rem] font-black leading-[1.06] tracking-tight text-white drop-shadow-[0_16px_36px_rgba(0,0,0,0.6)] text-balance">
+                {props.title}
+              </h1>
+
+              <p className="max-w-xl text-base sm:text-lg leading-relaxed text-white/85 text-pretty drop-shadow-sm">
+                {props.subtitle}
+              </p>
+
+              <div className="pt-2 flex flex-wrap items-center gap-3.5">
+                {renderHeroAction(
+                  props.primaryHref,
+                  props.ctaText,
+                  isRedLine
+                    ? 'inline-flex items-center justify-center rounded-full border border-primary/50 bg-primary px-8 py-3.5 text-sm font-bold text-white shadow-[0_14px_32px_-8px_rgba(225,29,72,0.7)] transition-all hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.97]'
+                    : 'inline-flex items-center justify-center rounded-full bg-white px-8 py-3.5 text-sm font-bold text-black shadow-[0_16px_36px_-8px_rgba(255,255,255,0.3)] transition-all hover:bg-neutral-100 hover:scale-[1.02] active:scale-[0.97]',
+                )}
+                {renderHeroAction(
+                  props.secondaryHref,
+                  props.secondaryCtaText,
+                  'inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20 hover:border-white/40 active:scale-[0.97]',
+                )}
+              </div>
             </div>
-          ) : null}
+
+            {/* Architectural Specimen Showcase Tile (Desktop End / Left in RTL) */}
+            <div className="lg:col-span-5 hidden lg:flex flex-col justify-end items-end">
+              <div className="rounded-2xl border border-white/15 bg-black/40 backdrop-blur-md p-6 max-w-sm text-start space-y-3 shadow-2xl">
+                <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/60 block">
+                  كولكشن 2026 الحصري
+                </span>
+                <p className="text-lg font-bold text-white tracking-tight">
+                  شياكة وراحة لكل يوم
+                </p>
+                <p className="text-xs text-white/80 leading-relaxed">
+                  خامات ممتازة وتقفيل مصري متقن يجمع بين أناقة المناسبات وعملية الاستخدام اليومي.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Docked Architectural Trust Bar */}
+      {leadHighlights.length > 0 ? (
+        <div className="relative z-10 border-t border-white/10 bg-black/50 backdrop-blur-md py-4">
+          <div className="container mx-auto px-4 md:px-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-start divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-white/10">
+              {leadHighlights.map((item, idx) => (
+                <div
+                  key={`${item.label}-${item.value}`}
+                  className={`flex items-center gap-3 ${idx > 0 ? 'pt-3 sm:pt-0 sm:pe-6' : ''}`}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/50 shrink-0" />
+                  <div>
+                    <span className="block text-[11px] font-semibold uppercase tracking-wider text-white/60">
+                      {item.label}
+                    </span>
+                    <p className="text-xs sm:text-sm font-bold text-white tracking-tight">
+                      {item.value}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 };

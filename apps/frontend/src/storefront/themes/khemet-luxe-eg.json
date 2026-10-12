@@ -5,23 +5,23 @@
   "direction": "rtl",
   "tokens": {
     "colors": {
-      "primary": "151 34% 16%",
-      "primaryForeground": "42 61% 96%",
-      "secondary": "32 38% 92%",
-      "secondaryForeground": "21 18% 16%",
-      "accent": "41 45% 63%",
-      "accentForeground": "21 18% 16%",
-      "background": "24 31% 97%",
-      "foreground": "22 16% 12%",
-      "muted": "30 24% 90%",
-      "mutedForeground": "23 10% 38%",
-      "border": "30 22% 82%",
+      "primary": "0 0% 9%",
+      "primaryForeground": "0 0% 98%",
+      "secondary": "220 14% 96%",
+      "secondaryForeground": "220 20% 12%",
+      "accent": "220 14% 18%",
+      "accentForeground": "0 0% 98%",
+      "background": "0 0% 99%",
+      "foreground": "220 20% 10%",
+      "muted": "220 14% 94%",
+      "mutedForeground": "220 10% 46%",
+      "border": "220 13% 90%",
       "card": "0 0% 100%",
-      "cardForeground": "22 16% 12%",
-      "ring": "151 34% 16%"
+      "cardForeground": "220 20% 10%",
+      "ring": "0 0% 9%"
     },
     "typography": {
-      "headingFont": "\"Noto Serif\", serif",
+      "headingFont": "\"Outfit\", \"Cabinet Grotesk\", \"IBM Plex Sans Arabic\", sans-serif",
       "bodyFont": "\"Manrope\", \"IBM Plex Sans Arabic\", sans-serif",
       "baseSize": "16px",
       "direction": "rtl"
@@ -39,7 +39,7 @@
       "surfaceOpacity": "1"
     },
     "layout": {
-      "contentAlign": "center"
+      "contentAlign": "start"
     }
   },
   "seo": {
@@ -155,18 +155,6 @@
     "home": {
       "sections": [
         {
-          "type": "promo-strip",
-          "settings": {
-            "badge": "عروض حصرية",
-            "message": "شحن سريع لمعظم المحافظات • معاينة واستبدال المقاس عند الاستلام",
-            "saleLabel": "خصم حتى 28%",
-            "shippingLabel": "شحن خلال 48 ساعة",
-            "returnLabel": "استبدال خلال 14 يوم",
-            "ctaText": "شاهدي العروض",
-            "ctaLink": "/sale"
-          }
-        },
-        {
           "type": "hero-banner",
           "variant": "cinematic-plinth",
           "settings": {
@@ -192,6 +180,18 @@
                 "value": "نقداً عند الاستلام"
               }
             ]
+          }
+        },
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "عروض حصرية",
+            "message": "شحن سريع لمعظم المحافظات · معاينة واستبدال المقاس عند الاستلام",
+            "saleLabel": "خصم حتى 28%",
+            "shippingLabel": "شحن خلال 48 ساعة",
+            "returnLabel": "استبدال خلال 14 يوم",
+            "ctaText": "شاهدي العروض",
+            "ctaLink": "/sale"
           }
         },
         {
