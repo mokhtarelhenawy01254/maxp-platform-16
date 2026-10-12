@@ -113,6 +113,17 @@ const WHATSAPP_ALL_SLUGS = new Set([
   ...WHATSAPP_LEGACY_ALIAS_SLUGS
 ]);
 
+const DENTAL_LAB_SLUGS = new Set([
+  'dental-lab-app',
+  'dental-lab',
+  'dental-lab-elite'
+]);
+
+const STRICT_EXPIRY_ENFORCED_SLUGS = new Set([
+  ...WHATSAPP_ALL_SLUGS,
+  ...DENTAL_LAB_SLUGS
+]);
+
 const hasAppBypassException = (ca, company = null) => {
   if (!ca) return false;
   let appSettings = ca.settings;
@@ -137,7 +148,7 @@ const hasAppBypassException = (ca, company = null) => {
 /**
  * Determines whether a CompanyApp installation record is currently active and valid.
  * Strict date/subscription expiration checks are isolated exclusively to WhatsApp apps
- * (WHATSAPP_ALL_SLUGS) so non-WhatsApp apps preserve 100% backward compatibility.
+ * and Dental Lab suite (STRICT_EXPIRY_ENFORCED_SLUGS) so other legacy apps preserve 100% backward compatibility.
  */
 const isCompanyAppInstallationValid = (ca, company = null) => {
   if (!ca) return false;
@@ -150,7 +161,7 @@ const isCompanyAppInstallationValid = (ca, company = null) => {
   }
 
   const appSlug = String(ca.app?.slug || ca.slug || '').trim().toLowerCase();
-  if (!WHATSAPP_ALL_SLUGS.has(appSlug)) {
+  if (!STRICT_EXPIRY_ENFORCED_SLUGS.has(appSlug)) {
     return true;
   }
 
@@ -204,6 +215,21 @@ const isCompanyAppInstallationValid = (ca, company = null) => {
     const pSubDateExpired = Boolean(pSub.nextBillingDate && now > new Date(pSub.nextBillingDate));
     if (pSubStatusInvalid || pSubDateExpired) {
       return isCompanyInActiveTrial;
+    }
+  }
+
+  if (DENTAL_LAB_SLUGS.has(appSlug) && company?.platformSubscription) {
+    const pSub = company.platformSubscription;
+    const pSubStatus = String(pSub.status || '').trim().toUpperCase();
+    if (['SUSPENDED', 'CANCELLED', 'EXPIRED'].includes(pSubStatus)) {
+      return isCompanyInActiveTrial;
+    }
+    if (pSub.nextBillingDate && now > new Date(pSub.nextBillingDate)) {
+      const isFeeActive = Number(pSub.monthlyFee || 0) > 0;
+      const trialEnded = Boolean(company.trialEndsAt && now > new Date(company.trialEndsAt));
+      if (isFeeActive || trialEnded) {
+        return isCompanyInActiveTrial;
+      }
     }
   }
 
@@ -291,7 +317,8 @@ const checkAppAccess = (appSlug) => {
             platformSubscription: {
               select: {
                 status: true,
-                nextBillingDate: true
+                nextBillingDate: true,
+                monthlyFee: true,
               }
             },
             installedApps: {

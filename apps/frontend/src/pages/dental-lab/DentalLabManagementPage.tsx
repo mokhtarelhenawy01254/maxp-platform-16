@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { TabId, TABS, fetchMyInfo } from "./shared";
+import { ArrowLeft, Loader2, AlertTriangle, ShieldAlert } from "lucide-react";
+import { TabId, TABS, fetchMyInfo, DentalSubscriptionInfo } from "./shared";
 import DentalTechKioskTab from "./technician/DentalTechKioskTab";
 import DentalLabDashboardTab from "./DentalLabDashboardTab";
 import DentalCasesTab from "./DentalCasesTab";
@@ -22,6 +22,7 @@ export default function DentalLabManagementPage() {
   const navigate = useNavigate();
   const { "*": path } = useParams();
   const [techPortal, setTechPortal] = useState<boolean | null>(null);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<DentalSubscriptionInfo | null>(null);
   const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
@@ -31,6 +32,7 @@ export default function DentalLabManagementPage() {
         if (mounted) {
           const isTech = info.dentalRole === "TECHNICIAN";
           setTechPortal(isTech);
+          setSubscriptionInfo(info.subscription || null);
           if (isTech) {
             try {
               sessionStorage.setItem("dentalRole", "TECHNICIAN");
@@ -114,6 +116,35 @@ export default function DentalLabManagementPage() {
             <DentalTechKioskTab />
           </div>
         </TabErrorBoundary>
+      )}
+      {techPortal === false && subscriptionInfo && (subscriptionInfo.isExpiringSoon || subscriptionInfo.isExpired) && (
+        <div
+          role="alert"
+          className={`mb-4 px-4 py-3 rounded-xl border flex items-center justify-between gap-3 text-xs sm:text-sm font-medium transition-all ${
+            subscriptionInfo.isExpired
+              ? "bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400"
+              : "bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-300"
+          }`}
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            {subscriptionInfo.isExpired ? (
+              <ShieldAlert className="w-4 h-4 shrink-0 text-red-500" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
+            )}
+            <span className="truncate">
+              {subscriptionInfo.warningMessage ||
+                (subscriptionInfo.isExpired
+                  ? "انتهت صلاحية اشتراك معمل الأسنان. يرجى تجديد الاشتراك لضمان استمرار الخدمة."
+                  : `ينتهي اشتراك معمل الأسنان خلال ${subscriptionInfo.daysRemaining} يوم. يرجى التجديد لضمان عدم توقف الخدمة.`)}
+            </span>
+          </div>
+          {subscriptionInfo.nextBillingDate && (
+            <span className="shrink-0 text-xs tabular-nums opacity-80 px-2 py-0.5 rounded bg-black/5 dark:bg-white/5 border border-border/40">
+              {new Date(subscriptionInfo.nextBillingDate).toLocaleDateString("ar-EG")}
+            </span>
+          )}
+        </div>
       )}
       {techPortal === false && !isKioskRoute && (
         <>

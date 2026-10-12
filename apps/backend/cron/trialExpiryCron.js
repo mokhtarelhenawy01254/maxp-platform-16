@@ -20,6 +20,25 @@ async function runTrialExpiryCheck() {
   try {
     const prisma = getSharedPrismaClient();
 
+    // 1. Freeze individually expired trial apps
+    const expiredApps = await prisma.companyApp.findMany({
+      where: {
+        status: 'TRIAL',
+        trialEndsAt: { not: null, lt: new Date() },
+      },
+      select: { id: true, companyId: true, appId: true, app: { select: { slug: true, name: true } } },
+      take: 50,
+    });
+
+    if (expiredApps.length > 0) {
+      await prisma.companyApp.updateMany({
+        where: { id: { in: expiredApps.map((a) => a.id) } },
+        data: { status: 'EXPIRED' },
+      });
+      console.log(`[TRIAL-EXPIRY-CRON] Expired ${expiredApps.length} trial app(s) whose trialEndsAt passed.`);
+    }
+
+    // 2. Expire company-level trial sessions
     const expiredCompanies = await prisma.company.findMany({
       where: {
         trialModeEnabled: true,

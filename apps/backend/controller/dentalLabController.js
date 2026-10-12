@@ -5725,11 +5725,82 @@ const getMyInfo = async (req, res) => {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
     const prisma = getSharedPrismaClient();
-    const [teamRoles, technician] = await Promise.all([
+    const [teamRoles, technician, company] = await Promise.all([
       require('../services/dentalRoles').loadTeamRoles(companyId),
       prisma.dentalTechnician.findFirst({ where: { companyId, userId: req.user?.id, isActive: true } }),
+      prisma.company.findUnique({
+        where: { id: companyId },
+        select: {
+          trialModeEnabled: true,
+          trialEndsAt: true,
+          platformSubscription: {
+            select: {
+              status: true,
+              monthlyFee: true,
+              nextBillingDate: true,
+              trialEndDate: true,
+            },
+          },
+          installedApps: {
+            where: {
+              app: {
+                slug: { in: ['dental-lab-app', 'dental-lab', 'dental-lab-elite'] },
+              },
+            },
+            select: {
+              status: true,
+              validUntil: true,
+              trialEndsAt: true,
+            },
+          },
+        },
+      }),
     ]);
     const role = resolveDentalRole(req.user, teamRoles);
+
+    let subscriptionInfo = null;
+    if (company) {
+      const now = new Date();
+      const pSub = company.platformSubscription;
+      const dentalApp = company.installedApps?.[0];
+
+      const effectiveEndDate = dentalApp?.validUntil || dentalApp?.trialEndsAt || pSub?.nextBillingDate || company.trialEndsAt;
+      let daysRemaining = null;
+      let isExpiringSoon = false;
+      let isExpired = false;
+
+      if (effectiveEndDate) {
+        const diffMs = new Date(effectiveEndDate).getTime() - now.getTime();
+        daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        if (daysRemaining <= 0) {
+          isExpired = true;
+        } else if (daysRemaining <= 7) {
+          isExpiringSoon = true;
+        }
+      }
+
+      if (pSub?.status === 'SUSPENDED' || pSub?.status === 'CANCELLED' || dentalApp?.status === 'EXPIRED' || dentalApp?.status === 'SUSPENDED') {
+        isExpired = true;
+      }
+
+      let warningMessage = null;
+      if (isExpired) {
+        warningMessage = 'انتهت صلاحية اشتراك معمل الأسنان. يرجى تجديد الاشتراك لتجنب إيقاف الخدمة.';
+      } else if (isExpiringSoon && daysRemaining !== null) {
+        warningMessage = `ينتهي اشتراك معمل الأسنان خلال ${daysRemaining} ${daysRemaining === 1 ? 'يوم' : 'أيام'}. يرجى التجديد لضمان عدم توقف الخدمة.`;
+      }
+
+      subscriptionInfo = {
+        status: pSub?.status || dentalApp?.status || (company.trialModeEnabled ? 'TRIAL' : 'ACTIVE'),
+        nextBillingDate: effectiveEndDate,
+        monthlyFee: Number(pSub?.monthlyFee || 0),
+        daysRemaining,
+        isExpiringSoon,
+        isExpired,
+        warningMessage,
+      };
+    }
+
     res.json({
       success: true,
       data: {
@@ -5738,6 +5809,7 @@ const getMyInfo = async (req, res) => {
         technician: technician
           ? { id: technician.id, name: technician.name, role: technician.role, wagePerStage: technician.wagePerStage }
           : null,
+        subscription: subscriptionInfo,
       },
     });
   } catch (error) {

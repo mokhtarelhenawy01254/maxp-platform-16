@@ -565,10 +565,21 @@ export interface BillingPolicy {
   enforceCreditLimit?: boolean;
 }
 
+export interface DentalSubscriptionInfo {
+  status?: string;
+  nextBillingDate?: string | null;
+  monthlyFee?: number;
+  daysRemaining?: number | null;
+  isExpiringSoon?: boolean;
+  isExpired?: boolean;
+  warningMessage?: string | null;
+}
+
 export interface MyInfo {
   dentalRole?: string;
   technicianId?: string;
   technician?: { id: string; name: string; role: string; wagePerStage?: number };
+  subscription?: DentalSubscriptionInfo;
 }
 
 export interface MyCase {
