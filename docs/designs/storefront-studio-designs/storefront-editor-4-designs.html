@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-mode="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>window.__errs=[];addEventListener('error',e=>window.__errs.push(String(e.message)));
+addEventListener('unhandledrejection',e=>window.__errs.push('rej:'+String(e.reason)));</script>
+<title>MaxP · استوديو المتجر — 4 تصاميم سحب وإفلات (معاينة)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap"></noscript>
+<style>
+/* ============================================================
+   0) شريط المعاينة (chrome) — مش جزء من أي تصميم
+   ============================================================ */
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:#060B14;color:#E6EDF7;
+  font-family:Cairo,'IBM Plex Sans Arabic',system-ui,-apple-system,'Segoe UI',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.bar{position:sticky;top:0;z-index:60;background:#0B111E;border-bottom:1px solid #1B2740;padding:10px 16px 12px}
+.bar-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between}
+.bar-title{display:flex;align-items:baseline;gap:10px;font-size:14px;font-weight:700}
+.bar-title small{font-weight:500;color:#8A9AB2;font-size:12px}
+.bar-ctl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.seg{display:flex;background:#141E31;border:1px solid #23304A;border-radius:10px;padding:2px}
+.seg button{font:inherit;font-size:12px;font-weight:600;color:#9FB0C8;background:transparent;border:0;padding:5px 10px;border-radius:8px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:#2F6BFF;color:#fff}
+.tabs{display:flex;gap:6px;margin-top:10px;overflow-x:auto;padding-bottom:2px}
+.tabs::-webkit-scrollbar{height:0}
+.tab{font:inherit;font-size:12.5px;font-weight:700;color:#A9B8CF;background:#121B2C;border:1px solid #23304A;padding:7px 13px;border-radius:999px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:7px}
+.tab b{font-weight:800;color:#6C97FF}
+.tab[aria-selected="true"]{background:#2F6BFF;border-color:#2F6BFF;color:#fff}
+.tab[aria-selected="true"] b{color:#CFE0FF}
+.note{margin-top:9px;font-size:12.5px;line-height:1.75;color:#B9C7DC;background:#101A2B;border:1px solid #1E2A40;border-radius:10px;padding:7px 11px}
+.note b{color:#E9F0FB}
+.note i{font-style:normal;color:#7E8FA8}
+.note .k{display:inline-block;background:#1C2A44;border:1px solid #2C3D5E;border-radius:6px;padding:0 6px;font-size:11.5px;color:#CFE0FF;font-weight:700}
+
+/* ============================================================
+   1) ستيدج + توكنز المشروع (نفس توكنز الموقع)
+   ============================================================ */
+.stage{padding:18px 16px 28px;max-width:1640px;margin:0 auto}
+.variant{display:none}
+.variant.is-active{display:block}
+.stage[data-vw="mobile"] .variant.is-active{max-width:428px;margin:14px auto 20px;border:9px solid #0B111E;border-radius:34px;overflow:hidden;box-shadow:0 24px 60px -20px rgba(0,0,0,.8)}
+.stage[data-vw="mobile"] .editor{min-height:640px}
+
+.mock{
+  container-type:inline-size;container-name:mock;
+  background:var(--bg);color:var(--ink);
+  --bg:#F5F8FD; --surface:#FFFFFF; --surface-2:#FAFCFF; --surface-3:#EFF4FB;
+  --ink:#0E1A2B; --ink-2:#3A4A61; --muted:#6B7C93;
+  --line:#E4EAF4; --line-2:#CBD8EA;
+  --brand:#2F6BFF; --brand-600:#2156D4; --brand-050:#EEF4FF; --brand-100:#DDE8FF; --brand-700:#1B47AE;
+  --teal:#23C7C9; --red:#DC2626; --red-bg:#FEF2F2; --green:#16A34A; --amber:#D97706;
+  --r:12px; --r-lg:16px; --r-sm:9px;
+  --sh1:0 1px 2px rgba(16,35,71,.06);
+  --sh2:0 8px 22px -10px rgba(16,35,71,.22);
+  --sh3:0 18px 44px -16px rgba(16,35,71,.3);
+  font-family:Cairo,'IBM Plex Sans Arabic',system-ui,sans-serif;
+}
+[data-mode="dark"] .mock{
+  --bg:#080E1B; --surface:#0F1A2E; --surface-2:#0B1526; --surface-3:#16233A;
+  --ink:#E9EFFA; --ink-2:#C3D0E4; --muted:#8CA0BA;
+  --line:#22314D; --line-2:#33465F;
+  --brand:#4C82FF; --brand-600:#6C97FF; --brand-050:#132244; --brand-100:#1A2C52; --brand-700:#9AB7FF;
+  --red:#F87171; --red-bg:#2A1418;
+  --sh1:0 1px 2px rgba(0,0,0,.4);
+  --sh2:0 8px 22px -10px rgba(0,0,0,.6);
+  --sh3:0 18px 44px -16px rgba(0,0,0,.7);
+}
+.mock button{font:inherit}
+.mock :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+/* ---------- هيكل المحرر العام (بيستخدمه كل التصاميم بشكل مختلف) ---------- */
+.editor{display:flex;flex-direction:column;height:calc(100vh - var(--chromeH,170px));min-height:560px;background:var(--bg);border:1px solid var(--line);border-radius:18px;overflow:hidden;position:relative}
+.tb{display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--surface);border-bottom:1px solid var(--line);padding:8px 12px;flex:0 0 auto;min-height:56px}
+.tb-l,.tb-c,.tb-r{display:flex;align-items:center;gap:8px;min-width:0}
+.tb-store{display:flex;align-items:center;gap:8px;min-width:0}
+.tb-logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(140deg,var(--brand) 0%,var(--brand-600) 100%);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;flex:0 0 auto}
+.tb-nm{font-size:13px;font-weight:800;color:var(--ink);white-space:nowrap}
+.tb-sub{font-size:10.5px;color:var(--muted);white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:4px;background:var(--brand-050);color:var(--brand);border:1px solid var(--brand-100);border-radius:999px;padding:2px 9px;font-size:10.5px;font-weight:800;white-space:nowrap}
+.badge.grey{background:var(--surface-3);color:var(--muted);border-color:var(--line)}
+.tb-btn{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);color:var(--ink-2);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.15s}
+.tb-btn:hover{background:var(--surface-3);color:var(--ink)}
+.tb-btn[disabled]{opacity:.45;cursor:not-allowed}
+.tb-btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.tb-btn.primary:hover{background:var(--brand-600)}
+.tb-btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.tb-btn.ghost:hover{background:var(--surface-3);color:var(--ink)}
+.tb-btn.sm{padding:4px 8px;font-size:11.5px}
+.tb-btn .ic{width:15px;height:15px;flex:0 0 auto}
+.tb-ic{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+.tb-ic:hover{background:var(--surface-3);color:var(--ink)}
+.tb-ic .ic{width:16px;height:16px}
+.tb-ic[disabled]{opacity:.4;cursor:not-allowed}
+.devseg{display:flex;align-items:center;background:var(--surface-3);border:1px solid var(--line);border-radius:10px;padding:2px}
+.devseg button{border:0;background:transparent;color:var(--muted);padding:5px 8px;border-radius:8px;cursor:pointer;display:flex}
+.devseg button[aria-pressed="true"]{background:var(--surface);color:var(--brand);box-shadow:var(--sh1)}
+.devseg .ic{width:15px;height:15px}
+.pagenav{position:relative}
+.pagenav>button{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:800;color:var(--ink);cursor:pointer}
+.pagenav>button:hover{background:var(--surface-3)}
+.pagenav .ic{width:14px;height:14px;color:var(--muted)}
+.pagepop{position:absolute;top:calc(100% + 6px);inset-inline-start:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh2);padding:5px;min-width:210px;display:none;z-index:40}
+.pagepop.open{display:block}
+.pagepop button{display:flex;width:100%;align-items:center;gap:8px;background:transparent;border:0;border-radius:9px;padding:7px 9px;font-size:12px;font-weight:700;color:var(--ink-2);cursor:pointer;text-align:start}
+.pagepop button:hover{background:var(--surface-3);color:var(--ink)}
+.pagepop button.on{background:var(--brand-050);color:var(--brand)}
+.pagepop small{display:block;font-size:10px;color:var(--muted);font-weight:500}
+
+.editor-body{display:flex;flex:1 1 auto;min-height:0;position:relative}
+
+/* ---------- دوكات ---------- */
+.rail{width:296px;flex:0 0 auto;background:var(--surface);border-inline-start:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.editor[dir="rtl"] .rail{border-inline-start:0;border-inline-end:1px solid var(--line)}
+.insp{width:308px;flex:0 0 auto;background:var(--surface);border-inline-start:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.dock-h{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--line);flex:0 0 auto}
+.dock-t{font-size:12px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:6px}
+.dock-t .ic{width:14px;height:14px;color:var(--brand)}
+.dock-tabs{display:flex;gap:4px;background:var(--surface-3);border-radius:9px;padding:2px}
+.dock-tabs button{border:0;background:transparent;color:var(--muted);font-size:10.5px;font-weight:800;padding:4px 8px;border-radius:7px;cursor:pointer}
+.dock-tabs button.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh1)}
+.dock-search{padding:8px 10px;border-bottom:1px solid var(--line);flex:0 0 auto}
+.dock-search .wrap{display:flex;align-items:center;gap:6px;background:var(--surface-3);border:1px solid var(--line);border-radius:9px;padding:5px 8px}
+.dock-search .ic{width:13px;height:13px;color:var(--muted)}
+.dock-search input{border:0;background:transparent;outline:none;font:inherit;font-size:12px;color:var(--ink);width:100%}
+.dock-scroll{flex:1 1 auto;overflow:auto;padding:8px;min-height:0}
+.dock-scroll::-webkit-scrollbar{width:9px}
+.dock-scroll::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px;border:2px solid var(--surface)}
+.dock-foot{flex:0 0 auto;border-top:1px solid var(--line);padding:9px 10px;display:flex;flex-direction:column;gap:7px;background:var(--surface)}
+.hint{font-size:10.5px;color:var(--muted);line-height:1.6}
+.hint b{color:var(--brand)}
+
+/* ---------- صفوف قائمة الأقسام (A / R) ---------- */
+.a-list{display:flex;flex-direction:column;gap:4px;position:relative}
+.a-row{position:relative;display:flex;align-items:center;gap:7px;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:7px 8px;cursor:pointer;transition:.13s}
+.a-row:hover{border-color:var(--line-2);background:var(--surface)}
+.a-row.sel{border-color:var(--brand);background:var(--brand-050);box-shadow:0 0 0 3px var(--brand-100)}
+.grip{width:20px;height:26px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:var(--line-2);cursor:grab;touch-action:none;border-radius:6px}
+.grip:hover{color:var(--brand);background:var(--brand-050)}
+.grip:active{cursor:grabbing}
+.grip svg{width:14px;height:14px}
+.a-ic{width:26px;height:26px;flex:0 0 auto;border-radius:8px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-size:13px}
+.a-nm{min-width:0;flex:1 1 auto}
+.a-nm b{display:block;font-size:11.5px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-nm span{display:block;font-size:9.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr;text-align:start}
+.a-acts{display:flex;gap:2px;flex:0 0 auto;opacity:.5;transition:.13s}
+.a-row:hover .a-acts,.a-row.sel .a-acts{opacity:1}
+#ed-R .a-acts{opacity:1}
+.mini-ic{width:24px;height:24px;border:0;background:transparent;border-radius:7px;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.mini-ic:hover{background:var(--surface-3);color:var(--ink)}
+.mini-ic.danger:hover{background:var(--red-bg);color:var(--red)}
+.mini-ic .ic{width:13px;height:13px}
+.mini-ic[disabled]{opacity:.28;cursor:not-allowed}
+.row-pulse{animation:pulseRing 1.6s ease-out 2}
+@keyframes pulseRing{0%{box-shadow:0 0 0 0 var(--brand-100)}70%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
+
+/* ---------- مؤشرات الإفلات ---------- */
+[data-item]{position:relative}
+.dz-before::before{content:'';position:absolute;inset-inline:6px;top:-3px;height:3px;border-radius:3px;background:var(--brand);box-shadow:0 0 0 3px var(--brand-100);z-index:9}
+.dz-after::after{content:'';position:absolute;inset-inline:6px;bottom:-3px;height:3px;border-radius:3px;background:var(--brand);box-shadow:0 0 0 3px var(--brand-100);z-index:9}
+[data-dropzone][data-horizontal="1"] .dz-before::before{inset-inline:auto;inset-block:5px;width:3px;height:auto;inset-inline-end:-5px;top:5px;bottom:5px}
+[data-dropzone][data-horizontal="1"] .dz-after::after{inset-inline:auto;inset-block:5px;width:3px;height:auto;inset-inline-start:-5px;top:5px;bottom:5px}
+.dz-empty::before{content:'أفلت هنا';position:absolute;inset:10px;border:2px dashed var(--brand);border-radius:12px;color:var(--brand);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;background:var(--brand-050)}
+
+/* ---------- الكانفس ---------- */
+.cv{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;background:
+  radial-gradient(circle at 1px 1px,var(--line) 1px,transparent 0) 0 0/22px 22px,var(--bg)}
+.cv-bar{flex:0 0 auto;display:flex;align-items:center;gap:8px;justify-content:space-between;padding:7px 12px;border-bottom:1px solid var(--line);background:var(--surface);font-size:11px;color:var(--muted);font-weight:700}
+.cv-bar .hint{display:flex;align-items:center;gap:6px}
+.cv-scroll{flex:1 1 auto;overflow:auto;min-height:0;padding:16px}
+.cv-scroll::-webkit-scrollbar{width:10px}
+.cv-scroll::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:10px;border:3px solid transparent;background-clip:content-box}
+.cv-frame{max-width:1180px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:var(--sh2);border:1px solid rgba(16,35,71,.08)}
+.editor[data-dev="tablet"] .cv-frame,.editor[data-dev="tablet"] .b-paper{max-width:834px}
+.editor[data-dev="mobile"] .cv-frame,.editor[data-dev="mobile"] .b-paper{max-width:390px}
+.editor[data-dev="mobile"] .cv-scroll{padding:14px 10px}
+
+/* ---------- إطار كل قسم على الكانفس ---------- */
+.sec{position:relative;outline:0 solid transparent;transition:outline-color .15s}
+.sec+.sec{}
+.sec:hover{outline:1.5px solid var(--brand-100);outline-offset:-1.5px}
+.sec.sel{outline:2px solid var(--brand);outline-offset:-2px}
+.sec-drag{opacity:.35}
+.pv-wrap{position:relative}
+.sec-tools{position:absolute;top:8px;inset-inline-start:8px;z-index:20;display:none;align-items:center;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--sh2);padding:3px}
+.sec:hover .sec-tools,.sec.sel .sec-tools{display:flex}
+#ed-R .sec-tools{display:none}
+#ed-R .sec.sel .sec-tools{display:flex}
+.sec-tools .lbl{font-size:10px;font-weight:900;color:var(--brand);background:var(--brand-050);border-radius:6px;padding:2px 7px;margin-inline-end:2px;white-space:nowrap}
+.hnd{width:26px;height:26px;border-radius:8px;border:0;background:transparent;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:grab;touch-action:none}
+.hnd:hover{background:var(--brand-050);color:var(--brand)}
+.hnd[disabled]{opacity:.3;cursor:not-allowed}
+.hnd .ic{width:14px;height:14px}
+.sec-hint{position:absolute;bottom:8px;inset-inline-start:8px;z-index:20;display:none;background:var(--ink);color:#fff;border-radius:8px;padding:3px 9px;font-size:10px;font-weight:800;opacity:.92}
+.sec:hover .sec-hint{display:block}
+
+/* ---------- مَعاينات المتجر (كانفس) ---------- */
+.pv-strip{background:#101827;color:#E8EEF9;font-size:11.5px;font-weight:700;text-align:center;padding:7px 10px}
+.pv-hero{display:flex;align-items:center;gap:26px;padding:34px 34px;background:linear-gradient(120deg,#F7FAFF 0%,#EAF1FE 100%)}
+.pv-hero-txt{flex:1 1 auto;min-width:0}
+.pv-badge{display:inline-block;background:#101827;color:#fff;font-size:10px;font-weight:800;border-radius:999px;padding:4px 11px;margin-bottom:12px}
+.pv-hero h3{margin:0 0 8px;font-size:26px;font-weight:900;color:#101827;line-height:1.25}
+.pv-hero p{margin:0 0 16px;font-size:13px;color:#5A6B84;font-weight:600}
+.pv-btn{display:inline-block;background:#2F6BFF;color:#fff;font-size:12.5px;font-weight:800;border-radius:11px;padding:9px 20px;box-shadow:0 8px 18px -8px rgba(47,107,255,.6)}
+.pv-hero-img{width:250px;height:168px;flex:0 0 auto;border-radius:14px;background:
+  radial-gradient(circle at 78% 22%,rgba(255,255,255,.55) 0 12%,transparent 13%),
+  linear-gradient(140deg,#BFD3F5 0%,#8FAEE8 55%,#6B8FD9 100%);position:relative;overflow:hidden}
+.pv-hero-img::after{content:'';position:absolute;inset:auto 14px 14px auto;width:84px;height:58px;border-radius:10px;background:rgba(255,255,255,.5);filter:blur(.5px)}
+.pv-feats{display:flex;gap:8px;padding:13px 18px;background:#FBFCFE;border-block:1px solid #EDF1F8}
+.pv-feat{flex:1 1 0;display:flex;align-items:center;gap:8px;justify-content:center;font-size:11px;font-weight:700;color:#3C4B63}
+.pv-feat i{width:22px;height:22px;border-radius:7px;background:#EAF1FE;color:#2F6BFF;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:11px}
+.pv-chips{display:flex;gap:8px;padding:14px 18px;background:#fff;flex-wrap:wrap;align-items:center}
+.pv-chips .ttl{font-size:11px;font-weight:900;color:#101827;margin-inline-end:4px}
+.pv-chip{border:1px solid #DCE5F2;border-radius:999px;padding:5px 13px;font-size:11px;font-weight:700;color:#42536B;background:#fff}
+.pv-cats{display:flex;gap:12px;padding:20px 18px;background:#fff}
+.pv-cat{flex:1 1 0;border:1px solid #EDF1F8;border-radius:13px;overflow:hidden;background:#fff}
+.pv-cat .im{height:92px;background:linear-gradient(140deg,#D9E5F8,#AEC6EF)}
+.pv-cat:nth-child(2) .im{background:linear-gradient(140deg,#F3E6D8,#E0C6A6)}
+.pv-cat:nth-child(3) .im{background:linear-gradient(140deg,#DDEBE4,#B7D6C5)}
+.pv-cat b{display:block;font-size:12px;font-weight:800;color:#101827;padding:9px 11px 11px}
+.pv-bento{display:grid;grid-template-columns:1.6fr 1fr;grid-template-rows:1fr 1fr;gap:10px;padding:18px}
+.pv-bt{border-radius:12px;padding:14px;color:#fff;font-weight:900;font-size:13px;display:flex;flex-direction:column;justify-content:flex-end;min-height:78px}
+.pv-bt small{font-weight:600;font-size:10.5px;opacity:.85}
+.pv-bt.b1{grid-row:span 2;background:linear-gradient(150deg,#123B8F,#2F6BFF)}
+.pv-bt.b2{background:linear-gradient(150deg,#0E7C74,#23C7C9)}
+.pv-bt.b3{background:linear-gradient(150deg,#7A4B12,#D97706)}
+.pv-prods{padding:22px 18px;background:#fff}
+.pv-prods .hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.pv-prods .hd b{font-size:17px;font-weight:900;color:#101827}
+.pv-prods .hd span{font-size:11.5px;font-weight:800;color:#2F6BFF}
+.pv-pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.pv-pcard{border:1px solid #EDF1F8;border-radius:13px;overflow:hidden;background:#fff}
+.pv-pcard .pim{height:120px;background:linear-gradient(150deg,#E8EEF9,#CBDAF1);position:relative}
+.pv-pcard .pim::after{content:'';position:absolute;inset:auto auto 10px 10px;width:46px;height:46px;border-radius:9px;background:rgba(255,255,255,.65)}
+.pv-pcard:nth-child(2) .pim{background:linear-gradient(150deg,#F5EBE0,#E7D2BC)}
+.pv-pcard:nth-child(3) .pim{background:linear-gradient(150deg,#E2F0EA,#BFDCCE)}
+.pv-pcard:nth-child(4) .pim{background:linear-gradient(150deg,#F0E9F8,#D6C7EC)}
+.pv-pcard .pn{padding:9px 11px 4px;font-size:12px;font-weight:800;color:#101827}
+.pv-pcard .pp{padding:0 11px 11px;font-size:12px;font-weight:900;color:#2F6BFF}
+.pv-pcard .pp s{color:#93A2B8;font-weight:600;font-size:10.5px;margin-inline-start:5px}
+.pv-news{display:flex;align-items:center;gap:14px;justify-content:space-between;padding:18px 22px;background:#101827;color:#fff;flex-wrap:wrap}
+.pv-news b{font-size:14px;font-weight:900}
+.pv-news small{display:block;color:#9FB0CA;font-weight:600;font-size:11px;margin-top:2px}
+.pv-field{display:flex;gap:8px}
+.pv-field .fi{background:#fff;border-radius:10px;padding:8px 13px;font-size:11px;color:#93A2B8;min-width:190px}
+.pv-field .fb{background:#2F6BFF;border-radius:10px;padding:8px 16px;font-size:11.5px;font-weight:800}
+/* معاينات عامة لصفحات تانية */
+.pv-bar{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid #EDF1F8;background:#fff}
+.pv-bar .sr{flex:1 1 auto;background:#F3F6FB;border-radius:9px;color:#93A2B8;font-size:11px;padding:7px 12px}
+.pv-bar .bb{background:#101827;color:#fff;border-radius:9px;font-size:10.5px;font-weight:800;padding:7px 12px}
+.pv-side{display:grid;grid-template-columns:210px 1fr;gap:0;background:#fff}
+.pv-side .flt{padding:14px;border-inline-end:1px solid #EDF1F8;display:flex;flex-direction:column;gap:9px}
+.pv-side .flt i{display:block;height:12px;border-radius:6px;background:#EFF3FA;font-style:normal}
+.pv-side .flt i:nth-child(odd){width:72%}
+.pv-grid6{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:16px;background:#fff}
+.pv-gcard{border:1px solid #EDF1F8;border-radius:12px;overflow:hidden}
+.pv-gcard .gim{height:104px;background:linear-gradient(150deg,#E8EEF9,#CFDDF3)}
+.pv-gcard:nth-child(2n) .gim{background:linear-gradient(150deg,#F5EBE0,#E8D6C2)}
+.pv-gcard:nth-child(3n) .gim{background:linear-gradient(150deg,#E2F0EA,#C6DFD2)}
+.pv-gcard .gnp{padding:8px 10px;font-size:11px;font-weight:800;color:#101827}
+.pv-gcard .gnp small{display:block;color:#2F6BFF;font-weight:900;margin-top:2px}
+.pv-rows{background:#fff;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.pv-row{display:flex;align-items:center;gap:12px;border:1px solid #EDF1F8;border-radius:12px;padding:9px 11px}
+.pv-row .rim{width:52px;height:52px;border-radius:10px;background:linear-gradient(150deg,#E8EEF9,#CFDDF3);flex:0 0 auto}
+.pv-row .rn{flex:1 1 auto;font-size:12px;font-weight:800;color:#101827}
+.pv-row .rn small{display:block;color:#93A2B8;font-weight:600;font-size:10.5px;margin-top:2px}
+.pv-row .rq{display:flex;align-items:center;gap:6px}
+.pv-row .rq i{width:24px;height:24px;border:1px solid #DCE5F2;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:11px;color:#42536B;font-weight:800}
+.pv-sum{background:#fff;padding:16px 18px;display:flex;flex-direction:column;gap:9px}
+.pv-sum .ln{display:flex;justify-content:space-between;font-size:12px;color:#42536B;font-weight:700}
+.pv-sum .ln.tot{border-top:1px dashed #DCE5F2;padding-top:9px;font-size:14px;font-weight:900;color:#101827}
+.pv-sum .go{margin-top:4px;background:#2F6BFF;color:#fff;border-radius:11px;text-align:center;font-size:12.5px;font-weight:800;padding:10px}
+.pv-form{background:#fff;padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.pv-form .fi{background:#F8FAFD;border:1px solid #E7EDF6;border-radius:10px;padding:10px 12px;font-size:11px;color:#93A2B8}
+.pv-form .fi.wide{grid-column:1/-1}
+.pv-methods{background:#fff;padding:16px 18px;display:flex;flex-direction:column;gap:9px}
+.pv-meth{display:flex;align-items:center;gap:10px;border:1.5px solid #EDF1F8;border-radius:12px;padding:11px 13px;font-size:12px;font-weight:800;color:#101827}
+.pv-meth.on{border-color:#2F6BFF;background:#F5F8FF}
+.pv-meth i{width:20px;height:20px;border-radius:50%;border:2px solid #CBD8EA;display:inline-flex;font-style:normal}
+.pv-meth.on i{border-color:#2F6BFF;background:radial-gradient(circle,#2F6BFF 0 5px,transparent 6px)}
+.pv-gallery{display:grid;grid-template-columns:88px 1fr;gap:10px;padding:14px;background:#fff}
+.pv-gallery .th{display:flex;flex-direction:column;gap:8px}
+.pv-gallery .th i{height:64px;border-radius:9px;background:linear-gradient(150deg,#E8EEF9,#CFDDF3);font-style:normal}
+.pv-gallery .main{height:220px;border-radius:12px;background:linear-gradient(150deg,#DCE7F8,#B9CEEE)}
+.pv-pdp{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;background:#fff;padding:16px}
+.pv-pdp .info b{font-size:17px;font-weight:900;color:#101827;display:block}
+.pv-pdp .info .pr{font-size:18px;font-weight:900;color:#2F6BFF;margin:8px 0}
+.pv-pdp .info .buy{background:#101827;color:#fff;border-radius:11px;text-align:center;font-size:12.5px;font-weight:800;padding:11px;margin-top:10px}
+.pv-pdp .info .lines i{display:block;height:11px;border-radius:6px;background:#F0F4FA;margin:7px 0;font-style:normal}
+.pv-conv{background:#F5F8FF;border-top:2px solid #2F6BFF;padding:14px 16px;display:flex;gap:10px;flex-wrap:wrap}
+.pv-conv .cd{background:#fff;border:1px solid #E1E9F5;border-radius:11px;padding:9px 12px;font-size:11px;font-weight:800;color:#31435E}
+.pv-revs{background:#fff;padding:14px 16px;display:flex;flex-direction:column;gap:9px}
+.pv-rev{border:1px solid #EDF1F8;border-radius:11px;padding:10px 12px;font-size:11.5px;color:#42536B;font-weight:600}
+.pv-rev b{color:#101827;font-weight:900;margin-inline-end:6px}
+.pv-rev .st{color:#F59E0B;font-weight:900}
+.pv-gen{background:#fff;padding:18px;display:flex;flex-direction:column;gap:9px}
+.pv-gen .g1{height:15px;width:42%;border-radius:7px;background:#EDF2F9}
+.pv-gen .g2{height:11px;width:78%;border-radius:6px;background:#F3F6FB}
+.pv-gen .g3{height:64px;border-radius:11px;background:linear-gradient(150deg,#EEF3FA,#DCE7F6)}
+
+/* ---------- إضافة قسم: زر عائم ---------- */
+.add-fab{position:absolute;bottom:18px;inset-inline-start:50%;transform:translateX(50%);z-index:30;display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border:0;border-radius:999px;padding:11px 20px;font-size:12.5px;font-weight:900;cursor:pointer;box-shadow:var(--sh3)}
+.add-fab:hover{background:var(--brand)}
+.add-fab .ic{width:15px;height:15px}
+
+/* ---------- إنسبكتر ---------- */
+.ins-h{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line)}
+.ins-h b{font-size:12px;font-weight:900;color:var(--ink)}
+.ins-h .sub{font-size:10px;color:var(--muted);direction:ltr;text-align:start}
+.ins-body{flex:1 1 auto;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:14px}
+.fld{display:flex;flex-direction:column;gap:5px}
+.lbl{font-size:11px;font-weight:800;color:var(--ink-2);display:flex;justify-content:space-between;align-items:center}
+.lbl small{color:var(--muted);font-weight:600;font-size:9.5px}
+.inp{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px 11px;font:inherit;font-size:12px;color:var(--ink);outline:none;width:100%}
+.inp:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-100)}
+textarea.inp{resize:vertical;min-height:58px;line-height:1.6}
+.seg2{display:flex;background:var(--surface-3);border:1px solid var(--line);border-radius:10px;padding:2px}
+.seg2 button{flex:1 1 0;border:0;background:transparent;color:var(--muted);font-size:11px;font-weight:800;padding:6px;border-radius:8px;cursor:pointer}
+.seg2 button.on{background:var(--surface);color:var(--brand);box-shadow:var(--sh1)}
+.imgdrop{border:1.5px dashed var(--line-2);border-radius:12px;padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;background:var(--surface-2);cursor:pointer}
+.imgdrop:hover{border-color:var(--brand);color:var(--brand);background:var(--brand-050)}
+.ins-sec-t{font-size:10.5px;font-weight:900;color:var(--muted);margin-top:4px}
+.ins-empty{padding:26px 16px;text-align:center;color:var(--muted);font-size:11.5px;font-weight:700;line-height:1.9}
+
+/* ---------- B: فجوات الإدراج + البوب أوفر ---------- */
+.b-gap{position:relative;height:0;transition:height .14s;z-index:25}
+.b-gap::before{content:'';position:absolute;inset-inline:0;top:-9px;bottom:-9px}
+.b-gap:hover{height:30px}
+.b-gap .hair{position:absolute;inset-inline:14px;top:50%;height:0;border-top:2px dashed var(--brand-100)}
+.b-gap:hover .hair{border-top-color:var(--brand)}
+.b-gap-btn{position:absolute;inset-inline-start:50%;top:50%;transform:translate(-50%,-50%) ;width:26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;border:3px solid #fff;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--sh2)}
+.b-gap:hover .b-gap-btn{display:inline-flex}
+.b-gap-btn .ic{width:12px;height:12px}
+.b-pop{position:absolute;z-index:60;width:430px;max-width:88%;background:var(--surface);border:1px solid var(--line);border-radius:15px;box-shadow:var(--sh3);overflow:hidden}
+.b-pop.center{position:absolute;bottom:84px;inset-inline-start:50%;transform:translateX(50%);top:auto;width:470px}
+.b-pop-h{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.b-pop-h .ic{width:14px;height:14px;color:var(--brand)}
+.b-pop-h b{font-size:12px;font-weight:900;color:var(--ink);flex:1 1 auto}
+.b-pop-s{padding:8px 10px;border-bottom:1px solid var(--line)}
+.b-pop-s .wrap{display:flex;align-items:center;gap:7px;background:var(--surface-3);border:1px solid var(--line);border-radius:9px;padding:6px 9px}
+.b-pop-s .ic{width:13px;height:13px;color:var(--muted)}
+.b-pop-s input{border:0;background:transparent;outline:none;font:inherit;font-size:12px;color:var(--ink);width:100%}
+.b-cats{display:flex;gap:4px;padding:8px 10px 2px;flex-wrap:wrap}
+.b-cat{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;font-size:10.5px;font-weight:800;color:var(--ink-2);cursor:pointer}
+.b-cat.on{background:var(--brand-050);border-color:var(--brand-100);color:var(--brand)}
+.b-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:10px;max-height:250px;overflow:auto}
+.b-item{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:11px;background:var(--surface);padding:8px 9px;cursor:pointer;text-align:start}
+.b-item:hover{border-color:var(--brand);background:var(--brand-050)}
+.b-item .a-ic{width:28px;height:28px;font-size:14px}
+.b-item b{display:block;font-size:11px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b-item span{display:block;font-size:9.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b-status{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border-top:1px solid var(--line);padding:7px 12px;font-size:11px;color:var(--muted);font-weight:700}
+.b-status b{color:var(--ink)}
+.b-paper{max-width:1180px;margin:0 auto;background:#fff;border-radius:14px;border:1px solid rgba(16,35,71,.08);box-shadow:var(--sh2);overflow:hidden}
+
+/* ---------- C: المكتبة + Click&Place ---------- */
+.c-lib{position:absolute;inset-block:0;inset-inline-end:0;width:392px;max-width:92%;background:var(--surface);border-inline-start:1px solid var(--line);box-shadow:var(--sh3);display:flex;flex-direction:column;z-index:45;transform:translateX(104%);transition:transform .22s ease}
+.editor[dir="rtl"] .c-lib{transform:translateX(-104%)}
+.c-lib.open{transform:none!important}
+.c-lib-h{display:flex;align-items:center;gap:9px;padding:11px 13px;border-bottom:1px solid var(--line)}
+.c-lib-h b{font-size:12.5px;font-weight:900;color:var(--ink);flex:1 1 auto}
+.c-chips{display:flex;gap:5px;padding:9px 12px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.c-lgrid{flex:1 1 auto;overflow:auto;padding:12px 12px 24px;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start}
+.c-card{border:1.5px solid var(--line);border-radius:13px;background:var(--surface-2);overflow:hidden;cursor:grab;touch-action:none;transition:.15s;position:relative;text-align:start}
+.c-card:hover{border-color:var(--brand);box-shadow:var(--sh2);transform:translateY(-1px)}
+.c-card.grabbed{border-color:var(--brand);box-shadow:0 0 0 4px var(--brand-100)}
+.c-card .im{height:76px;display:flex;align-items:center;justify-content:center;position:relative;background:linear-gradient(150deg,#E9EFF9,#D3E0F4)}
+.c-card.cat-hero .im{background:linear-gradient(150deg,#E9EFF9,#C9D9F3)}
+.c-card.cat-products .im{background:linear-gradient(150deg,#E9F2ED,#C6E0D3)}
+.c-card.cat-promotions .im{background:linear-gradient(150deg,#FBEFE3,#F1D6B9)}
+.c-card.cat-trust .im{background:linear-gradient(150deg,#EFEAF9,#DACDF2)}
+.c-card.cat-content .im{background:linear-gradient(150deg,#E9F2F8,#CADFF0)}
+.c-card.cat-navigation .im{background:linear-gradient(150deg,#F2F0E6,#E3DCC6)}
+.icp{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.88);display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 1px 4px rgba(16,24,39,.14);z-index:1}
+.c-card .im::before{content:'';position:absolute;top:11px;inset-inline-end:10px;width:44%;height:8px;border-radius:5px;background:rgba(16,24,39,.13)}
+.c-card .im::after{content:'';position:absolute;bottom:10px;inset-inline-end:10px;width:62%;height:17px;border-radius:6px;background:rgba(255,255,255,.78)}
+.c-card .tx{padding:8px 10px 10px}
+.c-card .tx b{display:block;font-size:11.5px;font-weight:900;color:var(--ink)}
+.c-card .tx span{display:block;font-size:9.5px;color:var(--muted);margin-top:3px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-card .tag2026{position:absolute;top:7px;inset-inline-start:7px;background:#101827;color:#fff;font-size:8.5px;font-weight:900;border-radius:6px;padding:2px 6px;z-index:2}
+.c-banner{display:none;align-items:center;gap:10px;background:var(--brand-050);border-bottom:1px solid var(--brand-100);padding:8px 13px;font-size:12px;font-weight:800;color:var(--brand-700);flex:0 0 auto}
+.c-banner.on{display:flex}
+.c-banner .x{margin-inline-start:auto}
+.c-slot{display:none;height:46px;width:calc(100% - 24px);margin:6px 12px;border:2px dashed var(--brand);border-radius:12px;background:var(--brand-050);color:var(--brand);font-size:11.5px;font-weight:900;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+.editor.picking .c-slot{display:flex;animation:slotPulse 1.5s ease-in-out infinite}
+@keyframes slotPulse{0%,100%{background:var(--brand-050)}50%{background:var(--brand-100)}}
+.c-slot.hot{background:var(--brand);color:#fff;border-style:solid}
+.c-handle{position:absolute;top:8px;inset-inline-start:8px;z-index:22;display:none}
+.sec:hover .c-handle,.sec.picked .c-handle{display:flex}
+.sec.picked .c-handle .lbl{background:var(--brand);color:#fff}
+
+/* ---------- D: الستوري بورد ---------- */
+.d-strip{flex:0 0 auto;background:var(--surface);border-top:1px solid var(--line);padding:9px 12px 11px;display:flex;flex-direction:column;gap:8px;min-height:0}
+.d-strip-h{display:flex;align-items:center;gap:9px;justify-content:space-between}
+.d-strip-h b{font-size:12px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:7px}
+.d-strip-h .ic{width:14px;height:14px;color:var(--brand)}
+.d-track{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 7px;position:relative}
+.d-track::-webkit-scrollbar{height:9px}
+.d-track::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px}
+.d-card{position:relative;flex:0 0 auto;width:172px;border:1.5px solid var(--line);border-radius:13px;background:var(--surface-2);cursor:grab;touch-action:none;transition:.14s;overflow:hidden}
+.d-card:hover{border-color:var(--brand)}
+.d-card.sel{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-100)}
+.d-card.dragging{opacity:.35}
+.d-thumb{height:96px;overflow:hidden;position:relative;background:#fff;border-bottom:1px solid var(--line)}
+.d-thumb-inner{position:absolute;top:0;right:0;width:580px;transform:scale(.296);transform-origin:top right;pointer-events:none}
+.d-meta{display:flex;align-items:center;gap:7px;padding:7px 9px}
+.d-num{width:20px;height:20px;border-radius:7px;background:var(--ink);color:#fff;font-size:10.5px;font-weight:900;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.d-nm{font-size:10.5px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.d-add{flex:0 0 auto;width:64px;border:1.5px dashed var(--line-2);border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--muted);font-size:10px;font-weight:800;cursor:pointer;background:transparent}
+.d-add:hover{border-color:var(--brand);color:var(--brand)}
+.d-add .ic{width:16px;height:16px}
+
+/* ---------- شبح السحب + التوست ---------- */
+#ghost{position:fixed;z-index:9999;pointer-events:none;display:none;align-items:center;gap:8px;background:var(--ink,#0E1A2B);color:#fff;border-radius:11px;padding:8px 13px;font-size:12px;font-weight:800;box-shadow:0 18px 40px -12px rgba(0,0,0,.5);font-family:Cairo,sans-serif;max-width:280px}
+#ghost .g-ic{width:22px;height:22px;border-radius:7px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:12px;flex:0 0 auto}
+#ghost small{font-weight:600;opacity:.75;font-size:10px}
+.tst{position:absolute;bottom:18px;inset-inline-start:50%;transform:translateX(50%) translateY(12px);background:var(--ink);color:#fff;border-radius:11px;padding:9px 16px;font-size:12px;font-weight:800;opacity:0;transition:.22s;z-index:80;pointer-events:none;box-shadow:var(--sh3);white-space:nowrap}
+.tst.on{opacity:1;transform:translateX(50%) translateY(0)}
+
+/* ---------- موبايل داخل الموك (كونتينر) ---------- */
+.mobile-dock{display:none}
+@container mock (max-width:900px){
+  .rail,.insp{display:none}
+  .mobile-dock{display:flex;flex:0 0 auto;align-items:center;justify-content:space-around;background:var(--surface);border-top:1px solid var(--line);padding:5px}
+  .mobile-dock button{flex:1 1 0;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:transparent;color:var(--muted);font-size:10px;font-weight:800;padding:6px 0;border-radius:10px;cursor:pointer}
+  .mobile-dock button.on{color:var(--brand);background:var(--brand-050)}
+  .mobile-dock .ic{width:16px;height:16px}
+  .editor[data-mtab="layers"] .rail{display:flex;position:absolute;inset-block:0;inset-inline-end:0;width:86%;max-width:340px;z-index:35;box-shadow:var(--sh3)}
+  .editor[data-mtab="inspector"] .insp{display:flex;position:absolute;inset-block:0;inset-inline-start:0;width:86%;max-width:340px;z-index:35;box-shadow:var(--sh3)}
+  .c-lib{width:92%}
+  .tb-sub,.tb-store .badge{display:none}
+}
+@media (max-width:860px){
+  .tb{flex-wrap:wrap;min-height:52px}
+  .editor{height:auto;min-height:640px}
+  .c-lgrid{grid-template-columns:1fr 1fr}
+}
+.pv-mini .pv-hero{padding:22px}
+.pv-mini .pv-hero h3{font-size:22px}
+[data-mode="dark"] .cv-frame{filter:brightness(.97)}
+body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!important}
+</style>
+</head>
+<body>
+<!-- ============ شريط المعاينة ============ -->
+<div class="bar" id="bar">
+  <div class="bar-top">
+    <div class="bar-title">MaxP · استوديو المتجر البصري <small>4 تصاميم سحب وإفلات + الحالي للمرجع</small></div>
+    <div class="bar-ctl">
+      <div class="seg" role="group" aria-label="الوضع">
+        <button id="btnLight" aria-pressed="true">فاتح</button>
+        <button id="btnDark" aria-pressed="false">غامق</button>
+      </div>
+      <div class="seg" role="group" aria-label="حجم الشاشة">
+        <button id="btnDesk" aria-pressed="true">شاشة كاملة</button>
+        <button id="btnMob" aria-pressed="false">موبايل</button>
+      </div>
+    </div>
+  </div>
+  <div class="tabs" id="tabs" role="tablist"></div>
+  <div class="note" id="note"></div>
+</div>
+
+<div class="stage" id="stage" data-vw="desktop">
+  <section class="variant" id="vR" aria-label="الحالي (مرجع)"><div class="mock"><div class="editor" id="ed-R" dir="rtl" data-variant="R" data-mtab="canvas"></div></div></section>
+  <section class="variant" id="vA" aria-label="A استوديو شوبيفاي"><div class="mock"><div class="editor" id="ed-A" dir="rtl" data-variant="A" data-mtab="canvas"></div></div></section>
+  <section class="variant" id="vB" aria-label="B محرر مباشر"><div class="mock"><div class="editor" id="ed-B" dir="rtl" data-variant="B" data-mtab="canvas"></div></div></section>
+  <section class="variant" id="vC" aria-label="C مكتبة مصغرات"><div class="mock"><div class="editor" id="ed-C" dir="rtl" data-variant="C" data-mtab="canvas"></div></div></section>
+  <section class="variant" id="vD" aria-label="D ستوري بورد"><div class="mock"><div class="editor" id="ed-D" dir="rtl" data-variant="D" data-mtab="canvas"></div></div></section>
+</div>
+
+<div id="ghost"><span class="g-ic"></span><span class="g-tx"></span><small></small></div>
+<script>
+/* ============================================================
+   MaxP Storefront Studio — 4 drag&drop design concepts (mockup)
+   بيانات حقيقية: صفحات الاستوديو + أقسام ثيم Modern Minimal + توكنز التطبيق
+   ============================================================ */
+'use strict';
+
+/* ---------- أيقونات ---------- */
+const svg=(p,c)=>`<svg class="ic ${c||''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const svgF=(p,c)=>`<svg class="ic ${c||''}" viewBox="0 0 24 24" fill="currentColor">${p}</svg>`;
+const I={
+  up: svg('<path d="M12 19V6M6 12l6-6 6 6"/>'),
+  down: svg('<path d="M12 5v13M6 12l6 6 6-6"/>'),
+  plus: svg('<path d="M12 5v14M5 12h14"/>'),
+  trash: svg('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>'),
+  copy: svg('<path d="M8 8V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2M4 10a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/>'),
+  eye: svg('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>'),
+  check: svg('<path d="M4.5 12.5l5 5 10-11"/>'),
+  undo: svg('<path d="M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/>'),
+  redo: svg('<path d="M15 14l5-5-5-5M20 9H10a6 6 0 0 0 0 12h3"/>'),
+  desktop: svg('<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M9 21h6M12 17v4"/>'),
+  tablet: svg('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/>'),
+  phone: svg('<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>'),
+  layers: svg('<path d="M4 4h6.5v6.5H4zM13.5 4H20v6.5h-6.5zM4 13.5h6.5V20H4zM13.5 13.5H20V20h-6.5z"/>'),
+  sliders: svg('<path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2.1"/><circle cx="15" cy="12" r="2.1"/><circle cx="7" cy="17" r="2.1"/>'),
+  search: svg('<circle cx="11" cy="11" r="7"/><path d="M20.5 20.5l-4-4"/>'),
+  dots: svgF('<circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/>'),
+  sparkles: svg('<path d="M12 3l1.7 5L19 9.7l-5.3 1.7L12 16.7l-1.7-5.3L5 9.7l5.3-1.7L12 3z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z"/>'),
+  chevD: svg('<path d="M6 9l6 6 6-6"/>'),
+  back: svg('<path d="M20 12H5M11 6l-6 6 6 6"/>'),
+  x: svg('<path d="M6 6l12 12M18 6L6 18"/>'),
+  film: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/>'),
+  gripsvg: svgF('<circle cx="9" cy="6" r="1.55"/><circle cx="15" cy="6" r="1.55"/><circle cx="9" cy="12" r="1.55"/><circle cx="15" cy="12" r="1.55"/><circle cx="9" cy="18" r="1.55"/><circle cx="15" cy="18" r="1.55"/>'),
+  bolt: svgF('<path d="M13 2L4.2 13.4h6.3L11 22l8.8-11.4h-6.3L13 2z"/>'),
+  cart: svg('<path d="M3 4h2l2.4 12h11L21 7H6.2"/><circle cx="9" cy="19.4" r="1.5"/><circle cx="17" cy="19.4" r="1.5"/>'),
+  tag: svg('<path d="M3 11V4a1 1 0 0 1 1-1h7l10 10-8 8L3 11z"/><circle cx="8" cy="8" r="1.4"/>'),
+  card: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/>'),
+  book: svg('<path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2V5z"/><path d="M8 7.5h7M8 11.5h5"/>'),
+  shield: svg('<path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z"/>'),
+  star: svgF('<path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9 2.9-6z"/>'),
+  compass: svg('<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5 5-2z"/>'),
+  mega: svg('<path d="M4 10.5v3a2 2 0 0 0 2 2h1l7 4.5V6L7 10.5H6a2 2 0 0 0-2 2z"/><path d="M17.5 8.5a5 5 0 0 1 0 7"/>'),
+  box: svg('<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>'),
+  grid: svg('<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>'),
+};
+
+/* ---------- بيانات حقيقية ---------- */
+const PAGES=[
+  {id:'home',l:'الرئيسية',i:'🏠',d:'واجهة المتجر والبنرات الأساسية'},
+  {id:'shop',l:'المتجر والكتالوج',i:'🛍️',d:'شبكة المنتجات والتصنيفات والتصفية'},
+  {id:'pdp',l:'صفحة المنتج',i:'📦',d:'تفاصيل السلعة، الصور، والـBuybox'},
+  {id:'cart',l:'السلة',i:'🛒',d:'عربة التسوق والهدايا والشحن المجاني'},
+  {id:'checkout',l:'إتمام الطلب',i:'💳',d:'صفحة الدفع وبيانات الشحن'},
+];
+/* أقسام ثيم «Modern Minimal» الحقيقي لكل صفحة */
+const INIT={
+  home:['promo-strip','hero-banner','features-bar','shopping-intents','featured-collections','offer-bento','featured-products','newsletter'],
+  shop:['shop-command-bar','filters-sidebar','product-grid','shop-promo-rail','newsletter'],
+  pdp:['product-gallery','product-info','conversion-stack','bought-together','related-products','reviews'],
+  cart:['cart-items','order-summary'],
+  checkout:['cart-items','checkout-form','payment'],
+};
+/* مكتبات الأقسام — أسماء من manifest الاستوديو (والباقي مقترح) */
+const M={
+  'promo-strip':{l:'شريط المزايا',i:'📣',c:'promotions'},
+  'hero-banner':{l:'البنر الرئيسي',i:'✨',c:'hero'},
+  'features-bar':{l:'شريط المزايا المصوّر',i:'⚡',c:'trust'},
+  'shopping-intents':{l:'مسارات تسوق سريعة',i:'🧭',c:'navigation'},
+  'featured-collections':{l:'التصنيفات المميزة',i:'🗂️',c:'navigation'},
+  'offer-bento':{l:'بنتو العروض التجارية',i:'🎁',c:'promotions'},
+  'featured-products':{l:'المنتجات المميزة',i:'🛍️',c:'products'},
+  'newsletter':{l:'النشرة البريدية',i:'✉️',c:'content'},
+  'shop-command-bar':{l:'شريط أوامر المتجر',i:'🔍',c:'navigation'},
+  'filters-sidebar':{l:'تصفية النتائج (جانبي)',i:'🎛️',c:'navigation'},
+  'product-grid':{l:'شبكة المنتجات',i:'🧱',c:'products'},
+  'shop-promo-rail':{l:'ريل العروض',i:'🏷️',c:'promotions'},
+  'product-gallery':{l:'معرض صور المنتج',i:'🖼️',c:'products'},
+  'product-info':{l:'تفاصيل المنتج والـBuybox',i:'📦',c:'products'},
+  'conversion-stack':{l:'طقم التحويل (Urgency)',i:'⏱️',c:'promotions'},
+  'bought-together':{l:'اشتروا معاً',i:'🧩',c:'products'},
+  'related-products':{l:'منتجات مشابهة',i:'🔁',c:'products'},
+  'reviews':{l:'آراء العملاء',i:'⭐',c:'trust'},
+  'cart-items':{l:'قائمة السلة',i:'🛒',c:'products'},
+  'order-summary':{l:'ملخص الطلب',i:'🧾',c:'products'},
+  'checkout-form':{l:'بيانات الدفع',i:'📝',c:'content'},
+  'payment':{l:'طرق الدفع',i:'💳',c:'products'},
+  'order-confirmation':{l:'تأكيد الطلب',i:'✅',c:'content'},
+  'hero':{l:'هيرو نصّي',i:'✨',c:'hero'},
+  'split-hero':{l:'هيرو منقسم',i:'🌗',c:'hero'},
+  'cinematic-banner':{l:'بانر سينمائي',i:'🎬',c:'hero'},
+  'grid-hero':{l:'هيرو شبكي',i:'🔲',c:'hero'},
+  'flash-sale':{l:'فلاش سيل',i:'⚡',c:'promotions'},
+  'product-slider':{l:'سلايدر منتجات',i:'🎠',c:'products'},
+  'recent-products':{l:'وصل حديثاً',i:'🆕',c:'products'},
+  'sale-countdown':{l:'عدّاد تنازلي للعرض',i:'⏳',c:'promotions'},
+  'promotion-banner':{l:'بانر ترويجي',i:'📣',c:'promotions'},
+  'deal-of-the-day':{l:'صفقة اليوم',i:'🔥',c:'promotions'},
+  'coupon-strip':{l:'شريط كوبونات',i:'🎟️',c:'promotions'},
+  'shoppable-reels':{l:'ريلز قابلة للشراء',i:'🎬',c:'promotions',n:true},
+  'flash-sale-timer':{l:'مؤقت فلاش سيل',i:'⌛',c:'promotions',n:true},
+  'countdown-banner':{l:'Countdown Banner (عدّاد)',i:'⏳',c:'promotions'},
+  'trust-badges':{l:'شارات الثقة',i:'🛡️',c:'trust'},
+  'customer-reviews':{l:'آراء العملاء (كاروسيل)',i:'🌟',c:'trust'},
+  'testimonials-slider':{l:'شهادات العملاء',i:'💬',c:'trust'},
+  'press-features':{l:'ظهور إعلامي',i:'📰',c:'trust'},
+  'rich-text':{l:'نص حر',i:'📝',c:'content'},
+  'about-story':{l:'قصة المتجر',i:'📖',c:'content'},
+  'story-parallax':{l:'قصة ببارالاكس',i:'🌄',c:'content'},
+  'faq-accordion':{l:'الأسئلة الشائعة',i:'❓',c:'content'},
+  'blog-feed':{l:'مقالات المدونة',i:'🗞️',c:'content'},
+  'video-showcase':{l:'فيديو تعريفي',i:'🎥',c:'content'},
+  'category-grid':{l:'شبكة تصنيفات',i:'🗂️',c:'navigation'},
+  'brand-strip':{l:'شريط الماركات',i:'🏷️',c:'navigation'},
+  'footer-section':{l:'تذييل الصفحة',i:'🧱',c:'navigation'},
+};
+/* التصنيفات الستة الحقيقية من الاستوديو */
+const CATS=[
+  {id:'hero',t:'البنرات والواجهات',i:'✨'},
+  {id:'products',t:'شبكات وعروض المنتجات',i:'🛍️'},
+  {id:'promotions',t:'العروض والمؤقتات',i:'🔥'},
+  {id:'trust',t:'الموثوقية والمراجعات',i:'🛡️'},
+  {id:'content',t:'القصص والمحتوى',i:'📖'},
+  {id:'navigation',t:'التصنيفات والفوتر',i:'🧭'},
+];
+const libTypes=cat=>Object.keys(M).filter(k=>M[k].c===cat);
+
+/* ---------- معاينات الأقسام (كانفس) ---------- */
+const sixCards=['حقيبة جلد طبيعي|450','حذاء رياضي خفيف|620','ساعة يد كلاسيك|890','عطر فاخر 100مل|520','طقم عناية بالبشرة|310','نظارة شمس صيفية|275'];
+const cardHTML=x=>{const[n,p]=x.split('|');return `<div class="pv-pcard"><div class="pim"></div><div class="pn">${n}</div><div class="pp">${p} ج.م</div></div>`;};
+const gCardHTML=x=>{const[n,p]=x.split('|');return `<div class="pv-gcard"><div class="gim"></div><div class="gnp">${n}<small>${p} ج.م</small></div></div>`;};
+const PV={
+  'promo-strip':()=>`<div class="pv-strip">🔥 شحن مجاني للطلبات فوق 500 جنيه • دفع عند الاستلام</div>`,
+  'hero-banner':()=>`<div class="pv-hero"><div class="pv-hero-txt"><span class="pv-badge">وصل حديثاً 2026</span><h3>تشكيلة الموسم الجديدة</h3><p>خصومات تبدأ من 30% لفترة محدودة — والدفع عند الاستلام متاح</p><span class="pv-btn">تسوّقي الآن</span></div><div class="pv-hero-img"></div></div>`,
+  'features-bar':()=>`<div class="pv-feats"><div class="pv-feat"><i>🚚</i> شحن سريع لكل المحافظات</div><div class="pv-feat"><i>💵</i> دفع عند الاستلام</div><div class="pv-feat"><i>↩️</i> استبدال مجاني 14 يوم</div><div class="pv-feat"><i>💬</i> دعم واتساب فوري</div></div>`,
+  'shopping-intents':()=>`<div class="pv-chips"><span class="ttl">بتدوّر على إيه؟</span><span class="pv-chip">هدايا</span><span class="pv-chip">أحدث الإضافات</span><span class="pv-chip">أقل من 300 ج.م</span><span class="pv-chip">الأكثر مبيعاً</span><span class="pv-chip">عروض الجمعة</span></div>`,
+  'featured-collections':()=>`<div class="pv-cats">${['حقائب','أحذية','إكسسوارات'].map(c=>`<div class="pv-cat"><div class="im"></div><b>${c}</b></div>`).join('')}</div>`,
+  'offer-bento':()=>`<div class="pv-bento"><div class="pv-bt b1">خصم حتى 40%<small>على تشكيلة الحقائب</small></div><div class="pv-bt b2">شنط جديدة<small>وصلت النهاردة</small></div><div class="pv-bt b3">عروض الساعات<small>لفترة محدودة</small></div></div>`,
+  'featured-products':()=>`<div class="pv-prods"><div class="hd"><b>المنتجات المميزة</b><span>شوف الكل ←</span></div><div class="pv-pgrid">${sixCards.slice(0,4).map(cardHTML).join('')}</div></div>`,
+  'product-slider':()=>`<div class="pv-prods"><div class="hd"><b>سلايدر المنتجات</b><span>اسحب ←</span></div><div class="pv-pgrid">${sixCards.slice(0,4).map(cardHTML).join('')}</div></div>`,
+  'recent-products':()=>`<div class="pv-prods"><div class="hd"><b>وصل حديثاً</b><span>شوف الكل ←</span></div><div class="pv-pgrid">${sixCards.slice(2,6).map(cardHTML).join('')}</div></div>`,
+  'related-products':()=>`<div class="pv-prods"><div class="hd"><b>منتجات مشابهة</b></div><div class="pv-pgrid">${sixCards.slice(1,5).map(cardHTML).join('')}</div></div>`,
+  'newsletter':()=>`<div class="pv-news"><div><b>اشترك في النشرة البريدية</b><small>كون أول من يعرف العروض الجديدة</small></div><div class="pv-field"><span class="fi">البريد الإلكتروني</span><span class="fb">اشترك</span></div></div>`,
+  'shop-command-bar':()=>`<div class="pv-bar"><span class="bb">الأقسام</span><span class="sr">ابحثي عن منتج… (بحث فوري)</span><span class="bb">العروض</span></div>`,
+  'filters-sidebar':()=>`<div class="pv-side"><div class="flt"><b style="font-size:11px;font-weight:900;color:#101827">تصفية النتائج</b><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="pv-grid6">${sixCards.map(gCardHTML).join('')}</div></div>`,
+  'product-grid':()=>`<div class="pv-grid6">${sixCards.map(gCardHTML).join('')}</div>`,
+  'shop-promo-rail':()=>`<div class="pv-chips"><span class="ttl">عروض الأسبوع</span><span class="pv-chip">خصم 25% على الأحذية</span><span class="pv-chip">اشترِ 2 والثالث هدية</span><span class="pv-chip">توصيل مجاني فوق 500</span></div>`,
+  'product-gallery':()=>`<div class="pv-gallery"><div class="th"><i></i><i></i><i></i><i></i></div><div class="main"></div></div>`,
+  'product-info':()=>`<div class="pv-pdp"><div class="main" style="height:230px;border-radius:12px;background:linear-gradient(150deg,#DCE7F8,#B9CEEE)"></div><div class="info"><b>حقيبة جلد طبيعي — إصدار 2026</b><div class="pr">450 ج.م <s style="font-size:12px;color:#93A2B8;font-weight:600">600 ج.م</s></div><div class="lines"><i></i><i style="width:80%"></i><i style="width:60%"></i></div><div class="buy">أضف إلى السلة — الدفع عند الاستلام</div></div></div>`,
+  'conversion-stack':()=>`<div class="pv-conv"><span class="cd">⏳ باقي 3 قطع في المخزون</span><span class="cd">🔥 12 شخصاً يشاهدون الآن</span><span class="cd">🚚 التوصيل خلال 48 ساعة</span><span class="cd">💵 دفع عند الاستلام</span></div>`,
+  'bought-together':()=>`<div class="pv-rows"><div class="pv-row"><span class="rim"></span><span class="rn">حقيبة + محفظة مطابقة<small>وفّري 15% عند الشراء معاً</small></span><span class="rq"><i>+</i></span></div><div class="pv-row"><span class="rim"></span><span class="rn">حقيبة + حزام جلد<small>وفّري 10%</small></span><span class="rq"><i>+</i></span></div></div>`,
+  'reviews':()=>`<div class="pv-revs"><div class="pv-rev"><b>منى س.</b><span class="st">★★★★★</span> الجودة أحسن من المتوقع والتوصيل سريع جداً</div><div class="pv-rev"><b>أحمد ع.</b><span class="st">★★★★★</span> التعامل محترم والمنتج مطابق للصور</div><div class="pv-rev"><b>سارة م.</b><span class="st">★★★★☆</span> السعر مناسب والتغليف ممتاز</div></div>`,
+  'cart-items':()=>`<div class="pv-rows"><div class="pv-row"><span class="rim"></span><span class="rn">حقيبة جلد طبيعي<small>اللون: كحلي</small></span><span class="rq"><i>−</i><b style="font-size:12px">1</b><i>+</i></span></div><div class="pv-row"><span class="rim"></span><span class="rn">عطر فاخر 100مل<small>اللون: ذهبي</small></span><span class="rq"><i>−</i><b style="font-size:12px">2</b><i>+</i></span></div></div>`,
+  'order-summary':()=>`<div class="pv-sum"><div class="ln"><span>الإجمالي الفرعي</span><span>1,240 ج.م</span></div><div class="ln"><span>الشحن</span><span>مجاني</span></div><div class="ln"><span>الضريبة</span><span>72 ج.م</span></div><div class="ln tot"><span>الإجمالي</span><span>1,312 ج.م</span></div><div class="go">إتمام الطلب</div></div>`,
+  'checkout-form':()=>`<div class="pv-form"><div class="fi">الاسم بالكامل</div><div class="fi">رقم الموبايل</div><div class="fi wide">المحافظة (تلقائي)</div><div class="fi wide">العنوان بالتفصيل</div><div class="fi wide">ملاحظات على الطلب</div></div>`,
+  'payment':()=>`<div class="pv-methods"><div class="pv-meth on"><i></i>الدفع عند الاستلام (COD)</div><div class="pv-meth"><i></i>بطاقة بنكية / محفظة إلكترونية</div><div class="pv-meth"><i></i>تحويل بنكي</div></div>`,
+  'order-confirmation':()=>`<div class="pv-gen"><div style="text-align:center;font-size:15px;font-weight:900;color:#101827">✅ تم استلام طلبك بنجاح</div><div class="g2" style="margin:0 auto;width:52%"></div><div class="g3"></div></div>`,
+};
+const PV_GEN=()=>`<div class="pv-gen"><div class="g1"></div><div class="g2"></div><div class="g3"></div></div>`;
+const previewHTML=t=>(PV[t]?PV[t]():PV_GEN());
+
+/* ---------- الحالة ---------- */
+let uidN=0;
+const mkSec=type=>({uid:'s'+(++uidN),type,title:M[type]?M[type].l:type,desc:''});
+const state={
+  tab:'A', page:'home', dev:'desktop', saving:false,
+  secs:Object.fromEntries(Object.entries(INIT).map(([p,ts])=>[p,ts.map(mkSec)])),
+  sel:{home:'',shop:'',pdp:'',cart:'',checkout:''},
+  libOpen:false, picked:null, pop:null, qRail:'', qLib:'', libCat:'hero', popCat:'hero', popQ:'',
+};
+state.sel.home=state.secs.home[1].uid;
+let savedSnap=JSON.stringify(state.secs);
+let hist=[savedSnap], hi=0;
+
+/* ---------- أدوات ---------- */
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+const cur=()=>state.secs[state.page];
+const byUid=u=>cur().find(s=>s.uid===u);
+const meta=t=>M[t]||{l:t,i:'📦',c:'content'};
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const isDirty=()=>JSON.stringify(state.secs)!==savedSnap;
+
+function snapNow(){hist=hist.slice(0,hi+1);hist.push(JSON.stringify(state.secs));if(hist.length>40)hist.shift();hi=hist.length-1;}
+function undo(){if(hi<=0)return;hi--;state.secs=JSON.parse(hist[hi]);renderAll();toastMsg(state.tab,'تراجع ↩️');}
+function redo(){if(hi>=hist.length-1)return;hi++;state.secs=JSON.parse(hist[hi]);renderAll();toastMsg(state.tab,'إعادة ↪️');}
+const canUndo=()=>hi>0, canRedo=()=>hi<hist.length-1;
+
+function toastMsg(v,msg){
+  const ed=document.getElementById('ed-'+v);if(!ed)return;
+  const t=ed.querySelector('.tst');if(!t)return;
+  t.textContent=msg;t.classList.add('on');
+  clearTimeout(t._tm);t._tm=setTimeout(()=>t.classList.remove('on'),2100);
+}
+function selectSec(uid){state.sel[state.page]=uid;renderAll();}
+
+/* ---------- بناء أجزاء الواجهة ---------- */
+function devSegHTML(){
+  const d=state.dev;
+  return `<div class="devseg" role="group" aria-label="حجم المعاينة">
+    <button data-act="setdev" data-dev="desktop" aria-pressed="${d==='desktop'}" title="ديسكتوب">${I.desktop}</button>
+    <button data-act="setdev" data-dev="tablet" aria-pressed="${d==='tablet'}" title="تابلت">${I.tablet}</button>
+    <button data-act="setdev" data-dev="mobile" aria-pressed="${d==='mobile'}" title="موبايل">${I.phone}</button></div>`;
+}
+function pageNavHTML(){
+  const p=PAGES.find(x=>x.id===state.page);
+  return `<div class="pagenav">
+    <button data-act="pagepop">${p.i} <span>${p.l}</span> ${I.chevD}</button>
+    ${state.pop2open?`<div class="pagepop open">${PAGES.map(x=>`<button data-act="setpage" data-page="${x.id}" class="${x.id===state.page?'on':''}">${x.i} <span><span>${x.l}</span><small>${x.d}</small></span></button>`).join('')}</div>`:''}
+  </div>`;
+}
+function tbBtn(act,label,icon,cls,disabled,title){
+  return `<button class="tb-btn ${cls||''}" data-act="${act}" ${disabled?'disabled':''} ${title?`title="${title}"`:''}>${icon||''}${label?`<span>${label}</span>`:''}</button>`;
+}
+function saveBtnHTML(){
+  const dirty=isDirty();
+  if(state.saving) return tbBtn('save','جاري الحفظ…',I.sparkles,'primary',true);
+  if(dirty) return tbBtn('save','حفظ التعديلات',I.check,'primary',false,'Ctrl+S');
+  return tbBtn('save','محفوظ',I.check,'',true);
+}
+function topbarHTML(v){
+  const store=`<span class="tb-logo">م</span><span class="tb-store"><span class="tb-nm">متجري</span><span class="tb-sub">استوديو التصميم البصري 2026</span></span><span class="badge">Modern Minimal</span>`;
+  const undoRedo=`<button class="tb-ic" data-act="undo" ${canUndo()?'':'disabled'} title="تراجع (Ctrl+Z)">${I.undo}</button><button class="tb-ic" data-act="redo" ${canRedo()?'':'disabled'} title="إعادة (Ctrl+Y)">${I.redo}</button>`;
+  const preview=tbBtn('preview','معاينة المتجر',I.eye,'',false,'فتح معاينة المتجر في تاب جديد');
+  const discard=isDirty()?tbBtn('discard','تجاهل التعديلات','','',false,'الرجوع للنسخة المحفوظة'):'';
+  if(v==='B'){
+    return `<div class="tb"><div class="tb-l">${store}<span class="badge grey">الرئيسية / تحرير مباشر</span></div>
+      <div class="tb-c">${devSegHTML()}</div>
+      <div class="tb-r">${undoRedo}${discard}${preview}${saveBtnHTML()}</div></div>`;
+  }
+  if(v==='C'){
+    return `<div class="tb"><div class="tb-l">${store}</div>
+      <div class="tb-c">${pageNavHTML()}${devSegHTML()}
+        <button class="tb-btn primary" data-act="libopen">${I.plus}<span>إضافة قسم</span></button></div>
+      <div class="tb-r">${undoRedo}${discard}${preview}${saveBtnHTML()}</div></div>`;
+  }
+  if(v==='D'){
+    return `<div class="tb"><div class="tb-l">${store}<span class="badge grey">ستوري بورد</span></div>
+      <div class="tb-c">${pageNavHTML()}${devSegHTML()}</div>
+      <div class="tb-r">${undoRedo}${discard}${preview}${saveBtnHTML()}</div></div>`;
+  }
+  /* R + A */
+  const panelToggles = v==='A' ? `<span style="display:flex;gap:2px"><button class="tb-ic" data-act="toggleRail" title="إظهار/إخفاء الهيكل">${I.layers}</button></span>`:'';
+  return `<div class="tb"><div class="tb-l">${store}</div>
+    <div class="tb-c">${pageNavHTML()}${devSegHTML()}${panelToggles}</div>
+    <div class="tb-r">${undoRedo}${discard}${preview}${saveBtnHTML()}</div></div>`;
+}
+function mobileDockHTML(v){
+  const t=state.mtab||'canvas';
+  return `<div class="mobile-dock">
+    <button data-act="mtab" data-tab="layers" class="${t==='layers'?'on':''}">${I.layers}<span>الهيكل</span></button>
+    <button data-act="mtab" data-tab="canvas" class="${t==='canvas'?'on':''}">${I.eye}<span>المعاينة</span></button>
+    <button data-act="mtab" data-tab="inspector" class="${t==='inspector'?'on':''}">${I.sliders}<span>الخصائص</span></button></div>`;
+}
+/* صف قائمة الهيكل */
+function rowHTML(v,sec,i,total){
+  const m=meta(sec.type),sel=state.sel[state.page]===sec.uid;
+  const grip=(v==='A')?`<span class="grip" data-drag="move" data-src="rail" data-uid="${sec.uid}" data-label="${esc(m.l)}" data-icon="${m.i}" title="اسحب لإعادة الترتيب">${I.gripsvg}</span>`:'';
+  const acts=`<span class="a-acts">
+    <button class="mini-ic" data-act="up" data-uid="${sec.uid}" ${i===0?'disabled':''} title="لأعلى">${I.up}</button>
+    <button class="mini-ic" data-act="down" data-uid="${sec.uid}" ${i===total-1?'disabled':''} title="لأسفل">${I.down}</button>
+    <button class="mini-ic" data-act="dup" data-uid="${sec.uid}" title="تكرار">${I.copy}</button>
+    <button class="mini-ic danger" data-act="del" data-uid="${sec.uid}" title="حذف">${I.trash}</button></span>`;
+  return `<div class="a-row ${sel?'sel':''}" data-item data-uid="${sec.uid}" data-act="select">
+    ${grip}<span class="a-ic">${m.i}</span>
+    <span class="a-nm"><b>${esc(m.l)}</b><span>${sec.type}</span></span>${acts}</div>`;
+}
+/* إطار قسم على الكانفس */
+function secHTML(v,sec,i,total){
+  const m=meta(sec.type),sel=state.sel[state.page]===sec.uid;
+  const sel2=state.picked&&state.picked.uid===sec.uid;
+  let tools='';
+  const dragAttr=`data-drag="move" data-src="canvas" data-uid="${sec.uid}" data-label="${esc(m.l)}" data-icon="${m.i}" title="اسحب لإعادة الترتيب"`;
+  if(v==='R'){
+    tools=`<div class="sec-tools"><span class="lbl">${esc(m.l)}</span>
+      <button class="hnd" data-act="up" data-uid="${sec.uid}" ${i===0?'disabled':''} title="تحريك لأعلى">${I.up}</button>
+      <button class="hnd" data-act="down" data-uid="${sec.uid}" ${i===total-1?'disabled':''} title="تحريك لأسفل">${I.down}</button>
+      <button class="hnd" data-act="dup" data-uid="${sec.uid}" title="تكرار القسم">${I.copy}</button>
+      <button class="hnd" data-act="del" data-uid="${sec.uid}" title="حذف القسم">${I.trash}</button></div>`;
+  } else if(v==='B'){
+    tools=`<div class="sec-tools"><span class="lbl">${esc(m.l)}</span>
+      <button class="hnd" ${dragAttr}>${I.gripsvg}</button>
+      <button class="hnd" data-act="up" data-uid="${sec.uid}" ${i===0?'disabled':''} title="لأعلى">${I.up}</button>
+      <button class="hnd" data-act="down" data-uid="${sec.uid}" ${i===total-1?'disabled':''} title="لأسفل">${I.down}</button>
+      <button class="hnd" data-act="dup" data-uid="${sec.uid}" title="تكرار">${I.copy}</button>
+      <button class="hnd" data-act="del" data-uid="${sec.uid}" title="حذف">${I.trash}</button></div>`;
+  } else if(v==='C'){
+    tools=`<div class="sec-tools c-handle"><span class="lbl">${esc(m.l)}</span>
+      <button class="hnd" ${dragAttr}>${I.gripsvg}</button></div>
+      <div class="sec-hint">اضغط مطوّلاً لنقل القسم ✋</div>`;
+  } else { /* A + D */
+    tools=`<div class="sec-tools"><span class="lbl">${esc(m.l)}</span>
+      <button class="hnd" ${dragAttr}>${I.gripsvg}</button>
+      <button class="hnd" data-act="up" data-uid="${sec.uid}" ${i===0?'disabled':''} title="لأعلى">${I.up}</button>
+      <button class="hnd" data-act="down" data-uid="${sec.uid}" ${i===total-1?'disabled':''} title="لأسفل">${I.down}</button>
+      <button class="hnd" data-act="dup" data-uid="${sec.uid}" title="تكرار">${I.copy}</button>
+      <button class="hnd" data-act="del" data-uid="${sec.uid}" title="حذف">${I.trash}</button></div>`;
+  }
+  const pickCls=(state.picked&&state.picked.uid===sec.uid)?'picked':'';
+  return `<div class="sec ${sel?'sel':''} ${sel2?'sel':''} ${pickCls}" data-item data-uid="${sec.uid}" ${v==='C'?`data-hold="1"`:''}>
+    <div class="pv-wrap">${tools}<div class="sec-body">${previewHTML(sec.type)}</div></div></div>`;
+}
+function canvasHTML(v,extraCls){
+  const secs=cur();
+  const dropAttr=v==='D'?'data-dropzone="canvas"':'data-dropzone="canvas"';
+  const inner=secs.map((s,i)=>secHTML(v,s,i,secs.length)).join('');
+  const scrollCls=v==='B'?'':'cv-scroll';
+  if(v==='B'){
+    let blocks='';
+    secs.forEach((s,i)=>{ blocks+=`<div class="b-gap" data-anchor="${i}"><span class="hair"></span><button class="b-gap-btn" data-act="bgap" data-idx="${i}" title="إضافة قسم هنا">${I.plus}</button></div>`; blocks+=secHTML(v,s,i,secs.length); });
+    blocks+=`<div class="b-gap" data-anchor="${secs.length}"><span class="hair"></span><button class="b-gap-btn" data-act="bgap" data-idx="${secs.length}" title="إضافة قسم هنا">${I.plus}</button></div>`;
+    return `<div class="cv"><div class="cv-bar"><span class="hint">${I.bolt} اضغط <b>+</b> بين الأقسام للإضافة — أو اسحب المقبض <b>⠿</b> لإعادة الترتيب</span><span>${secs.length} أقسام • الرئيسية</span></div>
+      <div class="cv-scroll"><div class="b-paper ${extraCls||''}" ${dropAttr} id="B-frame">${blocks}</div></div></div>`;
+  }
+  return `<div class="cv"><div class="cv-bar">${cvBarHint(v)}<span>${secs.length} أقسام</span></div>
+    <div class="cv-scroll"><div class="cv-frame" ${dropAttr} id="${v}-frame">${inner}${v==='C'?slotsHTML():''}</div></div></div>`;
+}
+function cvBarHint(v){
+  if(v==='A')return `<span class="hint">${I.bolt} اسحب أي قسم من <b>⠿</b> — والخط الأزرق يحدد مكان النزول</span>`;
+  if(v==='C')return `<span class="hint">${I.bolt} <b>Click & Place:</b> «إضافة قسم» ← اضغط عليه ← اختر مكانه على الصفحة</span>`;
+  if(v==='D')return `<span class="hint">${I.bolt} رتّب الصفحة من كروت الستوري بورد تحت — أو اسحب الكارت ونزّله هنا</span>`;
+  return `<span class="hint">${I.bolt} الترتيب حالياً بأسهم فوق/تحت فقط — <b>مفيش سحب وإفلات</b> (ده الوضع الحالي للمقارنة)</span>`;
+}
+function slotsHTML(){
+  const n=cur().length;let h=`<button class="c-slot" data-act="cslot" data-pos="0">${I.plus} أفلت هنا (بداية الصفحة)</button>`;
+  for(let i=1;i<=n;i++) h+=`<button class="c-slot" data-act="cslot" data-pos="${i}">${I.plus} أفلت هنا</button>`;
+  return h;
+}
+function radioHTML(){return `<div class="seg2"><button class="on">في المنتصف</button><button>على الطرف</button></div>`;}
+function inspHTML(v){
+  const sec=byUid(state.sel[state.page]);
+  if(!sec)return `<div class="ins-h"><b>الخصائص</b>${v==='A'?`<button class="tb-ic" data-act="toggleInsp" title="إخفاء">${I.x}</button>`:''}</div>
+    <div class="ins-empty">اضغط على أي قسم في الصفحة أو من الهيكل<br>وهتظهر خصائصه هنا ✨</div>`;
+  const m=meta(sec.type);
+  return `<div class="ins-h"><div><b>${m.i} ${esc(m.l)}</b><div class="sub">${sec.type}</div></div>
+    ${v==='A'?`<button class="tb-ic" data-act="toggleInsp" title="إخفاء لوحة الخصائص">${I.x}</button>`:''}</div>
+  <div class="ins-body">
+    <div class="fld"><span class="lbl">عنوان القسم</span><input class="inp" data-field="title" data-uid="${sec.uid}" value="${esc(sec.title||m.l)}"></div>
+    <div class="fld"><span class="lbl">وصف القسم</span><textarea class="inp" data-field="desc" data-uid="${sec.uid}" placeholder="اكتب وصفاً قصيراً…">${esc(sec.desc||'')}</textarea></div>
+    <div class="fld"><span class="lbl">محاذاة المحتوى</span>${radioHTML()}</div>
+    <div class="fld"><span class="lbl">صورة القسم</span><div class="imgdrop">📤 ارفع صورة أو اختار من مكتبة الوسائط</div></div>
+    <div class="ins-sec-t">إعدادات سريعة</div>
+    <div class="fld"><span class="lbl">إظهار على الموبايل <small>مفعّل</small></span><div class="seg2"><button class="on">ظاهر</button><button>مخفي</button></div></div>
+    <div class="hint">الخصائص هنا بتُخزَّن في <b>designTokens</b> وبتنعكس فوراً في كانفس المعاينة.</div>
+  </div>`;
+}
+/* مكتبة الأقسام (لـ B gaps و C drawer و A/D append) */
+function popItemsHTML(){
+  const q=state.popQ.trim().toLowerCase();
+  let types=libTypes(state.popCat);
+  if(q) types=Object.keys(M).filter(k=>M[k].l.toLowerCase().includes(q)||k.includes(q));
+  return types.map(t=>{const m=M[t];return `<button class="b-item" data-act="popinsert" data-type="${t}">
+    <span class="a-ic">${m.i}</span><span style="min-width:0"><b>${esc(m.l)}${m.n?' •2026':''}</b><span>${t}</span></span></button>`;}).join('')||`<div class="hint" style="padding:8px">مفيش نتائج مطابقة…</div>`;
+}
+function popHTML(){
+  if(!state.pop)return '';
+  const center=state.pop.mode==='append';
+  const anchor=state.pop.mode==='gap'?`data-anchor-idx="${state.pop.idx}"`:'';
+  return `<div class="b-pop ${center?'center':''}" id="thepop" ${anchor}>
+    <div class="b-pop-h">${I.sparkles}<b>${state.pop.mode==='append'?'إضافة قسم جديد للصفحة':'إدراج قسم في هذا المكان'}</b>
+      <button class="tb-ic" data-act="popclose" title="إغلاق">${I.x}</button></div>
+    <div class="b-pop-s"><span class="wrap">${I.search}<input placeholder="ابحث في 50+ قسم…" data-pop-q value="${esc(state.popQ)}"></span></div>
+    <div class="b-cats">${CATS.map(c=>`<button class="b-cat ${state.popCat===c.id?'on':''}" data-act="popcat" data-cat="${c.id}">${c.i} ${c.t}</button>`).join('')}</div>
+    <div class="b-grid" id="popgrid">${popItemsHTML()}</div></div>`;
+}
+function libHTML(){
+  return `<aside class="c-lib ${state.libOpen?'open':''}" id="clib">
+    <div class="c-lib-h">${I.sparkles}<b>مكتبة الأقسام الجاهزة 2026</b><button class="tb-ic" data-act="libclose" title="إغلاق">${I.x}</button></div>
+    <div class="b-pop-s"><span class="wrap">${I.search}<input placeholder="ابحث عن قسم…" data-lib-q value="${esc(state.qLib)}"></span></div>
+    <div class="c-chips">${CATS.map(c=>`<button class="b-cat ${state.libCat===c.id?'on':''}" data-act="libcat" data-cat="${c.id}">${c.i} ${c.t}</button>`).join('')}</div>
+    <div class="c-lgrid" id="clgrid">${libGridHTML()}</div>
+    <div class="dock-foot"><div class="hint">اضغط القسم ← يبقى «في إيدك» ← اضغط مكانه في الصفحة. أو اسحبه مباشرة ✋</div></div>
+  </aside>`;
+}
+function libCardHTML(t){const m=M[t];return `<button class="c-card cat-${m.c}" data-drag="pick" data-type="${t}" data-label="${esc(m.l)}" data-icon="${m.i}">
+    <div class="im"><span class="icp">${m.i}</span></div>${m.n?'<span class="tag2026">2026</span>':''}
+    <div class="tx"><b>${esc(m.l)}</b><span>${t}</span></div></button>`;}
+function bannerHTML(){
+  if(!state.picked)return '';
+  const m=meta(state.picked.type);
+  return `<div class="c-banner on">✋ القسم في إيدك: <b>«${esc(m.l)}»</b> — اختر مكانه في الصفحة (اضغط على أي مكان منقط)
+    <button class="tb-btn sm x" data-act="ccancel">إلغاء</button></div>`;
+}
+function stripHTML(){
+  const secs=cur();
+  const cards=secs.map((s,i)=>{const m=meta(s.type);return `<div class="d-card ${state.sel[state.page]===s.uid?'sel':''}" data-item data-uid="${s.uid}"
+    data-drag="move" data-src="strip" data-uid="${s.uid}" data-label="${esc(m.l)}" data-icon="${m.i}" title="اسحب لترتيب الصفحة">
+    <div class="d-thumb"><div class="d-thumb-inner">${previewHTML(s.type)}</div></div>
+    <div class="d-meta"><span class="d-num">${i+1}</span><span class="d-nm">${esc(m.l)}</span></div></div>`;}).join('');
+  return `<div class="d-strip"><div class="d-strip-h"><b>${I.film} ستوري بورد الصفحة — اسحب الكروت لترتيب الأقسام</b>
+      <span class="hint">${secs.length} كروت • اسحب كارت لفوق على الصفحة ينزل في مكانه</span></div>
+    <div class="d-track" data-dropzone="strip" data-horizontal="1" id="dtrack">${cards}
+      <button class="d-add" data-act="addfab" data-v="D">${I.plus}<span>قسم جديد</span></button></div></div>`;
+}
+
+/* ---------- رندر كل تصميم ---------- */
+function editorHTML(v){
+  let inner=topbarHTML(v);
+  if(v==='C') inner+=bannerHTML();
+  if(v==='R'||v==='A'){
+    const secs=cur();
+    inner+=`<div class="editor-body">
+      <aside class="rail">${railHeadHTML(v)}
+        <div class="dock-scroll"><div class="a-list" data-dropzone="rail" data-v="${v}" id="${v}-list">
+          ${secs.filter(s=>!state.qRail||meta(s.type).l.includes(state.qRail)).map((s,i)=>rowHTML(v,s,i,secs.length)).join('')}
+        </div></div>
+        <div class="dock-foot">
+          ${v==='A'?`<button class="tb-btn primary" data-act="addfab" data-v="A" style="justify-content:center">${I.plus}<span>إضافة قسم</span></button>`:''}
+          <div class="hint">${v==='A'?`اسحب المقبض <b>⠿</b> لإعادة ترتيب الأقسام`:`الترتيب حالياً: أسهم <b>↑↓</b> فقط — بدون سحب`}</div>
+        </div></aside>
+      ${canvasHTML(v)}
+      <aside class="insp">${inspHTML(v)}</aside>
+    </div>`;
+  } else if(v==='B'){
+    inner+=`<div class="editor-body">${canvasHTML(v)}</div>
+      <div class="b-status"><span><b>${cur().length}</b> أقسام • الرئيسية • حفظ يدوي (Ctrl+S)</span>
+      <span class="hint">اسحب المقبض لإعادة الترتيب، و <b>+</b> بين الأقسام للإضافة الفورية</span></div>`;
+  } else if(v==='C'){
+    inner+=`<div class="editor-body">${canvasHTML(v,state.picked?'':'')}${libHTML()}</div>`;
+  } else if(v==='D'){
+    inner+=`<div class="editor-body">${canvasHTML(v)}</div>${stripHTML()}`;
+  }
+  inner+=mobileDockHTML(v)+`<div class="tst"></div>`;
+  if(state.pop) inner+=(v===(state.pop.v||'A')?popHTML():'');
+  const cls=['picking',state.picked?'picking':''].filter(Boolean).join(' ');
+  return {html:inner,cls};
+}
+function railHeadHTML(v){
+  return `<div class="dock-h"><span class="dock-t">${I.layers} الهيكل (${cur().length})</span>
+    <div class="dock-tabs"><button class="on">الهيكل</button><button>الثيم</button><button>الصفحات</button></div></div>
+    <div class="dock-search"><span class="wrap">${I.search}<input placeholder="ابحث في أقسام الصفحة…" data-rail-q value="${esc(state.qRail)}"></span></div>`;
+}
+function renderVariant(v){
+  const ed=document.getElementById('ed-'+v);if(!ed)return;
+  const scrolls={};ed.querySelectorAll('.cv-scroll,.dock-scroll,.d-track,.c-lgrid').forEach((el,i)=>{
+    const key=el.className+'_'+i;scrolls[key]={t:el.scrollTop,l:el.scrollLeft};});
+  const {html,cls}=editorHTML(v);
+  ed.innerHTML=html;
+  ed.classList.toggle('picking',!!state.picked);
+  ed.dataset.dev=state.dev;
+  ed.dataset.mtab=state.mtab||'canvas';
+  if(ed.classList){ed.classList.toggle('has-pick',!!state.picked);}
+  ed.querySelectorAll('.cv-scroll,.dock-scroll,.d-track,.c-lgrid').forEach((el,i)=>{
+    const key=el.className+'_'+i;if(scrolls[key]){el.scrollTop=scrolls[key].t;el.scrollLeft=scrolls[key].l;}});
+  positionPop(v);
+}
+function renderAll(){['R','A','B','C','D'].forEach(renderVariant);}
+function positionPop(v){
+  if(!state.pop||(state.pop.v||'A')!==v)return;
+  const ed=document.getElementById('ed-'+v);if(!ed)return;
+  const pop=ed.querySelector('#thepop');if(!pop)return;
+  if(state.pop.mode==='append')return; /* center mode */
+  const gap=ed.querySelector(`.b-gap[data-anchor="${state.pop.idx}"]`);if(!gap)return;
+  const gr=gap.getBoundingClientRect(),er=ed.getBoundingClientRect();
+  const top=Math.max(8,Math.min(gr.bottom-er.top+8,er.height-pop.offsetHeight-12));
+  const left=Math.max(10,Math.min(gr.left-er.left,er.width-pop.offsetWidth-10));
+  pop.style.top=top+'px';pop.style.insetInlineStart=left+'px';
+}
+
+/* ============================================================
+   محرك السحب والإفلات (pointer events — يشتغل ماوس ولمس)
+   ============================================================ */
+let drag=null,hold=null;
+const ghost=$('#ghost');
+function startDrag(e,cfg){
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  e.preventDefault();e.stopPropagation();
+  drag={...cfg,x0:e.clientX,y0:e.clientY,active:false,painted:[],drop:null};
+  window.addEventListener('pointermove',onMove,{passive:false});
+  window.addEventListener('pointerup',onUp);
+  window.addEventListener('pointercancel',onUp);
+}
+function showGhost(){
+  const g=ghost;
+  g.querySelector('.g-ic').textContent=drag.icon||'⠿';
+  g.querySelector('.g-tx').textContent=drag.label||'قسم';
+  g.querySelector('small').textContent=drag.kind==='pick'?'إضافة قسم جديد':'إعادة ترتيب';
+  g.style.display='flex';
+}
+function moveGhost(x,y){
+  const r=ghost.getBoundingClientRect();
+  ghost.style.left=(x-r.width/2)+'px';
+  ghost.style.top=(y-44)+'px';
+}
+function clearPaint(){
+  if(!drag)return;
+  drag.painted.forEach(({el,cls})=>{if(el&&cls.split(' ').forEach(c=>el.classList.remove(c)));});
+  drag.painted=[];
+}
+function paint(el,cls){el.classList.add(cls);drag.painted.push({el,cls});}
+function onMove(e){
+  if(!drag)return;
+  const dx=e.clientX-drag.x0,dy=e.clientY-drag.y0;
+  if(!drag.active){
+    if(Math.hypot(dx,dy)<7)return;
+    drag.active=true;showGhost();moveGhost(e.clientX,e.clientY);
+    document.body.classList.add('dragging');
+    const ed=document.getElementById('ed-'+drag.variant);
+    if(ed){ed.querySelectorAll('.sec').forEach(s=>{if(s.dataset.uid===drag.uid)s.classList.add('sec-drag');});
+      if(drag.acceptSlots)ed.classList.add('picking');}
+  }
+  e.preventDefault();
+  moveGhost(e.clientX,e.clientY);
+  autoScroll(e.clientX,e.clientY);
+  clearPaint();
+  drag.drop=findDrop(e.clientX,e.clientY,drag);
+  if(drag.drop){
+    if(drag.drop.t==='slot'){paint(drag.drop.el,'hot');}
+    else{
+      const dz=drag.drop.dz,kids=[...(dz.children)].filter(c=>c.hasAttribute('data-item'));
+      if(!kids.length)paint(dz,'dz-empty');
+      else if(drag.drop.pos<kids.length)paint(kids[drag.drop.pos],'dz-before');
+      else paint(kids[kids.length-1],'dz-after');
+    }
+  }
+}
+function posInList(dz,x,y){
+  const kids=[...(dz.children)].filter(c=>c.hasAttribute('data-item'));
+  const horiz=dz.dataset.horizontal==='1';
+  if(horiz){
+    const rtl=getComputedStyle(dz).direction==='rtl';
+    for(let i=0;i<kids.length;i++){
+      const r=kids[i].getBoundingClientRect(),mid=r.left+r.width/2;
+      if(rtl?x>mid:x<mid)return i;
+    }
+  } else {
+    for(let i=0;i<kids.length;i++){
+      const r=kids[i].getBoundingClientRect(),mid=r.top+r.height/2;
+      if(y<mid)return i;
+    }
+  }
+  return kids.length;
+}
+function findDrop(x,y,d){
+  d=d||drag;
+  const els=document.elementsFromPoint(x,y);
+  if(d.acceptSlots){
+    for(const el of els){const s=el.closest&&el.closest('.c-slot');if(s&&s.offsetParent!==null)return{t:'slot',el:s};}
+  }
+  for(const el of els){
+    const dz=el.closest&&el.closest('[data-dropzone]');
+    if(dz&&dz.offsetParent!==null&&!dz.classList.contains('c-slot')){
+      if(d.variant&&!dz.closest('#ed-'+d.variant))continue;
+      return{t:'list',dz,pos:posInList(dz,x,y)};
+    }
+  }
+  return null;
+}
+function autoScroll(x,y){
+  const els=document.elementsFromPoint(x,y);
+  for(const el of els){
+    const sc=el.closest&&el.closest('.cv-scroll,.d-track,.dock-scroll');
+    if(sc&&sc.offsetParent!==null){
+      const r=sc.getBoundingClientRect();
+      if(sc.classList.contains('d-track')||sc.classList.contains('dock-scroll')){
+        if(x-r.left<56)sc.scrollLeft-=14; else if(r.right-x<56)sc.scrollLeft+=14;
+      } else {
+        if(y-r.top<70)sc.scrollTop-=14; else if(r.bottom-y<70)sc.scrollTop+=14;
+      }
+      return;
+    }
+  }
+}
+function onUp(e){
+  window.removeEventListener('pointermove',onMove);
+  window.removeEventListener('pointerup',onUp);
+  window.removeEventListener('pointercancel',onUp);
+  if(!drag)return;
+  const d=drag;drag=null;
+  ghost.style.display='none';
+  document.body.classList.remove('dragging');
+  const ed=document.getElementById('ed-'+d.variant);
+  if(ed){ed.querySelectorAll('.sec-drag').forEach(s=>s.classList.remove('sec-drag'));
+    if(!state.picked)ed.classList.remove('picking');}
+  d.painted.forEach(({el,cls})=>cls.split(' ').forEach(c=>el.classList.remove(c)));
+  if(!d.active){
+    if(d.kind==='pick'&&d.type){setPicked(d.type);}
+    else if(d.kind==='move'){selectSec(d.uid);}
+    return;
+  }
+  const drop=findDrop(e.clientX,e.clientY,d);
+  if(drop)commit(d,drop);
+}
+function commit(d,drop){
+  const arr=cur();
+  if(drop.t==='slot'){
+    const pos=+drop.el.dataset.pos||0;
+    if(d.kind==='pick'){
+      snapNow();const it=mkSec(d.type);arr.splice(pos,0,it);state.sel[state.page]=it.uid;
+      setPicked(null);renderAll();toastMsg(d.variant,`تمت إضافة «${meta(d.type).l}» ✨`);
+    } else {
+      const from=arr.findIndex(s=>s.uid===d.uid);if(from<0)return;
+      snapNow();moveIdx(arr,from,pos);setPicked(null);renderAll();toastMsg(d.variant,'تم نقل القسم إلى المكان الجديد');
+    }
+    return;
+  }
+  const kids=[...(drop.dz.children)].filter(c=>c.hasAttribute('data-item'));
+  let pos=Math.min(drop.pos,kids.length);
+  if(d.kind==='pick'){
+    snapNow();arr.splice(pos,0,mkSec(d.type));state.sel[state.page]=arr[pos].uid;setPicked(null);renderAll();
+    toastMsg(d.variant,`تمت إضافة «${meta(d.type).l}» في مكانه ✨`);
+  } else {
+    const from=arr.findIndex(s=>s.uid===d.uid);if(from<0)return;
+    if(pos===from||pos===from+1)return;
+    snapNow();moveIdx(arr,from,pos);renderAll();toastMsg(d.variant,'تم ترتيب القسم ⠿');
+  }
+}
+function moveIdx(arr,from,pos){
+  const [it]=arr.splice(from,1);
+  if(pos>from)pos--;
+  arr.splice(pos,0,it);
+}
+function setPicked(type){
+  if(!type){state.picked=null;renderAll();return;}
+  state.picked={type};state.libOpen=false;renderAll();
+  const ed=document.getElementById('ed-C');
+  if(ed)ed.classList.add('picking');
+}
+
+/* ---------- أحداث المحررات (delegation) ---------- */
+document.addEventListener('pointerup',()=>{if(hold){clearTimeout(hold.timer);hold=null;}},true);
+document.addEventListener('pointermove',e=>{if(hold&&Math.hypot(e.clientX-hold.x0,e.clientY-hold.y0)>8){clearTimeout(hold.timer);hold=null;}},true);
+document.querySelectorAll('.editor').forEach(root=>{
+  root.addEventListener('pointerdown',e=>{
+    const v=root.dataset.variant;
+    /* مقابض السحب */
+    const h=e.target.closest('[data-drag]');
+    if(h){
+      const kind=h.dataset.drag;
+      startDrag(e,{
+        kind, src:h.dataset.src||'canvas', uid:h.dataset.uid||null, type:h.dataset.type||null,
+        label:h.dataset.label, icon:h.dataset.icon, variant:v,
+        acceptSlots:kind==='pick',
+      });
+      return;
+    }
+    /* الضغط المطول (C) لنقل قسم موجود */
+    if(v==='C'){
+      const box=e.target.closest('.sec');
+      if(box&&!e.target.closest('.c-slot')){
+        const uid=box.dataset.uid,x0=e.clientX,y0=e.clientY;
+        clearTimeout(hold&&hold.timer);
+        hold={timer:setTimeout(()=>{
+          hold=null;
+          const s=byUid(uid)||{type:''};
+          startDrag(e,{kind:'move',src:'canvas',uid,label:meta(s.type).l,icon:meta(s.type).i,variant:'C',acceptSlots:true});
+        },360),x0,y0,uid};
+      }
+    }
+  });
+  root.addEventListener('click',e=>{
+    const b=e.target.closest('[data-act]');
+    if(!b)return;
+    const act=b.dataset.act,v=root.dataset.variant;
+    const arr=cur();
+    const idxOf=u=>arr.findIndex(s=>s.uid===u);
+    switch(act){
+      case 'select':selectSec(b.dataset.uid);break;
+      case 'up':{const i=idxOf(b.dataset.uid);if(i>0){snapNow();moveIdx(arr,i,i-1);renderAll();}break;}
+      case 'down':{const i=idxOf(b.dataset.uid);if(i>=0&&i<arr.length-1){snapNow();moveIdx(arr,i,i+2);renderAll();}break;}
+      case 'dup':{const i=idxOf(b.dataset.uid);if(i>=0){snapNow();const c=JSON.parse(JSON.stringify(arr[i]));c.uid='s'+(++uidN);arr.splice(i+1,0,c);state.sel[state.page]=c.uid;renderAll();toastMsg(v,'تم تكرار القسم ⧉');}break;}
+      case 'del':{const i=idxOf(b.dataset.uid);if(i>=0){snapNow();arr.splice(i,1);if(state.sel[state.page]===b.dataset.uid)state.sel[state.page]=arr[0]?arr[0].uid:'';renderAll();toastMsg(v,'تم حذف القسم 🗑');}break;}
+      case 'save':doSave();break;
+      case 'discard':state.secs=JSON.parse(savedSnap);state.sel[state.page]=cur()[0]?cur()[0].uid:'';hist=[savedSnap];hi=0;renderAll();toastMsg(v,'تم إلغاء التعديلات والعودة للنسخة المحفوظة 🔄');break;
+      case 'preview':toastMsg(v,'هتفتح معاينة المتجر في تاب جديد ↗');break;
+      case 'undo':undo();break;
+      case 'redo':redo();break;
+      case 'pagepop':state.pop2open=!state.pop2open;renderAll();break;
+      case 'setpage':state.page=b.dataset.page;state.pop2open=false;renderAll();toastMsg(v,'اتنقلنا لصفحة: '+PAGES.find(p=>p.id===state.page).l);break;
+      case 'setdev':state.dev=b.dataset.dev;renderAll();break;
+      case 'toggleRail':root.querySelector('.rail').style.display=root.querySelector('.rail').style.display==='none'?'flex':'none';break;
+      case 'toggleInsp':root.querySelector('.insp').style.display=root.querySelector('.insp').style.display==='none'?'flex':'none';break;
+      case 'libopen':state.libOpen=true;renderAll();break;
+      case 'libclose':state.libOpen=false;renderAll();break;
+      case 'libcat':state.libCat=b.dataset.cat;state.qLib='';renderAll();break;
+      case 'bgap':{state.pop={mode:'gap',idx:+b.dataset.idx,cat:state.popCat,q:'',v};state.popQ='';renderAll();const pop=root.querySelector('#thepop');if(pop){const inp=pop.querySelector('[data-pop-q]');if(inp)inp.focus();}break;}
+      case 'addfab':state.pop={mode:'append',idx:cur().length,cat:state.popCat,q:'',v};state.popQ='';renderAll();{const pop=root.querySelector('#thepop');if(pop){const inp=pop.querySelector('[data-pop-q]');if(inp)inp.focus();}}break;
+      case 'popclose':state.pop=null;renderAll();break;
+      case 'popcat':state.popCat=b.dataset.cat;state.popQ='';renderAll();{const pop=root.querySelector('#thepop');if(pop){const inp=pop.querySelector('[data-pop-q]');if(inp)inp.focus();}}break;
+      case 'popinsert':{const type=b.dataset.type;const pos=state.pop?state.pop.idx:cur().length;
+        snapNow();cur().splice(pos,0,mkSec(type));
+        state.sel[state.page]=cur()[pos].uid;state.pop=null;renderAll();
+        toastMsg(v,`تمت إضافة «${meta(type).l}» ✨`);
+        break;}
+      case 'ccancel':setPicked(null);toastMsg(v,'تم إلغاء الامساك');break;
+      case 'cslot':{const pos=+b.dataset.pos;if(state.picked){snapNow();const it=mkSec(state.picked.type);cur().splice(pos,0,it);state.sel[state.page]=it.uid;const t=state.picked.type;setPicked(null);renderAll();toastMsg(v,`تمت إضافة «${meta(t).l}» ✨`);}break;}
+      case 'mtab':state.mtab=b.dataset.tab;renderAll();break;
+      default:break;
+    }
+  });
+  root.addEventListener('input',e=>{
+    const t=e.target;
+    if(t.matches('[data-rail-q]')){state.qRail=t.value;const list=root.querySelector('.a-list');const secs=cur();
+      if(list)list.innerHTML=secs.filter(s=>!state.qRail||meta(s.type).l.includes(state.qRail)).map((s,i)=>rowHTML(root.dataset.variant,s,i,secs.length)).join('');return;}
+    if(t.matches('[data-lib-q]')){state.qLib=t.value;const g=root.querySelector('#clgrid');if(g)g.innerHTML=libGridHTML();return;}
+    if(t.matches('[data-pop-q]')){state.popQ=t.value;const g=root.querySelector('#popgrid');if(g)g.innerHTML=popItemsHTML();return;}
+    if(t.matches('[data-field]')){const sec=byUid(t.dataset.uid);if(sec){sec[t.dataset.field]=t.value;}return;}
+  });
+});
+function libGridHTML(){
+  const cards=libTypes(state.libCat).filter(t=>{const q=state.qLib.trim().toLowerCase();return !q||M[t].l.toLowerCase().includes(q)||t.includes(q);});
+  return cards.map(libCardHTML).join('');
+}
+/* إغلاق البوب أوفر بالضغط بره */
+document.addEventListener('click',e=>{
+  if(state.pop2open&&!e.target.closest('.pagenav')){state.pop2open=false;renderAll();}
+  if(state.pop&&!e.target.closest('.b-pop')&&!e.target.closest('[data-act="bgap"]')&&!e.target.closest('[data-act="addfab"]')){state.pop=null;renderAll();}
+});
+/* حفظ محاكاة */
+function doSave(){
+  if(state.saving)return;
+  state.saving=true;renderAll();
+  toastMsg(state.tab,'جاري الحفظ…');
+  setTimeout(()=>{
+    state.saving=false;savedSnap=JSON.stringify(state.secs);
+    renderAll();toastMsg(state.tab,'تم حفظ تعديلات المتجر بنجاح ✨');
+  },700);
+}
+/* اختصارات */
+document.addEventListener('keydown',e=>{
+  if(!(e.ctrlKey||e.metaKey))return;
+  if(e.key==='z'||e.key==='Z'){e.preventDefault();e.shiftKey?redo():undo();}
+  else if(e.key==='y'||e.key==='Y'){e.preventDefault();redo();}
+  else if(e.key==='s'||e.key==='S'){e.preventDefault();doSave();}
+});
+
+/* ============================================================
+   شريط المعاينة (tab switching / mode / width)
+   ============================================================ */
+const NOTES={
+  R:{name:'الحالي (مرجع)',note:`<b>الوضع الحالي كما هو على الموقع</b> — الترتيب بسهمين <b>↑↓</b> في قائمة «الهيكل» أو في شريط القسم على الصفحة، <b>مفيش سحب وإفلات خالص</b>. سيبته هنا للمقارنة قبل/بعد. <i>ده المرجع مش اقتراح.</i>`},
+  A:{name:'A · استوديو كلاسيكي',note:`<b>الفكرة (زي شوبيفاي):</b> نفس الـ3 دوكس الموجودين دلوقتي (هيكل يمين / كانفس / خصائص شمال)، بس كل صف في الهيكل وكل قسم على الصفحة بقى ليه <b>مقبض سحب ⠿</b> — تسحب وتفلت في أي مكان والخط الأزرق بيوضّح مكان النزول، ومعاها بحث في الأقسام وزر إضافة ثابت. <b>التحسين البصري:</b> ترتيب الصفحة بسحبة واحدة بدل ضغطات أسهم، من غير ما نغيّر شكل النظام المتعود عليه. <b>أفضل لـ:</b> الترتيب السريع لصفحات فيها أقسام كتير — وهو الأقل مخاطرة لأنه أقرب حاجة للوضع الحالي.`},
+  B:{name:'B · تحرير مباشر',note:`<b>الفكرة (زي ووردبريس/Gutenberg):</b> التركيز كله على الصفحة نفسها — كل قسم بيطلعله <b>شريط أدوات على الكانفس</b> (مقبض ⠿ + فوق/تحت + تكرار + حذف)، وبين كل قسمين <b>فجوة رفيعة فيها زرار (+)</b> يفتح مكتبة الأقسام بالبحث والتصنيفات الستة وتتضاف في نفس المكان فوراً. <b>التحسين البصري:</b> مفيش لوحات جانبية بتاخد مساحة — الصفحة هي لوحة التحكم، والتعديل بيحصل وإنت شايف النتيجة. <b>أفضل لـ:</b> الإضافة السريعة والتعديلات الصغيرة المتكررة.`},
+  C:{name:'C · مكتبة مصغّرات · Click & Drop',note:`<b>الفكرة (زي Wix / Elementor):</b> زرار «إضافة قسم» بيفتح <b>مكتبة مصوّرة</b> بالتصنيفات — تضغط القسم بضغطة فيبقى «في إيدك» ✋، والصفحة تعرض <b>أماكن إفلات منقطة «أفلت هنا»</b> وتضغط المكان اللي عايزه — أو تسحبه بالإصبع على المكان مباشرة. ونفس الحركة تنقل أي قسم موجود (اضغط عليه مطوّلاً). <b>التحسين البصري:</b> «Click and Drop» حرفياً: ضغطة تختار + ضغطة تحدد — أسهل وأضمن طريقة على الموبايل والتابلت (السحب بالإصبع مش دايماً مريح). <b>أفضل لـ:</b> المستخدم غير التقني، والإضافة الجوية السريعة.`},
+  D:{name:'D · ستوري بورد سفلي',note:`<b>الفكرة (مختلفة — زي محررات الفيديو وCanva):</b> الصفحة فوق كاملة العرض، وتحتها شريط <b>«ستوري بورد»</b> فيه كروت مصغّرة بمعاينة حقيقية لكل قسم — ترتّبها بالسحب أفقياً والصفحة بتتحدث فوراً، أو اسحب الكارت من الشريط ونزّله على الصفحة في المكان اللي تحبه. <b>التحسين البصري:</b> بتشوف الصفحة «كقصة» بتترتب مش كنص — وأهداف سحب كبيرة ومريحة على أي شاشة. <b>أفضل لـ:</b> الترتيب والمراجعة السريعة للصفحة كلها مرة واحدة.`},
+};
+const tabsEl=$('#tabs');
+tabsEl.innerHTML=['R','A','B','C','D'].map(k=>`<button class="tab" role="tab" data-k="${k}" aria-selected="false"><b>${k==='R'?'◉':k}</b> ${NOTES[k].name}</button>`).join('');
+function setTab(k){
+  state.tab=k;
+  if(k==='C'&&!state.cSeen){state.cSeen=true;state.libOpen=true;}
+  if(k!=='C')state.libOpen=(k==='C'&&state.libOpen);
+  $$('.variant').forEach(v=>v.classList.toggle('is-active',v.id==='v'+k));
+  $$('#tabs .tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.k===k)));
+  $('#note').innerHTML=NOTES[k].note;
+  renderAll();
+  fitEditor();
+}
+tabsEl.addEventListener('click',e=>{const b=e.target.closest('.tab');if(b)setTab(b.dataset.k);});
+function setMode(m){document.documentElement.dataset.mode=m;$('#btnLight').setAttribute('aria-pressed',String(m==='light'));$('#btnDark').setAttribute('aria-pressed',String(m==='dark'));}
+function setVw(w){$('#stage').dataset.vw=w;$('#btnDesk').setAttribute('aria-pressed',String(w==='desktop'));$('#btnMob').setAttribute('aria-pressed',String(w==='mobile'));}
+$('#btnLight').addEventListener('click',()=>setMode('light'));
+$('#btnDark').addEventListener('click',()=>setMode('dark'));
+$('#btnDesk').addEventListener('click',()=>setVw('desktop'));
+$('#btnMob').addEventListener('click',()=>setVw('mobile'));
+/* خلي المحرر يتظبط على ارتفاع الشاشة مهما كان حجم شريط المعاينة */
+function fitEditor(){
+  const b=document.querySelector('.bar').offsetHeight;
+  document.documentElement.style.setProperty('--chromeH',(b+26)+'px');
+}
+window.addEventListener('resize',fitEditor);
+window.addEventListener('load',fitEditor);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>fitEditor());
+fitEditor();
+
+setTab('A');
+setTimeout(()=>{
+  const hole=document.querySelector('#ed-A .a-row .grip');
+  if(hole){hole.parentElement.classList.add('row-pulse');setTimeout(()=>hole.parentElement.classList.remove('row-pulse'),3600);}
+},700);
+</script>
+</body>
+</html>
