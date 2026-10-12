@@ -1383,6 +1383,17 @@ class OrderConfirmationService {
         data: { status: targetStatus, updatedAt: new Date() }
       });
 
+      if (targetStatus === 'CONFIRMED') {
+        try {
+          const orderService = require('./orderService');
+          orderService.autoCreateTurboShipmentForGuestOrder(updatedGuest, companyId).catch(err => {
+            console.warn('⚠️ [TURBO-AUTO] orderConfirmationService guest error:', err.message);
+          });
+        } catch (turboErr) {
+          console.warn('⚠️ [TURBO-AUTO] orderConfirmationService require error:', turboErr.message);
+        }
+      }
+
       await this.prisma.orderStatusHistory.create({
         data: {
           guestOrderId: guestOrder.id,
@@ -1435,6 +1446,17 @@ class OrderConfirmationService {
           confirmationNotes: notes || null
         }
       });
+
+      if (targetStatus === 'CONFIRMED') {
+        try {
+          const orderService = require('./orderService');
+          orderService.autoCreateTurboShipmentForOrder(confirmed, companyId).catch(err => {
+            console.warn('⚠️ [TURBO-AUTO] orderConfirmationService regular error:', err.message);
+          });
+        } catch (turboErr) {
+          console.warn('⚠️ [TURBO-AUTO] orderConfirmationService require error:', turboErr.message);
+        }
+      }
 
       let assignment = null;
       if (settings.autoAssignOnConfirm && settings.distributionEnabled) {

@@ -359,61 +359,13 @@ class EnhancedOrderService {
       }
 
       // 🚚 Turbo Integration: إنشاء شحنة تلقائياً إذا كان الطلب CONFIRMED و Turbo مفعّل
-      if (order.status === 'CONFIRMED') {
+      // 🚚 Turbo Integration: إنشاء شحنة تلقائياً إذا كان الطلب CONFIRMED و Turbo مفعّل
+      if (String(order.status || '').trim().toUpperCase() === 'CONFIRMED') {
         try {
-          const company = await this.safeQuery(async () => {
-            return await this.getPrisma().company.findUnique({
-              where: { id: data.companyId },
-              select: {
-                turboApiKey: true,
-                turboEnabled: true,
-                turboAutoCreate: true
-              }
-            });
-          }, 2);
-
-          if (company?.turboEnabled && company?.turboAutoCreate && company?.turboApiKey) {
-            const TurboService = require('./turboService');
-            const turboService = new TurboService(company.turboApiKey, data.companyId);
-
-            // جلب بيانات الطلب الكاملة
-            const fullOrder = await this.safeQuery(async () => {
-              return await this.getPrisma().order.findUnique({
-                where: { id: order.id },
-                include: {
-                  customer: true,
-                  orderItems: true
-                }
-              });
-            }, 2);
-
-            if (fullOrder) {
-              // تحضير بيانات الطلب
-              const orderData = turboService.formatOrderForTurbo(fullOrder, fullOrder.customer, fullOrder.orderItems);
-
-              // إنشاء الشحنة
-              const shipmentResult = await turboService.createShipment(orderData);
-
-              // حفظ معلومات الشحنة في قاعدة البيانات
-              await this.safeQuery(async () => {
-                return await this.getPrisma().order.update({
-                  where: { id: order.id },
-                  data: {
-                    turboShipmentId: String(shipmentResult.shipmentId || ''),
-                    turboTrackingNumber: String(shipmentResult.trackingNumber || ''),
-                    turboShipmentStatus: shipmentResult.status,
-                    turboLabelUrl: shipmentResult.labelUrl,
-                    turboMetadata: serializeTurboMetadata(order.turboMetadata, shipmentResult.data)
-                  }
-                });
-              }, 3);
-
-              console.log(`✅ [TURBO] Shipment created automatically for order ${order.orderNumber}: ${shipmentResult.trackingNumber}`);
-            }
-          }
+          const orderService = require('./orderService');
+          await orderService.autoCreateTurboShipmentForOrder(order, data.companyId);
         } catch (turboError) {
-          // لا نوقف العملية إذا فشل Turbo - فقط نسجل الخطأ
-          console.error(`❌ [TURBO] Failed to create shipment for order ${order.orderNumber}:`, turboError.message);
+          console.error(`❌ [TURBO-AUTO] Failed to create shipment in enhancedOrderService for order ${order.orderNumber}:`, turboError.message);
         }
       }
 

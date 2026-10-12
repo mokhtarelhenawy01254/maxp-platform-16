@@ -1014,6 +1014,16 @@ router.patch('/:id/status', async (req, res) => {
       }
     }
 
+    // 🚚 إنشاء شحنة تربو تلقائياً إذا تم تأكيد الطلب
+    if (String(status || '').trim().toUpperCase() === 'CONFIRMED') {
+      try {
+        const orderService = require('../services/orderService');
+        orderService.autoCreateTurboShipmentForOrder(updatedOrder, companyId).catch(turboErr => {
+          console.warn(`⚠️ [TURBO-AUTO] enhancedOrders route error:`, turboErr.message);
+        });
+      } catch (err) {}
+    }
+
     await enhancedOrderService.disconnect();
 
     res.json({

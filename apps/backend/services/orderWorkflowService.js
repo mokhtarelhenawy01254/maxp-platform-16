@@ -375,6 +375,17 @@ class OrderWorkflowService {
                 console.warn(`[WORKFLOW] metadata sync failed for ${order.id}:`, prepErr.message);
             }
 
+            if (String(nextStatusDef.code || '').trim().toUpperCase() === 'CONFIRMED') {
+                try {
+                    const orderService = require('./orderService');
+                    orderService.autoCreateTurboShipmentForOrder(order.id, companyId).catch(err => {
+                        console.warn(`[WORKFLOW] Turbo auto-create failed for ${order.id}:`, err.message);
+                    });
+                } catch (turboWfErr) {
+                    console.warn('[WORKFLOW] Turbo auto-create require failed:', turboWfErr.message);
+                }
+            }
+
             if (auditLog) {
                 await this.logAudit(companyId, order.id, auditLog.fromStatusId, auditLog.toStatusId, auditLog.changedBy, auditLog.changeType, auditLog.reason);
             }

@@ -1810,7 +1810,8 @@ class OrderService {
       }
 
       // Keep confirmation reporting fields aligned with status changes.
-      const isConfirmingOrder = status.toUpperCase() === 'CONFIRMED';
+      const normalizedStatus = String(status || '').trim().toUpperCase();
+      const isConfirmingOrder = normalizedStatus === 'CONFIRMED';
       const confirmationData = isConfirmingOrder ? {
         confirmedAt: new Date(),
         confirmedBy: userId || null,
@@ -1818,7 +1819,7 @@ class OrderService {
       } : {};
 
       // Check if we need to reset confirmation data when reverting to pending
-      const isRevertingToPending = ['PENDING', 'WOO_TAGHEZ'].includes(status.toUpperCase());
+      const isRevertingToPending = ['PENDING', 'WOO_TAGHEZ'].includes(normalizedStatus);
       const resetConfirmationData = isRevertingToPending ? {
         confirmedAt: null,
         confirmedBy: null,
@@ -1967,7 +1968,7 @@ class OrderService {
           // 🎯 GOAL-METRIC-ENGINE: Auto-advance goals on order events
           try {
             const goalMetricEngine = require("./goalMetricEngine");
-            if (status === "CONFIRMED") {
+            if (normalizedStatus === "CONFIRMED") {
               goalMetricEngine
                 .recordGoalMetricEvent({
                   companyId: order.companyId,
@@ -1979,7 +1980,7 @@ class OrderService {
                 .catch((err) =>
                   console.warn("⚠️ [GOAL-HOOK] Order confirmed error:", err.message)
                 );
-            } else if (status === "DELIVERED") {
+            } else if (normalizedStatus === "DELIVERED") {
               goalMetricEngine
                 .recordGoalMetricEvent({
                   companyId: order.companyId,
@@ -2011,73 +2012,12 @@ class OrderService {
             console.warn("⚠️ [GOAL-HOOK] Failed to trigger goal event:", goalHookErr.message);
           }
 
-          let shouldAutoCreateTurbo = Boolean(
-            order.company?.turboEnabled && order.company?.turboAutoCreate && order.company?.turboApiKey
-          );
-          let turboApiKey = order.company?.turboApiKey;
-
-          // 🛡️ Fallback: Check ShippingCompany table if autoCreate not enabled on Company directly
-          if (!shouldAutoCreateTurbo && status === 'CONFIRMED' && !order.turboShipmentId) {
+          // 🚚 Turbo Integration: Auto-create shipment via unified method
+          if (isConfirmingOrder) {
             try {
-              const prisma = this.getPrisma();
-              const turboCarrier = await prisma.shippingCompany.findFirst({
-                where: {
-                  companyId: order.companyId,
-                  providerKey: 'TURBO',
-                  isActive: true
-                }
-              });
-              if (turboCarrier) {
-                let s = {};
-                try {
-                  s = typeof turboCarrier.settings === 'string' ? JSON.parse(turboCarrier.settings) : (turboCarrier.settings || {});
-                } catch {}
-                const carrierKey = turboCarrier.apiKey || s.apiKey || order.company?.turboApiKey;
-                const carrierAutoCreate = Boolean(s.autoCreateShipments);
-                if (carrierKey && carrierAutoCreate) {
-                  shouldAutoCreateTurbo = true;
-                  turboApiKey = carrierKey;
-                }
-              }
-            } catch (carrierErr) {
-              console.warn('⚠️ [TURBO] Non-blocking fallback carrier check error:', carrierErr.message);
-            }
-          }
-
-          if (status === 'CONFIRMED' && shouldAutoCreateTurbo && turboApiKey && !order.turboShipmentId) {
-            const existingActiveShipment = await this.checkDuplicateActiveTurboShipment(order.companyId, order);
-            if (existingActiveShipment) {
-              console.warn(`⚠️ [TURBO] Skipping automatic shipment creation for order ${order.orderNumber}: Customer already has active Turbo shipment ${existingActiveShipment.turboShipmentId} on order ${existingActiveShipment.orderNumber}`);
-              try {
-                const prisma = this.getPrisma();
-                const skipNote = `[تم تخطي الشحن التلقائي: شحنة تربو نشطة للعميل #${existingActiveShipment.turboShipmentId} بالطلب ${existingActiveShipment.orderNumber}]`;
-                await prisma.order.update({
-                  where: { id: order.id },
-                  data: {
-                    notes: order.notes ? `${order.notes}\n${skipNote}` : skipNote
-                  }
-                });
-              } catch (e) {}
-            } else {
-              const TurboService = require('./turboService');
-              const turboService = new TurboService(turboApiKey, order.companyId);
-              const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems);
-
-              const shipmentResult = await turboService.createShipment(orderData);
-
-              if (shipmentResult.success) {
-                const prisma = this.getPrisma();
-                await prisma.order.update({
-                  where: { id: order.id },
-                  data: {
-                    turboShipmentId: String(shipmentResult.shipmentId || ''),
-                    turboTrackingNumber: String(shipmentResult.trackingNumber || ''),
-                    turboShipmentStatus: shipmentResult.status,
-                    turboLabelUrl: shipmentResult.labelUrl,
-                    turboMetadata: serializeTurboMetadata(order.turboMetadata, shipmentResult.data)
-                  }
-                });
-              }
+              await this.autoCreateTurboShipmentForOrder(order, order.companyId);
+            } catch (turboAutoErr) {
+              console.error(`❌ [TURBO-AUTO-BG] Error in updateOrderStatus for ${orderNumber}:`, turboAutoErr.message);
             }
           }
 
@@ -2151,7 +2091,7 @@ class OrderService {
             });
           }
 
-          if (status === 'CONFIRMED' || status === 'DELIVERED') {
+          if (normalizedStatus === 'CONFIRMED' || normalizedStatus === 'DELIVERED') {
             const dropshippingService = require('./dropshippingService');
             const prisma = this.getPrisma();
 
@@ -2177,7 +2117,7 @@ class OrderService {
             });
             const triggerStatus = affSetting?.commissionOnStatus || 'CONFIRMED';
 
-            if (status === triggerStatus) {
+            if (normalizedStatus === String(triggerStatus).trim().toUpperCase()) {
               const existingCommissions = await prisma.commission.findMany({
                 where: { orderId: order.id },
               });
@@ -2506,6 +2446,11 @@ class OrderService {
       await (async () => {
         try {
           if (status === 'CONFIRMED' || status === 'PROCESSING') {
+            if (status === 'CONFIRMED') {
+              this.autoCreateTurboShipmentForGuestOrder(updatedGuestOrder, companyId).catch(turboGuestErr => {
+                console.error(`❌ [TURBO-AUTO-GUEST-BG] Error in updateGuestOrderStatus for ${updatedGuestOrder.orderNumber}:`, turboGuestErr.message);
+              });
+            }
             internalSyncService.pushOrderToProvider(updatedGuestOrder.id, companyId).catch(err => {
               console.error(`❌ [INTERNAL-SYNC] Failed to push guest order ${updatedGuestOrder.id} to provider:`, err.message);
             });
@@ -2756,83 +2701,11 @@ class OrderService {
         });
       }, 5);
 
-      // 🚚 Turbo Integration: إنشاء شحنة تلقائياً إذا كان مفعّل
-      let shouldAutoCreateTurbo = Boolean(
-        order.company?.turboEnabled && order.company?.turboAutoCreate && order.company?.turboApiKey
-      );
-      let turboApiKey = order.company?.turboApiKey;
-
-      if (!shouldAutoCreateTurbo && !order.turboShipmentId) {
-        try {
-          const prisma = this.getPrisma();
-          const turboCarrier = await prisma.shippingCompany.findFirst({
-            where: {
-              companyId: order.companyId,
-              providerKey: 'TURBO',
-              isActive: true
-            }
-          });
-          if (turboCarrier) {
-            let s = {};
-            try {
-              s = typeof turboCarrier.settings === 'string' ? JSON.parse(turboCarrier.settings) : (turboCarrier.settings || {});
-            } catch {}
-            const carrierKey = turboCarrier.apiKey || s.apiKey || order.company?.turboApiKey;
-            const carrierAutoCreate = Boolean(s.autoCreateShipments);
-            if (carrierKey && carrierAutoCreate) {
-              shouldAutoCreateTurbo = true;
-              turboApiKey = carrierKey;
-            }
-          }
-        } catch (carrierErr) {
-          console.warn('⚠️ [TURBO] Non-blocking fallback carrier check error in confirmOrder:', carrierErr.message);
-        }
-      }
-
-      if (shouldAutoCreateTurbo && turboApiKey && !order.turboShipmentId) {
-        try {
-          const existingActiveShipment = await this.checkDuplicateActiveTurboShipment(order.companyId, order);
-          if (existingActiveShipment) {
-            console.warn(`⚠️ [TURBO] Skipping automatic shipment creation in confirmOrder for order ${order.orderNumber}: Customer already has active Turbo shipment ${existingActiveShipment.turboShipmentId} on order ${existingActiveShipment.orderNumber}`);
-            try {
-              const prisma = this.getPrisma();
-              const skipNote = `[تم تخطي الشحن التلقائي: شحنة تربو نشطة للعميل #${existingActiveShipment.turboShipmentId} بالطلب ${existingActiveShipment.orderNumber}]`;
-              await prisma.order.update({
-                where: { id: order.id },
-                data: {
-                  notes: order.notes ? `${order.notes}\n${skipNote}` : skipNote
-                }
-              });
-            } catch (e) {}
-          } else {
-            const TurboService = require('./turboService');
-            const turboService = new TurboService(turboApiKey, order.companyId);
-
-            // تحضير بيانات الطلب
-            const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems);
-
-            // إنشاء الشحنة
-            const shipmentResult = await turboService.createShipment(orderData);
-
-            // حفظ معلومات الشحنة في قاعدة البيانات
-            await safeQuery(async () => {
-              const prisma = this.getPrisma();
-              return await prisma.order.update({
-                where: { id: order.id },
-                data: {
-                  turboShipmentId: String(shipmentResult.shipmentId || ''),
-                  turboTrackingNumber: String(shipmentResult.trackingNumber || ''),
-                  turboShipmentStatus: shipmentResult.status,
-                  turboLabelUrl: shipmentResult.labelUrl,
-                  turboMetadata: serializeTurboMetadata(order.turboMetadata, shipmentResult.data)
-                }
-              });
-            }, 3);
-          }
-        } catch (turboError) {
-          // لا نوقف العملية إذا فشل Turbo - فقط نسجل الخطأ
-          console.error(`❌ [TURBO] Failed to create shipment for order ${orderNumber}:`, turboError.message);
-        }
+      // 🚚 Turbo Integration: Auto-create shipment via unified method
+      try {
+        await this.autoCreateTurboShipmentForOrder(order, companyId);
+      } catch (turboError) {
+        console.error(`❌ [TURBO-AUTO] Failed in confirmOrder for order ${orderNumber}:`, turboError.message);
       }
 
       //console.log(`✅ Order ${orderNumber} confirmed`);
@@ -2891,10 +2764,399 @@ class OrderService {
     }
   }
 
+  /**
+   * 🚚 Unified Turbo auto-create shipment for regular orders.
+   * Handles idempotency, duplicate active shipment protection, Carrier & Company settings resolution,
+   * safe execution, database persistence, twin guest order sync, and non-silent error logging/notes.
+   */
+  async autoCreateTurboShipmentForOrder(orderOrId, companyId, options = {}) {
+    const prisma = this.getPrisma();
+    let order = orderOrId;
+
+    try {
+      if (typeof order === 'string' || !order.customer || !order.orderItems || !order.company) {
+        const orderId = typeof order === 'string' ? order : order.id;
+        const orderNum = typeof order === 'string' ? order : order.orderNumber;
+        order = await prisma.order.findFirst({
+          where: {
+            companyId,
+            OR: [
+              ...(orderId ? [{ id: orderId }] : []),
+              ...(orderNum ? [{ orderNumber: orderNum }] : [])
+            ]
+          },
+          include: {
+            customer: true,
+            orderItems: {
+              include: {
+                product: true,
+                productVariant: true
+              }
+            },
+            shipments: {
+              select: { id: true, trackingNumber: true, status: true }
+            },
+            company: {
+              select: {
+                id: true,
+                turboApiKey: true,
+                turboEnabled: true,
+                turboAutoCreate: true
+              }
+            }
+          }
+        });
+      }
+
+      if (!order) {
+        console.warn(`⚠️ [TURBO-AUTO] Order not found for company ${companyId}`);
+        return { success: false, reason: 'ORDER_NOT_FOUND' };
+      }
+
+      // Idempotency: skip if already has Turbo shipment or tracking code
+      const existingTracking = order.turboTrackingNumber || (order.shipments || []).find(s => s.trackingNumber)?.trackingNumber;
+      if (order.turboShipmentId || existingTracking) {
+        console.log(`ℹ️ [TURBO-AUTO] Skipping shipment creation for ${order.orderNumber}: already has shipment (id: ${order.turboShipmentId || 'N/A'}, tracking: ${existingTracking || 'N/A'})`);
+        return { skipped: true, reason: 'ALREADY_HAS_SHIPMENT', shipmentId: order.turboShipmentId, trackingNumber: existingTracking };
+      }
+
+      // Check Turbo configuration across Company and ShippingCompany tables
+      let turboEnabled = Boolean(order.company?.turboEnabled);
+      let turboAutoCreate = Boolean(order.company?.turboAutoCreate);
+      let turboApiKey = order.company?.turboApiKey || null;
+
+      let turboCarrier = null;
+      try {
+        turboCarrier = await prisma.shippingCompany.findFirst({
+          where: {
+            companyId,
+            providerKey: 'TURBO',
+            isActive: true
+          }
+        });
+      } catch (carrierErr) {
+        console.warn('⚠️ [TURBO-AUTO] Fallback carrier check error:', carrierErr.message);
+      }
+
+      if (turboCarrier) {
+        turboEnabled = true;
+        let s = {};
+        try {
+          s = typeof turboCarrier.settings === 'string' ? JSON.parse(turboCarrier.settings) : (turboCarrier.settings || {});
+        } catch {}
+        if (!turboApiKey) {
+          turboApiKey = turboCarrier.apiKey || s.apiKey || null;
+        }
+        if (s.autoCreateShipments !== undefined && s.autoCreateShipments !== null) {
+          turboAutoCreate = Boolean(s.autoCreateShipments);
+        }
+      }
+
+      // If Turbo not enabled at all, skip silently (standard for companies not using Turbo)
+      if (!turboEnabled) {
+        return { skipped: true, reason: 'TURBO_NOT_ENABLED' };
+      }
+
+      // If Turbo enabled but auto-creation is disabled in settings
+      if (!turboAutoCreate && !options.force) {
+        console.log(`ℹ️ [TURBO-AUTO] Auto-creation disabled for company on order ${order.orderNumber}`);
+        const skipNote = '[تم تخطي الشحن التلقائي لتربو: ميزة الإنشاء التلقائي غير مفعلة في الإعدادات]';
+        if (!order.notes?.includes(skipNote)) {
+          const updatedNotes = order.notes ? `${order.notes}\n${skipNote}` : skipNote;
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { notes: updatedNotes }
+          }).catch(() => {});
+        }
+        return { skipped: true, reason: 'AUTO_CREATE_DISABLED' };
+      }
+
+      // If Turbo enabled and auto-create enabled, but API key is missing
+      if (!turboApiKey) {
+        console.error(`❌ [TURBO-AUTO] Missing Turbo API key for company ${companyId} on order ${order.orderNumber}`);
+        const errNote = '[تعذر إنشاء شحنة تربو تلقائياً: مفتاح API غير مضبوط في إعدادات الشركة]';
+        if (!order.notes?.includes(errNote)) {
+          const updatedNotes = order.notes ? `${order.notes}\n${errNote}` : errNote;
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { notes: updatedNotes }
+          }).catch(() => {});
+        }
+        return { success: false, reason: 'MISSING_API_KEY' };
+      }
+
+      // Duplicate active shipment guard (same customer recent shipment within 48h)
+      const existingActiveShipment = await this.checkDuplicateActiveTurboShipment(companyId, order);
+      if (existingActiveShipment && !options.force) {
+        console.warn(`⚠️ [TURBO-AUTO] Skipping shipment creation for order ${order.orderNumber}: Customer already has active Turbo shipment ${existingActiveShipment.turboShipmentId} on order ${existingActiveShipment.orderNumber}`);
+        const skipNote = `[تم تخطي الشحن التلقائي: شحنة تربو نشطة للعميل #${existingActiveShipment.turboShipmentId} بالطلب ${existingActiveShipment.orderNumber}]`;
+        if (!order.notes?.includes(skipNote)) {
+          const updatedNotes = order.notes ? `${order.notes}\n${skipNote}` : skipNote;
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { notes: updatedNotes }
+          }).catch(() => {});
+        }
+        return { skipped: true, reason: 'DUPLICATE_ACTIVE_CUSTOMER_SHIPMENT', existingActiveShipment };
+      }
+
+      const TurboService = require('./turboService');
+      const turboService = new TurboService(turboApiKey, companyId);
+      const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems);
+
+      const shipmentResult = await turboService.createShipment(orderData);
+
+      if (shipmentResult && shipmentResult.success && (shipmentResult.shipmentId || shipmentResult.trackingNumber)) {
+        const shipmentId = String(shipmentResult.shipmentId || '');
+        const trackingNumber = String(shipmentResult.trackingNumber || '');
+        const shipmentStatus = shipmentResult.status || 'created';
+        const labelUrl = shipmentResult.labelUrl || null;
+        const serializedMeta = serializeTurboMetadata(order.turboMetadata, shipmentResult.data);
+
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            turboShipmentId: shipmentId,
+            turboTrackingNumber: trackingNumber,
+            turboShipmentStatus: shipmentStatus,
+            turboLabelUrl: labelUrl,
+            turboMetadata: serializedMeta
+          }
+        });
+
+        order.turboShipmentId = shipmentId;
+        order.turboTrackingNumber = trackingNumber;
+        order.turboShipmentStatus = shipmentStatus;
+        order.turboLabelUrl = labelUrl;
+
+        // 🛡️ Synchronize twin guest order if exists
+        if (order.orderNumber) {
+          await prisma.guestOrder.updateMany({
+            where: { companyId, orderNumber: order.orderNumber },
+            data: {
+              turboShipmentId: shipmentId,
+              turboTrackingNumber: trackingNumber,
+              turboShipmentStatus: shipmentStatus,
+              turboLabelUrl: labelUrl,
+              turboMetadata: serializedMeta
+            }
+          }).catch(e => console.warn('⚠️ [TURBO-AUTO] Guest twin sync warning:', e.message));
+        }
+
+        console.log(`✅ [TURBO-AUTO] Successfully created shipment for order ${order.orderNumber}: shipmentId=${shipmentId}, trackingNumber=${trackingNumber}`);
+        return { success: true, shipmentId, trackingNumber, status: shipmentStatus, labelUrl };
+      } else {
+        const errorMsg = shipmentResult?.error || shipmentResult?.message || 'استجابة غير صحيحة من سيرفر تربو';
+        console.error(`❌ [TURBO-AUTO] Failed to create shipment for order ${order.orderNumber}:`, errorMsg);
+        const errNote = `[فشل إنشاء شحنة تربو تلقائياً: ${errorMsg}]`;
+        if (!order.notes?.includes(errNote)) {
+          const updatedNotes = order.notes ? `${order.notes}\n${errNote}` : errNote;
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { notes: updatedNotes }
+          }).catch(() => {});
+        }
+        return { success: false, error: errorMsg };
+      }
+    } catch (err) {
+      console.error(`❌ [TURBO-AUTO] Exception creating shipment for order ${order?.orderNumber || orderOrId}:`, err.message);
+      if (order?.id) {
+        const errNote = `[فشل إنشاء شحنة تربو تلقائياً: ${err.message}]`;
+        if (!order.notes?.includes(errNote)) {
+          const updatedNotes = order.notes ? `${order.notes}\n${errNote}` : errNote;
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { notes: updatedNotes }
+          }).catch(() => {});
+        }
+      }
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * 🚚 Unified Turbo auto-create shipment for guest orders.
+   */
+  async autoCreateTurboShipmentForGuestOrder(guestOrderOrId, companyId, options = {}) {
+    const prisma = this.getPrisma();
+    let guest = guestOrderOrId;
+
+    try {
+      if (typeof guest === 'string' || !guest.guestName) {
+        const guestId = typeof guest === 'string' ? guest : guest.id;
+        const guestOrderNumber = typeof guest === 'string' ? guest : guest.orderNumber;
+        guest = await prisma.guestOrder.findFirst({
+          where: {
+            companyId,
+            OR: [
+              ...(guestId ? [{ id: guestId }] : []),
+              ...(guestOrderNumber ? [{ orderNumber: guestOrderNumber }] : [])
+            ]
+          }
+        });
+      }
+
+      if (!guest) {
+        console.warn(`⚠️ [TURBO-AUTO-GUEST] Guest order not found for company ${companyId}`);
+        return { success: false, reason: 'GUEST_ORDER_NOT_FOUND' };
+      }
+
+      // Idempotency: skip if already has Turbo shipment
+      if (guest.turboShipmentId || guest.turboTrackingNumber) {
+        console.log(`ℹ️ [TURBO-AUTO-GUEST] Skipping shipment for guest ${guest.orderNumber}: already has shipment`);
+        return { skipped: true, reason: 'ALREADY_HAS_SHIPMENT', shipmentId: guest.turboShipmentId, trackingNumber: guest.turboTrackingNumber };
+      }
+
+      const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { id: true, turboEnabled: true, turboAutoCreate: true, turboApiKey: true }
+      });
+
+      let turboEnabled = Boolean(company?.turboEnabled);
+      let turboAutoCreate = Boolean(company?.turboAutoCreate);
+      let turboApiKey = company?.turboApiKey || null;
+
+      let turboCarrier = null;
+      try {
+        turboCarrier = await prisma.shippingCompany.findFirst({
+          where: { companyId, providerKey: 'TURBO', isActive: true }
+        });
+      } catch (carrierErr) {
+        console.warn('⚠️ [TURBO-AUTO-GUEST] Carrier check error:', carrierErr.message);
+      }
+
+      if (turboCarrier) {
+        turboEnabled = true;
+        let s = {};
+        try {
+          s = typeof turboCarrier.settings === 'string' ? JSON.parse(turboCarrier.settings) : (turboCarrier.settings || {});
+        } catch {}
+        if (!turboApiKey) {
+          turboApiKey = turboCarrier.apiKey || s.apiKey || null;
+        }
+        if (s.autoCreateShipments !== undefined && s.autoCreateShipments !== null) {
+          turboAutoCreate = Boolean(s.autoCreateShipments);
+        }
+      }
+
+      if (!turboEnabled) return { skipped: true, reason: 'TURBO_NOT_ENABLED' };
+
+      if (!turboAutoCreate && !options.force) {
+        console.log(`ℹ️ [TURBO-AUTO-GUEST] Auto-creation disabled for guest order ${guest.orderNumber}`);
+        const skipNote = '[تم تخطي الشحن التلقائي لتربو: ميزة الإنشاء التلقائي غير مفعلة في الإعدادات]';
+        if (!guest.notes?.includes(skipNote)) {
+          const updatedNotes = guest.notes ? `${guest.notes}\n${skipNote}` : skipNote;
+          await prisma.guestOrder.update({ where: { id: guest.id }, data: { notes: updatedNotes } }).catch(() => {});
+        }
+        return { skipped: true, reason: 'AUTO_CREATE_DISABLED' };
+      }
+
+      if (!turboApiKey) {
+        console.error(`❌ [TURBO-AUTO-GUEST] Missing API key for guest order ${guest.orderNumber}`);
+        const errNote = '[تعذر إنشاء شحنة تربو تلقائياً: مفتاح API غير مضبوط في إعدادات الشركة]';
+        if (!guest.notes?.includes(errNote)) {
+          const updatedNotes = guest.notes ? `${guest.notes}\n${errNote}` : errNote;
+          await prisma.guestOrder.update({ where: { id: guest.id }, data: { notes: updatedNotes } }).catch(() => {});
+        }
+        return { success: false, reason: 'MISSING_API_KEY' };
+      }
+
+      let parsedItems = [];
+      try {
+        parsedItems = typeof guest.items === 'string' ? JSON.parse(guest.items) : (guest.items || []);
+      } catch {}
+
+      const TurboService = require('./turboService');
+      const turboService = new TurboService(turboApiKey, companyId);
+      const guestOrderData = turboService.formatOrderForTurbo({
+        ...guest,
+        customerName: guest.guestName,
+        customerPhone: guest.guestPhone,
+        customerEmail: guest.guestEmail,
+        total: Number(guest.finalTotal ?? guest.total ?? 0),
+        shipping: Number(guest.shippingCost || 0),
+        orderItems: (Array.isArray(parsedItems) ? parsedItems : []).map(item => ({
+          productName: item.name || item.productName || 'منتج',
+          quantity: item.quantity || 1,
+          price: item.price || 0,
+          total: item.total || ((item.price || 0) * (item.quantity || 1)),
+          color: item.color || null,
+          size: item.size || null,
+          variantName: item.variantName || null,
+        }))
+      }, {
+        firstName: guest.guestName?.split(' ')[0] || '',
+        lastName: guest.guestName?.split(' ').slice(1).join(' ') || '',
+        phone: guest.guestPhone || '',
+        email: guest.guestEmail || ''
+      }, parsedItems);
+
+      const result = await turboService.createShipment(guestOrderData);
+
+      if (result && result.success && (result.shipmentId || result.trackingNumber)) {
+        const shipmentId = String(result.shipmentId || '');
+        const trackingNumber = String(result.trackingNumber || '');
+        const shipmentStatus = result.status || 'created';
+        const labelUrl = result.labelUrl || null;
+        const serializedMeta = serializeTurboMetadata(guest.turboMetadata, result.data);
+
+        await prisma.guestOrder.update({
+          where: { id: guest.id },
+          data: {
+            turboShipmentId: shipmentId,
+            turboTrackingNumber: trackingNumber,
+            turboShipmentStatus: shipmentStatus,
+            turboLabelUrl: labelUrl,
+            turboMetadata: serializedMeta
+          }
+        });
+
+        guest.turboShipmentId = shipmentId;
+        guest.turboTrackingNumber = trackingNumber;
+
+        // 🛡️ Sync to twin regular order if exists
+        if (guest.orderNumber) {
+          await prisma.order.updateMany({
+            where: { companyId, orderNumber: guest.orderNumber },
+            data: {
+              turboShipmentId: shipmentId,
+              turboTrackingNumber: trackingNumber,
+              turboShipmentStatus: shipmentStatus,
+              turboLabelUrl: labelUrl,
+              turboMetadata: serializedMeta
+            }
+          }).catch(e => console.warn('⚠️ [TURBO-AUTO-GUEST] Regular twin sync warning:', e.message));
+        }
+
+        console.log(`✅ [TURBO-AUTO-GUEST] Successfully created shipment for guest ${guest.orderNumber}: shipmentId=${shipmentId}, trackingNumber=${trackingNumber}`);
+        return { success: true, shipmentId, trackingNumber, status: shipmentStatus, labelUrl };
+      } else {
+        const errorMsg = result?.error || result?.message || 'استجابة غير صحيحة من سيرفر تربو';
+        console.error(`❌ [TURBO-AUTO-GUEST] Failed to create shipment for guest ${guest.orderNumber}:`, errorMsg);
+        const errNote = `[فشل إنشاء شحنة تربو تلقائياً: ${errorMsg}]`;
+        if (!guest.notes?.includes(errNote)) {
+          const updatedNotes = guest.notes ? `${guest.notes}\n${errNote}` : errNote;
+          await prisma.guestOrder.update({ where: { id: guest.id }, data: { notes: updatedNotes } }).catch(() => {});
+        }
+        return { success: false, error: errorMsg };
+      }
+    } catch (err) {
+      console.error(`❌ [TURBO-AUTO-GUEST] Exception creating shipment for guest ${guest?.orderNumber || guestOrderOrId}:`, err.message);
+      if (guest?.id) {
+        const errNote = `[فشل إنشاء شحنة تربو تلقائياً: ${err.message}]`;
+        if (!guest.notes?.includes(errNote)) {
+          const updatedNotes = guest.notes ? `${guest.notes}\n${errNote}` : errNote;
+          await prisma.guestOrder.update({ where: { id: guest.id }, data: { notes: updatedNotes } }).catch(() => {});
+        }
+      }
+      return { success: false, error: err.message };
+    }
+  }
+
   async checkDuplicateActiveTurboShipment(companyId, order) {
     try {
       const prisma = this.getPrisma();
-      const rawPhone = order.customerPhone || order.customer?.phone || (order.shippingAddress && typeof order.shippingAddress === 'object' ? order.shippingAddress.phone : null);
+      const rawPhone = order.customerPhone || order.customer?.phone || order.guestPhone || (order.shippingAddress && typeof order.shippingAddress === 'object' ? order.shippingAddress.phone : null);
       if (!rawPhone) return null;
 
       const cleanPhone = String(rawPhone)

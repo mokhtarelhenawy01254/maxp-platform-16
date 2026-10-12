@@ -30,8 +30,8 @@ function cleanEgyptianPhone(raw) {
   let digits = normalizeDigits(raw).replace(/\D/g, '');
   if (digits.startsWith('0020')) digits = digits.slice(4);
   else if (digits.startsWith('002')) digits = digits.slice(3);
-  else if (digits.startsWith('20') && digits.length === 12) digits = digits.slice(2);
-  else if (digits.startsWith('1') && digits.length === 10) digits = '0' + digits;
+  else if (digits.startsWith('20') && (digits.length === 12 || (digits.length === 13 && digits.startsWith('2001')))) digits = digits.slice(2);
+  if (digits.startsWith('1') && digits.length === 10) digits = '0' + digits;
   return (digits.startsWith('01') && digits.length === 11) ? digits : null;
 }
 
