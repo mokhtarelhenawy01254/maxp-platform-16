@@ -140,6 +140,22 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               rows={3}
             />
           </TaskModalField>
+
+          <TaskModalField
+            label="لينك الصفحة (Page URL)"
+            hint="رابط صفحة العمل أو المسار المطلوب في النظام أو المتجر."
+          >
+            <Input
+              data-testid="task-page-url-edit-input"
+              type="text"
+              value={task.pageUrl || ""}
+              onChange={(event) =>
+                setEditingTask({ ...task, pageUrl: event.target.value })
+              }
+              className={taskModalControlClassName}
+              placeholder="https://maxp.online/... أو مسار الصفحة"
+            />
+          </TaskModalField>
         </TaskModalSection>
 
         <div className="space-y-4">

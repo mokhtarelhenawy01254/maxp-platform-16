@@ -244,12 +244,47 @@ export const ApprovalGateModal: React.FC<ApprovalGateModalProps> = ({
                   </span>
                 </div>
 
+                {evidenceObj.pageUrl && (
+                  <div>
+                    <span className="font-semibold text-zinc-500 block text-[11px]">لينك الصفحة:</span>
+                    <a
+                      href={evidenceObj.pageUrl.startsWith("http") ? evidenceObj.pageUrl : `https://${evidenceObj.pageUrl}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 mt-0.5 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                    >
+                      {evidenceObj.pageUrl} ↗
+                    </a>
+                  </div>
+                )}
+
                 <div>
                   <span className="font-semibold text-zinc-500 block text-[11px]">2. الكوميت / مسار الملفات:</span>
                   <code className="block mt-0.5 p-1.5 rounded bg-zinc-100 dark:bg-zinc-900 font-mono text-[11px] break-all border border-zinc-200 dark:border-zinc-800">
                     {evidenceObj.commitOrPath || "غير متوفر"}
                   </code>
                 </div>
+
+                {(evidenceObj.beforeAttachmentUrl || evidenceObj.afterAttachmentUrl) && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    {evidenceObj.beforeAttachmentUrl && (
+                      <div className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                        <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 block mb-1">صورة قبل</span>
+                        <a href={evidenceObj.beforeAttachmentUrl} target="_blank" rel="noopener noreferrer">
+                          <img src={evidenceObj.beforeAttachmentUrl} alt="صورة قبل" className="h-28 w-full object-cover rounded" />
+                        </a>
+                      </div>
+                    )}
+                    {evidenceObj.afterAttachmentUrl && (
+                      <div className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 block mb-1">صورة بعد</span>
+                        <a href={evidenceObj.afterAttachmentUrl} target="_blank" rel="noopener noreferrer">
+                          <img src={evidenceObj.afterAttachmentUrl} alt="صورة بعد" className="h-28 w-full object-cover rounded" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <span className="font-semibold text-zinc-500 block text-[11px]">3. الأرقام قبل / بعد:</span>

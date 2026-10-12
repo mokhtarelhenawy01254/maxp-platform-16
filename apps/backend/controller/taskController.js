@@ -811,6 +811,7 @@ const formatTaskSummary = (task) => {
     title: task.title,
     description: task.description,
     aiDescription: task.aiDescription || null,
+    pageUrl: task.pageUrl || null,
     status: task.status,
     priority: task.priority,
     type: task.type,
@@ -868,6 +869,7 @@ const formatTaskSummary = (task) => {
     evidence: typeof task.evidence === "string" ? (() => { try { return JSON.parse(task.evidence); } catch { return null; } })() : (task.evidence || null),
     acceptanceCriteria: task.acceptanceCriteria || null,
     aiDescription: task.aiDescription || null,
+    pageUrl: task.pageUrl || null,
     acceptanceCriteriaMet: Boolean(task.acceptanceCriteriaMet),
     criteriaChecklist: typeof task.criteriaChecklist === "string" ? (() => { try { return JSON.parse(task.criteriaChecklist); } catch { return null; } })() : (task.criteriaChecklist || null),
     returnCount: Number(task.returnCount || 0),
@@ -1111,6 +1113,7 @@ const taskController = {
         title,
         description,
         aiDescription,
+        pageUrl,
         priority,
         type = "general",
         assignedTo,
@@ -1237,6 +1240,7 @@ const taskController = {
           recurringRule: serializedRecurringRule,
           acceptanceCriteria: acceptanceCriteria ? String(acceptanceCriteria).trim() : null,
           aiDescription: aiDescription ? String(aiDescription).trim() : null,
+          pageUrl: pageUrl ? String(pageUrl).trim() : null,
           completedDate: null,
           updatedAt: new Date(),
           createdAt: new Date(),
@@ -1275,6 +1279,7 @@ const taskController = {
             title,
             description,
             aiDescription: aiDescription ? String(aiDescription).trim() : null,
+            pageUrl: pageUrl ? String(pageUrl).trim() : null,
             acceptanceCriteria: acceptanceCriteria ? String(acceptanceCriteria).trim() : null,
             status: "PENDING",
             priority: taskPriority,
@@ -1433,6 +1438,7 @@ const taskController = {
         title,
         description,
         aiDescription,
+        pageUrl,
         acceptanceCriteria,
         priority,
         type,
@@ -1535,6 +1541,9 @@ const taskController = {
           ...(description && { description }),
           ...(aiDescription !== undefined && {
             aiDescription: aiDescription ? String(aiDescription).trim() : null,
+          }),
+          ...(pageUrl !== undefined && {
+            pageUrl: pageUrl ? String(pageUrl).trim() : null,
           }),
           ...(acceptanceCriteria !== undefined && {
             acceptanceCriteria: acceptanceCriteria ? String(acceptanceCriteria).trim() : null,
@@ -1788,7 +1797,16 @@ const taskController = {
             select: { id: true, fileName: true, originalName: true, filePath: true }
           }).catch(() => []);
 
-          const validation = taskEvidenceService.validateDeliveryEvidence(req.body, taskAttachments);
+          const validation = taskEvidenceService.validateDeliveryEvidence(req.body, taskAttachments, existingTask);
+          if (validation && !validation.isValid) {
+            return res.status(422).json({
+              success: false,
+              error: validation.errorSummary,
+              message: validation.errorSummary,
+              missingFields: validation.missingFields,
+              errorSummary: validation.errorSummary,
+            });
+          }
           sanitizedEvidence = validation ? validation.sanitizedEvidence : null;
         } else if (isApproving) {
           const approvalValidation = taskEvidenceService.validateApprovalGate(existingTask, req.user, {
@@ -2127,7 +2145,16 @@ const taskController = {
           select: { id: true, fileName: true, originalName: true, filePath: true }
         }).catch(() => []);
 
-        const validation = taskEvidenceService.validateDeliveryEvidence(req.body, taskAttachments);
+        const validation = taskEvidenceService.validateDeliveryEvidence(req.body, taskAttachments, existingTask);
+        if (validation && !validation.isValid) {
+          return res.status(422).json({
+            success: false,
+            error: validation.errorSummary,
+            message: validation.errorSummary,
+            missingFields: validation.missingFields,
+            errorSummary: validation.errorSummary,
+          });
+        }
         sanitizedEvidence = validation ? validation.sanitizedEvidence : null;
       } else if (isApproving) {
         const approvalValidation = taskEvidenceService.validateApprovalGate(existingTask, req.user, {

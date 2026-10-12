@@ -54,6 +54,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [aiDescription, setAiDescription] = useState('');
+  const [pageUrl, setPageUrl] = useState('');
   const [acceptanceCriteria, setAcceptanceCriteria] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
@@ -226,6 +227,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         projectName: projectName.trim() || undefined,
         acceptanceCriteria: acceptanceCriteria.trim() || undefined,
         aiDescription: aiDescription.trim() || undefined,
+        pageUrl: pageUrl.trim() || undefined,
         isRecurring,
         recurringRule: isRecurring ? recurringRule : undefined,
         watchers,
@@ -378,6 +380,21 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             value={acceptanceCriteria}
             onChange={setAcceptanceCriteria}
           />
+
+          {/* Page URL */}
+          <div style={modalStyles.formGroup}>
+            <label style={modalStyles.label}>لينك الصفحة (Page URL)</label>
+            <input
+              type="text"
+              value={pageUrl}
+              onChange={(e) => setPageUrl(e.target.value)}
+              placeholder="https://maxp.online/... أو مسار الصفحة في النظام"
+              style={modalStyles.input}
+            />
+            <span style={{ fontSize: 11, color: 'var(--text-dim)', display: 'block', marginTop: 3 }}>
+              رابط صفحة العمل أو المسار المطلوب في النظام أو المتجر.
+            </span>
+          </div>
 
           {/* Assignee & Priority (2 columns) */}
           <div style={modalStyles.row2}>

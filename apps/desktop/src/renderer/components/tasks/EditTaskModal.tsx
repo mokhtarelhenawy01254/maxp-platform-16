@@ -53,6 +53,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [aiDescription, setAiDescription] = useState('');
+  const [pageUrl, setPageUrl] = useState('');
   const [acceptanceCriteria, setAcceptanceCriteria] = useState('');
   const [copiedDesc, setCopiedDesc] = useState(false);
   const [assignedTo, setAssignedTo] = useState('');
@@ -71,6 +72,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     setTitle(task.title || '');
     setDescription(task.description || '');
     setAiDescription(task.aiDescription || '');
+    setPageUrl(task.pageUrl || '');
     setAcceptanceCriteria(task.acceptanceCriteria || '');
     setAssignedTo(String(
       task.assignedTo ||
@@ -217,6 +219,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         description: description.trim() || title.trim(),
         acceptanceCriteria: acceptanceCriteria.trim() || undefined,
         aiDescription: aiDescription.trim() || undefined,
+        pageUrl: pageUrl.trim() || undefined,
         priority,
         assignedTo: assignedTo || undefined,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
@@ -357,6 +360,21 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             value={acceptanceCriteria}
             onChange={setAcceptanceCriteria}
           />
+
+          {/* Page URL */}
+          <div style={modalStyles.formGroup}>
+            <label style={modalStyles.label}>لينك الصفحة (Page URL)</label>
+            <input
+              type="text"
+              value={pageUrl}
+              onChange={(e) => setPageUrl(e.target.value)}
+              placeholder="https://maxp.online/... أو مسار الصفحة في النظام"
+              style={modalStyles.input}
+            />
+            <span style={{ fontSize: 11, color: 'var(--text-dim)', display: 'block', marginTop: 3 }}>
+              رابط صفحة العمل أو المسار المطلوب في النظام أو المتجر.
+            </span>
+          </div>
 
           {/* Assignee & Priority */}
           <div style={modalStyles.row2}>

@@ -148,6 +148,7 @@ const createInitialTaskDraft = (
   metricCurrentValue: 0,
   tags: [],
   aiDescription: "",
+  pageUrl: "",
 });
 
 interface TasksProps {

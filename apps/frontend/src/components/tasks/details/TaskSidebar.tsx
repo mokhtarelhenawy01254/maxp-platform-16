@@ -514,16 +514,39 @@ const TaskSidebar: React.FC<TaskSidebarProps> = ({
         </div>
       )}
 
-      {/* Related Links */}
+      {/* Related Links & Page URL */}
       {(settings?.taskDetailsVisibility?.showRelatedLinks ?? true) &&
-        task.relatedLinks &&
-        task.relatedLinks.length > 0 && (
+        ((task.relatedLinks && task.relatedLinks.length > 0) || task.pageUrl) && (
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
             <h3 className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <LinkIcon className="w-4 h-4" /> الروابط المرتبطة
+              <LinkIcon className="w-4 h-4" /> الروابط وصفحة العمل
             </h3>
             <div className="space-y-3">
-              {task.relatedLinks.map((link, i) => (
+              {task.pageUrl && (
+                <a
+                  href={
+                    task.pageUrl.startsWith("http")
+                      ? task.pageUrl
+                      : `https://${task.pageUrl}`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-2 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/20 transition-all border border-indigo-200/60 dark:border-indigo-800/60 group"
+                >
+                  <div className="p-1.5 bg-white dark:bg-gray-800 rounded shadow-sm text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
+                    <LinkIcon className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">
+                      لينك الصفحة (Page URL)
+                    </p>
+                    <p className="text-[10px] text-gray-500 truncate dir-ltr">
+                      {task.pageUrl}
+                    </p>
+                  </div>
+                </a>
+              )}
+              {task.relatedLinks?.map((link, i) => (
                 <a
                   key={i}
                   href={

@@ -152,44 +152,66 @@ const TaskOverview: React.FC<TaskOverviewProps> = ({
         </div>
       ) : null}
 
-      {/* Related Links */}
-      {visibility.showRelatedLinks &&
-        task.relatedLinks &&
-        task.relatedLinks.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-              <LinkIcon className="h-5 w-5 text-indigo-500" />
-              الروابط المرتبطة (Related Links)
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {task.relatedLinks.map((link, idx) => (
-                <a
-                  key={idx}
-                  href={
-                    link.url.startsWith("http")
-                      ? link.url
-                      : `https://${link.url}`
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 bg-indigo-50/30 dark:bg-indigo-900/10 rounded-lg border border-indigo-100 dark:border-indigo-900/20 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all group"
-                >
-                  <div className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm group-hover:scale-110 transition-transform">
-                    <LinkIcon className="h-4 w-4 text-indigo-500" />
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-bold text-gray-900 dark:text-gray-100 text-sm truncate">
-                      {link.title}
-                    </span>
-                    <span className="text-gray-500 dark:text-gray-400 text-xs truncate dir-ltr text-right">
-                      {link.url}
-                    </span>
-                  </div>
-                </a>
-              ))}
-            </div>
+      {/* Page URL & Related Links */}
+      {((visibility.showRelatedLinks && task.relatedLinks && task.relatedLinks.length > 0) || task.pageUrl) && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+            <LinkIcon className="h-5 w-5 text-indigo-500" />
+            روابط المهمة وصفحة العمل (Task Links & Page URL)
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {task.pageUrl && (
+              <a
+                href={
+                  task.pageUrl.startsWith("http")
+                    ? task.pageUrl
+                    : `https://${task.pageUrl}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all group"
+              >
+                <div className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm group-hover:scale-110 transition-transform">
+                  <LinkIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-bold text-gray-900 dark:text-gray-100 text-sm truncate">
+                    لينك الصفحة (Page URL)
+                  </span>
+                  <span className="text-gray-500 dark:text-gray-400 text-xs truncate dir-ltr text-right">
+                    {task.pageUrl}
+                  </span>
+                </div>
+              </a>
+            )}
+            {task.relatedLinks?.map((link, idx) => (
+              <a
+                key={idx}
+                href={
+                  link.url.startsWith("http")
+                    ? link.url
+                    : `https://${link.url}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 bg-indigo-50/30 dark:bg-indigo-900/10 rounded-lg border border-indigo-100 dark:border-indigo-900/20 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all group"
+              >
+                <div className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm group-hover:scale-110 transition-transform">
+                  <LinkIcon className="h-4 w-4 text-indigo-500" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-bold text-gray-900 dark:text-gray-100 text-sm truncate">
+                    {link.title}
+                  </span>
+                  <span className="text-gray-500 dark:text-gray-400 text-xs truncate dir-ltr text-right">
+                    {link.url}
+                  </span>
+                </div>
+              </a>
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
       {/* Lists/Checklists Section */}
       {visibility.showChecklists &&
@@ -319,6 +341,129 @@ const TaskOverview: React.FC<TaskOverviewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Delivery Evidence Section (Before / After Images) */}
+      {(() => {
+        const evidenceObj = typeof task.evidence === "string" 
+          ? (() => { try { return JSON.parse(task.evidence); } catch { return null; } })() 
+          : task.evidence;
+        if (!evidenceObj) return null;
+
+        const beforeUrl = evidenceObj.beforeAttachmentUrl || (evidenceObj.beforeAttachmentId ? imageBlobUrls[evidenceObj.beforeAttachmentId] : null);
+        const afterUrl = evidenceObj.afterAttachmentUrl || (evidenceObj.afterAttachmentId ? imageBlobUrls[evidenceObj.afterAttachmentId] : null);
+        const hasBeforeOrAfter = Boolean(beforeUrl || afterUrl || evidenceObj.beforeAttachmentId || evidenceObj.afterAttachmentId);
+
+        if (!hasBeforeOrAfter && !evidenceObj.numbersBeforeAfter && !evidenceObj.changeType) return null;
+
+        return (
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm space-y-4">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <PhotoIcon className="h-5 w-5 text-indigo-500" />
+              أدلة تسليم المهمة (Delivery Gate Evidence)
+            </h3>
+
+            {hasBeforeOrAfter && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Before Image */}
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-4 bg-zinc-50/50 dark:bg-zinc-900/40">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-amber-500" />
+                      صورة قبل (Before)
+                    </span>
+                    {beforeUrl && (
+                      <a
+                        href={beforeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                      >
+                        عرض بالحجم الكامل ↗
+                      </a>
+                    )}
+                  </div>
+                  {beforeUrl ? (
+                    <div className="rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 h-48 bg-black/5 dark:bg-black/40 flex items-center justify-center">
+                      <img
+                        src={beforeUrl}
+                        alt="صورة قبل"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-48 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 flex flex-col items-center justify-center text-zinc-400 text-xs">
+                      <PhotoIcon className="size-8 mb-1 text-zinc-300 dark:text-zinc-600" />
+                      <span>{evidenceObj.beforeAttachmentId ? "جاري تحميل الصورة..." : "لم تُرفق صورة قبل"}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* After Image */}
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-4 bg-zinc-50/50 dark:bg-zinc-900/40">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-emerald-500" />
+                      صورة بعد (After)
+                    </span>
+                    {afterUrl && (
+                      <a
+                        href={afterUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                      >
+                        عرض بالحجم الكامل ↗
+                      </a>
+                    )}
+                  </div>
+                  {afterUrl ? (
+                    <div className="rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 h-48 bg-black/5 dark:bg-black/40 flex items-center justify-center">
+                      <img
+                        src={afterUrl}
+                        alt="صورة بعد"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-48 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 flex flex-col items-center justify-center text-zinc-400 text-xs">
+                      <PhotoIcon className="size-8 mb-1 text-zinc-300 dark:text-zinc-600" />
+                      <span>{evidenceObj.afterAttachmentId ? "جاري تحميل الصورة..." : "لم تُرفق صورة بعد"}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Evidence details grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs pt-2 border-t border-zinc-100 dark:border-zinc-800">
+              {evidenceObj.changeType && (
+                <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-100 dark:border-zinc-800">
+                  <span className="text-zinc-500 block mb-0.5">نوع التغيير</span>
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">{evidenceObj.changeType}</span>
+                </div>
+              )}
+              {evidenceObj.commitOrPath && (
+                <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-100 dark:border-zinc-800">
+                  <span className="text-zinc-500 block mb-0.5">الكوميت / مسار الملفات</span>
+                  <span className="font-mono text-zinc-800 dark:text-zinc-200 truncate block">{evidenceObj.commitOrPath}</span>
+                </div>
+              )}
+              {evidenceObj.numbersBeforeAfter && (
+                <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-100 dark:border-zinc-800">
+                  <span className="text-zinc-500 block mb-0.5">الأرقام قبل / بعد</span>
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">{evidenceObj.numbersBeforeAfter}</span>
+                </div>
+              )}
+              {evidenceObj.notTestedScope && (
+                <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-100 dark:border-zinc-800 sm:col-span-2">
+                  <span className="text-zinc-500 block mb-0.5">«إيه اللي ما اختبرتهوش»</span>
+                  <span className="text-zinc-700 dark:text-zinc-300">{evidenceObj.notTestedScope}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Business & Acceptance */}
       {(visibility.showBusinessValue || visibility.showAcceptanceCriteria) && (

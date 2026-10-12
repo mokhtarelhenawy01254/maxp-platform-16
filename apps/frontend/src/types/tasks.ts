@@ -36,6 +36,10 @@ export interface Task {
   businessValue?: string | null;
   acceptanceCriteria?: string | null;
   aiDescription?: string | null;
+  pageUrl?: string | null;
+  evidence?: any;
+  hasEvidence?: boolean;
+  missingEvidence?: boolean;
 
   nextTaskId?: string | null;
   previousTaskId?: string | null;

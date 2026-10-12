@@ -237,6 +237,22 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             </TaskModalField>
 
             <TaskModalField
+              label="لينك الصفحة (Page URL)"
+              hint="رابط صفحة العمل أو المسار المطلوب في النظام أو المتجر."
+            >
+              <Input
+                data-testid="task-page-url-input"
+                type="text"
+                value={newTask.pageUrl || ""}
+                onChange={(event) =>
+                  setNewTask({ ...newTask, pageUrl: event.target.value })
+                }
+                className={taskModalControlClassName}
+                placeholder="https://maxp.online/... أو مسار الصفحة"
+              />
+            </TaskModalField>
+
+            <TaskModalField
               label="الساعات المقدرة"
               hint="اتركها 0 إذا كانت المهمة سريعة أو لا تحتاج تقديرًا زمنيًا."
             >

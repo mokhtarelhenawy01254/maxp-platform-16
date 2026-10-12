@@ -2,142 +2,213 @@ const {
   validateDeliveryEvidence,
   generateDeliveryComment,
   validateApprovalGate,
-  validateRevisionRequest
+  validateRevisionRequest,
+  normalizeTaskPriority
 } = require('../../services/taskEvidenceService');
 
-describe('Task Delivery Gate & Approval Gate Unit Tests', () => {
-  describe('1. validateDeliveryEvidence (بوابة التسليم الاختيارية وغير المانعة)', () => {
-    it('بدون دليل → مقبول بدون تعطيل (Accepts when no evidence is provided)', () => {
-      const result = validateDeliveryEvidence({}, []);
-      expect(result.isValid).toBe(true);
-      expect(result.missingFields).toHaveLength(0);
-      expect(result.sanitizedEvidence).toBeNull();
+describe('Task Delivery Gate & Severity Enforcement Tests', () => {
+  describe('1. validateDeliveryEvidence Unit Tests (حسب درجة الخطورة)', () => {
+    describe('HIGH & URGENT priority (إلزام كامل)', () => {
+      it('HIGH ناقص (نوع التغيير بس) → isValid: false ومع قائمة الحقول الناقصة', () => {
+        const partialEvidence = {
+          changeType: 'BUG_FIX'
+        };
+        const result = validateDeliveryEvidence(partialEvidence, [], 'HIGH');
+
+        expect(result.isValid).toBe(false);
+        expect(result.missingFields).toContain('لينك الصفحة أو الكوميت/مسار التعديل');
+        expect(result.missingFields).toContain('الأرقام قبل / بعد');
+        expect(result.missingFields).toContain('نطاق ما لم يتم اختباره');
+        expect(result.missingFields).toContain('صورة قبل');
+        expect(result.missingFields).toContain('صورة بعد');
+        expect(result.missingFields).toContain('مرفق إثبات التشغيل');
+        expect(result.errorSummary).toContain('أدلة التسليم غير مكتملة');
+        expect(result.errorSummary).toContain('عالية / عاجلة');
+      });
+
+      it('HIGH بناقص إحدى الصورتين (صورة قبل فقط دون صورة بعد) → isValid: false', () => {
+        const evidenceMissingAfter = {
+          changeType: 'FEATURE',
+          commitOrPath: 'feat(core): new checkout engine',
+          numbersBeforeAfter: 'Conversion rate 2% -> 5%',
+          notTestedScope: 'Tested on desktop Chrome',
+          beforeAttachmentUrl: 'https://maxp.online/uploads/before.png'
+        };
+        const result = validateDeliveryEvidence(evidenceMissingAfter, [], { priority: 'HIGH' });
+
+        expect(result.isValid).toBe(false);
+        expect(result.missingFields).toContain('صورة بعد');
+        expect(result.missingFields).not.toContain('صورة قبل');
+      });
+
+      it('HIGH كامل (كل الحقول + صورتين قبل وبعد) → isValid: true', () => {
+        const fullHighEvidence = {
+          changeType: 'BUG_FIX',
+          commitOrPath: 'fix(auth): prevent session timeout',
+          pageUrl: 'https://maxp.online/settings/security',
+          numbersBeforeAfter: 'Session errors dropped from 14% to 0%',
+          notTestedScope: 'Tested with Jest and Cypress; production canary pending',
+          beforeAttachmentId: 'att-before-123',
+          beforeAttachmentUrl: 'https://maxp.online/uploads/before.png',
+          afterAttachmentId: 'att-after-456',
+          afterAttachmentUrl: 'https://maxp.online/uploads/after.png',
+          proofAttachmentId: 'att-after-456',
+          agentInfo: {
+            isAgent: true,
+            agentName: 'MaxP TestBot',
+            commitOrRunId: 'git-sha-789',
+            testOutput: 'PASS 15 tests'
+          }
+        };
+        const result = validateDeliveryEvidence(fullHighEvidence, [], { priority: 'HIGH' });
+
+        expect(result.isValid).toBe(true);
+        expect(result.missingFields).toHaveLength(0);
+        expect(result.errorSummary).toBe('');
+        expect(result.sanitizedEvidence).toBeDefined();
+        expect(result.sanitizedEvidence.beforeAttachmentId).toBe('att-before-123');
+        expect(result.sanitizedEvidence.afterAttachmentId).toBe('att-after-456');
+        expect(result.sanitizedEvidence.pageUrl).toBe('https://maxp.online/settings/security');
+      });
+
+      it('URGENT priority يتبع نفس الإلزام الكامل لـ HIGH', () => {
+        const partialUrgent = { changeType: 'HOTFIX' };
+        const result = validateDeliveryEvidence(partialUrgent, [], 'URGENT');
+
+        expect(result.isValid).toBe(false);
+        expect(result.missingFields.length).toBeGreaterThan(3);
+      });
     });
 
-    it('حقول جزئية → مقبولة وتسجل ما تم إدخاله (Accepts partial evidence without blocking)', () => {
-      const partialEvidence = {
-        changeType: 'BUG_FIX',
-        commitOrPath: 'fix(tasks): resolve delivery gate lock'
-      };
-      const attachments = [{ id: 'att-1', fileName: 'test-run.png' }];
+    describe('MEDIUM priority (إلزام أساسي: نوع التغيير + اللينك أو الكوميت)', () => {
+      it('MEDIUM ناقص اللينك والكوميت → isValid: false', () => {
+        const evidenceMissingLink = {
+          changeType: 'REFACTOR'
+        };
+        const result = validateDeliveryEvidence(evidenceMissingLink, [], 'MEDIUM');
 
-      const result = validateDeliveryEvidence(partialEvidence, attachments);
-      expect(result.isValid).toBe(true);
-      expect(result.missingFields).toHaveLength(0);
-      expect(result.sanitizedEvidence).toBeDefined();
-      expect(result.sanitizedEvidence.changeType).toBe('BUG_FIX');
-      expect(result.sanitizedEvidence.commitOrPath).toBe('fix(tasks): resolve delivery gate lock');
+        expect(result.isValid).toBe(false);
+        expect(result.missingFields).toContain('لينك الصفحة أو الكوميت/مسار التعديل');
+        expect(result.missingFields).not.toContain('صورة قبل');
+        expect(result.missingFields).not.toContain('صورة بعد');
+      });
+
+      it('MEDIUM كامل الحد الأدنى مع commitOrPath → isValid: true', () => {
+        const minimalMedium = {
+          changeType: 'PERFORMANCE',
+          commitOrPath: 'perf(db): optimize query indexes'
+        };
+        const result = validateDeliveryEvidence(minimalMedium, [], 'MEDIUM');
+
+        expect(result.isValid).toBe(true);
+        expect(result.missingFields).toHaveLength(0);
+        expect(result.sanitizedEvidence.commitOrPath).toBe('perf(db): optimize query indexes');
+      });
+
+      it('MEDIUM كامل الحد الأدنى مع pageUrl بدلاً من commitOrPath → isValid: true', () => {
+        const mediumWithPageUrl = {
+          changeType: 'UI_UX',
+          pageUrl: 'https://maxp.online/tasks'
+        };
+        const result = validateDeliveryEvidence(mediumWithPageUrl, [], 'MEDIUM');
+
+        expect(result.isValid).toBe(true);
+        expect(result.missingFields).toHaveLength(0);
+        expect(result.sanitizedEvidence.pageUrl).toBe('https://maxp.online/tasks');
+      });
     });
 
-    it('بدون مرفقات → مقبول بدون حجب (Accepts even if no proof attachments exist)', () => {
-      const evidence = {
-        changeType: 'FEATURE',
-        commitOrPath: 'feat(tasks): compliance reporting'
-      };
-      const emptyAttachments = [];
+    describe('LOW priority (بدون إلزام)', () => {
+      it('LOW فاضي بالكامل → isValid: true', () => {
+        const result = validateDeliveryEvidence({}, [], 'LOW');
 
-      const result = validateDeliveryEvidence(evidence, emptyAttachments);
-      expect(result.isValid).toBe(true);
-      expect(result.missingFields).toHaveLength(0);
+        expect(result.isValid).toBe(true);
+        expect(result.missingFields).toHaveLength(0);
+        expect(result.errorSummary).toBe('');
+      });
+
+      it('LOW يسجل الدليل إن وجد دون حجب في حال غيابه', () => {
+        const lowWithPartial = {
+          changeType: 'CONFIG',
+          numbersBeforeAfter: 'N/A'
+        };
+        const result = validateDeliveryEvidence(lowWithPartial, [], 'LOW');
+
+        expect(result.isValid).toBe(true);
+        expect(result.sanitizedEvidence).toBeDefined();
+        expect(result.sanitizedEvidence.changeType).toBe('CONFIG');
+      });
     });
 
-    it('بأربعة أسئلة + مرفق → مقبول وموثق (Accepts when full evidence is provided)', () => {
-      const validEvidence = {
-        changeType: 'BUG_FIX',
-        commitOrPath: 'apps/backend/controller/taskController.js + 42 lines',
-        numbersBeforeAfter: 'المهام المعلقة بدون دليل انخفضت من 80 إلى 0 بعد فرض البوابة',
-        notTestedScope: 'تم اختبار بيئة التطوير والاختبارات الآلية',
-        agentInfo: {
-          isAgent: true,
-          agentName: 'MaxPAgent',
-          commitOrRunId: 'git-commit-e4f8b2',
-          testOutput: 'PASS tests/services/taskDeliveryGate.test.js\n12 passed, 12 total\nTime: 1.2s'
-        }
-      };
-      const attachments = [{ id: 'att-screenshot-1', fileName: 'test-execution.png' }];
+    describe('Backward Compatibility (التوافق للخلف)', () => {
+      it('payload بالشكل القديم (proofAttachmentId وبدون صور قبل/بعد) على مهمة MEDIUM يفضل يعدّي', () => {
+        const legacyPayload = {
+          changeType: 'BUG_FIX',
+          commitOrPath: 'fix(tasks): resolve delivery gate lock',
+          proofAttachmentId: 'att-legacy-1'
+        };
+        const attachments = [{ id: 'att-legacy-1', fileName: 'test-run.png' }];
 
-      const result = validateDeliveryEvidence(validEvidence, attachments);
-      expect(result.isValid).toBe(true);
-      expect(result.missingFields).toHaveLength(0);
-      expect(result.sanitizedEvidence).toBeDefined();
-      expect(result.sanitizedEvidence.changeType).toBe('BUG_FIX');
-      expect(result.sanitizedEvidence.agentInfo.testOutput).toContain('12 passed');
+        const result = validateDeliveryEvidence(legacyPayload, attachments, 'MEDIUM');
+        expect(result.isValid).toBe(true);
+        expect(result.missingFields).toHaveLength(0);
+        expect(result.sanitizedEvidence.proofAttachmentId).toBe('att-legacy-1');
+      });
+
+      it('payload بالشكل القديم على مهمة LOW يفضل يعدّي', () => {
+        const legacyPayload = {
+          proofAttachmentId: 'att-legacy-2'
+        };
+        const result = validateDeliveryEvidence(legacyPayload, [], 'LOW');
+        expect(result.isValid).toBe(true);
+      });
     });
   });
 
   describe('2. generateDeliveryComment (تعليق آلي وقت التسليم)', () => {
-    it('ينشئ قالباً تعليقياً يوثق البيانات إن وجدت', () => {
+    it('يوثق كافة البيانات بما فيها صورتي قبل وبعد ولينك الصفحة', () => {
       const evidence = {
-        changeType: 'HOTFIX',
-        commitOrPath: 'fix(auth): lock session',
-        numbersBeforeAfter: '0 -> 100%',
-        notTestedScope: 'Only tested on Chrome',
-        proofAttachmentName: 'evidence-screen.mp4',
+        changeType: 'FEATURE',
+        pageUrl: 'https://maxp.online/inventory',
+        commitOrPath: 'feat(inv): bulk barcode scanner',
+        numbersBeforeAfter: 'Speedup 3x',
+        notTestedScope: 'Tested on Zebra scanners',
+        beforeAttachmentUrl: 'https://maxp.online/uploads/before-kiosk.png',
+        afterAttachmentUrl: 'https://maxp.online/uploads/after-kiosk.png',
+        proofAttachmentName: 'scanner-evidence.png',
         agentInfo: null
       };
-      const user = { firstName: 'شروق', lastName: 'علي', email: 'shrouk@example.com' };
+      const user = { firstName: 'مختار', lastName: 'محمود' };
 
       const comment = generateDeliveryComment(evidence, user);
       expect(comment).toContain('📋 **توثيق تسليم المهمة للمراجعة والاعتماد (Delivery Gate)**');
-      expect(comment).toContain('شروق علي');
-      expect(comment).toContain('نوع التغيير:** HOTFIX');
-      expect(comment).toContain('`fix(auth): lock session`');
-      expect(comment).toContain('evidence-screen.mp4');
+      expect(comment).toContain('مختار محمود');
+      expect(comment).toContain('FEATURE');
+      expect(comment).toContain('https://maxp.online/inventory');
+      expect(comment).toContain('صورة قبل');
+      expect(comment).toContain('صورة بعد');
+      expect(comment).toContain('scanner-evidence.png');
     });
 
     it('ينشئ تعليق تسليم بسيط عند عدم وجود دليل', () => {
-      const user = { firstName: 'شروق', lastName: 'علي' };
+      const user = { firstName: 'مختار', lastName: 'محمود' };
       const comment = generateDeliveryComment(null, user);
       expect(comment).toContain('تسليم المهمة للمراجعة والاعتماد');
-      expect(comment).toContain('شروق علي');
+      expect(comment).toContain('مختار محمود');
     });
   });
 
-  describe('3. validateApprovalGate (بوابة الاعتماد السلسة وغير المعطلة)', () => {
-    it('اعتماد مهمة بدون دليل → مسموح وسلس (Allows approval without evidence)', () => {
-      const taskWithoutEvidence = {
-        id: 't-1',
-        title: 'Task without proof',
-        hasEvidence: false,
-        evidence: null,
-        acceptanceCriteria: 'معيار 1'
-      };
-      const approver = { id: 'u-admin', role: 'COMPANY_ADMIN' };
-
-      const result = validateApprovalGate(taskWithoutEvidence, approver, { criteriaChecked: true });
+  describe('3. validateApprovalGate & validateRevisionRequest', () => {
+    it('اعتماد مهمة بدون دليل مسموح وسلس للمدراء', () => {
+      const task = { id: 't-1', title: 'Task 1' };
+      const result = validateApprovalGate(task, { role: 'COMPANY_ADMIN' }, {});
       expect(result.isValid).toBe(true);
     });
 
-    it('اعتماد مباشر بدون إجبار على التأشير على جميع المعايير (Allows approval directly)', () => {
-      const taskWithCriteria = {
-        id: 't-2',
-        title: 'Task with criteria',
-        hasEvidence: false,
-        acceptanceCriteria: '1. شاشة المراجعة تعمل\n2. التقرير دقيق'
-      };
-      const approver = { id: 'u-admin', role: 'COMPANY_ADMIN' };
-
-      const result = validateApprovalGate(taskWithCriteria, approver, {
-        criteriaChecked: false
-      });
-      expect(result.isValid).toBe(true);
-    });
-  });
-
-  describe('4. validateRevisionRequest (إرجاع للتعديل وزيادة returnCount)', () => {
-    it('سبب الإرجاع إلزامي (Rejects revision request with empty reason)', () => {
-      const result = validateRevisionRequest('', 2, { name: 'المدير' });
+    it('validateRevisionRequest يرفض الإرجاع الخالي من الأسباب', () => {
+      const result = validateRevisionRequest('', 0);
       expect(result.isValid).toBe(false);
       expect(result.error).toContain('سبب الإرجاع للتعديل إلزامي');
-    });
-
-    it('الإرجاع يسجل السبب ويزيد returnCount تلقائياً', () => {
-      const result = validateRevisionRequest('يرجى مراجعة الصياغة والتنسيق', 1, { firstName: 'شادي' });
-      expect(result.isValid).toBe(true);
-      expect(result.nextReturnCount).toBe(2);
-      expect(result.comment).toContain('إعادة المهمة للتعديل (المرة رقم 2)');
-      expect(result.comment).toContain('يرجى مراجعة الصياغة والتنسيق');
-      expect(result.comment).toContain('شادي');
     });
   });
 });

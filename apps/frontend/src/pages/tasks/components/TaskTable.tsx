@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import { buildApiUrl } from "../../../utils/urlHelper";
 import { tokenManager } from "../../../utils/tokenManager";
 import type { Task, TaskSortBy } from "../types";
-import { DeliveryGateModal, type DeliveryEvidencePayload } from "./DeliveryGateModal";
+import { DeliveryGateModal, type DeliveryEvidencePayload, type DeliveryGateFiles } from "./DeliveryGateModal";
 import { ApprovalGateModal } from "./ApprovalGateModal";
 
 export interface TaskTableProps {
@@ -234,16 +234,34 @@ export const TaskTable: React.FC<TaskTableProps> = ({
     serverTotalTasks > 0 ? serverTotalTasks : filteredAndSortedTasks.length;
   const isEmpty = !loading && paginatedTasks.length === 0;
 
-  const handleDeliverySubmit = async (payload: DeliveryEvidencePayload, newFile?: File | null) => {
+  const handleDeliverySubmit = async (
+    payload: DeliveryEvidencePayload,
+    files?: DeliveryGateFiles | File | null
+  ) => {
     if (!deliveryGateTask) return;
     try {
       setIsSubmittingGate(true);
       const token = tokenManager.getAccessToken();
 
-      let proofAttachmentId = payload.proofAttachmentId;
-      if (newFile) {
+      let beforeAttachmentId = payload.beforeAttachmentId;
+      let afterAttachmentId = payload.afterAttachmentId;
+      let beforeAttachmentUrl = payload.beforeAttachmentUrl;
+      let afterAttachmentUrl = payload.afterAttachmentUrl;
+
+      // Extract files cleanly
+      let beforeFileToUpload: File | null = null;
+      let afterFileToUpload: File | null = null;
+
+      if (files instanceof File) {
+        afterFileToUpload = files;
+      } else if (files && typeof files === "object") {
+        beforeFileToUpload = files.beforeFile || null;
+        afterFileToUpload = files.afterFile || null;
+      }
+
+      if (beforeFileToUpload) {
         const formData = new FormData();
-        formData.append("file", newFile);
+        formData.append("file", beforeFileToUpload);
         formData.append("taskId", deliveryGateTask.id);
         const uploadRes = await fetch(buildApiUrl("tasks/attachments"), {
           method: "POST",
@@ -252,9 +270,29 @@ export const TaskTable: React.FC<TaskTableProps> = ({
         });
         const uploadData = await uploadRes.json();
         if (uploadData.success && uploadData.data?.id) {
-          proofAttachmentId = uploadData.data.id;
+          beforeAttachmentId = uploadData.data.id;
+          beforeAttachmentUrl = uploadData.data.filePath;
         }
       }
+
+      if (afterFileToUpload) {
+        const formData = new FormData();
+        formData.append("file", afterFileToUpload);
+        formData.append("taskId", deliveryGateTask.id);
+        const uploadRes = await fetch(buildApiUrl("tasks/attachments"), {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.success && uploadData.data?.id) {
+          afterAttachmentId = uploadData.data.id;
+          afterAttachmentUrl = uploadData.data.filePath;
+        }
+      }
+
+      const proofAttachmentId = afterAttachmentId || beforeAttachmentId || payload.proofAttachmentId;
+      const proofAttachmentUrl = afterAttachmentUrl || beforeAttachmentUrl || payload.proofAttachmentUrl;
 
       const res = await fetch(buildApiUrl(`tasks/${deliveryGateTask.id}/submit-review`), {
         method: "POST",
@@ -264,20 +302,32 @@ export const TaskTable: React.FC<TaskTableProps> = ({
         },
         body: JSON.stringify({
           ...payload,
+          beforeAttachmentId,
+          beforeAttachmentUrl,
+          afterAttachmentId,
+          afterAttachmentUrl,
           proofAttachmentId,
+          proofAttachmentUrl,
         }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (res.ok && data.success) {
         toast.success("تم تسليم المهمة للمراجعة بنجاح");
         setDeliveryGateTask(null);
         if (onReloadTasks) onReloadTasks();
         else updateTaskStatus(deliveryGateTask.id, "in_review");
       } else {
-        toast.error(data.error || "فشل تسليم المهمة للمراجعة");
+        const errMsg = data.error || data.message || "فشل تسليم المهمة للمراجعة";
+        toast.error(errMsg);
+        const gateErr: any = new Error(errMsg);
+        gateErr.missingFields = data.missingFields;
+        throw gateErr;
       }
-    } catch {
-      toast.error("حدث خطأ أثناء تسليم المهمة");
+    } catch (err: any) {
+      if (!err?.missingFields) {
+        toast.error(err?.message || "حدث خطأ أثناء تسليم المهمة");
+      }
+      throw err;
     } finally {
       setIsSubmittingGate(false);
     }

@@ -101,6 +101,7 @@ const formatTask = (task) => ({
   title: task.title,
   description: task.description,
   aiDescription: task.aiDescription || null,
+  pageUrl: task.pageUrl || null,
   acceptanceCriteria: task.acceptanceCriteria || null,
   status: task.status,
   priority: task.priority,
@@ -390,6 +391,8 @@ const taskExternalController = {
         description,
         aiDescription: rawAiDescription,
         ai_description: rawAiDescriptionUnderscore,
+        pageUrl: rawPageUrl,
+        page_url: rawPageUrlUnderscore,
         priority,
         type = 'general',
         assignedTo,
@@ -458,6 +461,7 @@ const taskExternalController = {
       }
 
       const finalAiDescription = rawAiDescription !== undefined ? rawAiDescription : rawAiDescriptionUnderscore;
+      const finalPageUrl = rawPageUrl !== undefined ? rawPageUrl : rawPageUrlUnderscore;
 
       const createdTask = await prisma.task.create({
         data: {
@@ -468,6 +472,7 @@ const taskExternalController = {
           title: String(title).trim(),
           description: String(description).trim(),
           aiDescription: finalAiDescription ? String(finalAiDescription).trim() : null,
+          pageUrl: finalPageUrl ? String(finalPageUrl).trim() : null,
           acceptanceCriteria: acceptanceCriteria ? String(acceptanceCriteria).trim() : null,
           status: 'PENDING',
           priority: normalizePriority(priority),
@@ -645,7 +650,16 @@ const taskExternalController = {
           select: { id: true, fileName: true, originalName: true, filePath: true }
         }).catch(() => []);
 
-        const validation = taskEvidenceService.validateDeliveryEvidence(req.body, taskAttachments);
+        const validation = taskEvidenceService.validateDeliveryEvidence(req.body, taskAttachments, currentTask);
+        if (validation && !validation.isValid) {
+          return res.status(422).json({
+            success: false,
+            error: validation.errorSummary,
+            message: validation.errorSummary,
+            missingFields: validation.missingFields,
+            errorSummary: validation.errorSummary
+          });
+        }
         sanitizedEvidence = validation ? validation.sanitizedEvidence : null;
       } else if (effectiveStatus === 'COMPLETED' && currentTask.status === 'IN_REVIEW') {
         const approvalValidation = taskEvidenceService.validateApprovalGate(currentTask, actingUser || {}, {
@@ -771,6 +785,7 @@ const taskExternalController = {
       const title = req.body.title;
       const description = req.body.description;
       const aiDescription = req.body.aiDescription !== undefined ? req.body.aiDescription : req.body.ai_description;
+      const pageUrl = req.body.pageUrl !== undefined ? req.body.pageUrl : req.body.page_url;
       const acceptanceCriteria = req.body.acceptanceCriteria !== undefined ? req.body.acceptanceCriteria : req.body.acceptance_criteria;
       const priority = req.body.priority;
       const dueDate = req.body.dueDate !== undefined ? req.body.dueDate : req.body.due_date;
@@ -794,6 +809,7 @@ const taskExternalController = {
         title,
         description,
         aiDescription,
+        pageUrl,
         acceptanceCriteria,
         priority,
         dueDate,
@@ -906,6 +922,13 @@ const taskExternalController = {
         updateData.aiDescription = aiDescription ? String(aiDescription).trim() : null;
         if (updateData.aiDescription !== currentTask.aiDescription) {
           changeList.push('وصف الذكاء الاصطناعي');
+        }
+      }
+
+      if (pageUrl !== undefined) {
+        updateData.pageUrl = pageUrl ? String(pageUrl).trim() : null;
+        if (updateData.pageUrl !== currentTask.pageUrl) {
+          changeList.push('لينك الصفحة');
         }
       }
 

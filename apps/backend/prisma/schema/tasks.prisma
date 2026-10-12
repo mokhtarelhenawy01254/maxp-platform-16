@@ -512,6 +512,7 @@ model Task {
   title                                                  String
   description                                            String
   aiDescription                                          String?
+  pageUrl                                                String?
   status                                                 TasksStatus      @default(PENDING)
   priority                                               TasksPriority    @default(MEDIUM)
   type                                                   String           @default("general")
