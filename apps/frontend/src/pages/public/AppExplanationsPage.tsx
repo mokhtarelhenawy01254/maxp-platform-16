@@ -115,13 +115,22 @@ const groupOf = (route?: string) => {
 };
 
 const AppExplanationsPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { i18n } = useTranslation();
   const [explanations, setExplanations] = useState<AppExplanation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [openSlugs, setOpenSlugs] = useState<Set<string>>(new Set());
   const [activeGroup, setActiveGroup] = useState<string>("");
+
+  const ar = (key: string, fallback: string): string => {
+    const res = i18n.getResource("ar", "translation", key);
+    return typeof res === "string" && res.trim() ? res : fallback;
+  };
+
+  useEffect(() => {
+    document.title = "شرح المنصة — MaxP";
+  }, []);
 
   useEffect(() => {
     const fetchExplanations = async () => {
@@ -134,14 +143,14 @@ const AppExplanationsPage: React.FC = () => {
         }
       } catch (err) {
         console.error("Failed to load explanations", err);
-        setError(t("explanations.loadError", "تعذر تحميل الشروحات. يرجى المحاولة لاحقاً."));
+        setError(ar("explanations.loadError", "تعذر تحميل الشروحات. يرجى المحاولة لاحقاً."));
       } finally {
         setLoading(false);
       }
     };
 
     fetchExplanations();
-  }, [t]);
+  }, [i18n]);
 
   const toggleSlug = (slug: string, open: boolean) => {
     setOpenSlugs((prev) => {
@@ -246,21 +255,21 @@ const AppExplanationsPage: React.FC = () => {
   };
 
   return (
-    <div className="rtl min-h-screen bg-background text-foreground">
+    <div className="rtl min-h-screen bg-background text-foreground" dir="rtl">
       {/* الشريط الأعلى الثابت */}
       <header className="sticky top-0 z-20 border-b bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-3 px-4 py-2.5">
           <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-            <span>{t("explanations.breadcrumbHome", "الرئيسية")}</span>
+            <span>{ar("explanations.breadcrumbHome", "الرئيسية")}</span>
             <span className="text-muted-foreground/60">⁄</span>
             <b className="font-extrabold text-foreground">
-              {t("explanations.pageTitle", "شرح المنصة")}
+              {ar("explanations.pageTitle", "شرح المنصة")}
             </b>
           </div>
           {!loading && !error && explanations.length > 0 && (
             <div className="text-xs font-bold text-muted-foreground tabular-nums">
-              <span>{filteredTotal}</span> {t("explanations.guidesCount", "شرح")} ·{" "}
-              <span>{grouped.length}</span> {t("explanations.groupsCount", "أقسام")}
+              <span>{filteredTotal}</span> {ar("explanations.guidesCount", "شرح")} ·{" "}
+              <span>{grouped.length}</span> {ar("explanations.groupsCount", "أقسام")}
             </div>
           )}
         </div>
@@ -280,7 +289,7 @@ const AppExplanationsPage: React.FC = () => {
         <div className="mx-auto max-w-[1180px] px-4 py-8">
           <div className="rounded-2xl border bg-card p-12 text-center">
             <p className="text-muted-foreground">
-              {t("explanations.emptyState", "لا توجد شروحات متاحة حالياً")}
+              {ar("explanations.emptyState", "لا توجد شروحات متاحة حالياً")}
             </p>
           </div>
         </div>
@@ -295,11 +304,11 @@ const AppExplanationsPage: React.FC = () => {
               </div>
               <div className="min-w-0 flex-1">
                 <b className="block truncate text-[15px] font-extrabold leading-tight text-foreground">
-                  {t("explanations.pageTitle", "شرح المنصة")}
+                  {ar("explanations.pageTitle", "شرح المنصة")}
                 </b>
                 <span className="text-[11.5px] text-muted-foreground tabular-nums">
-                  {filteredTotal} {t("explanations.guidesCount", "شرح")} · {grouped.length}{" "}
-                  {t("explanations.groupsCount", "أقسام")}
+                  {filteredTotal} {ar("explanations.guidesCount", "شرح")} · {grouped.length}{" "}
+                  {ar("explanations.groupsCount", "أقسام")}
                 </span>
               </div>
             </div>
@@ -317,7 +326,7 @@ const AppExplanationsPage: React.FC = () => {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="ابحث…"
-                aria-label={t("explanations.searchPlaceholder", "ابحث في الشروحات…")}
+                aria-label={ar("explanations.searchPlaceholder", "ابحث في الشروحات…")}
                 className="h-10 w-full rounded-xl border bg-card ps-9 pe-14 text-sm outline-none focus:ring-2 focus:ring-ring text-foreground"
               />
               <span className="pointer-events-none absolute end-2.5 top-1/2 -translate-y-1/2 rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold tabular-nums text-muted-foreground">
@@ -350,7 +359,7 @@ const AppExplanationsPage: React.FC = () => {
                         isActive ? "text-primary" : "text-muted-foreground"
                       }`}
                     />
-                    <span className="truncate">{t(group.labelKey, group.labelFallback)}</span>
+                    <span className="truncate">{ar(group.labelKey, group.labelFallback)}</span>
                     <span
                       className={`ms-auto rounded-full px-2 py-0.5 text-[11px] tabular-nums ${
                         isActive
@@ -367,7 +376,7 @@ const AppExplanationsPage: React.FC = () => {
 
             {/* سطر توضيحي أسفل الشريط */}
             <div className="hidden border-t pt-3 text-[11.5px] leading-relaxed text-muted-foreground md:block mt-3">
-              {t("explanations.railHint", "اختر القسم وتنقّل — الصفحة بتفضل في نفس المكان.")}
+              {ar("explanations.railHint", "اختر القسم وتنقّل — الصفحة بتفضل في نفس المكان.")}
             </div>
           </aside>
 
@@ -375,7 +384,7 @@ const AppExplanationsPage: React.FC = () => {
           <main>
             {isSearching && grouped.length === 0 ? (
               <div className="rounded-2xl border border-dashed bg-card p-12 text-center text-sm text-muted-foreground">
-                <p>{t("explanations.searchEmpty", "مفيش نتائج للبحث")}</p>
+                <p>{ar("explanations.searchEmpty", "مفيش نتائج للبحث")}</p>
               </div>
             ) : (
               grouped.map((group) => (
@@ -383,7 +392,7 @@ const AppExplanationsPage: React.FC = () => {
                   {/* رأس القسم */}
                   <div className="mb-2.5 flex items-center gap-2.5">
                     <h2 className="text-sm font-bold text-foreground">
-                      {t(group.labelKey, group.labelFallback)}
+                      {ar(group.labelKey, group.labelFallback)}
                     </h2>
                     <span className="rounded-full bg-muted/60 px-2 py-0.5 text-xs font-bold text-muted-foreground tabular-nums">
                       {group.items.length}
@@ -400,7 +409,7 @@ const AppExplanationsPage: React.FC = () => {
                         idx={idx}
                         open={openSlugs.has(exp.slug)}
                         onOpenChange={(open) => toggleSlug(exp.slug, open)}
-                        watchVideoLabel={t("explanations.watchVideo", "شاهد الفيديو التوضيحي")}
+                        watchVideoLabel={ar("explanations.watchVideo", "شاهد الفيديو التوضيحي")}
                       />
                     ))}
                   </div>
