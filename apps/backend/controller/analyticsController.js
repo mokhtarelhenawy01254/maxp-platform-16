@@ -5647,6 +5647,209 @@ const getTodayOps = async (req, res) => {
   }
 };
 
+/**
+ * 🏷️ تقرير عمولات المسوقين (Marketer Commissions Analytics)
+ * يحسب عدد الطلبات والقطع (items[].quantity) والعمولة التقديرية (افتراضياً 50 ج/قطعة)
+ * لكل مسوق أنشأ طلبات (createdBy = userId) خلال فترة زمنية محددة
+ */
+const getMarketerCommissionsAnalytics = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+
+    const { startDate, endDate, period, userId, commissionPerPiece } = req.query;
+    const ratePerPiece = parseFloat(commissionPerPiece) || 50;
+    const prisma = getSharedPrismaClient();
+
+    let whereClause = {
+      companyId: String(companyId),
+      createdBy: { not: null }
+    };
+
+    if (userId) {
+      whereClause.createdBy = String(userId);
+    }
+
+    if (startDate || endDate || period) {
+      try {
+        const { start, end } = parseAnalyticsDateRange({ startDate, endDate, period: period || '30' });
+        whereClause.createdAt = {
+          gte: start,
+          lte: end
+        };
+      } catch (err) {
+        console.error('Date parsing error in getMarketerCommissionsAnalytics:', err);
+      }
+    }
+
+    const userWhere = { companyId: String(companyId) };
+    if (userId) {
+      userWhere.id = String(userId);
+    }
+
+    const [users, orders] = await Promise.all([
+      prisma.user.findMany({
+        where: userWhere,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true
+        }
+      }),
+      prisma.order.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          total: true,
+          createdBy: true,
+          confirmedBy: true,
+          createdAt: true,
+          orderItems: {
+            select: {
+              quantity: true,
+              price: true,
+              total: true
+            }
+          }
+        }
+      })
+    ]);
+
+    const marketerStats = {};
+    users.forEach(u => {
+      marketerStats[u.id] = {
+        userId: u.id,
+        userName: [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email,
+        email: u.email,
+        role: u.role,
+        ordersCreated: 0,
+        totalPieces: 0,
+        totalRevenue: 0,
+        estimatedCommission: 0,
+        confirmedOrders: 0,
+        confirmedPieces: 0,
+        deliveredOrders: 0,
+        deliveredPieces: 0,
+        deliveredCommission: 0,
+        shippedOrders: 0,
+        shippedPieces: 0,
+        returnedOrders: 0,
+        returnedPieces: 0,
+        cancelledOrders: 0,
+        cancelledPieces: 0,
+        statusBreakdown: {}
+      };
+    });
+
+    orders.forEach(order => {
+      const creatorId = order.createdBy;
+      if (!creatorId) return;
+
+      if (!marketerStats[creatorId]) {
+        marketerStats[creatorId] = {
+          userId: creatorId,
+          userName: 'مستخدم غير معروف',
+          email: '',
+          role: 'AGENT',
+          ordersCreated: 0,
+          totalPieces: 0,
+          totalRevenue: 0,
+          estimatedCommission: 0,
+          confirmedOrders: 0,
+          confirmedPieces: 0,
+          deliveredOrders: 0,
+          deliveredPieces: 0,
+          deliveredCommission: 0,
+          shippedOrders: 0,
+          shippedPieces: 0,
+          returnedOrders: 0,
+          returnedPieces: 0,
+          cancelledOrders: 0,
+          cancelledPieces: 0,
+          statusBreakdown: {}
+        };
+      }
+
+      const st = String(order.status || 'UNKNOWN').toUpperCase();
+      const m = marketerStats[creatorId];
+      const pieces = order.orderItems && order.orderItems.length > 0
+        ? order.orderItems.reduce((sum, item) => sum + (item.quantity || 1), 0)
+        : 1;
+      const orderRevenue = parseFloat(order.total) || 0;
+
+      m.ordersCreated += 1;
+      m.totalPieces += pieces;
+      m.totalRevenue += orderRevenue;
+
+      if (!m.statusBreakdown[st]) {
+        m.statusBreakdown[st] = { count: 0, pieces: 0, revenue: 0 };
+      }
+      m.statusBreakdown[st].count += 1;
+      m.statusBreakdown[st].pieces += pieces;
+      m.statusBreakdown[st].revenue += orderRevenue;
+
+      if (order.confirmedBy) {
+        m.confirmedOrders += 1;
+        m.confirmedPieces += pieces;
+      }
+
+      if (st === 'DELIVERED') {
+        m.deliveredOrders += 1;
+        m.deliveredPieces += pieces;
+        m.deliveredCommission += pieces * ratePerPiece;
+      } else if (st === 'SHIPPED') {
+        m.shippedOrders += 1;
+        m.shippedPieces += pieces;
+      } else if (st === 'RETURNED') {
+        m.returnedOrders += 1;
+        m.returnedPieces += pieces;
+      } else if (st === 'CANCELLED') {
+        m.cancelledOrders += 1;
+        m.cancelledPieces += pieces;
+      }
+    });
+
+    const activeMarketers = Object.values(marketerStats)
+      .filter(m => m.ordersCreated > 0)
+      .map(m => ({
+        ...m,
+        totalRevenue: parseFloat(m.totalRevenue.toFixed(2)),
+        estimatedCommission: m.totalPieces * ratePerPiece,
+        deliveredCommission: m.deliveredPieces * ratePerPiece
+      }))
+      .sort((a, b) => b.totalPieces - a.totalPieces);
+
+    const totalPiecesSum = activeMarketers.reduce((s, m) => s + m.totalPieces, 0);
+    const totalDeliveredPiecesSum = activeMarketers.reduce((s, m) => s + m.deliveredPieces, 0);
+
+    res.json({
+      success: true,
+      data: {
+        commissionRatePerPiece: ratePerPiece,
+        summary: {
+          totalMarketers: activeMarketers.length,
+          totalOrders: activeMarketers.reduce((s, m) => s + m.ordersCreated, 0),
+          totalPieces: totalPiecesSum,
+          totalRevenue: parseFloat(activeMarketers.reduce((s, m) => s + m.totalRevenue, 0).toFixed(2)),
+          totalEstimatedCommission: totalPiecesSum * ratePerPiece,
+          totalDeliveredPieces: totalDeliveredPiecesSum,
+          totalDeliveredCommission: totalDeliveredPiecesSum * ratePerPiece
+        },
+        marketers: activeMarketers
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error in getMarketerCommissionsAnalytics:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء جلب تقرير عمولات المسوقين', error: error.message });
+  }
+};
+
 module.exports = {
   getStoreAnalytics,
   getConversionRate,
@@ -5680,6 +5883,7 @@ module.exports = {
   getDeliveryReturnsLogisticsAnalytics,
   getProductSalesPerformance,
   getTeamPerformanceAnalytics,
+  getMarketerCommissionsAnalytics,
   getFunnelAnalytics,
   getStockForecastAnalytics,
   getCampaignAttributionAnalytics,

@@ -91,6 +91,9 @@ router.get('/products-delivery-returns', authenticateToken, cacheMiddleware(3000
 // تحليل أداء الفريق
 router.get('/team-performance', authenticateToken, cacheMiddleware(60000), analyticsController.getTeamPerformanceAnalytics);
 
+// تقرير عمولات المسوقين (قطع × 50ج أو معدل مخصص)
+router.get('/marketer-commissions', authenticateToken, cacheMiddleware(30000), analyticsController.getMarketerCommissionsAnalytics);
+
 // تحليل القمع
 router.get('/funnel', authenticateToken, cacheMiddleware(60000), analyticsController.getFunnelAnalytics);
 
