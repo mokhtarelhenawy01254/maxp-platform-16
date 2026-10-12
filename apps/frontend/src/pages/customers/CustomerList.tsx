@@ -333,53 +333,60 @@ const CustomerList: React.FC = () => {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-5">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {t("customers.pageTitle")}
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                {t("customers.pageTitle")}
+              </h1>
+              {pagination.total > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-100/80 dark:bg-zinc-800/70 text-zinc-600 dark:text-zinc-400 text-xs font-mono font-medium tabular-nums shadow-2xs">
+                  {pagination.total} عميل
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
               {t("customers.pageSubtitle")}
             </p>
             {availableDiscountCount !== null && availableDiscountCount > 0 && (
-              <span className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 border border-emerald-200/80 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-800/60 dark:text-emerald-300 tabular-nums">
-                <TagIcon className="h-3.5 w-3.5" />
+              <span className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 tabular-nums shadow-2xs">
+                <TagIcon className="h-3 w-3" />
                 <span>{availableDiscountCount} عميل مؤهل لخصم تلقائي</span>
               </span>
             )}
           </div>
           {isAdmin && (
-            <div className="flex space-x-3 space-x-reverse">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => setIsImportModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-transform active:scale-[0.97]"
+                className="inline-flex items-center px-3 py-1.5 sm:py-2 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all duration-150 active:scale-[0.97] shadow-2xs"
               >
-                <ArrowUpTrayIcon className="h-4 w-4 ml-2" />
+                <ArrowUpTrayIcon className="h-3.5 w-3.5 ml-1.5 text-zinc-400" />
                 {t("customers.importCSV")}
               </button>
               <button
                 onClick={() => handleExport("csv")}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-transform active:scale-[0.97]"
+                className="inline-flex items-center px-3 py-1.5 sm:py-2 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all duration-150 active:scale-[0.97] shadow-2xs"
               >
-                <ArrowDownTrayIcon className="h-4 w-4 ml-2" />
+                <ArrowDownTrayIcon className="h-3.5 w-3.5 ml-1.5 text-zinc-400" />
                 {t("customers.exportCSV")}
               </button>
 
               <Link
                 to="/customers/new"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-transform active:scale-[0.97]"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200 shadow-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-150 active:scale-[0.97]"
               >
-                <PlusIcon className="h-4 w-4 ml-2" />
-                {t("customers.addCustomer")}
+                <PlusIcon className="h-3.5 w-3.5 text-white dark:text-zinc-950" />
+                <span>{t("customers.addCustomer")}</span>
               </Link>
             </div>
           )}
         </div>
 
-        {/* Quick Status Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        {/* Quick Status Tabs (Linear-style unified tray) */}
+        <div className="bg-zinc-100/80 dark:bg-zinc-800/60 p-1 rounded-lg border border-zinc-200/60 dark:border-zinc-700/50 flex items-center gap-1 overflow-x-auto no-scrollbar">
           {[
             { id: "", label: "الكل" },
             { id: "LEAD", label: "عملاء محتملون" },
@@ -402,10 +409,10 @@ const CustomerList: React.FC = () => {
                   }
                   setSearchParams(newParams);
                 }}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-150 active:scale-[0.97] flex items-center gap-1.5 ${
+                className={`px-3 py-1 rounded-md text-xs whitespace-nowrap transition-all duration-150 active:scale-[0.97] flex items-center gap-1.5 ${
                   isActive
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    ? "bg-white dark:bg-zinc-900 text-zinc-950 dark:text-zinc-50 shadow-xs font-semibold"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/60 dark:hover:bg-zinc-700/60 font-medium"
                 }`}
               >
                 <span>{tab.label}</span>
@@ -415,18 +422,18 @@ const CustomerList: React.FC = () => {
         </div>
 
         {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow dark:shadow-md">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="bg-white dark:bg-zinc-900 p-3 sm:p-3.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-2xs">
+          <div className="flex flex-col sm:flex-row gap-2.5">
             {/* Search */}
             <form onSubmit={handleSearch} className="flex-1">
               <div className="relative">
-                <MagnifyingGlassIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                <MagnifyingGlassIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-500" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t("customers.searchPlaceholder")}
-                  className="block w-full pr-10 pl-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 dark:text-gray-100"
+                  className="block w-full pr-9 pl-3 py-2 text-xs sm:text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50/50 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-zinc-900 dark:focus:border-zinc-100 transition-all shadow-2xs"
                 />
               </div>
             </form>
@@ -434,20 +441,22 @@ const CustomerList: React.FC = () => {
             {/* Toggle: with orders only */}
             <button
               onClick={handleToggleWithOrders}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md border text-sm font-medium transition-colors ${
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-medium transition-all duration-150 active:scale-[0.97] shrink-0 shadow-2xs ${
                 showOnlyWithOrders
-                  ? "bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700"
-                  : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                  ? "border-zinc-900 dark:border-zinc-100 text-zinc-900 dark:text-zinc-100 bg-zinc-100 dark:bg-zinc-800 font-semibold"
+                  : "border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700"
               }`}
             >
               {showOnlyWithOrders ? (
-                <ShoppingBagIcon className="h-4 w-4" />
+                <ShoppingBagIcon className="h-3.5 w-3.5" />
               ) : (
-                <UsersIcon className="h-4 w-4" />
+                <UsersIcon className="h-3.5 w-3.5" />
               )}
-              {showOnlyWithOrders
-                ? t("customers.withOrdersOnly")
-                : t("customers.showAllCustomers")}
+              <span>
+                {showOnlyWithOrders
+                  ? t("customers.withOrdersOnly")
+                  : t("customers.showAllCustomers")}
+              </span>
             </button>
 
             {/* 🎟️ Auto-Discount Status Filter */}
@@ -524,12 +533,12 @@ const CustomerList: React.FC = () => {
         )}
 
         {/* Customers Table */}
-        <div className="bg-white dark:bg-gray-800 shadow dark:shadow-md overflow-hidden sm:rounded-md mb-8 sm:mb-6">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl shadow-2xs overflow-hidden mb-6">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-900">
+            <table className="min-w-full divide-y divide-zinc-200/60 dark:divide-zinc-800/60">
+              <thead className="bg-zinc-50/80 dark:bg-zinc-850/80 border-b border-zinc-200/80 dark:border-zinc-800/80">
                 <tr>
-                  <th className="px-4 py-3 text-center">
+                  <th className="px-4 py-3.5 text-center">
                     <input
                       type="checkbox"
                       checked={
@@ -537,57 +546,57 @@ const CustomerList: React.FC = () => {
                         customers.length > 0
                       }
                       onChange={toggleSelectAll}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-zinc-900 dark:text-zinc-100 focus:ring-zinc-900 dark:focus:ring-zinc-100 border-zinc-300 dark:border-zinc-700 rounded dark:bg-zinc-800"
                     />
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-4 py-3.5 text-right text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.08em]">
                     {t("customers.tableCustomer")}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-4 py-3.5 text-right text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.08em]">
                     {t("customers.tableContactInfo")}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-4 py-3.5 text-right text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.08em]">
                     {t("customers.tableStatus")}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-4 py-3.5 text-right text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.08em]">
                     {t("customers.tableStats")}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-4 py-3.5 text-right text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.08em]">
                     {t("customers.tableUpdatedAt")}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-4 py-3.5 text-right text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.08em]">
                     {t("customers.tableActions")}
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="bg-white dark:bg-zinc-900 divide-y divide-zinc-100 dark:divide-zinc-800/60">
                 {customers.map((customer) => (
                   <tr
                     key={customer.id}
-                    className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${selectedIds.has(customer.id) ? "bg-indigo-50 dark:bg-indigo-900/10" : ""}`}
+                    className={`hover:bg-zinc-50/70 dark:hover:bg-zinc-800/40 transition-colors ${selectedIds.has(customer.id) ? "bg-zinc-100/70 dark:bg-zinc-800/60" : ""}`}
                   >
-                    <td className="px-4 py-4 text-center">
+                    <td className="px-4 py-3 text-center">
                       <input
                         type="checkbox"
                         checked={selectedIds.has(customer.id)}
                         onChange={() => toggleSelect(customer.id)}
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        className="h-4 w-4 text-zinc-900 dark:text-zinc-100 focus:ring-zinc-900 dark:focus:ring-zinc-100 border-zinc-300 dark:border-zinc-700 rounded dark:bg-zinc-800"
                       />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center">
-                            <span className="text-sm font-medium text-indigo-700 dark:text-indigo-400">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0 h-9 w-9">
+                          <div className="h-9 w-9 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 flex items-center justify-center shadow-2xs">
+                            <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300 font-mono">
                               {customer.firstName &&
                                 customer.firstName.charAt(0)}
                               {customer.lastName && customer.lastName.charAt(0)}
                             </span>
                           </div>
                         </div>
-                        <div className="mr-4">
-                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center">
-                            {customer.firstName || ""} {customer.lastName || ""}
+                        <div>
+                          <div className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 flex-wrap">
+                            <span>{customer.firstName || ""} {customer.lastName || ""}</span>
                             {getRatingBadge(customer.customerRating, (customer as any).deliveryRate)}
                             {getTierBadge(customer.loyaltyTier)}
                             {getAutoDiscountBadge(customer.autoDiscountStatus)}
@@ -597,13 +606,13 @@ const CustomerList: React.FC = () => {
                               {parseTags(customer.tags).slice(0, 2).map((tag, index) => (
                                 <span
                                   key={index}
-                                  className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
+                                  className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200/60 dark:border-zinc-700"
                                 >
                                   {tag}
                                 </span>
                               ))}
                               {parseTags(customer.tags).length > 2 && (
-                                <span className="text-xs text-gray-500">
+                                <span className="text-[10px] text-zinc-400 font-mono">
                                   +{parseTags(customer.tags).length - 2}
                                 </span>
                               )}
@@ -612,36 +621,36 @@ const CustomerList: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-gray-100">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="text-xs font-medium text-zinc-900 dark:text-zinc-100">
                         {customer.email || "-"}
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400 tabular-nums font-mono">
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400 tabular-nums font-mono mt-0.5">
                         {customer.phone || "-"}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       {getStatusBadge(customer.status)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-4 py-3 whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400 font-mono">
                       <div>
                         {t("customers.conversations")}:{" "}
-                        <span className="tabular-nums font-mono font-medium text-gray-700 dark:text-gray-300">
+                        <span className="tabular-nums font-semibold text-zinc-800 dark:text-zinc-200">
                           {customer._count?.conversations || 0}
                         </span>
                       </div>
                       <div>
                         {t("customers.orders")}:{" "}
-                        <span className="tabular-nums font-mono font-medium text-gray-700 dark:text-gray-300">
+                        <span className="tabular-nums font-semibold text-zinc-800 dark:text-zinc-200">
                           {customer._count?.orders || 0}
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 tabular-nums">
+                    <td className="px-4 py-3 whitespace-nowrap text-xs text-zinc-400 dark:text-zinc-500 tabular-nums font-mono">
                       {formatDate(customer.updatedAt)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2 space-x-reverse">
+                    <td className="px-4 py-3 whitespace-nowrap text-xs font-medium">
+                      <div className="flex items-center gap-1">
                         {customer.phone && (
                           <a
                             href={`https://wa.me/${customer.phone.replace(/[^0-9]/g, "")}`}
@@ -649,7 +658,7 @@ const CustomerList: React.FC = () => {
                             rel="noopener noreferrer"
                             title="مراسلة سريعة عبر واتساب"
                             aria-label="مراسلة سريعة عبر واتساب"
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-emerald-600 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-transparent hover:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all duration-150 active:scale-[0.94]"
                           >
                             <ChatBubbleLeftRightIcon className="h-4 w-4" />
                           </a>
@@ -658,26 +667,25 @@ const CustomerList: React.FC = () => {
                           to={`/customers/${customer.id}/portal`}
                           title="صفحة العميل (النقاط والخصومات والكاش باك)"
                           aria-label="صفحة العميل (النقاط والخصومات والكاش باك)"
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-md text-fuchsia-600 dark:text-fuchsia-400 hover:text-fuchsia-900 dark:hover:text-fuchsia-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-150 active:scale-[0.94]"
                         >
-                          <EyeIcon className="h-4 w-4" />
+                          <EyeIcon className="h-3.5 w-3.5" />
                         </Link>
                         <Link
                           to={`/customers/${customer.id}`}
                           title={t("customers.tableActions")}
                           aria-label={t("customers.tableActions")}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-md text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-150 active:scale-[0.94]"
                         >
-                          <InformationCircleIcon className="h-4 w-4" />
+                          <InformationCircleIcon className="h-3.5 w-3.5" />
                         </Link>
                         <Link
                           to={`/customers/${customer.id}/edit`}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-md text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-150 active:scale-[0.94]"
                           aria-label="تعديل العميل"
                         >
-                          <PencilIcon className="h-4 w-4" />
+                          <PencilIcon className="h-3.5 w-3.5" />
                         </Link>
-                        {/* Admin delete option removed as requested */}
                       </div>
                     </td>
                   </tr>

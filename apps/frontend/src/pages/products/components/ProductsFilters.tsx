@@ -138,46 +138,52 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
   ];
 
   return (
-    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl shadow-xs border border-gray-200/80 dark:border-gray-700/60 p-2.5 sm:p-4 space-y-2 sm:space-y-3 animate-slide-up">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl p-3 shadow-2xs space-y-2.5 animate-slide-up">
       {/* Top Search and Action Bar */}
       <div className="flex items-center gap-2">
-        {/* Search Input */}
+        {/* Search Input with inline keyboard badge */}
         <div className="relative flex-1">
-          <MagnifyingGlassIcon className={`h-4 w-4 sm:h-5 sm:w-5 absolute ${isEn ? "left-3" : "right-3"} top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none`} />
+          <MagnifyingGlassIcon className={`h-4 w-4 absolute ${isEn ? "left-3" : "right-3"} top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 pointer-events-none`} />
           <input
             type="text"
             aria-label={isEn ? "Search by product, SKU or Tag" : "البحث عن منتج أو SKU أو Tag"}
             placeholder={isEn ? "Search by name, SKU or Tag..." : "بحث بالاسم أو SKU أو Tag..."}
             value={filters.searchQuery}
             onChange={(e) => onFilterChange("searchQuery", e.target.value)}
-            className={`w-full ${isEn ? "pl-9 pr-8" : "pr-9 pl-8"} py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700/80 dark:text-gray-100 dark:placeholder-gray-400 transition-all shadow-xs`}
+            className={`w-full ${isEn ? "pl-9 pr-14" : "pr-9 pl-14"} py-2 text-xs sm:text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50/50 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-zinc-900 dark:focus:border-zinc-100 transition-all shadow-2xs`}
           />
-          {filters.searchQuery && (
-            <button
-              type="button"
-              onClick={() => onFilterChange("searchQuery", "")}
-              className={`absolute ${isEn ? "right-2.5" : "left-2.5"} top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5`}
-              aria-label={isEn ? "Clear search" : "مسح البحث"}
-            >
-              <XMarkIcon className="h-4 w-4" />
-            </button>
-          )}
+          <div className={`absolute ${isEn ? "right-2.5" : "left-2.5"} top-1/2 -translate-y-1/2 flex items-center gap-1`}>
+            {filters.searchQuery ? (
+              <button
+                type="button"
+                onClick={() => onFilterChange("searchQuery", "")}
+                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-0.5"
+                aria-label={isEn ? "Clear search" : "مسح البحث"}
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            ) : (
+              <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-medium text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded shadow-2xs select-none">
+                ⌘K
+              </kbd>
+            )}
+          </div>
         </div>
 
         {/* Mobile Filter Toggle Button */}
         <button
           type="button"
           onClick={() => setShowMobileFilters((v) => !v)}
-          className={`md:hidden inline-flex items-center gap-1 px-3 py-1.5 border rounded-lg text-xs font-semibold transition-colors shrink-0 shadow-xs ${
+          className={`md:hidden inline-flex items-center gap-1.5 px-3 py-2 border rounded-lg text-xs font-medium transition-all duration-150 active:scale-[0.97] shrink-0 shadow-2xs ${
             showMobileFilters || activeCount > 0
-              ? "border-indigo-500 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30"
-              : "border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+              ? "border-zinc-900 dark:border-zinc-100 text-zinc-900 dark:text-zinc-100 bg-zinc-100 dark:bg-zinc-800"
+              : "border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700"
           }`}
         >
           <AdjustmentsHorizontalIcon className="h-4 w-4" />
           <span>{isEn ? "Filters" : "فلاتر"}</span>
           {activeCount > 0 && (
-            <span className="inline-flex items-center justify-center bg-indigo-600 text-white rounded-full h-4 w-4 text-[10px] font-bold">
+            <span className="inline-flex items-center justify-center bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-full h-4 w-4 text-[10px] font-bold font-mono">
               {activeCount}
             </span>
           )}
@@ -187,34 +193,34 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
         <button
           type="button"
           onClick={onToggleAdvancedFilters}
-          className={`hidden md:inline-flex items-center px-3.5 py-2 border rounded-lg text-xs font-semibold transition-colors shrink-0 shadow-xs ${
+          className={`hidden md:inline-flex items-center gap-1.5 px-3.5 py-2 border rounded-lg text-xs font-medium transition-all duration-150 active:scale-[0.97] shrink-0 shadow-2xs ${
             showAdvancedFilters
-              ? "border-indigo-500 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30"
-              : "border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+              ? "border-zinc-900 dark:border-zinc-100 text-zinc-900 dark:text-zinc-100 bg-zinc-100 dark:bg-zinc-800 font-semibold"
+              : "border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700/60"
           }`}
         >
-          <FunnelIcon className={`h-3.5 w-3.5 ${isEn ? "mr-1.5" : "ml-1.5"}`} />
-          {isEn ? "Advanced Filters" : "فلاتر متقدمة"}
+          <FunnelIcon className="h-3.5 w-3.5 text-zinc-500" />
+          <span>{isEn ? "Advanced Filters" : "فلاتر متقدمة"}</span>
           {activeCount > 0 && (
-            <span className={`${isEn ? "ml-1.5" : "mr-1.5"} bg-indigo-600 text-white rounded-full px-1.5 py-0.2 text-[10px] font-bold`}>
+            <span className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 rounded-full px-1.5 py-0.2 text-[10px] font-bold font-mono">
               {activeCount}
             </span>
           )}
         </button>
       </div>
 
-      {/* Quick Filter Chips + Category & Stock Dropdowns (always visible, scrollable row) */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
-        {/* Category select — always visible */}
+      {/* Segmented Filter Control Track (Linear-style unified tray) */}
+      <div className="bg-zinc-100/80 dark:bg-zinc-800/60 p-1 rounded-lg border border-zinc-200/60 dark:border-zinc-700/50 flex items-center gap-1 overflow-x-auto no-scrollbar">
+        {/* Category select inside tray */}
         {categories.length > 0 && (
           <select
             value={filters.categoryFilter}
             onChange={(e) => onFilterChange("categoryFilter", e.target.value)}
             aria-label={isEn ? "Filter by category" : "تصفية حسب الفئة"}
-            className={`shrink-0 px-2.5 py-1 text-[11px] sm:text-xs font-semibold border rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer ${
+            className={`shrink-0 px-2.5 py-1 text-xs font-medium border rounded-md transition-all cursor-pointer ${
               filters.categoryFilter !== "all"
-                ? "bg-indigo-600 text-white border-indigo-600"
-                : "bg-gray-100 dark:bg-gray-700/70 text-gray-600 dark:text-gray-300 border-gray-200/50 dark:border-gray-600/50 hover:bg-gray-200 dark:hover:bg-gray-600"
+                ? "bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-950 dark:border-zinc-100 shadow-2xs font-semibold"
+                : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200/80 dark:border-zinc-700/80 hover:bg-zinc-50 dark:hover:bg-zinc-700"
             }`}
           >
             <option value="all">{isEn ? "All Categories" : "جميع الفئات"}</option>
@@ -224,15 +230,15 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
           </select>
         )}
 
-        {/* Stock select — moved up alongside Category */}
+        {/* Stock select inside tray */}
         <select
           value={filters.stockFilter}
           onChange={(e) => onFilterChange("stockFilter", e.target.value)}
           aria-label={isEn ? "Filter by stock" : "تصفية حسب المخزون"}
-          className={`shrink-0 px-2.5 py-1 text-[11px] sm:text-xs font-semibold border rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer ${
+          className={`shrink-0 px-2.5 py-1 text-xs font-medium border rounded-md transition-all cursor-pointer ${
             filters.stockFilter !== "all"
-                ? "bg-indigo-600 text-white border-indigo-600"
-                : "bg-gray-100 dark:bg-gray-700/70 text-gray-600 dark:text-gray-300 border-gray-200/50 dark:border-gray-600/50 hover:bg-gray-200 dark:hover:bg-gray-600"
+              ? "bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-950 dark:border-zinc-100 shadow-2xs font-semibold"
+              : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200/80 dark:border-zinc-700/80 hover:bg-zinc-50 dark:hover:bg-zinc-700"
           }`}
         >
           <option value="all">{isEn ? "All Stock" : "جميع المخزون"}</option>
@@ -241,6 +247,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
           <option value="out-of-stock">{isEn ? "Out of Stock" : "نفد المخزون"}</option>
         </select>
 
+        {/* Segmented quick filter chips */}
         {quickChips.map((chip) => {
           const Icon = chip.icon;
           return (
@@ -248,14 +255,14 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
               key={chip.label}
               type="button"
               onClick={chip.onClick}
-              className={`inline-flex items-center gap-1 whitespace-nowrap px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold transition-all shrink-0 ${
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-1 rounded-md text-xs transition-all duration-150 shrink-0 ${
                 chip.isActive
                   ? chip.isSpecial
-                    ? "bg-emerald-600 text-white shadow-xs"
-                    : "bg-indigo-600 text-white shadow-xs"
+                    ? "bg-emerald-600 text-white shadow-xs font-semibold"
+                    : "bg-white dark:bg-zinc-900 text-zinc-950 dark:text-zinc-50 shadow-xs font-semibold"
                   : chip.isSpecial
-                    ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200/60 dark:border-emerald-800/40"
-                    : "bg-gray-100 dark:bg-gray-700/70 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200/50 dark:border-gray-600/50"
+                    ? "text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 font-medium"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/60 dark:hover:bg-zinc-700/60 font-medium"
               }`}
             >
               {Icon && <Icon className="w-3.5 h-3.5" />}
@@ -268,7 +275,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
           <button
             type="button"
             onClick={onResetAdvancedFilters}
-            className={`whitespace-nowrap px-2 py-1 text-[11px] text-red-600 dark:text-red-400 hover:underline font-medium shrink-0 ${isEn ? "ml-1" : "mr-1"}`}
+            className={`whitespace-nowrap px-2 py-1 text-xs text-rose-600 dark:text-rose-400 hover:underline font-medium shrink-0 ${isEn ? "ml-auto" : "mr-auto"}`}
           >
             {isEn ? `Reset (${activeCount})` : `إعادة تعيين (${activeCount})`}
           </button>

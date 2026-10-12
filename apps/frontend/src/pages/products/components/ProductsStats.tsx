@@ -1,11 +1,5 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import {
-  PhotoIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/outline";
 import { Product, getStockStatus } from "./ProductsTypes";
 import { PRODUCT_WORKFLOW_STATUSES } from "../utils/workflow";
 
@@ -41,87 +35,81 @@ const ProductsStats: React.FC<ProductsStatsProps> = ({
     (p) => p.workflow.status === PRODUCT_WORKFLOW_STATUSES.PUBLISHED,
   ).length;
 
-  const cards: Array<{
-    type: StatFilterType;
-    label: string;
-    value: number;
-    icon: React.ComponentType<{ className?: string }>;
-    iconBg: string;
-    iconColor: string;
-    valueClass: string;
-    isActive: boolean;
-  }> = [
+  const total = totalItems || products.length;
+  const publishedRatio = total > 0 ? Math.round((publishedCount / total) * 100) : 0;
+
+  const stats = [
     {
-      type: "all",
+      type: "all" as StatFilterType,
       label: isEn ? "Total Products" : "إجمالي المنتجات",
-      value: totalItems || products.length,
-      icon: PhotoIcon,
-      iconBg: "bg-blue-100 dark:bg-blue-900/30",
-      iconColor: "text-blue-600 dark:text-blue-400",
-      valueClass: "text-gray-900 dark:text-gray-100",
+      value: total,
+      meta: isEn ? "Full catalog" : "كامل الكتالوج",
+      dotClass: "bg-zinc-400 dark:bg-zinc-500 ring-zinc-400/20",
       isActive: activeStockFilter === "all" && activeStatusFilter === "all",
     },
     {
-      type: "published",
-      label: isEn ? "Published Products" : "منتجات منشورة",
+      type: "published" as StatFilterType,
+      label: isEn ? "Published" : "منتجات منشورة",
       value: publishedCount,
-      icon: CheckCircleIcon,
-      iconBg: "bg-green-100 dark:bg-green-900/30",
-      iconColor: "text-green-600 dark:text-green-400",
-      valueClass: "text-gray-900 dark:text-gray-100",
+      meta: `${publishedRatio}% ${isEn ? "active" : "نشط"}`,
+      dotClass: "bg-emerald-500 ring-emerald-500/20",
       isActive: activeStatusFilter === "published",
     },
     {
-      type: "low-stock",
+      type: "low-stock" as StatFilterType,
       label: isEn ? "Low Stock" : "مخزون منخفض",
       value: lowStockCount,
-      icon: ExclamationTriangleIcon,
-      iconBg: "bg-yellow-100 dark:bg-yellow-900/30",
-      iconColor: "text-yellow-600 dark:text-yellow-400",
-      valueClass: "text-gray-900 dark:text-gray-100",
+      meta: isEn ? "Requires attention" : "يتطلب انتباه",
+      dotClass: lowStockCount > 0 ? "bg-amber-500 ring-amber-500/20 animate-pulse" : "bg-amber-500/60 ring-amber-500/10",
       isActive: activeStockFilter === "low-stock",
     },
     {
-      type: "out-of-stock",
+      type: "out-of-stock" as StatFilterType,
       label: isEn ? "Out of Stock" : "نفد المخزون",
       value: outOfStockCount,
-      icon: XCircleIcon,
-      iconBg: "bg-red-100 dark:bg-red-900/30",
-      iconColor: "text-red-600 dark:text-red-400",
-      valueClass: "text-gray-900 dark:text-gray-100",
+      meta: isEn ? "Depleted inventory" : "مخزون منتهي",
+      dotClass: outOfStockCount > 0 ? "bg-rose-500 ring-rose-500/20 animate-pulse" : "bg-rose-500/60 ring-rose-500/10",
       isActive: activeStockFilter === "out-of-stock",
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-      {cards.map((card) => (
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl overflow-hidden shadow-2xs divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-zinc-200/60 dark:divide-zinc-800/60 grid grid-cols-2 lg:grid-cols-4">
+      {stats.map((stat) => (
         <button
-          key={card.type}
+          key={stat.type}
           type="button"
-          onClick={() => onStatClick?.(card.type)}
-          className={`${isEn ? "text-left" : "text-right"} group relative w-full rounded-xl border p-3 sm:p-4 transition-all duration-150 ease-out active:scale-[0.97] ${
-            card.isActive
-              ? "border-primary/60 bg-primary/[0.04] dark:bg-primary/[0.08] shadow-sm ring-1 ring-primary/30"
-              : "border-border/60 bg-card hover:border-border hover:bg-accent/40 shadow-xs"
+          onClick={() => onStatClick?.(stat.type)}
+          className={`relative p-3.5 sm:p-4 text-start transition-all duration-150 active:scale-[0.99] group ${
+            stat.isActive
+              ? "bg-zinc-100/70 dark:bg-zinc-800/60"
+              : "hover:bg-zinc-50/80 dark:hover:bg-zinc-850/40"
           }`}
-          title={isEn ? `Filter by: ${card.label}` : `تصفية حسب: ${card.label}`}
+          title={isEn ? `Filter by: ${stat.label}` : `تصفية حسب: ${stat.label}`}
         >
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className={`p-2 sm:p-2.5 ${card.iconBg} rounded-lg shrink-0 transition-transform group-hover:scale-105`}>
-              <card.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.iconColor}`} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-medium text-muted-foreground truncate tracking-wide">
-                {card.label}
-              </p>
-              <p className={`text-lg sm:text-2xl font-black ${card.valueClass} leading-tight mt-0.5 tabular-nums font-mono`}>
-                {card.value}
-              </p>
-            </div>
+          {/* Header row: micro-label + status LED dot */}
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
+              {stat.label}
+            </span>
+            <span
+              className={`h-2 w-2 rounded-full ring-4 shrink-0 transition-transform group-hover:scale-125 ${stat.dotClass}`}
+            />
           </div>
-          {card.isActive && (
-            <span className="absolute bottom-0 inset-x-4 h-0.5 bg-primary rounded-full" />
+
+          {/* Metric Value */}
+          <div className="mt-2.5 flex items-baseline justify-between gap-2">
+            <span className="text-2xl sm:text-3xl font-bold font-mono tabular-nums tracking-tight text-zinc-900 dark:text-zinc-100">
+              {stat.value}
+            </span>
+            <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 truncate">
+              {stat.meta}
+            </span>
+          </div>
+
+          {/* Active bottom hairline indicator */}
+          {stat.isActive && (
+            <span className="absolute bottom-0 inset-x-0 h-0.5 bg-zinc-900 dark:bg-zinc-100" />
           )}
         </button>
       ))}
@@ -130,4 +118,3 @@ const ProductsStats: React.FC<ProductsStatsProps> = ({
 };
 
 export default ProductsStats;
-

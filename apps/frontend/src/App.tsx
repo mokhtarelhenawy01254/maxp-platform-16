@@ -917,6 +917,9 @@ const ClothingStoreLanding = React.lazy(
 const ClothingStoreTasteLanding = React.lazy(
   () => import("./pages/landing/ClothingStoreTasteLanding"),
 );
+const StoreCompleteBundleLanding = React.lazy(
+  () => import("./pages/landing/StoreCompleteBundleLanding"),
+);
 const PlatformLandingPreviewPage = React.lazy(
   () => import("./pages/landing/PlatformLandingPreviewPage"),
 );
@@ -2340,6 +2343,8 @@ const AppContent = () => {
             {activeLpSlugs && !activeLpSlugs.has("clothing-store-bundle") ? <Route path="/lp/clothing-store-bundle" element={<Navigate to="/" replace />} /> : <Route path="/lp/clothing-store-bundle" element={<ClothingStoreLanding />} />}
             <Route path="/lp/clothing-taste" element={<ClothingStoreTasteLanding />} />
             <Route path="/lp/fashion-os" element={<ClothingStoreTasteLanding />} />
+            <Route path="/lp/store-complete-bundle" element={<StoreCompleteBundleLanding />} />
+            <Route path="/bundle/store-complete-bundle" element={<StoreCompleteBundleLanding />} />
             <Route
               path="/preview/platform-home/:variantId"
               element={<PlatformLandingPreviewPage />}

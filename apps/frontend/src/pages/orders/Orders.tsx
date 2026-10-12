@@ -3118,7 +3118,7 @@ const Orders: React.FC = () => {
   return (
     <div
       data-orders-page="true"
-      className="orders-page-root flex-1 h-full min-h-0 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.14),_transparent_36%),linear-gradient(180deg,_rgba(255,255,255,0.96)_0%,_rgba(241,245,249,0.94)_100%)] px-2 py-2 dark:bg-[radial-gradient(circle_at_top,_rgba(96,165,250,0.2),_transparent_34%),linear-gradient(180deg,_rgba(2,6,23,0.98)_0%,_rgba(15,23,42,0.98)_100%)] sm:px-3 sm:py-2.5"
+      className="orders-page-root flex-1 h-full min-h-0 overflow-y-auto bg-slate-50/60 dark:bg-zinc-950 px-2 py-2 sm:px-3 sm:py-2.5"
     >
       <div className="w-full max-w-none">
         <HeldOrdersBanner />

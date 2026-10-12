@@ -2579,6 +2579,9 @@ declare module 'react-i18next' {
         noPageExplanations: string;
         allExplanations: string;
         watchVideo: string;
+        watchHow: string;
+        mobileVersion: string;
+        desktopVersion: string;
         pageTitle: string;
         pageSubtitle: string;
         guidesCount: string;
