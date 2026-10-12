@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Bars3Icon,
   ChevronDownIcon,
@@ -17,15 +17,32 @@ import {
   CreditCardIcon,
   SparklesIcon,
   XMarkIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import { getStorefrontSectionLabel } from "../sections/manifest";
 import type { StudioLeftPanelTab } from "./StudioTypes";
+import type { StudioDragPayload, StudioDropTarget } from "./hooks/useStudioSectionDnD";
+
+export const GripDotsIcon: React.FC<{ className?: string }> = ({ className = "h-3.5 w-3.5" }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    <circle cx="9" cy="6" r="1.55" />
+    <circle cx="15" cy="6" r="1.55" />
+    <circle cx="9" cy="12" r="1.55" />
+    <circle cx="15" cy="12" r="1.55" />
+    <circle cx="9" cy="18" r="1.55" />
+    <circle cx="15" cy="18" r="1.55" />
+  </svg>
+);
 
 interface StudioLayersDrawerProps {
   sections: any[];
   selectedSectionKey: string;
   leftPanelTab: StudioLeftPanelTab;
   designTokens?: Record<string, unknown>;
+  isDragging?: boolean;
+  activeDragKey?: string;
+  dropTarget?: StudioDropTarget | null;
+  onStartDrag?: (e: React.PointerEvent, payload: StudioDragPayload) => void;
   onSelectSection: (key: string) => void;
   onMoveSection: (index: number, direction: "up" | "down") => void;
   onDuplicateSection: (index: number) => void;
@@ -41,6 +58,10 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
   selectedSectionKey,
   leftPanelTab,
   designTokens,
+  isDragging = false,
+  activeDragKey = "",
+  dropTarget = null,
+  onStartDrag,
   onSelectSection,
   onMoveSection,
   onDuplicateSection,
@@ -50,6 +71,7 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
   onUpdateThemeTokens,
   onCollapse,
 }) => {
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const primaryColor = (designTokens?.colors as any)?.primary || "#0f172a";
   const fontFamily = (designTokens?.typography as any)?.fontFamily || "Cairo";
   const isLandingMode = Boolean(designTokens?.landingPageMode);
@@ -177,12 +199,36 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
       {/* Content Area */}
       {leftPanelTab === "layers" ? (
         <div className="flex flex-1 flex-col overflow-hidden">
+          {/* Section Search */}
+          <div className="px-3 pt-3">
+            <div className="relative flex items-center">
+              <MagnifyingGlassIcon className="absolute start-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="بحث في الأقسام…"
+                className="w-full rounded-xl border border-border/80 bg-background/60 py-1.5 ps-8 pe-7 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute end-2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+                  title="مسح البحث"
+                >
+                  <XMarkIcon className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Add Section Action Button */}
           <div className="p-3">
             <button
               type="button"
               onClick={onOpenSectionCatalog}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/40 bg-primary/5 py-3 text-xs font-black text-primary transition-all hover:bg-primary/10 hover:border-primary active:scale-98"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/40 bg-primary/5 py-2.5 text-xs font-black text-primary transition-all hover:bg-primary/10 hover:border-primary active:scale-98"
             >
               <PlusIcon className="h-4 w-4" />
               <span>إضافة قسم جديد</span>
@@ -190,24 +236,76 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
           </div>
 
           {/* Section Layers List */}
-          <div className="flex-1 overflow-y-auto px-3 pb-6 space-y-2 [scrollbar-width:none]">
+          <div
+            data-studio-dropzone="rail"
+            className="flex-1 overflow-y-auto px-3 pb-3 space-y-2 [scrollbar-width:none]"
+          >
             {sections.map((section, index) => {
               const sectionType = typeof section === "string" ? section : section.type;
               const sectionKey = typeof section === "string" ? `${section}-${index}` : section.key || `${sectionType}-${index}`;
               const isSelected = selectedSectionKey === sectionKey;
               const label = getStorefrontSectionLabel(sectionType);
 
+              const normalizedQuery = searchQuery.trim().toLowerCase();
+              if (
+                normalizedQuery &&
+                !label.toLowerCase().includes(normalizedQuery) &&
+                !sectionType.toLowerCase().includes(normalizedQuery)
+              ) {
+                return null;
+              }
+
+              const isDropTargetBefore = dropTarget?.zone === "rail" && dropTarget.slot === index;
+              const isDropTargetAfter =
+                dropTarget?.zone === "rail" &&
+                dropTarget.slot === sections.length &&
+                index === sections.length - 1;
+              const isBeingDragged = isDragging && activeDragKey === sectionKey;
+
               return (
                 <div
                   key={sectionKey}
+                  data-studio-rail-item="true"
+                  data-index={index}
                   onClick={() => onSelectSection(sectionKey)}
-                  className={`group relative flex items-center justify-between rounded-2xl border p-2.5 transition-all cursor-pointer ${
+                  className={`group relative flex items-center justify-between rounded-xl border p-2 transition-all cursor-pointer ${
                     isSelected
-                      ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/30"
+                      ? "border-primary bg-primary/5 shadow-sm ring-2 ring-primary/25"
                       : "border-border/60 bg-background/50 hover:border-border hover:bg-muted/40"
-                  }`}
+                  } ${isBeingDragged ? "opacity-40 scale-[0.99] border-dashed border-primary/50" : ""}`}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  {/* Drop line before row */}
+                  {isDropTargetBefore && (
+                    <div className="absolute -top-1.5 inset-x-2 z-30 h-[3px] rounded-full bg-primary shadow-[0_0_0_2px_rgba(59,130,246,0.35)] pointer-events-none" />
+                  )}
+                  {/* Drop line after last row */}
+                  {isDropTargetAfter && (
+                    <div className="absolute -bottom-1.5 inset-x-2 z-30 h-[3px] rounded-full bg-primary shadow-[0_0_0_2px_rgba(59,130,246,0.35)] pointer-events-none" />
+                  )}
+
+                  <div className="flex items-center gap-2 min-w-0">
+                    {/* Grip Drag Handle */}
+                    <button
+                      type="button"
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        if (onStartDrag) {
+                          onStartDrag(e, {
+                            source: "rail",
+                            index,
+                            sectionKey,
+                            label,
+                            type: sectionType,
+                          });
+                        }
+                      }}
+                      className="flex h-6 w-5 shrink-0 items-center justify-center rounded text-muted-foreground/40 hover:text-primary hover:bg-primary/10 active:cursor-grabbing cursor-grab touch-none transition-colors"
+                      title="اسحب لإعادة الترتيب"
+                      aria-label="اسحب لإعادة الترتيب"
+                    >
+                      <GripDotsIcon className="h-3.5 w-3.5" />
+                    </button>
+
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
                       <Bars3Icon className="h-4 w-4" />
                     </span>
@@ -273,6 +371,11 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
                 </div>
               );
             })}
+          </div>
+
+          {/* Footer Drag Hint */}
+          <div className="border-t border-border/60 py-2.5 px-3 text-center text-[10px] text-muted-foreground">
+            <span>اسحب المقبض <b>⠿</b> لإعادة ترتيب الأقسام</span>
           </div>
         </div>
       ) : (

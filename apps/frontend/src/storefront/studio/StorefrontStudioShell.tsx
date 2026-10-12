@@ -10,11 +10,12 @@ import {
   ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 import { StudioTopBar } from "./StudioTopBar";
-import { StudioLayersDrawer } from "./StudioLayersDrawer";
+import { StudioLayersDrawer, GripDotsIcon } from "./StudioLayersDrawer";
 import { StudioPropertyInspector } from "./StudioPropertyInspector";
 import { StudioCanvasStage } from "./StudioCanvasStage";
 import { StudioSectionCatalogModal } from "./StudioSectionCatalogModal";
 import type { StudioDeviceMode, StudioLeftPanelTab } from "./StudioTypes";
+import { useStudioSectionDnD, reorderSections } from "./hooks/useStudioSectionDnD";
 import { PageComposer } from "../engine/PageComposer";
 import { StorefrontThemeProvider } from "../engine/ThemeProvider";
 import { resolveStorefrontTheme, type StorefrontThemeInput } from "../engine/themeResolver";
@@ -165,29 +166,47 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   }, [activeSections, selectedSectionKey]);
 
   // Section Manipulation Handlers
-  const handleMoveSection = (index: number, direction: "up" | "down") => {
-    const nextSections = [...activeSections];
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= nextSections.length) return;
+  const handleReorderSection = useCallback(
+    (fromIndex: number, targetSlot: number) => {
+      const nextSections = reorderSections(activeSections, fromIndex, targetSlot);
+      if (nextSections === activeSections) return;
 
-    const [moved] = nextSections.splice(index, 1);
-    nextSections.splice(targetIndex, 0, moved);
+      const nextPages = {
+        ...(currentDesignTokens?.pages as Record<string, unknown> || {}),
+        ...(currentDesignTokens?.pageOverrides as Record<string, unknown> || {}),
+        [activePageKey]: {
+          ...activePageConfig,
+          sections: nextSections,
+        },
+      };
 
-    const nextPages = {
-      ...(currentDesignTokens?.pages as Record<string, unknown> || {}),
-      ...(currentDesignTokens?.pageOverrides as Record<string, unknown> || {}),
-      [activePageKey]: {
-        ...activePageConfig,
-        sections: nextSections,
-      },
-    };
+      handleDesignTokensChange({
+        ...currentDesignTokens,
+        pages: nextPages,
+        pageOverrides: nextPages,
+      });
+    },
+    [activeSections, currentDesignTokens, activePageKey, activePageConfig, handleDesignTokensChange]
+  );
 
-    handleDesignTokensChange({
-      ...currentDesignTokens,
-      pages: nextPages,
-      pageOverrides: nextPages,
-    });
-  };
+  const handleMoveSection = useCallback(
+    (index: number, direction: "up" | "down") => {
+      const targetSlot = direction === "up" ? index - 1 : index + 2;
+      handleReorderSection(index, targetSlot);
+    },
+    [handleReorderSection]
+  );
+
+  const {
+    isDragging,
+    activePayload,
+    dropTarget,
+    pointerPos,
+    startDrag,
+  } = useStudioSectionDnD({
+    sections: activeSections,
+    onReorder: handleReorderSection,
+  });
 
   const handleDuplicateSection = (index: number) => {
     const sectionToDup = activeSections[index];
@@ -366,6 +385,10 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
             selectedSectionKey={selectedSectionKey}
             leftPanelTab={leftPanelTab}
             designTokens={currentDesignTokens}
+            isDragging={isDragging}
+            activeDragKey={activePayload?.sectionKey}
+            dropTarget={dropTarget}
+            onStartDrag={startDrag}
             onSelectSection={(key) => {
               setSelectedSectionKey(key);
               setIsInspectorOpen(true);
@@ -389,7 +412,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         >
           <StudioCanvasStage deviceMode={deviceMode}>
             <StorefrontThemeProvider initialTheme={previewTheme as unknown as StorefrontThemeInput}>
-              <div className="relative min-h-screen bg-background">
+              <div data-studio-dropzone="canvas" className="relative min-h-screen bg-background">
                 {/* Announcement Bar Overlay */}
                 {announcement.enabled && announcement.text && (
                   <div className="bg-slate-900 px-3 py-1.5 text-center text-[11px] font-bold text-white shadow-sm flex items-center justify-center gap-2">
@@ -407,17 +430,36 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                       getStorefrontSectionManifest(typeof sectionEntry === "string" ? sectionEntry : sectionEntry?.type)?.label ||
                       getStorefrontSectionManifest(componentKey)?.label ||
                       getStorefrontSectionLabel(sectionId);
+                    const sectionType = typeof sectionEntry === "string" ? sectionEntry : sectionEntry?.type || "section";
+
+                    const isDropTargetBefore = dropTarget?.zone === "canvas" && dropTarget.slot === index;
+                    const isDropTargetAfter =
+                      dropTarget?.zone === "canvas" &&
+                      dropTarget.slot === activeSections.length &&
+                      index === activeSections.length - 1;
+                    const isBeingDragged = isDragging && activePayload?.sectionKey === stableSectionKey;
 
                     return (
                       <div
                         key={`${stableSectionKey}-${index}`}
-                        className="group relative cursor-pointer"
+                        data-studio-canvas-item="true"
+                        data-index={index}
+                        className={`group relative cursor-pointer ${isBeingDragged ? "opacity-40" : ""}`}
                         onClick={() => {
                           setSelectedSectionKey(stableSectionKey);
                           setIsInspectorOpen(true);
                           setMobileStudioTab("inspector");
                         }}
                       >
+                        {/* Drop indicator before section */}
+                        {isDropTargetBefore && (
+                          <div className="absolute -top-1.5 inset-x-0 z-50 h-[3px] rounded-full bg-primary shadow-[0_0_0_3px_rgba(59,130,246,0.4)] pointer-events-none" />
+                        )}
+                        {/* Drop indicator after last section */}
+                        {isDropTargetAfter && (
+                          <div className="absolute -bottom-1.5 inset-x-0 z-50 h-[3px] rounded-full bg-primary shadow-[0_0_0_3px_rgba(59,130,246,0.4)] pointer-events-none" />
+                        )}
+
                         {/* Interactive Highlight Border */}
                         <div
                           className={`pointer-events-none absolute inset-0 z-30 rounded-2xl border-2 transition-all ${
@@ -428,51 +470,71 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                         />
 
                         {/* On-Canvas Floating Action Toolbar */}
-                        {selected && (
-                          <div
-                            className="absolute top-2 start-2 z-40 flex items-center gap-1 rounded-xl border border-border/80 bg-background/95 p-1 shadow-xl backdrop-blur-md"
-                            onClick={(e) => e.stopPropagation()}
+                        <div
+                          className={`absolute top-2 start-2 z-40 flex items-center gap-1 rounded-xl border border-border/80 bg-background/95 p-1 shadow-xl backdrop-blur-md transition-opacity duration-150 ${
+                            selected
+                              ? "opacity-100"
+                              : "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
+                          }`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span className="rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-black text-primary">
+                            {sectionLabel}
+                          </span>
+                          <div className="h-3 w-[1px] bg-border mx-0.5" />
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              startDrag(e, {
+                                source: "canvas",
+                                index,
+                                sectionKey: stableSectionKey,
+                                label: sectionLabel,
+                                type: sectionType,
+                              });
+                            }}
+                            className="rounded-lg p-1 text-muted-foreground hover:bg-primary/10 hover:text-primary active:cursor-grabbing cursor-grab touch-none transition-colors"
+                            title="اسحب لإعادة الترتيب"
+                            aria-label="اسحب لإعادة الترتيب"
                           >
-                            <span className="rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-black text-primary">
-                              {sectionLabel}
-                            </span>
-                            <div className="h-3 w-[1px] bg-border mx-0.5" />
-                            <button
-                              type="button"
-                              onClick={() => index > 0 && handleMoveSection(index, "up")}
-                              disabled={index === 0}
-                              className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
-                              title="تحريك لأعلى"
-                            >
-                              <ChevronUpIcon className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => index < activeSections.length - 1 && handleMoveSection(index, "down")}
-                              disabled={index === activeSections.length - 1}
-                              className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
-                              title="تحريك لأسفل"
-                            >
-                              <ChevronDownIcon className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDuplicateSection(index)}
-                              className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                              title="تكرار القسم"
-                            >
-                              <DocumentDuplicateIcon className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteSection(stableSectionKey)}
-                              className="rounded-lg p-1 text-destructive/80 hover:bg-destructive/10 hover:text-destructive"
-                              title="حذف القسم"
-                            >
-                              <TrashIcon className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        )}
+                            <GripDotsIcon className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => index > 0 && handleMoveSection(index, "up")}
+                            disabled={index === 0}
+                            className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
+                            title="تحريك لأعلى"
+                          >
+                            <ChevronUpIcon className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => index < activeSections.length - 1 && handleMoveSection(index, "down")}
+                            disabled={index === activeSections.length - 1}
+                            className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
+                            title="تحريك لأسفل"
+                          >
+                            <ChevronDownIcon className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicateSection(index)}
+                            className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                            title="تكرار القسم"
+                          >
+                            <DocumentDuplicateIcon className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSection(stableSectionKey)}
+                            className="rounded-lg p-1 text-destructive/80 hover:bg-destructive/10 hover:text-destructive"
+                            title="حذف القسم"
+                          >
+                            <TrashIcon className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
 
                         <div className="relative z-10 select-none [&_a]:pointer-events-none [&_button]:pointer-events-none [&_input]:pointer-events-none [&_select]:pointer-events-none">
                           {element}
@@ -564,6 +626,28 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         }}
         selectedUrl={selectedSectionConfig?.image || selectedSectionConfig?.backgroundImage || ""}
       />
+
+      {/* 6. Drag & Drop Floating Ghost Pill */}
+      {isDragging && activePayload && (
+        <div
+          style={{
+            position: "fixed",
+            left: `${pointerPos.x}px`,
+            top: `${pointerPos.y - 44}px`,
+            transform: "translate(-50%, 0)",
+            pointerEvents: "none",
+            zIndex: 9999,
+          }}
+          className="flex items-center gap-2 rounded-xl bg-slate-900/95 px-3.5 py-2 text-xs font-bold text-white shadow-2xl ring-1 ring-white/10 backdrop-blur-md"
+        >
+          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-white/15 text-[11px] text-white">
+            <GripDotsIcon className="h-3.5 w-3.5" />
+          </span>
+          <span className="truncate max-w-[160px]">{activePayload.label}</span>
+          <span className="text-[10px] font-medium text-white/70">إعادة ترتيب</span>
+        </div>
+      )}
     </div>
   );
 };
+
