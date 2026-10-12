@@ -290,7 +290,7 @@ const AppShell: React.FC<AppShellProps> = ({
             sections={appSections}
             onBack={handleBack}
             onNavigate={() => setIsSidebarOpen(false)}
-            showPageExplanations={showPageExplanations}
+            showPageExplanations={false}
           />
         </div>
 
