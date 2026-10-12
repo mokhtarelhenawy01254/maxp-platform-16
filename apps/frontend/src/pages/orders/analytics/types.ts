@@ -105,6 +105,30 @@ export interface OrderStats {
   shippingPerformance?: ShippingPerformance[];
   branchPerformance?: BranchPerformance[];
   dailyTrend?: DailyTrendEntry[];
+  duplicateStats?: DuplicateStats;
+}
+
+export interface DuplicateOrderCustomer {
+  customerPhone: string;
+  customerName: string;
+  count: number;
+  totalValue: number;
+  originalOrderNumber?: string | null;
+  orderNumbers: string[];
+}
+
+export interface DuplicateDailyTrend {
+  date: string;
+  count: number;
+  avoidedRevenue: number;
+}
+
+export interface DuplicateStats {
+  totalDuplicates: number;
+  duplicateRate: number;
+  avoidedRevenue: number;
+  dailyTrend: DuplicateDailyTrend[];
+  topDuplicates: DuplicateOrderCustomer[];
 }
 
 export interface SalesProduct {

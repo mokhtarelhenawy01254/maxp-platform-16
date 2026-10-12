@@ -18,6 +18,7 @@ import { OrdersVelocityChart } from "./analytics/OrdersVelocityChart";
 import { OrdersLogisticsPerformance } from "./analytics/OrdersLogisticsPerformance";
 import { OrdersGovernorateTable } from "./analytics/OrdersGovernorateTable";
 import { OrdersTopProductsTable } from "./analytics/OrdersTopProductsTable";
+import { OrdersDuplicateReport } from "./analytics/OrdersDuplicateReport";
 import { PeriodKey } from "./analytics/types";
 
 export const OrdersAnalytics: React.FC = () => {
@@ -309,6 +310,13 @@ export const OrdersAnalytics: React.FC = () => {
             formatPrice={formatPrice}
           />
         )}
+
+        {/* Strip 3.5: Duplicate Orders & Avoided Revenue Report */}
+        <OrdersDuplicateReport
+          duplicateStats={stats?.duplicateStats}
+          loading={loading}
+          formatPrice={formatPrice}
+        />
 
         {/* Strip 4: Logistics Performance & Status Breakdown */}
         <OrdersLogisticsPerformance

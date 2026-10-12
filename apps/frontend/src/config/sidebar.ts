@@ -698,6 +698,7 @@ export const getSidebarConfig = (
             icon: BarChart3,
             items: [
                 { to: '/analytics/orders', icon: BarChart3, label: t('dashboard.overview') },
+                { to: '/analytics/aov-cockpit', icon: Sparkles, label: isEn ? 'AOV Growth Cockpit' : 'مركز نمو السلة (AOV)' },
                 { to: '/analytics/store', icon: LineChart, label: isEn ? 'Store & Funnel Analytics' : 'تحليلات المتجر ومسار التحويل' },
                 { to: '/analytics/orders/orders', icon: Archive, label: t('sidebar.orderAnalytics') },
                 { to: '/analytics/orders/revenue', icon: Banknote, label: t('sidebar.revenueAnalytics') },
@@ -785,6 +786,7 @@ export const getSidebarConfig = (
                 },
                 { to: '/settings/custom-domain', icon: Link, label: t('sidebar.customDomain') },
                 { to: '/settings/store/tools', icon: Sparkles, label: t('sidebar.conversionTools') },
+                { to: '/analytics/aov-cockpit', icon: TrendingUp, label: isEn ? 'AOV Growth Cockpit' : 'مركز نمو السلة (AOV)' },
                 { to: '/settings/upsell', icon: TrendingUp, label: t('sidebar.upsellManagement') },
                 { to: '/settings/post-purchase-offer', icon: Zap, label: isEn ? 'Post-Purchase Offer' : 'العرض بعد الطلب (Upsell)' },
                 { to: '/admin/faqs', icon: HelpCircle, label: t('sidebar.faqs') },

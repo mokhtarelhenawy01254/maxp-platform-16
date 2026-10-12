@@ -22,4 +22,28 @@ describe("Orders Analytics dateUtils", () => {
     expect(calculateCustomDaysCount("2026-10-01", "2026-10-05")).toBe(5);
     expect(calculateCustomDaysCount("2026-10-01", "2026-10-01")).toBe(1);
   });
+
+  test("validates DuplicateStats structure shape", () => {
+    const mockDuplicateStats = {
+      totalDuplicates: 5,
+      duplicateRate: 12.5,
+      avoidedRevenue: 2450,
+      dailyTrend: [{ date: "2026-10-10", count: 2, avoidedRevenue: 1000 }],
+      topDuplicates: [
+        {
+          customerPhone: "01012345678",
+          customerName: "أحمد علي",
+          count: 3,
+          totalValue: 1500,
+          originalOrderNumber: "ORD-101",
+          orderNumbers: ["ORD-102", "ORD-103"],
+        },
+      ],
+    };
+
+    expect(mockDuplicateStats.totalDuplicates).toBe(5);
+    expect(mockDuplicateStats.duplicateRate).toBe(12.5);
+    expect(mockDuplicateStats.avoidedRevenue).toBe(2450);
+    expect(mockDuplicateStats.topDuplicates[0].originalOrderNumber).toBe("ORD-101");
+  });
 });

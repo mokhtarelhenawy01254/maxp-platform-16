@@ -161,6 +161,67 @@ describe('reportsController - getDetailedOrderReport & getSalesReport', () => {
       expect(alex.ordersCount).toBe(1);
     });
 
+    test('accurately calculates duplicateStats including avoidedRevenue and topDuplicates', async () => {
+      const orders = [
+        {
+          id: 'ord-1',
+          orderNumber: 'ORD-101',
+          status: 'DELIVERED',
+          total: 500,
+          customerPhone: '01012345678',
+          customerName: 'أحمد علي',
+          createdAt: new Date('2026-10-10T10:00:00Z'),
+          shipments: [],
+        },
+        {
+          id: 'ord-dup-1',
+          orderNumber: 'ORD-102',
+          status: 'DUPLICATE_ORDER',
+          total: 500,
+          customerPhone: '01012345678',
+          customerName: 'أحمد علي',
+          metadata: JSON.stringify({ duplicate: { duplicateOfOrderNumber: 'ORD-101' } }),
+          createdAt: new Date('2026-10-10T10:15:00Z'),
+          shipments: [],
+        },
+        {
+          id: 'ord-dup-2',
+          orderNumber: 'ORD-103',
+          status: 'PENDING',
+          total: 300,
+          customerPhone: '01099999999',
+          customerName: 'محمود حسن',
+          metadata: JSON.stringify({ duplicate: { duplicateOfOrderNumber: 'ORD-099' } }),
+          createdAt: new Date('2026-10-10T11:00:00Z'),
+          shipments: [],
+        },
+      ];
+
+      mockPrisma.order.findMany.mockResolvedValue(orders);
+      mockPrisma.guestOrder.findMany.mockResolvedValue([]);
+      mockPrisma.orderItem.aggregate.mockResolvedValue({ _sum: { quantity: 3 } });
+
+      const req = {
+        user: { companyId: 'comp-1' },
+        query: { period: 'today' },
+      };
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      await getDetailedOrderReport(req, res);
+      const data = res.json.mock.calls[0][0].data;
+
+      expect(data.duplicateStats).toBeDefined();
+      expect(data.duplicateStats.totalDuplicates).toBe(2);
+      expect(data.duplicateStats.duplicateRate).toBe(66.7);
+      expect(data.duplicateStats.avoidedRevenue).toBe(800);
+      expect(data.duplicateStats.topDuplicates.length).toBe(2);
+      expect(data.duplicateStats.topDuplicates[0].customerPhone).toBe('01012345678');
+      expect(data.duplicateStats.topDuplicates[0].originalOrderNumber).toBe('ORD-101');
+    });
+
     test('supports period=yesterday query parameter', async () => {
       mockPrisma.order.findMany.mockResolvedValue([]);
       mockPrisma.guestOrder.findMany.mockResolvedValue([]);

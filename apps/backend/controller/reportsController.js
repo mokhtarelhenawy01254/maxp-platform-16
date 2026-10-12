@@ -773,6 +773,9 @@ const getDetailedOrderReport = async (req, res) => {
                 select: {
                     id: true,
                     orderNumber: true,
+                    customerName: true,
+                    customerPhone: true,
+                    metadata: true,
                     status: true,
                     customStatusCode: true,
                     paymentMethod: true,
@@ -807,6 +810,8 @@ const getDetailedOrderReport = async (req, res) => {
                 select: {
                     id: true,
                     orderNumber: true,
+                    guestName: true,
+                    guestPhone: true,
                     status: true,
                     paymentMethod: true,
                     total: true,
@@ -880,6 +885,9 @@ const getDetailedOrderReport = async (req, res) => {
             return {
                 id: guest.orderNumber || guest.id,
                 orderNumber: guest.orderNumber,
+                customerName: guest.guestName || '',
+                customerPhone: guest.guestPhone || '',
+                metadata: guest.metadata || null,
                 status: guestRawStatus,
                 customStatusCode: null,
                 paymentMethod: guest.paymentMethod || 'cash_on_delivery',
@@ -935,6 +943,11 @@ const getDetailedOrderReport = async (req, res) => {
         let delayedShipmentsRevenue = 0;
         let pendingFulfillmentCount = 0;
         let uncollectedCodAmount = 0;
+
+        let duplicateOrdersCount = 0;
+        let duplicateAvoidedRevenue = 0;
+        const duplicateDailyMap = {};
+        const duplicateCustomerMap = {};
 
         const branchMap = {};
 
@@ -1140,6 +1153,68 @@ const getDetailedOrderReport = async (req, res) => {
             if (isDelivered) dailyMap[dayKey].delivered += 1;
             if (isCancelled) dailyMap[dayKey].cancelled += 1;
             if (isReturned) dailyMap[dayKey].returned += 1;
+
+            // Duplicate Orders Aggregation
+            let parsedMetadata = null;
+            if (typeof order.metadata === 'string') {
+                try {
+                    parsedMetadata = JSON.parse(order.metadata);
+                } catch (_) {
+                    parsedMetadata = null;
+                }
+            } else if (order.metadata && typeof order.metadata === 'object') {
+                parsedMetadata = order.metadata;
+            }
+
+            const duplicateMeta = parsedMetadata?.duplicate;
+            const isDuplicate = ['DUPLICATE_ORDER', 'DUPLICATE'].includes(rawStatus) ||
+                                ['DUPLICATE_ORDER', 'DUPLICATE'].includes(rawCustom) ||
+                                Boolean(duplicateMeta);
+
+            if (isDuplicate) {
+                duplicateOrdersCount += 1;
+                const isNotShipped = !isShipped && !isDelivered;
+                if (isNotShipped) {
+                    duplicateAvoidedRevenue += total;
+                }
+
+                if (!duplicateDailyMap[dayKey]) {
+                    duplicateDailyMap[dayKey] = {
+                        date: dayKey,
+                        count: 0,
+                        avoidedRevenue: 0
+                    };
+                }
+                duplicateDailyMap[dayKey].count += 1;
+                if (isNotShipped) {
+                    duplicateDailyMap[dayKey].avoidedRevenue += total;
+                }
+
+                const custPhone = String(order.customerPhone || '').trim();
+                const custName = String(order.customerName || '').trim();
+                const phoneKey = custPhone || custName || `order_${order.orderNumber}`;
+
+                if (phoneKey) {
+                    if (!duplicateCustomerMap[phoneKey]) {
+                        duplicateCustomerMap[phoneKey] = {
+                            customerPhone: custPhone || '-',
+                            customerName: custName || 'عميل بدون اسم',
+                            count: 0,
+                            totalValue: 0,
+                            originalOrderNumber: duplicateMeta?.duplicateOfOrderNumber || null,
+                            orderNumbers: []
+                        };
+                    }
+                    duplicateCustomerMap[phoneKey].count += 1;
+                    duplicateCustomerMap[phoneKey].totalValue += total;
+                    if (order.orderNumber && !duplicateCustomerMap[phoneKey].orderNumbers.includes(order.orderNumber)) {
+                        duplicateCustomerMap[phoneKey].orderNumbers.push(order.orderNumber);
+                    }
+                    if (!duplicateCustomerMap[phoneKey].originalOrderNumber && duplicateMeta?.duplicateOfOrderNumber) {
+                        duplicateCustomerMap[phoneKey].originalOrderNumber = duplicateMeta.duplicateOfOrderNumber;
+                    }
+                }
+            }
         });
 
         // جلب توزيع القطع لكل حالة عبر استعلام خفيف وآمن
@@ -1299,7 +1374,16 @@ const getDetailedOrderReport = async (req, res) => {
                 branchPerformance,
                 governorateDetails,
                 shippingPerformance,
-                dailyTrend
+                dailyTrend,
+                duplicateStats: {
+                    totalDuplicates: duplicateOrdersCount,
+                    duplicateRate: totalOrders > 0 ? Number(((duplicateOrdersCount / totalOrders) * 100).toFixed(1)) : 0,
+                    avoidedRevenue: Math.round(duplicateAvoidedRevenue),
+                    dailyTrend: Object.values(duplicateDailyMap).sort((a, b) => a.date.localeCompare(b.date)),
+                    topDuplicates: Object.values(duplicateCustomerMap)
+                        .sort((a, b) => b.count - a.count || b.totalValue - a.totalValue)
+                        .slice(0, 15)
+                }
             }
         });
     } catch (error) {

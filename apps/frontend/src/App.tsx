@@ -394,6 +394,9 @@ const PaymentOffersSettings = React.lazy(
 const PostPurchaseOfferBuilderPage = React.lazy(
   () => import("./pages/marketing/PostPurchaseOfferBuilderPage"),
 );
+const AovCockpitPage = React.lazy(
+  () => import("./pages/Analytics/AovCockpitPage"),
+);
 const StorefrontVisualEditorPage = React.lazy(
   () => import("./pages/settings/StorefrontVisualEditorPage"),
 );
@@ -5544,6 +5547,26 @@ const AppContent = () => {
                   }
                 />
                 {/* Orders Analytics Routes */}
+                <Route
+                  path="/analytics/aov-cockpit"
+                  element={
+                    <Layout fullWidth>
+                      <AovCockpitPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/marketing/aov-cockpit"
+                  element={
+                    <Navigate to="/analytics/aov-cockpit" replace />
+                  }
+                />
+                <Route
+                  path="/settings/aov-center"
+                  element={
+                    <Navigate to="/analytics/aov-cockpit" replace />
+                  }
+                />
                 <Route
                   path="/analytics/orders"
                   element={

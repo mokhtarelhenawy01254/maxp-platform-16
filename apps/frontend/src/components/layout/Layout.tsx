@@ -239,6 +239,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     location.pathname === "/orders" ||
     location.pathname.startsWith("/orders/workspace") ||
     location.pathname.startsWith("/orders/analytics") ||
+    location.pathname.startsWith("/analytics/aov-cockpit") ||
     location.pathname.startsWith("/profile") ||
     location.pathname.startsWith("/whatsapp") ||
     location.pathname.startsWith("/whatsapp-chat") ||
