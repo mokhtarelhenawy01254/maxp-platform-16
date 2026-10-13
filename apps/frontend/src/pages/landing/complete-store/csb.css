@@ -671,67 +671,113 @@
   color: #7fb8a2;
 }
 
-.csb-journey-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0;
-  border: 1px solid var(--csb-dark-line);
-  border-radius: 14px;
-  overflow: hidden;
-  background: var(--csb-dark-2);
+/* إنفوجرافيك متسلسل: خطrail يمين (RTL) وعقد مرقمة وكروت ورا بعض */
+.csb-jrail {
+  position: relative;
+  max-width: 760px;
+  margin: 0 auto;
+  padding-right: 62px;
+}
+
+.csb-jrail::before {
+  content: "";
+  position: absolute;
+  right: 21px;
+  top: 26px;
+  bottom: 60px;
+  width: 2px;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(127, 184, 162, 0.55) 0 6px,
+    transparent 6px 13px
+  );
 }
 
 .csb-jstep {
-  padding: 22px 22px 20px;
-  border-left: 1px solid var(--csb-dark-line);
-  border-top: 1px solid var(--csb-dark-line);
+  position: relative;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+
+.csb-jrail-side {
+  position: absolute;
+  right: -62px;
+  top: 10px;
+  bottom: 0;
+  width: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.csb-jnode {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--csb-dark-2);
+  border: 1.5px solid rgba(127, 184, 162, 0.6);
+  color: #7fd0ae;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  z-index: 1;
+}
+
+.csb-jlink {
+  flex: 1;
+  width: 0;
+}
+
+.csb-jcard {
+  background: var(--csb-dark-2);
+  border: 1px solid var(--csb-dark-line);
+  border-radius: 14px;
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
 }
 
-.csb-jstep:nth-child(3n + 1) {
-  border-left: 0;
+.csb-jcard-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.csb-jstep:nth-child(-n + 3) {
-  border-top: 0;
-}
-
-.csb-jstep-num {
-  font-size: 11px;
-  font-weight: 700;
-  color: #7fb8a2;
-  letter-spacing: 0.06em;
-}
-
-.csb-jstep h3 {
-  font-size: 16.5px;
+.csb-jcard-head h3 {
+  font-size: 17px;
   font-weight: 700;
   margin: 0;
   color: #f5f1e8;
 }
 
-.csb-jstep > p {
+.csb-jtools {
+  font-size: 11px;
+  font-weight: 700;
+  color: #7fb8a2;
+  border: 1px dashed rgba(127, 184, 162, 0.4);
+  border-radius: 6px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+
+.csb-jcard > p {
   margin: 0;
   font-size: 13px;
   line-height: 1.8;
   color: var(--csb-dark-soft);
 }
 
-.csb-jstep-tools {
-  margin-top: auto;
-  font-size: 11px;
-  color: #7fb8a2;
-  border-top: 1px dashed var(--csb-dark-line);
-  padding-top: 9px;
-}
-
 .csb-journey-note {
   margin-top: 14px;
   font-size: 11.5px;
   color: var(--csb-dark-soft);
+  text-align: center;
 }
 
 /* واجهة توضيحية مصغرة داخل كل محطة */
@@ -1392,17 +1438,23 @@
     display: none;
   }
 
-  .csb-journey-grid {
-    grid-template-columns: 1fr;
+  .csb-jrail {
+    padding-right: 48px;
   }
 
-  .csb-jstep {
-    border-left: 0;
-    border-top: 1px solid var(--csb-dark-line);
+  .csb-jrail::before {
+    right: 17px;
   }
 
-  .csb-jstep:first-child {
-    border-top: 0;
+  .csb-jrail-side {
+    right: -48px;
+    width: 36px;
+  }
+
+  .csb-jnode {
+    width: 36px;
+    height: 36px;
+    font-size: 12.5px;
   }
 
   .csb-families {

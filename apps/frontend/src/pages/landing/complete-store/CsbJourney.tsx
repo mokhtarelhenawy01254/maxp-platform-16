@@ -1,7 +1,7 @@
 import React from "react";
 import { CSB_JOURNEY } from "./csbData";
 
-/** واجهات توضيحية مصغرة لكل محطة — شكل عناصر المنتج الحقيقية (inbox/واتساب/بوليصة/أرباح) */
+/** واجهات توضيحية مصغرة لكل محطة — شكل عناصر المنتج الحقيقية */
 const STEP_UI: Record<string, React.ReactNode> = {
   message: (
     <div className="csb-ui" aria-hidden="true">
@@ -115,28 +115,35 @@ const STEP_UI: Record<string, React.ReactNode> = {
   ),
 };
 
+/** إنفوجرافيك متسلسل: عقد مرقمة على خط واحد — الخطوة ورا الخطوة */
 export const CsbJourney: React.FC = () => {
   return (
     <section className="csb-journey" id="journey">
       <div className="csb-section">
         <div className="csb-section-head csb-reveal">
           <span className="csb-sec-eyebrow">رحلة الأوردر الواحد</span>
-          <h2>من رسالة العميل لحد صافي الربح — من غير شيت ولا مكالمة</h2>
+          <h2>الأوردر بيمشي الخطوات دي بالترتيب — واحدة ورا التانية</h2>
           <p>
-              الأدوات مش «ميزات» منفصلة؛ دي محطات الأوردر وهو بيمشي. دي شكل المحطات الست
-              جوه النظام:
+            من رسالة العميل لحد صافي الربح، الـ17 أداة بتشتغل ورا بعض في نفس
+            التسلسل. دي المحطات الست:
           </p>
         </div>
 
-        <div className="csb-journey-grid">
+        <div className="csb-jrail">
           {CSB_JOURNEY.map((step, i) => (
             <article className="csb-jstep csb-reveal" key={step.id}>
-              <span className="csb-jstep-num">
-                {String(i + 1).padStart(2, "0")} — {step.tools}
-              </span>
-              <h3>{step.title}</h3>
-              <p>{step.caption}</p>
-              {STEP_UI[step.id]}
+              <div className="csb-jrail-side" aria-hidden="true">
+                <span className="csb-jnode">{String(i + 1).padStart(2, "0")}</span>
+                {i < CSB_JOURNEY.length - 1 && <span className="csb-jlink" />}
+              </div>
+              <div className="csb-jcard">
+                <div className="csb-jcard-head">
+                  <h3>{step.title}</h3>
+                  <span className="csb-jtools">{step.tools}</span>
+                </div>
+                <p>{step.caption}</p>
+                {STEP_UI[step.id]}
+              </div>
             </article>
           ))}
         </div>
