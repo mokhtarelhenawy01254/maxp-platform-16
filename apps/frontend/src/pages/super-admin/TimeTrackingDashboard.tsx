@@ -14,9 +14,11 @@ import {
   PieChart,
   Timer,
   DollarSign,
+  ChevronDown,
 } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import i18n from "../../i18n";
+import { Button } from "../../components/ui/button";
 
 interface DashboardStats {
   totalHours: number;
@@ -92,7 +94,6 @@ const TimeTrackingDashboard: React.FC = () => {
   useEffect(() => {
     fetchAllData();
 
-    // Auto-refresh every 30 seconds if enabled
     let interval: NodeJS.Timeout;
     if (autoRefresh) {
       interval = setInterval(() => {
@@ -177,7 +178,7 @@ const TimeTrackingDashboard: React.FC = () => {
   };
 
   const formatDuration = (minutes: number): string => {
-    const days = Math.floor(minutes / 1440); // 1440 minutes in a day
+    const days = Math.floor(minutes / 1440);
     const remainingMinutes = minutes % 1440;
     const hours = Math.floor(remainingMinutes / 60);
     const mins = remainingMinutes % 60;
@@ -193,312 +194,271 @@ const TimeTrackingDashboard: React.FC = () => {
 
   const getTaskTypeColor = (type: string): string => {
     const colors: Record<string, string> = {
-      BUG: "bg-red-100 text-red-700",
-      FEATURE: "bg-blue-100 text-blue-700",
-      ENHANCEMENT: "bg-green-100 text-green-700",
-      HOTFIX: "bg-orange-100 text-orange-700",
-      SECURITY: "bg-purple-100 text-purple-700",
-      REFACTOR: "bg-yellow-100 text-yellow-700",
+      BUG: "bg-destructive/10 text-destructive border-destructive/20",
+      FEATURE: "bg-primary/10 text-primary border-primary/20",
+      ENHANCEMENT: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+      HOTFIX: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
+      SECURITY: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20",
+      REFACTOR: "bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/20",
     };
-    return colors[type] || "bg-gray-100 text-gray-700";
+    return colors[type] || "bg-muted text-muted-foreground border-border/40";
   };
 
   if (loading) {
     return (
-      <div
-        className={`flex items-center justify-center h-64 bg-gray-50 dark:bg-gray-900`}
-      >
-        <div className="text-center">
-          <RefreshCw className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className={"text-gray-600 dark:text-gray-300"}>
-            جاري تحميل البيانات...
-          </p>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+          <RefreshCw className="size-4 animate-spin text-primary" />
+          <span>جاري تجميع سجلات تتبع الوقت والإنتاجية...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      className={`p-6 w-full transition-colors bg-gray-50 dark:bg-gray-900`}
-      dir={i18n.dir()}
-    >
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto" dir={i18n.dir()}>
+      {/* Linear Unified Control Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-card flex items-center justify-center text-foreground shadow-2xs">
+            <Clock className="size-4.5 text-primary" />
+          </div>
           <div>
-            <h1
-              className={`text-3xl font-bold flex items-center gap-2 text-gray-900 dark:text-white`}
-            >
-              <Clock className="w-8 h-8 text-blue-600" />
-              تتبع الوقت والإنتاجية
-            </h1>
-            <p className={`mt-1 text-gray-600 dark:text-gray-400`}>
-              آخر تحديث: {lastUpdate.toLocaleTimeString("ar-EG")}
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
+                تتبع الوقت والإنتاجية
+              </h1>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+                {stats?.runningTimers?.length || 0} يعملون الآن
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              متابعة مباشرة لساعات عمل المطورين والمهام المنجزة والفوترة
             </p>
           </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
-                autoRefresh
-                  ? "bg-green-100 text-green-700"
-                  : "bg-gray-100 text-gray-700"
-              }`}
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${autoRefresh ? "animate-spin" : ""}`}
-              />
-              تحديث تلقائي
-            </button>
-
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700`}
-            >
-              <Filter className="w-4 h-4" />
-              فلاتر
-            </button>
-
-            <div className="relative">
-              <button
-                onClick={() =>
-                  document
-                    .getElementById("export-menu")
-                    ?.classList.toggle("hidden")
-                }
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2 hover:bg-blue-700"
-              >
-                <Download className="w-4 h-4" />
-                تصدير
-              </button>
-              <div
-                id="export-menu"
-                className={`hidden absolute left-0 mt-2 w-48 rounded-lg shadow-lg border z-10 bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700`}
-              >
-                <button
-                  onClick={() => handleExport("csv")}
-                  className={`w-full px-4 py-2 text-right rounded-t-lg transition-colors hover:bg-gray-50 text-gray-900 dark:hover:bg-gray-700 dark:text-gray-300`}
-                >
-                  تصدير CSV
-                </button>
-                <button
-                  onClick={() => handleExport("json")}
-                  className={`w-full px-4 py-2 text-right rounded-b-lg transition-colors hover:bg-gray-50 text-gray-900 dark:hover:bg-gray-700 dark:text-gray-300`}
-                >
-                  تصدير JSON
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Filters */}
-        {showFilters && (
-          <div
-            className={`p-4 rounded-lg shadow-sm border mb-4 transition-colors bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700`}
-          >
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label
-                      className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
-                >
-                  الفترة الزمنية
-                </label>
-                <select
-                  value={dateRange}
-                  onChange={(e) => setDateRange(e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
-                >
-                  <option value="today">اليوم</option>
-                  <option value="yesterday">أمس</option>
-                  <option value="week">آخر 7 أيام</option>
-                  <option value="month">آخر 30 يوم</option>
-                  <option value="custom">نطاق مخصص</option>
-                </select>
-              </div>
-
-              {dateRange === "custom" && (
-                <>
-                  <div>
-                    <label
-                      className={`block text-sm font-medium mb-2 ${
-                        "text-gray-700 dark:text-gray-300"
-                      }`}
-                    >
-                      من تاريخ
-                    </label>
-                    <input
-                      type="date"
-                      value={customStartDate}
-                      onChange={(e) => setCustomStartDate(e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className={`block text-sm font-medium mb-2 ${
-                        "text-gray-700 dark:text-gray-300"
-                      }`}
-                    >
-                      إلى تاريخ
-                    </label>
-                    <input
-                      type="date"
-                      value={customEndDate}
-                      onChange={(e) => setCustomEndDate(e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Unified Telemetry Ribbon */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs mb-6">
-        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-            <span className="font-medium text-[11px]">إجمالي ساعات العمل</span>
-            <span className="size-1.5 rounded-full bg-blue-500" />
-          </div>
-          <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-            {(stats?.totalHours ?? 0).toFixed(1)}h
-          </div>
-          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">
-            قابل للفوترة: {(stats?.billableHours ?? 0).toFixed(1)}h
-          </p>
-        </div>
-
-        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-            <span className="font-medium text-[11px]">الأعضاء النشطون</span>
-            <span className="size-1.5 rounded-full bg-emerald-500" />
-          </div>
-          <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
-            {stats?.activeMembers}/{stats?.totalMembers}
-          </div>
-          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">
-            يعملون الآن: {stats?.runningTimers.length || 0}
-          </p>
-        </div>
-
-        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-            <span className="font-medium text-[11px]">المهام المكتملة</span>
-            <span className="size-1.5 rounded-full bg-purple-500" />
-          </div>
-          <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-            {stats?.tasksCompleted || 0}
-          </div>
-          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">
-            في الفترة المحددة
-          </p>
-        </div>
-
-        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-            <span className="font-medium text-[11px]">متوسط وقت المهمة</span>
-            <span className="size-1.5 rounded-full bg-amber-500" />
-          </div>
-          <div className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400 font-mono tabular-nums">
-            {(stats?.avgTimePerTask ?? 0).toFixed(1)}h
-          </div>
-          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">
-            لكل مهمة منجزة
-          </p>
-        </div>
-      </div>
-
-      {/* Live Activity */}
-      {stats?.runningTimers && stats.runningTimers.length > 0 && (
-        <div
-          className={`p-6 rounded-lg shadow-sm border mb-6 transition-colors ${
-            "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700"
-          }`}
-        >
-          <h2
-            className={`text-xl font-bold mb-4 flex items-center gap-2 ${
-              "text-gray-900 dark:text-white"
+        <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            className={`h-8 text-xs font-medium gap-1.5 shadow-2xs active:scale-[0.98] transition-transform ${
+              autoRefresh
+                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                : ""
             }`}
           >
-            <Activity className="w-5 h-5 text-green-600" />
-            النشاط الحي
-            <span
-              className={`inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400`}
+            <RefreshCw
+              className={`size-3.5 ${autoRefresh ? "animate-spin text-emerald-600" : ""}`}
+            />
+            <span>{autoRefresh ? "تحديث تلقائي: نشط" : "تحديث تلقائي: معطل"}</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className="h-8 text-xs font-medium gap-1.5 shadow-2xs active:scale-[0.98] transition-transform"
+          >
+            <Filter className="size-3.5" />
+            <span>فلاتر</span>
+          </Button>
+
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                document.getElementById("export-menu")?.classList.toggle("hidden")
+              }
+              className="h-8 text-xs font-medium gap-1.5 shadow-2xs active:scale-[0.98] transition-transform"
             >
+              <Download className="size-3.5" />
+              <span>تصدير</span>
+              <ChevronDown className="size-3 text-muted-foreground" />
+            </Button>
+            <div
+              id="export-menu"
+              className="hidden absolute left-0 mt-1.5 w-40 rounded-lg shadow-lg border border-border bg-card z-20 text-xs overflow-hidden"
+            >
+              <button
+                onClick={() => handleExport("csv")}
+                className="w-full px-3 py-2 text-right transition-colors hover:bg-muted/40 text-foreground"
+              >
+                تصدير ملف CSV
+              </button>
+              <button
+                onClick={() => handleExport("json")}
+                className="w-full px-3 py-2 text-right transition-colors hover:bg-muted/40 text-foreground border-t border-border/40"
+              >
+                تصدير ملف JSON
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters Drawer */}
+      {showFilters && (
+        <div className="rounded-xl border border-border/80 bg-card p-4 shadow-2xs">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+            <div>
+              <label className="block font-medium mb-1.5 text-muted-foreground">
+                الفترة الزمنية
+              </label>
+              <select
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value)}
+                className="w-full h-8 px-2.5 border border-border rounded-lg bg-background text-foreground outline-none font-medium"
+              >
+                <option value="today">اليوم</option>
+                <option value="yesterday">أمس</option>
+                <option value="week">آخر 7 أيام</option>
+                <option value="month">آخر 30 يوم</option>
+                <option value="custom">نطاق مخصص</option>
+              </select>
+            </div>
+
+            {dateRange === "custom" && (
+              <>
+                <div>
+                  <label className="block font-medium mb-1.5 text-muted-foreground">
+                    من تاريخ
+                  </label>
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="w-full h-8 px-2.5 border border-border rounded-lg bg-background text-foreground outline-none font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium mb-1.5 text-muted-foreground">
+                    إلى تاريخ
+                  </label>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="w-full h-8 px-2.5 border border-border rounded-lg bg-background text-foreground outline-none font-mono"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Linear Telemetry Ribbon */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
+          <div className="p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">إجمالي ساعات العمل</span>
+              <span className="size-1.5 rounded-full bg-primary" />
+            </div>
+            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {(stats?.totalHours ?? 0).toFixed(1)}h
+            </div>
+            <span className="text-[10px] text-muted-foreground font-mono mt-0.5">
+              قابل للفوترة: {(stats?.billableHours ?? 0).toFixed(1)}h
+            </span>
+          </div>
+
+          <div className="p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">الأعضاء النشطون</span>
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+            <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+              {stats?.activeMembers}/{stats?.totalMembers}
+            </div>
+            <span className="text-[10px] text-muted-foreground font-mono mt-0.5">
+              يعملون الآن: {stats?.runningTimers.length || 0}
+            </span>
+          </div>
+
+          <div className="p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">المهام المكتملة</span>
+              <span className="size-1.5 rounded-full bg-purple-500" />
+            </div>
+            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {stats?.tasksCompleted || 0}
+            </div>
+            <span className="text-[10px] text-muted-foreground mt-0.5">خلال الفترة المحددة</span>
+          </div>
+
+          <div className="p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">متوسط وقت المهمة</span>
+              <span className="size-1.5 rounded-full bg-amber-500" />
+            </div>
+            <div className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400 font-mono tabular-nums">
+              {(stats?.avgTimePerTask ?? 0).toFixed(1)}h
+            </div>
+            <span className="text-[10px] text-muted-foreground mt-0.5">لكل مهمة منجزة</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Live Activity Chassis */}
+      {stats?.runningTimers && stats.runningTimers.length > 0 && (
+        <div className="rounded-xl border border-border/80 bg-card shadow-2xs overflow-hidden">
+          <div className="px-4 py-3 border-b border-border/60 bg-muted/20 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Activity className="size-4 text-emerald-500" />
+              <h2 className="text-xs font-semibold text-foreground">النشاط الحي المباشر</h2>
+            </div>
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 font-mono">
               {stats.runningTimers.length} يعملون الآن
             </span>
-          </h2>
+          </div>
 
-          <div className="space-y-3">
+          <div className="p-3 space-y-2">
             {stats.runningTimers.map((timer) => (
               <div
                 key={timer.id}
-                className={`flex items-center justify-between p-4 rounded-lg transition-colors bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600`}
+                className="flex items-center justify-between p-2.5 rounded-lg border border-border/40 bg-muted/10 hover:bg-muted/20 transition-colors"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   <div className="relative">
                     {timer.memberAvatar ? (
                       <img
                         src={timer.memberAvatar}
                         alt={timer.memberName}
-                        className="w-10 h-10 rounded-full"
+                        className="size-8 rounded-full border border-border"
                       />
                     ) : (
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          "bg-blue-100 dark:bg-blue-900"
-                        }`}
-                      >
-                        <span
-                          className={`font-medium ${
-                            "text-blue-600 dark:text-blue-300"
-                          }`}
-                        >
-                          {timer.memberName.charAt(0)}
-                        </span>
+                      <div className="size-8 rounded-full flex items-center justify-center bg-primary/10 text-primary border border-primary/20 text-xs font-bold font-mono">
+                        {timer.memberName.charAt(0)}
                       </div>
                     )}
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
+                    <div className="absolute -bottom-0.5 -right-0.5 size-2 bg-emerald-500 rounded-full ring-2 ring-card animate-pulse" />
                   </div>
 
                   <div>
-                    <p
-                      className={`font-medium ${
-                        "text-gray-900 dark:text-white"
-                      }`}
-                    >
+                    <p className="font-medium text-xs text-foreground">
                       {timer.memberName}
                     </p>
-                    <p
-                      className={`text-sm ${
-                        "text-gray-600 dark:text-gray-400"
-                      }`}
-                    >
+                    <p className="text-[11px] text-muted-foreground truncate max-w-md">
                       {timer.taskTitle}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(timer.taskType)}`}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${getTaskTypeColor(
+                      timer.taskType,
+                    )}`}
                   >
                     {timer.taskType}
                   </span>
-                  <div
-                    className={`flex items-center gap-2 ${
-                      "text-gray-700 dark:text-gray-300"
-                    }`}
-                  >
-                    <Timer className="w-4 h-4" />
-                    <span className="font-mono font-medium">
-                      {formatDuration(timer.elapsedMinutes)}
-                    </span>
+                  <div className="flex items-center gap-1 text-xs text-foreground font-mono tabular-nums">
+                    <Timer className="size-3.5 text-muted-foreground" />
+                    <span>{formatDuration(timer.elapsedMinutes)}</span>
                   </div>
                 </div>
               </div>
@@ -507,78 +467,62 @@ const TimeTrackingDashboard: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      {/* Recent Logs & Team Performance */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Recent Time Logs */}
-        <div
-          className={`p-6 rounded-lg shadow-sm border transition-colors ${
-            "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700"
-          }`}
-        >
-          <h2
-            className={`text-xl font-bold mb-4 flex items-center gap-2 ${
-              "text-gray-900 dark:text-white"
-            }`}
-          >
-            <Calendar className="w-5 h-5 text-blue-600" />
-            سجلات الوقت الأخيرة
-          </h2>
+        <div className="rounded-xl border border-border/80 bg-card shadow-2xs overflow-hidden">
+          <div className="px-4 py-3 border-b border-border/60 bg-muted/20 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="size-4 text-primary" />
+              <h2 className="text-xs font-semibold text-foreground">
+                سجلات الوقت الأخيرة
+              </h2>
+            </div>
+            <span className="text-[10px] text-muted-foreground font-mono">
+              {timeLogs.length} سجل
+            </span>
+          </div>
 
-          <div className="space-y-3 max-h-96 overflow-y-auto">
+          <div className="divide-y divide-border/40 max-h-96 overflow-y-auto">
             {timeLogs.length > 0 ? (
               timeLogs.map((log) => (
                 <div
                   key={log.id}
-                  className={`p-3 border rounded-lg transition-colors cursor-pointer border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700`}
-                  onClick={() =>
-                    navigate(`/super-admin/dev-tasks/${log.taskId}`)
-                  }
+                  className="p-3 hover:bg-muted/30 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/super-admin/dev-tasks/${log.taskId}`)}
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <p
-                        className={`font-medium text-sm ${
-                          "text-gray-900 dark:text-white"
-                        }`}
-                      >
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-xs text-foreground truncate">
                         {log.taskTitle}
                       </p>
-                      <p
-                        className={`text-xs mt-1 ${
-                          "text-gray-600 dark:text-gray-400"
-                        }`}
-                      >
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
                         {log.memberName}
                       </p>
                     </div>
-                    <div className="text-left">
-                      <p
-                        className={`font-bold ${
-                          "text-gray-900 dark:text-white"
-                        }`}
-                      >
+                    <div className="text-left font-mono shrink-0">
+                      <p className="font-bold text-xs text-foreground tabular-nums">
                         {formatDuration(log.duration)}
                       </p>
                       {log.isBillable && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">
-                          <DollarSign className="w-3 h-3 ml-1" />
-                          قابل للفوترة
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                          <DollarSign className="size-2.5 mr-0.5" />
+                          فوترة
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <div
-                    className={`flex items-center gap-2 text-xs ${
-                      "text-gray-500"
-                    }`}
-                  >
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
                     <span
-                      className={`px-2 py-0.5 rounded ${getTaskTypeColor(log.taskType)}`}
+                      className={`px-1 py-0.2 rounded border ${getTaskTypeColor(
+                        log.taskType,
+                      )}`}
                     >
                       {log.taskType}
                     </span>
                     {log.projectName && (
-                      <span className="px-2 py-0.5 rounded bg-gray-100">
+                      <span className="px-1 py-0.2 rounded bg-muted border border-border/40 font-sans">
                         {log.projectName}
                       </span>
                     )}
@@ -594,11 +538,7 @@ const TimeTrackingDashboard: React.FC = () => {
                 </div>
               ))
             ) : (
-              <p
-                className={`text-center py-8 ${
-                  "text-gray-500"
-                }`}
-              >
+              <p className="text-center py-10 text-xs text-muted-foreground">
                 لا توجد سجلات في هذه الفترة
               </p>
             )}
@@ -606,120 +546,81 @@ const TimeTrackingDashboard: React.FC = () => {
         </div>
 
         {/* Team Performance */}
-        <div
-          className={`p-6 rounded-lg shadow-sm border transition-colors ${
-            "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700"
-          }`}
-        >
-          <h2
-            className={`text-xl font-bold mb-4 flex items-center gap-2 ${
-              "text-gray-900 dark:text-white"
-            }`}
-          >
-            <BarChart3 className="w-5 h-5 text-purple-600" />
-            أداء الفريق
-          </h2>
+        <div className="rounded-xl border border-border/80 bg-card shadow-2xs overflow-hidden">
+          <div className="px-4 py-3 border-b border-border/60 bg-muted/20 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="size-4 text-primary" />
+              <h2 className="text-xs font-semibold text-foreground">
+                أداء وإنتاجية الفريق
+              </h2>
+            </div>
+            <span className="text-[10px] text-muted-foreground font-mono">
+              {memberPerformance.length} عضو
+            </span>
+          </div>
 
-          <div className="space-y-3 max-h-96 overflow-y-auto">
+          <div className="divide-y divide-border/40 max-h-96 overflow-y-auto font-mono">
             {memberPerformance.length > 0 ? (
               memberPerformance.map((member, index) => (
-                <div
-                  key={member.memberId}
-                  className={`p-3 border rounded-lg transition-colors border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700`}
-                >
+                <div key={member.memberId} className="p-3 hover:bg-muted/30 transition-colors">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`text-lg font-bold ${
-                          "text-gray-400 dark:text-gray-600"
-                        }`}
-                      >
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xs font-bold text-muted-foreground font-mono w-4">
                         #{index + 1}
                       </span>
                       {member.avatar ? (
                         <img
                           src={member.avatar}
                           alt={member.name}
-                          className="w-8 h-8 rounded-full"
+                          className="size-7 rounded-full border border-border"
                         />
                       ) : (
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            "bg-purple-100 dark:bg-purple-900"
-                          }`}
-                        >
-                          <span
-                            className={`text-sm font-medium ${
-                              "text-purple-600 dark:text-purple-300"
-                            }`}
-                          >
-                            {member.name.charAt(0)}
-                          </span>
+                        <div className="size-7 rounded-full flex items-center justify-center bg-primary/10 text-primary border border-primary/20 text-xs font-bold font-mono">
+                          {member.name.charAt(0)}
                         </div>
                       )}
                       <div>
-                        <p
-                          className={`font-medium text-sm ${
-                            "text-gray-900 dark:text-white"
-                          }`}
-                        >
+                        <p className="font-medium text-xs text-foreground font-sans">
                           {member.name}
                         </p>
                         {member.department && (
-                          <p
-                            className={`text-xs ${
-                              "text-gray-500"
-                            }`}
-                          >
+                          <p className="text-[10px] text-muted-foreground font-sans">
                             {member.department}
                           </p>
                         )}
                       </div>
                     </div>
 
-                    <div className="text-left">
-                      <p
-                        className={`font-bold ${
-                          "text-gray-900 dark:text-white"
-                        }`}
-                      >
+                    <div className="text-left font-mono">
+                      <p className="font-bold text-xs text-foreground tabular-nums">
                         {member.totalHours}h
                       </p>
-                      <p
-                        className={`text-xs ${
-                          "text-gray-500"
-                        }`}
-                      >
+                      <p className="text-[10px] text-muted-foreground">
                         {member.tasksCompleted} مهام
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 text-xs">
-                    <div
-                      className={`flex-1 rounded-full h-2 ${
-                        "bg-gray-200 dark:bg-gray-700"
-                      }`}
-                    >
+                  <div className="flex items-center gap-2.5 text-[10px]">
+                    <div className="flex-1 bg-muted rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="bg-purple-600 h-2 rounded-full"
+                        className="bg-primary h-full rounded-full"
                         style={{
-                          width: `${Math.min((parseFloat(member.totalHours) / 8) * 100, 100)}%`,
+                          width: `${Math.min(
+                            (parseFloat(member.totalHours) / 8) * 100,
+                            100,
+                          )}%`,
                         }}
-                      ></div>
+                      />
                     </div>
-                    <span
-                      className={`font-medium ${
-                        "text-gray-600 dark:text-gray-400"
-                      }`}
-                    >
+                    <span className="text-muted-foreground font-sans tabular-nums">
                       كفاءة: {(member.efficiencyScore ?? 0).toFixed(1)}
                     </span>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-center text-gray-500 py-8">
+              <p className="text-center py-10 text-xs text-muted-foreground">
                 لا توجد بيانات في هذه الفترة
               </p>
             )}
@@ -727,15 +628,17 @@ const TimeTrackingDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* View Analytics Button */}
-      <div className="text-center">
-        <button
+      {/* Advanced Analytics Link Bar */}
+      <div className="flex justify-center pt-2">
+        <Button
           onClick={() => navigate("/super-admin/time-tracking/analytics")}
-          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all flex items-center gap-2 mx-auto"
+          variant="outline"
+          size="sm"
+          className="h-9 px-4 text-xs font-medium gap-2 shadow-2xs active:scale-[0.98] transition-transform"
         >
-          <PieChart className="w-5 h-5" />
-          عرض التحليلات المتقدمة والرسوم البيانية
-        </button>
+          <PieChart className="size-4 text-primary" />
+          <span>عرض التحليلات المتقدمة والرسوم البيانية</span>
+        </Button>
       </div>
     </div>
   );

@@ -3,38 +3,58 @@ import { useNavigate, useParams } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-import { useTheme } from "../../hooks/useTheme";
 import {
-  ArrowRightIcon,
-  FlagIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  ExclamationTriangleIcon,
-  PlusIcon,
-  PencilIcon,
-  TrashIcon,
-  LinkIcon,
-  XMarkIcon,
-  CalendarDaysIcon,
-  UserIcon,
-  ChatBubbleLeftIcon,
-  ChartBarIcon,
-} from "@heroicons/react/24/outline";
+  ArrowRight,
+  Target,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  Plus,
+  Pencil,
+  Trash2,
+  Link2,
+  X,
+  Calendar,
+  User,
+  MessageSquare,
+  BarChart3,
+  RefreshCw,
+  Folder,
+  Tag,
+  Check,
+} from "lucide-react";
+import { Button } from "../../components/ui/button";
 
 const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);
 
-const statusConfig: Record<string, { label: string; color: string }> = {
-  ACTIVE: { label: "نشط", color: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" },
-  COMPLETED: { label: "مكتمل", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400" },
-  ON_HOLD: { label: "معلق", color: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400" },
-  CANCELLED: { label: "ملغي", color: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400" },
+const statusConfig: Record<string, { label: string; color: string; border: string }> = {
+  ACTIVE: {
+    label: "نشط",
+    color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+    border: "border-emerald-500/20",
+  },
+  COMPLETED: {
+    label: "مكتمل",
+    color: "bg-primary/10 text-primary",
+    border: "border-primary/20",
+  },
+  ON_HOLD: {
+    label: "معلق",
+    color: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+    border: "border-amber-500/20",
+  },
+  CANCELLED: {
+    label: "ملغي",
+    color: "bg-destructive/10 text-destructive",
+    border: "border-destructive/20",
+  },
 };
 
-const confidenceConfig: Record<string, { label: string; color: string; bg: string }> = {
-  ON_TRACK: { label: "على المسار", color: "text-green-600", bg: "bg-green-500" },
-  AT_RISK: { label: "في خطر", color: "text-yellow-600", bg: "bg-yellow-500" },
-  OFF_TRACK: { label: "خارج المسار", color: "text-red-600", bg: "bg-red-500" },
+const confidenceConfig: Record<string, { label: string; dot: string }> = {
+  ON_TRACK: { label: "على المسار", dot: "bg-emerald-500" },
+  AT_RISK: { label: "في خطر", dot: "bg-amber-500" },
+  OFF_TRACK: { label: "خارج المسار", dot: "bg-destructive" },
 };
 
 interface Goal {
@@ -57,9 +77,22 @@ interface Goal {
   owner: { id: string; name: string; userId: string } | null;
   project: { id: string; name: string; color: string } | null;
   parentGoal: { id: string; title: string } | null;
-  childGoals: Array<{ id: string; title: string; status: string; progress: number; priority: string; type: string }>;
+  childGoals: Array<{
+    id: string;
+    title: string;
+    status: string;
+    progress: number;
+    priority: string;
+    type: string;
+  }>;
   keyResults: KeyResult[];
-  linkedTasks: Array<{ id: string; title: string; status: string; priority: string; assigneeId: string | null }>;
+  linkedTasks: Array<{
+    id: string;
+    title: string;
+    status: string;
+    priority: string;
+    assigneeId: string | null;
+  }>;
   _count: { keyResults: number; linkedTasks: number; childGoals: number };
 }
 
@@ -93,7 +126,9 @@ const DevGoalDetails: React.FC = () => {
   const [goal, setGoal] = useState<Goal | null>(null);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"overview" | "key-results" | "tasks" | "check-ins">("overview");
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "key-results" | "tasks" | "check-ins"
+  >("overview");
 
   // KR Modal
   const [showKRModal, setShowKRModal] = useState(false);
@@ -137,9 +172,12 @@ const DevGoalDetails: React.FC = () => {
   const fetchCheckIns = useCallback(async () => {
     if (!id) return;
     try {
-      const response = await fetch(buildApiUrl(`super-admin/dev/goals/${id}/check-ins`), {
-        headers: getAuthHeaders({ "Content-Type": "application/json" }),
-      });
+      const response = await fetch(
+        buildApiUrl(`super-admin/dev/goals/${id}/check-ins`),
+        {
+          headers: getAuthHeaders({ "Content-Type": "application/json" }),
+        },
+      );
       const data = await response.json();
       if (data.success) setCheckIns(data.data);
     } catch (err) {
@@ -167,7 +205,15 @@ const DevGoalDetails: React.FC = () => {
       if (data.success) {
         setShowKRModal(false);
         setEditingKR(null);
-        setKrForm({ title: "", description: "", targetType: "NUMBER", targetValue: 0, currentValue: 0, unit: "", weight: 1 });
+        setKrForm({
+          title: "",
+          description: "",
+          targetType: "NUMBER",
+          targetValue: 0,
+          currentValue: 0,
+          unit: "",
+          weight: 1,
+        });
         fetchGoal();
       }
     } catch (err) {
@@ -178,10 +224,13 @@ const DevGoalDetails: React.FC = () => {
   const handleDeleteKR = async (krId: string) => {
     if (!confirm("هل أنت متأكد من حذف هذه النتيجة الرئيسية؟")) return;
     try {
-      const response = await fetch(buildApiUrl(`super-admin/dev/goals/key-results/${krId}`), {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
+      const response = await fetch(
+        buildApiUrl(`super-admin/dev/goals/key-results/${krId}`),
+        {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+        },
+      );
       const data = await response.json();
       if (data.success) fetchGoal();
     } catch (err) {
@@ -192,15 +241,28 @@ const DevGoalDetails: React.FC = () => {
   const handleAddCheckIn = async () => {
     if (!id || !checkInForm.content.trim()) return;
     try {
-      const response = await fetch(buildApiUrl("super-admin/dev/goals/check-ins"), {
-        method: "POST",
-        headers: getAuthHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({ ...checkInForm, goalId: id, memberId: goal?.owner?.id }),
-      });
+      const response = await fetch(
+        buildApiUrl("super-admin/dev/goals/check-ins"),
+        {
+          method: "POST",
+          headers: getAuthHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({
+            ...checkInForm,
+            goalId: id,
+            memberId: goal?.owner?.id,
+          }),
+        },
+      );
       const data = await response.json();
       if (data.success) {
         setShowCheckInModal(false);
-        setCheckInForm({ content: "", confidence: "ON_TRACK", progressValue: 0, blockers: "", keyResultId: "" });
+        setCheckInForm({
+          content: "",
+          confidence: "ON_TRACK",
+          progressValue: 0,
+          blockers: "",
+          keyResultId: "",
+        });
         fetchCheckIns();
         fetchGoal();
       }
@@ -209,36 +271,31 @@ const DevGoalDetails: React.FC = () => {
     }
   };
 
-  const handleUpdateKRProgress = async (krId: string, currentValue: number) => {
-    try {
-      const response = await fetch(buildApiUrl(`super-admin/dev/goals/key-results/${krId}`), {
-        method: "PUT",
-        headers: getAuthHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({ currentValue }),
-      });
-      const data = await response.json();
-      if (data.success) fetchGoal();
-    } catch (err) {
-      alert(i18n.t("DevGoalDetails.failed_update_f56b"));
-    }
-  };
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+          <RefreshCw className="size-4 animate-spin text-primary" />
+          <span>جاري تحميل تفاصيل الهدف ومؤشرات الإنجاز...</span>
+        </div>
       </div>
     );
   }
 
   if (!goal) {
     return (
-      <div className="text-center py-8">
-        <FlagIcon className="h-10 w-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">الهدف غير موجود</h3>
-        <button onClick={() => navigate("/super-admin/dev-goals")} className="mt-3 text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
-          العودة للأهداف
-        </button>
+      <div className="p-8 max-w-md mx-auto rounded-xl border border-border/80 bg-card text-center my-12 shadow-2xs">
+        <Target className="size-10 text-muted-foreground/40 mx-auto mb-3" />
+        <h3 className="text-base font-semibold text-foreground mb-1">الهدف غير موجود</h3>
+        <p className="text-xs text-muted-foreground mb-4">قد يكون تم حذفه أو ليس لديك صلاحية للوصول إليه.</p>
+        <Button
+          onClick={() => navigate("/super-admin/dev-goals")}
+          variant="outline"
+          size="sm"
+          className="text-xs"
+        >
+          العودة لقائمة الأهداف
+        </Button>
       </div>
     );
   }
@@ -247,467 +304,658 @@ const DevGoalDetails: React.FC = () => {
   const confidenceInfo = goal.confidence ? confidenceConfig[goal.confidence] : null;
 
   return (
-    <div className="space-y-6" dir={i18n.dir()}>
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={() => navigate("/super-admin/dev-goals")}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400"
-        >
-          <ArrowRightIcon className="h-5 w-5" />
-        </button>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
-              {statusInfo.label}
-            </span>
-            {confidenceInfo && (
-              <span className="flex items-center gap-1 text-xs">
-                <span className={`w-2 h-2 rounded-full ${confidenceInfo.bg}`} />
-                {confidenceInfo.label}
+    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto" dir={i18n.dir()}>
+      {/* Linear Unified Control Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/super-admin/dev-goals")}
+            className="size-9 rounded-lg border border-border/80 bg-card text-foreground shadow-2xs hover:bg-muted/40"
+            title="رجوع"
+          >
+            <ArrowRight className="size-4 rtl:rotate-180" />
+          </Button>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
+                {goal.title}
+              </h1>
+              <span
+                className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium border ${statusInfo.color} ${statusInfo.border}`}
+              >
+                {statusInfo.label}
               </span>
+              {confidenceInfo && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-muted/60 text-muted-foreground border border-border/60">
+                  <span className={`size-1.5 rounded-full ${confidenceInfo.dot}`} />
+                  {confidenceInfo.label}
+                </span>
+              )}
+            </div>
+            {goal.description && (
+              <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl">
+                {goal.description}
+              </p>
             )}
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{goal.title}</h1>
-          {goal.description && (
-            <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">{goal.description}</p>
-          )}
         </div>
-        <div className="text-left">
-          <div className="text-2xl sm:text-3xl font-bold tabular-nums text-indigo-600 dark:text-indigo-400">{goal.progress}%</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">التقدم</div>
+
+        <div className="flex items-center gap-3 self-end sm:self-auto">
+          <div className="text-left font-mono">
+            <div className="text-2xl font-bold tracking-tight text-primary tabular-nums">
+              {goal.progress}%
+            </div>
+            <div className="text-[10px] text-muted-foreground font-sans">نسبة الإنجاز</div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/super-admin/dev-goals/${goal.id}/edit`)}
+            className="h-8 text-xs font-medium gap-1.5 shadow-2xs active:scale-[0.98] transition-transform"
+          >
+            <Pencil className="size-3.5" />
+            <span>تعديل الهدف</span>
+          </Button>
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
+      {/* Progress & Milestone Ribbon */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card p-3.5 shadow-2xs">
+        <div className="flex justify-between items-center text-xs mb-1.5 font-mono">
+          <span className="text-muted-foreground font-sans">
+            الهدف:{" "}
+            <strong className="text-foreground font-mono">
+              {goal.currentValue} / {goal.targetValue}
+              {goal.unit ? ` ${goal.unit}` : ""}
+            </strong>
+          </span>
+          <span className="text-muted-foreground text-[11px]">
+            {new Date(goal.startDate).toLocaleDateString("ar-EG")} ←{" "}
+            {new Date(goal.endDate).toLocaleDateString("ar-EG")}
+          </span>
+        </div>
+        <div className="w-full bg-muted/60 rounded-full h-2.5 overflow-hidden border border-border/40">
           <div
-            className={`h-4 rounded-full transition-all ${
-              goal.progress >= 80 ? "bg-green-500" : goal.progress >= 50 ? "bg-blue-500" : goal.progress >= 30 ? "bg-yellow-500" : "bg-red-500"
+            className={`h-full rounded-full transition-all ${
+              goal.progress >= 80
+                ? "bg-emerald-500"
+                : goal.progress >= 50
+                ? "bg-primary"
+                : goal.progress >= 30
+                ? "bg-amber-500"
+                : "bg-destructive"
             }`}
-            style={{ width: `${goal.progress}%` }}
+            style={{ width: `${Math.min(goal.progress, 100)}%` }}
           />
         </div>
-        <div className="flex justify-between mt-2 text-sm text-gray-500 dark:text-gray-400">
-          <span>{goal.currentValue} / {goal.targetValue}{goal.unit ? ` ${goal.unit}` : ""}</span>
-          <span>{new Date(goal.startDate).toLocaleDateString("ar-EG")} → {new Date(goal.endDate).toLocaleDateString("ar-EG")}</span>
-        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-700">
-        <div className="flex gap-6">
+      {/* Linear Single-Surface Chassis with Tabs */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+        {/* Tab Headers */}
+        <div className="p-1 sm:p-1.5 border-b border-border/60 bg-muted/20 flex gap-1 overflow-x-auto">
           {[
             { key: "overview", label: "نظرة عامة" },
-            { key: "key-results", label: `النتائج الرئيسية (${goal.keyResults.length})` },
-            { key: "tasks", label: `المهام المرتبطة (${goal.linkedTasks.length})` },
-            { key: "check-ins", label: `المراجعات (${checkIns.length})` },
+            {
+              key: "key-results",
+              label: `النتائج الرئيسية (${goal.keyResults?.length ?? 0})`,
+            },
+            {
+              key: "tasks",
+              label: `المهام المرتبطة (${goal.linkedTasks?.length ?? 0})`,
+            },
+            {
+              key: "check-ins",
+              label: `المراجعات (${checkIns?.length ?? 0})`,
+            },
           ].map((tab) => (
             <button
               key={tab.key}
+              type="button"
               onClick={() => setActiveTab(tab.key as any)}
-              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 ${
                 activeTab === tab.key
-                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  ? "bg-card text-foreground shadow-2xs font-semibold border border-border/60"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
               }`}
             >
               {tab.label}
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Tab Content */}
-      {activeTab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Details */}
-          <div className="lg:col-span-2 space-y-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">تفاصيل الهدف</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">المالك</p>
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{goal.owner?.name || "غير محدد"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">المشروع</p>
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{goal.project?.name || "غير محدد"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">الهدف الأعلى</p>
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{goal.parentGoal?.title || "هدف رئيسي"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">الترم</p>
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{goal.quarter || "غير محدد"}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Child Goals */}
-            {(goal.childGoals?.length ?? 0) > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">الأهداف الفرعية</h3>
-                <div className="space-y-3">
-                  {(goal.childGoals ?? []).map((child) => (
-                    <div
-                      key={child.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-                      onClick={() => navigate(`/super-admin/dev-goals/${child.id}`)}
-                    >
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">{child.title}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{child.type}</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${statusConfig[child.status]?.color || ""}`}>
-                          {statusConfig[child.status]?.label || child.status}
-                        </span>
-                        <span className="font-semibold text-gray-900 dark:text-gray-100">{child.progress}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-4">
-            {/* Stats */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">الإحصائيات</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">النتائج الرئيسية</span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">{goal.keyResults?.length ?? 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">المهام المرتبطة</span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">{goal.linkedTasks?.length ?? 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">الأهداف الفرعية</span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">{goal.childGoals?.length ?? 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">الأولوية</span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">{goal.priority}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Tags */}
-            {goal.tags && goal.tags.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">التصنيفات</h3>
-                <div className="flex flex-wrap gap-2">
-                  {goal.tags.map((tag, idx) => (
-                    <span key={idx} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full text-xs">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Quick Actions */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">إجراءات سريعة</h3>
-              <div className="space-y-2">
-                <button
-                  onClick={() => navigate(`/super-admin/dev-goals/${goal.id}/edit`)}
-                  className="w-full flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm"
-                >
-                  <PencilIcon className="h-4 w-4" />
-                  تعديل الهدف
-                </button>
-                <button
-                  onClick={() => setShowCheckInModal(true)}
-                  className="w-full flex items-center gap-2 px-3 py-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-700 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 text-sm"
-                >
-                  <ChatBubbleLeftIcon className="h-4 w-4" />
-                  إضافة مراجعة
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === "key-results" && (
-        <div className="space-y-4">
-          <div className="flex justify-end">
-            <button
-              onClick={() => { setEditingKR(null); setKrForm({ title: "", description: "", targetType: "NUMBER", targetValue: 0, currentValue: 0, unit: "", weight: 1 }); setShowKRModal(true); }}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-            >
-              <PlusIcon className="h-5 w-5" />
-              نتيجة رئيسية جديدة
-            </button>
-          </div>
-
-          {goal.keyResults.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 text-center">
-              <ChartBarIcon className="h-10 w-10 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">لا توجد نتائج رئيسية بعد</p>
-            </div>
-          ) : (
-            goal.keyResults.map((kr) => {
-              const krProgress = kr.targetValue > 0 ? Math.min((kr.currentValue / kr.targetValue) * 100, 100) : 0;
-              return (
-                <div key={kr.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 dark:text-gray-100">{kr.title}</h4>
-                      {kr.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{kr.description}</p>}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          setEditingKR(kr);
-                          setKrForm({ title: kr.title, description: kr.description || "", targetType: kr.targetType, targetValue: kr.targetValue, currentValue: kr.currentValue, unit: kr.unit || "", weight: kr.weight });
-                          setShowKRModal(true);
-                        }}
-                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-500"
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </button>
-                      <button onClick={() => handleDeleteKR(kr.id)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded text-gray-500 hover:text-red-600">
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1">
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-500 dark:text-gray-400">{kr.currentValue} / {kr.targetValue}{kr.unit ? ` ${kr.unit}` : ""}</span>
-                        <span className="font-semibold text-gray-900 dark:text-gray-100">{Math.round(krProgress)}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full transition-all ${krProgress >= 80 ? "bg-green-500" : krProgress >= 50 ? "bg-blue-500" : "bg-yellow-500"}`}
-                          style={{ width: `${krProgress}%` }}
-                        />
-                      </div>
-                    </div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">وزن: {kr.weight}</span>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      )}
-
-      {activeTab === "tasks" && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-          {(goal.linkedTasks?.length ?? 0) === 0 ? (
-            <div className="p-6 sm:p-8 text-center">
-              <LinkIcon className="h-10 w-10 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">لا توجد مهام مرتبطة بعد</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {(goal.linkedTasks ?? []).map((task) => (
-                <div
-                  key={task.id}
-                  className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                  onClick={() => navigate(`/super-admin/dev-tasks/${task.id}`)}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={`w-2 h-2 rounded-full ${
-                      task.status === "DONE" ? "bg-green-500" :
-                      task.status === "IN_PROGRESS" ? "bg-blue-500" :
-                      task.status === "IN_REVIEW" ? "bg-purple-500" :
-                      "bg-gray-400"
-                    }`} />
-                    <span className="font-medium text-gray-900 dark:text-gray-100">{task.title}</span>
-                  </div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{task.status}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === "check-ins" && (
-        <div className="space-y-4">
-          <div className="flex justify-end">
-            <button
-              onClick={() => setShowCheckInModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
-            >
-              <PlusIcon className="h-4 w-4" />
-              مراجعة جديدة
-            </button>
-          </div>
-
-          {checkIns.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 text-center">
-              <ChatBubbleLeftIcon className="h-10 w-10 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">لا توجد مراجعات بعد</p>
-            </div>
-          ) : (
-            checkIns.map((ci) => (
-              <div key={ci.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                      <UserIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+        {/* Tab Content Body */}
+        <div className="p-4 sm:p-5">
+          {/* OVERVIEW TAB */}
+          {activeTab === "overview" && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              {/* Left Column: Details & Child Goals */}
+              <div className="lg:col-span-2 space-y-4">
+                <div className="rounded-lg border border-border/60 p-4 bg-muted/10">
+                  <h3 className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                    <Target className="size-3.5 text-primary" />
+                    <span>مواصفات وتصنيف الهدف</span>
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground block">المالك</span>
+                      <span className="font-medium text-foreground">
+                        {goal.owner?.name || "غير محدد"}
+                      </span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{ci.member.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(ci.createdAt).toLocaleDateString("ar-EG")}</p>
+                      <span className="text-[10px] text-muted-foreground block">المشروع</span>
+                      <span className="font-medium text-foreground">
+                        {goal.project?.name || "غير محدد"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground block">الهدف الأعلى</span>
+                      <span className="font-medium text-foreground">
+                        {goal.parentGoal?.title || "هدف رئيسي"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground block">الربع السنوي</span>
+                      <span className="font-medium text-foreground font-mono">
+                        {goal.quarter || "غير محدد"}
+                      </span>
                     </div>
                   </div>
-                  {ci.confidence && (
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      ci.confidence === "ON_TRACK" ? "bg-green-100 text-green-700" :
-                      ci.confidence === "AT_RISK" ? "bg-yellow-100 text-yellow-700" :
-                      "bg-red-100 text-red-700"
-                    }`}>
-                      {ci.confidence === "ON_TRACK" ? "على المسار" : ci.confidence === "AT_RISK" ? "في خطر" : "خارج المسار"}
-                    </span>
-                  )}
                 </div>
-                <p className="text-gray-700 dark:text-gray-300 mt-2">{ci.content}</p>
-                {ci.blockers && (
-                  <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded text-sm text-red-700 dark:text-red-400">
-                    <strong>معوقات:</strong> {ci.blockers}
+
+                {/* Child Goals */}
+                {(goal.childGoals?.length ?? 0) > 0 && (
+                  <div className="rounded-lg border border-border/60 p-4 bg-card">
+                    <h3 className="text-xs font-semibold text-foreground mb-3">
+                      الأهداف الفرعية التابعة
+                    </h3>
+                    <div className="space-y-2">
+                      {goal.childGoals.map((child) => (
+                        <div
+                          key={child.id}
+                          className="flex items-center justify-between p-2.5 bg-muted/20 hover:bg-muted/40 border border-border/40 rounded-lg cursor-pointer transition-colors"
+                          onClick={() => navigate(`/super-admin/dev-goals/${child.id}`)}
+                        >
+                          <div>
+                            <p className="font-medium text-xs text-foreground">{child.title}</p>
+                            <p className="text-[10px] text-muted-foreground">{child.type}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-[10px] border ${
+                                statusConfig[child.status]?.color || ""
+                              } ${statusConfig[child.status]?.border || ""}`}
+                            >
+                              {statusConfig[child.status]?.label || child.status}
+                            </span>
+                            <span className="font-mono text-xs font-bold tabular-nums text-foreground">
+                              {child.progress}%
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
-            ))
+
+              {/* Right Column: Telemetry & Tags */}
+              <div className="space-y-4">
+                <div className="rounded-lg border border-border/60 p-4 bg-muted/10">
+                  <h3 className="text-xs font-semibold text-foreground mb-3">
+                    إحصائيات الإنجاز
+                  </h3>
+                  <div className="space-y-2 text-xs divide-y divide-border/40">
+                    <div className="flex justify-between pt-1.5 first:pt-0">
+                      <span className="text-muted-foreground">النتائج الرئيسية</span>
+                      <span className="font-mono font-bold text-foreground">
+                        {goal.keyResults?.length ?? 0}
+                      </span>
+                    </div>
+                    <div className="flex justify-between pt-1.5">
+                      <span className="text-muted-foreground">المهام المرتبطة</span>
+                      <span className="font-mono font-bold text-foreground">
+                        {goal.linkedTasks?.length ?? 0}
+                      </span>
+                    </div>
+                    <div className="flex justify-between pt-1.5">
+                      <span className="text-muted-foreground">الأهداف الفرعية</span>
+                      <span className="font-mono font-bold text-foreground">
+                        {goal.childGoals?.length ?? 0}
+                      </span>
+                    </div>
+                    <div className="flex justify-between pt-1.5">
+                      <span className="text-muted-foreground">الأولوية</span>
+                      <span className="font-medium text-foreground font-mono">
+                        {goal.priority}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {goal.tags && goal.tags.length > 0 && (
+                  <div className="rounded-lg border border-border/60 p-4 bg-card">
+                    <h3 className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                      <Tag className="size-3 text-muted-foreground" />
+                      <span>التصنيفات</span>
+                    </h3>
+                    <div className="flex flex-wrap gap-1.5">
+                      {goal.tags.map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-0.5 bg-muted text-muted-foreground rounded text-[11px] font-mono border border-border/40"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-lg border border-border/60 p-3 bg-card space-y-2">
+                  <Button
+                    onClick={() => setShowCheckInModal(true)}
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs font-medium gap-1.5 text-primary border-primary/30 hover:bg-primary/5 shadow-2xs"
+                  >
+                    <MessageSquare className="size-3.5" />
+                    <span>إضافة مراجعة سريعة (Check-in)</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* KEY RESULTS TAB */}
+          {activeTab === "key-results" && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">
+                  النتائج القابلة للقياس التي تحدد نجاح هذا الهدف
+                </span>
+                <Button
+                  onClick={() => {
+                    setEditingKR(null);
+                    setKrForm({
+                      title: "",
+                      description: "",
+                      targetType: "NUMBER",
+                      targetValue: 0,
+                      currentValue: 0,
+                      unit: "",
+                      weight: 1,
+                    });
+                    setShowKRModal(true);
+                  }}
+                  size="sm"
+                  className="h-8 text-xs font-medium gap-1.5 shadow-2xs"
+                >
+                  <Plus className="size-3.5" />
+                  <span>نتيجة رئيسية جديدة</span>
+                </Button>
+              </div>
+
+              {goal.keyResults.length === 0 ? (
+                <div className="p-8 text-center border border-dashed border-border/80 rounded-lg">
+                  <BarChart3 className="size-8 mx-auto mb-2 text-muted-foreground/40" />
+                  <p className="text-xs text-muted-foreground">لا توجد نتائج رئيسية مضافة بعد</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border/60 border border-border/60 rounded-lg overflow-hidden">
+                  {goal.keyResults.map((kr) => {
+                    const krProgress =
+                      kr.targetValue > 0
+                        ? Math.min((kr.currentValue / kr.targetValue) * 100, 100)
+                        : 0;
+
+                    return (
+                      <div
+                        key={kr.id}
+                        className="p-3.5 bg-card hover:bg-muted/20 transition-colors flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-xs text-foreground truncate">
+                              {kr.title}
+                            </h4>
+                            <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.2 rounded border border-border/40">
+                              وزن: {kr.weight}
+                            </span>
+                          </div>
+                          {kr.description && (
+                            <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                              {kr.description}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-4 shrink-0">
+                          <div className="w-36">
+                            <div className="flex justify-between text-[11px] font-mono mb-1">
+                              <span className="text-muted-foreground">
+                                {kr.currentValue}/{kr.targetValue}
+                                {kr.unit ? ` ${kr.unit}` : ""}
+                              </span>
+                              <span className="font-bold text-foreground">
+                                {Math.round(krProgress)}%
+                              </span>
+                            </div>
+                            <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${
+                                  krProgress >= 80
+                                    ? "bg-emerald-500"
+                                    : krProgress >= 50
+                                    ? "bg-primary"
+                                    : "bg-amber-500"
+                                }`}
+                                style={{ width: `${krProgress}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setEditingKR(kr);
+                                setKrForm({
+                                  title: kr.title,
+                                  description: kr.description || "",
+                                  targetType: kr.targetType,
+                                  targetValue: kr.targetValue,
+                                  currentValue: kr.currentValue,
+                                  unit: kr.unit || "",
+                                  weight: kr.weight,
+                                });
+                                setShowKRModal(true);
+                              }}
+                              className="size-7 text-muted-foreground hover:text-foreground"
+                            >
+                              <Pencil className="size-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteKR(kr.id)}
+                              className="size-7 text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="size-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TASKS TAB */}
+          {activeTab === "tasks" && (
+            <div className="space-y-4">
+              {(goal.linkedTasks?.length ?? 0) === 0 ? (
+                <div className="p-8 text-center border border-dashed border-border/80 rounded-lg">
+                  <Link2 className="size-8 mx-auto mb-2 text-muted-foreground/40" />
+                  <p className="text-xs text-muted-foreground">لا توجد مهام مرتبطة بهذا الهدف</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border/60 border border-border/60 rounded-lg overflow-hidden">
+                  {goal.linkedTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="p-3 bg-card hover:bg-muted/20 transition-colors flex items-center justify-between cursor-pointer"
+                      onClick={() => navigate(`/super-admin/dev-tasks/${task.id}`)}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span
+                          className={`size-2 rounded-full shrink-0 ${
+                            task.status === "DONE"
+                              ? "bg-emerald-500"
+                              : task.status === "IN_PROGRESS"
+                              ? "bg-primary"
+                              : task.status === "IN_REVIEW"
+                              ? "bg-purple-500"
+                              : "bg-muted-foreground/50"
+                          }`}
+                        />
+                        <span className="font-medium text-xs text-foreground truncate">
+                          {task.title}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded border border-border/40">
+                        {task.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* CHECK-INS TAB */}
+          {activeTab === "check-ins" && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">
+                  سجل التحديثات الدورية وملاحظات التقدم
+                </span>
+                <Button
+                  onClick={() => setShowCheckInModal(true)}
+                  size="sm"
+                  className="h-8 text-xs font-medium gap-1.5 shadow-2xs"
+                >
+                  <Plus className="size-3.5" />
+                  <span>مراجعة جديدة</span>
+                </Button>
+              </div>
+
+              {checkIns.length === 0 ? (
+                <div className="p-8 text-center border border-dashed border-border/80 rounded-lg">
+                  <MessageSquare className="size-8 mx-auto mb-2 text-muted-foreground/40" />
+                  <p className="text-xs text-muted-foreground">لا توجد مراجعات مسجلة بعد</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {checkIns.map((ci) => (
+                    <div
+                      key={ci.id}
+                      className="p-3.5 rounded-lg border border-border/60 bg-muted/10 space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="size-6 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center text-xs font-bold">
+                            {ci.member?.name?.charAt(0) || "U"}
+                          </div>
+                          <div>
+                            <span className="font-medium text-xs text-foreground block">
+                              {ci.member?.name}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              {new Date(ci.createdAt).toLocaleDateString("ar-EG")}
+                            </span>
+                          </div>
+                        </div>
+
+                        {ci.confidence && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-card border border-border/60 text-muted-foreground font-mono">
+                            <span
+                              className={`size-1.5 rounded-full ${
+                                confidenceConfig[ci.confidence]?.dot || "bg-primary"
+                              }`}
+                            />
+                            {confidenceConfig[ci.confidence]?.label || ci.confidence}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-foreground leading-relaxed">{ci.content}</p>
+
+                      {ci.blockers && (
+                        <div className="p-2 rounded bg-destructive/5 border border-destructive/20 text-destructive text-[11px]">
+                          <strong>معوقات:</strong> {ci.blockers}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* KR Modal */}
       {showKRModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-lg w-full">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-xl max-w-lg w-full shadow-lg overflow-hidden">
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <h2 className="text-sm font-bold text-foreground">
                 {editingKR ? "تعديل النتيجة الرئيسية" : "نتيجة رئيسية جديدة"}
               </h2>
-              <button onClick={() => { setShowKRModal(false); setEditingKR(null); }} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <XMarkIcon className="h-5 w-5 text-gray-500" />
+              <button
+                onClick={() => {
+                  setShowKRModal(false);
+                  setEditingKR(null);
+                }}
+                className="p-1 text-muted-foreground hover:text-foreground rounded"
+              >
+                <X className="size-4" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-4 space-y-3 text-xs">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان *</label>
+                <label className="block text-muted-foreground mb-1">العنوان</label>
                 <input
-                  type="text"
                   value={krForm.title}
                   onChange={(e) => setKrForm({ ...krForm, title: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="مثال: زيادة عدد العملاء بنسبة 20%"
+                  className="w-full h-8 px-2.5 border border-border rounded-md bg-background text-foreground outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="مثال: خفض زمن الاستجابة إلى 200ms"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-muted-foreground mb-1">الوصف</label>
+                <textarea
+                  value={krForm.description}
+                  onChange={(e) => setKrForm({ ...krForm, description: e.target.value })}
+                  className="w-full h-16 p-2 border border-border rounded-md bg-background text-foreground outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="تفاصيل إضافية..."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">القيمة المستهدفة</label>
+                  <label className="block text-muted-foreground mb-1">القيمة المستهدفة</label>
                   <input
                     type="number"
                     value={krForm.targetValue}
-                    onChange={(e) => setKrForm({ ...krForm, targetValue: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    onChange={(e) =>
+                      setKrForm({ ...krForm, targetValue: Number(e.target.value) })
+                    }
+                    className="w-full h-8 px-2.5 border border-border rounded-md bg-background text-foreground outline-none font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">القيمة الحالية</label>
+                  <label className="block text-muted-foreground mb-1">الوحدة</label>
                   <input
-                    type="number"
-                    value={krForm.currentValue}
-                    onChange={(e) => setKrForm({ ...krForm, currentValue: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الوحدة</label>
-                  <input
-                    type="text"
                     value={krForm.unit}
                     onChange={(e) => setKrForm({ ...krForm, unit: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    placeholder="عميل، ساعة، جنيه..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الوزن</label>
-                  <input
-                    type="number"
-                    value={krForm.weight}
-                    onChange={(e) => setKrForm({ ...krForm, weight: parseInt(e.target.value) || 1 })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    min="1"
-                    max="10"
+                    className="w-full h-8 px-2.5 border border-border rounded-md bg-background text-foreground outline-none"
+                    placeholder="مثال: % أو تذكرة أو يوم"
                   />
                 </div>
               </div>
-              <div className="flex justify-end gap-3 pt-4">
-                <button onClick={() => { setShowKRModal(false); setEditingKR(null); }} className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300">إلغاء</button>
-                <button onClick={handleAddKR} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">{editingKR ? "تحديث" : "إضافة"}</button>
-              </div>
+            </div>
+            <div className="p-3 border-t border-border flex justify-end gap-2 bg-muted/20">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowKRModal(false);
+                  setEditingKR(null);
+                }}
+                className="h-8 text-xs"
+              >
+                إلغاء
+              </Button>
+              <Button onClick={handleAddKR} size="sm" className="h-8 text-xs">
+                حفظ
+              </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Check-in Modal */}
+      {/* Check-In Modal */}
       {showCheckInModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-lg w-full">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">إضافة مراجعة</h2>
-              <button onClick={() => setShowCheckInModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <XMarkIcon className="h-5 w-5 text-gray-500" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-xl max-w-lg w-full shadow-lg overflow-hidden">
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <h2 className="text-sm font-bold text-foreground">إضافة مراجعة (Check-in)</h2>
+              <button
+                onClick={() => setShowCheckInModal(false)}
+                className="p-1 text-muted-foreground hover:text-foreground rounded"
+              >
+                <X className="size-4" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-4 space-y-3 text-xs">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">المحتوى *</label>
+                <label className="block text-muted-foreground mb-1">تفاصيل المراجعة</label>
                 <textarea
                   value={checkInForm.content}
-                  onChange={(e) => setCheckInForm({ ...checkInForm, content: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="كيف التقدم في الهدف؟"
+                  onChange={(e) =>
+                    setCheckInForm({ ...checkInForm, content: e.target.value })
+                  }
+                  className="w-full h-20 p-2 border border-border rounded-md bg-background text-foreground outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="ما الذي تم إنجازه؟"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">مستوى الثقة</label>
-                <select
-                  value={checkInForm.confidence}
-                  onChange={(e) => setCheckInForm({ ...checkInForm, confidence: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                >
-                  <option value="ON_TRACK">على المسار</option>
-                  <option value="AT_RISK">في خطر</option>
-                  <option value="OFF_TRACK">خارج المسار</option>
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-muted-foreground mb-1">مستوى الثقة</label>
+                  <select
+                    value={checkInForm.confidence}
+                    onChange={(e) =>
+                      setCheckInForm({ ...checkInForm, confidence: e.target.value })
+                    }
+                    className="w-full h-8 px-2 border border-border rounded-md bg-background text-foreground outline-none"
+                  >
+                    <option value="ON_TRACK">على المسار</option>
+                    <option value="AT_RISK">في خطر</option>
+                    <option value="OFF_TRACK">خارج المسار</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-muted-foreground mb-1">المعوقات (إن وجدت)</label>
+                  <input
+                    value={checkInForm.blockers}
+                    onChange={(e) =>
+                      setCheckInForm({ ...checkInForm, blockers: e.target.value })
+                    }
+                    className="w-full h-8 px-2.5 border border-border rounded-md bg-background text-foreground outline-none"
+                    placeholder="أي عوائق تعطل الإنجاز..."
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">المعوقات (اختياري)</label>
-                <input
-                  type="text"
-                  value={checkInForm.blockers}
-                  onChange={(e) => setCheckInForm({ ...checkInForm, blockers: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="أي عوائق تواجه العمل؟"
-                />
-              </div>
-              <div className="flex justify-end gap-3 pt-4">
-                <button onClick={() => setShowCheckInModal(false)} className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300">إلغاء</button>
-                <button onClick={handleAddCheckIn} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">إضافة</button>
-              </div>
+            </div>
+            <div className="p-3 border-t border-border flex justify-end gap-2 bg-muted/20">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCheckInModal(false)}
+                className="h-8 text-xs"
+              >
+                إلغاء
+              </Button>
+              <Button onClick={handleAddCheckIn} size="sm" className="h-8 text-xs">
+                حفظ المراجعة
+              </Button>
             </div>
           </div>
         </div>
