@@ -15,7 +15,11 @@ import { useCountUp } from "./csbHooks";
  * الفاتورة التفاعلية: 17 بند بأسعارهم المنفردة، الإجمالي متشطب، والمجموع الجديد 999.
  * كل بند بيتفتح يورّح ميزة الأداة الفعلية.
  */
-export const CsbInvoice: React.FC<{ ctaRef?: React.RefObject<HTMLDivElement | null> }> = ({ ctaRef }) => {
+export const CsbInvoice: React.FC<{
+  ctaRef?: React.RefObject<HTMLDivElement | null>;
+  onTrial?: () => void;
+  onSubscribe?: () => void;
+}> = ({ ctaRef, onTrial, onSubscribe }) => {
   const [openId, setOpenId] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const { ref: oldTotalRef, value: animatedOld } = useCountUp(INDIVIDUAL_TOTAL, 1100);
@@ -40,7 +44,7 @@ export const CsbInvoice: React.FC<{ ctaRef?: React.RefObject<HTMLDivElement | nu
       <div className="csb-receipt" data-testid="csb-invoice">
         <div className="csb-receipt-head">
           <strong>فاتورة اشتراكات المتجر</strong>
-          <span>17 بند · أسعار منفردة شهرية</span>
+          <span>15 أداة مدفوعة + 2 إضافة شاملة ببلاش</span>
         </div>
 
         <div className="csb-receipt-rows">
@@ -103,6 +107,21 @@ export const CsbInvoice: React.FC<{ ctaRef?: React.RefObject<HTMLDivElement | nu
         </div>
 
         <p className="csb-receipt-foot">الأسعار من كتالوج سوق MaxP الرسمي — اضغط على أي بند تعرف بيعمل إيه</p>
+
+        {(onTrial || onSubscribe) && (
+          <div className="csb-receipt-ctas">
+            {onTrial && (
+              <button type="button" className="csb-btn csb-btn-primary csb-btn-sm" onClick={onTrial}>
+                ابدأ التجربة المجانية
+              </button>
+            )}
+            {onSubscribe && (
+              <button type="button" className="csb-btn csb-btn-ghost csb-btn-sm" onClick={onSubscribe}>
+                اشترك الآن
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

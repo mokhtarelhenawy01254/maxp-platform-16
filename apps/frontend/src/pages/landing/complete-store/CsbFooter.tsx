@@ -1,27 +1,46 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { WHATSAPP_CONSULT_URL, ANNUAL_SAVING, csbFmt } from "./csbData";
+import { WHATSAPP_CONSULT_URL, csbFmt } from "./csbData";
 
 interface Props {
-  onPrimary: () => void;
+  onTrial: () => void;
+  onSubscribe: () => void;
+  /** توفير السنة المحسوب من حاسبة المستخدم — null لو لسه ما دخلش رقم */
+  annualSaving: number | null;
 }
 
-export const CsbFooter: React.FC<Props> = ({ onPrimary }) => {
+export const CsbFooter: React.FC<Props> = ({ onTrial, onSubscribe, annualSaving }) => {
+  const headline =
+    annualSaving && annualSaving > 0
+      ? `${csbFmt(annualSaving)} ج.م اللي هتدفعها زيادة في سنة لو فضلت على اشتراكاتك المتفرقة`
+      : "كل شهر تشتغل بأنظمة مفروقة = وقت ضايع وأوردرات بتقع بين الثنوب";
+
+  const sub =
+    annualSaving && annualSaving > 0
+      ? "الرقم ده محسوب من اللي دخّلته في الحاسبة فوق — والتجربة 7 أيام بتفضح كل حاجة قبل ما تدفع."
+      : "اكتب إنفاقك الشهري الحالي في الحاسبة فوق وشوف الفرق على سنة بأرقامك انت — مش بأرقامنا.";
+
   return (
     <>
       <section className="csb-section" style={{ paddingTop: 8 }}>
         <div className="csb-final csb-reveal">
           <div style={{ minWidth: 0 }}>
-            <h2>
-              {csbFmt(ANNUAL_SAVING)} ج.م الفرق لو كملت سنة على اشتراكات متفرقة
-            </h2>
-            <p>
-              أو تبعتها في اشتراك واحد بيجمع متجرك كله. التجربة 7 أيام — والقرار بيرجعلك.
-            </p>
+            <h2>{headline}</h2>
+            <p>{sub}</p>
           </div>
-          <button type="button" className="csb-btn" onClick={onPrimary}>
-            ابدأ التجربة المجانية
-          </button>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button type="button" className="csb-btn" onClick={onTrial}>
+              ابدأ التجربة المجانية
+            </button>
+            <button
+              type="button"
+              onClick={onSubscribe}
+              className="csb-btn"
+              style={{ background: "transparent", color: "#f2f7f2", border: "1px solid rgba(242,247,242,0.5)" }}
+            >
+              اشترك الآن
+            </button>
+          </div>
         </div>
       </section>
 

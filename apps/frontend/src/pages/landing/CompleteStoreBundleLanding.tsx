@@ -5,10 +5,12 @@ import tokenManager from "../../utils/tokenManager";
 
 import { CsbNavbar } from "./complete-store/CsbNavbar";
 import { CsbHero } from "./complete-store/CsbHero";
+import { CsbStats } from "./complete-store/CsbStats";
 import { CsbJourney } from "./complete-store/CsbJourney";
 import { CsbFamilies } from "./complete-store/CsbFamilies";
 import { CsbCalculator } from "./complete-store/CsbCalculator";
 import { CsbCompare } from "./complete-store/CsbCompare";
+import { CsbLead } from "./complete-store/CsbLead";
 import { CsbFaq } from "./complete-store/CsbFaq";
 import { CsbFooter } from "./complete-store/CsbFooter";
 
@@ -19,6 +21,7 @@ import {
   WHATSAPP_CONSULT_URL,
   TRIAL_DAYS,
   BUNDLE_PRICE,
+  INDIVIDUAL_TOTAL,
   csbFmt,
 } from "./complete-store/csbData";
 import { useRevealOnScroll } from "./complete-store/csbHooks";
@@ -28,14 +31,17 @@ export const CompleteStoreBundleLanding: React.FC = () => {
   const navigate = useNavigate();
   const [utm, setUtm] = useState<Record<string, string>>({});
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
+  const [activated, setActivated] = useState(false);
+  const [spend, setSpend] = useState<number>(INDIVIDUAL_TOTAL);
   const rootRef = useRef<HTMLDivElement | null>(null);
   useRevealOnScroll(rootRef);
 
   // ── SEO tags + UTM first-touch ──
   useEffect(() => {
-    const TITLE = "باقة المتجر الكاملة — 17 أداة بـ999 ج.م/شهر بدل 2,936 | MaxP";
+    const TITLE = "باقة المتجر الكاملة — متجرك كله في نظام واحد بـ999 ج.م/شهر | MaxP";
     const DESC =
-      "المتجر + مسار الطلبات + واتساب الأوردرات + الشحن الذكي + المخزون + المرتجعات + تحليلات الأرباح وإسناد الحملات — اشتراك واحد بـ999 ج.م/شهر مع تجربة 7 أيام مجانًا.";
+      "المتجر + واتساب الأوردرات + الشحن الذكي + المخزون + المرتجعات + تحليلات الأرباح وإسناد الحملات — اشتراك واحد بـ999 ج.م/شهر، وتجربة 7 أيام مجانًا من غير كارت.";
     document.title = TITLE;
 
     const metaChanges: Array<{ el: HTMLMetaElement; prev: string | null }> = [];
@@ -75,6 +81,7 @@ export const CompleteStoreBundleLanding: React.FC = () => {
         const stored = sessionStorage.getItem("csb_utm");
         if (stored) setUtm(JSON.parse(stored));
       }
+      if (sessionStorage.getItem("csb_activated") === "1") setActivated(true);
     } catch {
       // ignore
     }
@@ -93,7 +100,7 @@ export const CompleteStoreBundleLanding: React.FC = () => {
 
   const buildRegisterQuery = useCallback(
     (extra: Record<string, string> = {}) => {
-      const parts: string[] = [`landingBundle=${BUNDLE_SLUG}`];
+      const parts: string[] = [`landingBundle=clothing-store-bundle`];
       Object.entries(extra).forEach(([k, v]) => {
         if (v) parts.push(`${k}=${encodeURIComponent(v)}`);
       });
@@ -106,14 +113,56 @@ export const CompleteStoreBundleLanding: React.FC = () => {
     [utm]
   );
 
-  /** CTA الرئيسي: مسجل؟ → كاشير Kashier مباشرة. مش مسجل؟ → تسجيل ورجوع للاندنج. */
-  const handlePrimary = useCallback(async () => {
+  /**
+   * التجربة المجانية — مسار صادق 100%:
+   * مسجل؟ → lp-activate بيفعّل الـ17 أداة تجربة 7 أيام بلا أي دفع.
+   * مش مسجل؟ → تسجيل عادي ورجوع للاندنج (زر التجربة يفضل شغال).
+   */
+  const handleTrial = useCallback(async () => {
     const token = tokenManager.getAccessToken
       ? tokenManager.getAccessToken()
       : tokenManager.getToken?.();
 
     if (!token) {
-      navigate(`/auth/register?${buildRegisterQuery({ source: LANDING_SLUG, action: "paid" })}`);
+      navigate(
+        `/auth/register?${buildRegisterQuery({ source: LANDING_SLUG, action: "free" })}`
+      );
+      return;
+    }
+
+    if (isActivating || activated) return;
+    setIsActivating(true);
+    try {
+      const res = await fetch("/api/v1/platform-subscription/lp-activate", {
+        method: "POST",
+        headers: tokenManager.createAuthHeaders({ "Content-Type": "application/json" }),
+        credentials: "include",
+        body: JSON.stringify({ bundleSlug: BUNDLE_SLUG }),
+      });
+      const data = await res.json();
+      if (data?.success) {
+        sessionStorage.setItem("csb_activated", "1");
+        setActivated(true);
+      } else {
+        alert(data?.message || "تعذر تفعيل التجربة، حاول مرة أخرى.");
+      }
+    } catch {
+      alert("تعذر الاتصال بالخادم، حاول مرة أخرى.");
+    } finally {
+      setIsActivating(false);
+    }
+  }, [navigate, buildRegisterQuery, isActivating, activated]);
+
+  /** الاشتراك المدفوع — كاشير Kashier مباشرة، أو تسجيل ورجوع. */
+  const handleSubscribe = useCallback(async () => {
+    const token = tokenManager.getAccessToken
+      ? tokenManager.getAccessToken()
+      : tokenManager.getToken?.();
+
+    if (!token) {
+      navigate(
+        `/auth/register?${buildRegisterQuery({ source: LANDING_SLUG, action: "paid" })}`
+      );
       return;
     }
 
@@ -139,18 +188,37 @@ export const CompleteStoreBundleLanding: React.FC = () => {
     }
   }, [navigate, buildRegisterQuery, utm, isCheckingOut]);
 
+  const annualSaving = Math.max(0, Math.round(spend) - BUNDLE_PRICE) * 12;
+
   return (
     <div className="csb-root" dir="rtl" ref={rootRef}>
-      <CsbNavbar onTrial={handlePrimary} />
+      <CsbNavbar onTrial={handleTrial} activated={activated} />
 
       <main>
-        <CsbHero onPrimary={handlePrimary} />
+        {activated && (
+          <div className="csb-activated-banner" role="status">
+            الباقة مفعّلة — الـ17 أداة شغالة في تجربة الـ{TRIAL_DAYS} أيام. لوحة متجرك
+            («إدارة المتجر») فيها كل حاجة.
+          </div>
+        )}
+
+        <CsbHero
+          onTrial={handleTrial}
+          onSubscribe={handleSubscribe}
+          isCheckingOut={isCheckingOut}
+        />
+        <CsbStats />
         <CsbJourney />
         <CsbFamilies />
-        <CsbCalculator />
+        <CsbCalculator spend={spend} onSpendChange={setSpend} />
         <CsbCompare />
+        <CsbLead utm={utm} />
         <CsbFaq />
-        <CsbFooter onPrimary={handlePrimary} />
+        <CsbFooter
+          onTrial={handleTrial}
+          onSubscribe={handleSubscribe}
+          annualSaving={annualSaving}
+        />
       </main>
 
       {/* الشريط اللاصق موبايل */}
@@ -159,7 +227,7 @@ export const CompleteStoreBundleLanding: React.FC = () => {
           <b>
             {csbFmt(BUNDLE_PRICE)} ج.م/شهر — 17 أداة
           </b>
-          بدل 2,936 · تجربة {TRIAL_DAYS} أيام
+          تجربة {TRIAL_DAYS} أيام من غير كارت
         </div>
         <div style={{ display: "flex", gap: 6, flex: "none" }}>
           <a
@@ -174,7 +242,7 @@ export const CompleteStoreBundleLanding: React.FC = () => {
           </a>
           <button
             type="button"
-            onClick={handlePrimary}
+            onClick={handleTrial}
             className="csb-btn csb-btn-primary csb-btn-sm"
             style={{ minHeight: 38 }}
           >

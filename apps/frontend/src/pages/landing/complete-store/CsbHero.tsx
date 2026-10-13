@@ -1,46 +1,47 @@
 import React from "react";
-import { Check, MessageCircle, ArrowLeft } from "lucide-react";
-import { TRIAL_DAYS, MONTHLY_SAVING, WHATSAPP_CONSULT_URL, csbFmt } from "./csbData";
+import { Check, MessageCircle, ArrowLeft, CreditCard } from "lucide-react";
+import { TRIAL_DAYS, PRICE_PER_DAY, WHATSAPP_CONSULT_URL, csbFmt, INDIVIDUAL_TOTAL } from "./csbData";
 import { CsbInvoice } from "./CsbInvoice";
 
 interface Props {
-  onPrimary: () => void;
+  onTrial: () => void;
+  onSubscribe: () => void;
+  isCheckingOut: boolean;
 }
 
-export const CsbHero: React.FC<Props> = ({ onPrimary }) => {
+export const CsbHero: React.FC<Props> = ({ onTrial, onSubscribe, isCheckingOut }) => {
   return (
     <header className="csb-hero">
       <div className="csb-hero-copy">
         <span className="csb-kicker">
           <i aria-hidden="true" />
-          باقة المتجر الكاملة — 17 أداة في اشتراك واحد
+          باقة المتجر الكاملة — نظام واحد لأي متجر أونلاين
         </span>
 
         <h1>
-          اشتراك واحد بـ<span className="csb-h1-green">999 ج.م</span>{" "}
-          بدل <span className="csb-h1-strike">17 اشتراك بـ2,936 ج.م</span>
+          متجرك كله في نظام واحد — <span className="csb-h1-green">999 ج.م</span> في الشهر
         </h1>
 
         <p className="csb-hero-sub">
-          المتجر ومسار الطلبات وواتساب الأوردرات والشحن الذكي والمخزون والمرتجعات
-          وتحليلات الأرباح وإسناد الحملات — كل اللي بيدوّر عليه صاحب المتجر الأونلاين،
-          في نظام واحد. الفاتورة جنبك شمال، افتح أي بند وشوف هو بيعمل إيه فعلًا.
+          من رسالة العميل لحد صافي الربح: المتجر والواتساب والشحن والمخزون والمرتجعات
+          والتحليلات — بـ{PRICE_PER_DAY} ج.م في اليوم تقريبًا، بدل {csbFmt(INDIVIDUAL_TOTAL)} لو
+          اشتريت الأدوات واحدة واحدة.
         </p>
 
         <div className="csb-hero-ctas">
-          <button type="button" className="csb-btn csb-btn-primary" onClick={onPrimary}>
+          <button type="button" className="csb-btn csb-btn-primary" onClick={onTrial}>
             ابدأ {TRIAL_DAYS} أيام مجانًا
             <ArrowLeft size={16} strokeWidth={2.4} />
           </button>
-          <a
-            href={WHATSAPP_CONSULT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
             className="csb-btn csb-btn-ghost"
+            onClick={onSubscribe}
+            disabled={isCheckingOut}
           >
-            <MessageCircle size={16} strokeWidth={2.2} />
-            اسأل قبل ما تشترك
-          </a>
+            <CreditCard size={15} strokeWidth={2.2} />
+            {isCheckingOut ? "بنجهز الدفع…" : "اشترك الآن — 999 ج.م/شهر"}
+          </button>
         </div>
 
         <div className="csb-hero-trust">
@@ -57,13 +58,20 @@ export const CsbHero: React.FC<Props> = ({ onPrimary }) => {
             دفع آمن عبر Kashier
           </span>
           <span>
-            <Check size={13} strokeWidth={3} />
-            توفير موثق {csbFmt(MONTHLY_SAVING)} ج.م شهريًا
+            <MessageCircle size={13} strokeWidth={2.4} />
+            <a
+              href={WHATSAPP_CONSULT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 3 }}
+            >
+              اسأل قبل ما تشترك
+            </a>
           </span>
         </div>
       </div>
 
-      <CsbInvoice />
+      <CsbInvoice onTrial={onTrial} onSubscribe={onSubscribe} />
     </header>
   );
 };

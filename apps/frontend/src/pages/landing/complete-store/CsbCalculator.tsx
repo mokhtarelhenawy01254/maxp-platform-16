@@ -1,11 +1,16 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { BUNDLE_PRICE, INDIVIDUAL_TOTAL, WHATSAPP_CONSULT_URL, csbFmt } from "./csbData";
 
 const CHIPS = [1000, 1500, 2000, 2936];
 
+interface Props {
+  spend: number;
+  onSpendChange: (v: number) => void;
+}
+
 /** حاسبة صادقة: العميل يدخل إنفاقه الشهري الحالي — والفرق بيتحسب قدامه على أساس سنة. */
-export const CsbCalculator: React.FC = () => {
-  const [spend, setSpend] = useState<number>(INDIVIDUAL_TOTAL);
+export const CsbCalculator: React.FC<Props> = ({ spend, onSpendChange }) => {
+  const setSpend = onSpendChange;
 
   const { monthly, annual, below } = useMemo(() => {
     const diff = Math.max(0, Math.round(spend) - BUNDLE_PRICE);

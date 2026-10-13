@@ -1142,6 +1142,95 @@
   background: #fff;
 }
 
+/* شريط أرقام المنصة */
+.csb-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--csb-line);
+  border-bottom: 1px solid var(--csb-line);
+}
+
+.csb-stat {
+  padding: 22px 20px;
+  border-left: 1px solid var(--csb-line-soft);
+  display: grid;
+  gap: 4px;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.csb-stat:last-child {
+  border-left: 0;
+}
+
+.csb-stat strong {
+  font-size: clamp(26px, 3.4vw, 38px);
+  font-weight: 800;
+  color: var(--csb-ink);
+  letter-spacing: -0.01em;
+}
+
+.csb-stat span {
+  font-size: 12.5px;
+  color: var(--csb-ink-soft);
+}
+
+.csb-stats-date {
+  text-align: center;
+  font-size: 10.5px;
+  color: var(--csb-ink-soft);
+  margin: 10px 0 0;
+}
+
+/* بانر التفعيل الناجح */
+.csb-activated-banner {
+  max-width: 1120px;
+  margin: 14px auto 0;
+  padding: 12px 18px;
+  background: var(--csb-green-soft);
+  border: 1px solid rgba(14, 92, 63, 0.3);
+  border-radius: 10px;
+  color: var(--csb-green);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* أزرار تحت الفاتورة */
+.csb-receipt-ctas {
+  display: flex;
+  gap: 8px;
+  padding: 0 30px 20px;
+}
+
+.csb-receipt-ctas .csb-btn {
+  flex: 1;
+}
+
+/* فورم الـLeads */
+.csb-lead-grid {
+  grid-template-columns: 7fr 5fr;
+}
+
+.csb-lead-input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--csb-line);
+  border-radius: 10px;
+  background: var(--csb-paper);
+  padding: 0 14px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--csb-ink);
+}
+
+.csb-lead-input:focus-visible {
+  outline: none;
+  border-color: var(--csb-green);
+  box-shadow: 0 0 0 3px rgba(14, 92, 63, 0.15);
+}
+
 /* الفوتر */
 .csb-footer {
   border-top: 1px solid var(--csb-line-soft);
@@ -1242,6 +1331,24 @@
 }
 
 @media (max-width: 640px) {
+  .csb-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .csb-stat {
+    border-left: 0;
+    border-top: 1px solid var(--csb-line-soft);
+    padding: 16px 20px;
+  }
+
+  .csb-stat:first-child {
+    border-top: 0;
+  }
+
+  .csb-lead-grid {
+    grid-template-columns: 1fr;
+  }
+
   .csb-compare-row {
     grid-template-columns: 1fr;
   }

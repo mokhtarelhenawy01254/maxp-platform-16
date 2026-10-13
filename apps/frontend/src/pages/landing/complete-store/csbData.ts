@@ -21,6 +21,15 @@ export const MONTHLY_SAVING = INDIVIDUAL_TOTAL - BUNDLE_PRICE; // 1,937
 export const ANNUAL_SAVING = MONTHLY_SAVING * 12; // 23,244
 export const DISCOUNT_PCT = 66;
 export const TRIAL_DAYS = 7;
+export const PRICE_PER_DAY = Math.round(BUNDLE_PRICE / 30); // ≈33 ج.م/يوم
+
+// أرقام المنصة الحقيقية — من إنتاج (psql) بتاريخ 2026-10-13
+export const PLATFORM_STATS_DATE = "أرقام المنصة حتى 13 أكتوبر 2026";
+export const PLATFORM_STATS = [
+  { value: "101", label: "متجر شغال على MaxP" },
+  { value: "2,775", label: "أوردر اتعالج في آخر 30 يوم" },
+  { value: "17", label: "أداة في باقة واحدة" },
+];
 
 export const OFFICIAL_WHATSAPP_NUMBER = "201123087745";
 export const WHATSAPP_CONSULT_URL = `https://wa.me/${OFFICIAL_WHATSAPP_NUMBER}?text=${encodeURIComponent(
@@ -141,6 +150,10 @@ export const CSB_LINES: CsbLine[] = [
     price: 299,
   },
 ];
+
+// 17 بند = 15 مدفوعة + 2 إضافة شاملة ببلاش (تجهيز الطلبات + بيانات الحملة)
+export const PAID_LINES_COUNT = CSB_LINES.filter((l) => l.price > 0).length; // 15
+export const BONUS_LINES_COUNT = CSB_LINES.length - PAID_LINES_COUNT; // 2
 
 export const CSB_FAMILIES: CsbFamily[] = [
   {
@@ -287,7 +300,15 @@ export const CSB_FAQ: CsbFaqItem[] = [
   },
   {
     q: "أعمل إيه لو كنت بدفع أقل من 999 دلوقتي؟",
-    a: "ساعتها الباقة مش ليك دلوقتي — ولحقك مع نظامين أو تلاتة لحد ما التكلفة المخفية (الوقت والأوردرات الضايعة) توصلها. كلمنا على واتساب ونرشحلك اللي يبدأ بيه.",
+    a: "ساعتها الباقة مش ليك دلوقتي — ولحقك مع نظامين أو تلاتة لحد ما التكلفة المخفية (الوقت والأوردرات الضايعة) توصلها. سيب رقمك في الفورم تحت ونرشحلك اللي يبدأ بيه من غير ما تدفع حاجة مش محتاجها.",
+  },
+  {
+    q: "منتجاتي وأوردراتي القديمة هتنقل إزاي؟",
+    a: "في أدوات استيراد جاهزة جوه المنصة، وفريق الدعم بيمشي معاك في رفع المنتجات وتظبيط الإعدادات خطوة بخطوة — مفيش أي شغل تقني مطلوب منك.",
+  },
+  {
+    q: "إيه اللي بيحصل بعد الـ7 أيام لو مشتركتش؟",
+    a: "أدوات الباقة بتتجمّد مؤقتًا — ومحتوى متجرك وطلباتك وبياناتك بتفضل كلها محفوظة. أول ما تشترك في أي وقت، كل حاجة بترجع شغالة من نفس المكان.",
   },
 ];
 

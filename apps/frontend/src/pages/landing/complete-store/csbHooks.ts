@@ -59,6 +59,13 @@ export function useRevealOnScroll(rootRef: React.RefObject<HTMLElement | null>):
       { threshold: 0.15 }
     );
     targets.forEach((t) => io.observe(t));
-    return () => io.disconnect();
+    // Fallback: مفيش محتوى يفضل مخفي أبدًا لو الـIO فات عنصر (سكرول سريع/قفزات أنكور)
+    const fallback = window.setTimeout(() => {
+      targets.forEach((t) => t.classList.add("csb-in"));
+    }, 4000);
+    return () => {
+      window.clearTimeout(fallback);
+      io.disconnect();
+    };
   }, [rootRef]);
 }

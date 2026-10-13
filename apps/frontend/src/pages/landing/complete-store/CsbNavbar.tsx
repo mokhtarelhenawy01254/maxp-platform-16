@@ -3,9 +3,10 @@ import { Link } from "react-router-dom";
 
 interface Props {
   onTrial: () => void;
+  activated?: boolean;
 }
 
-export const CsbNavbar: React.FC<Props> = ({ onTrial }) => {
+export const CsbNavbar: React.FC<Props> = ({ onTrial, activated }) => {
   return (
     <nav className="csb-nav">
       <div className="csb-nav-inner">
@@ -31,8 +32,12 @@ export const CsbNavbar: React.FC<Props> = ({ onTrial }) => {
           <Link to="/auth/login" className="csb-btn csb-btn-ghost csb-btn-sm">
             دخول
           </Link>
-          <button type="button" className="csb-btn csb-btn-primary csb-btn-sm" onClick={onTrial}>
-            ابدأ مجانًا
+          <button
+            type="button"
+            className={activated ? "csb-btn csb-btn-ghost csb-btn-sm" : "csb-btn csb-btn-primary csb-btn-sm"}
+            onClick={onTrial}
+          >
+            {activated ? "الباقة مفعّلة" : "ابدأ مجانًا"}
           </button>
         </div>
       </div>
