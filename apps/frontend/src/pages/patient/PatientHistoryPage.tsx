@@ -10,7 +10,7 @@ import {
   HeartPulse,
   Pill,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-react";
 
 interface Visit {
@@ -37,7 +37,7 @@ const mockMedicalHistory: Visit[] = [
     doctor: { id: "d1", title: "د.", name: "خالد عبد الرحمن" },
     diagnosis: "التهاب خفيف بجدار المعدة مع عسر هضم وظيفي، ضغط الدم 120/80 مستقر.",
     treatmentPlan: "اتباع حمية غذائية متوازنة وتجنب الأطعمة الحارة والدهنية لمدة 14 يوماً مع متابعة الأعراض.",
-    prescription: "أوميبرازول 20 ملجم (كبسولة قبل الإفطار) + موتيليوم 10 ملجم (قرص قبل الوجبات)."
+    prescription: "أوميبرازول 20 ملجم (كبسولة قبل الإفطار) + موتيليوم 10 ملجم (قرص قبل الوجبات).",
   },
   {
     id: "v-2",
@@ -49,8 +49,8 @@ const mockMedicalHistory: Visit[] = [
     doctor: { id: "d2", title: "د.", name: "إيمان عبد العزيز" },
     diagnosis: "مستوى السكر الصائم 98 mg/dL وتراكمي HbA1c 5.4% ضمن المعدل الطبيعي الممتاز.",
     treatmentPlan: "الاستمرار على ممارسة رياضة المشي يومياً 30 دقيقة وشرب كميات كافية من الماء.",
-    prescription: "مكمل فيتامين د 50000 وحدة دولية (كبسولة أسبوعياً لمدة شهر)."
-  }
+    prescription: "مكمل فيتامين د 50000 وحدة دولية (كبسولة أسبوعياً لمدة شهر).",
+  },
 ];
 
 const PatientHistoryPage: React.FC = () => {
@@ -63,7 +63,7 @@ const PatientHistoryPage: React.FC = () => {
       setRefreshing(true);
       const token = localStorage.getItem("patientToken");
       const res = await fetch("/api/v1/booking/patient-portal/medical-history", {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();
       if (json.success && Array.isArray(json.data) && json.data.length > 0) {
@@ -85,86 +85,95 @@ const PatientHistoryPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[360px] space-y-3">
-        <RefreshCw className="w-8 h-8 text-primary animate-spin" />
-        <p className="text-xs font-mono text-muted-foreground uppercase">جاري تحميل السجل الطبي...</p>
+      <div className="flex min-h-[380px] items-center justify-center rounded-2xl border border-border/70 bg-card">
+        <div className="flex items-center gap-2.5 font-mono text-xs text-muted-foreground">
+          <RefreshCw className="h-4 w-4 animate-spin text-primary" />
+          <span>جاري تحميل السجل الطبي...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 pb-10" dir="rtl">
+    <div className="space-y-6" dir="rtl">
       {/* Telemetry Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-xl border border-border/70 bg-card text-card-foreground shadow-sm">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-5 shadow-xs md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+            <span className="inline-flex items-center rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 font-mono text-[11px] font-semibold text-primary">
               MEDICAL HISTORY
             </span>
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
               سجل سري ومحمي
             </span>
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">تاريخي الطبي والروشتات</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            تاريخي الطبي والروشتات
+          </h1>
           <p className="text-xs text-muted-foreground">
             كشف الزيارات السابقة، تقارير التشخيص، والوصفات الدوائية المعتمدة من الأطباء
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={fetchHistory}
             disabled={refreshing}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border/80 bg-background hover:bg-muted text-foreground transition-all focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-background px-3 py-2 text-xs font-medium text-foreground shadow-xs transition-all hover:bg-muted/40 active:scale-[0.98]"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
             <span>تحديث السجل</span>
           </button>
         </div>
       </div>
 
       {/* KPI Ribbon */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-        <div className="p-4 rounded-xl border border-border/70 bg-card text-card-foreground shadow-sm">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">الزيارات السريرية</span>
-            <HeartPulse className="w-4 h-4 text-primary" />
+            <span className="text-xs font-medium text-muted-foreground">الزيارات السريرية</span>
+            <HeartPulse className="h-4 w-4 text-primary" />
           </div>
-          <div className="text-2xl font-bold font-mono tabular-nums text-foreground mt-2">
+          <div className="mt-2 font-mono text-2xl font-bold tabular-nums text-foreground">
             {visits.length} زيارات
           </div>
+          <div className="mt-1 font-mono text-[11px] text-muted-foreground">موثقة بالعيادة</div>
         </div>
 
-        <div className="p-4 rounded-xl border border-border/70 bg-card text-card-foreground shadow-sm">
+        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">الروشتات الموثقة</span>
-            <Pill className="w-4 h-4 text-emerald-500" />
+            <span className="text-xs font-medium text-muted-foreground">الروشتات الموثقة</span>
+            <Pill className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold font-mono tabular-nums text-foreground mt-2">
+          <div className="mt-2 font-mono text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
             {visits.filter((v) => v.prescription).length} وصفة
           </div>
+          <div className="mt-1 font-mono text-[11px] text-muted-foreground">أدوية معتمدة</div>
         </div>
 
-        <div className="p-4 rounded-xl border border-border/70 bg-card text-card-foreground shadow-sm">
+        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">حالة السجل الطبي</span>
-            <CheckCircle2 className="w-4 h-4 text-blue-500" />
+            <span className="text-xs font-medium text-muted-foreground">حالة السجل الطبي</span>
+            <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </div>
-          <div className="text-sm font-semibold text-foreground mt-2 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          <div className="mt-2 flex items-center gap-2 text-xs font-semibold text-foreground">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
             محدث ومكتمل
           </div>
+          <div className="mt-1 font-mono text-[11px] text-muted-foreground">جاهز للاطلاع</div>
         </div>
       </div>
 
       {/* Visits Timeline Container */}
       <div className="space-y-4">
         {visits.length === 0 ? (
-          <div className="rounded-xl border border-border/70 bg-card p-12 text-center space-y-2 shadow-sm">
-            <FileText className="w-10 h-10 text-muted-foreground mx-auto stroke-1" />
+          <div className="space-y-2 rounded-2xl border border-border/70 bg-card p-12 text-center shadow-xs">
+            <FileText className="mx-auto h-10 w-10 text-muted-foreground stroke-1" />
             <p className="text-sm font-medium text-foreground">لا توجد سجلات طبية مدونة بعد</p>
-            <p className="text-xs text-muted-foreground">سيظهر تقرير الكشف هنا فور اعتماده من الطبيب المعالج</p>
+            <p className="text-xs text-muted-foreground">
+              سيظهر تقرير الكشف هنا فور اعتماده من الطبيب المعالج
+            </p>
           </div>
         ) : (
           visits.map((v) => {
@@ -172,85 +181,89 @@ const PatientHistoryPage: React.FC = () => {
               weekday: "long",
               year: "numeric",
               month: "short",
-              day: "numeric"
+              day: "numeric",
             });
 
             return (
               <div
                 key={v.id}
-                className="rounded-xl border border-border/70 bg-card text-card-foreground shadow-sm p-5 space-y-4 hover:border-border transition-all"
+                className="space-y-4 rounded-2xl border border-border/70 bg-card p-5 text-card-foreground shadow-xs transition-all hover:border-border"
               >
                 {/* Visit Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3.5 border-b border-border/50">
+                <div className="flex flex-col justify-between gap-2 border-b border-border/50 pb-3.5 sm:flex-row sm:items-center">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-foreground">
                         {v.serviceName || "كشف استشاري"}
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-primary/10 text-primary border border-primary/20">
+                      <span className="rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 font-mono text-[11px] font-semibold text-primary">
                         زيارة موثقة
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground pt-0.5">
-                      <span className="flex items-center gap-1 font-mono text-foreground/80">
-                        <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
+                    <div className="flex flex-wrap items-center gap-3 pt-0.5 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1 font-mono text-foreground">
+                        <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
                         {dateStr}
                       </span>
                       <span>•</span>
-                      <span className="flex items-center gap-1 font-mono text-foreground/80">
-                        <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="flex items-center gap-1 font-mono text-foreground">
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                         {v.startTime}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground self-start sm:self-center">
+                  <div className="flex flex-wrap items-center gap-3 self-start text-xs text-muted-foreground sm:self-center">
                     <span className="flex items-center gap-1">
-                      <User className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span>{v.doctor ? `${v.doctor.title || ""} ${v.doctor.name || ""}` : "طبيب العيادة"}</span>
+                      <User className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>
+                        {v.doctor
+                          ? `${v.doctor.title || ""} ${v.doctor.name || ""}`
+                          : "طبيب العيادة"}
+                      </span>
                     </span>
                     <span>•</span>
                     <span className="flex items-center gap-1">
-                      <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+                      <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                       <span>{v.branch?.name || "الفرع الرئيسي"}</span>
                     </span>
                   </div>
                 </div>
 
                 {/* Clinical Notes Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs">
+                <div className="grid grid-cols-1 gap-3.5 text-xs md:grid-cols-3">
                   {v.diagnosis && (
-                    <div className="p-3.5 rounded-lg border border-border/60 bg-muted/20 space-y-1.5">
-                      <div className="font-semibold text-foreground flex items-center gap-1.5">
-                        <Activity className="w-3.5 h-3.5 text-primary" />
+                    <div className="space-y-1.5 rounded-xl border border-border/60 bg-muted/20 p-3.5">
+                      <div className="flex items-center gap-1.5 font-semibold text-foreground">
+                        <Activity className="h-3.5 w-3.5 text-primary" />
                         <span>التشخيص الطبي</span>
                       </div>
-                      <p className="text-muted-foreground leading-relaxed">
+                      <p className="leading-relaxed text-muted-foreground">
                         {v.diagnosis}
                       </p>
                     </div>
                   )}
 
                   {v.treatmentPlan && (
-                    <div className="p-3.5 rounded-lg border border-border/60 bg-muted/20 space-y-1.5">
-                      <div className="font-semibold text-foreground flex items-center gap-1.5">
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <div className="space-y-1.5 rounded-xl border border-border/60 bg-muted/20 p-3.5">
+                      <div className="flex items-center gap-1.5 font-semibold text-foreground">
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                         <span>خطة العلاج والإرشادات</span>
                       </div>
-                      <p className="text-muted-foreground leading-relaxed">
+                      <p className="leading-relaxed text-muted-foreground">
                         {v.treatmentPlan}
                       </p>
                     </div>
                   )}
 
                   {v.prescription && (
-                    <div className="p-3.5 rounded-lg border border-border/60 bg-muted/20 space-y-1.5">
-                      <div className="font-semibold text-foreground flex items-center gap-1.5">
-                        <Pill className="w-3.5 h-3.5 text-blue-600" />
+                    <div className="space-y-1.5 rounded-xl border border-border/60 bg-muted/20 p-3.5">
+                      <div className="flex items-center gap-1.5 font-semibold text-foreground">
+                        <Pill className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                         <span>الوصفة الدوائية (الروشتة)</span>
                       </div>
-                      <p className="text-muted-foreground leading-relaxed font-mono">
+                      <p className="font-mono leading-relaxed text-muted-foreground">
                         {v.prescription}
                       </p>
                     </div>

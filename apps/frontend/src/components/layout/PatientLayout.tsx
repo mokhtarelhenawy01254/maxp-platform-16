@@ -1,7 +1,16 @@
 import React from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
-  CalendarDays, Wallet, LayoutDashboard, LogOut, Menu, X, User, HeartPulse, ClipboardList
+  CalendarDays,
+  Wallet,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  X,
+  User,
+  HeartPulse,
+  ClipboardList,
+  ChevronLeft,
 } from "lucide-react";
 
 interface PatientLayoutProps {
@@ -12,77 +21,133 @@ const PatientLayout: React.FC<PatientLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const patient = JSON.parse(localStorage.getItem('patient') || '{}');
+  const patient = JSON.parse(localStorage.getItem("patient") || "{}");
 
   const navItems = [
-    { path: '/patient/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
-    { path: '/patient/appointments', label: 'مواعيدي', icon: CalendarDays },
-    { path: '/patient/history', label: 'تاريخي الطبي', icon: ClipboardList },
-    { path: '/patient/invoices', label: 'فواتيري', icon: Wallet },
+    { path: "/patient/dashboard", label: "لوحة التحكم", icon: LayoutDashboard },
+    { path: "/patient/appointments", label: "مواعيدي", icon: CalendarDays },
+    { path: "/patient/history", label: "تاريخي الطبي", icon: ClipboardList },
+    { path: "/patient/invoices", label: "فواتيري", icon: Wallet },
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem('patientToken');
-    localStorage.removeItem('patient');
-    navigate('/patient/login', { replace: true });
+    localStorage.removeItem("patientToken");
+    localStorage.removeItem("patient");
+    navigate("/patient/login", { replace: true });
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-gray-50">
-      {/* Mobile header */}
-      <header className="bg-white shadow-sm border-b lg:hidden">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-md hover:bg-gray-100">
-            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-          <Link to="/patient/dashboard" className="text-lg font-bold text-teal-600">بوابة المريض</Link>
-          <div className="w-10" />
-        </div>
+    <div dir="rtl" className="min-h-screen bg-background text-foreground antialiased font-sans">
+      {/* Mobile Header */}
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border/70 bg-card/95 px-4 py-3 backdrop-blur-md lg:hidden">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="rounded-xl border border-border/70 p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground active:scale-95"
+          aria-label="القائمة الجانبية"
+        >
+          {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+        <Link to="/patient/dashboard" className="flex items-center gap-2 text-sm font-bold tracking-tight text-foreground">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+            <HeartPulse size={16} />
+          </div>
+          <span>بوابة المريض</span>
+        </Link>
+        <div className="w-9" />
       </header>
 
       <div className="flex">
-        {/* Sidebar */}
-        <aside className={`${sidebarOpen ? 'block' : 'hidden'} lg:block fixed lg:sticky top-0 right-0 z-40 w-64 h-screen bg-white shadow-lg border-l`}>
-          <div className="p-6 border-b">
-            <Link to="/patient/dashboard" className="text-xl font-bold text-teal-600 block mb-1 flex items-center gap-2"><HeartPulse size={20} />بوابة المريض</Link>
-            <div className="flex items-center gap-2 mt-3 text-sm text-gray-600">
-              <User size={16} />
-              <span>{patient.firstName ? `${patient.firstName} ${patient.lastName || ""}` : 'مريض'}</span>
+        {/* Desktop & Mobile Sidebar Chassis */}
+        <aside
+          className={`${
+            sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
+          } fixed inset-y-0 right-0 z-40 flex w-64 flex-col border-l border-border/70 bg-card transition-transform duration-200 ease-out lg:sticky lg:top-0 lg:h-screen`}
+        >
+          {/* Header & Patient ID Card */}
+          <div className="border-b border-border/60 p-5">
+            <Link
+              to="/patient/dashboard"
+              className="flex items-center gap-2.5 font-bold tracking-tight text-foreground transition-opacity hover:opacity-90"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary shadow-xs">
+                <HeartPulse size={18} />
+              </div>
+              <div>
+                <span className="block text-sm leading-tight">بوابة المريض</span>
+                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Patient Health Portal
+                </span>
+              </div>
+            </Link>
+
+            {/* Patient Profile Telemetry Strip */}
+            <div className="mt-4 rounded-xl border border-border/60 bg-muted/20 p-2.5">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/15 font-mono text-xs font-semibold text-primary">
+                  <User size={14} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-xs font-semibold text-foreground">
+                    {patient.firstName ? `${patient.firstName} ${patient.lastName || ""}` : "ملف المريض"}
+                  </div>
+                  <div className="flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>ملف نشط</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <nav className="p-4 space-y-1">
-            {navItems.map(item => {
+
+          {/* Navigation Links */}
+          <nav className="flex-1 space-y-1 p-3.5">
+            {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname.startsWith(item.path);
               return (
-                <Link key={item.path} to={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                    isActive ? 'bg-teal-50 text-teal-700' : 'text-gray-700 hover:bg-gray-100'
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all ${
+                    isActive
+                      ? "border border-primary/20 bg-primary/10 font-semibold text-primary shadow-xs"
+                      : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                   }`}
-                  onClick={() => setSidebarOpen(false)}>
-                  <Icon size={20} />
-                  {item.label}
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Icon size={16} className={isActive ? "text-primary" : "text-muted-foreground"} />
+                    <span>{item.label}</span>
+                  </div>
+                  {isActive && <ChevronLeft size={14} className="text-primary/70" />}
                 </Link>
               );
             })}
           </nav>
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
-            <button onClick={handleLogout}
-              className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
-              <LogOut size={20} />
-              تسجيل خروج
+
+          {/* Sidebar Footer Logout */}
+          <div className="border-t border-border/60 p-3.5">
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center gap-2.5 rounded-xl border border-border/60 bg-background px-3.5 py-2 text-xs font-medium text-muted-foreground transition-all hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-500/20 active:scale-[0.98]"
+            >
+              <LogOut size={15} />
+              <span>تسجيل الخروج</span>
             </button>
           </div>
         </aside>
 
-        {/* Overlay for mobile */}
+        {/* Mobile Backdrop */}
         {sidebarOpen && (
-          <div className="fixed inset-0 bg-black/30 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
+          <div
+            className="fixed inset-0 z-30 bg-black/40 backdrop-blur-xs lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
         )}
 
-        {/* Main content */}
-        <main className="flex-1 p-4 lg:p-8 min-h-screen">
-          {children}
+        {/* Main Viewport Single-Surface Chassis */}
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>
     </div>
