@@ -55,7 +55,9 @@ import BusinessProfileDialog from '../../components/whatsapp/BusinessProfileDial
 import QuickOrderModal from '../../components/facebook-inbox/Modals/QuickOrderModal';
 import QuickCreateTaskModal from '../../components/facebook-inbox/Modals/QuickCreateTaskModal';
 import ProductImagePickerModal from '../../components/facebook-inbox/ProductImagePicker/ProductImagePickerModal';
+import ImageGalleryModal from '../../components/facebook-inbox/ImageGallery/ImageGalleryModal';
 import CreateServiceOrderModal from '../../components/facebook-inbox/Modals/CreateServiceOrderModal';
+import { buildWhatsAppMediaUrl } from './utils/mediaUrl';
 import { useAuth } from '../../hooks/useAuthSimple';
 
 import ChatSidebar from './components/ChatSidebar';
@@ -450,6 +452,7 @@ const WhatsAppChatContent: React.FC = () => {
   const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);
   const [showServiceOrderModal, setShowServiceOrderModal] = useState(false);
   const [showProductPicker, setShowProductPicker] = useState(false);
+  const [showImageGallery, setShowImageGallery] = useState(false);
   const [quickOrderContact, setQuickOrderContact] = useState<Contact | null>(null);
   const [ordersRefreshToken, setOrdersRefreshToken] = useState(0);
   const [showQuickCreateTaskModal, setShowQuickCreateTaskModal] = useState(false);
@@ -1733,6 +1736,87 @@ const WhatsAppChatContent: React.FC = () => {
     }
   };
 
+  const handleSelectImageFromGallery = useCallback(
+    async (imageUrl: string, filename: string) => {
+      if (!selectedContact) return;
+      const targetSessionId =
+        selectedContact.sessionId ||
+        (selectedSession === 'all' ? null : selectedSession);
+      if (!targetSessionId) {
+        tToast.error("whatsappChat.msg_1f79");
+        return;
+      }
+
+      setShowImageGallery(false);
+      try {
+        const fullUrl = buildWhatsAppMediaUrl(imageUrl);
+        const res = await fetch(fullUrl || imageUrl);
+        const blob = await res.blob();
+        const file = new File([blob], filename || 'gallery_image.jpg', {
+          type: blob.type || 'image/jpeg',
+        });
+        await sendMediaMutation.mutateAsync({
+          sessionId: targetSessionId,
+          to: selectedContact.jid,
+          file,
+          caption: '',
+          userId: user?.id,
+        });
+        toast.success("تم إرسال الصورة بنجاح");
+      } catch (error: unknown) {
+        console.error('Error sending image from gallery:', error);
+        toast.error(getErrorMessage(error, "فشل إرسال الصورة من الحافظة"));
+      }
+    },
+    [selectedContact, selectedSession, user?.id, sendMediaMutation],
+  );
+
+  const handleSelectMultipleImagesFromGallery = useCallback(
+    async (images: Array<{ url: string; filename: string }>) => {
+      if (!selectedContact || images.length === 0) return;
+      const targetSessionId =
+        selectedContact.sessionId ||
+        (selectedSession === 'all' ? null : selectedSession);
+      if (!targetSessionId) {
+        tToast.error("whatsappChat.msg_1f79");
+        return;
+      }
+
+      setShowImageGallery(false);
+      let successCount = 0;
+      for (const image of images) {
+        try {
+          const fullUrl = buildWhatsAppMediaUrl(image.url);
+          const res = await fetch(fullUrl || image.url);
+          const blob = await res.blob();
+          const file = new File([blob], image.filename || 'gallery_image.jpg', {
+            type: blob.type || 'image/jpeg',
+          });
+          await sendMediaMutation.mutateAsync({
+            sessionId: targetSessionId,
+            to: selectedContact.jid,
+            file,
+            caption: '',
+            userId: user?.id,
+          });
+          successCount++;
+          if (images.length > 1) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+        } catch (error: unknown) {
+          console.error('Error sending gallery image:', error);
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`تم إرسال ${successCount} صورة بنجاح`);
+      } else {
+        toast.error("فشل إرسال الصور من الحافظة");
+      }
+    },
+    [selectedContact, selectedSession, user?.id, sendMediaMutation],
+  );
+
 
   const handleClearChat = (contact: Contact) => {
     if (!selectedSession) return;
@@ -2770,6 +2854,7 @@ const WhatsAppChatContent: React.FC = () => {
           onOpenTasks={() => setShowQuickCreateTaskModal(true)}
           onOpenTemplate={handleOpenTemplateDialog}
           onOpenProducts={() => setShowProductPicker(true)}
+          onOpenImageGallery={() => setShowImageGallery(true)}
           onBackToList={() => {
             if (typeof document.startViewTransition === 'function') {
               document.startViewTransition(() => setSelectedContact(null));
@@ -3859,6 +3944,13 @@ const WhatsAppChatContent: React.FC = () => {
         isOpen={showProductPicker}
         onClose={() => setShowProductPicker(false)}
         onSendProduct={handleSendProductImages}
+      />
+
+      <ImageGalleryModal
+        isOpen={showImageGallery}
+        onClose={() => setShowImageGallery(false)}
+        onSelectImage={handleSelectImageFromGallery}
+        onSelectMultipleImages={handleSelectMultipleImagesFromGallery}
       />
 
       <InteractiveButtonsModal

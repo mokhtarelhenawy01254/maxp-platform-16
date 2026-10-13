@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   BarChart3,
+  ImageIcon,
   Info,
   List,
   MapPin,
@@ -81,6 +82,7 @@ interface ChatWindowProps {
   onOpenTasks?: () => void;
   onOpenTemplate?: () => void;
   onOpenProducts?: () => void;
+  onOpenImageGallery?: () => void;
   onBackToList?: () => void;
   onTouchStart?: (e: ReactTouchEvent) => void;
   onTouchEnd?: (e: ReactTouchEvent) => void;
@@ -141,6 +143,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   onOpenTasks,
   onOpenTemplate,
   onOpenProducts,
+  onOpenImageGallery,
   onBackToList,
   onTouchStart,
   onTouchEnd,
@@ -689,6 +692,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     <FileText className="size-4" />
                   </Button>
                 )}
+                {onOpenImageGallery && (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="rounded-full text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400"
+                    onClick={onOpenImageGallery}
+                    title={t("whatsapp.tooltips.imageGallery", "حافظة الصور المحفوظة") as string}
+                  >
+                    <ImageIcon className="size-4" />
+                  </Button>
+                )}
                   </div>
                 </div>
               </>
@@ -710,6 +724,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 }
               }}
             />
+
+            {onOpenImageGallery && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="order-4 rounded-full border-0 text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] hover:bg-[var(--whatsapp-surface-hover)] w-10 h-10 p-0 shrink-0 flex items-center justify-center"
+                onClick={onOpenImageGallery}
+                title={t("whatsapp.tooltips.imageGallery", "حافظة الصور المحفوظة") as string}
+              >
+                <ImageIcon className="size-4" />
+              </Button>
+            )}
 
             {onOpenProducts && (
               <Button

@@ -9335,7 +9335,8 @@
       "attach": "Attach File",
       "emoji": "Emojis",
       "template": "Send Template",
-      "products": "Pick a product from the store and send its image"
+      "products": "Pick a product from the store and send its image",
+      "imageGallery": "Saved Images Vault"
     }
   },
   "whatsappAnalytics": {

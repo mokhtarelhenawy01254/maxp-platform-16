@@ -13,6 +13,7 @@ import { getWhatsAppInboxWorkspaceCopy } from './workspaceCopy';
 import QuickOrderModal from '../../components/facebook-inbox/Modals/QuickOrderModal';
 import QuickCreateTaskModal from '../../components/facebook-inbox/Modals/QuickCreateTaskModal';
 import ProductImagePickerModal from '../../components/facebook-inbox/ProductImagePicker/ProductImagePickerModal';
+import ImageGalleryModal from '../../components/facebook-inbox/ImageGallery/ImageGalleryModal';
 import CreateServiceOrderModal from '../../components/facebook-inbox/Modals/CreateServiceOrderModal';
 
 type ConversationDetail = {
@@ -129,6 +130,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
   const [correctionText, setCorrectionText] = useState('');
   const [showDetailsPanel, setShowDetailsPanel] = useState(false);
   const [showProductPicker, setShowProductPicker] = useState(false);
+  const [showImageGallery, setShowImageGallery] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const currentRole = useMemo(() => {
@@ -291,6 +293,47 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
       await loadConversation();
     } catch (error: any) {
       alert(error.response?.data?.error || error.message || 'فشل إرسال صور المنتج');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSelectImageFromGallery = async (imageUrl: string, filename: string) => {
+    if (!conversationId) return;
+    setSaving(true);
+    setShowImageGallery(false);
+    try {
+      await apiClient.post(`${apiBase}/conversations/${conversationId}/send-existing-image${superAdminMode && companyId ? `?companyId=${companyId}` : ''}`, {
+        imageUrl,
+        filename,
+      });
+      await loadConversation();
+      toast.success("تم إرسال الصورة بنجاح");
+    } catch (error: any) {
+      alert(error.response?.data?.error || error.message || 'فشل إرسال الصورة من الحافظة');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSelectMultipleImagesFromGallery = async (images: Array<{ url: string; filename: string }>) => {
+    if (!conversationId || images.length === 0) return;
+    setSaving(true);
+    setShowImageGallery(false);
+    try {
+      for (const image of images) {
+        await apiClient.post(`${apiBase}/conversations/${conversationId}/send-existing-image${superAdminMode && companyId ? `?companyId=${companyId}` : ''}`, {
+          imageUrl: image.url,
+          filename: image.filename,
+        });
+        if (images.length > 1) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+      }
+      await loadConversation();
+      toast.success(`تم إرسال ${images.length} صورة بنجاح`);
+    } catch (error: any) {
+      alert(error.response?.data?.error || error.message || 'فشل إرسال الصور من الحافظة');
     } finally {
       setSaving(false);
     }
@@ -692,6 +735,15 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
             <div className="flex justify-end gap-2">
               <button
                 type="button"
+                onClick={() => setShowImageGallery(true)}
+                disabled={saving}
+                className="business-icon-button rounded-lg px-3 py-2 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                title="حافظة الصور المحفوظة"
+              >
+                <ImageIcon className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
                 onClick={() => setShowProductPicker(true)}
                 disabled={saving}
                 className="business-icon-button rounded-lg px-3 py-2 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
@@ -1003,6 +1055,13 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
         isOpen={showProductPicker}
         onClose={() => setShowProductPicker(false)}
         onSendProduct={sendProductImages}
+      />
+
+      <ImageGalleryModal
+        isOpen={showImageGallery}
+        onClose={() => setShowImageGallery(false)}
+        onSelectImage={handleSelectImageFromGallery}
+        onSelectMultipleImages={handleSelectMultipleImagesFromGallery}
       />
     </div>
   );
