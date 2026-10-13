@@ -9,6 +9,8 @@ import {
 } from "../components/ui/table";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { toast } from "sonner";
+import { Wallet, CreditCard, ArrowUpRight, ArrowDownLeft, History, RefreshCw, Plus, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { cn } from "../lib/utils";
 
 const CustomerPayments = () => {
   const { t } = useTranslation();
@@ -180,16 +182,55 @@ const CustomerPayments = () => {
   const formatCurrency = (amount) => new Intl.NumberFormat("ar-EG", { style: "currency", currency: "EGP", minimumFractionDigits: 0 }).format(amount);
   const formatDate = (d) => new Date(d).toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
+  const transactionStats = useMemo(() => {
+    const total = transactions.length;
+    const completed = transactions.filter((t) => t.status === "COMPLETED").length;
+    const pending = transactions.filter((t) => t.status === "PENDING").length;
+    return { total, completed, pending };
+  }, [transactions]);
+
   if (loading) return <div className="flex justify-center items-center min-h-[400px]"><LoadingSpinner size="lg" /></div>;
 
   return (
-    <div className="p-3 min-h-screen bg-background transition-colors duration-200">
-      <h1 className="text-2xl font-bold mb-4">{t("billing.payments.title")}</h1>
+    <div className="w-full space-y-4">
+      {/* Linear Taste Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+            <Wallet className="size-4 text-foreground/80" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold tracking-tight text-foreground">
+                {t("billing.payments.title")}
+              </h1>
+              <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] font-mono tabular-nums text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                محفظة الدفع الإلكتروني
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              سجل المعاملات المالية والشحن الفوري عبر بوابات الدفع المعتمدة
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowRechargeModal(true)}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 active:scale-[0.98] transition-all shrink-0 cursor-pointer shadow-xs"
+          >
+            <Plus className="size-3.5" />
+            <span>{t("billing.payments.recharge")}</span>
+          </button>
+        </div>
+      </div>
 
       {marketplaceContext && marketplaceContext.returnUrl && (
-        <div className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-card-foreground flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 sm:p-4 text-card-foreground flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-lg shrink-0">
+            <div className="size-9 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm shrink-0">
               ⚡
             </div>
             <div>
@@ -211,7 +252,7 @@ const CustomerPayments = () => {
                 : `${marketplaceContext.returnUrl}?recharged=true`;
               navigate(target);
             }}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 active:scale-[0.98] transition shrink-0"
           >
             <span>العودة لإكمال التفعيل</span>
             <span dir="ltr">←</span>
@@ -219,55 +260,109 @@ const CustomerPayments = () => {
         </div>
       )}
 
-      {error && <Alert variant="destructive" className="mb-6"><AlertDescription>{error}</AlertDescription></Alert>}
+      {error && <Alert variant="destructive" className="py-2.5"><AlertDescription className="text-xs">{error}</AlertDescription></Alert>}
 
-      {wallet && (
-        <div className="rounded-xl border bg-card text-card-foreground p-4 mb-4">
+      {/* Unified Telemetry Ribbon */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-x-reverse divide-y sm:divide-y-0 divide-border/60 rounded-xl border border-border/60 bg-card overflow-hidden">
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">{t("billing.payments.walletBalance")}</p>
-              <p className="text-2xl font-bold">{toNumber(wallet.balance).toFixed(2)} {t("billing.payments.currency")}</p>
-            </div>
-            <button
-              onClick={() => setShowRechargeModal(true)}
-              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition"
-            >
-              {t("billing.payments.recharge")}
-            </button>
+            <span className="text-[11px] font-medium text-muted-foreground">{t("billing.payments.walletBalance")}</span>
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+              {wallet ? toNumber(wallet.balance).toFixed(2) : "0.00"}{" "}
+              <span className="text-xs font-sans text-muted-foreground font-normal">{t("billing.payments.currency")}</span>
+            </span>
           </div>
         </div>
-      )}
 
-      <div className="rounded-xl border bg-card text-card-foreground">
-        <div className="p-4">
-          <h2 className="text-base font-semibold mb-4">{t("billing.payments.transactionHistory")}</h2>
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">إجمالي المعاملات</span>
+            <span className="size-1.5 rounded-full bg-blue-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+              {transactionStats.total}
+            </span>
+          </div>
+        </div>
+
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">معاملات مكتملة</span>
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">
+              {transactionStats.completed}
+            </span>
+          </div>
+        </div>
+
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">قيد المعالجة</span>
+            <span className="size-1.5 rounded-full bg-amber-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-amber-600 dark:text-amber-400">
+              {transactionStats.pending}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Transaction History Table Chassis */}
+      <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+        <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <History className="size-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-foreground">{t("billing.payments.transactionHistory")}</h2>
+          </div>
+          <span className="text-xs font-mono tabular-nums text-muted-foreground">
+            {transactions.length} سجل
+          </span>
+        </div>
+
+        <div>
           {transactions.length === 0 ? (
-            <Alert><AlertDescription>{t("billing.payments.noTransactions")}</AlertDescription></Alert>
+            <div className="p-8 text-center text-xs text-muted-foreground">
+              {t("billing.payments.noTransactions")}
+            </div>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>{t("billing.payments.description")}</TableHead>
-                  <TableHead>{t("billing.payments.amount")}</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>{t("billing.payments.date")}</TableHead>
+                <TableRow className="border-border/60 hover:bg-transparent">
+                  <TableHead className="text-xs font-medium text-muted-foreground">{t("billing.payments.description")}</TableHead>
+                  <TableHead className="text-xs font-medium text-muted-foreground">{t("billing.payments.amount")}</TableHead>
+                  <TableHead className="text-xs font-medium text-muted-foreground">الحالة</TableHead>
+                  <TableHead className="text-xs font-medium text-muted-foreground text-end">{t("billing.payments.date")}</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="divide-y divide-border/40">
                 {transactions.map((tx) => (
-                  <TableRow key={tx.id}>
-                    <TableCell className="max-w-xs truncate">{tx.description || tx.paymentNumber || "-"}</TableCell>
-                    <TableCell className={`font-bold tabular-nums ${toNumber(tx.amount) >= 0 ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
+                  <TableRow key={tx.id} className="border-border/40 hover:bg-muted/30 transition-colors">
+                    <TableCell className="max-w-xs truncate text-xs font-medium text-foreground">
+                      {tx.description || tx.paymentNumber || "-"}
+                    </TableCell>
+                    <TableCell className={cn(
+                      "font-mono font-bold text-xs tabular-nums",
+                      toNumber(tx.amount) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400"
+                    )}>
                       {toNumber(tx.amount) >= 0 ? "+" : ""}{toNumber(tx.amount).toFixed(2)} {t("billing.payments.currency")}
                     </TableCell>
                     <TableCell>
                       {tx.status === "COMPLETED" ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-mono text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 bg-emerald-500/10">
+                          <span className="size-1.5 rounded-full bg-emerald-500" />
                           مكتملة
                         </span>
                       ) : tx.status === "PENDING" ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-mono text-amber-700 dark:text-amber-400 border border-amber-500/20 bg-amber-500/10">
+                            <span className="size-1.5 rounded-full bg-amber-500" />
                             قيد المعالجة
                           </span>
                           {tx.referenceId && (
@@ -275,19 +370,22 @@ const CustomerPayments = () => {
                               type="button"
                               onClick={() => handleVerifyPending(tx)}
                               disabled={verifyingId === tx.id}
-                              className="text-xs text-primary hover:underline font-medium disabled:opacity-50"
+                              className="text-xs text-primary hover:underline font-mono disabled:opacity-50 cursor-pointer"
                             >
                               {verifyingId === tx.id ? "جاري الفحص..." : "تأكيد الدفع"}
                             </button>
                           )}
                         </div>
                       ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-mono text-rose-700 dark:text-rose-400 border border-rose-500/20 bg-rose-500/10">
+                          <span className="size-1.5 rounded-full bg-rose-500" />
                           {tx.status || "ملغية"}
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{tx.createdAt ? formatDate(tx.createdAt) : t("billing.payments.notSpecified")}</TableCell>
+                    <TableCell className="text-xs font-mono text-muted-foreground tabular-nums text-end">
+                      {tx.createdAt ? formatDate(tx.createdAt) : t("billing.payments.notSpecified")}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -25,6 +25,7 @@ import { useAuth } from "../hooks/useAuthSimple";
 import tokenManager from "../utils/tokenManager";
 import { getApiUrl } from "../config/environment";
 import { exportToExcel } from "../utils/exportHelpers";
+import { cn } from "../lib/utils";
 import {
   BarChart,
   Bar,
@@ -308,21 +309,24 @@ const EmployeeStatsReport = () => {
 
   return (
     <div className="w-full space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-            <BarChart3 className="size-5" />
+      {/* Linear Taste Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+            <BarChart3 className="size-4 text-foreground/80" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">
-              {t("employeeStatsReport.employeePageTitle", "تقارير أداء الموظفين")}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold tracking-tight text-foreground">
+                {t("employeeStatsReport.employeePageTitle", "تقارير أداء الموظفين")}
+              </h1>
+              <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] font-mono tabular-nums text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                {filteredAndSortedStatistics.length} موظف نشط
+              </span>
+            </div>
             <p className="text-xs text-muted-foreground">
-              {t(
-                "employeeStatsReport.employeePageSubtitle",
-                "متابعة دقيقة لإنتاجية فريق خدمة العملاء والمبيعات ومعدلات التحويل عبر القنوات"
-              )}
+              مؤشرات إنتاجية الفريق ومعدلات التحويل وحجم المبيعات
             </p>
           </div>
         </div>
@@ -333,256 +337,219 @@ const EmployeeStatsReport = () => {
             size="sm"
             onClick={handleExport}
             disabled={filteredAndSortedStatistics.length === 0}
-            className="flex items-center gap-2"
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform"
           >
-            <Download className="size-4 text-emerald-600" />
+            <Download className="size-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>{t("employeeStatsReport.export", "تصدير Excel")}</span>
           </Button>
         </div>
       </div>
 
       {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+        <Alert variant="destructive" className="py-2.5">
+          <AlertDescription className="text-xs">{error}</AlertDescription>
         </Alert>
       )}
 
-      {/* Filter Bar */}
-      <Card>
-        <CardContent className="p-3 sm:p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
-            {/* Period Selector */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">
-                {t("employeeStatsReport.periodPlaceholder", "الفترة الزمنية")}
-              </label>
-              <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t("employeeStatsReport.periodPlaceholder", "الفترة")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="today">{t("employeeStatsReport.today", "اليوم")}</SelectItem>
-                  <SelectItem value="yesterday">{t("employeeStatsReport.yesterday", "أمس")}</SelectItem>
-                  <SelectItem value="last7days">{t("employeeStatsReport.last7Days", "آخر 7 أيام")}</SelectItem>
-                  <SelectItem value="last30days">{t("employeeStatsReport.last30Days", "آخر 30 يوم")}</SelectItem>
-                  <SelectItem value="thisMonth">{t("employeeStatsReport.thisMonth", "الشهر الحالي")}</SelectItem>
-                  <SelectItem value="lastMonth">{t("employeeStatsReport.lastMonth", "الشهر السابق")}</SelectItem>
-                  <SelectItem value="all">{t("employeeStatsReport.allTime", "كل الأوقات")}</SelectItem>
-                  <SelectItem value="custom">{t("employeeStatsReport.custom", "فترة مخصصة")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Channel Selector */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                <Filter className="size-3" />
-                <span>القناة</span>
-              </label>
-              <Select value={selectedChannel} onValueChange={setSelectedChannel}>
-                <SelectTrigger>
-                  <SelectValue placeholder="جميع القنوات" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع القنوات</SelectItem>
-                  <SelectItem value="whatsapp">واتساب (WhatsApp)</SelectItem>
-                  <SelectItem value="facebook">فيسبوك (Messenger)</SelectItem>
-                  <SelectItem value="instagram">إنستجرام (Instagram)</SelectItem>
-                  <SelectItem value="telegram">تليجرام (Telegram)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Custom Dates (if selected) */}
-            {selectedPeriod === "custom" && (
-              <>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">من</label>
-                  <Input
-                    type="date"
-                    value={customDates.startDate}
-                    onChange={(e) =>
-                      setCustomDates((p) => ({ ...p, startDate: e.target.value }))
-                    }
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">إلى</label>
-                  <Input
-                    type="date"
-                    value={customDates.endDate}
-                    onChange={(e) =>
-                      setCustomDates((p) => ({ ...p, endDate: e.target.value }))
-                    }
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Search Input */}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                <Search className="size-3" />
-                <span>بحث بالموظف</span>
-              </label>
-              <Input
-                placeholder="ابحث بالاسم أو الإيميل..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-
-            {/* Update / Refresh Button */}
-            <div>
-              <Button
-                onClick={() => {
-                  if (selectedPeriod === "custom") {
-                    handleCustomDateSubmit();
-                  } else {
-                    fetchStatistics();
-                  }
-                }}
-                disabled={loading}
-                className="w-full"
-              >
-                {loading ? <LoadingSpinner size="sm" /> : <BarChart3 className="size-4 me-2" />}
-                {t("employeeStatsReport.updateStats", "تحديث الإحصائيات")}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      {/* Unified Telemetry Ribbon */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 divide-x divide-x-reverse divide-y sm:divide-y-0 divide-border/60 rounded-xl border border-border/60 bg-card overflow-hidden">
         {/* Total Employees */}
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  {t("employeeStatsReport.totalEmployees", "إجمالي الموظفين")}
-                </p>
-                <p className="text-2xl font-bold mt-1 tabular-nums">
-                  {searchTerm.trim() ? filteredAndSortedStatistics.length : activeEmployees.length}
-                </p>
-              </div>
-              <div className="size-9 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center">
-                <User className="size-4" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">فريق العمل</span>
+            <span className="size-1.5 rounded-full bg-blue-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+              {searchTerm.trim() ? filteredAndSortedStatistics.length : activeEmployees.length}
+            </span>
+          </div>
+        </div>
 
         {/* Unique Conversations */}
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  {t("employeeStatsReport.totalConversations", "المحادثات")}
-                </p>
-                <p className="text-2xl font-bold mt-1 text-primary">{totals.uniqueConversations}</p>
-              </div>
-              <div className="size-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                <MessageSquare className="size-4" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">المحادثات</span>
+            <span className="size-1.5 rounded-full bg-indigo-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-primary">
+              {totals.uniqueConversations}
+            </span>
+          </div>
+        </div>
 
         {/* Total Messages Sent */}
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  الرسائل الصادرة
-                </p>
-                <p className="text-2xl font-bold mt-1 text-purple-600 dark:text-purple-400">
-                  {totals.messages}
-                </p>
-              </div>
-              <div className="size-9 rounded-full bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-400 flex items-center justify-center">
-                <Send className="size-4" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">الرسائل</span>
+            <span className="size-1.5 rounded-full bg-purple-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+              {totals.messages}
+            </span>
+          </div>
+        </div>
 
         {/* Total Orders */}
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  {t("employeeStatsReport.totalOrders", "الطلبات المحققة")}
-                </p>
-                <p className="text-2xl font-bold mt-1 text-emerald-600">{totals.orders}</p>
-              </div>
-              <div className="size-9 rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400 flex items-center justify-center">
-                <ShoppingCart className="size-4" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">الطلبات</span>
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">
+              {totals.orders}
+            </span>
+          </div>
+        </div>
 
         {/* Total Pieces */}
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  {t("employeeStatsReport.totalPieces", "إجمالي القطع")}
-                </p>
-                <p className="text-2xl font-bold mt-1 text-teal-600 dark:text-teal-400 tabular-nums">
-                  {totals.pieces?.toLocaleString() || 0}
-                </p>
-              </div>
-              <div className="size-9 rounded-full bg-teal-50 text-teal-600 dark:bg-teal-950/50 dark:text-teal-400 flex items-center justify-center">
-                <Package className="size-4" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">القطع</span>
+            <span className="size-1.5 rounded-full bg-teal-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-teal-600 dark:text-teal-400">
+              {totals.pieces?.toLocaleString() || 0}
+            </span>
+          </div>
+        </div>
 
         {/* Total Revenue */}
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  إجمالي المبيعات
-                </p>
-                <p className="text-2xl font-bold mt-1 text-amber-600 dark:text-amber-400 font-mono">
-                  {totals.revenue.toLocaleString()} ج.م
-                </p>
-              </div>
-              <div className="size-9 rounded-full bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400 flex items-center justify-center">
-                <DollarSign className="size-4" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">المبيعات</span>
+            <span className="size-1.5 rounded-full bg-amber-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-amber-600 dark:text-amber-400">
+              {totals.revenue.toLocaleString()} <span className="text-xs font-sans text-muted-foreground font-normal">ج.م</span>
+            </span>
+          </div>
+        </div>
 
         {/* Avg Conversion Rate */}
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  {t("employeeStatsReport.avgConversionRate", "معدل التحويل")}
-                </p>
-                <p className="text-2xl font-bold mt-1 text-indigo-600 dark:text-indigo-400 font-mono">
-                  {totals.conversion}%
-                </p>
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">التحويل</span>
+            <span className="size-1.5 rounded-full bg-rose-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-indigo-600 dark:text-indigo-400">
+              {totals.conversion}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Streamlined Filter Control Bar */}
+      <div className="rounded-xl border border-border/60 bg-card p-3 sm:p-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 items-end">
+          {/* Period Selector */}
+          <div className="space-y-1">
+            <label className="text-[11px] font-medium text-muted-foreground">
+              {t("employeeStatsReport.periodPlaceholder", "الفترة الزمنية")}
+            </label>
+            <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
+              <SelectTrigger className="h-8 text-xs font-mono">
+                <SelectValue placeholder={t("employeeStatsReport.periodPlaceholder", "الفترة")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">{t("employeeStatsReport.today", "اليوم")}</SelectItem>
+                <SelectItem value="yesterday">{t("employeeStatsReport.yesterday", "أمس")}</SelectItem>
+                <SelectItem value="last7days">{t("employeeStatsReport.last7Days", "آخر 7 أيام")}</SelectItem>
+                <SelectItem value="last30days">{t("employeeStatsReport.last30Days", "آخر 30 يوم")}</SelectItem>
+                <SelectItem value="thisMonth">{t("employeeStatsReport.thisMonth", "الشهر الحالي")}</SelectItem>
+                <SelectItem value="lastMonth">{t("employeeStatsReport.lastMonth", "الشهر السابق")}</SelectItem>
+                <SelectItem value="all">{t("employeeStatsReport.allTime", "كل الأوقات")}</SelectItem>
+                <SelectItem value="custom">{t("employeeStatsReport.custom", "فترة مخصصة")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Channel Selector */}
+          <div className="space-y-1">
+            <label className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+              <Filter className="size-3" />
+              <span>القناة</span>
+            </label>
+            <Select value={selectedChannel} onValueChange={setSelectedChannel}>
+              <SelectTrigger className="h-8 text-xs font-mono">
+                <SelectValue placeholder="جميع القنوات" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">جميع القنوات</SelectItem>
+                <SelectItem value="whatsapp">واتساب (WhatsApp)</SelectItem>
+                <SelectItem value="facebook">فيسبوك (Messenger)</SelectItem>
+                <SelectItem value="instagram">إنستجرام (Instagram)</SelectItem>
+                <SelectItem value="telegram">تليجرام (Telegram)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Custom Dates (if selected) */}
+          {selectedPeriod === "custom" && (
+            <>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-muted-foreground">من</label>
+                <Input
+                  type="date"
+                  className="h-8 text-xs font-mono"
+                  value={customDates.startDate}
+                  onChange={(e) =>
+                    setCustomDates((p) => ({ ...p, startDate: e.target.value }))
+                  }
+                />
               </div>
-              <div className="size-9 rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400 flex items-center justify-center">
-                <TrendingUp className="size-4" />
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-muted-foreground">إلى</label>
+                <Input
+                  type="date"
+                  className="h-8 text-xs font-mono"
+                  value={customDates.endDate}
+                  onChange={(e) =>
+                    setCustomDates((p) => ({ ...p, endDate: e.target.value }))
+                  }
+                />
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </>
+          )}
+
+          {/* Search Input */}
+          <div className="space-y-1">
+            <label className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+              <Search className="size-3" />
+              <span>بحث بالموظف</span>
+            </label>
+            <Input
+              placeholder="ابحث بالاسم أو البريد..."
+              className="h-8 text-xs font-mono"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Update / Refresh Button */}
+          <div>
+            <Button
+              onClick={() => {
+                if (selectedPeriod === "custom") {
+                  handleCustomDateSubmit();
+                } else {
+                  fetchStatistics();
+                }
+              }}
+              disabled={loading}
+              className="w-full h-8 text-xs active:scale-[0.98] transition-transform"
+            >
+              {loading ? <LoadingSpinner size="sm" /> : <BarChart3 className="size-3.5 me-1.5" />}
+              {t("employeeStatsReport.updateStats", "تحديث الإحصائيات")}
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Main Table */}

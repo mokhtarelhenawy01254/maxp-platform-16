@@ -19,6 +19,7 @@ import {
 import { broadcastService, Campaign } from "../../services/broadcastService";
 import { socketService } from "../../services/socketService";
 import { useDateFormat } from "../../hooks/useDateFormat";
+import { cn } from "../../lib/utils";
 
 interface CampaignStats {
   totalCampaigns: number;
@@ -94,15 +95,30 @@ const BroadcastDashboard: React.FC = () => {
   const getStatusColor = (status: Campaign["status"]) => {
     switch (status) {
       case "draft":
-        return "text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700";
+        return "text-muted-foreground border-border/70 bg-muted/40";
       case "scheduled":
-        return "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30";
+        return "text-blue-600 dark:text-blue-400 border-blue-500/20 bg-blue-500/10";
       case "sent":
-        return "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30";
+        return "text-emerald-600 dark:text-emerald-400 border-emerald-500/20 bg-emerald-500/10";
       case "cancelled":
-        return "text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30";
+        return "text-rose-600 dark:text-rose-400 border-rose-500/20 bg-rose-500/10";
       default:
-        return "text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700";
+        return "text-muted-foreground border-border/70 bg-muted/40";
+    }
+  };
+
+  const getStatusDot = (status: Campaign["status"]) => {
+    switch (status) {
+      case "draft":
+        return "bg-slate-400";
+      case "scheduled":
+        return "bg-blue-500";
+      case "sent":
+        return "bg-emerald-500";
+      case "cancelled":
+        return "bg-rose-500";
+      default:
+        return "bg-slate-400";
     }
   };
 
@@ -123,243 +139,217 @@ const BroadcastDashboard: React.FC = () => {
 
   const tabs = [
     { id: "overview", name: "نظرة عامة", icon: ChartBarIcon },
-    { id: "create", name: "إنشاء حملة جديدة", icon: PlusIcon },
+    { id: "create", name: "إنشاء حملة", icon: PlusIcon },
     { id: "scheduled", name: "الحملات المجدولة", icon: CalendarIcon },
-    { id: "analytics", name: "إحصائيات الحملات", icon: ChartBarIcon },
-    { id: "lists", name: "إدارة قوائم العملاء", icon: UserGroupIcon },
-    { id: "settings", name: "إعدادات البرودكاست", icon: Cog6ToothIcon },
+    { id: "analytics", name: "الإحصائيات", icon: ChartBarIcon },
+    { id: "lists", name: "قوائم العملاء", icon: UserGroupIcon },
+    { id: "settings", name: "الإعدادات", icon: Cog6ToothIcon },
   ];
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <MegaphoneIcon className="h-8 w-8 text-indigo-600 ml-3" />
-              <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
+    <div className="w-full space-y-4">
+      {/* Linear Taste Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+            <MegaphoneIcon className="size-4 text-foreground/80" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold tracking-tight text-foreground">
                 لوحة البرودكاست
               </h1>
+              <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] font-mono tabular-nums text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                {stats?.activeCampaigns ?? 0} حملة نشطة
+              </span>
             </div>
-            <div className="flex items-center space-x-4 space-x-reverse">
-              <button className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center">
-                <PlusIcon className="h-5 w-5 ml-2" />
-                حملة جديدة
-              </button>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              إدارة حملات الرسائل الجماعية ومتابعة معدلات الفتح والتفاعل
+            </p>
           </div>
         </div>
-      </div>
 
-      {/* Navigation Tabs */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8 space-x-reverse" aria-label="Tabs">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`${
-                    activeTab === tab.id
-                      ? "border-indigo-500 text-indigo-800 font-black text-gray-900 dark:text-white"
-                      : "border-transparent text-gray-800 hover:text-black font-semibold text-gray-900 dark:text-white hover:border-gray-300"
-                  } whitespace-nowrap py-4 px-1 border-b-2 text-sm flex items-center`}
-                >
-                  <Icon className="h-5 w-5 ml-2" />
-                  {tab.name}
-                </button>
-              );
-            })}
-          </nav>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("create")}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 active:scale-[0.98] transition-all shrink-0 cursor-pointer shadow-xs"
+          >
+            <PlusIcon className="size-3.5" />
+            <span>حملة جديدة</span>
+          </button>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+      {/* Segmented Pill Tabs Navigation */}
+      <div className="flex items-center gap-1 border-b border-border/60 pb-1 overflow-x-auto no-scrollbar">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer active:scale-[0.98]",
+                isActive
+                  ? "bg-muted text-foreground font-semibold shadow-xs border border-border/80"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+              )}
+            >
+              <Icon className="size-3.5" />
+              <span>{tab.name}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tab Content */}
+      <div className="w-full">
         {activeTab === "overview" && (
-          <div className="space-y-6">
-            {/* Stats Cards */}
+          <div className="space-y-4">
+            {/* Unified Telemetry Strip */}
             {stats && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-                  <div className="p-5">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <MegaphoneIcon className="h-6 w-6 text-gray-400 dark:text-gray-500" />
-                      </div>
-                      <div className="mr-5 w-0 flex-1">
-                        <dl>
-                          <dt className="text-sm font-semibold text-gray-700 dark:text-gray-400 truncate">
-                            إجمالي الحملات
-                          </dt>
-                          <dd className="text-2xl font-black text-gray-900 dark:text-white">
-                            {stats.totalCampaigns}
-                          </dd>
-                        </dl>
-                      </div>
-                    </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-x-reverse divide-y sm:divide-y-0 divide-border/60 rounded-xl border border-border/60 bg-card overflow-hidden">
+                <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-muted-foreground">إجمالي الحملات</span>
+                    <span className="size-1.5 rounded-full bg-blue-500" />
+                  </div>
+                  <div className="mt-2">
+                    <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+                      {stats.totalCampaigns}
+                    </span>
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-                  <div className="p-5">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <ClockIcon className="h-6 w-6 text-blue-400 dark:text-blue-500" />
-                      </div>
-                      <div className="mr-5 w-0 flex-1">
-                        <dl>
-                          <dt className="text-sm font-semibold text-gray-700 dark:text-gray-400 truncate">
-                            الحملات النشطة
-                          </dt>
-                          <dd className="text-2xl font-black text-gray-900 dark:text-white">
-                            {stats.activeCampaigns}
-                          </dd>
-                        </dl>
-                      </div>
-                    </div>
+                <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-muted-foreground">حملات نشطة</span>
+                    <span className="size-1.5 rounded-full bg-emerald-500" />
+                  </div>
+                  <div className="mt-2">
+                    <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">
+                      {stats.activeCampaigns}
+                    </span>
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-                  <div className="p-5">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <UserGroupIcon className="h-6 w-6 text-green-400 dark:text-green-500" />
-                      </div>
-                      <div className="mr-5 w-0 flex-1">
-                        <dl>
-                          <dt className="text-sm font-semibold text-gray-700 dark:text-gray-400 truncate">
-                            إجمالي المستلمين
-                          </dt>
-                          <dd className="text-2xl font-black text-gray-900 dark:text-white">
-                            {stats.totalRecipients.toLocaleString()}
-                          </dd>
-                        </dl>
-                      </div>
-                    </div>
+                <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-muted-foreground">إجمالي المستلمين</span>
+                    <span className="size-1.5 rounded-full bg-purple-500" />
+                  </div>
+                  <div className="mt-2">
+                    <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+                      {stats.totalRecipients.toLocaleString()}
+                    </span>
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-                  <div className="p-5">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <EyeIcon className="h-6 w-6 text-indigo-400 dark:text-indigo-500" />
-                      </div>
-                      <div className="mr-5 w-0 flex-1">
-                        <dl>
-                          <dt className="text-sm font-semibold text-gray-700 dark:text-gray-400 truncate">
-                            متوسط معدل الفتح
-                          </dt>
-                          <dd className="text-2xl font-black text-gray-900 dark:text-white">
-                            {stats.averageOpenRate}%
-                          </dd>
-                        </dl>
-                      </div>
-                    </div>
+                <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-muted-foreground">معدل الفتح</span>
+                    <span className="size-1.5 rounded-full bg-indigo-500" />
+                  </div>
+                  <div className="mt-2">
+                    <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-indigo-600 dark:text-indigo-400">
+                      {stats.averageOpenRate}%
+                    </span>
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-                  <div className="p-5">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <ChatBubbleLeftRightIcon className="h-6 w-6 text-purple-400 dark:text-purple-500" />
-                      </div>
-                      <div className="mr-5 w-0 flex-1">
-                        <dl>
-                          <dt className="text-sm font-semibold text-gray-700 dark:text-gray-400 truncate">
-                            متوسط معدل النقر
-                          </dt>
-                          <dd className="text-2xl font-black text-gray-900 dark:text-white">
-                            {stats.averageClickRate}%
-                          </dd>
-                        </dl>
-                      </div>
-                    </div>
+                <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-muted-foreground">معدل النقر</span>
+                    <span className="size-1.5 rounded-full bg-teal-500" />
+                  </div>
+                  <div className="mt-2">
+                    <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-teal-600 dark:text-teal-400">
+                      {stats.averageClickRate}%
+                    </span>
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-                  <div className="p-5">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <ArrowTrendingUpIcon className="h-6 w-6 text-orange-400 dark:text-orange-500" />
-                      </div>
-                      <div className="mr-5 w-0 flex-1">
-                        <dl>
-                          <dt className="text-sm font-semibold text-gray-700 dark:text-gray-400 truncate">
-                            حملات هذا الشهر
-                          </dt>
-                          <dd className="text-2xl font-black text-gray-900 dark:text-white">
-                            {stats.campaignsThisMonth}
-                          </dd>
-                        </dl>
-                      </div>
-                    </div>
+                <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-muted-foreground">حملات هذا الشهر</span>
+                    <span className="size-1.5 rounded-full bg-amber-500" />
+                  </div>
+                  <div className="mt-2">
+                    <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-amber-600 dark:text-amber-400">
+                      {stats.campaignsThisMonth}
+                    </span>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Recent Campaigns */}
-            <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
-              <div className="px-4 py-5 sm:px-6">
-                <h3 className="text-xl font-black text-gray-900 dark:text-white">
-                  الحملات الأخيرة
-                </h3>
-                <p className="text-lg font-bold text-gray-700 dark:text-gray-200">
-                  آخر الحملات التي تم إنشاؤها أو تنفيذها
-                </p>
+            {/* Recent Campaigns Single Chassis */}
+            <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+              <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <MegaphoneIcon className="size-4 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold text-foreground">الحملات الأخيرة</h3>
+                </div>
+                <span className="text-xs font-mono tabular-nums text-muted-foreground">
+                  {campaigns.length} حملة مسجلة
+                </span>
               </div>
-              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                {campaigns.slice(0, 5).map((campaign) => (
-                  <li key={campaign.id}>
-                    <div className="px-4 py-4 sm:px-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0">
-                            <MegaphoneIcon className="h-6 w-6 text-gray-400 dark:text-gray-500" />
+
+              {campaigns.length === 0 ? (
+                <div className="p-8 text-center text-xs text-muted-foreground">
+                  لا توجد حملات مسجلة بعد
+                </div>
+              ) : (
+                <ul className="divide-y divide-border/40">
+                  {campaigns.slice(0, 5).map((campaign) => (
+                    <li key={campaign.id} className="hover:bg-muted/30 transition-colors">
+                      <div className="px-4 py-3 sm:px-4 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="size-8 rounded-lg border border-border/70 bg-muted/40 flex items-center justify-center shrink-0">
+                            <MegaphoneIcon className="size-3.5 text-muted-foreground" />
                           </div>
-                          <div className="mr-4">
-                            <p className="text-base font-semibold text-gray-900 dark:text-white">
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium text-foreground truncate">
                               {campaign.name}
                             </p>
-                            <p className="text-base font-medium text-gray-700 dark:text-gray-200">
-                              {campaign.recipientCount} مستلم •{" "}
-                              {formatDate(campaign.createdAt)}
+                            <p className="text-[11px] font-mono text-muted-foreground tabular-nums">
+                              {campaign.recipientCount} مستلم • {formatDate(campaign.createdAt)}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2 space-x-reverse">
+
+                        <div className="flex items-center gap-2 shrink-0">
                           <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(campaign.status)}`}
+                            className={cn(
+                              "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono border",
+                              getStatusColor(campaign.status)
+                            )}
                           >
+                            <span className={cn("size-1.5 rounded-full", getStatusDot(campaign.status))} />
                             {getStatusText(campaign.status)}
                           </span>
-                          {campaign.openRate && (
-                            <span className="text-base font-semibold text-gray-500 dark:text-gray-400">
+                          {campaign.openRate ? (
+                            <span className="text-xs font-mono tabular-nums text-muted-foreground">
                               {campaign.openRate}% فتح
                             </span>
-                          )}
+                          ) : null}
                         </div>
                       </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         )}

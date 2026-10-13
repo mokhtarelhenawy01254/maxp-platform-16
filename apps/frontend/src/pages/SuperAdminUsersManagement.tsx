@@ -721,170 +721,150 @@ const SuperAdminUsersManagement: React.FC = () => {
   const visibleFrom = totalCount === 0 ? 0 : (page - 1) * limit + 1;
   const visibleTo = totalCount === 0 ? 0 : Math.min(page * limit, totalCount);
 
+  const userStats = useMemo(() => {
+    const active = users.filter((u) => u.isActive).length;
+    const superAdmins = users.filter((u) => u.role === "SUPER_ADMIN").length;
+    return { active, superAdmins };
+  }, [users]);
+
   return (
-    <BusinessPageShell className="space-y-4" dir="rtl">
-      <BusinessPageHero
-        title="إدارة المستخدمين"
-        actions={
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => void fetchUsers()}
-              disabled={loading}
-              title="تحديث"
-            >
-              <RefreshCw className={cn("size-4", loading && "animate-spin")} />
-            </Button>
-            <Button
-              type="button"
-              onClick={openCreateDialog}
-            >
-              <Plus className="size-4" />
-              إضافة مستخدم
-            </Button>
+    <div className="w-full space-y-4" dir="rtl">
+      {/* Linear Taste Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+            <UserRound className="size-4 text-foreground/80" />
           </div>
-        }
-      />
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold tracking-tight text-foreground">
+                إدارة المستخدمين
+              </h1>
+              <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] font-mono tabular-nums text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                {totalCount} مستخدم • صفحة {page} من {Math.max(totalPages, 1)}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              التحكم في حسابات مسؤولي المنصة والصلاحيات وتتبع حالات النشاط
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void fetchUsers()}
+            disabled={loading}
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform"
+          >
+            <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
+            <span>تحديث</span>
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={openCreateDialog}
+            className="h-8 gap-1.5 text-xs font-medium bg-primary text-primary-foreground active:scale-[0.98] transition-transform"
+          >
+            <Plus className="size-3.5" />
+            <span>إضافة مستخدم</span>
+          </Button>
+        </div>
+      </div>
 
       {error ? (
-        <Alert variant="destructive" className="business-page-panel border-0 shadow-none">
+        <Alert variant="destructive" className="py-2.5">
           <AlertTriangle className="size-4" />
-          <AlertTitle>تعذر تحميل الصفحة بشكل كامل</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-          <AlertAction>
-            <Button variant="outline" size="sm" onClick={() => void fetchUsers()}>
-              إعادة المحاولة
-            </Button>
-          </AlertAction>
+          <AlertTitle className="text-xs font-bold">تعذر تحميل البيانات</AlertTitle>
+          <AlertDescription className="text-xs">{error}</AlertDescription>
         </Alert>
       ) : null}
 
-      <BusinessMobileSearchPanel
-        searchId="super-admin-users-search-mobile"
-        searchName="super-admin-users-search-mobile"
-        searchLabel="بحث سريع"
-        searchPlaceholder="ابحث بالاسم أو البريد الإلكتروني"
-        searchValue={searchInput}
-        searchAriaLabel="ابحث في مستخدمي السوبر أدمن"
-        onSearchChange={setSearchInput}
-        onSearchSubmit={applySearch}
-        onOpenFilters={() => setFilterSheetOpen(true)}
-        filterCount={filterCount}
-        summaryIcon={<Users className="size-3.5" />}
-        summary={
-          <span>
-            {totalCount > 0
-              ? `${visibleFrom}-${visibleTo} من ${totalCount} مستخدم`
-              : "لا توجد نتائج حالية"}
-          </span>
-        }
-        activeFilters={activeFilterLabels}
-      />
+      {/* Unified Telemetry Ribbon */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-x-reverse divide-y sm:divide-y-0 divide-border/60 rounded-xl border border-border/60 bg-card overflow-hidden">
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">إجمالي المستخدمين</span>
+            <span className="size-1.5 rounded-full bg-blue-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+              {totalCount}
+            </span>
+          </div>
+        </div>
 
-      <BusinessFilterSheet
-        open={filterSheetOpen}
-        onOpenChange={setFilterSheetOpen}
-        title="فلاتر المستخدمين"
-        description="اختَر الحالة المناسبة ثم طبّق الفلاتر على النتائج."
-        onClear={() => {
-          clearFilters();
-          setFilterSheetOpen(false);
-        }}
-        onApply={() => {
-          applySearch();
-          setFilterSheetOpen(false);
-        }}
-      >
-        <FormField label="بحث سريع" htmlFor="super-admin-users-search-sheet">
-          <Input
-            id="super-admin-users-search-sheet"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="اسم المستخدم أو بريده الإلكتروني"
-            className="h-11 rounded-2xl"
-          />
-        </FormField>
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">حسابات نشطة</span>
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">
+              {userStats.active}
+            </span>
+          </div>
+        </div>
 
-        <FormField label="حالة الحساب">
-          <Select
-            name="super-admin-users-status-filter-sheet"
-            value={filters.isActive || null}
-            onValueChange={(value) => {
-              setPage(1);
-              setFilters((current) => ({
-                ...current,
-                isActive: value || "",
-              }));
-            }}
-          >
-            <SelectLabel className="sr-only">حالة الحساب</SelectLabel>
-            <SelectTrigger aria-label="حالة الحساب" className="h-11 rounded-2xl">
-              <SelectValue placeholder="كل الحالات" />
-            </SelectTrigger>
-            <SelectContent align="end">
-              <SelectItem value={null}>كل الحالات</SelectItem>
-              <SelectItem value="true">الحسابات النشطة</SelectItem>
-              <SelectItem value="false">الحسابات غير النشطة</SelectItem>
-            </SelectContent>
-          </Select>
-        </FormField>
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">مدراء النظام</span>
+            <span className="size-1.5 rounded-full bg-purple-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+              {userStats.superAdmins}
+            </span>
+          </div>
+        </div>
 
-        <FormField label="عدد النتائج لكل صفحة">
-          <Select
-            name="super-admin-users-page-size-sheet"
-            value={String(limit)}
-            onValueChange={(value) => {
-              setLimit(Number(value || "25"));
-              setPage(1);
-            }}
-          >
-            <SelectLabel className="sr-only">عدد النتائج لكل صفحة</SelectLabel>
-            <SelectTrigger aria-label="عدد النتائج لكل صفحة" className="h-11 rounded-2xl">
-              <SelectValue placeholder="عدد النتائج" />
-            </SelectTrigger>
-            <SelectContent align="end">
-              {PAGE_SIZE_OPTIONS.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FormField>
-      </BusinessFilterSheet>
-      
-      <BusinessSectionPanel
-        title="المستخدمون"
-        contentClassName="space-y-4 p-4 md:p-6"
-      >
-        <div className="hidden gap-3 md:grid md:grid-cols-[1fr_auto]">
-          <div className="flex gap-2">
-            <Input
-              id="super-admin-users-search-desktop"
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  applySearch();
-                }
-              }}
-              placeholder="ابحث بالاسم أو البريد الإلكتروني"
-              className="h-11 rounded-2xl"
-            />
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">حد العرض للصفحة</span>
+            <span className="size-1.5 rounded-full bg-amber-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+              {limit} <span className="text-xs font-sans text-muted-foreground font-normal">سجل</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Streamlined Filter Bar & Table Chassis */}
+      <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-border/60 p-3 sm:p-4">
+          <div className="flex flex-1 items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:max-w-xs">
+              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              <Input
+                id="super-admin-users-search-desktop"
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    applySearch();
+                  }
+                }}
+                placeholder="ابحث بالاسم أو البريد..."
+                className="h-8 pr-8 text-xs font-mono"
+              />
+            </div>
             <Button
               type="button"
               variant="outline"
-              className="h-11 rounded-2xl px-4"
+              size="sm"
+              className="h-8 text-xs font-mono active:scale-[0.98]"
               onClick={applySearch}
             >
-              <Search className="size-4" />
               بحث
             </Button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <Select
               name="super-admin-users-status-filter-desktop"
               value={filters.isActive || null}
@@ -896,8 +876,7 @@ const SuperAdminUsersManagement: React.FC = () => {
                 }));
               }}
             >
-              <SelectLabel className="sr-only">حالة الحساب</SelectLabel>
-              <SelectTrigger aria-label="حالة الحساب" className="h-11 rounded-2xl min-w-[140px]">
+              <SelectTrigger aria-label="حالة الحساب" className="h-8 text-xs font-mono min-w-[130px]">
                 <SelectValue placeholder="كل الحالات" />
               </SelectTrigger>
               <SelectContent align="end">
@@ -906,19 +885,23 @@ const SuperAdminUsersManagement: React.FC = () => {
                 <SelectItem value="false">الحسابات غير النشطة</SelectItem>
               </SelectContent>
             </Select>
+
             {filterCount > 0 && (
               <Button
                 type="button"
                 variant="ghost"
-                size="icon"
+                size="icon-sm"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
                 onClick={clearFilters}
                 title="مسح الفلاتر"
               >
-                <X className="size-4" />
+                <X className="size-3.5" />
               </Button>
             )}
           </div>
         </div>
+
+        <div className="p-3 sm:p-4">
 
         {loading && users.length === 0 ? (
           <div className="flex min-h-[18rem] items-center justify-center rounded-[2rem] border border-dashed border-border/70 bg-background/70">
@@ -1141,7 +1124,8 @@ const SuperAdminUsersManagement: React.FC = () => {
             </div>
           </>
         )}
-      </BusinessSectionPanel>
+        </div>
+      </div>
       
       <Dialog open={editorMode !== null} onOpenChange={(open) => !open && closeEditor()}>
         <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-3xl">
@@ -1437,7 +1421,7 @@ const SuperAdminUsersManagement: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </BusinessPageShell>
+    </div>
   );
 };
 

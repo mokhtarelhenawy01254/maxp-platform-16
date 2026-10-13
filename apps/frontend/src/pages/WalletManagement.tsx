@@ -1580,69 +1580,141 @@ const WalletManagement: React.FC = () => {
   };
 
   return (
-    <BusinessPageShell className="space-y-6">
-      <BusinessPageHero
-        eyebrow="SUPER ADMIN • FINANCE"
-        title="إدارة المحافظ والمدفوعات"
-        description={activeTabDescription}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="rounded-full px-3 py-1">
-              {TAB_LABELS[activeTab]}
-            </Badge>
-            <Button type="button" variant="outline" onClick={() => void refreshCurrentTab()}>
-              {loadingState[activeTab] ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <RefreshCw className="size-4" />
-              )}
-              تحديث البيانات
-            </Button>
+    <div className="w-full space-y-4" dir="rtl">
+      {/* Linear Taste Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+            <Landmark className="size-4 text-foreground/80" />
           </div>
-        }
-      />
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold tracking-tight text-foreground">
+                إدارة المحافظ والمدفوعات
+              </h1>
+              <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] font-mono tabular-nums text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                {walletNumbers.filter(w => w.isActive).length} محفظة نشطة
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {activeTabDescription}
+            </p>
+          </div>
+        </div>
 
-      <BusinessMetricsStrip items={metrics} />
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void refreshCurrentTab()}
+            disabled={loadingState[activeTab]}
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform"
+          >
+            {loadingState[activeTab] ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="size-3.5" />
+            )}
+            <span>تحديث البيانات</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Unified Telemetry Ribbon */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-x-reverse divide-y sm:divide-y-0 divide-border/60 rounded-xl border border-border/60 bg-card overflow-hidden">
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">أرقام المحافظ</span>
+            <span className="size-1.5 rounded-full bg-blue-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+              {walletNumbers.length}
+            </span>
+          </div>
+          <p className="mt-0.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
+            {walletNumbers.filter(w => w.isActive).length} نشطة
+          </p>
+        </div>
+
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">المحافظ المفعلة</span>
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">
+              {walletNumbers.filter(w => w.isActive).length}
+            </span>
+          </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">وسائل دفع جاهزة</p>
+        </div>
+
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">الإيصالات المعلقة</span>
+            <span className={cn("size-1.5 rounded-full", pendingReceipts.length > 0 ? "bg-amber-500" : "bg-emerald-500")} />
+          </div>
+          <div className="mt-2">
+            <span className={cn(
+              "text-xl font-bold font-mono tabular-nums tracking-tight",
+              pendingReceipts.length > 0 ? "text-amber-600 dark:text-amber-400" : "text-foreground"
+            )}>
+              {pendingReceipts.length}
+            </span>
+          </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">
+            {pendingReceipts.length > 0 ? "تحتاج اعتمادًا" : "مراجعة مكتملة"}
+          </p>
+        </div>
+
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">أرصدة الشركات</span>
+            <span className="size-1.5 rounded-full bg-purple-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+              {companiesLoaded ? formatCurrency(companyBalanceTotal) : "—"}
+            </span>
+          </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">إجمالي الرصيد المتاح</p>
+        </div>
+      </div>
 
       <Tabs
         value={activeTab}
         onValueChange={(value) => setActiveTab(value as WalletTab)}
-        className="gap-4"
+        className="w-full space-y-4"
       >
-        <TabsList
-          variant="line"
-          className="h-auto w-full justify-start gap-2 overflow-x-auto rounded-none bg-transparent p-0"
-        >
+        <TabsList className="flex items-center gap-1 border-b border-border/60 pb-1 overflow-x-auto no-scrollbar bg-transparent h-auto p-0 justify-start w-full">
           <TabsTrigger
             value="wallets"
-            className="min-w-max rounded-full border border-border/70 bg-background/70 px-4 py-2 data-active:border-primary/40 data-active:bg-primary/10 data-active:text-primary"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:font-semibold data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/80 text-muted-foreground hover:text-foreground"
           >
-            <CreditCard className="size-4" />
-            أرقام المحافظ
+            <CreditCard className="size-3.5" />
+            <span>أرقام المحافظ</span>
           </TabsTrigger>
           <TabsTrigger
             value="receipts"
-            className="min-w-max rounded-full border border-border/70 bg-background/70 px-4 py-2 data-active:border-primary/40 data-active:bg-primary/10 data-active:text-primary"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:font-semibold data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/80 text-muted-foreground hover:text-foreground"
           >
-            <ReceiptText className="size-4" />
-            الإيصالات المعلقة
-            <span
-              className={cn(
-                "rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                pendingReceipts.length > 0
-                  ? "bg-destructive/10 text-destructive"
-                  : "bg-muted text-muted-foreground",
-              )}
-            >
-              {pendingReceipts.length}
-            </span>
+            <ReceiptText className="size-3.5" />
+            <span>الإيصالات المعلقة</span>
+            {pendingReceipts.length > 0 && (
+              <span className="flex size-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-mono text-white">
+                {pendingReceipts.length}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger
             value="companies"
-            className="min-w-max rounded-full border border-border/70 bg-background/70 px-4 py-2 data-active:border-primary/40 data-active:bg-primary/10 data-active:text-primary"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:font-semibold data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/80 text-muted-foreground hover:text-foreground"
           >
-            <Building2 className="size-4" />
-            محافظ الشركات
+            <Building2 className="size-3.5" />
+            <span>محافظ الشركات</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1759,7 +1831,7 @@ const WalletManagement: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </BusinessPageShell>
+    </div>
   );
 };
 

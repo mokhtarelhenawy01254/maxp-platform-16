@@ -730,197 +730,170 @@ export default function SuperAdminCompaniesV2() {
         ) : null}
 
         {/* Main panel */}
-        <Card className="rounded-lg bg-white shadow-sm ring-0 dark:bg-card">
-          <CardHeader className="p-2 pb-0 md:p-3 md:pb-0">
-            <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <div className="flex size-5 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <Building2 className="size-2.5" />
-                  </div>
-                  <Badge variant="outline" className="h-5 rounded-full border-primary/20 bg-primary/5 px-2 text-[11px] font-black uppercase tracking-widest text-primary">
-                    <Sparkles className="ml-1 size-2" /> مركز الإدارة v2
-                  </Badge>
-                  <span className="text-[11px] font-bold text-muted-foreground/50">{formatDate(new Date().toISOString())}</span>
-                </div>
-                <h1 className="text-xl font-black tracking-tight text-foreground md:text-2xl">
-                  إدارة <span className="text-primary">الشركات</span>
-                </h1>
-                <CardDescription className="text-sm text-muted-foreground/60">قاعدة بيانات متكاملة للتحكم في حسابات الشركات وأتمتة المتابعة.</CardDescription>
+        <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+          {/* Linear Header */}
+          <div className="flex flex-col gap-2.5 p-3 sm:p-4 border-b border-border/60 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+                <Building2 className="size-4 text-foreground/80" />
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" variant="outline" className="h-9 rounded-lg border-border/60 px-4 text-[13px] font-black" onClick={handleExport} disabled={!total}>
-                  <Download className="ml-1.5 size-3.5" /> تصدير
-                </Button>
-                <Button type="button" variant="outline" className="h-9 rounded-lg border-border/60 px-4 text-[13px] font-black" onClick={() => refetch()} disabled={isLoading}>
-                  {isLoading ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : <RefreshCw className="ml-1.5 size-3.5" />} تحديث
-                </Button>
-                <Button type="button" className="h-9 rounded-lg bg-primary px-5 text-[13px] font-black shadow-sm md:inline-flex hidden" onClick={handleCreateCompany}>
-                  <Plus className="ml-1.5 size-3.5" /> إضافة شركة
-                </Button>
-                <div className="h-5 w-px bg-border/60" />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "h-9 rounded-lg px-3 text-[13px] font-black transition-all",
-                    filterOpen
-                      ? "bg-primary/10 text-primary border border-primary/20"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted",
-                  )}
-                  onClick={() => setFilterOpen(!filterOpen)}
-                >
-                  <Filter className={cn("ml-1.5 size-3.5 transition-transform", filterOpen && "rotate-180")} />
-                  فلاتر
-                  {filterCount > 0 && (
-                      <span className="mr-1.5 flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-black text-primary-foreground">
-                      {filterCount}
-                    </span>
-                  )}
-                </Button>
-                <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/10 px-4 py-2">
-                  <span className="text-[13px] font-black text-foreground">{total} شركة</span>
-                  <div className="h-4 w-px bg-primary/20" />
-                  <span className="text-[13px] font-bold text-primary">{quickStats.activeCompanies} نشطة</span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg font-bold tracking-tight text-foreground">
+                    إدارة الشركات
+                  </h1>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] font-mono tabular-nums text-muted-foreground">
+                    <span className="size-1.5 rounded-full bg-emerald-500" />
+                    {total} شركة • {quickStats.activeCompanies} نشطة
+                  </span>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  قاعدة بيانات الشركات المشتركة ومتابعة دورة حياة العملاء
+                </p>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="p-2 pt-0 space-y-1.5 md:p-3 md:pt-0">
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform" onClick={handleExport} disabled={!total}>
+                <Download className="size-3.5" />
+                <span>تصدير</span>
+              </Button>
+              <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform" onClick={() => refetch()} disabled={isLoading}>
+                {isLoading ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+                <span>تحديث</span>
+              </Button>
+              <Button type="button" size="sm" className="h-8 gap-1.5 text-xs font-medium bg-primary text-primary-foreground active:scale-[0.98] transition-transform" onClick={handleCreateCompany}>
+                <Plus className="size-3.5" />
+                <span>إضافة شركة</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-8 gap-1.5 text-xs transition-all active:scale-[0.98]",
+                  filterOpen ? "bg-muted text-foreground border-border" : "text-muted-foreground"
+                )}
+                onClick={() => setFilterOpen(!filterOpen)}
+              >
+                <Filter className="size-3.5" />
+                <span>فلاتر</span>
+                {filterCount > 0 && (
+                  <span className="flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-mono text-primary-foreground">
+                    {filterCount}
+                  </span>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          <div className="p-3 sm:p-4 space-y-3">
             {(quickStats.urgentEscalationDue > 0 || quickStats.myDueToday > 0) && (
               <div className="rounded-lg border border-primary/10 bg-primary/5 p-px">
                 <AlertBanner urgentEscalationDue={quickStats.urgentEscalationDue} myDueToday={quickStats.myDueToday} onOpenView={handleOpenView} />
               </div>
             )}
 
-            {/* Cockpit Lifecycle Cards */}
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+            {/* Cockpit Lifecycle Unified Ribbon */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-x-reverse divide-y sm:divide-y-0 divide-border/60 rounded-xl border border-border/60 bg-muted/20 overflow-hidden">
               <button
                 type="button"
                 onClick={handleClearFilters}
                 className={cn(
-                  "group rounded-xl border p-3.5 text-right shadow-2xs transition-all hover:shadow-sm dark:bg-card relative",
-                  savedView === "ALL"
-                    ? "border-primary/60 bg-primary/[0.04] ring-2 ring-primary/40"
-                    : "border-border/40 bg-white hover:border-primary/40 hover:bg-primary/[0.02]"
+                  "p-3 text-right transition-colors cursor-pointer active:scale-[0.99]",
+                  savedView === "ALL" ? "bg-card shadow-xs" : "hover:bg-muted/40"
                 )}
               >
-                <div className="flex items-start justify-between gap-1.5">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Building2 className="size-4" />
-                  </div>
-                  {savedView === "ALL" ? (
-                    <Badge variant="outline" className="rounded-full border-primary/30 bg-primary/10 text-[9px] font-black text-primary px-2 py-0.2">
-                      العرض الحالي
-                    </Badge>
-                  ) : (
-                    <BadgeCheck className="size-3.5 text-emerald-500/60" aria-hidden="true" />
-                  )}
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium text-muted-foreground">كل الشركات</span>
+                  <span className={cn("size-1.5 rounded-full", savedView === "ALL" ? "bg-primary" : "bg-muted-foreground/30")} />
                 </div>
-                <p className="mt-2 text-xl font-black tabular-nums text-foreground">{quickStats.totalCompanies}</p>
-                <p className="text-xs font-bold text-muted-foreground">كل الشركات</p>
-                <p className="mt-0.5 text-[10px] font-bold text-emerald-600">{quickStats.activeCompanies} نشطة</p>
+                <div className="mt-1.5">
+                  <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+                    {quickStats.totalCompanies}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[11px] font-mono text-emerald-600 dark:text-emerald-400">{quickStats.activeCompanies} نشطة</p>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleOpenView("TRIAL")}
                 className={cn(
-                  "group rounded-xl border p-3.5 text-right shadow-2xs transition-all hover:shadow-sm dark:bg-card relative",
-                  savedView === "TRIAL"
-                    ? "border-purple-400 bg-purple-50/50 ring-2 ring-purple-400/50"
-                    : "border-border/40 bg-white hover:border-purple-400/60 hover:bg-purple-50/25"
+                  "p-3 text-right transition-colors cursor-pointer active:scale-[0.99]",
+                  savedView === "TRIAL" ? "bg-card shadow-xs" : "hover:bg-muted/40"
                 )}
               >
-                <div className="flex items-start justify-between gap-1.5">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-950/40 dark:text-purple-300">
-                    <Clock className="size-4" />
-                  </div>
-                  {savedView === "TRIAL" ? (
-                    <Badge variant="outline" className="rounded-full border-purple-300 bg-purple-100/70 text-[9px] font-black text-purple-700 px-2 py-0.2">
-                      محدد
-                    </Badge>
-                  ) : null}
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium text-muted-foreground">فترة تجريبية</span>
+                  <span className={cn("size-1.5 rounded-full", savedView === "TRIAL" ? "bg-purple-500" : "bg-muted-foreground/30")} />
                 </div>
-                <p className="mt-2 text-xl font-black tabular-nums text-foreground">{quickStats.trialCompanies ?? 0}</p>
-                <p className="text-xs font-bold text-muted-foreground">فترة تجريبية</p>
-                <p className="mt-0.5 text-[10px] font-bold text-purple-600 dark:text-purple-400">تحت التجربة المجانية</p>
+                <div className="mt-1.5">
+                  <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+                    {quickStats.trialCompanies ?? 0}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[11px] font-mono text-purple-600 dark:text-purple-400">تجربة مجانية</p>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleOpenView("ACTIVE_STORES")}
                 className={cn(
-                  "group rounded-xl border p-3.5 text-right shadow-2xs transition-all hover:shadow-sm dark:bg-card relative",
-                  savedView === "ACTIVE_STORES"
-                    ? "border-emerald-400 bg-emerald-50/50 ring-2 ring-emerald-400/50"
-                    : "border-border/40 bg-white hover:border-emerald-400/60 hover:bg-emerald-50/25"
+                  "p-3 text-right transition-colors cursor-pointer active:scale-[0.99]",
+                  savedView === "ACTIVE_STORES" ? "bg-card shadow-xs" : "hover:bg-muted/40"
                 )}
               >
-                <div className="flex items-start justify-between gap-1.5">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">
-                    <ShoppingBag className="size-4" />
-                  </div>
-                  {savedView === "ACTIVE_STORES" ? (
-                    <Badge variant="outline" className="rounded-full border-emerald-300 bg-emerald-100/70 text-[9px] font-black text-emerald-700 px-2 py-0.2">
-                      محدد
-                    </Badge>
-                  ) : null}
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium text-muted-foreground">متاجر نشطة</span>
+                  <span className={cn("size-1.5 rounded-full", savedView === "ACTIVE_STORES" ? "bg-emerald-500" : "bg-muted-foreground/30")} />
                 </div>
-                <p className="mt-2 text-xl font-black tabular-nums text-foreground">{quickStats.activeStores ?? 0}</p>
-                <p className="text-xs font-bold text-muted-foreground">متاجر نشطة</p>
-                <p className="mt-0.5 text-[10px] font-bold text-emerald-600">لديها طلبات بيع</p>
+                <div className="mt-1.5">
+                  <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+                    {quickStats.activeStores ?? 0}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[11px] font-mono text-emerald-600 dark:text-emerald-400">لديها مبيعات</p>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleOpenView("ONBOARDING_STUCK")}
                 className={cn(
-                  "group rounded-xl border p-3.5 text-right shadow-2xs transition-all hover:shadow-sm dark:bg-card relative",
-                  savedView === "ONBOARDING_STUCK"
-                    ? "border-sky-400 bg-sky-50/50 ring-2 ring-sky-400/50"
-                    : "border-border/40 bg-white hover:border-sky-400/60 hover:bg-sky-50/25"
+                  "p-3 text-right transition-colors cursor-pointer active:scale-[0.99]",
+                  savedView === "ONBOARDING_STUCK" ? "bg-card shadow-xs" : "hover:bg-muted/40"
                 )}
               >
-                <div className="flex items-start justify-between gap-1.5">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-sky-100 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300">
-                    <Package className="size-4" />
-                  </div>
-                  {savedView === "ONBOARDING_STUCK" ? (
-                    <Badge variant="outline" className="rounded-full border-sky-300 bg-sky-100/70 text-[9px] font-black text-sky-700 px-2 py-0.2">
-                      محدد
-                    </Badge>
-                  ) : null}
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium text-muted-foreground">تحتاج إعداد</span>
+                  <span className={cn("size-1.5 rounded-full", savedView === "ONBOARDING_STUCK" ? "bg-sky-500" : "bg-muted-foreground/30")} />
                 </div>
-                <p className="mt-2 text-xl font-black tabular-nums text-foreground">{quickStats.onboardingStuck ?? 0}</p>
-                <p className="text-xs font-bold text-muted-foreground">تحتاج إعداد</p>
-                <p className="mt-0.5 text-[10px] font-bold text-sky-600">لم تضف منتجات بعد</p>
+                <div className="mt-1.5">
+                  <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+                    {quickStats.onboardingStuck ?? 0}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[11px] font-mono text-sky-600 dark:text-sky-400">بدون منتجات</p>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleOpenView("FOLLOW_UP_NOW")}
                 className={cn(
-                  "group rounded-xl border p-3.5 text-right shadow-2xs transition-all hover:shadow-sm dark:bg-card relative",
-                  savedView === "FOLLOW_UP_NOW"
-                    ? "border-amber-400 bg-amber-50/50 ring-2 ring-amber-400/50"
-                    : "border-border/40 bg-white hover:border-amber-400/60 hover:bg-amber-50/25"
+                  "p-3 text-right transition-colors cursor-pointer active:scale-[0.99]",
+                  savedView === "FOLLOW_UP_NOW" ? "bg-card shadow-xs" : "hover:bg-muted/40"
                 )}
               >
-                <div className="flex items-start justify-between gap-1.5">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300">
-                    <AlertTriangle className="size-4" />
-                  </div>
-                  {savedView === "FOLLOW_UP_NOW" ? (
-                    <Badge variant="outline" className="rounded-full border-amber-300 bg-amber-100/70 text-[9px] font-black text-amber-700 px-2 py-0.2">
-                      محدد
-                    </Badge>
-                  ) : null}
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium text-muted-foreground">متابعة وتصعيد</span>
+                  <span className={cn("size-1.5 rounded-full", savedView === "FOLLOW_UP_NOW" ? "bg-amber-500" : "bg-muted-foreground/30")} />
                 </div>
-                <p className="mt-2 text-xl font-black tabular-nums text-foreground">{quickStats.followUpNow + quickStats.escalationDue + quickStats.urgentEscalationDue}</p>
-                <p className="text-xs font-bold text-muted-foreground">متابعة وتصعيد</p>
-                <p className="mt-0.5 text-[10px] font-bold text-amber-600">تحتاج تدخلاً فوريًا</p>
+                <div className="mt-1.5">
+                  <span className="text-xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+                    {quickStats.followUpNow + quickStats.escalationDue + quickStats.urgentEscalationDue}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[11px] font-mono text-amber-600 dark:text-amber-400">تدخل فوري</p>
               </button>
             </div>
 
@@ -980,8 +953,8 @@ export default function SuperAdminCompaniesV2() {
                 onRunFollowUpAction={handleRunFollowUpAction}
                 isMobile={isMobile}
               />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
       </div>
 
       {/* Mobile FAB */}
