@@ -1,35 +1,67 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
-import { PlusIcon, PencilIcon, TrashIcon, MusicalNoteIcon, PhotoIcon, VideoCameraIcon, DocumentTextIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Music,
+  Image as ImageIcon,
+  Video,
+  FileText,
+  X,
+  Briefcase,
+  Layers,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
+  UploadCloud,
+  FileAudio,
+} from "lucide-react";
 import { uploadService } from "../../services/uploadService";
 
+interface ServiceItem {
+  id: string;
+  name: string;
+  description?: string;
+  category: "audio" | "image" | "video" | "other" | string;
+  price?: number | string;
+  isActive: boolean;
+  icon?: string;
+  samples?: Array<{ url: string; originalName: string; type: string }>;
+}
+
 const CATEGORIES = [
-  { value: "audio", label: "صوتي (موسيقى/أغاني)", icon: MusicalNoteIcon, accept: "audio/*" },
-  { value: "image", label: "تصميم (صور)", icon: PhotoIcon, accept: "image/*" },
-  { value: "video", label: "فيديو (مونتاج)", icon: VideoCameraIcon, accept: "video/*" },
-  { value: "other", label: "أخرى", icon: DocumentTextIcon, accept: "*/*" },
+  { value: "audio", label: "صوتي (موسيقى/أغاني)", icon: Music, accept: "audio/*" },
+  { value: "image", label: "تصميم (صور)", icon: ImageIcon, accept: "image/*" },
+  { value: "video", label: "فيديو (مونتاج)", icon: Video, accept: "video/*" },
+  { value: "other", label: "أخرى", icon: FileText, accept: "*/*" },
 ];
 
-const companyId = () => localStorage.getItem("companyId");
 const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` });
 
 export default function ServiceManagementPage() {
-  const [services, setServices] = useState<any[]>([]);
+  const [services, setServices] = useState<ServiceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<any>(null);
   const [sampleFiles, setSampleFiles] = useState<File[]>([]);
   const [uploadingSamples, setUploadingSamples] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
-  useEffect(() => { fetchServices(); }, []);
+  useEffect(() => {
+    fetchServices();
+  }, []);
 
   const fetchServices = async () => {
     try {
       const r = await fetch(`/api/v1/services`, { headers: authHeaders() as any });
       const d = await r.json();
-      if (d.success) setServices(d.data);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+      if (d.success) setServices(d.data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const uploadNewSamples = async (): Promise<any[]> => {
@@ -38,8 +70,11 @@ export default function ServiceManagementPage() {
     const uploaded: any[] = [...(modal.samples || [])];
     for (const file of sampleFiles) {
       const r = await uploadService.uploadServiceFile(file);
-      if (r.success && r.data) uploaded.push({ url: r.data.url, originalName: r.data.originalName, type: r.data.type });
-      else toast.error(`فشل رفع: ${file.name}`);
+      if (r.success && r.data) {
+        uploaded.push({ url: r.data.url, originalName: r.data.originalName, type: r.data.type });
+      } else {
+        toast.error(`فشل رفع: ${file.name}`);
+      }
     }
     setUploadingSamples(false);
     return uploaded;
@@ -56,112 +91,470 @@ export default function ServiceManagementPage() {
         body: JSON.stringify({ ...modal, samples }),
       });
       const d = await r.json();
-      if (d.success) { toast.success(isNew ? "تمت الإضافة" : "تم التحديث"); setModal(null); setSampleFiles([]); fetchServices(); }
-      else toast.error(d.error);
-    } catch (e) { tToast.error("ServiceManagementPage.error_error_0d92"); }
+      if (d.success) {
+        toast.success(isNew ? "تمت إضافة الخدمة بنجاح" : "تم تحديث بيانات الخدمة");
+        setModal(null);
+        setSampleFiles([]);
+        fetchServices();
+      } else {
+        toast.error(d.error || "حدث خطأ أثناء الحفظ");
+      }
+    } catch (e) {
+      tToast.error("ServiceManagementPage.error_error_0d92");
+    }
   };
 
   const remove = async (id: string) => {
-    if (!confirm("تأكيد الحذف؟")) return;
+    if (!confirm("هل أنت متأكد من حذف هذه الخدمة؟")) return;
     try {
       const r = await fetch(`/api/v1/services/${id}`, { method: "DELETE", headers: authHeaders() as any });
       const d = await r.json();
-      if (d.success) { tToast.success("ServiceManagementPage.msg_9174"); fetchServices(); }
-    } catch (e) { tToast.error("ServiceManagementPage.error_error_0d92"); }
+      if (d.success) {
+        tToast.success("ServiceManagementPage.msg_9174");
+        fetchServices();
+      }
+    } catch (e) {
+      tToast.error("ServiceManagementPage.error_error_0d92");
+    }
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">جاري التحميل...</div>;
+  const filteredServices = useMemo(() => {
+    if (selectedCategory === "all") return services;
+    return services.filter((s) => s.category === selectedCategory);
+  }, [services, selectedCategory]);
+
+  const stats = useMemo(() => {
+    const total = services.length;
+    const active = services.filter((s) => s.isActive).length;
+    const samples = services.reduce((acc, s) => acc + (s.samples?.length || 0), 0);
+    return { total, active, samples };
+  }, [services]);
+
+  const getCategoryIcon = (category: string) => {
+    const matched = CATEGORIES.find((c) => c.value === category);
+    if (!matched) return Briefcase;
+    return matched.icon;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3 text-muted-foreground">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs font-mono">جاري تحميل الخدمات...</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto rtl" dir="rtl">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">إدارة الخدمات</h1>
-        <button onClick={() => setModal({ name: "", category: "audio", isActive: true })}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-          <PlusIcon className="w-5 h-5" />إضافة خدمة
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 rtl font-sans" dir="rtl">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+              <Sparkles className="w-3.5 h-3.5" />
+              إدارة الكتالوج
+            </span>
+            <span className="text-xs text-muted-foreground font-mono tabular-nums">
+              {stats.total} خدمة مسجلة
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            إدارة الخدمات وعينات الإنتاج
+          </h1>
+          <p className="text-xs text-muted-foreground">
+            التحكم في خدمات الصوت والتصميم والمونتاج وعيناتها التسويقية المعروضة للعملاء
+          </p>
+        </div>
+
+        <button
+          onClick={() => setModal({ name: "", category: "audio", isActive: true })}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <Plus className="w-4 h-4" />
+          إضافة خدمة جديدة
         </button>
       </div>
 
-      {services.length === 0 ? (
-        <p className="text-center text-gray-400 py-12">لا توجد خدمات. أضف خدمة جديدة.</p>
+      {/* Telemetry Ribbon */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-card border border-border/80 rounded-xl p-4 flex items-center justify-between shadow-xs">
+          <div className="space-y-1">
+            <div className="text-xs text-muted-foreground">إجمالي الخدمات</div>
+            <div className="text-2xl font-bold text-foreground font-mono tabular-nums">
+              {stats.total}
+            </div>
+          </div>
+          <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20">
+            <Layers className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-card border border-border/80 rounded-xl p-4 flex items-center justify-between shadow-xs">
+          <div className="space-y-1">
+            <div className="text-xs text-muted-foreground">الخدمات النشطة</div>
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+              {stats.active}
+            </div>
+          </div>
+          <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-card border border-border/80 rounded-xl p-4 flex items-center justify-between shadow-xs">
+          <div className="space-y-1">
+            <div className="text-xs text-muted-foreground">عينات الأعمال المرفوعة</div>
+            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400 font-mono tabular-nums">
+              {stats.samples}
+            </div>
+          </div>
+          <div className="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center border border-purple-500/20">
+            <FileAudio className="w-5 h-5" />
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-border/60">
+        <button
+          onClick={() => setSelectedCategory("all")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+            selectedCategory === "all"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "bg-muted/40 text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+          }`}
+        >
+          كل الخدمات ({services.length})
+        </button>
+        {CATEGORIES.map((cat) => {
+          const Icon = cat.icon;
+          const count = services.filter((s) => s.category === cat.value).length;
+          return (
+            <button
+              key={cat.value}
+              onClick={() => setSelectedCategory(cat.value)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                selectedCategory === cat.value
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "bg-muted/40 text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {cat.label} ({count})
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Services Grid */}
+      {filteredServices.length === 0 ? (
+        <div className="bg-card border border-border/80 rounded-2xl p-12 text-center space-y-3">
+          <div className="w-12 h-12 rounded-xl bg-muted/60 text-muted-foreground mx-auto flex items-center justify-center">
+            <Briefcase className="w-6 h-6" />
+          </div>
+          <h3 className="text-sm font-semibold text-foreground">لا توجد خدمات في هذا التصنيف</h3>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            قم بالضغط على "إضافة خدمة جديدة" للبدء في إدراج خدماتك ونماذج أعمالها
+          </p>
+          <button
+            onClick={() => setModal({ name: "", category: selectedCategory === "all" ? "audio" : selectedCategory, isActive: true })}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            إضافة خدمة
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {services.map((s) => (
-            <div key={s.id} className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4 ${!s.isActive ? "opacity-60" : ""}`}>
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h3 className="font-bold text-lg">{s.icon || "📋"} {s.name}</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{s.description || "—"}</p>
+          {filteredServices.map((s) => {
+            const CatIcon = getCategoryIcon(s.category);
+            const categoryInfo = CATEGORIES.find((c) => c.value === s.category);
+            return (
+              <div
+                key={s.id}
+                className={`group bg-card border border-border/80 hover:border-primary/40 rounded-xl p-4.5 transition-all shadow-xs flex flex-col justify-between ${
+                  !s.isActive ? "opacity-60 bg-muted/20" : ""
+                }`}
+              >
+                <div className="space-y-3">
+                  {/* Top card bar */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
+                        <CatIcon className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-sm text-foreground truncate">
+                          {s.name}
+                        </h3>
+                        <span className="text-[11px] text-muted-foreground">
+                          {categoryInfo?.label || s.category}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                        s.isActive
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                          : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
+                      }`}
+                    >
+                      {s.isActive ? "نشط" : "معطل"}
+                    </span>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-xs text-muted-foreground line-clamp-2 min-h-[32px]">
+                    {s.description || "لا يوجد وصف مدخل لهذه الخدمة"}
+                  </p>
+
+                  {/* Meta Badges */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    {s.price ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-mono tabular-nums">
+                        {s.price} ج.م
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted/60 text-muted-foreground">
+                        سعر مخصص
+                      </span>
+                    )}
+
+                    {s.samples && s.samples.length > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-mono tabular-nums">
+                        <FileAudio className="w-3 h-3" />
+                        {s.samples.length} عينة
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <span className={`px-2 py-0.5 rounded-full text-xs ${s.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{s.isActive ? "نشط" : "غير نشط"}</span>
+
+                {/* Footer Actions */}
+                <div className="flex items-center gap-2 pt-4 mt-3 border-t border-border/60">
+                  <button
+                    onClick={() => setModal(s)}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-muted/60 text-foreground hover:bg-muted transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    تعديل
+                  </button>
+                  <button
+                    onClick={() => remove(s.id)}
+                    className="inline-flex items-center justify-center p-1.5 text-xs font-medium rounded-lg text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
+                    title="حذف الخدمة"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-1 flex-wrap mb-2">
-                <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">{CATEGORIES.find(c => c.value === s.category)?.label || s.category}</span>
-                {s.price && <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{s.price} ج.م</span>}
-                {s.samples?.length > 0 && <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded">{s.samples.length} عينة</span>}
-              </div>
-              <div className="flex gap-2 mt-3">
-                <button onClick={() => setModal(s)} className="text-xs px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"><PencilIcon className="w-3.5 h-3.5 inline ml-1" />تعديل</button>
-                <button onClick={() => remove(s.id)} className="text-xs px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"><TrashIcon className="w-3.5 h-3.5 inline ml-1" />حذف</button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
+      {/* Edit/Create Modal */}
       {modal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => { setModal(null); setSampleFiles([]); }}>
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-bold mb-4">{modal.id ? "تعديل خدمة" : "إضافة خدمة"}</h2>
-            <div className="space-y-3">
-              <input className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600" placeholder="اسم الخدمة" value={modal.name || ""} onChange={e => setModal({ ...modal, name: e.target.value })} />
-              <textarea className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600" placeholder="وصف الخدمة" value={modal.description || ""} onChange={e => setModal({ ...modal, description: e.target.value })} />
-              <input className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600" placeholder="أيقونة (إيموجي)" value={modal.icon || ""} onChange={e => setModal({ ...modal, icon: e.target.value })} />
-              <select className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600" value={modal.category || "audio"} onChange={e => setModal({ ...modal, category: e.target.value })}>
-                {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-              </select>
-              <input type="number" className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600" placeholder="السعر (اختياري)" value={modal.price || ""} onChange={e => setModal({ ...modal, price: e.target.value })} />
-              <label className="flex items-center gap-2"><input type="checkbox" checked={modal.isActive !== false} onChange={e => setModal({ ...modal, isActive: e.target.checked })} /> نشط</label>
+        <div
+          className="fixed inset-0 bg-background/80 backdrop-blur-xs flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setModal(null);
+            setSampleFiles([]);
+          }}
+        >
+          <div
+            className="bg-card border border-border rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-border/80">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                  <Briefcase className="w-4 h-4" />
+                </div>
+                <h2 className="text-base font-bold text-foreground">
+                  {modal.id ? "تعديل الخدمة" : "إضافة خدمة جديدة"}
+                </h2>
+              </div>
+              <button
+                onClick={() => {
+                  setModal(null);
+                  setSampleFiles([]);
+                }}
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-              {/* Samples section */}
-              <div className="border-t pt-3 mt-4">
-                <label className="block text-sm font-medium mb-2">عينات الخدمة ({CATEGORIES.find(c => c.value === modal.category)?.label || modal.category})</label>
-                {(modal.samples?.length > 0) && (
-                  <div className="space-y-2 mb-3">
+            <div className="space-y-4 text-xs">
+              <div className="space-y-1.5">
+                <label className="font-medium text-foreground">اسم الخدمة *</label>
+                <input
+                  className="w-full bg-background border border-input rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="مثال: هندسة صوتية وماسترينج احترافي"
+                  value={modal.name || ""}
+                  onChange={(e) => setModal({ ...modal, name: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-medium text-foreground">وصف الخدمة</label>
+                <textarea
+                  rows={2}
+                  className="w-full bg-background border border-input rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="تفاصيل الخدمة وما يحصل عليه العميل..."
+                  value={modal.description || ""}
+                  onChange={(e) => setModal({ ...modal, description: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="font-medium text-foreground">التصنيف</label>
+                  <select
+                    className="w-full bg-background border border-input rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    value={modal.category || "audio"}
+                    onChange={(e) => setModal({ ...modal, category: e.target.value })}
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-medium text-foreground">السعر المقترح (ج.م)</label>
+                  <input
+                    type="number"
+                    className="w-full bg-background border border-input rounded-lg px-3 py-2 text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="اختياري"
+                    value={modal.price || ""}
+                    onChange={(e) => setModal({ ...modal, price: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <label className="inline-flex items-center gap-2 cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  className="rounded border-input text-primary focus:ring-primary"
+                  checked={modal.isActive !== false}
+                  onChange={(e) => setModal({ ...modal, isActive: e.target.checked })}
+                />
+                <span className="font-medium text-foreground">الخدمة نشطة ومتاحة للطلب الآن</span>
+              </label>
+
+              {/* Samples Section */}
+              <div className="pt-3 border-t border-border/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="font-medium text-foreground">
+                    عينات ونماذج الأعمال السابقة
+                  </label>
+                  <span className="text-[11px] text-muted-foreground font-mono">
+                    {CATEGORIES.find((c) => c.value === modal.category)?.label}
+                  </span>
+                </div>
+
+                {modal.samples?.length > 0 && (
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto">
                     {modal.samples.map((s: any, i: number) => (
-                      <div key={i} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <div
+                        key={i}
+                        className="flex items-center justify-between p-2 bg-muted/30 border border-border/60 rounded-lg text-xs"
+                      >
                         <div className="flex items-center gap-2 min-w-0">
-                          {s.type?.startsWith("image/") ? <PhotoIcon className="w-4 h-4 shrink-0 text-purple-500" /> :
-                           s.type?.startsWith("video/") ? <VideoCameraIcon className="w-4 h-4 shrink-0 text-purple-500" /> :
-                           s.type?.startsWith("audio/") ? <MusicalNoteIcon className="w-4 h-4 shrink-0 text-purple-500" /> :
-                           <DocumentTextIcon className="w-4 h-4 shrink-0 text-gray-500" />}
-                          <span className="text-sm truncate">{s.originalName}</span>
+                          {s.type?.startsWith("image/") ? (
+                            <ImageIcon className="w-4 h-4 shrink-0 text-purple-500" />
+                          ) : s.type?.startsWith("video/") ? (
+                            <Video className="w-4 h-4 shrink-0 text-purple-500" />
+                          ) : s.type?.startsWith("audio/") ? (
+                            <Music className="w-4 h-4 shrink-0 text-purple-500" />
+                          ) : (
+                            <FileText className="w-4 h-4 shrink-0 text-muted-foreground" />
+                          )}
+                          <span className="truncate">{s.originalName || "عينة مرفوعة"}</span>
                         </div>
-                        <button onClick={() => setModal({ ...modal, samples: modal.samples.filter((_: any, j: number) => j !== i) })}
-                          className="text-red-500 hover:text-red-700 p-1"><XMarkIcon className="w-4 h-4" /></button>
+                        <button
+                          onClick={() =>
+                            setModal({
+                              ...modal,
+                              samples: modal.samples.filter((_: any, j: number) => j !== i),
+                            })
+                          }
+                          className="text-red-500 hover:text-red-700 p-1 rounded-sm"
+                          title="حذف العينة"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     ))}
                   </div>
                 )}
-                <input type="file" multiple accept={CATEGORIES.find(c => c.value === modal.category)?.accept || "*/*"}
-                  onChange={e => setSampleFiles(prev => [...prev, ...Array.from(e.target.files || [])])}
-                  className="w-full text-sm text-gray-500 file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100" />
-                {sampleFiles.length > 0 && (
-                  <div className="space-y-1 mt-2">
-                    {sampleFiles.map((f, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs text-gray-500 bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded">
-                        <span className="truncate">{f.name}</span>
-                        <button onClick={() => setSampleFiles(prev => prev.filter((_, j) => j !== i))}
-                          className="text-red-500 hover:text-red-700"><XMarkIcon className="w-3.5 h-3.5" /></button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+
+                <div className="space-y-2">
+                  <label className="flex flex-col items-center justify-center p-4 border border-dashed border-border rounded-xl cursor-pointer hover:bg-muted/30 transition-colors">
+                    <UploadCloud className="w-5 h-5 text-muted-foreground mb-1" />
+                    <span className="text-[11px] text-foreground font-medium">
+                      اضغط لاختيار ملفات العينات
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      (صوت، صور، أو فيديو بحسب نوع الخدمة)
+                    </span>
+                    <input
+                      type="file"
+                      multiple
+                      accept={CATEGORIES.find((c) => c.value === modal.category)?.accept || "*/*"}
+                      onChange={(e) =>
+                        setSampleFiles((prev) => [...prev, ...Array.from(e.target.files || [])])
+                      }
+                      className="hidden"
+                    />
+                  </label>
+
+                  {sampleFiles.length > 0 && (
+                    <div className="space-y-1">
+                      {sampleFiles.map((f, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between text-[11px] text-muted-foreground bg-muted/40 px-2.5 py-1 rounded-md"
+                        >
+                          <span className="truncate">{f.name}</span>
+                          <button
+                            onClick={() =>
+                              setSampleFiles((prev) => prev.filter((_, j) => j !== i))
+                            }
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={save} disabled={uploadingSamples} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">{uploadingSamples ? "جاري رفع العينات..." : "حفظ"}</button>
-              <button onClick={() => { setModal(null); setSampleFiles([]); }} className="flex-1 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">إلغاء</button>
+
+            <div className="flex items-center gap-2.5 pt-4 border-t border-border/80">
+              <button
+                onClick={save}
+                disabled={uploadingSamples || !modal.name?.trim()}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-all shadow-sm"
+              >
+                {uploadingSamples ? "جاري رفع العينات..." : "حفظ التغييرات"}
+              </button>
+              <button
+                onClick={() => {
+                  setModal(null);
+                  setSampleFiles([]);
+                }}
+                className="px-4 py-2 text-xs font-medium rounded-lg bg-muted text-foreground hover:bg-muted/80 transition-colors"
+              >
+                إلغاء
+              </button>
             </div>
           </div>
         </div>

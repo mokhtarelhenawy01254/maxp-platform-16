@@ -1403,7 +1403,9 @@ const EscalationHistory = React.lazy(
 const QueueMonitor = React.lazy(
   () => import("./pages/super-admin/QueueMonitor"),
 );
-// const SuperAdminMarketingLinks = React.lazy(() => import('./pages/super-admin/SuperAdminMarketingLinks'));
+const SuperAdminMarketingLinks = React.lazy(
+  () => import("./pages/super-admin/SuperAdminMarketingLinks"),
+);
 const PlatformPartnerManagement = React.lazy(
   () => import("./pages/super-admin/PlatformPartnerManagement"),
 );
@@ -2580,6 +2582,14 @@ const AppContent = () => {
               element={
                 <Layout>
                   <SuperAdminLandingPages />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/marketing-links"
+              element={
+                <Layout>
+                  <SuperAdminMarketingLinks />
                 </Layout>
               }
             />

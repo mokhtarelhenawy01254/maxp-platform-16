@@ -1,12 +1,25 @@
-import { useState } from 'react';
-import { ArrowTopRightOnSquareIcon, ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
-import { marketingSections } from '../landing/marketingLandingData';
+import React, { useState } from "react";
+import {
+  ExternalLink,
+  Copy,
+  Check,
+  Megaphone,
+  Globe,
+  Target,
+  Sparkles,
+} from "lucide-react";
+import { marketingSections } from "../landing/marketingLandingData";
+import { Button } from "../../components/ui/button";
 
-const SuperAdminMarketingLinks = () => {
+const SuperAdminMarketingLinks: React.FC = () => {
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
 
-  const liveCount = marketingSections.filter((section) => section.status === 'live').length;
-  const upcomingCount = marketingSections.filter((section) => section.status === 'upcoming').length;
+  const liveCount = marketingSections.filter(
+    (section) => section.status === "live",
+  ).length;
+  const upcomingCount = marketingSections.filter(
+    (section) => section.status === "upcoming",
+  ).length;
 
   const copyLink = async (slug: string) => {
     const path = `/marketing/${slug}`;
@@ -17,126 +30,195 @@ const SuperAdminMarketingLinks = () => {
       setCopiedSlug(slug);
       setTimeout(() => setCopiedSlug(null), 1800);
     } catch (error) {
-      console.error('Failed to copy link', error);
+      console.error("Failed to copy link", error);
     }
   };
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-900 p-6">
-      <div className="max-w-6xl 2xl:max-w-7xl mx-auto space-y-6">
-        <header className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-2">
-            مركز روابط صفحات التسويق
-          </h1>
-          <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-            هذا القسم مخصص لفريق السوبر أدمن لتجميع كل روابط صفحات الهبوط التسويقية مع شرح واضح
-            لكل صفحة: الجمهور المستهدف، الهدف التحويلي، وحالة الصفحة.
-          </p>
-        </header>
+    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto" dir="rtl">
+      {/* Linear Control Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-card flex items-center justify-center text-foreground shadow-2xs">
+            <Megaphone className="size-4.5 text-primary" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
+                مركز روابط صفحات التسويق
+              </h1>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+                Landing Directory
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              دليل صفحات الهبوط التسويقية، الأهداف التحويلية، والجمهور المستهدف لكل قطاع
+            </p>
+          </div>
+        </div>
 
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <article className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">إجمالي صفحات اللاندنج</p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white">{marketingSections.length}</p>
-          </article>
-          <article className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">صفحات جاهزة الآن</p>
-            <p className="text-3xl font-bold text-emerald-600">{liveCount}</p>
-          </article>
-          <article className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">صفحات قيد الإطلاق</p>
-            <p className="text-3xl font-bold text-amber-600">{upcomingCount}</p>
-          </article>
-        </section>
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs font-medium gap-1.5 shadow-2xs active:scale-[0.98] transition-transform self-end sm:self-auto"
+        >
+          <a href="/marketing" target="_blank" rel="noreferrer">
+            <span>فتح مركز اللاندنج العام</span>
+            <ExternalLink className="size-3.5" />
+          </a>
+        </Button>
+      </div>
 
-        <section className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">الروابط والشرح</h2>
-            <a
-              href="/marketing"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
-            >
-              فتح مركز اللاندنج العام
-              <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-            </a>
+      {/* Linear Telemetry Strip */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
+          <div className="p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">إجمالي صفحات اللاندنج</span>
+              <span className="size-1.5 rounded-full bg-primary" />
+            </div>
+            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {marketingSections.length}
+            </div>
+            <span className="text-[10px] text-muted-foreground mt-0.5">صفحة متخصصة</span>
           </div>
 
-          <div className="space-y-4">
-            {marketingSections.map((section) => {
-              const sectionPath = `/marketing/${section.slug}`;
-              const isCopied = copiedSlug === section.slug;
+          <div className="p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">صفحات جاهزة الآن</span>
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+            </div>
+            <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+              {liveCount}
+            </div>
+            <span className="text-[10px] text-muted-foreground mt-0.5">مفعلة وتستقبل الزوار</span>
+          </div>
 
-              return (
-                <article
-                  key={section.slug}
-                  className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 md:p-5 bg-slate-50/70 dark:bg-slate-900/30"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">{section.pageTitle}</h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{section.kicker}</p>
+          <div className="p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">صفحات قيد الإطلاق</span>
+              <span className="size-1.5 rounded-full bg-amber-500" />
+            </div>
+            <div className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400 font-mono tabular-nums">
+              {upcomingCount}
+            </div>
+            <span className="text-[10px] text-muted-foreground mt-0.5">جاهزة للنشر قريباً</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Single-Surface Chassis */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+        <div className="px-4 py-3 border-b border-border/60 bg-muted/20 flex items-center justify-between">
+          <h2 className="text-xs font-semibold text-foreground">
+            قائمة الروابط والشروحات
+          </h2>
+          <span className="text-[10px] font-mono text-muted-foreground">
+            {marketingSections.length} رابط
+          </span>
+        </div>
+
+        <div className="divide-y divide-border/60">
+          {marketingSections.map((section) => {
+            const sectionPath = `/marketing/${section.slug}`;
+            const isCopied = copiedSlug === section.slug;
+
+            return (
+              <div
+                key={section.slug}
+                className="p-4 hover:bg-muted/15 transition-colors space-y-3"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        {section.pageTitle}
+                      </h3>
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-medium border ${
+                          section.status === "upcoming"
+                            ? "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                            : "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                        }`}
+                      >
+                        {section.status === "upcoming" ? "قريباً" : "جاهزة"}
+                      </span>
                     </div>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        section.status === 'upcoming'
-                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
-                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-                      }`}
-                    >
-                      {section.status === 'upcoming' ? 'قريبًا' : 'جاهزة'}
+                    {section.kicker && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {section.kicker}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {section.heroLead}
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
+                  <div className="rounded-lg border border-border/40 bg-muted/20 p-2.5">
+                    <span className="text-[10px] text-muted-foreground block mb-0.5">
+                      الجمهور المستهدف
+                    </span>
+                    <span className="font-medium text-foreground">
+                      {section.audience}
                     </span>
                   </div>
-
-                  <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-4">
-                    {section.heroLead}
-                  </p>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                    <div className="rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3">
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">الجمهور المستهدف</p>
-                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{section.audience}</p>
-                    </div>
-                    <div className="rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3">
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">هدف الصفحة (Conversion)</p>
-                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{section.conversionGoal}</p>
-                    </div>
+                  <div className="rounded-lg border border-border/40 bg-muted/20 p-2.5">
+                    <span className="text-[10px] text-muted-foreground block mb-0.5">
+                      هدف الصفحة التحويلي (Conversion)
+                    </span>
+                    <span className="font-medium text-foreground">
+                      {section.conversionGoal}
+                    </span>
                   </div>
+                </div>
 
-                  <div className="flex flex-col md:flex-row md:items-center gap-3">
-                    <code className="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm">
-                      {sectionPath}
-                    </code>
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={sectionPath}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
-                      >
-                        فتح الصفحة
-                        <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1">
+                  <code className="text-[11px] font-mono px-2 py-1 rounded bg-muted text-muted-foreground border border-border/40 self-start sm:self-auto">
+                    {sectionPath}
+                  </code>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      asChild
+                      size="sm"
+                      className="h-7.5 px-3 text-xs gap-1.5 shadow-2xs active:scale-[0.98] transition-transform"
+                    >
+                      <a href={sectionPath} target="_blank" rel="noreferrer">
+                        <span>فتح الصفحة</span>
+                        <ExternalLink className="size-3" />
                       </a>
-                      <button
-                        type="button"
-                        onClick={() => copyLink(section.slug)}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                      >
-                        {isCopied ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}
-                        {isCopied ? 'تم النسخ' : 'نسخ الرابط'}
-                      </button>
-                    </div>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyLink(section.slug)}
+                      className="h-7.5 px-3 text-xs gap-1.5 shadow-2xs active:scale-[0.98] transition-transform"
+                    >
+                      {isCopied ? (
+                        <>
+                          <Check className="size-3 text-emerald-500" />
+                          <span>تم النسخ</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="size-3" />
+                          <span>نسخ الرابط</span>
+                        </>
+                      )}
+                    </Button>
                   </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
 };
 
 export default SuperAdminMarketingLinks;
-

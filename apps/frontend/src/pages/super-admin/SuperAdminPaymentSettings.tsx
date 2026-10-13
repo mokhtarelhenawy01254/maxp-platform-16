@@ -16,10 +16,15 @@ import {
   Zap,
   RefreshCw,
   Info,
+  Smartphone,
+  ShieldCheck,
+  CheckCircle2,
 } from "lucide-react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 
 interface KashierSettings {
   merchantId: string;
@@ -64,7 +69,7 @@ export default function SuperAdminPaymentSettings() {
       setLoading(true);
       const response = await axios.get(
         buildApiUrl("super-admin/platform/settings/kashier"),
-        { headers: getAuthHeaders() }
+        { headers: getAuthHeaders() },
       );
       if (response.data.success) {
         setSettings(response.data.data);
@@ -104,12 +109,11 @@ export default function SuperAdminPaymentSettings() {
       const response = await axios.put(
         buildApiUrl("super-admin/platform/settings/kashier"),
         settings,
-        { headers: getAuthHeaders() }
+        { headers: getAuthHeaders() },
       );
       if (response.data.success) {
         tToast.success("SuperAdminPaymentSettings.success_save_a705");
         setIsDirty(false);
-        // Re-fetch to get masked secretKey
         await fetchSettings();
       }
     } catch (error: any) {
@@ -131,11 +135,12 @@ export default function SuperAdminPaymentSettings() {
       const response = await axios.post(
         buildApiUrl("super-admin/platform/settings/kashier/test-connection"),
         settings,
-        { headers: getAuthHeaders() }
+        { headers: getAuthHeaders() },
       );
       setTestResult({
         success: response.data.success,
-        message: response.data.message || i18n.t("SuperAdminPaymentSettings.msg_25c4"),
+        message:
+          response.data.message || i18n.t("SuperAdminPaymentSettings.msg_25c4"),
       });
     } catch (error: any) {
       setTestResult({
@@ -152,8 +157,11 @@ export default function SuperAdminPaymentSettings() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+          <RefreshCw className="size-4 animate-spin text-primary" />
+          <span>جاري تحميل إعدادات بوابة الدفع...</span>
+        </div>
       </div>
     );
   }
@@ -161,118 +169,192 @@ export default function SuperAdminPaymentSettings() {
   const isLive = settings.mode === "live";
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto" dir={i18n.dir()}>
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <CreditCard className="text-blue-600" size={28} />
-            إعدادات بوابة الدفع المنصية
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            بيانات كاشير المستخدمة لتحصيل اشتراكات التجار على MaxP
-          </p>
+    <div className="p-4 md:p-6 space-y-4 max-w-4xl mx-auto" dir={i18n.dir()}>
+      {/* Linear Control Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-card flex items-center justify-center text-foreground shadow-2xs">
+            <CreditCard className="size-4.5 text-primary" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
+                إعدادات بوابة الدفع المنصية
+              </h1>
+              <span
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium border ${
+                  isLive
+                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
+                    : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+                }`}
+              >
+                <span
+                  className={`size-1.5 rounded-full ${
+                    isLive ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                  }`}
+                />
+                {isLive ? "وضع الإنتاج" : "وضع الاختبار"}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              بيانات Kashier المعتمدة لتحصيل رسوم اشتراكات التجار وباقات المنصة
+            </p>
+          </div>
         </div>
-        <div
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold ${
-            isLive
-              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-              : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-          }`}
-        >
-          {isLive ? <Zap size={16} /> : <Settings size={16} />}
-          {isLive ? "وضع الإنتاج" : "وضع الاختبار"}
+
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleTest}
+            disabled={testing || saving}
+            className="h-8 text-xs font-medium gap-1.5 shadow-2xs active:scale-[0.98] transition-transform"
+          >
+            {testing ? (
+              <RefreshCw className="size-3.5 animate-spin" />
+            ) : (
+              <Wifi className="size-3.5 text-primary" />
+            )}
+            <span>{testing ? "جاري الاختبار..." : "اختبار الاتصال"}</span>
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={saving || testing || !isDirty}
+            className="h-8 text-xs font-medium gap-1.5 shadow-2xs active:scale-[0.98] transition-transform"
+          >
+            {saving ? (
+              <RefreshCw className="size-3.5 animate-spin" />
+            ) : (
+              <Save className="size-3.5" />
+            )}
+            <span>حفظ الإعدادات</span>
+          </Button>
         </div>
       </div>
 
-      {/* Mode Toggle */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <Shield size={20} className="text-blue-500" />
-          وضع التشغيل
-        </h3>
-        <div className="flex gap-4">
-          {(["test", "live"] as const).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => handleChange("mode", mode)}
-              className={`flex-1 py-3 px-6 rounded-xl font-semibold border-2 transition-all ${
-                settings.mode === mode
-                  ? mode === "live"
-                    ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400"
-                    : "border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400"
-                  : "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300"
-              }`}
-            >
-              {mode === "test" ? "🧪 وضع الاختبار (Test)" : "🚀 وضع الإنتاج (Live)"}
-            </button>
-          ))}
+      {/* Mode Selector Chassis */}
+      <div className="rounded-xl border border-border/80 bg-card p-4 shadow-2xs space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Shield className="size-4 text-primary" />
+            <h2 className="text-xs font-semibold text-foreground">وضع التشغيل</h2>
+          </div>
         </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => handleChange("mode", "test")}
+            className={`p-3 rounded-lg border text-right transition-all flex flex-col justify-between ${
+              settings.mode === "test"
+                ? "border-amber-500/40 bg-amber-500/5 shadow-2xs"
+                : "border-border/60 bg-muted/10 hover:bg-muted/30"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-semibold text-xs text-foreground flex items-center gap-1.5">
+                <Settings className="size-3.5 text-amber-500" />
+                وضع الاختبار (Sandbox)
+              </span>
+              {settings.mode === "test" && (
+                <span className="size-2 rounded-full bg-amber-500" />
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              لا يتم خصم أموال حقيقية — مخصص للاختبارات الفنية
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleChange("mode", "live")}
+            className={`p-3 rounded-lg border text-right transition-all flex flex-col justify-between ${
+              settings.mode === "live"
+                ? "border-emerald-500/40 bg-emerald-500/5 shadow-2xs"
+                : "border-border/60 bg-muted/10 hover:bg-muted/30"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-semibold text-xs text-foreground flex items-center gap-1.5">
+                <Zap className="size-3.5 text-emerald-500" />
+                وضع الإنتاج (Production)
+              </span>
+              {settings.mode === "live" && (
+                <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              تحصيل مبالغ حقيقية من بطاقات ومحافظ التجار المشتركين
+            </p>
+          </button>
+        </div>
+
         {isLive && (
-          <div className="mt-3 flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3">
-            <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5">
+            <AlertCircle className="size-4 shrink-0 mt-0.5" />
             <span>
-              أنت في وضع الإنتاج — ستُحصَّل مبالغ حقيقية من التجار. تأكد من صحة البيانات.
+              أنت في وضع الإنتاج — ستُحصَّل مبالغ حقيقية من التجار. تأكد من صحة البيانات المسجلة.
             </span>
           </div>
         )}
       </div>
 
-      {/* Credentials */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
-          <CreditCard size={20} className="text-blue-500" />
-          بيانات كاشير
-        </h3>
+      {/* Credentials Chassis */}
+      <div className="rounded-xl border border-border/80 bg-card p-4 shadow-2xs space-y-4">
+        <div className="flex items-center gap-2 border-b border-border/60 pb-2.5">
+          <CreditCard className="size-4 text-primary" />
+          <h2 className="text-xs font-semibold text-foreground">بيانات الاعتماد (API Credentials)</h2>
+        </div>
 
-        <div className="space-y-5">
+        <div className="space-y-3 text-xs">
           {/* Merchant ID */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Merchant ID <span className="text-red-500">*</span>
+            <label className="block text-muted-foreground mb-1">
+              Merchant ID <span className="text-destructive">*</span>
             </label>
-            <input
-              type="text"
+            <Input
               value={settings.merchantId}
               onChange={(e) => handleChange("merchantId", e.target.value)}
               placeholder="MID-XXXXXXXX"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition font-mono"
+              className="h-8 text-xs font-mono bg-background"
             />
           </div>
 
           {/* API Key */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              API Key <span className="text-red-500">*</span>
+            <label className="block text-muted-foreground mb-1">
+              API Key <span className="text-destructive">*</span>
             </label>
             <div className="relative">
-              <input
+              <Input
                 type={showApiKey ? "text" : "password"}
                 value={settings.apiKey}
                 onChange={(e) => handleChange("apiKey", e.target.value)}
                 placeholder="api_key_xxxxxxxxxxxxxx"
-                className="w-full px-4 py-3 pr-12 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition font-mono"
+                className="h-8 text-xs font-mono bg-background pl-8"
               />
               <button
                 type="button"
                 onClick={() => setShowApiKey(!showApiKey)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
-                {showApiKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showApiKey ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
               </button>
             </div>
           </div>
 
           {/* Secret Key */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            <label className="block text-muted-foreground mb-1">
               Secret Key{" "}
-              <span className="text-xs text-gray-400 font-normal">
-                (اتركه فارغاً للإبقاء على القيمة المحفوظة)
+              <span className="text-[10px] text-muted-foreground/70 font-normal">
+                (اتركه فارغاً للإبقاء على القيمة المحفوظة في قاعدة البيانات)
               </span>
             </label>
             <div className="relative">
-              <input
+              <Input
                 type={showSecretKey ? "text" : "password"}
                 value={settings.secretKey}
                 onChange={(e) => handleChange("secretKey", e.target.value)}
@@ -281,72 +363,86 @@ export default function SuperAdminPaymentSettings() {
                     ? "محفوظ بأمان — أدخل قيمة جديدة للتغيير"
                     : "secret_key_xxxxxxxxxxxxxx"
                 }
-                className="w-full px-4 py-3 pr-12 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition font-mono"
+                className="h-8 text-xs font-mono bg-background pl-8"
               />
               <button
                 type="button"
                 onClick={() => setShowSecretKey(!showSecretKey)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
-                {showSecretKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showSecretKey ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Payment Methods */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <Zap size={20} className="text-purple-500" />
-          طرق الدفع المفعّلة
-        </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          اختر طرق الدفع التي ستظهر للتجار عند اشتراكهم في المنصة
+      {/* Payment Methods Chassis */}
+      <div className="rounded-xl border border-border/80 bg-card p-4 shadow-2xs space-y-3">
+        <div className="flex items-center gap-2 border-b border-border/60 pb-2.5">
+          <Zap className="size-4 text-primary" />
+          <h2 className="text-xs font-semibold text-foreground">طرق الدفع المفعّلة</h2>
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          حدد خيارات الدفع المتاحة للتجار عند الترقية أو تجديد الاشتراك
         </p>
-        <div className="flex gap-4">
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             {
               id: "card",
-              label: "💳 بطاقة بنكية",
-              desc: "Visa / Mastercard",
+              title: "بطاقة بنكية",
+              icon: CreditCard,
+              desc: "Visa / Mastercard / Meeza",
             },
             {
               id: "wallet",
-              label: "📱 محفظة إلكترونية",
-              desc: "Fawry / Vodafone Cash",
+              title: "محفظة إلكترونية",
+              icon: Smartphone,
+              desc: "Vodafone Cash / InstaPay / Wallets",
             },
           ].map((method) => {
             const isEnabled = settings.enabledPaymentMethods.includes(method.id);
+            const Icon = method.icon;
             return (
               <button
                 key={method.id}
+                type="button"
                 onClick={() => togglePaymentMethod(method.id)}
-                className={`flex-1 p-4 rounded-xl border-2 text-right transition-all ${
+                className={`p-3 rounded-lg border text-right transition-all flex items-center justify-between ${
                   isEnabled
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                    : "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 opacity-60"
+                    ? "border-primary/40 bg-primary/5 shadow-2xs"
+                    : "border-border/60 bg-muted/10 opacity-60 hover:opacity-80"
                 }`}
               >
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2.5">
                   <div
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    className={`size-7 rounded-md flex items-center justify-center ${
                       isEnabled
-                        ? "border-blue-500 bg-blue-500"
-                        : "border-gray-300 dark:border-gray-500"
+                        ? "bg-primary/10 text-primary border border-primary/20"
+                        : "bg-muted text-muted-foreground border border-border/60"
                     }`}
                   >
-                    {isEnabled && (
-                      <CheckCircle size={12} className="text-white" />
-                    )}
+                    <Icon className="size-3.5" />
                   </div>
-                  <span className="text-lg">{method.label.split(" ")[0]}</span>
+                  <div>
+                    <span className="font-semibold text-xs text-foreground block">
+                      {method.title}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {method.desc}
+                    </span>
+                  </div>
                 </div>
-                <div className="font-semibold text-gray-900 dark:text-white text-sm">
-                  {method.label.split(" ").slice(1).join(" ")}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {method.desc}
+
+                <div
+                  className={`size-4 rounded-full border flex items-center justify-center ${
+                    isEnabled
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border/80"
+                  }`}
+                >
+                  {isEnabled && <CheckCircle2 className="size-3" />}
                 </div>
               </button>
             );
@@ -357,75 +453,34 @@ export default function SuperAdminPaymentSettings() {
       {/* Test Connection Result */}
       {testResult && (
         <div
-          className={`flex items-start gap-3 p-4 rounded-xl border ${
+          className={`flex items-start gap-2.5 p-3 rounded-xl border text-xs ${
             testResult.success
-              ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700 text-green-700 dark:text-green-400"
-              : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700 text-red-700 dark:text-red-400"
+              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400"
+              : "bg-destructive/10 border-destructive/20 text-destructive"
           }`}
         >
           {testResult.success ? (
-            <CheckCircle size={20} className="flex-shrink-0 mt-0.5" />
+            <CheckCircle className="size-4 shrink-0 mt-0.5" />
           ) : (
-            <WifiOff size={20} className="flex-shrink-0 mt-0.5" />
+            <WifiOff className="size-4 shrink-0 mt-0.5" />
           )}
           <div>
-            <div className="font-semibold">
-              {testResult.success ? "الاتصال ناجح ✅" : "فشل الاتصال ❌"}
-            </div>
-            <div className="text-sm mt-0.5">{testResult.message}</div>
+            <span className="font-semibold block">
+              {testResult.success ? "الاتصال ناجح" : "فشل الاتصال"}
+            </span>
+            <span className="text-[11px] mt-0.5 block opacity-90">
+              {testResult.message}
+            </span>
           </div>
         </div>
       )}
 
       {/* Informational Note */}
-      <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-400 text-sm">
-        <Info size={18} className="flex-shrink-0 mt-0.5" />
+      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-muted/30 border border-border/60 text-muted-foreground text-[11px]">
+        <Info className="size-4 text-primary shrink-0 mt-0.5" />
         <span>
-          هذه البيانات تُستخدم فقط لتحصيل رسوم اشتراكات التجار في المنصة. لإعداد بوابات الدفع الخاصة بكل تاجر في متجره، يستخدم كل تاجر بياناته الخاصة من صفحة &quot;إعدادات المتجر&quot;.
+          هذه البيانات تُستخدم فقط لتحصيل رسوم اشتراكات التجار في منصة MaxP. أما إعدادات بوابات الدفع الخاصة بكل تاجر في متجره لعملائه، فيقوم التاجر بضبطها من شاشة &quot;إعدادات المتجر - بوابات الدفع&quot;.
         </span>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-4">
-        <button
-          onClick={handleTest}
-          disabled={testing || saving}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-blue-500 text-blue-600 dark:text-blue-400 font-semibold hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {testing ? (
-            <>
-              <RefreshCw size={18} className="animate-spin" />
-              جاري الاختبار...
-            </>
-          ) : (
-            <>
-              <Wifi size={18} />
-              اختبار الاتصال
-            </>
-          )}
-        </button>
-
-        <button
-          onClick={handleSave}
-          disabled={saving || testing || !isDirty}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-semibold transition-all ${
-            isDirty && !saving && !testing
-              ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg shadow-blue-500/25"
-              : "bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed"
-          }`}
-        >
-          {saving ? (
-            <>
-              <RefreshCw size={18} className="animate-spin" />
-              جاري الحفظ...
-            </>
-          ) : (
-            <>
-              <Save size={18} />
-              حفظ الإعدادات
-            </>
-          )}
-        </button>
       </div>
     </div>
   );
