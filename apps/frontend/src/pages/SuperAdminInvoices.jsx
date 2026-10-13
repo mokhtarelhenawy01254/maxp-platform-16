@@ -18,6 +18,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "../components/ui/table";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
+import { FileText, Plus, Search, Filter, RefreshCw, Eye, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
 
 const SuperAdminInvoices = () => {
   const navigate = useNavigate();
@@ -161,8 +162,16 @@ const SuperAdminInvoices = () => {
     return new Date(dateString).toLocaleDateString("ar-EG");
   };
 
-  const handleFilterChange = (field, value) => { setFilters(prev => ({ ...prev, [field]: value })); setPage(1); };
-  const handleOrderFilterChange = (field, value) => { setOrderFilters(prev => ({ ...prev, [field]: value })); setOrderPage(1); };
+  const handleFilterChange = (field, value) => {
+    const finalVal = value === "ALL" ? "" : value;
+    setFilters(prev => ({ ...prev, [field]: finalVal }));
+    setPage(1);
+  };
+  const handleOrderFilterChange = (field, value) => {
+    const finalVal = value === "ALL" ? "" : value;
+    setOrderFilters(prev => ({ ...prev, [field]: finalVal }));
+    setOrderPage(1);
+  };
 
   const viewOrderInvoice = async (invoice) => {
     try {
@@ -182,24 +191,38 @@ const SuperAdminInvoices = () => {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-4 w-full">
-      {/* Header Control Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2">
-        <div className="space-y-0.5">
-          <h1 className="text-xl font-bold tracking-tight text-foreground">النظام المركزي للفواتير</h1>
-          <p className="text-xs text-muted-foreground">إدارة ومتابعة فواتير الاشتراكات والطلبات لشركات المنصة</p>
+    <div className="w-full space-y-4" dir="rtl">
+      {/* Linear Taste Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+            <FileText className="size-4.5 text-primary" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">النظام المركزي للفواتير</h1>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border border-border/80 bg-muted/30">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                مفوتر
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">إدارة ومتابعة فواتير الاشتراكات والطلبات لشركات المنصة</p>
+          </div>
         </div>
+
         {activeTab === 0 && (
           <Button
             onClick={() => setCreateDialogOpen(true)}
-            className="h-8.5 px-3 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-all active:scale-[0.98]"
+            size="sm"
+            className="h-8 rounded-lg text-xs font-mono active:scale-[0.98] transition-transform"
           >
+            <Plus className="ml-1.5 size-3.5" />
             فاتورة جديدة
           </Button>
         )}
       </div>
 
-      {error && <Alert variant="destructive" className="mb-3"><AlertDescription>{error}</AlertDescription></Alert>}
+      {error && <Alert variant="destructive" className="mb-2"><AlertDescription>{error}</AlertDescription></Alert>}
 
       {/* Segmented Control Tabs */}
       <div className="flex items-center gap-1 p-1 bg-muted/40 border border-border/60 rounded-lg w-fit">
@@ -207,7 +230,7 @@ const SuperAdminInvoices = () => {
           <button
             key={tab}
             onClick={() => { setActiveTab(i); setError(""); }}
-            className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+            className={`px-3 py-1 rounded-md text-xs font-mono transition-all active:scale-[0.98] ${
               activeTab === i
                 ? "bg-background text-foreground shadow-2xs font-semibold"
                 : "text-muted-foreground hover:text-foreground"
@@ -222,60 +245,61 @@ const SuperAdminInvoices = () => {
       {activeTab === 0 && (
         <>
           {/* Linear Telemetry Strip */}
-          <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
-            <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
-              <div className="p-3 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span className="font-medium text-[11px]">إجمالي الفواتير</span>
-                  <span className="size-1.5 rounded-full bg-indigo-500" />
-                </div>
-                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-                  {stats.total || 0}
-                </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+            <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span className="font-medium text-[11px]">إجمالي الفواتير</span>
+                <span className="size-1.5 rounded-full bg-indigo-500" />
               </div>
-              <div className="p-3 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span className="font-medium text-[11px]">الفواتير المدفوعة</span>
-                  <span className="size-1.5 rounded-full bg-emerald-500" />
-                </div>
-                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-                  {stats.byStatus?.PAID?.count || 0}
-                </div>
+              <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                {stats.total || 0}
               </div>
-              <div className="p-3 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span className="font-medium text-[11px]">الفواتير المتأخرة</span>
-                  <span className="size-1.5 rounded-full bg-rose-500" />
-                </div>
-                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-                  {stats.byStatus?.OVERDUE?.count || 0}
-                </div>
+            </div>
+            <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span className="font-medium text-[11px]">الفواتير المدفوعة</span>
+                <span className="size-1.5 rounded-full bg-emerald-500" />
               </div>
-              <div className="p-3 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span className="font-medium text-[11px]">إجمالي الإيرادات</span>
-                  <span className="size-1.5 rounded-full bg-violet-500" />
-                </div>
-                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-                  {formatPrice(stats.totalRevenue || 0)}
-                </div>
+              <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                {stats.byStatus?.PAID?.count || 0}
+              </div>
+            </div>
+            <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span className="font-medium text-[11px]">الفواتير المتأخرة</span>
+                <span className="size-1.5 rounded-full bg-rose-500" />
+              </div>
+              <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                {stats.byStatus?.OVERDUE?.count || 0}
+              </div>
+            </div>
+            <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span className="font-medium text-[11px]">إجمالي الإيرادات</span>
+                <span className="size-1.5 rounded-full bg-violet-500" />
+              </div>
+              <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                {formatPrice(stats.totalRevenue || 0)}
               </div>
             </div>
           </div>
 
           {/* Unified Table Chassis with Integrated Filter Bar */}
-          <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+          <div className="rounded-xl border border-border/80 bg-card/40 shadow-xs overflow-hidden">
             <div className="p-3 border-b border-border/60 flex flex-wrap items-center gap-2 bg-muted/20">
-              <Input
-                placeholder="البحث برقم الفاتورة أو اسم الشركة..."
-                value={filters.search}
-                onChange={e => handleFilterChange("search", e.target.value)}
-                className="h-8 text-xs max-w-xs bg-background"
-              />
-              <Select value={filters.status} onValueChange={v => handleFilterChange("status", v)}>
+              <div className="relative flex-1 min-w-[200px] max-w-xs">
+                <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="البحث برقم الفاتورة أو اسم الشركة..."
+                  value={filters.search}
+                  onChange={e => handleFilterChange("search", e.target.value)}
+                  className="h-8 pr-8 text-xs bg-background"
+                />
+              </div>
+              <Select value={filters.status || "ALL"} onValueChange={v => handleFilterChange("status", v)}>
                 <SelectTrigger className="h-8 text-xs w-28 bg-background"><SelectValue placeholder="الحالة" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">الكل</SelectItem>
+                  <SelectItem value="ALL">كل الحالات</SelectItem>
                   <SelectItem value="DRAFT">مسودة</SelectItem>
                   <SelectItem value="SENT">مرسلة</SelectItem>
                   <SelectItem value="PAID">مدفوعة</SelectItem>
@@ -283,10 +307,10 @@ const SuperAdminInvoices = () => {
                   <SelectItem value="CANCELLED">ملغية</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={filters.type} onValueChange={v => handleFilterChange("type", v)}>
+              <Select value={filters.type || "ALL"} onValueChange={v => handleFilterChange("type", v)}>
                 <SelectTrigger className="h-8 text-xs w-28 bg-background"><SelectValue placeholder="النوع" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">الكل</SelectItem>
+                  <SelectItem value="ALL">كل الأنواع</SelectItem>
                   <SelectItem value="SUBSCRIPTION">اشتراك</SelectItem>
                   <SelectItem value="ONE_TIME">مرة واحدة</SelectItem>
                   <SelectItem value="UPGRADE">ترقية</SelectItem>
@@ -355,52 +379,50 @@ const SuperAdminInvoices = () => {
       {activeTab === 2 && (
         <>
           {/* Order Invoices Telemetry Strip */}
-          <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden mb-4">
-            <div className="grid grid-cols-2 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
-              <div className="p-3 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span className="font-medium text-[11px]">إجمالي فواتير الطلبات</span>
-                  <span className="size-1.5 rounded-full bg-indigo-500" />
-                </div>
-                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-                  {orderStats.total || 0}
-                </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs mb-3">
+            <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span className="font-medium text-[11px]">إجمالي فواتير الطلبات</span>
+                <span className="size-1.5 rounded-full bg-indigo-500" />
               </div>
-              <div className="p-3 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span className="font-medium text-[11px]">مدفوعة</span>
-                  <span className="size-1.5 rounded-full bg-emerald-500" />
-                </div>
-                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-                  {(orderStats.byPaymentStatus?.PAID?.count || 0) + (orderStats.byPaymentStatus?.COMPLETED?.count || 0)}
-                </div>
+              <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                {orderStats.total || 0}
               </div>
-              <div className="p-3 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span className="font-medium text-[11px]">قيد الانتظار</span>
-                  <span className="size-1.5 rounded-full bg-amber-500" />
-                </div>
-                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-                  {orderStats.byPaymentStatus?.PENDING?.count || 0}
-                </div>
+            </div>
+            <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span className="font-medium text-[11px]">مدفوعة</span>
+                <span className="size-1.5 rounded-full bg-emerald-500" />
               </div>
-              <div className="p-3 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span className="font-medium text-[11px]">ملغية</span>
-                  <span className="size-1.5 rounded-full bg-rose-500" />
-                </div>
-                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-                  {orderStats.byPaymentStatus?.CANCELLED?.count || 0}
-                </div>
+              <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                {(orderStats.byPaymentStatus?.PAID?.count || 0) + (orderStats.byPaymentStatus?.COMPLETED?.count || 0)}
               </div>
-              <div className="p-3 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span className="font-medium text-[11px]">إجمالي الإيرادات</span>
-                  <span className="size-1.5 rounded-full bg-violet-500" />
-                </div>
-                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-                  {formatPrice(orderStats.totalRevenue || 0)}
-                </div>
+            </div>
+            <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span className="font-medium text-[11px]">قيد الانتظار</span>
+                <span className="size-1.5 rounded-full bg-amber-500" />
+              </div>
+              <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                {orderStats.byPaymentStatus?.PENDING?.count || 0}
+              </div>
+            </div>
+            <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span className="font-medium text-[11px]">ملغية</span>
+                <span className="size-1.5 rounded-full bg-rose-500" />
+              </div>
+              <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                {orderStats.byPaymentStatus?.CANCELLED?.count || 0}
+              </div>
+            </div>
+            <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors col-span-2 sm:col-span-1">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span className="font-medium text-[11px]">إجمالي الإيرادات</span>
+                <span className="size-1.5 rounded-full bg-violet-500" />
+              </div>
+              <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                {formatPrice(orderStats.totalRevenue || 0)}
               </div>
             </div>
           </div>
@@ -408,27 +430,30 @@ const SuperAdminInvoices = () => {
           {orderLoading ? (
             <div className="flex justify-center items-center min-h-[300px]"><LoadingSpinner size="lg" /></div>
           ) : (
-            <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+            <div className="rounded-xl border border-border/80 bg-card/40 shadow-xs overflow-hidden">
               <div className="p-3 border-b border-border/60 flex flex-wrap items-center gap-2 bg-muted/20">
-                <Input
-                  placeholder="بحث (رقم فاتورة / عميل / شركة)..."
-                  value={orderFilters.search}
-                  onChange={e => handleOrderFilterChange("search", e.target.value)}
-                  className="h-8 text-xs max-w-xs bg-background"
-                />
-                <Select value={orderFilters.companyId} onValueChange={v => handleOrderFilterChange("companyId", v)}>
+                <div className="relative flex-1 min-w-[200px] max-w-xs">
+                  <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="بحث (رقم فاتورة / عميل / شركة)..."
+                    value={orderFilters.search}
+                    onChange={e => handleOrderFilterChange("search", e.target.value)}
+                    className="h-8 pr-8 text-xs bg-background"
+                  />
+                </div>
+                <Select value={orderFilters.companyId || "ALL"} onValueChange={v => handleOrderFilterChange("companyId", v)}>
                   <SelectTrigger className="h-8 text-xs w-36 bg-background"><SelectValue placeholder="الشركة" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">كل الشركات</SelectItem>
+                    <SelectItem value="ALL">كل الشركات</SelectItem>
                     {companies.map(c => (
                       <SelectItem key={c.companyId} value={c.companyId}>{c.companyName} ({c.invoiceCount})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={orderFilters.paymentStatus} onValueChange={v => handleOrderFilterChange("paymentStatus", v)}>
+                <Select value={orderFilters.paymentStatus || "ALL"} onValueChange={v => handleOrderFilterChange("paymentStatus", v)}>
                   <SelectTrigger className="h-8 text-xs w-28 bg-background"><SelectValue placeholder="حالة الدفع" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">الكل</SelectItem>
+                    <SelectItem value="ALL">كل الحالات</SelectItem>
                     <SelectItem value="PAID">مدفوعة</SelectItem>
                     <SelectItem value="COMPLETED">مدفوعة</SelectItem>
                     <SelectItem value="PENDING">قيد الانتظار</SelectItem>

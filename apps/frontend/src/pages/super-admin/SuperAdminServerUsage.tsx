@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent } from "../../components/ui/card";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { Separator } from "../../components/ui/separator";
 import { apiClient } from "../../services/apiClient";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis } from "recharts";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../lib/utils";
-import { HardDrive, RefreshCw, PieChart as PieChartIcon, Info, Server, Cloud, Cpu, Gauge, Settings, BarChart3, Image, Video, Music, FileText, MoreHorizontal } from "lucide-react";
+import {
+  HardDrive, RefreshCw, PieChart as PieChartIcon, Info, Server, Cpu,
+  BarChart3, Image, Video, Music, FileText, MoreHorizontal, CheckCircle2, AlertTriangle
+} from "lucide-react";
 
 const formatSize = (bytes: number) => {
   if (bytes === 0 || !bytes) return "0 Bytes";
@@ -16,70 +20,302 @@ const formatSize = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
-const SuperAdminServerUsage = () => {
-  const [stats, setStats] = useState(null);
+const SuperAdminServerUsage: React.FC = () => {
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => { fetchStats(); }, []);
 
   const fetchStats = async () => {
-    try { setLoading(true); setError(null); const r = await apiClient.get("/super-admin/server-usage"); if (r.status === 200 && r.data.success) setStats(r.data.data); else setError(r.data.message || "فشل في جلب إحصائيات السيرفر"); } catch { setError("حدث خطأ أثناء الاتصال بالخادم"); } finally { setLoading(false); }
+    try {
+      setLoading(true);
+      setError(null);
+      const r = await apiClient.get("/super-admin/server-usage");
+      if (r.status === 200 && r.data.success) {
+        setStats(r.data.data);
+      } else {
+        setError(r.data?.message || "فشل في جلب إحصائيات السيرفر");
+      }
+    } catch {
+      setError("حدث خطأ أثناء الاتصال بالخادم");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (loading && !stats) return <div className="flex justify-center items-center min-h-[60vh]"><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}><LoadingSpinner size="xl" /></motion.div></div>;
+  if (loading && !stats) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
-  const chartData = stats ? [{ name: "المساحة المستخدمة", value: stats.used, color: "var(--color-primary)" }, { name: "المساحة الفارغة", value: stats.free, color: "var(--color-muted)" }] : [];
-  const breakdownData = stats?.breakdown ? [{ name: "الصور", value: stats.breakdown.images, color: "var(--color-primary)", icon: <Image className="size-4" /> }, { name: "الفيديوهات", value: stats.breakdown.videos, color: "var(--color-destructive)", icon: <Video className="size-4" /> }, { name: "الصوتيات", value: stats.breakdown.audio, color: "var(--color-secondary)", icon: <Music className="size-4" /> }, { name: "المستندات", value: stats.breakdown.documents, color: "var(--color-warning)", icon: <FileText className="size-4" /> }, { name: "أخرى", value: stats.breakdown.other, color: "var(--color-muted-foreground)", icon: <MoreHorizontal className="size-4" /> }] : [];
+  const chartData = stats ? [
+    { name: "المساحة المستخدمة", value: stats.used || (stats.disk?.used ?? 0), color: "#3b82f6" },
+    { name: "المساحة الفارغة", value: stats.free || (stats.disk?.free ?? 0), color: "hsl(var(--muted))" }
+  ] : [];
+
+  const breakdown = stats?.breakdown || {
+    images: stats?.media?.images?.size || 0,
+    videos: stats?.media?.videos?.size || 0,
+    audio: stats?.media?.audio?.size || 0,
+    documents: stats?.media?.documents?.size || 0,
+    other: 0,
+  };
+
+  const totalUsed = stats?.used || stats?.disk?.used || 1;
+  const usagePercentage = stats?.usagePercent || stats?.disk?.usagePercentage || 0;
+
+  const breakdownData = [
+    { name: "الصور", value: breakdown.images, color: "#3b82f6", icon: <Image className="size-3.5" /> },
+    { name: "الفيديوهات", value: breakdown.videos, color: "#ef4444", icon: <Video className="size-3.5" /> },
+    { name: "الصوتيات", value: breakdown.audio, color: "#8b5cf6", icon: <Music className="size-3.5" /> },
+    { name: "المستندات", value: breakdown.documents, color: "#f59e0b", icon: <FileText className="size-3.5" /> },
+    { name: "أخرى", value: breakdown.other, color: "#64748b", icon: <MoreHorizontal className="size-3.5" /> },
+  ];
 
   return (
-    <div className="space-y-4" dir="rtl">
-      <div className="flex justify-between items-center mb-2">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-500 to-blue-700 bg-clip-text text-transparent">تحليل استهلاك القرص</h1>
-          <p className="text-xs sm:text-sm font-medium text-muted-foreground">مراقبة حية وتفصيلية لموارد التخزين</p>
+    <div className="w-full space-y-4" dir="rtl">
+      {/* Linear Taste Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+            <Server className="size-4.5 text-primary" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">تحليل استهلاك موارد السيرفر</h1>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border border-border/80 bg-muted/30">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                مراقبة لحظية
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">مراقبة حية وتفصيلية لمساحة التخزين والذاكرة والعتاد</p>
+          </div>
         </div>
-        <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 hover:bg-blue-500 hover:text-white transition-all cursor-pointer" onClick={fetchStats}>
-          <RefreshCw className="size-4" />
-        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={fetchStats}
+          disabled={loading}
+          className="h-8 rounded-lg text-xs font-mono active:scale-[0.98] transition-transform"
+        >
+          <RefreshCw className={cn("ml-1.5 size-3.5", loading && "animate-spin")} />
+          تحديث الإحصائيات
+        </Button>
       </div>
 
-      {error && <div className="mb-4 rounded-xl bg-destructive/10 p-3 text-xs sm:text-sm text-destructive shadow-sm">{error}</div>}
-
-      {stats && <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 * 0.1 }} className="lg:col-span-1">
-          <Card className="h-full backdrop-blur-xl border border-border/50 rounded-2xl overflow-hidden"><CardContent className="p-4">
-            <h2 className="text-sm font-semibold flex items-center gap-1.5 mb-2"><PieChartIcon className="size-4 text-blue-500" /> نظرة عامة</h2>
-            <div className="relative min-h-[240px] w-full"><ResponsiveContainer width="100%" height={240}><PieChart><Pie data={chartData} cx="50%" cy="50%" innerRadius={70} outerRadius={90} stroke="none" paddingAngle={6} dataKey="value" startAngle={90} endAngle={-270}>{chartData.map((entry, index) => <Cell key={index} fill={entry.color} />)}</Pie></PieChart></ResponsiveContainer>
-              <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full">
-                <p className="text-2xl sm:text-3xl font-bold tabular-nums text-primary">{stats.usagePercent}%</p>
-                <p className="text-xs font-medium text-muted-foreground">نسبة الاستهلاك</p>
-              </motion.div>
-            </div>
-            <div className="flex items-center justify-center gap-3 mt-2"><div className="text-center"><p className="text-sm sm:text-base font-bold tabular-nums">{formatSize(stats.used)}</p><p className="text-xs text-muted-foreground">المستخدم</p></div><Separator orientation="vertical" className="h-8" /><div className="text-center"><p className="text-sm sm:text-base font-bold tabular-nums text-green-600">{formatSize(stats.free)}</p><p className="text-xs text-green-600">المتاح</p></div></div>
-          </CardContent></Card>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 * 0.1 }} className="lg:col-span-2">
-          <Card className="h-full backdrop-blur-xl border"><CardContent className="p-4">
-            <h2 className="font-bold flex items-center gap-1 mb-4"><BarChart3 className="size-4 text-blue-500" /> توزيع مساحة الملفات</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">{breakdownData.map((item, i) => <div key={i}><div className="flex justify-between items-center mb-1"><div className="flex items-center gap-1" style={{ color: item.color }}>{item.icon}<span className="text-sm font-bold">{item.name}</span></div><span className="text-sm font-bold">{formatSize(item.value)}</span></div><div className="h-2 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full" style={{ width: `${(item.value / stats.used) * 100}%`, backgroundColor: item.color }} /></div></div>)}</div>
-              <div><ResponsiveContainer width="100%" height={200}><BarChart data={breakdownData} layout="vertical" margin={{ left: -20 }}><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 12, fontWeight: 700 }} /><RechartsTooltip formatter={(value: number) => formatSize(value)} contentStyle={{ borderRadius: 8, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} /><Bar dataKey="value" radius={[0, 4, 4, 0]}>{breakdownData.map((entry, index) => <Cell key={index} fill={entry.color} />)}</Bar></BarChart></ResponsiveContainer></div>
-            </div>
-          </CardContent></Card>
-        </motion.div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 col-span-1 lg:col-span-3">
-          {[{ icon: <HardDrive className="size-6" />, label: "نظام التشغيل", value: stats.platform, iconClass: "bg-blue-500/10 text-blue-500" }, { icon: <Settings className="size-6" />, label: "اسم القرص", value: "القرص المحلي (Root)", iconClass: "bg-green-500/10 text-green-500" }, { icon: <RefreshCw className="size-6" />, label: "آخر تحديث", value: new Date(stats.timestamp).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }), iconClass: "bg-amber-500/10 text-amber-500" }].map((item, i) => <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (i + 2) * 0.1 }}><Card className="h-full border"><CardContent><div className="flex items-center gap-2"><div className={cn("p-3 rounded-xl", item.iconClass)}>{item.icon}</div><div><p className="text-xs font-semibold text-muted-foreground">{item.label}</p><p className="text-base font-bold">{item.value}</p></div></div></CardContent></Card></motion.div>)}
+      {error && (
+        <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive">
+          {error}
         </div>
-      </div>}
+      )}
 
-      <AnimatePresence>{stats && stats.usagePercent > 80 && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto", marginTop: 32 }} exit={{ opacity: 0, height: 0 }}>
-        <div className="p-3 rounded-xl bg-gradient-to-r from-red-500/10 to-transparent border border-red-500/20">
-          <div className="flex items-center gap-2"><div className="p-3 rounded-full bg-red-500 text-white animate-pulse"><Info className="size-5" /></div><div><p className="font-bold text-red-500">تنبيه: مساحة التخزين حرجة ({stats.usagePercent}%)</p><p className="text-sm text-muted-foreground">نوصي بحذف الفيديوهات القديمة أو الصور المؤرشفة لتوفير مساحة إضافية.</p></div></div>
-        </div>
-      </motion.div>}</AnimatePresence>
+      {stats && (
+        <>
+          {/* Telemetry Ribbon */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+            <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span className="font-medium text-[11px]">إجمالي سعة التخزين</span>
+                <span className="size-1.5 rounded-full bg-indigo-500" />
+              </div>
+              <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                {formatSize(stats.total || stats.disk?.total)}
+              </div>
+            </div>
+
+            <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span className="font-medium text-[11px]">المساحة المستخدمة</span>
+                <span className="size-1.5 rounded-full bg-sky-500" />
+              </div>
+              <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                {formatSize(stats.used || stats.disk?.used)}
+              </div>
+            </div>
+
+            <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span className="font-medium text-[11px]">المساحة المتاحة</span>
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+              </div>
+              <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+                {formatSize(stats.free || stats.disk?.free)}
+              </div>
+            </div>
+
+            <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span className="font-medium text-[11px]">نسبة استهلاك القرص</span>
+                <span className={cn("size-1.5 rounded-full", usagePercentage > 80 ? "bg-rose-500" : "bg-emerald-500")} />
+              </div>
+              <div className={cn("text-2xl font-bold tracking-tight font-mono tabular-nums", usagePercentage > 80 ? "text-rose-600 dark:text-rose-400" : "text-foreground")}>
+                {usagePercentage}%
+              </div>
+            </div>
+          </div>
+
+          {/* Charts Row Chassis */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            {/* Donut Chart */}
+            <div className="rounded-xl border border-border/80 bg-card/40 p-4 shadow-xs">
+              <div className="mb-3 flex items-center justify-between border-b border-border/60 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <PieChartIcon className="size-4 text-primary" />
+                  <h3 className="text-xs font-semibold text-foreground">نظرة عامة على القرص</h3>
+                </div>
+                <Badge variant="outline" className="text-[10px] font-mono">{usagePercentage}% مستهلك</Badge>
+              </div>
+
+              <div className="relative min-h-[200px] w-full flex items-center justify-center">
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      stroke="none"
+                      paddingAngle={4}
+                      dataKey="value"
+                      startAngle={90}
+                      endAngle={-270}
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={index} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+                  <p className="text-2xl font-bold font-mono tabular-nums text-foreground">{usagePercentage}%</p>
+                  <p className="text-[10px] text-muted-foreground">الاستهلاك</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-around border-t border-border/60 pt-3 mt-1">
+                <div className="text-center">
+                  <p className="text-xs font-bold font-mono tabular-nums text-foreground">{formatSize(stats.used || stats.disk?.used)}</p>
+                  <p className="text-[10px] text-muted-foreground">المستخدم</p>
+                </div>
+                <Separator orientation="vertical" className="h-6" />
+                <div className="text-center">
+                  <p className="text-xs font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatSize(stats.free || stats.disk?.free)}</p>
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400">المتاح</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Distribution Bar Chart */}
+            <div className="rounded-xl border border-border/80 bg-card/40 p-4 shadow-xs lg:col-span-2">
+              <div className="mb-3 flex items-center justify-between border-b border-border/60 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="size-4 text-primary" />
+                  <h3 className="text-xs font-semibold text-foreground">توزيع مساحة الملفات والوسائط</h3>
+                </div>
+                <span className="text-[10px] font-mono text-muted-foreground">تخزين السيرفر المحلي</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                <div className="space-y-2.5">
+                  {breakdownData.map((item, i) => {
+                    const pct = totalUsed > 0 ? ((item.value / totalUsed) * 100).toFixed(1) : "0";
+                    return (
+                      <div key={i} className="text-xs">
+                        <div className="flex justify-between items-center mb-1">
+                          <div className="flex items-center gap-1.5" style={{ color: item.color }}>
+                            {item.icon}
+                            <span className="font-medium text-foreground text-xs">{item.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2 font-mono text-[11px]">
+                            <span className="font-semibold text-foreground tabular-nums">{formatSize(item.value)}</span>
+                            <span className="text-muted-foreground text-[10px]">({pct}%)</span>
+                          </div>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{ width: `${pct}%`, backgroundColor: item.color }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="h-[180px] w-full" dir="ltr">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={breakdownData} layout="vertical" margin={{ left: -15, right: 10, top: 0, bottom: 0 }}>
+                      <XAxis type="number" hide />
+                      <YAxis dataKey="name" type="category" width={65} tick={{ fontSize: 11 }} />
+                      <RechartsTooltip
+                        formatter={(value: number) => formatSize(value)}
+                        contentStyle={{ borderRadius: 8, fontSize: 11, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }}
+                      />
+                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                        {breakdownData.map((entry, index) => (
+                          <Cell key={index} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Host Specs Chassis */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+            <div className="p-3.5 flex items-center gap-3 hover:bg-muted/10 transition-colors">
+              <div className="size-8 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-primary shrink-0">
+                <Cpu className="size-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] text-muted-foreground">نظام التشغيل والمعالج</p>
+                <p className="text-xs font-semibold text-foreground truncate font-mono">{stats.platform || stats.cpu?.model || "Linux x86_64"}</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 flex items-center gap-3 hover:bg-muted/10 transition-colors">
+              <div className="size-8 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-primary shrink-0">
+                <HardDrive className="size-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] text-muted-foreground">القرص ونقطة الربط</p>
+                <p className="text-xs font-semibold text-foreground font-mono">القرص المحلي (Root /)</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 flex items-center gap-3 hover:bg-muted/10 transition-colors">
+              <div className="size-8 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-primary shrink-0">
+                <RefreshCw className="size-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] text-muted-foreground">آخر فحص لحظي</p>
+                <p className="text-xs font-semibold text-foreground font-mono">
+                  {stats.timestamp ? new Date(stats.timestamp).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "الآن"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Critical Warning if > 80% */}
+          {usagePercentage > 80 && (
+            <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3.5 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-3">
+              <AlertTriangle className="size-5 shrink-0 text-rose-600" />
+              <div>
+                <p className="font-semibold">تنبيه: مساحة التخزين تقترب من الحد الأقصى ({usagePercentage}%)</p>
+                <p className="text-[11px] text-rose-600/90 dark:text-rose-400/90 mt-0.5">يوصى بأرشفة مقاطع الفيديو القديمة أو الصور غير المستخدمة لضمان استقرار الخادم.</p>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };

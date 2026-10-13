@@ -139,26 +139,26 @@ const Reminders: React.FC = () => {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high":
-        return "text-red-600 bg-red-100";
+        return "text-destructive bg-destructive/10 border-destructive/20";
       case "medium":
-        return "text-yellow-600 bg-yellow-100";
+        return "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20";
       case "low":
-        return "text-green-600 bg-green-100";
+        return "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
       default:
-        return "text-gray-600 bg-gray-100";
+        return "text-muted-foreground bg-muted border-border";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "completed":
-        return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+        return <CheckCircleIcon className="h-4 w-4 text-emerald-500" />;
       case "triggered":
-        return <BellIcon className="h-5 w-5 text-blue-500" />;
+        return <BellIcon className="h-4 w-4 text-primary" />;
       case "dismissed":
-        return <XMarkIcon className="h-5 w-5 text-gray-500" />;
+        return <XMarkIcon className="h-4 w-4 text-muted-foreground" />;
       default:
-        return <ClockIcon className="h-5 w-5 text-yellow-500" />;
+        return <ClockIcon className="h-4 w-4 text-amber-500" />;
     }
   };
 
@@ -203,22 +203,33 @@ const Reminders: React.FC = () => {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-4 w-full">
-      {/* Header Control Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2">
-        <div className="space-y-0.5">
-          <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <BellIcon className="size-5 text-indigo-600 dark:text-indigo-400" />
-            التذكيرات والمتابعة
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            إدارة تنبيهات المهام والمتابعات اليومية مع العملاء
-          </p>
+    <div className="w-full space-y-4" dir="rtl">
+      {/* Linear Taste Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+            <BellIcon className="size-4.5 text-primary" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
+                التذكيرات والمتابعة
+              </h1>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border border-border/80 bg-muted/30">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                تنبيهات نشطة
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              إدارة تنبيهات المهام والمتابعات اليومية مع العملاء
+            </p>
+          </div>
         </div>
+
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowCreateForm(true)}
-            className="h-8.5 px-3 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-all active:scale-[0.98] flex items-center gap-1.5"
+            className="h-8 px-3 rounded-lg text-xs font-mono font-medium bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xs transition-all active:scale-[0.98] flex items-center gap-1.5"
           >
             <PlusIcon className="size-3.5" />
             تذكير جديد
@@ -226,7 +237,7 @@ const Reminders: React.FC = () => {
           <button
             onClick={loadData}
             disabled={loading}
-            className="h-8.5 px-3 rounded-lg text-xs font-medium border border-border/70 hover:bg-muted/50 text-foreground transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-1.5"
+            className="h-8 px-3 rounded-lg text-xs font-mono font-medium border border-border/80 bg-card hover:bg-muted/50 text-foreground transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-1.5"
           >
             <ArrowPathIcon className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
             تحديث
@@ -235,43 +246,44 @@ const Reminders: React.FC = () => {
       </div>
 
       {/* Linear Telemetry Strip */}
-      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
-        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
-          <div className="p-3 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">التذكيرات النشطة</span>
-              <span className="size-1.5 rounded-full bg-indigo-500" />
-            </div>
-            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-              {stats?.active?.total ?? activeReminders.length}
-            </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">التذكيرات النشطة</span>
+            <span className="size-1.5 rounded-full bg-indigo-500" />
           </div>
-          <div className="p-3 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">متأخرة عن الموعد</span>
-              <span className="size-1.5 rounded-full bg-rose-500" />
-            </div>
-            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-              {stats?.active?.overdue ?? 0}
-            </div>
+          <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+            {stats?.active?.total ?? activeReminders.length}
           </div>
-          <div className="p-3 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">مكتملة هذا الأسبوع</span>
-              <span className="size-1.5 rounded-full bg-emerald-500" />
-            </div>
-            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-              {stats?.completed?.thisWeek ?? completedReminders.length}
-            </div>
+        </div>
+
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">متأخرة عن الموعد</span>
+            <span className="size-1.5 rounded-full bg-rose-500" />
           </div>
-          <div className="p-3 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">معدل الإنجاز</span>
-              <span className="size-1.5 rounded-full bg-violet-500" />
-            </div>
-            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-              {stats?.performance?.completionRate ? `${Math.round(stats.performance.completionRate * 100)}%` : "0%"}
-            </div>
+          <div className="text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400 font-mono tabular-nums">
+            {stats?.active?.overdue ?? 0}
+          </div>
+        </div>
+
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">مكتملة هذا الأسبوع</span>
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+          </div>
+          <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+            {stats?.completed?.thisWeek ?? completedReminders.length}
+          </div>
+        </div>
+
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">معدل الإنجاز</span>
+            <span className="size-1.5 rounded-full bg-violet-500" />
+          </div>
+          <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+            {stats?.performance?.completionRate ? `${Math.round(stats.performance.completionRate * 100)}%` : "0%"}
           </div>
         </div>
       </div>
@@ -280,7 +292,7 @@ const Reminders: React.FC = () => {
       <div className="flex items-center gap-1 p-1 bg-muted/40 border border-border/60 rounded-lg w-fit">
         <button
           onClick={() => setActiveTab("active")}
-          className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+          className={`px-3 py-1 rounded-md text-xs font-mono transition-all active:scale-[0.98] ${
             activeTab === "active"
               ? "bg-background text-foreground shadow-2xs font-semibold"
               : "text-muted-foreground hover:text-foreground"
@@ -291,7 +303,7 @@ const Reminders: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab("completed")}
-          className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+          className={`px-3 py-1 rounded-md text-xs font-mono transition-all active:scale-[0.98] ${
             activeTab === "completed"
               ? "bg-background text-foreground shadow-2xs font-semibold"
               : "text-muted-foreground hover:text-foreground"
@@ -302,7 +314,7 @@ const Reminders: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab("stats")}
-          className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+          className={`px-3 py-1 rounded-md text-xs font-mono transition-all active:scale-[0.98] ${
             activeTab === "stats"
               ? "bg-background text-foreground shadow-2xs font-semibold"
               : "text-muted-foreground hover:text-foreground"
@@ -315,117 +327,115 @@ const Reminders: React.FC = () => {
 
       {/* Create Reminder Modal */}
       {showCreateForm && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 dark:bg-gray-900 dark:bg-opacity-75 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border border-gray-200 dark:border-gray-700 w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                إنشاء تذكير جديد
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    العنوان
-                  </label>
-                  <input
-                    type="text"
-                    value={createForm.title}
-                    onChange={(e) =>
-                      setCreateForm({ ...createForm, title: e.target.value })
-                    }
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="عنوان التذكير"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    الوصف
-                  </label>
-                  <textarea
-                    value={createForm.description}
-                    onChange={(e) =>
-                      setCreateForm({
-                        ...createForm,
-                        description: e.target.value,
-                      })
-                    }
-                    rows={3}
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="وصف التذكير"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      النوع
-                    </label>
-                    <select
-                      value={createForm.type}
-                      onChange={(e) =>
-                        setCreateForm({ ...createForm, type: e.target.value })
-                      }
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="FOLLOW_UP">متابعة عميل</option>
-                      <option value="QUOTE_FOLLOW_UP">متابعة عرض سعر</option>
-                      <option value="PAYMENT_REMINDER">تذكير دفع</option>
-                      <option value="TASK_REMINDER">تذكير مهمة</option>
-                      <option value="APPOINTMENT_REMINDER">تذكير موعد</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      الأولوية
-                    </label>
-                    <select
-                      value={createForm.priority}
-                      onChange={(e) =>
-                        setCreateForm({
-                          ...createForm,
-                          priority: e.target.value,
-                        })
-                      }
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="low">منخفضة</option>
-                      <option value="medium">متوسطة</option>
-                      <option value="high">عالية</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    وقت التذكير
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={createForm.scheduledTime}
-                    onChange={(e) =>
-                      setCreateForm({
-                        ...createForm,
-                        scheduledTime: e.target.value,
-                      })
-                    }
-                    className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end space-x-2 mt-6">
-                <button
-                  onClick={() => setShowCreateForm(false)}
-                  className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500"
-                >
-                  إلغاء
-                </button>
-                <button
-                  onClick={handleCreateReminder}
-                  disabled={
-                    !createForm.title.trim() || !createForm.scheduledTime
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="rounded-xl border border-border/80 bg-card p-5 shadow-xl max-w-md w-full animate-in fade-in zoom-in-95">
+            <h3 className="text-sm font-semibold text-foreground mb-4">
+              إنشاء تذكير جديد
+            </h3>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block font-medium text-foreground mb-1">
+                  العنوان
+                </label>
+                <input
+                  type="text"
+                  value={createForm.title}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, title: e.target.value })
                   }
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                >
-                  إنشاء
-                </button>
+                  className="w-full border border-border rounded-lg px-3 py-1.5 bg-background text-foreground text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
+                  placeholder="عنوان التذكير"
+                />
               </div>
+              <div>
+                <label className="block font-medium text-foreground mb-1">
+                  الوصف
+                </label>
+                <textarea
+                  value={createForm.description}
+                  onChange={(e) =>
+                    setCreateForm({
+                      ...createForm,
+                      description: e.target.value,
+                    })
+                  }
+                  rows={2}
+                  className="w-full border border-border rounded-lg px-3 py-1.5 bg-background text-foreground text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
+                  placeholder="وصف التذكير"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-medium text-foreground mb-1">
+                    النوع
+                  </label>
+                  <select
+                    value={createForm.type}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, type: e.target.value })
+                    }
+                    className="w-full border border-border rounded-lg px-3 py-1.5 bg-background text-foreground text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="FOLLOW_UP">متابعة عميل</option>
+                    <option value="QUOTE_FOLLOW_UP">متابعة عرض سعر</option>
+                    <option value="PAYMENT_REMINDER">تذكير دفع</option>
+                    <option value="TASK_REMINDER">تذكير مهمة</option>
+                    <option value="APPOINTMENT_REMINDER">تذكير موعد</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-medium text-foreground mb-1">
+                    الأولوية
+                  </label>
+                  <select
+                    value={createForm.priority}
+                    onChange={(e) =>
+                      setCreateForm({
+                        ...createForm,
+                        priority: e.target.value,
+                      })
+                    }
+                    className="w-full border border-border rounded-lg px-3 py-1.5 bg-background text-foreground text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="low">منخفضة</option>
+                    <option value="medium">متوسطة</option>
+                    <option value="high">عالية</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block font-medium text-foreground mb-1">
+                  وقت التذكير
+                </label>
+                <input
+                  type="datetime-local"
+                  value={createForm.scheduledTime}
+                  onChange={(e) =>
+                    setCreateForm({
+                      ...createForm,
+                      scheduledTime: e.target.value,
+                    })
+                  }
+                  className="w-full border border-border rounded-lg px-3 py-1.5 bg-background text-foreground text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                onClick={() => setShowCreateForm(false)}
+                className="px-3 py-1.5 border border-border rounded-lg text-xs font-mono text-muted-foreground hover:bg-muted"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={handleCreateReminder}
+                disabled={
+                  !createForm.title.trim() || !createForm.scheduledTime
+                }
+                className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-mono font-medium hover:bg-primary/90 disabled:opacity-50"
+              >
+                إنشاء
+              </button>
             </div>
           </div>
         </div>
@@ -433,37 +443,37 @@ const Reminders: React.FC = () => {
 
       {/* Content */}
       {activeTab === "active" && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {activeReminders.length === 0 ? (
-            <div className="text-center py-12">
-              <BellIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">
+            <div className="rounded-xl border border-dashed border-border/70 p-12 text-center bg-card/20">
+              <BellIcon className="mx-auto h-8 w-8 text-muted-foreground/50" />
+              <h3 className="mt-3 text-sm font-semibold text-foreground">
                 لا توجد تذكيرات نشطة
               </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                جميع التذكيرات مكتملة أو لا توجد تذكيرات
+              <p className="mt-1 text-xs text-muted-foreground">
+                جميع التذكيرات مكتملة أو لم يتم جدولة تذكيرات بعد
               </p>
             </div>
           ) : (
             activeReminders.map((reminder) => (
               <div
                 key={reminder.id}
-                className={`bg-white dark:bg-gray-800 rounded-lg shadow border dark:border-gray-700 hover:shadow-md transition-shadow ${
+                className={`rounded-xl border transition-all ${
                   isOverdue(reminder.scheduledTime)
-                    ? "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-900/20"
-                    : ""
+                    ? "border-destructive/40 bg-destructive/5"
+                    : "border-border/80 bg-card hover:border-border"
                 }`}
               >
-                <div className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
+                <div className="p-4 sm:p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
                         {getStatusIcon(reminder.status)}
-                        <h4 className="text-lg font-medium text-gray-900 dark:text-white">
+                        <h4 className="text-sm font-semibold text-foreground truncate">
                           {reminder.title}
                         </h4>
                         <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(reminder.priority)}`}
+                          className={`px-2 py-0.5 rounded-md text-[11px] font-medium border ${getPriorityColor(reminder.priority)}`}
                         >
                           {reminder.priority === "high"
                             ? "عالية"
@@ -472,58 +482,58 @@ const Reminders: React.FC = () => {
                               : "منخفضة"}
                         </span>
                         {isOverdue(reminder.scheduledTime) && (
-                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400">
+                          <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-destructive/15 text-destructive border border-destructive/25">
                             متأخر
                           </span>
                         )}
                       </div>
 
-                      <p className="text-gray-600 dark:text-gray-400 mb-3">
+                      <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
                         {reminder.description}
                       </p>
 
-                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 space-x-4">
-                        <span className="flex items-center">
-                          <ClockIcon className="h-4 w-4 ml-1" />
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1 font-mono">
+                          <ClockIcon className="h-3.5 w-3.5" />
                           {formatTime(reminder.scheduledTime)}
                         </span>
                         {reminder.customerId && (
-                          <span className="flex items-center">
-                            <UserIcon className="h-4 w-4 ml-1" />
+                          <span className="flex items-center gap-1 font-mono">
+                            <UserIcon className="h-3.5 w-3.5" />
                             عميل #{reminder.customerId}
                           </span>
                         )}
                         {reminder.snoozeCount > 0 && (
-                          <span className="text-yellow-600">
+                          <span className="text-amber-500 font-mono text-[11px]">
                             تم التأجيل {reminder.snoozeCount} مرة
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <div className="mr-4 flex flex-col space-y-2">
+                    <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() =>
                           handleUpdateStatus(reminder.id, "completed")
                         }
-                        className="text-green-600 hover:text-green-800 p-1 text-sm"
+                        className="h-8 w-8 rounded-lg flex items-center justify-center text-emerald-500 hover:bg-emerald-500/10 transition-colors"
                         title="تم الإنجاز"
                       >
-                        <CheckCircleIcon className="h-5 w-5" />
+                        <CheckCircleIcon className="h-4 w-4" />
                       </button>
 
                       {reminder.canSnooze &&
                         reminder.snoozeCount < reminder.maxSnooze && (
                           <div className="relative group">
-                            <button className="text-yellow-600 hover:text-yellow-800 p-1 text-sm">
-                              <ClockIcon className="h-5 w-5" />
+                            <button className="h-8 w-8 rounded-lg flex items-center justify-center text-amber-500 hover:bg-amber-500/10 transition-colors">
+                              <ClockIcon className="h-4 w-4" />
                             </button>
-                            <div className="absolute left-0 mt-1 w-32 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                            <div className="absolute left-0 mt-1 w-32 bg-popover text-popover-foreground border border-border rounded-lg shadow-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 p-1">
                               <button
                                 onClick={() =>
                                   handleSnoozeReminder(reminder.id, 15)
                                 }
-                                className="block w-full text-right px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                className="w-full text-right px-2.5 py-1.5 text-xs rounded-md hover:bg-accent transition-colors"
                               >
                                 15 دقيقة
                               </button>
@@ -531,7 +541,7 @@ const Reminders: React.FC = () => {
                                 onClick={() =>
                                   handleSnoozeReminder(reminder.id, 60)
                                 }
-                                className="block w-full text-right px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                className="w-full text-right px-2.5 py-1.5 text-xs rounded-md hover:bg-accent transition-colors"
                               >
                                 ساعة واحدة
                               </button>
@@ -539,7 +549,7 @@ const Reminders: React.FC = () => {
                                 onClick={() =>
                                   handleSnoozeReminder(reminder.id, 240)
                                 }
-                                className="block w-full text-right px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                className="w-full text-right px-2.5 py-1.5 text-xs rounded-md hover:bg-accent transition-colors"
                               >
                                 4 ساعات
                               </button>
@@ -551,10 +561,10 @@ const Reminders: React.FC = () => {
                         onClick={() =>
                           handleUpdateStatus(reminder.id, "dismissed")
                         }
-                        className="text-gray-600 hover:text-gray-800 p-1 text-sm"
+                        className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                         title="تجاهل"
                       >
-                        <XMarkIcon className="h-5 w-5" />
+                        <XMarkIcon className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
@@ -566,11 +576,11 @@ const Reminders: React.FC = () => {
       )}
 
       {activeTab === "completed" && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {completedReminders.length === 0 ? (
-            <div className="text-center py-12">
-              <CheckCircleIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">
+            <div className="rounded-xl border border-dashed border-border/70 p-12 text-center bg-card/20">
+              <CheckCircleIcon className="mx-auto h-8 w-8 text-muted-foreground/50" />
+              <h3 className="mt-3 text-sm font-semibold text-foreground">
                 لا توجد تذكيرات مكتملة
               </h3>
             </div>
@@ -578,41 +588,39 @@ const Reminders: React.FC = () => {
             completedReminders.map((reminder) => (
               <div
                 key={reminder.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow border dark:border-gray-700"
+                className="rounded-xl border border-border/80 bg-card p-4 sm:p-5"
               >
-                <div className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        {getStatusIcon(reminder.status)}
-                        <h4 className="text-lg font-medium text-gray-900">
-                          {reminder.title}
-                        </h4>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            reminder.status === "completed"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {reminder.status === "completed"
-                            ? "مكتمل"
-                            : "تم التجاهل"}
-                        </span>
-                      </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                      {getStatusIcon(reminder.status)}
+                      <h4 className="text-sm font-semibold text-foreground truncate">
+                        {reminder.title}
+                      </h4>
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[11px] font-medium border ${
+                          reminder.status === "completed"
+                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                            : "bg-muted text-muted-foreground border-border"
+                        }`}
+                      >
+                        {reminder.status === "completed"
+                          ? "مكتمل"
+                          : "تم التجاهل"}
+                      </span>
+                    </div>
 
-                      <p className="text-gray-600 mb-3">
-                        {reminder.description}
-                      </p>
+                    <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                      {reminder.description}
+                    </p>
 
-                      <div className="flex items-center text-sm text-gray-500 space-x-4">
-                        <span>
-                          تم الإنشاء: {formatDate(reminder.createdAt)}
-                        </span>
-                        <span>
-                          كان مجدولاً: {formatDate(reminder.scheduledTime)}
-                        </span>
-                      </div>
+                    <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-muted-foreground">
+                      <span>
+                        تم الإنشاء: {formatDate(reminder.createdAt)}
+                      </span>
+                      <span>
+                        كان مجدولاً: {formatDate(reminder.scheduledTime)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -623,52 +631,52 @@ const Reminders: React.FC = () => {
       )}
 
       {activeTab === "stats" && stats && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Performance Metrics */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          <div className="rounded-xl border border-border/80 bg-card p-5">
+            <h3 className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-4">
               مقاييس الأداء
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-center">
+                <div className="text-2xl font-bold font-mono tabular-nums text-foreground">
                   {Math.round(stats.performance.completionRate * 100)}%
                 </div>
-                <div className="text-sm text-gray-600">معدل الإنجاز</div>
+                <div className="text-xs text-muted-foreground mt-1">معدل الإنجاز</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
+              <div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-center">
+                <div className="text-2xl font-bold font-mono tabular-nums text-foreground">
                   {stats.performance.averageSnoozeCount.toFixed(1)}
                 </div>
-                <div className="text-sm text-gray-600">متوسط التأجيل</div>
+                <div className="text-xs text-muted-foreground mt-1">متوسط التأجيل</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">
+              <div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-center">
+                <div className="text-2xl font-bold font-mono tabular-nums text-foreground">
                   {Math.round(stats.performance.onTimeCompletion * 100)}%
                 </div>
-                <div className="text-sm text-gray-600">الإنجاز في الوقت</div>
+                <div className="text-xs text-muted-foreground mt-1">الإنجاز في الوقت</div>
               </div>
             </div>
           </div>
 
           {/* Trends */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              الاتجاهات
+          <div className="rounded-xl border border-border/80 bg-card p-5">
+            <h3 className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-4">
+              الاتجاهات الزمنية
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {stats.trends.map((trend: any, index: number) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                  className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-muted/20"
                 >
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  <span className="text-xs font-medium text-foreground">
                     {trend.period}
                   </span>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                    <span>تم الإنشاء: {trend.created}</span>
-                    <span>مكتمل: {trend.completed}</span>
-                    <span>متأخر: {trend.overdue}</span>
+                  <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground">
+                    <span>تم الإنشاء: <strong className="text-foreground">{trend.created}</strong></span>
+                    <span>مكتمل: <strong className="text-emerald-500">{trend.completed}</strong></span>
+                    <span>متأخر: <strong className="text-destructive">{trend.overdue}</strong></span>
                   </div>
                 </div>
               ))}

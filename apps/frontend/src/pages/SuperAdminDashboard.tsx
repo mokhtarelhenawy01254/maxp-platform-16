@@ -55,31 +55,31 @@ const MetricCard = ({ title, value, icon: Icon, color, growth, subtext, classNam
   const isPositive = growth !== undefined && growth > 0;
   const isNegative = growth !== undefined && growth < 0;
   return (
-    <div className={cn("rounded-xl border border-border/80 dark:border-border/60 bg-card p-4 shadow-2xs transition-all duration-150 hover:border-border select-none", className)}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className={cn("size-1.5 rounded-full shrink-0", color === "indigo" ? "bg-indigo-500" : color === "emerald" ? "bg-emerald-500" : color === "blue" ? "bg-sky-500" : "bg-amber-500")} />
-            <span className="font-medium text-[11px]">{title}</span>
-          </div>
-          <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-            {typeof value === 'number' ? value.toLocaleString() : value}
-          </div>
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            {subtext && (
-              <span className="text-[11px] text-muted-foreground font-medium">
-                {subtext}
-              </span>
-            )}
-            {growth !== undefined && (
-              <span className={cn("text-[11px] font-mono font-semibold tabular-nums", isPositive ? "text-emerald-600 dark:text-emerald-400" : isNegative ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground")}>
-                {isPositive ? "+" : ""}{growth?.toFixed(1)}%
-              </span>
-            )}
-          </div>
+    <div className={cn("p-4 flex flex-col justify-between hover:bg-muted/10 transition-colors select-none", className)}>
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className={cn("size-1.5 rounded-full shrink-0", color === "indigo" ? "bg-indigo-500" : color === "emerald" ? "bg-emerald-500" : color === "blue" ? "bg-sky-500" : "bg-amber-500")} />
+          <span className="font-medium text-[11px]">{title}</span>
         </div>
-        <div className="p-2 rounded-lg bg-muted/60 text-muted-foreground shrink-0">
-          <Icon className="size-4" />
+        <div className="size-7 rounded-md border border-border/70 bg-muted/30 flex items-center justify-center text-muted-foreground shrink-0">
+          <Icon className="size-3.5" />
+        </div>
+      </div>
+      <div>
+        <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+          {typeof value === 'number' ? value.toLocaleString() : value}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          {subtext && (
+            <span className="text-[10px] text-muted-foreground font-medium">
+              {subtext}
+            </span>
+          )}
+          {growth !== undefined && (
+            <span className={cn("text-[10px] font-mono font-semibold tabular-nums", isPositive ? "text-emerald-600 dark:text-emerald-400" : isNegative ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground")}>
+              {isPositive ? "+" : ""}{growth?.toFixed(1)}%
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -89,43 +89,43 @@ const MetricCard = ({ title, value, icon: Icon, color, growth, subtext, classNam
 const SystemHealthBar = ({ health }: { health: DashboardData['health'] }) => {
   const statusColor = health.status === 'healthy' ? 'bg-emerald-500' : health.status === 'degraded' ? 'bg-amber-500' : 'bg-rose-500';
   const statusText = health.status === 'healthy' ? 'ممتاز' : health.status === 'degraded' ? 'منخفض' : 'عطل';
-  const dbColor = health.database === 'connected' ? 'text-emerald-500' : 'text-rose-500';
+  const dbColor = health.database === 'connected' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
   const uptimeStr = Math.floor(health.uptime / 86400) + 'd ' + Math.floor((health.uptime % 86400) / 3600) + 'h';
   return (
-    <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-border/50 bg-card/60 px-5 py-3.5 backdrop-blur-xl">
+    <div className="flex flex-wrap items-center gap-3.5 rounded-xl border border-border/80 bg-card/40 px-4 py-2.5 shadow-xs text-xs">
       <div className="flex items-center gap-2">
-        <div className={cn("size-2 rounded-full animate-pulse", statusColor)} />
-        <span className="text-xs font-medium text-muted-foreground">حالة النظام:</span>
-        <span className={cn("text-xs font-semibold", health.status === 'healthy' ? 'text-emerald-600' : health.status === 'degraded' ? 'text-amber-600' : 'text-rose-600')}>
+        <div className={cn("size-2 rounded-full", statusColor)} />
+        <span className="font-medium text-muted-foreground text-[11px]">حالة النظام:</span>
+        <span className={cn("font-semibold text-xs", health.status === 'healthy' ? 'text-emerald-600 dark:text-emerald-400' : health.status === 'degraded' ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400')}>
           {statusText}
         </span>
       </div>
-      <div className="h-4 w-px bg-border/40" />
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Server className="size-4" />
-        <span className="text-xs font-medium tabular-nums">{uptimeStr}</span>
+      <div className="h-3.5 w-px bg-border/60" />
+      <div className="flex items-center gap-1.5 text-muted-foreground font-mono text-[11px]">
+        <Server className="size-3.5" />
+        <span className="tabular-nums">{uptimeStr}</span>
       </div>
-      <div className="h-4 w-px bg-border/40" />
-      <div className="flex items-center gap-2">
-        <Database className={cn("size-4", dbColor)} />
-        <span className={cn("text-xs font-medium", dbColor)}>{health.database === 'connected' ? 'DB متصل' : 'DB منفصل'}</span>
+      <div className="h-3.5 w-px bg-border/60" />
+      <div className="flex items-center gap-1.5 font-mono text-[11px]">
+        <Database className={cn("size-3.5", dbColor)} />
+        <span className={cn("font-medium", dbColor)}>{health.database === 'connected' ? 'قاعدة البيانات متصلة' : 'قاعدة البيانات منفصلة'}</span>
         {health.dbStats && (
-          <span className="text-[11px] text-muted-foreground/80 tabular-nums">
+          <span className="text-muted-foreground tabular-nums">
             ({health.dbStats.active}/{health.dbStats.queryCount} اتصال)
           </span>
         )}
       </div>
-      <div className="h-6 w-px bg-border/40" />
-      <div className="flex items-center gap-2 text-muted-foreground/70">
-        <Wifi className="size-4" />
-        <span className="text-[11px] font-black">{health.environment === 'production' ? 'إنتاج' : 'تطوير'}</span>
+      <div className="h-3.5 w-px bg-border/60" />
+      <div className="flex items-center gap-1.5 text-muted-foreground font-mono text-[11px]">
+        <Wifi className="size-3.5" />
+        <span>{health.environment === 'production' ? 'إنتاج' : 'تطوير'}</span>
       </div>
       {health.dbStats && (
         <>
-          <div className="h-6 w-px bg-border/40" />
-          <div className="flex items-center gap-2 text-muted-foreground/70">
-            <HardDrive className="size-4" />
-            <span className="text-[11px] font-black">{health.dbStats.latency}ms</span>
+          <div className="h-3.5 w-px bg-border/60" />
+          <div className="flex items-center gap-1.5 text-muted-foreground font-mono text-[11px]">
+            <HardDrive className="size-3.5" />
+            <span className="tabular-nums">{health.dbStats.latency}ms</span>
           </div>
         </>
       )}
@@ -149,14 +149,14 @@ const TrendChart = ({ data }: { data: DashboardData['trends'] }) => {
     if (!active || !payload?.length) return null;
     const date = new Date(label + 'T00:00:00');
     return (
-      <div className="rounded-2xl border border-border/40 bg-white/90 p-4 shadow-xl backdrop-blur-xl dark:bg-slate-900/90">
-        <p className="mb-2 text-[11px] font-black text-muted-foreground/70">
+      <div className="rounded-xl border border-border/80 bg-card p-3 shadow-md text-xs">
+        <p className="mb-1.5 text-[10px] font-mono text-muted-foreground">
           {date.toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" })}
         </p>
         {payload.map((entry: any) => (
           <div key={entry.name} className="flex items-center gap-2 py-0.5">
-            <div className="size-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-            <span className="text-xs font-black text-foreground">
+            <div className="size-2 rounded-full" style={{ backgroundColor: entry.color }} />
+            <span className="text-[11px] font-medium text-foreground">
               {entry.name === 'companies' ? 'شركات' : entry.name === 'users' ? 'مستخدمين' : 'عملاء'}: {entry.value}
             </span>
           </div>
@@ -166,38 +166,44 @@ const TrendChart = ({ data }: { data: DashboardData['trends'] }) => {
   };
 
   return (
-    <div className="rounded-[32px] border border-border/40 bg-white/70 p-6 shadow-lg backdrop-blur-xl dark:bg-slate-900/70">
-      <div className="mb-6 flex items-center gap-4">
-        <div className="flex size-11 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600 shadow-inner">
-          <TrendingUp className="size-6" />
+    <div className="rounded-xl border border-border/80 bg-card/40 p-4 shadow-xs">
+      <div className="mb-4 flex items-center justify-between border-b border-border/60 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="size-8 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-primary">
+            <TrendingUp className="size-4" />
+          </div>
+          <div>
+            <h3 className="text-xs font-semibold text-foreground">النمو اليومي لمنظومة المنصة</h3>
+            <p className="text-[10px] text-muted-foreground">الشركات · المستخدمين · العملاء (آخر 30 يوم)</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-lg font-black">النمو اليومي (آخر 30 يوم)</h3>
-          <p className="text-[11px] font-bold text-muted-foreground/70">الشركات - المستخدمين - العملاء</p>
-        </div>
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+          <span className="size-1.5 rounded-full bg-emerald-500" />
+          معدل تصاعدي
+        </span>
       </div>
-      <div className="h-[320px] w-full" dir="ltr">
+      <div className="h-[280px] w-full" dir="ltr">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               {Object.entries(chartColors).map(([key, color]) => (
                 <linearGradient key={key} id={`gradient_${key}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={color} stopOpacity={0.02} />
+                  <stop offset="5%" stopColor={color} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={color} stopOpacity={0.01} />
                 </linearGradient>
               ))}
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"} />
-            <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 10, fontWeight: 700 }} stroke={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"} />
-            <YAxis tick={{ fontSize: 10, fontWeight: 700 }} stroke={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"} />
+            <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 10 }} stroke={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"} />
+            <YAxis tick={{ fontSize: 10 }} stroke={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"} />
             <Tooltip content={<CustomTooltip />} />
             <Legend
               formatter={(value) => ({ companies: 'شركات', users: 'مستخدمين', customers: 'عملاء' }[value] || value)}
-              wrapperStyle={{ fontSize: '11px', fontWeight: 700 }}
+              wrapperStyle={{ fontSize: '11px' }}
             />
-            <Area type="monotone" dataKey="companies" stroke={chartColors.companies} fill="url(#gradient_companies)" strokeWidth={2.5} name="companies" />
-            <Area type="monotone" dataKey="users" stroke={chartColors.users} fill="url(#gradient_users)" strokeWidth={2.5} name="users" />
-            <Area type="monotone" dataKey="customers" stroke={chartColors.customers} fill="url(#gradient_customers)" strokeWidth={2.5} name="customers" />
+            <Area type="monotone" dataKey="companies" stroke={chartColors.companies} fill="url(#gradient_companies)" strokeWidth={2} name="companies" />
+            <Area type="monotone" dataKey="users" stroke={chartColors.users} fill="url(#gradient_users)" strokeWidth={2} name="users" />
+            <Area type="monotone" dataKey="customers" stroke={chartColors.customers} fill="url(#gradient_customers)" strokeWidth={2} name="customers" />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -207,36 +213,36 @@ const TrendChart = ({ data }: { data: DashboardData['trends'] }) => {
 
 const SystemServicesGrid = ({ systems }: { systems: DashboardData['systems'] }) => {
   if (!systems || systems.length === 0) return null;
-  const usageColor = (u: string) => u === 'high' ? 'text-rose-500 bg-rose-500/10' : u === 'medium' ? 'text-amber-500 bg-amber-500/10' : 'text-emerald-500 bg-emerald-500/10';
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/75 p-5 shadow-sm backdrop-blur-xl">
-      <div className="mb-5 flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 shadow-inner">
-          <Layers className="size-5" />
+    <div className="rounded-xl border border-border/80 bg-card/40 p-4 shadow-xs">
+      <div className="mb-3.5 flex items-center justify-between border-b border-border/60 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="size-8 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-primary">
+            <Layers className="size-4" />
+          </div>
+          <div>
+            <h3 className="text-xs font-semibold text-foreground">خدمات النظام الأساسية</h3>
+            <p className="text-[10px] text-muted-foreground">حالة تشغيل البوابات والخدمات السحابية</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-base font-bold text-foreground">خدمات النظام</h3>
-          <p className="text-xs text-muted-foreground">حالة تشغيل الأنظمة والخدمات</p>
-        </div>
+        <Badge variant="outline" className="text-[10px] font-mono">{systems.length} خدمة</Badge>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-2.5 sm:grid-cols-2">
         {systems.map((s) => (
-          <div key={s.systemName} className="group relative overflow-hidden rounded-xl border border-border/50 bg-background/50 p-3.5 transition-all hover:bg-background hover:shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className={cn("flex size-8 items-center justify-center rounded-lg", s.isEnabled ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground")}>
-                  {s.isEnabled ? <Power className="size-3.5" /> : <PowerOff className="size-3.5" />}
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-foreground">{s.displayName}</p>
-                  <p className="text-[10px] text-muted-foreground">{s.category === 'api_keys' ? 'مفاتيح API' : s.category === 'monitoring' ? 'مراقبة' : s.category === 'general' ? 'عام' : s.category}</p>
-                </div>
+          <div key={s.systemName} className="flex items-center justify-between rounded-lg border border-border/70 bg-card/60 p-2.5 hover:bg-muted/20 transition-colors">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className={cn("size-7 rounded-md border flex items-center justify-center shrink-0", s.isEnabled ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "border-border/80 bg-muted text-muted-foreground")}>
+                {s.isEnabled ? <Power className="size-3.5" /> : <PowerOff className="size-3.5" />}
               </div>
-              <div className="flex flex-col items-end gap-1">
-                <div className={cn("size-2 rounded-full", s.isEnabled ? "bg-emerald-500 shadow-sm shadow-emerald-500/50" : "bg-muted-foreground/40")} />
-                <span className={cn("rounded-full px-2 py-0.5 text-[9px] font-medium", usageColor(s.resourceUsage))}>{s.resourceUsage === 'high' ? 'عال' : s.resourceUsage === 'medium' ? 'متوسط' : 'خفيف'}</span>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-foreground truncate">{s.displayName}</p>
+                <p className="text-[10px] font-mono text-muted-foreground">{s.category === 'api_keys' ? 'مفاتيح API' : s.category === 'monitoring' ? 'مراقبة' : s.category === 'general' ? 'عام' : s.category}</p>
               </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[10px] font-mono text-muted-foreground">{s.resourceUsage}</span>
+              <div className={cn("size-1.5 rounded-full", s.isEnabled ? "bg-emerald-500" : "bg-muted-foreground/40")} />
             </div>
           </div>
         ))}
@@ -248,23 +254,26 @@ const SystemServicesGrid = ({ systems }: { systems: DashboardData['systems'] }) 
 const AlertsPanel = ({ alerts }: { alerts: DashboardData['alerts'] }) => {
   if (!alerts || alerts.length === 0) return null;
   return (
-    <div className="rounded-2xl border border-border/50 bg-card/75 p-5 shadow-sm backdrop-blur-xl">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 shadow-inner">
-          <AlertTriangle className="size-5" />
+    <div className="rounded-xl border border-border/80 bg-card/40 p-4 shadow-xs">
+      <div className="mb-3.5 flex items-center justify-between border-b border-border/60 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="size-8 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-amber-500">
+            <AlertTriangle className="size-4" />
+          </div>
+          <div>
+            <h3 className="text-xs font-semibold text-foreground">تنبيهات المنظومة</h3>
+            <p className="text-[10px] text-muted-foreground">أحدث الأحداث الأمنية والتشغيلية</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-base font-bold text-foreground">التنبيهات</h3>
-          <p className="text-xs text-muted-foreground">آخر الأحداث الهامة في النظام</p>
-        </div>
+        <Badge variant="outline" className="text-[10px] font-mono">{alerts.length} تنبيه</Badge>
       </div>
       <div className="space-y-2">
         {alerts.map((a) => (
-          <div key={a.id} className={cn("flex items-start gap-3 rounded-xl p-3", a.type === 'error' ? "bg-rose-500/5 border border-rose-500/10" : "bg-amber-500/5 border border-amber-500/10")}>
-            {a.type === 'error' ? <XCircle className="mt-0.5 size-4 shrink-0 text-rose-500" /> : <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />}
+          <div key={a.id} className={cn("flex items-start gap-2.5 rounded-lg border p-2.5 text-xs transition-colors", a.type === 'error' ? "border-rose-500/20 bg-rose-500/5" : "border-amber-500/20 bg-amber-500/5")}>
+            {a.type === 'error' ? <XCircle className="mt-0.5 size-3.5 shrink-0 text-rose-500" /> : <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-500" />}
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-foreground truncate">{a.message}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
+              <p className="text-xs font-medium text-foreground truncate">{a.message}</p>
+              <p className="text-[10px] font-mono text-muted-foreground mt-0.5 tabular-nums">
                 {a.category} · {new Date(a.timestamp).toLocaleDateString("ar-EG", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
               </p>
             </div>
@@ -344,135 +353,138 @@ const SuperAdminDashboard = () => {
   }
 
   return (
-    <div className="relative w-full space-y-5" dir="rtl">
-      <div className="pointer-events-none absolute -right-20 -top-20 size-[400px] rounded-full bg-primary/5 blur-[100px]" />
-      <div className="pointer-events-none absolute -bottom-20 -left-20 size-[400px] rounded-full bg-indigo-500/5 blur-[100px]" />
-
-      <div className="relative w-full space-y-5">
-        {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-primary/20">
-                <LayoutDashboard className="size-5" />
-              </div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">لوحة تحكم مدير النظام</h1>
+    <div className="w-full space-y-4" dir="rtl">
+      {/* Linear Taste Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+            <LayoutDashboard className="size-4.5 text-primary" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">لوحة تحكم مدير النظام</h1>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border border-border/80 bg-muted/30">
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+                متصل
+              </span>
             </div>
-            <p className="text-xs sm:text-sm font-medium text-muted-foreground">
-              مرحباً {user?.firstName} {user?.lastName}، إليك نظرة شاملة على نبض النظام اليوم.
+            <p className="text-xs text-muted-foreground mt-0.5">
+              مرحباً {user?.firstName} {user?.lastName} · نظرة موحدة على النبض التشغيلي لمنصة MaxP
             </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-2 rounded-xl bg-card/60 px-3 py-1.5 border border-border/40 shadow-sm">
-              <div className="flex size-7 items-center justify-center rounded-lg bg-green-500/10 text-green-600">
-                <Clock className="size-4" />
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] font-medium text-muted-foreground">تاريخ اليوم</p>
-                <p className="text-xs font-semibold text-foreground">
-                  {new Date().toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" })}
-                </p>
-              </div>
-            </div>
-
-            <Button onClick={() => setShowActiveUsers(true)}
-              className="h-9 sm:h-10 rounded-xl bg-green-600 px-4 font-semibold text-xs sm:text-sm shadow-sm transition-all hover:bg-green-700 active:scale-95">
-              <Users className="ml-1.5 size-4" />
-              المستخدمون النشطون
-            </Button>
-
-            <Button variant="outline" onClick={() => fetchDashboard(true)} disabled={isRefreshing}
-              className="h-9 sm:h-10 rounded-xl border-border/60 bg-card/60 px-4 font-semibold text-xs sm:text-sm shadow-sm backdrop-blur-sm transition-all hover:bg-card active:scale-95">
-              <RefreshCw className={cn("ml-1.5 size-4", isRefreshing && "animate-spin")} />
-              {isRefreshing ? 'جاري التحديث...' : 'تحديث البيانات'}
-            </Button>
-          </div>
         </div>
 
-        {/* 💓 Platform Live Operations & Merchant Health Pulse */}
-        <PlatformOperationsPulse />
-
-        {/* System Health */}
-        {data?.health && <SystemHealthBar health={data.health} />}
-
-        {/* Metric Cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard title="إجمالي الشركات" value={data?.overview?.totalCompanies || 0} icon={Building2} color="indigo"
-            subtext={`نشطة: ${data?.overview?.activeCompanies || 0}`} growth={data?.comparison?.companiesGrowth} />
-          <MetricCard title="إجمالي المستخدمين" value={data?.overview?.totalUsers || 0} icon={Users2} color="emerald"
-            growth={data?.comparison?.usersGrowth} />
-          <MetricCard title="إجمالي العملاء" value={data?.overview?.totalCustomers || 0} icon={Users} color="blue"
-            growth={data?.comparison?.customersGrowth} />
-          <MetricCard title="إجمالي المحادثات" value={data?.overview?.totalConversations || 0} icon={MessageSquare} color="amber"
-            subtext="عبر كل القنوات" />
-        </div>
-
-        {/* Recent Activity + Growth Chassis */}
-        <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
-          <div className="p-3.5 border-b border-border/60 flex items-center justify-between gap-3 bg-muted/20">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="size-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-xs font-semibold text-foreground">النشاط ومعدل النمو الأخير</span>
-              <span className="text-[11px] text-muted-foreground">(آخر 30 يوماً)</span>
-            </div>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
-              <span className="size-1.5 rounded-full bg-emerald-500" />
-              نمو إيجابي
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 rounded-lg border border-border/80 bg-muted/20 px-3 py-1 text-xs">
+            <Clock className="size-3.5 text-muted-foreground" />
+            <span className="text-[11px] font-mono text-muted-foreground">
+              {new Date().toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" })}
             </span>
           </div>
 
-          <div className="p-4">
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span className="text-[11px] font-medium">شركات جديدة</span>
-                  <Briefcase className="size-3.5 text-indigo-500" />
-                </div>
-                <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums mb-1">
-                  {data?.recentActivity?.newCompaniesLast30Days || 0}
-                </div>
-                {data?.comparison?.companiesGrowth !== undefined && (
-                  <p className={cn("text-[11px] font-mono font-semibold tabular-nums", data.comparison.companiesGrowth >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
-                    {data.comparison.companiesGrowth >= 0 ? '↑' : '↓'} {Math.abs(data.comparison.companiesGrowth).toFixed(1)}% عن الشهر الماضي
-                  </p>
-                )}
-              </div>
+          <Button
+            onClick={() => setShowActiveUsers(true)}
+            variant="outline"
+            size="sm"
+            className="h-8 rounded-lg text-xs font-mono active:scale-[0.98] transition-transform"
+          >
+            <Users className="ml-1.5 size-3.5" />
+            المستخدمون النشطون
+          </Button>
 
-              <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span className="text-[11px] font-medium">مستخدمون جدد</span>
-                  <Users2 className="size-3.5 text-emerald-500" />
-                </div>
-                <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums mb-1">
-                  {data?.recentActivity?.newUsersLast30Days || 0}
-                </div>
-                {data?.comparison?.usersGrowth !== undefined && (
-                  <p className={cn("text-[11px] font-mono font-semibold tabular-nums", data.comparison.usersGrowth >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
-                    {data.comparison.usersGrowth >= 0 ? '↑' : '↓'} {Math.abs(data.comparison.usersGrowth).toFixed(1)}% عن الشهر الماضي
-                  </p>
-                )}
-              </div>
+          <Button
+            onClick={() => fetchDashboard(true)}
+            disabled={isRefreshing}
+            size="sm"
+            className="h-8 rounded-lg text-xs font-mono active:scale-[0.98] transition-transform"
+          >
+            <RefreshCw className={cn("ml-1.5 size-3.5", isRefreshing && "animate-spin")} />
+            {isRefreshing ? 'جاري التحديث...' : 'تحديث البيانات'}
+          </Button>
+        </div>
+      </div>
 
-              <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span className="text-[11px] font-medium">عملاء جدد</span>
-                  <Users className="size-3.5 text-sky-500" />
-                </div>
-                <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums mb-1">
-                  {data?.recentActivity?.newCustomersLast30Days || 0}
-                </div>
-                {data?.comparison?.customersGrowth !== undefined && (
-                  <p className={cn("text-[11px] font-mono font-semibold tabular-nums", data.comparison.customersGrowth >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
-                    {data.comparison.customersGrowth >= 0 ? '↑' : '↓'} {Math.abs(data.comparison.customersGrowth).toFixed(1)}% عن الشهر الماضي
-                  </p>
-                )}
-              </div>
-            </div>
+      {/* Platform Live Operations Pulse */}
+      <PlatformOperationsPulse />
+
+      {/* System Health Strip */}
+      {data?.health && <SystemHealthBar health={data.health} />}
+
+      {/* Unified Telemetry Ribbon */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+        <MetricCard title="إجمالي الشركات" value={data?.overview?.totalCompanies || 0} icon={Building2} color="indigo"
+          subtext={`نشطة: ${data?.overview?.activeCompanies || 0}`} growth={data?.comparison?.companiesGrowth} />
+        <MetricCard title="إجمالي المستخدمين" value={data?.overview?.totalUsers || 0} icon={Users2} color="emerald"
+          growth={data?.comparison?.usersGrowth} />
+        <MetricCard title="إجمالي العملاء" value={data?.overview?.totalCustomers || 0} icon={Users} color="blue"
+          growth={data?.comparison?.customersGrowth} />
+        <MetricCard title="إجمالي المحادثات" value={data?.overview?.totalConversations || 0} icon={MessageSquare} color="amber"
+          subtext="عبر كل القنوات" />
+      </div>
+
+      {/* Recent Activity Chassis */}
+      <div className="rounded-xl border border-border/80 bg-card/40 shadow-xs overflow-hidden">
+        <div className="p-3 border-b border-border/60 flex items-center justify-between gap-3 bg-muted/20">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-xs font-semibold text-foreground">النشاط ومعدل النمو الأخير</span>
+            <span className="text-[10px] font-mono text-muted-foreground">(آخر 30 يوماً)</span>
           </div>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+            نمو إيجابي
+          </span>
         </div>
 
-        {/* Trend Chart */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="text-[11px] font-medium">شركات جديدة</span>
+              <Briefcase className="size-3.5 text-indigo-500" />
+            </div>
+            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums mb-1">
+              {data?.recentActivity?.newCompaniesLast30Days || 0}
+            </div>
+            {data?.comparison?.companiesGrowth !== undefined && (
+              <p className={cn("text-[10px] font-mono font-semibold tabular-nums", data.comparison.companiesGrowth >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
+                {data.comparison.companiesGrowth >= 0 ? '↑' : '↓'} {Math.abs(data.comparison.companiesGrowth).toFixed(1)}% عن الشهر الماضي
+              </p>
+            )}
+          </div>
+
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="text-[11px] font-medium">مستخدمون جدد</span>
+              <Users2 className="size-3.5 text-emerald-500" />
+            </div>
+            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums mb-1">
+              {data?.recentActivity?.newUsersLast30Days || 0}
+            </div>
+            {data?.comparison?.usersGrowth !== undefined && (
+              <p className={cn("text-[10px] font-mono font-semibold tabular-nums", data.comparison.usersGrowth >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
+                {data.comparison.usersGrowth >= 0 ? '↑' : '↓'} {Math.abs(data.comparison.usersGrowth).toFixed(1)}% عن الشهر الماضي
+              </p>
+            )}
+          </div>
+
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="text-[11px] font-medium">عملاء جدد</span>
+              <Users className="size-3.5 text-sky-500" />
+            </div>
+            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums mb-1">
+              {data?.recentActivity?.newCustomersLast30Days || 0}
+            </div>
+            {data?.comparison?.customersGrowth !== undefined && (
+              <p className={cn("text-[10px] font-mono font-semibold tabular-nums", data.comparison.customersGrowth >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
+                {data.comparison.customersGrowth >= 0 ? '↑' : '↓'} {Math.abs(data.comparison.customersGrowth).toFixed(1)}% عن الشهر الماضي
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Trend Chart */}
         {data?.trends && data.trends.length > 0 && <TrendChart data={data.trends} />}
 
         {/* Bottom Grid: Systems + Alerts */}
@@ -484,7 +496,6 @@ const SuperAdminDashboard = () => {
             {data?.alerts && data.alerts.length > 0 && <AlertsPanel alerts={data.alerts} />}
           </div>
         </div>
-      </div>
 
       <ActiveUsersMonitor isOpen={showActiveUsers} onClose={() => setShowActiveUsers(false)} />
     </div>
