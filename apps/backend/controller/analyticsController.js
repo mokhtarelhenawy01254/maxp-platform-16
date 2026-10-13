@@ -4034,19 +4034,87 @@ const getTeamPerformanceAnalytics = async (req, res) => {
       end = pEnd;
     }
 
-    let whereClause = {
+    let orderWhereClause = {
       companyId: String(companyId)
     };
 
+    const CONFIRMATION_ACTION_STATUSES = new Set([
+      'CONFIRMED', 'SCHEDULED', 'PROCESSING'
+    ]);
+    const CONFIRMED_OR_FULFILLED_STATUSES = new Set([
+      'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED',
+      'READY_TO_SHIP', 'READY_FOR_PROCESSING', 'SCHEDULED',
+      'OUT_FOR_DELIVERY', 'PREPARING', 'READY', 'PACKAGED',
+      'EXCHANGED', 'PARTIALLY_DELIVERED', 'WOO_TAGHEZ'
+    ]);
+    const CANCELLED_STATUSES = new Set(['CANCELLED', 'DUPLICATE_ORDER', 'FAILED', 'REJECTED']);
+
+    // 1. Fetch status transitions in range from orderStatusHistory
+    const statusHistories = (prisma.orderStatusHistory?.findMany && start && end)
+      ? await prisma.orderStatusHistory.findMany({
+          where: {
+            createdAt: { gte: start, lte: end },
+            OR: [
+              { order: { companyId: String(companyId) } },
+              { guestOrder: { companyId: String(companyId) } }
+            ]
+          },
+          select: {
+            id: true,
+            orderId: true,
+            guestOrderId: true,
+            status: true,
+            oldStatus: true,
+            changedBy: true,
+            userName: true,
+            createdAt: true,
+            reason: true
+          },
+          orderBy: { createdAt: 'asc' }
+        })
+      : [];
+
+    const historyOrderIds = new Set();
+    const historyGuestOrderIds = new Set();
+    const orderHistoryMap = new Map();
+
+    statusHistories.forEach(h => {
+      // Ignore automated courier updates (Turbo, Bosta, etc.)
+      if (h.changedBy === 'SYSTEM' || String(h.changedBy).startsWith('SYSTEM_TURBO') || String(h.changedBy).startsWith('SYSTEM_COURIER')) {
+        return;
+      }
+      const targetId = h.orderId || h.guestOrderId;
+      if (!targetId) return;
+
+      if (h.orderId) historyOrderIds.add(h.orderId);
+      if (h.guestOrderId) historyGuestOrderIds.add(h.guestOrderId);
+
+      if (!orderHistoryMap.has(targetId)) {
+        orderHistoryMap.set(targetId, []);
+      }
+      orderHistoryMap.get(targetId).push(h);
+    });
+
     if (start && end) {
-      whereClause.OR = [
+      orderWhereClause.OR = [
         { createdAt: { gte: start, lte: end } },
         { confirmedAt: { gte: start, lte: end } },
-        { statusHistory: { some: { createdAt: { gte: start, lte: end } } } }
+        { statusHistory: { some: { createdAt: { gte: start, lte: end } } } },
+        ...(historyOrderIds.size > 0 ? [{ id: { in: Array.from(historyOrderIds) } }] : [])
       ];
     }
 
-    const [directUsers, userCompanyRecords, orders] = await Promise.all([
+    let guestWhereClause = {
+      companyId: String(companyId)
+    };
+    if (start && end) {
+      guestWhereClause.OR = [
+        { createdAt: { gte: start, lte: end } },
+        ...(historyGuestOrderIds.size > 0 ? [{ id: { in: Array.from(historyGuestOrderIds) } }] : [])
+      ];
+    }
+
+    const [directUsers, userCompanyRecords, orders, guestOrders] = await Promise.all([
       prisma.user.findMany({
         where: { companyId: String(companyId), isActive: true },
         select: {
@@ -4075,7 +4143,7 @@ const getTeamPerformanceAnalytics = async (req, res) => {
           })
         : Promise.resolve([]),
       prisma.order.findMany({
-        where: whereClause,
+        where: orderWhereClause,
         select: {
           id: true,
           orderNumber: true,
@@ -4094,8 +4162,38 @@ const getTeamPerformanceAnalytics = async (req, res) => {
             orderBy: { createdAt: 'asc' }
           }
         }
-      })
+      }),
+      (prisma.guestOrder?.findMany && start && end)
+        ? prisma.guestOrder.findMany({
+            where: guestWhereClause,
+            select: {
+              id: true,
+              orderNumber: true,
+              status: true,
+              total: true,
+              finalTotal: true,
+              createdBy: true,
+              createdByName: true,
+              createdAt: true
+            }
+          })
+        : Promise.resolve([])
     ]);
+
+    // Merge relation statusHistory from orders into orderHistoryMap for mocked or inline records
+    orders.forEach(o => {
+      if (Array.isArray(o.statusHistory) && o.statusHistory.length > 0) {
+        if (!orderHistoryMap.has(o.id)) {
+          orderHistoryMap.set(o.id, []);
+        }
+        const existingIds = new Set(orderHistoryMap.get(o.id).map(h => h.id || h.createdAt));
+        o.statusHistory.forEach(h => {
+          if (!existingIds.has(h.id || h.createdAt)) {
+            orderHistoryMap.get(o.id).push(h);
+          }
+        });
+      }
+    });
 
     const userMap = new Map();
     const isCompanyStaffSet = new Set();
@@ -4125,18 +4223,39 @@ const getTeamPerformanceAnalytics = async (req, res) => {
       }
     });
 
-    // Also collect any user IDs present in orders or statusHistory who might not be in the rosters above
+    // Register WhatsApp Bot entity
+    const WHATSAPP_BOT_ID = 'SYSTEM_WHATSAPP';
+    userMap.set(WHATSAPP_BOT_ID, {
+      id: WHATSAPP_BOT_ID,
+      firstName: 'بوت الواتساب',
+      lastName: '(تأكيد تلقائي)',
+      email: 'whatsapp-bot@system.maxp',
+      role: 'BOT'
+    });
+
+    // Register Storefront entity for guest checkout orders
+    const STOREFRONT_ID = 'STOREFRONT_GUEST';
+    userMap.set(STOREFRONT_ID, {
+      id: STOREFRONT_ID,
+      firstName: 'المتجر الإلكتروني',
+      lastName: '(طلبات أونلاين)',
+      email: 'storefront@online.maxp',
+      role: 'STORE'
+    });
+
+    // Also collect any human user IDs present in orders or statusHistory who might not be in the rosters above
     const orderUserIds = new Set();
     orders.forEach(o => {
-      if (o.createdBy && !userMap.has(o.createdBy) && !String(o.createdBy).startsWith('SYSTEM_')) orderUserIds.add(o.createdBy);
-      if (o.confirmedBy && !userMap.has(o.confirmedBy) && !String(o.confirmedBy).startsWith('SYSTEM_')) orderUserIds.add(o.confirmedBy);
-      if (o.assignedTo && !userMap.has(o.assignedTo) && !String(o.assignedTo).startsWith('SYSTEM_')) orderUserIds.add(o.assignedTo);
-      if (Array.isArray(o.statusHistory)) {
-        o.statusHistory.forEach(h => {
-          if (h.changedBy && !userMap.has(h.changedBy) && !String(h.changedBy).startsWith('SYSTEM')) {
-            orderUserIds.add(h.changedBy);
-          }
-        });
+      if (o.createdBy && !userMap.has(o.createdBy) && !String(o.createdBy).startsWith('SYSTEM')) orderUserIds.add(o.createdBy);
+      if (o.confirmedBy && !userMap.has(o.confirmedBy) && !String(o.confirmedBy).startsWith('SYSTEM')) orderUserIds.add(o.confirmedBy);
+      if (o.assignedTo && !userMap.has(o.assignedTo) && !String(o.assignedTo).startsWith('SYSTEM')) orderUserIds.add(o.assignedTo);
+    });
+    guestOrders.forEach(g => {
+      if (g.createdBy && !userMap.has(g.createdBy) && !String(g.createdBy).startsWith('SYSTEM')) orderUserIds.add(g.createdBy);
+    });
+    statusHistories.forEach(h => {
+      if (h.changedBy && !userMap.has(h.changedBy) && !String(h.changedBy).startsWith('SYSTEM')) {
+        orderUserIds.add(h.changedBy);
       }
     });
 
@@ -4186,16 +4305,38 @@ const getTeamPerformanceAnalytics = async (req, res) => {
       };
     }
 
-    const CONFIRMED_OR_FULFILLED_STATUSES = new Set([
-      'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED',
-      'READY_TO_SHIP', 'READY_FOR_PROCESSING', 'SCHEDULED',
-      'OUT_FOR_DELIVERY', 'PREPARING', 'READY', 'PACKAGED',
-      'EXCHANGED', 'PARTIALLY_DELIVERED', 'WOO_TAGHEZ'
-    ]);
-    const CANCELLED_STATUSES = new Set(['CANCELLED', 'DUPLICATE_ORDER', 'FAILED', 'REJECTED']);
+    // Unified orders collection
+    const unifiedOrders = [
+      ...orders.map(o => ({
+        id: o.id,
+        orderNumber: o.orderNumber,
+        status: o.status,
+        total: parseFloat(o.total) || 0,
+        createdBy: o.createdBy,
+        confirmedBy: o.confirmedBy,
+        assignedTo: o.assignedTo,
+        createdAt: o.createdAt,
+        confirmedAt: o.confirmedAt,
+        statusHistory: orderHistoryMap.get(o.id) || []
+      })),
+      ...guestOrders.map(g => ({
+        id: g.id,
+        orderNumber: g.orderNumber,
+        status: g.status,
+        total: parseFloat(g.finalTotal || g.total) || 0,
+        createdBy: g.createdBy,
+        confirmedBy: null,
+        assignedTo: null,
+        createdAt: g.createdAt,
+        confirmedAt: null,
+        statusHistory: orderHistoryMap.get(g.id) || []
+      }))
+    ];
 
-    orders.forEach(order => {
-      const orderAmount = parseFloat(order.total) || 0;
+    const processedOrderIds = new Set();
+
+    unifiedOrders.forEach(order => {
+      const orderAmount = order.total;
       const isConfirmedOrDelivered = CONFIRMED_OR_FULFILLED_STATUSES.has(order.status);
       const isDelivered = order.status === 'DELIVERED';
       const isCancelled = CANCELLED_STATUSES.has(order.status);
@@ -4203,11 +4344,13 @@ const getTeamPerformanceAnalytics = async (req, res) => {
       const isCreatedInRange = !start || !order.createdAt || (order.createdAt >= start && order.createdAt <= end);
 
       // Attribution to Creator
-      if (isCreatedInRange && order.createdBy && userPerformance[order.createdBy]) {
-        const creator = userPerformance[order.createdBy];
+      const effectiveCreator = order.createdBy || (isCreatedInRange ? STOREFRONT_ID : null);
+      if (isCreatedInRange && effectiveCreator && userPerformance[effectiveCreator]) {
+        processedOrderIds.add(order.id);
+        const creator = userPerformance[effectiveCreator];
         creator.ordersCreated += 1;
+        creator.createdRevenue += orderAmount;
         if (isConfirmedOrDelivered) {
-          creator.createdRevenue += orderAmount;
           creator.successfulOrders += 1;
         }
         if (isDelivered) {
@@ -4224,18 +4367,24 @@ const getTeamPerformanceAnalytics = async (req, res) => {
 
       if (Array.isArray(order.statusHistory) && order.statusHistory.length > 0) {
         for (const h of order.statusHistory) {
-          if (!h.changedBy || String(h.changedBy).startsWith('SYSTEM')) continue;
+          if (!h.changedBy) continue;
+          if (h.changedBy === 'SYSTEM' || String(h.changedBy).startsWith('SYSTEM_TURBO') || String(h.changedBy).startsWith('SYSTEM_COURIER')) continue;
 
-          // Transition into confirmed/scheduled/fulfilled
-          if (CONFIRMED_OR_FULFILLED_STATUSES.has(h.status)) {
-            if (!historyConfirmer) {
-              historyConfirmer = h.changedBy;
-            }
+          let actor = h.changedBy;
+          if (actor === 'SYSTEM_WHATSAPP') actor = WHATSAPP_BOT_ID;
+
+          // Transition into confirmed/scheduled/processing
+          const isConfirmAction = CONFIRMATION_ACTION_STATUSES.has(h.status) && (
+            !h.oldStatus || h.oldStatus === 'PENDING' || !CONFIRMATION_ACTION_STATUSES.has(h.oldStatus)
+          );
+
+          if (isConfirmAction && !historyConfirmer) {
+            historyConfirmer = actor;
           }
 
           // Transition into cancelled
           if (CANCELLED_STATUSES.has(h.status)) {
-            historyCancelledBy = h.changedBy;
+            historyCancelledBy = actor;
           }
         }
       }
@@ -4247,10 +4396,11 @@ const getTeamPerformanceAnalytics = async (req, res) => {
       );
 
       const effectiveConfirmer = historyConfirmer
-        || order.confirmedBy
+        || (order.confirmedBy === 'SYSTEM_WHATSAPP' ? WHATSAPP_BOT_ID : order.confirmedBy)
         || (isConfirmedOrDelivered && order.createdBy ? order.createdBy : null);
 
       if (isConfirmedInRange && effectiveConfirmer && userPerformance[effectiveConfirmer]) {
+        processedOrderIds.add(order.id);
         const confirmer = userPerformance[effectiveConfirmer];
         confirmer.ordersConfirmed += 1;
         if (isConfirmedOrDelivered) {
@@ -4275,10 +4425,10 @@ const getTeamPerformanceAnalytics = async (req, res) => {
 
       // Attribution to Assigned Agent
       if (isCreatedInRange && order.assignedTo && userPerformance[order.assignedTo]) {
+        processedOrderIds.add(order.id);
         userPerformance[order.assignedTo].ordersAssigned += 1;
       }
     });
-
 
     const teamStats = Object.values(userPerformance)
       .filter(u => u.isRosterMember || u.ordersCreated > 0 || u.ordersConfirmed > 0 || u.ordersAssigned > 0)
@@ -4326,7 +4476,7 @@ const getTeamPerformanceAnalytics = async (req, res) => {
       data: {
         teamMembers: teamStats,
         totalTeamMembers: teamStats.length,
-        totalOrdersProcessed: orders.length,
+        totalOrdersProcessed: processedOrderIds.size > 0 ? processedOrderIds.size : unifiedOrders.length,
         totalTeamRevenue: parseFloat(teamStats.reduce((sum, u) => sum + u.totalRevenue, 0).toFixed(2))
       }
     });

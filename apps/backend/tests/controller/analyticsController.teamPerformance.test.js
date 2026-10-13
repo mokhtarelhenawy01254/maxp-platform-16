@@ -263,5 +263,102 @@ describe('analyticsController.getTeamPerformanceAnalytics', () => {
     expect(byEmail['swan@h2m.com'].confirmedRevenue).toBe(655);
     expect(byEmail['swan@h2m.com'].totalRevenue).toBe(655);
   });
+
+  test('attributes WhatsApp Bot (SYSTEM_WHATSAPP) confirmations as dedicated BOT entity', async () => {
+    const yesterdayDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const botOrder = {
+      id: 'o-bot',
+      orderNumber: 'ORD-BOT-001',
+      status: 'PROCESSING',
+      total: '500.00',
+      createdBy: null,
+      confirmedBy: 'SYSTEM_WHATSAPP',
+      confirmedAt: yesterdayDate,
+      assignedTo: null,
+      createdAt: yesterdayDate,
+      statusHistory: [
+        {
+          id: 'sh-bot',
+          status: 'CONFIRMED',
+          oldStatus: 'PENDING',
+          changedBy: 'SYSTEM_WHATSAPP',
+          reason: 'تم تأكيد الطلب عبر الواتساب ✅',
+          createdAt: yesterdayDate
+        }
+      ]
+    };
+
+    prismaMock.order.findMany.mockResolvedValue([botOrder]);
+
+    const req = createRequest({ period: 'yesterday' });
+    const res = createResponse();
+    await getTeamPerformanceAnalytics(req, res);
+
+    expect(res.payload.success).toBe(true);
+    const data = res.payload.data;
+    const botMember = data.teamMembers.find((m) => m.userId === 'SYSTEM_WHATSAPP');
+
+    expect(botMember).toBeDefined();
+    expect(botMember.userName).toContain('بوت الواتساب');
+    expect(botMember.role).toBe('BOT');
+    expect(botMember.ordersConfirmed).toBe(1);
+    expect(botMember.confirmedRevenue).toBe(500);
+    expect(botMember.totalRevenue).toBe(500);
+    expect(botMember.successRate).toBe(100);
+  });
+
+  test('attributes GuestOrder confirmations via orderStatusHistory and storefront creations', async () => {
+    const yesterdayDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const guestOrder1 = {
+      id: 'g-1',
+      orderNumber: 'ORD-GUEST-001',
+      status: 'CONFIRMED',
+      total: '600.00',
+      finalTotal: '600.00',
+      createdBy: null,
+      createdByName: null,
+      createdAt: yesterdayDate
+    };
+
+    prismaMock.order.findMany.mockResolvedValue([]);
+    prismaMock.guestOrder = {
+      findMany: jest.fn().mockResolvedValue([guestOrder1])
+    };
+    prismaMock.orderStatusHistory = {
+      findMany: jest.fn().mockResolvedValue([
+        {
+          id: 'sh-g1',
+          orderId: null,
+          guestOrderId: 'g-1',
+          status: 'CONFIRMED',
+          oldStatus: 'PENDING',
+          changedBy: 'user-1',
+          userName: 'Swan Test',
+          createdAt: yesterdayDate,
+          reason: 'تم الاتصال بالعميل وتأكيد الطلب'
+        }
+      ])
+    };
+
+    const req = createRequest({ period: 'yesterday' });
+    const res = createResponse();
+    await getTeamPerformanceAnalytics(req, res);
+
+    expect(res.payload.success).toBe(true);
+    const data = res.payload.data;
+    const byEmail = Object.fromEntries(data.teamMembers.map((m) => [m.email, m]));
+
+    // Swan confirmed the guest order
+    expect(byEmail['swan@example.com']).toBeDefined();
+    expect(byEmail['swan@example.com'].ordersConfirmed).toBe(1);
+    expect(byEmail['swan@example.com'].confirmedRevenue).toBe(600);
+
+    // Storefront guest entry captured
+    const storefront = data.teamMembers.find((m) => m.userId === 'STOREFRONT_GUEST');
+    expect(storefront).toBeDefined();
+    expect(storefront.ordersCreated).toBe(1);
+    expect(storefront.createdRevenue).toBe(600);
+  });
 });
 
