@@ -5,11 +5,10 @@ import { apiClient } from "../../services/apiClient";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis } from "recharts";
-import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../lib/utils";
 import {
-  HardDrive, RefreshCw, PieChart as PieChartIcon, Info, Server, Cpu,
-  BarChart3, Image, Video, Music, FileText, MoreHorizontal, CheckCircle2, AlertTriangle
+  HardDrive, RefreshCw, PieChart as PieChartIcon, Server, Cpu,
+  BarChart3, Image, Video, Music, FileText, MoreHorizontal, AlertTriangle, Activity
 } from "lucide-react";
 
 const formatSize = (bytes: number) => {
@@ -77,7 +76,7 @@ const SuperAdminServerUsage: React.FC = () => {
   ];
 
   return (
-    <div className="w-full space-y-4" dir="rtl">
+    <div className="w-full max-w-[1440px] mx-auto p-4 sm:p-6 space-y-4" dir="rtl">
       {/* Linear Taste Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-3">
@@ -88,11 +87,11 @@ const SuperAdminServerUsage: React.FC = () => {
             <div className="flex items-center gap-2">
               <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">تحليل استهلاك موارد السيرفر</h1>
               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border border-border/80 bg-muted/30">
-                <span className="size-1.5 rounded-full bg-emerald-500" />
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 مراقبة لحظية
               </span>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">مراقبة حية وتفصيلية لمساحة التخزين والذاكرة والعتاد</p>
+            <p className="text-xs text-muted-foreground mt-0.5">مراقبة حية وتفصيلية لمساحة التخزين والذاكرة والعتاد السحابي</p>
           </div>
         </div>
 
@@ -101,10 +100,10 @@ const SuperAdminServerUsage: React.FC = () => {
           size="sm"
           onClick={fetchStats}
           disabled={loading}
-          className="h-8 rounded-lg text-xs font-mono active:scale-[0.98] transition-transform"
+          className="h-8 rounded-lg text-xs font-mono active:scale-[0.98] transition-transform gap-1.5"
         >
-          <RefreshCw className={cn("ml-1.5 size-3.5", loading && "animate-spin")} />
-          تحديث الإحصائيات
+          <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
+          <span>تحديث الإحصائيات</span>
         </Button>
       </div>
 
@@ -126,6 +125,7 @@ const SuperAdminServerUsage: React.FC = () => {
               <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
                 {formatSize(stats.total || stats.disk?.total)}
               </div>
+              <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">سعة القرص الصلب الكلية</p>
             </div>
 
             <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
@@ -136,6 +136,7 @@ const SuperAdminServerUsage: React.FC = () => {
               <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
                 {formatSize(stats.used || stats.disk?.used)}
               </div>
+              <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">{usagePercentage}% من الإجمالي</p>
             </div>
 
             <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
@@ -146,6 +147,7 @@ const SuperAdminServerUsage: React.FC = () => {
               <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
                 {formatSize(stats.free || stats.disk?.free)}
               </div>
+              <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">جاهزة للرفع والتخزين</p>
             </div>
 
             <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
@@ -156,11 +158,12 @@ const SuperAdminServerUsage: React.FC = () => {
               <div className={cn("text-2xl font-bold tracking-tight font-mono tabular-nums", usagePercentage > 80 ? "text-rose-600 dark:text-rose-400" : "text-foreground")}>
                 {usagePercentage}%
               </div>
+              <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">مؤشر أمان القرص</p>
             </div>
           </div>
 
           {/* Charts Row Chassis */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
             {/* Donut Chart */}
             <div className="rounded-xl border border-border/80 bg-card/40 p-4 shadow-xs">
               <div className="mb-3 flex items-center justify-between border-b border-border/60 pb-2.5">
@@ -293,7 +296,7 @@ const SuperAdminServerUsage: React.FC = () => {
 
             <div className="p-3.5 flex items-center gap-3 hover:bg-muted/10 transition-colors">
               <div className="size-8 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-primary shrink-0">
-                <RefreshCw className="size-4" />
+                <Activity className="size-4" />
               </div>
               <div className="min-w-0">
                 <p className="text-[10px] text-muted-foreground">آخر فحص لحظي</p>
