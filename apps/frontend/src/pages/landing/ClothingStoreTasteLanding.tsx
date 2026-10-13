@@ -15,6 +15,7 @@ import { ClothingTasteLeadForm } from "./clothing-taste/ClothingTasteLeadForm";
 import { ClothingTasteFAQ } from "./clothing-taste/ClothingTasteFAQ";
 import { ClothingTasteFooter } from "./clothing-taste/ClothingTasteFooter";
 import { ClothingTasteTrustStrip } from "./clothing-taste/ClothingTasteTrustStrip";
+import { ClothingTasteSocialProof } from "./clothing-taste/ClothingTasteSocialProof";
 import { ClothingTasteActivationModal } from "./clothing-taste/ClothingTasteActivationModal";
 
 import { UtmData } from "./clothing-taste/types";
@@ -217,6 +218,9 @@ export const ClothingStoreTasteLanding: React.FC = () => {
           <ClothingTasteLookbook
             onFreeRegister={handleFreeRegister}
           />
+
+          {/* Real Social Proof & Authentic Merchant Case Studies */}
+          <ClothingTasteSocialProof />
 
           {/* 17 Fashion Tools Suite Matrix */}
           <ClothingTasteToolsMatrix

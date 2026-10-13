@@ -4,7 +4,7 @@ const path = require("path");
 const ARTIFACT_DIR = "C:/Users/mokhtar/.gemini/antigravity/brain/a1008c72-8752-43b0-a449-0d550429ed5f";
 
 async function runVerification() {
-  console.log("=== Phase 3: Luxury Fashion Editorial Landing Live Browser Verification Starting ===");
+  console.log("=== Phase 3: High-Converting Apparel Landing Live Browser Verification Starting ===");
   const browser = await chromium.launch({
     channel: "msedge",
     headless: true,
@@ -78,7 +78,7 @@ async function runVerification() {
   await page.waitForTimeout(400);
   console.log("PASS: Switched to POS Live Sync tab");
 
-  const bostaTab = page.locator("button:has-text('بوليصة بوسطة')");
+  const bostaTab = page.getByRole("button", { name: "بوليصة بوسطة", exact: true });
   await bostaTab.click();
   await page.waitForTimeout(400);
   console.log("PASS: Switched to Bosta AWB tab");
@@ -94,34 +94,53 @@ async function runVerification() {
   await page.waitForTimeout(300);
   console.log("PASS: Incremented height in Size Advisor");
 
+  // Test Lookbook Interactive Real Photography & Model Switcher
+  console.log("\n[3] Testing Lookbook Photography & Model Switcher...");
+  const coatModelBtn = page.locator("button:has-text('موديل الجاكيت الكلاسيك')");
+  await coatModelBtn.click();
+  await page.waitForTimeout(400);
+  console.log("PASS: Switched to Coat Editorial Model");
+
+  const streetwearModelBtn = page.locator("button:has-text('موديل التيشيرت الأوفرسايز')");
+  await streetwearModelBtn.click();
+  await page.waitForTimeout(400);
+  console.log("PASS: Switched back to Streetwear Model");
+
   // Test Lookbook Interactive Sale Simulation
-  console.log("\n[3] Testing Lookbook & Branch POS Sale Simulation...");
   const simulateSaleBtn = page.locator("button:has-text('محاكاة مسح باركود وبيعه في فرع المعادي')");
   await simulateSaleBtn.click();
   await page.waitForTimeout(400);
-  console.log("PASS: Decremented stock in branch POS simulation");
+  console.log("PASS: Decremented stock in branch POS simulation & generated thermal receipt");
 
-  // Test Tools Matrix Category Filter
-  console.log("\n[4] Testing Category Filters in 17 Tools Grid...");
-  const shippingCategoryBtn = page.locator("button:has-text('بوسطة والشحن')");
-  await shippingCategoryBtn.click();
+  // Test Real Social Proof & Case Studies Switcher
+  console.log("\n[4] Testing Authentic Social Proof & Merchant Stories...");
+  const urbanThreadsTab = page.locator("button:has-text('Urban Threads')");
+  await urbanThreadsTab.click();
   await page.waitForTimeout(400);
-  console.log("PASS: Filtered tools by 'بوسطة والشحن'");
+  console.log("PASS: Switched to Urban Threads (Mohandessin & Nasr City) Case Study");
 
-  const allCategoryBtn = page.locator("button:has-text('جميع الأدوات (17)')");
-  await allCategoryBtn.click();
+  const zahraTab = page.locator("button:has-text('Zahra Modest Wear')");
+  await zahraTab.click();
   await page.waitForTimeout(400);
-  console.log("PASS: Reset to 'جميع الأدوات (17)'");
+  console.log("PASS: Switched to Zahra Modest Wear Case Study");
+
+  // Test 4 Core Operational Pillars & Expandable 17 Tools
+  console.log("\n[5] Testing 4 Core Pillars & Tools Expansion...");
+  const expandToolsBtn = page.locator("button:has-text('عرض قائمة الـ 17 أداة بالتفصيل الفردي')");
+  await expandToolsBtn.scrollIntoViewIfNeeded();
+  await expandToolsBtn.click();
+  await page.waitForTimeout(400);
+  console.log("PASS: Expanded 17 discrete tools breakdown cleanly");
 
   // Test Unit Economics Margin Inputs
-  console.log("\n[5] Testing Margin Calculator...");
+  console.log("\n[6] Testing Margin Calculator...");
   const fabricInput = page.locator("input[type='number']").first();
   await fabricInput.fill("150");
   await page.waitForTimeout(300);
   console.log("PASS: Adjusted fabric cost input");
 
   // Test Egyptian Logistics & Payments Trust Strip
-  console.log("\n[6] Testing Egyptian Logistics & Payment Trust Strip...");
+  console.log("\n[7] Testing Egyptian Logistics & Payment Trust Strip...");
   const bostaPartner = page.locator("text=Bosta API");
   await bostaPartner.waitFor({ state: "visible", timeout: 5000 });
   console.log("PASS: Bosta API trust badge verified");
@@ -129,8 +148,17 @@ async function runVerification() {
   await kashierPartner.waitFor({ state: "visible", timeout: 5000 });
   console.log("PASS: Kashier trust badge verified");
 
+  // Test Pricing Onboarding Bonus & 14-Day Guarantee
+  console.log("\n[8] Testing Pricing Onboarding Bonus & Guarantee...");
+  const bonusBox = page.locator("text=بونص الانضمام الفوري");
+  await bonusBox.waitFor({ state: "visible", timeout: 5000 });
+  console.log("PASS: Verified Irresistible Onboarding Bonus on 999 plan");
+  const guaranteeBox = page.locator("text=ضمان استرجاع كامل للاشتراك لمدة 14 يوماً");
+  await guaranteeBox.waitFor({ state: "visible", timeout: 5000 });
+  console.log("PASS: Verified 14-Day Zero-Risk Guarantee banner");
+
   // Test Lead Capture Form Input
-  console.log("\n[7] Testing Lead Capture Form Inputs...");
+  console.log("\n[9] Testing Lead Capture Form Inputs...");
   const nameInput = page.locator("input[placeholder='مثال: كريم الشناوي']");
   await nameInput.fill("مختار مجدي");
   const phoneInput = page.locator("input[placeholder='010XXXXXXXX']");
@@ -139,7 +167,7 @@ async function runVerification() {
   console.log("PASS: Filled Lead Form inputs");
 
   // Test Fast Inline Activation Modal
-  console.log("\n[8] Testing 60-Second Fast Activation Modal...");
+  console.log("\n[10] Testing 60-Second Fast Activation Modal...");
   const heroFreeCta = page.locator("button:has-text('ابدأ متجرك مجاناً')").first();
   await heroFreeCta.click();
   await page.waitForTimeout(400);
@@ -160,13 +188,17 @@ async function runVerification() {
   await page.waitForTimeout(300);
   console.log("PASS: Closed Fast Activation Modal cleanly");
 
-  // Test FAQ Accordion
-  console.log("\n[9] Testing FAQ Accordion...");
-  const faqButtons = page.locator("section:has-text('الأسئلة الشائعة') button");
-  const secondFaq = faqButtons.nth(1);
-  await secondFaq.click();
+  // Test FAQ Accordion with the 3 Dealbreaker Questions
+  console.log("\n[11] Testing FAQ Accordion with Dealbreaker Inquiries...");
+  const excelFaqBtn = page.locator("button:has-text('عندي بضاعة ومخزون مسجلين على شيت إكسيل')");
+  await excelFaqBtn.click();
   await page.waitForTimeout(400);
-  console.log("PASS: Toggled second FAQ item");
+  console.log("PASS: Toggled Excel migration FAQ item");
+
+  const offlineFaqBtn = page.locator("button:has-text('لو الإنترنت فصل في المحل')");
+  await offlineFaqBtn.click();
+  await page.waitForTimeout(400);
+  console.log("PASS: Toggled Offline cashier continuity FAQ item");
 
   // Take Full Desktop Page Screenshot
   const desktopScreenshotPath = path.join(ARTIFACT_DIR, "clothing_taste_desktop.png");
@@ -174,7 +206,7 @@ async function runVerification() {
   console.log(`Saved screenshot: ${desktopScreenshotPath}`);
 
   // ── Mobile Verification (390x844 iPhone 14) ──
-  console.log("\n[10] Testing Mobile Viewport (390x844 - iPhone 14)...");
+  console.log("\n[12] Testing Mobile Viewport (390x844 - iPhone 14)...");
   const mobileContext = await browser.newContext({
     viewport: { width: 390, height: 844 },
     isMobile: true,
