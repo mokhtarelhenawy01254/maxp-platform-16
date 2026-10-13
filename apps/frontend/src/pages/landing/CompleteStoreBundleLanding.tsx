@@ -112,7 +112,7 @@ export const CompleteStoreBundleLanding: React.FC = () => {
 
   /**
    * الاشتراك — دفع مباشر من غير تجربة:
-   * مسجل؟ → كاشير Kashier على طول.
+   * مسجل؟ → بوابه الاشتراك على طول.
    * مش مسجل؟ → تسجيل سريع ورجوع للاندنج يكمّل الدفع.
    */
   const handleSubscribe = useCallback(async () => {

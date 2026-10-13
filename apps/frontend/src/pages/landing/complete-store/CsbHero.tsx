@@ -59,7 +59,7 @@ export const CsbHero: React.FC<Props> = ({ onSubscribe, isCheckingOut }) => {
           </span>
           <span>
             <Check size={13} strokeWidth={3} />
-            دفع آمن عبر Kashier
+            اشتراك واحد بيشمل كل حاجة
           </span>
         </div>
       </div>

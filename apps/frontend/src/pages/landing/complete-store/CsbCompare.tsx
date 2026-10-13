@@ -36,8 +36,8 @@ export const CsbCompare: React.FC = () => {
         </div>
         <div className="csb-risk-item">
           <CreditCard size={18} strokeWidth={2} aria-hidden="true" />
-          <strong>دفع آمن عبر Kashier</strong>
-          <span>بطاقة أو محفظة — والبيانات بتاعتك مع بوابة دفع مرخصة.</span>
+          <strong>بياناتك ملكك</strong>
+          <span>أوردراتك وعملائك محفوظين — وتقدر تصدّرهم في أي وقت.</span>
         </div>
         <div className="csb-risk-item">
           <LifeBuoy size={18} strokeWidth={2} aria-hidden="true" />
