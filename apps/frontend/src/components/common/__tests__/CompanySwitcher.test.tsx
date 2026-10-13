@@ -64,4 +64,32 @@ describe("CompanySwitcher", () => {
     expect(screen.getByText("Alpha Agent")).toBeInTheDocument();
     expect(screen.getAllByText("H2m")).toHaveLength(2);
   });
+
+  it("stays hidden for SUPER_ADMIN bound to a single company", () => {
+    mockUseAuth.mockReturnValue({
+      user: {
+        role: "SUPER_ADMIN",
+        hasMultipleCompanies: false,
+        company: {
+          id: "company-maxp",
+          name: "max-p",
+          role: "OWNER",
+        },
+        companies: [
+          {
+            id: "company-maxp",
+            name: "max-p",
+            role: "OWNER",
+            isCurrent: true,
+          },
+        ],
+      },
+      switchCompany: mockSwitchCompany,
+      isSwitchingCompany: false,
+    });
+
+    const { container } = render(<CompanySwitcher />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
 });

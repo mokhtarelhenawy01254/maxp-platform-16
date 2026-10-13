@@ -378,8 +378,9 @@ const authenticateToken = async (req, res, next) => {
     let effectiveRole = user.role || decoded.role;
 
     if (user.role === 'SUPER_ADMIN' && !effectiveCompanyId) {
-      // Fallback for SUPER_ADMIN when no header is supplied (desktop clients, internal services)
-      effectiveCompanyId = 'cmldvhqkx0000juj6sdbx2jw0';
+      // Fallback for SUPER_ADMIN when no header is supplied (desktop clients, internal services).
+      // Points to the platform company (max-p) — the super admin's single bound company.
+      effectiveCompanyId = process.env.PLATFORM_COMPANY_ID || 'cmopgxu3a07i4jujj6f1oh32h';
     }
 
     if (user.role !== 'SUPER_ADMIN' && effectiveCompanyId && typeof effectiveCompanyId === 'string') {

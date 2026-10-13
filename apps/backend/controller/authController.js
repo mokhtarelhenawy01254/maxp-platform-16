@@ -1025,39 +1025,8 @@ const login = async (req, res) => {
       }
     }
 
-    // For SUPER_ADMIN users without explicit company bindings, expose active companies
-    if (user.role === 'SUPER_ADMIN' && companiesMap.size <= 1) {
-      try {
-        const allActive = await getSharedPrismaClient().company.findMany({
-          where: { isActive: true },
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            logo: true,
-            currency: true,
-            isActive: true,
-            sidebarLayout: true,
-            settings: true,
-          },
-          orderBy: { createdAt: 'asc' },
-          take: 50
-        });
-        for (const comp of allActive) {
-          if (!companiesMap.has(comp.id)) {
-            companiesMap.set(comp.id, {
-              ...comp,
-              activeApps: [],
-              role: 'SUPER_ADMIN',
-              isDefault: false,
-              isCurrent: false
-            });
-          }
-        }
-      } catch (e) {
-        console.warn('[LOGIN] Failed to fetch active companies for super admin:', e.message);
-      }
-    }
+    // SUPER_ADMIN operates only within its bound company (max-p). Platform-wide
+    // administration lives in /super-admin — no synthetic all-companies list here.
 
     // Ensure at least one company is marked as isCurrent: true
     const hasCurrentCompany = Array.from(companiesMap.values()).some(c => c.isCurrent);
@@ -1379,39 +1348,9 @@ const me = async (req, res) => {
       }
     }
 
-    // For SUPER_ADMIN users, expose active companies so they can switch contexts
-    if (user.role === 'SUPER_ADMIN' && companiesMap.size <= 1) {
-      try {
-        const allActive = await getSharedPrismaClient().company.findMany({
-          where: { isActive: true },
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            logo: true,
-            currency: true,
-            isActive: true,
-            sidebarLayout: true,
-            settings: true,
-          },
-          orderBy: { createdAt: 'asc' },
-          take: 50
-        });
-        for (const comp of allActive) {
-          if (!companiesMap.has(comp.id)) {
-            companiesMap.set(comp.id, {
-              ...comp,
-              activeApps: [],
-              role: 'SUPER_ADMIN',
-              isDefault: false,
-              isCurrent: comp.id === decoded.companyId
-            });
-          }
-        }
-      } catch (e) {
-        console.warn('[AUTH-ME] Failed to fetch active companies for super admin:', e.message);
-      }
-    }
+    // SUPER_ADMIN operates only within its bound company (max-p). Context switching
+    // for platform operations stays server-side (/super-admin flows) — no synthetic
+    // all-companies list is exposed here.
 
     // Return user without password
     const { password: _, userCompanies: __, role: ___, companyId: ____, ...userWithoutSensitive } = user;
