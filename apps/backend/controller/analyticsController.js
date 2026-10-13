@@ -4041,7 +4041,8 @@ const getTeamPerformanceAnalytics = async (req, res) => {
     if (start && end) {
       whereClause.OR = [
         { createdAt: { gte: start, lte: end } },
-        { confirmedAt: { gte: start, lte: end } }
+        { confirmedAt: { gte: start, lte: end } },
+        { statusHistory: { some: { createdAt: { gte: start, lte: end } } } }
       ];
     }
 
@@ -4085,7 +4086,13 @@ const getTeamPerformanceAnalytics = async (req, res) => {
           confirmedBy: true,
           assignedTo: true,
           createdAt: true,
-          confirmedAt: true
+          confirmedAt: true,
+          statusHistory: start && end ? {
+            where: { createdAt: { gte: start, lte: end } },
+            orderBy: { createdAt: 'asc' }
+          } : {
+            orderBy: { createdAt: 'asc' }
+          }
         }
       })
     ]);
@@ -4118,12 +4125,19 @@ const getTeamPerformanceAnalytics = async (req, res) => {
       }
     });
 
-    // Also collect any user IDs present in orders who might not be in the rosters above
+    // Also collect any user IDs present in orders or statusHistory who might not be in the rosters above
     const orderUserIds = new Set();
     orders.forEach(o => {
       if (o.createdBy && !userMap.has(o.createdBy) && !String(o.createdBy).startsWith('SYSTEM_')) orderUserIds.add(o.createdBy);
       if (o.confirmedBy && !userMap.has(o.confirmedBy) && !String(o.confirmedBy).startsWith('SYSTEM_')) orderUserIds.add(o.confirmedBy);
       if (o.assignedTo && !userMap.has(o.assignedTo) && !String(o.assignedTo).startsWith('SYSTEM_')) orderUserIds.add(o.assignedTo);
+      if (Array.isArray(o.statusHistory)) {
+        o.statusHistory.forEach(h => {
+          if (h.changedBy && !userMap.has(h.changedBy) && !String(h.changedBy).startsWith('SYSTEM')) {
+            orderUserIds.add(h.changedBy);
+          }
+        });
+      }
     });
 
     if (orderUserIds.size > 0) {
@@ -4187,11 +4201,6 @@ const getTeamPerformanceAnalytics = async (req, res) => {
       const isCancelled = CANCELLED_STATUSES.has(order.status);
 
       const isCreatedInRange = !start || !order.createdAt || (order.createdAt >= start && order.createdAt <= end);
-      const isConfirmedInRange = !start || (
-        order.confirmedAt
-          ? (order.confirmedAt >= start && order.confirmedAt <= end)
-          : (isCreatedInRange || Boolean(order.confirmedBy))
-      );
 
       // Attribution to Creator
       if (isCreatedInRange && order.createdBy && userPerformance[order.createdBy]) {
@@ -4209,8 +4218,38 @@ const getTeamPerformanceAnalytics = async (req, res) => {
         }
       }
 
-      // Attribution to Confirmer
-      const effectiveConfirmer = order.confirmedBy || (isConfirmedOrDelivered && order.createdBy ? order.createdBy : null);
+      // Attribution to Confirmer / Status Changer
+      let historyConfirmer = null;
+      let historyCancelledBy = null;
+
+      if (Array.isArray(order.statusHistory) && order.statusHistory.length > 0) {
+        for (const h of order.statusHistory) {
+          if (!h.changedBy || String(h.changedBy).startsWith('SYSTEM')) continue;
+
+          // Transition into confirmed/scheduled/fulfilled
+          if (CONFIRMED_OR_FULFILLED_STATUSES.has(h.status)) {
+            if (!historyConfirmer) {
+              historyConfirmer = h.changedBy;
+            }
+          }
+
+          // Transition into cancelled
+          if (CANCELLED_STATUSES.has(h.status)) {
+            historyCancelledBy = h.changedBy;
+          }
+        }
+      }
+
+      const isConfirmedInRange = !start || (
+        order.confirmedAt
+          ? (order.confirmedAt >= start && order.confirmedAt <= end)
+          : (Boolean(historyConfirmer) || (isCreatedInRange && (Boolean(order.confirmedBy) || isConfirmedOrDelivered)))
+      );
+
+      const effectiveConfirmer = historyConfirmer
+        || order.confirmedBy
+        || (isConfirmedOrDelivered && order.createdBy ? order.createdBy : null);
+
       if (isConfirmedInRange && effectiveConfirmer && userPerformance[effectiveConfirmer]) {
         const confirmer = userPerformance[effectiveConfirmer];
         confirmer.ordersConfirmed += 1;
@@ -4227,6 +4266,11 @@ const getTeamPerformanceAnalytics = async (req, res) => {
             confirmer.cancelledOrders += 1;
           }
         }
+      }
+
+      // Cancellation attribution from history if changed by an agent
+      if (historyCancelledBy && userPerformance[historyCancelledBy] && historyCancelledBy !== effectiveConfirmer) {
+        userPerformance[historyCancelledBy].cancelledOrders += 1;
       }
 
       // Attribution to Assigned Agent

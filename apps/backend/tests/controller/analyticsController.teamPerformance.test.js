@@ -208,5 +208,60 @@ describe('analyticsController.getTeamPerformanceAnalytics', () => {
     expect(byEmail['swan@h2m.com'].ordersConfirmed).toBe(0);
     expect(byEmail['swan@h2m.com'].totalRevenue).toBe(0);
   });
+
+  test('attributes order confirmation to agent who transitioned order to SCHEDULED or CONFIRMED in statusHistory even if order was created earlier', async () => {
+    prismaMock.user.findMany.mockResolvedValue([
+      user('user-direct', 'Abdallah', 'abdallah@redline.com', 'OWNER')
+    ]);
+    prismaMock.userCompany = {
+      findMany: jest.fn().mockResolvedValue([
+        {
+          userId: 'user-swan',
+          role: 'COMPANY_ADMIN',
+          user: user('user-swan', 'Swan', 'swan@h2m.com', 'COMPANY_ADMIN')
+        }
+      ])
+    };
+
+    const pastDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+    const yesterdayDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    // Order created 5 days ago, confirmedAt is null, but swan moved it to SCHEDULED yesterday
+    const orderWithHistory = {
+      id: 'o-past',
+      orderNumber: 'ORD-444986-677',
+      status: 'PROCESSING',
+      total: '655.00',
+      createdBy: null,
+      confirmedBy: null,
+      confirmedAt: null,
+      assignedTo: null,
+      createdAt: pastDate,
+      statusHistory: [
+        {
+          id: 'sh-1',
+          status: 'SCHEDULED',
+          oldStatus: 'PENDING',
+          changedBy: 'user-swan',
+          createdAt: yesterdayDate
+        }
+      ]
+    };
+
+    prismaMock.order.findMany.mockResolvedValue([orderWithHistory]);
+
+    const req = createRequest({ period: 'yesterday' });
+    const res = createResponse();
+    await getTeamPerformanceAnalytics(req, res);
+
+    expect(res.payload.success).toBe(true);
+    const data = res.payload.data;
+    const byEmail = Object.fromEntries(data.teamMembers.map((m) => [m.email, m]));
+
+    expect(byEmail['swan@h2m.com']).toBeDefined();
+    expect(byEmail['swan@h2m.com'].ordersConfirmed).toBe(1);
+    expect(byEmail['swan@h2m.com'].confirmedRevenue).toBe(655);
+    expect(byEmail['swan@h2m.com'].totalRevenue).toBe(655);
+  });
 });
 
