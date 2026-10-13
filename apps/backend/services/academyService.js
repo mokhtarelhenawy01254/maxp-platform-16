@@ -1020,11 +1020,11 @@ class AcademyService {
 
   async getCourseOutlineWithProgress({ courseId, companyId, studentUserId, customerId, studentPhone }) {
     const db = this.getDb();
-    const course = await db.academyCourse.findFirst({
+    let course = await db.academyCourse.findFirst({
       where: {
         id: courseId,
         OR: [
-          { companyId },
+          ...(companyId ? [{ companyId }] : []),
           { isGlobal: true },
         ],
       },
@@ -1044,25 +1044,71 @@ class AcademyService {
         },
       },
     });
+
+    // Check enrollment (for global courses or cross-company enrollments, match by student identifier)
+    let enrollment = null;
+    if (studentUserId || customerId || studentPhone) {
+      enrollment = await db.academyEnrollment.findFirst({
+        where: {
+          courseId,
+          status: { in: ['ACTIVE', 'COMPLETED'] },
+          OR: [
+            ...(studentUserId ? [{ studentUserId }] : []),
+            ...(customerId ? [{ customerId }] : []),
+            ...(studentPhone ? [{ studentPhone }] : []),
+          ],
+        },
+        include: {
+          progress: true,
+          certificate: true,
+        },
+      });
+
+      // فحص انتهاء مدة الاشتراك
+      if (enrollment && enrollment.expiresAt && new Date(enrollment.expiresAt) < new Date()) {
+        enrollment = null;
+      }
+    }
+
+    // If course was not matched by current companyId, but student has active enrollment in this course, grant outline access
+    if (!course && enrollment) {
+      course = await db.academyCourse.findFirst({
+        where: { id: courseId },
+        include: {
+          modules: {
+            orderBy: { sortOrder: 'asc' },
+            include: {
+              lessons: {
+                orderBy: { sortOrder: 'asc' },
+                include: {
+                  quiz: {
+                    select: { id: true, passScorePercent: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
     if (!course) throw new Error('Course not found');
 
-    // Check enrollment (for global courses, enrollment companyId may differ)
-    const enrollment = await db.academyEnrollment.findFirst({
-      where: {
-        courseId,
-        ...(course.isGlobal ? {} : { companyId }),
-        status: { in: ['ACTIVE', 'COMPLETED'] },
-        OR: [
-          ...(studentUserId ? [{ studentUserId }] : []),
-          ...(customerId ? [{ customerId }] : []),
-          ...(studentPhone ? [{ studentPhone }] : []),
-        ],
-      },
-      include: {
-        progress: true,
-        certificate: true,
-      },
-    });
+    // Auto-heal module and lesson companyId if drifted from course.companyId
+    if (course.companyId) {
+      const driftedModules = course.modules.some(m => m.companyId !== course.companyId);
+      if (driftedModules) {
+        db.academyModule.updateMany({
+          where: { courseId: course.id, companyId: { not: course.companyId } },
+          data: { companyId: course.companyId }
+        }).catch(() => {});
+        const moduleIds = course.modules.map(m => m.id);
+        db.academyLesson.updateMany({
+          where: { moduleId: { in: moduleIds }, companyId: { not: course.companyId } },
+          data: { companyId: course.companyId }
+        }).catch(() => {});
+      }
+    }
 
     const isEnrolled = Boolean(enrollment);
     const progressMap = new Map();
@@ -1129,7 +1175,7 @@ class AcademyService {
   async getLessonContent({ lessonId, companyId, studentUserId, customerId, studentPhone }) {
     const db = this.getDb();
     const lesson = await db.academyLesson.findFirst({
-      where: { id: lessonId, ...(companyId ? { companyId } : {}) },
+      where: { id: lessonId },
       include: {
         module: {
           include: {
@@ -1141,7 +1187,16 @@ class AcademyService {
     });
 
     if (!lesson) throw new Error('Lesson not found');
-    const course = lesson.module.course;
+    const course = lesson.module?.course;
+    if (!course) throw new Error('Course not found');
+
+    // Auto-heal orphaned module/lesson companyId if course companyId differs
+    if (course.companyId && lesson.companyId !== course.companyId) {
+      db.academyLesson.update({
+        where: { id: lesson.id },
+        data: { companyId: course.companyId }
+      }).catch(() => {});
+    }
 
     // Check enrollment
     let enrollment = null;
@@ -1169,6 +1224,11 @@ class AcademyService {
 
     // If not free preview and not enrolled => reject
     if (!lesson.isFreePreview && !isEnrolled) {
+      throw new Error('هذا الدرس يتطلب الاشتراك في الكورس أولاً');
+    }
+
+    // If free preview without enrollment, ensure course is accessible in current context
+    if (lesson.isFreePreview && !isEnrolled && !course.isGlobal && companyId && course.companyId !== companyId) {
       throw new Error('هذا الدرس يتطلب الاشتراك في الكورس أولاً');
     }
 
