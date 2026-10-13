@@ -22,6 +22,9 @@ import {
   getPlatformLandingPreviewPath,
   type PlatformLandingVariantDefinition,
 } from "../landing/platformLandingRegistry";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { cn } from "../../lib/utils";
 
 const formatDateTime = (value?: string | null) => {
   if (!value) {
@@ -36,7 +39,7 @@ const formatDateTime = (value?: string | null) => {
       hour: "numeric",
       minute: "2-digit",
     });
-  } catch (error) {
+  } catch {
     return "لم يتم الحفظ بعد";
   }
 };
@@ -56,8 +59,6 @@ const resolveAvailableVariants = (
     return registryAligned;
   }
 
-  // Keep new shipped variants visible even if a stale admin API response
-  // still returns an older availableLandingIds list.
   const missingRegistryVariants = PLATFORM_LANDING_VARIANTS.filter(
     (variant) => !allowedIds.has(variant.id),
   );
@@ -153,12 +154,12 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
     return (
       <div
         dir={i18n.dir()}
-        className="bg-slate-50 p-6 dark:bg-slate-900"
+        className="w-full max-w-[1440px] mx-auto p-4 sm:p-6"
       >
-        <div className="mx-auto flex h-[60vh] max-w-6xl 2xl:max-w-7xl items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-          <div className="flex items-center gap-3 text-slate-700 dark:text-slate-200">
-            <ArrowPathIcon className="h-6 w-6 animate-spin" />
-            <span className="text-sm font-semibold">جاري تحميل النسخ...</span>
+        <div className="flex h-[50vh] items-center justify-center rounded-xl border border-border/70 bg-card/40">
+          <div className="flex items-center gap-3 text-muted-foreground">
+            <ArrowPathIcon className="h-5 w-5 animate-spin text-primary" />
+            <span className="text-xs font-mono">جاري تحميل النسخ والخيارات...</span>
           </div>
         </div>
       </div>
@@ -166,282 +167,284 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
   }
 
   return (
-    <div dir={i18n.dir()} className="bg-slate-50 p-6 dark:bg-slate-900">
-      <div className="mx-auto max-w-6xl 2xl:max-w-7xl space-y-6">
-        <header className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-4xl space-y-3">
-              <p className="text-xs font-bold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
-                Platform Homepage Release Control
-              </p>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white sm:text-3xl">
-                غرفة تحرير اللاندنج الأساسية للمنصة
+    <div dir={i18n.dir()} className="w-full max-w-[1440px] mx-auto p-4 sm:p-6 space-y-4">
+      {/* Linear Single-Surface Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+            <SparklesIcon className="size-4.5 text-primary" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
+                إدارة واجهة الصفحة الرئيسية للمنصة
               </h1>
-              <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">
-                الهدف هنا واضح: تعرف النسخة المنشورة الآن، تراجع نسخة أخرى إذا
-                لزم، ثم تقرر هل تنشرها على{" "}
-                <span dir="ltr" className="font-bold">
-                  /
-                </span>
-                . المتجر على{" "}
-                <span dir="ltr" className="font-bold">
-                  /store
-                </span>{" "}
-                لا يتأثر بهذه الصفحة.
-              </p>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border border-border/80 bg-muted/30">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                تحكم النشر المباشر
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              اختيار واعتماد لاندنج المنصة الرئيسية (/) مع عزل تام لقوالب المتاجر
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadSettings}
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform"
+          >
+            <ArrowPathIcon className="size-3.5" />
+            <span>تحديث</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Telemetry Ribbon */}
+      <div className="grid grid-cols-2 md:grid-cols-4 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">النسخة المنشورة الآن</span>
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+          </div>
+          <div className="text-lg sm:text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 truncate">
+            {activeVariant.label}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">الظاهرة على الجذر /</p>
+        </div>
+
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">النسخ المتاحة</span>
+            <span className="size-1.5 rounded-full bg-blue-500" />
+          </div>
+          <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+            {availableVariants.length}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">نماذج جاهزة للاختيار</p>
+        </div>
+
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">النسخة المحددة للمعاينة</span>
+            <span className="size-1.5 rounded-full bg-purple-500" />
+          </div>
+          <div className="text-lg sm:text-xl font-bold tracking-tight text-foreground truncate">
+            {selectedVariant.label}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
+            {isSelectionActive ? "منشورة حالياً" : "قيد المراجعة"}
+          </p>
+        </div>
+
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">آخر تحديث واعتماد</span>
+            <span className="size-1.5 rounded-full bg-amber-500" />
+          </div>
+          <div className="text-xs font-semibold text-foreground font-mono truncate mt-1">
+            {formatDateTime(settings.updatedAt)}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">تاريخ الحفظ الأخير</p>
+        </div>
+      </div>
+
+      {/* Main Workspace Layout */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
+        {/* Sidebar: Release Controls & Variants List */}
+        <aside className="space-y-4">
+          <div className="rounded-xl border border-border/80 bg-card/40 p-4 shadow-xs space-y-3">
+            <div className="flex items-center gap-2 border-b border-border/60 pb-2.5">
+              <MegaphoneIcon className="size-4 text-primary" />
+              <h3 className="text-xs font-semibold text-foreground">قرار النشر والاعتماد</h3>
             </div>
 
-            <div className="min-w-0 max-w-md rounded-xl border border-indigo-200 bg-indigo-50/80 p-4 dark:border-indigo-900/70 dark:bg-indigo-950/30">
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
-                النسخة المنشورة الآن
-              </p>
-              <p className="mt-2 text-xl font-bold text-slate-900 dark:text-white">
-                {activeVariant.label}
-              </p>
-              <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                آخر تحديث: {formatDateTime(settings.updatedAt)}
-              </p>
+            <div className="space-y-2 text-xs">
+              <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5">
+                <span className="text-[10px] font-mono text-muted-foreground block">النسخة المختارة:</span>
+                <span className="font-bold text-foreground text-sm mt-0.5 block">{selectedVariant.label}</span>
+              </div>
+              <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5">
+                <span className="text-[10px] font-mono text-muted-foreground block">حالة النشر:</span>
+                <span className="text-xs text-muted-foreground mt-0.5 block leading-relaxed">
+                  {isSelectionActive
+                    ? "هذه النسخة هي الظاهرة بالفعل على الصفحة الرئيسية العامة."
+                    : "بالضغط على اعتماد، ستصبح هذه النسخة هي الواجهة الأساسية."}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <a
+                href={previewHref}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-xs font-mono text-foreground hover:bg-muted/40 transition-colors"
+              >
+                <EyeIcon className="size-3.5" />
+                <span>فتح المعاينة في تبويب جديد</span>
+                <ArrowTopRightOnSquareIcon className="size-3 text-muted-foreground" />
+              </a>
+
+              <Button
+                type="button"
+                disabled={isSelectionActive || isSavingSelection}
+                onClick={() => void handleActivateVariant(selectedVariant.id)}
+                className={cn(
+                  "w-full h-9 text-xs font-mono gap-1.5 active:scale-[0.98] transition-transform",
+                  isSelectionActive
+                    ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 cursor-default"
+                    : ""
+                )}
+              >
+                {isSelectionActive ? (
+                  <>
+                    <CheckCircleIcon className="size-4 text-emerald-600" />
+                    <span>هذه النسخة منشورة الآن</span>
+                  </>
+                ) : isSavingSelection ? (
+                  <>
+                    <ArrowPathIcon className="size-4 animate-spin" />
+                    <span>جاري اعتماد النسخة...</span>
+                  </>
+                ) : (
+                  <>
+                    <BoltIcon className="size-4" />
+                    <span>اعتماد ونشر هذه النسخة</span>
+                  </>
+                )}
+              </Button>
             </div>
           </div>
-        </header>
 
-        <section className="grid grid-cols-1 gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
-          <aside className="space-y-6">
-            <article className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-              <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-                <MegaphoneIcon className="h-5 w-5 text-indigo-500" />
-                قرار النشر
-              </h3>
-              <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                استخدم هذه المنطقة عندما تكون حسمت ما سيظهر على{" "}
-                <span dir="ltr" className="font-bold">
-                  /
-                </span>
-                . التحديد من القائمة لا ينشر وحده.
-              </p>
+          {/* Variants Selector */}
+          <div className="rounded-xl border border-border/80 bg-card/40 p-4 shadow-xs space-y-2.5">
+            <div className="flex items-center justify-between border-b border-border/60 pb-2">
+              <h3 className="text-xs font-semibold text-foreground">قائمة النسخ المتاحة</h3>
+              <Badge variant="outline" className="text-[10px] font-mono">{availableVariants.length}</Badge>
+            </div>
 
-              <div className="mt-5 space-y-4 text-sm">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                    النسخة المختارة الآن
-                  </p>
-                  <p className="mt-2 font-bold text-slate-900 dark:text-white">
-                    {selectedVariant.label}
-                  </p>
-                </div>
+            <div className="space-y-1.5 max-h-[420px] overflow-y-auto pr-0.5">
+              {availableVariants.map((variant, index) => {
+                const isSelected = variant.id === selectedVariant.id;
+                const isActive = variant.id === settings.activeLandingId;
 
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                    نتيجة النشر
-                  </p>
-                  <p className="mt-2 leading-7 text-slate-700 dark:text-slate-300">
-                    {isSelectionActive
-                      ? "هذه النسخة هي الظاهرة بالفعل على الجذر العام."
-                      : "إذا ضغطت نشر الآن، ستصبح هذه النسخة هي الظاهرة على الجذر العام."}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 space-y-3">
-                <a
-                  href={previewHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 py-3 text-sm font-bold text-slate-800 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-700"
-                >
-                  <EyeIcon className="h-5 w-5" />
-                  فتح المعاينة العامة
-                  <ArrowTopRightOnSquareIcon className="h-4 w-4" />
-                </a>
-
-                <button
-                  type="button"
-                  disabled={isSelectionActive || isSavingSelection}
-                  onClick={() => void handleActivateVariant(selectedVariant.id)}
-                  className={`inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-bold transition ${
-                    isSelectionActive
-                      ? "cursor-default bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                      : "bg-indigo-600 text-white hover:bg-indigo-700"
-                  } ${isSavingSelection ? "opacity-75" : ""}`}
-                >
-                  {isSelectionActive ? (
-                    <>
-                      <CheckCircleIcon className="h-5 w-5" />
-                      هذه النسخة منشورة الآن
-                    </>
-                  ) : isSavingSelection ? (
-                    <>
-                      <ArrowPathIcon className="h-5 w-5 animate-spin" />
-                      جاري اعتماد النسخة...
-                    </>
-                  ) : (
-                    <>
-                      <BoltIcon className="h-5 w-5" />
-                      اعتماد هذه النسخة للنشر
-                    </>
-                  )}
-                </button>
-              </div>
-            </article>
-
-            <article className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                النسخ المتاحة
-              </h3>
-              <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                اختر نسخة لعرضها في مساحة المراجعة. التحديد هنا لا يغيّر النشر.
-              </p>
-
-              <div className="mt-4 space-y-2">
-                {availableVariants.map((variant, index) => {
-                  const isSelected = variant.id === selectedVariant.id;
-                  const isActive = variant.id === settings.activeLandingId;
-
-                  return (
-                    <button
-                      key={variant.id}
-                      type="button"
-                      aria-pressed={isSelected}
-                      onClick={() => setSelectedVariantId(variant.id)}
-                      className={`w-full rounded-xl border p-4 text-right transition ${
-                        isSelected
-                          ? "border-indigo-300 bg-indigo-50 dark:border-indigo-500 dark:bg-indigo-900/20"
-                          : "border-slate-200 bg-slate-50 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/40 dark:hover:bg-slate-900/70"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-base font-bold text-slate-900 dark:text-white">
-                              {variant.label}
-                            </span>
-                            {isActive ? (
-                              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                                LIVE
-                              </span>
-                            ) : null}
-                          </div>
-                          <p className="line-clamp-2 text-xs leading-6 text-slate-600 dark:text-slate-400">
-                            {variant.summary}
-                          </p>
-                        </div>
-                        <span className="text-xl font-bold text-slate-400 dark:text-slate-500">
-                          {formatVariantIndex(index)}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </article>
-
-            <article className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                ماذا يحدث هنا؟
-              </h3>
-              <ul className="mt-3 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                <li>التبديل بين النسخ يعرض التفاصيل فقط.</li>
-                <li>المعاينة تفتح النسخة المختارة في مسار مستقل.</li>
-                <li>النشر يغيّر ما يظهر على الجذر العام فقط.</li>
-              </ul>
-            </article>
-          </aside>
-
-          <main className="space-y-6">
-            <article className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
-              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5 dark:border-slate-700">
-                <div className="space-y-2">
-                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
-                    {formatVariantIndex(
-                      selectedVariantIndex >= 0 ? selectedVariantIndex : 0,
-                    )}{" "}
-                    {selectedVariant.badge}
-                  </p>
-                  <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
-                    {selectedVariant.label}
-                  </h2>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-bold ${
-                      isSelectionActive
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                        : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                    }`}
+                return (
+                  <button
+                    key={variant.id}
+                    type="button"
+                    onClick={() => setSelectedVariantId(variant.id)}
+                    className={cn(
+                      "w-full rounded-lg border p-2.5 text-right transition-colors text-xs",
+                      isSelected
+                        ? "border-primary/50 bg-primary/10 text-foreground"
+                        : "border-border/60 bg-muted/10 hover:bg-muted/30 text-muted-foreground"
+                    )}
                   >
-                    {isSelectionActive ? "منشورة حاليًا" : "قيد المراجعة"}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-foreground truncate">{variant.label}</span>
+                          {isActive && (
+                            <span className="rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 text-[9px] font-mono font-bold">
+                              LIVE
+                            </span>
+                          )}
+                        </div>
+                        <p className="line-clamp-1 text-[11px] text-muted-foreground mt-0.5">
+                          {variant.summary}
+                        </p>
+                      </div>
+                      <span className="font-mono text-[10px] text-muted-foreground/60 shrink-0">
+                        {formatVariantIndex(index)}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Preview & Details Surface */}
+        <main className="space-y-4">
+          <div className="rounded-xl border border-border/80 bg-card/40 p-5 shadow-xs space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                  {formatVariantIndex(selectedVariantIndex >= 0 ? selectedVariantIndex : 0)} · {selectedVariant.badge}
+                </span>
+                <h2 className="text-xl font-bold tracking-tight text-foreground mt-0.5">
+                  {selectedVariant.label}
+                </h2>
+              </div>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-xs font-mono",
+                  isSelectionActive
+                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20"
+                    : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20"
+                )}
+              >
+                {isSelectionActive ? "منشورة حالياً" : "قيد المراجعة"}
+              </Badge>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <h3 className="font-semibold text-foreground mb-1">لماذا قد تختار هذه النسخة؟</h3>
+                <p className="text-muted-foreground leading-relaxed text-xs">
+                  {selectedVariant.summary}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                  <span className="text-[10px] font-mono text-muted-foreground block">النبرة التسويقية</span>
+                  <span className="text-xs font-semibold text-foreground mt-1 block">{selectedVariant.tone}</span>
+                </div>
+                <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                  <span className="text-[10px] font-mono text-muted-foreground block">الجمهور المستهدف</span>
+                  <span className="text-xs font-semibold text-foreground mt-1 block">{selectedVariant.audience}</span>
+                </div>
+                <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                  <span className="text-[10px] font-mono text-muted-foreground block flex items-center gap-1">
+                    <LinkIcon className="size-3" />
+                    مسار المعاينة
+                  </span>
+                  <span dir="ltr" className="text-xs font-mono text-primary truncate mt-1 block font-semibold">
+                    {previewHref}
                   </span>
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-6 xl:grid-cols-[minmax(0,1fr)_19rem]">
-                <div className="space-y-6 xl:col-span-2">
-                  <section>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                      لماذا قد تختار هذه النسخة؟
-                    </h3>
-                    <p className="mt-2 text-sm leading-7 text-slate-700 dark:text-slate-300">
-                      {selectedVariant.summary}
-                    </p>
-                  </section>
-
-                  <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                        النبرة
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
-                        {selectedVariant.tone}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                        المستهدف
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
-                        {selectedVariant.audience}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
-                      <p className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                        <LinkIcon className="h-3.5 w-3.5" />
-                        مسار المعاينة
-                      </p>
-                      <p
-                        dir="ltr"
-                        className="mt-2 break-all text-sm font-semibold text-slate-800 dark:text-slate-200"
-                      >
-                        {previewHref}
-                      </p>
-                    </div>
-                  </section>
-
-                  <section className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
-                    <p className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
-                      <SparklesIcon className="h-4 w-4 text-indigo-500" />
-                      ما الذي يميزها؟
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {selectedVariant.focusPoints.map((point, index) => (
-                        <span
-                          key={`${selectedVariant.id}-${point}`}
-                          className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
-                        >
-                          <span
-                            className="h-2 w-2 rounded-full"
-                            style={{ backgroundColor: selectedVariant.accent }}
-                          />
-                          {formatVariantIndex(index)} {point}
-                        </span>
-                      ))}
-                    </div>
-                  </section>
+              <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 space-y-2">
+                <div className="flex items-center gap-1.5 font-semibold text-foreground">
+                  <SparklesIcon className="size-4 text-primary" />
+                  <span>نقاط التميز والعناصر الأساسية في هذه النسخة:</span>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {selectedVariant.focusPoints.map((point, idx) => (
+                    <span
+                      key={`${selectedVariant.id}-${point}`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-background/60 px-2.5 py-1 text-[11px] font-medium text-foreground"
+                    >
+                      <span
+                        className="size-1.5 rounded-full"
+                        style={{ backgroundColor: selectedVariant.accent || "#3b82f6" }}
+                      />
+                      <span>{formatVariantIndex(idx)} {point}</span>
+                    </span>
+                  ))}
                 </div>
               </div>
-            </article>
-          </main>
-        </section>
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   );

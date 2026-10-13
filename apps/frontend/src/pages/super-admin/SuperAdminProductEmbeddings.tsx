@@ -7,8 +7,9 @@ import { apiClient } from "../../services/apiClient";
 import i18n from "../../i18n";
 import {
   Database, RefreshCw, Play, CheckCircle, AlertCircle, Clock, Layers,
-  Building2, ChevronDown, ChevronRight, Info, BookOpen, Search,
+  Building2, ChevronDown, ChevronRight, Info, BookOpen, Search, Sparkles
 } from "lucide-react";
+import { cn } from "../../lib/utils";
 
 interface JobState {
   status: "idle" | "running" | "done" | "error";
@@ -95,10 +96,10 @@ function nextScheduledTime(hour: number, minute: number): string {
 }
 
 const STATUS_CONFIG = {
-  idle:    { label: "في الانتظار",  color: "bg-slate-100 text-slate-700", icon: <Clock className="size-3" /> },
-  running: { label: "جارٍ الآن",   color: "bg-blue-100 text-blue-700",   icon: <RefreshCw className="size-3 animate-spin" /> },
-  done:    { label: "اكتمل",        color: "bg-green-100 text-green-700", icon: <CheckCircle className="size-3" /> },
-  error:   { label: "خطأ",          color: "bg-red-100 text-red-700",     icon: <AlertCircle className="size-3" /> },
+  idle:    { label: "في الانتظار",  color: "bg-muted text-muted-foreground border-border/60", icon: <Clock className="size-3" /> },
+  running: { label: "جارٍ الآن",   color: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20", icon: <RefreshCw className="size-3 animate-spin" /> },
+  done:    { label: "اكتمل",        color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20", icon: <CheckCircle className="size-3" /> },
+  error:   { label: "خطأ",          color: "bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20", icon: <AlertCircle className="size-3" /> },
 };
 
 function JobCard({
@@ -113,62 +114,59 @@ function JobCard({
   const statusCfg = STATUS_CONFIG[job?.status ?? "idle"];
   const isRunning = job?.status === "running";
   const lastRunDisplay = fmtTs(job?.started_at ?? null, null);
-  const finishedDisplay = job?.started_at && job?.finished_at
-    ? fmtTs(null, null).replace("—", "") + fmtTs(job.finished_at, null)
-    : fmtTs(job?.finished_at ?? null, null);
 
   const lastRunFallback = !job?.started_at && job?.last_db_update
     ? `آخر تحديث: ${fmtTs(null, job.last_db_update)}`
     : null;
 
   return (
-    <div className="rounded-xl border bg-card p-4 space-y-3">
-      <div className="flex items-center gap-2">
-        <Clock className="size-4 text-muted-foreground" />
-        <span className="text-sm font-semibold">حالة المهمة المجدولة</span>
+    <div className="rounded-xl border border-border/80 bg-card/40 p-3.5 space-y-3 shadow-xs">
+      <div className="flex items-center justify-between border-b border-border/60 pb-2">
+        <div className="flex items-center gap-2">
+          <Clock className="size-3.5 text-muted-foreground" />
+          <span className="text-xs font-semibold text-foreground">حالة المهمة المجدولة</span>
+        </div>
+        <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-mono font-medium border", statusCfg.color)}>
+          {statusCfg.icon}
+          {statusCfg.label}
+        </span>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="rounded-lg bg-muted/40 px-3 py-2">
-          <p className="text-xs text-muted-foreground mb-1">الحالة</p>
-          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${statusCfg.color}`}>
-            {statusCfg.icon}
-            {statusCfg.label}
-          </span>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+        <div className="rounded-lg bg-muted/20 border border-border/50 p-2">
+          <p className="text-[10px] font-mono text-muted-foreground mb-0.5">الحالة</p>
+          <p className="font-semibold text-foreground text-xs">{statusCfg.label}</p>
         </div>
-        <div className="rounded-lg bg-muted/40 px-3 py-2">
-          <p className="text-xs text-muted-foreground mb-1">آخر تشغيل</p>
-          {lastRunFallback ? (
-            <p className="text-xs font-medium text-muted-foreground">{lastRunFallback}</p>
-          ) : (
-            <p className="text-xs font-medium">{lastRunDisplay}</p>
-          )}
+        <div className="rounded-lg bg-muted/20 border border-border/50 p-2">
+          <p className="text-[10px] font-mono text-muted-foreground mb-0.5">آخر تشغيل</p>
+          <p className="font-mono text-xs text-foreground truncate">{lastRunFallback || lastRunDisplay}</p>
         </div>
-        <div className="rounded-lg bg-muted/40 px-3 py-2">
-          <p className="text-xs text-muted-foreground mb-1">انتهى في</p>
-          <p className="text-xs font-medium">
+        <div className="rounded-lg bg-muted/20 border border-border/50 p-2">
+          <p className="text-[10px] font-mono text-muted-foreground mb-0.5">انتهى في</p>
+          <p className="font-mono text-xs text-foreground truncate">
             {fmtTs(job?.finished_at ?? null, null)}
             {job?.started_at && job?.finished_at ? (
-              <span className="text-muted-foreground mr-1">
+              <span className="text-muted-foreground mr-1 text-[10px]">
                 ({fmtDuration(job.started_at, job.finished_at)})
               </span>
             ) : null}
           </p>
         </div>
-        <div className="rounded-lg bg-muted/40 px-3 py-2">
-          <p className="text-xs text-muted-foreground mb-1">التالي المجدول</p>
-          <p className="text-xs font-medium">{nextScheduledTime(scheduleHour, scheduleMinute)}</p>
+        <div className="rounded-lg bg-muted/20 border border-border/50 p-2">
+          <p className="text-[10px] font-mono text-muted-foreground mb-0.5">التالي المجدول</p>
+          <p className="font-mono text-xs text-foreground truncate">{nextScheduledTime(scheduleHour, scheduleMinute)}</p>
         </div>
       </div>
 
       {isRunning && job && job.total > 0 && (
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-muted-foreground">
+        <div className="space-y-1 pt-1">
+          <div className="flex justify-between text-[11px] font-mono text-muted-foreground">
             <span>تم: {job.done} / {job.total}</span>
             <span>أخطاء: {job.errors}</span>
           </div>
-          <div className="h-2 rounded-full bg-muted overflow-hidden">
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
             <div
-              className="h-full bg-blue-500 transition-all duration-500"
+              className="h-full bg-primary transition-all duration-500 rounded-full"
               style={{ width: `${Math.round((job.done / job.total) * 100)}%` }}
             />
           </div>
@@ -176,7 +174,7 @@ function JobCard({
       )}
 
       {job?.last_error && (
-        <p className="text-xs text-red-600 bg-red-50 rounded p-2">
+        <p className="text-[11px] font-mono text-rose-600 bg-rose-500/10 border border-rose-500/20 rounded p-2">
           آخر خطأ: {job.last_error}
         </p>
       )}
@@ -295,13 +293,11 @@ const SuperAdminProductEmbeddings: React.FC = () => {
     });
   };
 
-  const companyName = (id: string) => companyMap[id] || id;
-
   const isRunning = data?.job?.status === "running";
   const kIsRunning = kData?.job?.status === "running";
 
   if (loading) return (
-    <div className="flex justify-center items-center h-[60vh]">
+    <div className="w-full max-w-[1440px] mx-auto p-4 sm:p-6 flex justify-center items-center h-[50vh]">
       <LoadingSpinner size="lg" />
     </div>
   );
@@ -334,306 +330,356 @@ const SuperAdminProductEmbeddings: React.FC = () => {
   });
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-64px)]" dir={i18n.dir()}>
-      {/* Header */}
-      <div className="px-4 py-3 shrink-0 border-b bg-card flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-blue-50">
-          <Database className="size-6 text-blue-600" />
+    <div className="w-full max-w-[1440px] mx-auto p-4 sm:p-6 space-y-4" dir={i18n.dir()}>
+      {/* Linear Single-Surface Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+            <Database className="size-4.5 text-primary" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
+                مزامنة التضمينات الدلالية بالذكاء الاصطناعي
+              </h1>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border border-border/80 bg-muted/30">
+                <span className={cn("size-1.5 rounded-full", isRunning || kIsRunning ? "bg-blue-500 animate-spin" : "bg-emerald-500")} />
+                {isRunning || kIsRunning ? "مزامنة جارية" : "جاهز"}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              تضمينات المنتجات والمعرفة للبحث الدلالي اللحظي وقواعد المعرفة الخاصة بالشركات
+            </p>
+          </div>
         </div>
-        <div className="flex-1">
-          <p className="text-sm font-bold">مزامنة التضمينات الدلالية</p>
-          <p className="text-xs text-muted-foreground">
-            تضمينات المنتجات والمعرفة (الأسئلة الشائعة والسياسات) للبحث الذكي
-          </p>
+
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => Promise.all([load(), loadKnowledge()])}
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform"
+          >
+            <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
+            <span>تحديث</span>
+          </Button>
         </div>
-        <Button size="sm" variant="outline" onClick={() => Promise.all([load(), loadKnowledge()])} className="gap-1.5">
-          <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
-          تحديث
-        </Button>
       </div>
 
-      <div className="flex-1 overflow-auto p-4 space-y-6">
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+      {error && (
+        <Alert variant="destructive" className="rounded-xl">
+          <AlertDescription className="text-xs">{error}</AlertDescription>
+        </Alert>
+      )}
 
-        {/* ── PRODUCT EMBEDDINGS ── */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Database className="size-4 text-blue-600" />
-              <h2 className="text-sm font-bold">تضمينات المنتجات</h2>
+      {/* Telemetry Ribbon for Product Embeddings */}
+      {summary && (
+        <div className="grid grid-cols-2 md:grid-cols-4 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">إجمالي المنتجات</span>
+              <span className="size-1.5 rounded-full bg-blue-500" />
             </div>
-            <Button
-              size="sm"
-              onClick={() => triggerSync()}
-              disabled={isRunning || syncing !== null}
-              className="gap-1.5"
-            >
-              {isRunning
-                ? <><RefreshCw className="size-3.5 animate-spin" /> جارٍ المزامنة...</>
-                : <><Play className="size-3.5" /> مزامنة الكل</>
-              }
-            </Button>
+            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {summary.total_products.toLocaleString()}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">في جميع الكتالوجات</p>
           </div>
 
-          <JobCard job={job} scheduleHour={3} scheduleMinute={0} />
-
-          {summary && (
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-xl border bg-card p-4 text-center">
-                <p className="text-2xl font-bold">{summary.total_products.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground mt-1">إجمالي المنتجات</p>
-              </div>
-              <div className="rounded-xl border bg-card p-4 text-center">
-                <p className="text-2xl font-bold text-green-600">{summary.total_embedded.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground mt-1">مُضَمَّنة</p>
-              </div>
-              <div className="rounded-xl border bg-card p-4 text-center">
-                <p className={`text-2xl font-bold ${summary.total_missing > 0 ? "text-amber-600" : "text-green-600"}`}>
-                  {summary.total_missing.toLocaleString()}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">غير مُضَمَّنة</p>
-              </div>
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">منتجات مُضَمَّنة</span>
+              <span className="size-1.5 rounded-full bg-emerald-500" />
             </div>
-          )}
-
-          <div className="rounded-xl border bg-card overflow-hidden">
-            <div className="px-4 py-3 border-b space-y-2">
-              <div className="flex items-center gap-2">
-                <Building2 className="size-4 text-muted-foreground" />
-                <span className="text-sm font-semibold">تفاصيل الشركات</span>
-                <Badge variant="secondary" className="mr-auto text-xs">{filteredCompanies.length} / {companies.length} شركة</Badge>
-              </div>
-              <div className="relative">
-                <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="ابحث بالاسم أو الـ ID..."
-                  value={productSearch}
-                  onChange={e => setProductSearch(e.target.value)}
-                  className="w-full rounded-lg border bg-background pr-8 pl-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring"
-                />
-              </div>
+            <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+              {summary.total_embedded.toLocaleString()}
             </div>
-            {filteredCompanies.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
-                <Layers className="size-8 opacity-40" />
-                <p className="text-sm">{companies.length === 0 ? "لا توجد بيانات" : "لا توجد نتائج للبحث"}</p>
-              </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">جاهزة للبحث البصري والذكي</p>
+          </div>
+
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">منتجات مفقودة التضمين</span>
+              <span className="size-1.5 rounded-full bg-amber-500" />
+            </div>
+            <div className={cn("text-2xl font-bold tracking-tight font-mono tabular-nums", summary.total_missing > 0 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400")}>
+              {summary.total_missing.toLocaleString()}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">تتطلب مزامنة لتحديثها</p>
+          </div>
+
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">نسبة اكتمال التضمينات</span>
+              <span className="size-1.5 rounded-full bg-purple-500" />
+            </div>
+            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {summary.total_products > 0
+                ? `${Math.round((summary.total_embedded / summary.total_products) * 100)}%`
+                : "100%"}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">معدل التغطية الفعلي</p>
+          </div>
+        </div>
+      )}
+
+      {/* Section 1: Product Embeddings */}
+      <div className="rounded-xl border border-border/80 bg-card/40 p-4 shadow-xs space-y-3.5">
+        <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
+          <div className="flex items-center gap-2">
+            <Database className="size-4 text-primary" />
+            <h2 className="text-xs font-semibold text-foreground">تضمينات المنتجات والكتالوج</h2>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => triggerSync()}
+            disabled={isRunning || syncing !== null}
+            className="h-7 text-xs font-mono gap-1.5 active:scale-[0.98]"
+          >
+            {isRunning ? (
+              <>
+                <RefreshCw className="size-3 animate-spin" />
+                <span>جارٍ المزامنة...</span>
+              </>
             ) : (
-              <div className="divide-y">
-                {filteredCompanies.map(c => {
-                  const pct = c.total > 0 ? Math.round((c.embedded / c.total) * 100) : 100;
-                  const isExpanded = expandedCompanies.has(c.company_id);
-                  const companyMissing = missingByCompany[c.company_id] ?? [];
-                  const name = companyMap[c.company_id];
-                  return (
-                    <div key={c.company_id}>
-                      <div className="px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors">
-                        <button
-                          onClick={() => toggleCompany(c.company_id)}
-                          className="text-muted-foreground hover:text-foreground transition-colors"
-                          disabled={c.missing === 0}
-                        >
-                          {c.missing > 0
-                            ? (isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />)
-                            : <CheckCircle className="size-4 text-green-500" />
-                          }
-                        </button>
-                        <div className="w-48 shrink-0">
-                          {name ? (
-                            <p className="text-xs font-medium truncate">{name}</p>
-                          ) : (
-                            <code className="text-xs text-muted-foreground font-mono truncate block">{c.company_id}</code>
-                          )}
-                        </div>
-                        <div className="flex-1 space-y-0.5">
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>{c.embedded}/{c.total}</span>
-                            <span>{pct}%</span>
-                          </div>
-                          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                            <div
-                              className={`h-full transition-all ${pct === 100 ? "bg-green-500" : pct >= 70 ? "bg-blue-500" : "bg-amber-500"}`}
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                        </div>
-                        {c.missing > 0 && (
-                          <Badge variant="outline" className="text-xs border-amber-300 text-amber-700 bg-amber-50 shrink-0">
-                            {c.missing} ناقص
-                          </Badge>
-                        )}
-                        <Button
-                          size="sm"
-                          variant={c.missing > 0 ? "default" : "outline"}
-                          className="shrink-0 h-7 text-xs gap-1"
-                          disabled={isRunning || syncing !== null}
-                          onClick={() => triggerSync(c.company_id)}
-                        >
-                          <Play className="size-3" />
-                          مزامنة
-                        </Button>
-                      </div>
-                      {isExpanded && companyMissing.length > 0 && (
-                        <div className="bg-amber-50/50 border-t px-8 py-2 space-y-1">
-                          <p className="text-xs text-muted-foreground font-medium mb-2 flex items-center gap-1">
-                            <Info className="size-3" />
-                            المنتجات غير المُضَمَّنة ({companyMissing.length})
-                          </p>
-                          {companyMissing.map(p => (
-                            <div key={p.id} className="flex items-center gap-2 text-xs py-0.5">
-                              <span className="text-foreground font-medium">{p.name}</span>
-                              {p.sku && <code className="text-muted-foreground font-mono">{p.sku}</code>}
-                            </div>
-                          ))}
-                          {companyMissing.length >= 500 && (
-                            <p className="text-xs text-muted-foreground italic">* يُعرض حد 500 منتج فقط</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              <>
+                <Play className="size-3" />
+                <span>مزامنة كافة المنتجات</span>
+              </>
             )}
+          </Button>
+        </div>
+
+        <JobCard job={job} scheduleHour={3} scheduleMinute={0} />
+
+        {/* Company breakdown */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3 text-muted-foreground pointer-events-none" />
+              <input
+                type="text"
+                placeholder="ابحث باسم الشركة أو المعرف..."
+                value={productSearch}
+                onChange={e => setProductSearch(e.target.value)}
+                className="w-full h-7 rounded-md border border-border/80 bg-background/50 pr-7 pl-3 text-xs font-mono outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+            <Badge variant="outline" className="text-[10px] font-mono">
+              {filteredCompanies.length} / {companies.length} شركة
+            </Badge>
           </div>
-        </section>
 
-        {/* ── KNOWLEDGE EMBEDDINGS ── */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BookOpen className="size-4 text-purple-600" />
-              <h2 className="text-sm font-bold">تضمينات المعرفة</h2>
-              <span className="text-xs text-muted-foreground">(الأسئلة الشائعة والسياسات)</span>
-            </div>
-            <Button
-              size="sm"
-              onClick={() => triggerKnowledgeSync()}
-              disabled={kIsRunning || kSyncing}
-              className="gap-1.5"
-            >
-              {kIsRunning
-                ? <><RefreshCw className="size-3.5 animate-spin" /> جارٍ المزامنة...</>
-                : <><Play className="size-3.5" /> مزامنة الكل</>
-              }
-            </Button>
-          </div>
-
-          <JobCard job={kJob} scheduleHour={3} scheduleMinute={30} />
-
-          {kSummary && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="rounded-xl border bg-card p-4 text-center">
-                <p className="text-2xl font-bold">{kSummary.total_faqs.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground mt-1">إجمالي الأسئلة</p>
-              </div>
-              <div className="rounded-xl border bg-card p-4 text-center">
-                <p className={`text-2xl font-bold ${kSummary.missing_faqs > 0 ? "text-amber-600" : "text-green-600"}`}>
-                  {kSummary.embedded_faqs.toLocaleString()}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">أسئلة مُضَمَّنة</p>
-              </div>
-              <div className="rounded-xl border bg-card p-4 text-center">
-                <p className="text-2xl font-bold">{kSummary.total_policies.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground mt-1">إجمالي السياسات</p>
-              </div>
-              <div className="rounded-xl border bg-card p-4 text-center">
-                <p className={`text-2xl font-bold ${kSummary.missing_policies > 0 ? "text-amber-600" : "text-green-600"}`}>
-                  {kSummary.embedded_policies.toLocaleString()}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">سياسات مُضَمَّنة</p>
-              </div>
-            </div>
-          )}
-
-          <div className="rounded-xl border bg-card overflow-hidden">
-            <div className="px-4 py-3 border-b space-y-2">
-              <div className="flex items-center gap-2">
-                <Building2 className="size-4 text-muted-foreground" />
-                <span className="text-sm font-semibold">تفاصيل الشركات — المعرفة</span>
-                <Badge variant="secondary" className="mr-auto text-xs">{filteredKCompanies.length} / {kCompanies.length} شركة</Badge>
-              </div>
-              <div className="relative">
-                <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="ابحث بالاسم أو الـ ID..."
-                  value={knowledgeSearch}
-                  onChange={e => setKnowledgeSearch(e.target.value)}
-                  className="w-full rounded-lg border bg-background pr-8 pl-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring"
-                />
-              </div>
-            </div>
-            {filteredKCompanies.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
-                <Layers className="size-8 opacity-40" />
-                <p className="text-sm">{kCompanies.length === 0 ? "لا توجد بيانات — شغّل المزامنة أولاً" : "لا توجد نتائج للبحث"}</p>
+          <div className="rounded-lg border border-border/60 divide-y divide-border/40 overflow-hidden bg-background/30 text-xs">
+            {filteredCompanies.length === 0 ? (
+              <div className="py-8 text-center text-xs font-mono text-muted-foreground">
+                لا توجد شركات مطابقة
               </div>
             ) : (
-              <div className="divide-y">
-                {filteredKCompanies.map(c => {
-                  const totalK = c.total_faqs + c.total_policies;
-                  const embeddedK = c.embedded_faqs + c.embedded_policies;
-                  const missingK = c.missing_faqs + c.missing_policies;
-                  const pct = totalK > 0 ? Math.round((embeddedK / totalK) * 100) : 100;
-                  const name = companyMap[c.company_id];
-                  return (
-                    <div key={c.company_id} className="px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors">
-                      <div className="text-muted-foreground">
-                        {missingK === 0
-                          ? <CheckCircle className="size-4 text-green-500" />
-                          : <AlertCircle className="size-4 text-amber-500" />
+              filteredCompanies.map(c => {
+                const pct = c.total > 0 ? Math.round((c.embedded / c.total) * 100) : 100;
+                const isExpanded = expandedCompanies.has(c.company_id);
+                const companyMissing = missingByCompany[c.company_id] ?? [];
+                const name = companyMap[c.company_id];
+                return (
+                  <div key={c.company_id}>
+                    <div className="p-2.5 flex items-center gap-3 hover:bg-muted/20 transition-colors">
+                      <button
+                        onClick={() => toggleCompany(c.company_id)}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        disabled={c.missing === 0}
+                      >
+                        {c.missing > 0
+                          ? (isExpanded ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />)
+                          : <CheckCircle className="size-3.5 text-emerald-500" />
                         }
-                      </div>
+                      </button>
                       <div className="w-48 shrink-0">
                         {name ? (
-                          <p className="text-xs font-medium truncate">{name}</p>
+                          <p className="text-xs font-semibold text-foreground truncate">{name}</p>
                         ) : (
-                          <code className="text-xs text-muted-foreground font-mono truncate block">{c.company_id}</code>
+                          <code className="text-[10px] text-muted-foreground font-mono truncate block">{c.company_id}</code>
                         )}
                       </div>
                       <div className="flex-1 space-y-0.5">
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>
-                            أسئلة: {c.embedded_faqs}/{c.total_faqs} &nbsp;|&nbsp;
-                            سياسات: {c.embedded_policies}/{c.total_policies}
-                          </span>
+                        <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
+                          <span>{c.embedded}/{c.total}</span>
                           <span>{pct}%</span>
                         </div>
                         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                           <div
-                            className={`h-full transition-all ${pct === 100 ? "bg-green-500" : pct >= 70 ? "bg-purple-500" : "bg-amber-500"}`}
+                            className={cn("h-full transition-all rounded-full", pct === 100 ? "bg-emerald-500" : pct >= 70 ? "bg-blue-500" : "bg-amber-500")}
                             style={{ width: `${pct}%` }}
                           />
                         </div>
                       </div>
-                      {missingK > 0 && (
-                        <Badge variant="outline" className="text-xs border-amber-300 text-amber-700 bg-amber-50 shrink-0">
-                          {missingK} ناقص
+                      {c.missing > 0 && (
+                        <Badge variant="outline" className="text-[10px] font-mono border-amber-500/30 text-amber-700 dark:text-amber-300 bg-amber-500/10 shrink-0">
+                          {c.missing} ناقص
                         </Badge>
                       )}
                       <Button
                         size="sm"
-                        variant={missingK > 0 ? "default" : "outline"}
-                        className="shrink-0 h-7 text-xs gap-1"
-                        disabled={kIsRunning || kSyncing}
-                        onClick={() => triggerKnowledgeSync(c.company_id)}
+                        variant={c.missing > 0 ? "default" : "outline"}
+                        className="shrink-0 h-6 text-[10px] font-mono gap-1 px-2 active:scale-[0.98]"
+                        disabled={isRunning || syncing !== null}
+                        onClick={() => triggerSync(c.company_id)}
                       >
-                        <Play className="size-3" />
-                        مزامنة
+                        <Play className="size-2.5" />
+                        <span>مزامنة</span>
                       </Button>
                     </div>
-                  );
-                })}
-              </div>
+                    {isExpanded && companyMissing.length > 0 && (
+                      <div className="bg-amber-500/5 border-t border-amber-500/20 px-8 py-2 space-y-1">
+                        <p className="text-[11px] text-muted-foreground font-medium mb-1.5 flex items-center gap-1">
+                          <Info className="size-3" />
+                          المنتجات غير المُضَمَّنة ({companyMissing.length})
+                        </p>
+                        {companyMissing.slice(0, 10).map(p => (
+                          <div key={p.id} className="flex items-center gap-2 text-xs py-0.5 font-mono">
+                            <span className="text-foreground font-medium">{p.name}</span>
+                            {p.sku && <code className="text-muted-foreground text-[10px]">{p.sku}</code>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
-        </section>
+        </div>
+      </div>
+
+      {/* Section 2: Knowledge Embeddings */}
+      <div className="rounded-xl border border-border/80 bg-card/40 p-4 shadow-xs space-y-3.5">
+        <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
+          <div className="flex items-center gap-2">
+            <BookOpen className="size-4 text-purple-600" />
+            <h2 className="text-xs font-semibold text-foreground">تضمينات المعرفة والسياسات (Knowledge Embeddings)</h2>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => triggerKnowledgeSync()}
+            disabled={kIsRunning || kSyncing}
+            className="h-7 text-xs font-mono gap-1.5 active:scale-[0.98]"
+          >
+            {kIsRunning ? (
+              <>
+                <RefreshCw className="size-3 animate-spin" />
+                <span>جارٍ المزامنة...</span>
+              </>
+            ) : (
+              <>
+                <Play className="size-3" />
+                <span>مزامنة المعرفة</span>
+              </>
+            )}
+          </Button>
+        </div>
+
+        <JobCard job={kJob} scheduleHour={3} scheduleMinute={30} />
+
+        {kSummary && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+            <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5">
+              <p className="text-lg font-bold font-mono tabular-nums text-foreground">{kSummary.total_faqs.toLocaleString()}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">إجمالي الأسئلة</p>
+            </div>
+            <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5">
+              <p className="text-lg font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{kSummary.embedded_faqs.toLocaleString()}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">أسئلة مُضَمَّنة</p>
+            </div>
+            <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5">
+              <p className="text-lg font-bold font-mono tabular-nums text-foreground">{kSummary.total_policies.toLocaleString()}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">إجمالي السياسات</p>
+            </div>
+            <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5">
+              <p className="text-lg font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{kSummary.embedded_policies.toLocaleString()}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">سياسات مُضَمَّنة</p>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3 text-muted-foreground pointer-events-none" />
+              <input
+                type="text"
+                placeholder="ابحث بالاسم أو الـ ID..."
+                value={knowledgeSearch}
+                onChange={e => setKnowledgeSearch(e.target.value)}
+                className="w-full h-7 rounded-md border border-border/80 bg-background/50 pr-7 pl-3 text-xs font-mono outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+            <Badge variant="outline" className="text-[10px] font-mono">
+              {filteredKCompanies.length} / {kCompanies.length} شركة
+            </Badge>
+          </div>
+
+          <div className="rounded-lg border border-border/60 divide-y divide-border/40 overflow-hidden bg-background/30 text-xs">
+            {filteredKCompanies.length === 0 ? (
+              <div className="py-8 text-center text-xs font-mono text-muted-foreground">
+                لا توجد بيانات للمعرفة
+              </div>
+            ) : (
+              filteredKCompanies.map(c => {
+                const totalK = c.total_faqs + c.total_policies;
+                const embeddedK = c.embedded_faqs + c.embedded_policies;
+                const missingK = c.missing_faqs + c.missing_policies;
+                const pct = totalK > 0 ? Math.round((embeddedK / totalK) * 100) : 100;
+                const name = companyMap[c.company_id];
+                return (
+                  <div key={c.company_id} className="p-2.5 flex items-center gap-3 hover:bg-muted/20 transition-colors">
+                    <div className="text-muted-foreground">
+                      {missingK === 0
+                        ? <CheckCircle className="size-3.5 text-emerald-500" />
+                        : <AlertCircle className="size-3.5 text-amber-500" />
+                      }
+                    </div>
+                    <div className="w-48 shrink-0">
+                      {name ? (
+                        <p className="text-xs font-semibold text-foreground truncate">{name}</p>
+                      ) : (
+                        <code className="text-[10px] text-muted-foreground font-mono truncate block">{c.company_id}</code>
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-0.5">
+                      <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
+                        <span>
+                          أسئلة: {c.embedded_faqs}/{c.total_faqs} | سياسات: {c.embedded_policies}/{c.total_policies}
+                        </span>
+                        <span>{pct}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={cn("h-full transition-all rounded-full", pct === 100 ? "bg-emerald-500" : pct >= 70 ? "bg-purple-500" : "bg-amber-500")}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                    {missingK > 0 && (
+                      <Badge variant="outline" className="text-[10px] font-mono border-amber-500/30 text-amber-700 dark:text-amber-300 bg-amber-500/10 shrink-0">
+                        {missingK} ناقص
+                      </Badge>
+                    )}
+                    <Button
+                      size="sm"
+                      variant={missingK > 0 ? "default" : "outline"}
+                      className="shrink-0 h-6 text-[10px] font-mono gap-1 px-2 active:scale-[0.98]"
+                      disabled={kIsRunning || kSyncing}
+                      onClick={() => triggerKnowledgeSync(c.company_id)}
+                    >
+                      <Play className="size-2.5" />
+                      <span>مزامنة</span>
+                    </Button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

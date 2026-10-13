@@ -9,20 +9,13 @@ import {
   Ticket,
   Trash2,
   Users,
+  Edit3,
+  Filter,
+  CheckCircle2,
+  Clock,
+  Ban
 } from "lucide-react";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
-
-import {
-  BusinessFilterSheet,
-  BusinessMobileSearchPanel,
-} from "../../components/business/BusinessFilters";
-import {
-  BusinessPageHero,
-  BusinessPageShell,
-  BusinessSectionPanel,
-} from "../../components/business/BusinessSurface";
-import { BusinessMetricsStrip } from "../../components/business/BusinessMetrics";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import {
@@ -59,6 +52,7 @@ import {
   type PlatformSignupCouponFormPayload,
   type PlatformSignupCouponSummary,
 } from "../../services/platformSignupCouponService";
+import { cn } from "../../lib/utils";
 
 type CouponStateFilter =
   | "all"
@@ -139,30 +133,26 @@ const formatDate = (value?: string | null) => {
 const buildBenefitList = (coupon: PlatformSignupCoupon) =>
   [
     coupon.trialDays > 0 ? `${coupon.trialDays} يوم مجاني` : null,
-    coupon.bonusUsers > 0 ? `${coupon.bonusUsers} مستخدم إضافي` : null,
-    coupon.bonusProducts > 0 ? `${coupon.bonusProducts} منتج إضافي` : null,
-    coupon.bonusOrdersPerMonth > 0
-      ? `${coupon.bonusOrdersPerMonth} طلب إضافي شهريًا`
-      : null,
-    coupon.bonusCustomers > 0
-      ? `${coupon.bonusCustomers} عميل إضافي`
-      : null,
+    coupon.bonusUsers > 0 ? `${coupon.bonusUsers} مستخدم` : null,
+    coupon.bonusProducts > 0 ? `${coupon.bonusProducts} منتج` : null,
+    coupon.bonusOrdersPerMonth > 0 ? `${coupon.bonusOrdersPerMonth} طلب/شهر` : null,
+    coupon.bonusCustomers > 0 ? `${coupon.bonusCustomers} عميل` : null,
   ].filter(Boolean) as string[];
 
 const stateBadgeClassName = (state: PlatformSignupCoupon["state"]) => {
   if (state === "live") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    return "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
   }
   if (state === "scheduled") {
-    return "border-blue-200 bg-blue-50 text-blue-700";
+    return "border-blue-500/20 bg-blue-500/10 text-blue-700 dark:text-blue-300";
   }
   if (state === "expired") {
-    return "border-slate-200 bg-slate-100 text-slate-600";
+    return "border-border/60 bg-muted text-muted-foreground";
   }
   if (state === "depleted") {
-    return "border-amber-200 bg-amber-50 text-amber-700";
+    return "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300";
   }
-  return "border-rose-200 bg-rose-50 text-rose-700";
+  return "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300";
 };
 
 const stateLabel = (state: PlatformSignupCoupon["state"]) => {
@@ -183,95 +173,28 @@ const summaryFallback: PlatformSignupCouponSummary = {
   totalRedemptions: 0,
 };
 
-const numericBenefitFields: Array<{
-  key: keyof PlatformSignupCouponBenefits;
-  label: string;
-  placeholder: string;
-}> = [
-  { key: "trialDays", label: "أيام التجربة المجانية", placeholder: "7" },
-  { key: "bonusUsers", label: "مستخدمون إضافيون", placeholder: "5" },
-  { key: "bonusProducts", label: "منتجات إضافية", placeholder: "100" },
-  {
-    key: "bonusOrdersPerMonth",
-    label: "طلبات إضافية شهريًا",
-    placeholder: "200",
-  },
-  { key: "bonusCustomers", label: "عملاء إضافيون", placeholder: "500" },
-];
-
 const PlatformSignupCoupons: React.FC = () => {
   const [coupons, setCoupons] = useState<PlatformSignupCoupon[]>([]);
-  const [summary, setSummary] =
-    useState<PlatformSignupCouponSummary>(summaryFallback);
+  const [summary, setSummary] = useState<PlatformSignupCouponSummary>(summaryFallback);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState<CouponStateFilter>("all");
-  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingCoupon, setEditingCoupon] = useState<PlatformSignupCoupon | null>(
-    null,
-  );
-  const [couponPendingRemoval, setCouponPendingRemoval] =
-    useState<PlatformSignupCoupon | null>(null);
+  const [editingCoupon, setEditingCoupon] = useState<PlatformSignupCoupon | null>(null);
+  const [couponPendingRemoval, setCouponPendingRemoval] = useState<PlatformSignupCoupon | null>(null);
   const [removing, setRemoving] = useState(false);
-  const [formState, setFormState] =
-    useState<PlatformSignupCouponFormPayload>(createDefaultFormState);
-
-  const activeFilterLabels = useMemo(() => {
-    if (stateFilter === "all") return [];
-    const option = stateOptions.find((item) => item.value === stateFilter);
-    return option ? [option.label] : [];
-  }, [stateFilter]);
-
-  const metricItems = useMemo(
-    () => [
-      {
-        title: "إجمالي الكوبونات",
-        value: summary.totalCoupons.toLocaleString("ar-EG"),
-        subtitle: "عدد كل كوبونات onboarding المتاحة للإدارة.",
-        tone: "primary" as const,
-        icon: Ticket,
-      },
-      {
-        title: "الكوبونات الحية",
-        value: summary.liveCoupons.toLocaleString("ar-EG"),
-        subtitle: "الصالحة الآن للاستخدام في شاشة التسجيل.",
-        tone: "success" as const,
-        icon: Sparkles,
-      },
-      {
-        title: "إجمالي الاسترداد",
-        value: summary.totalRedemptions.toLocaleString("ar-EG"),
-        subtitle: "عدد الشركات التي استخدمت كوبونًا عند التسجيل.",
-        tone: "secondary" as const,
-        icon: Gift,
-      },
-      {
-        title: "المستهلك والمنتهي",
-        value: (
-          summary.depletedCoupons + summary.expiredCoupons
-        ).toLocaleString("ar-EG"),
-        subtitle: "كوبونات تحتاج مراجعة أو إعادة تفعيل بخطة جديدة.",
-        tone: "warning" as const,
-        icon: CalendarRange,
-      },
-    ],
-    [summary],
-  );
+  const [formState, setFormState] = useState<PlatformSignupCouponFormPayload>(createDefaultFormState);
 
   const loadCoupons = async (nextSearch = search, nextState = stateFilter) => {
     try {
       setLoading(true);
-      const response = await platformSignupCouponService.listCoupons(
-        nextSearch,
-        nextState,
-      );
+      const response = await platformSignupCouponService.listCoupons(nextSearch, nextState);
       setCoupons(response.items);
       setSummary(response.summary);
     } catch (error) {
       console.error("Failed to load platform signup coupons", error);
-      tToast.error("PlatformSignupCoupons.failed_load_ccaf");
+      toast.error("فشل تحميل كوبونات التسجيل");
     } finally {
       setLoading(false);
     }
@@ -291,10 +214,6 @@ const PlatformSignupCoupons: React.FC = () => {
     setEditingCoupon(coupon);
     setFormState(mapCouponToForm(coupon));
     setDialogOpen(true);
-  };
-
-  const openRemoveDialog = (coupon: PlatformSignupCoupon) => {
-    setCouponPendingRemoval(coupon);
   };
 
   const updateBenefitField = (
@@ -324,30 +243,19 @@ const PlatformSignupCoupons: React.FC = () => {
       setDialogOpen(false);
       setEditingCoupon(null);
       setFormState(createDefaultFormState());
-      toast.success(
-        editingCoupon
-          ? "تم تحديث كوبون التسجيل"
-          : "تم إنشاء كوبون التسجيل",
-      );
+      toast.success(editingCoupon ? "تم تحديث كوبون التسجيل بنجاح" : "تم إنشاء كوبون التسجيل بنجاح");
 
       setCoupons((previous) => {
         if (editingCoupon) {
-          return previous.map((coupon) =>
-            coupon.id === savedCoupon.id ? savedCoupon : coupon,
-          );
+          return previous.map((coupon) => (coupon.id === savedCoupon.id ? savedCoupon : coupon));
         }
-
         return [savedCoupon, ...previous];
       });
 
       await loadCoupons();
     } catch (error: any) {
       console.error("Failed to save platform signup coupon", error);
-      toast.error(
-        error?.response?.data?.message ||
-          error?.message ||
-          "فشل حفظ كوبون التسجيل",
-      );
+      toast.error(error?.response?.data?.message || error?.message || "فشل حفظ كوبون التسجيل");
     } finally {
       setSaving(false);
     }
@@ -355,604 +263,416 @@ const PlatformSignupCoupons: React.FC = () => {
 
   const handleRemoveCoupon = async () => {
     if (!couponPendingRemoval) return;
-
     try {
       setRemoving(true);
-      const result = await platformSignupCouponService.removeCoupon(
-        couponPendingRemoval.id,
-      );
-
-      if (result.action === "deleted") {
-        setCoupons((previous) =>
-          previous.filter((coupon) => coupon.id !== couponPendingRemoval.id),
-        );
-        tToast.success("PlatformSignupCoupons.success_delete_6248");
-      } else {
-        setCoupons((previous) =>
-          previous.map((coupon) =>
-            coupon.id === couponPendingRemoval.id && result.coupon
-              ? result.coupon
-              : coupon,
-          ),
-        );
-        tToast.success("PlatformSignupCoupons.msg_42c7");
-      }
-
+      await platformSignupCouponService.deleteCoupon(couponPendingRemoval.id);
+      toast.success("تم حذف الكوبون بنجاح");
+      setCoupons(prev => prev.filter(c => c.id !== couponPendingRemoval.id));
       setCouponPendingRemoval(null);
       await loadCoupons();
     } catch (error: any) {
-      console.error("Failed to remove platform signup coupon", error);
-      toast.error(
-        error?.response?.data?.message ||
-          error?.message ||
-          "فشل حذف كوبون التسجيل",
-      );
+      toast.error(error?.response?.data?.message || "فشل حذف الكوبون");
     } finally {
       setRemoving(false);
     }
   };
 
   return (
-    <BusinessPageShell className="space-y-6">
-      <BusinessPageHero
-        eyebrow="Growth Controls"
-        title="كوبونات التسجيل للمنصة"
-        description="إدارة كوبونات onboarding التي تمنح trial إضافي أو limits استخدام أعلى للعملاء الجدد من شاشة التسجيل مباشرة."
-        actions={
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-2xl"
-              onClick={() => void loadCoupons()}
-              disabled={loading}
-            >
-              <RefreshCw className={loading ? "animate-spin" : ""} />
-              تحديث
-            </Button>
-            <Button type="button" className="rounded-2xl" onClick={openCreateDialog}>
-              <Plus />
-              إنشاء كوبون
-            </Button>
+    <div className="w-full max-w-[1440px] mx-auto p-4 sm:p-6 space-y-4" dir="rtl">
+      {/* Linear Taste Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+            <Ticket className="size-4.5 text-primary" />
           </div>
-        }
-      />
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
+                كوبونات التسجيل وباقات الترحيب
+              </h1>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border border-border/80 bg-muted/30">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {summary.liveCoupons} كوبون فعّال
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              إدارة أكواد الخصم والحوافز وأيام التجربة المجانية الممنوحة للشركات الجديدة عند إنشاء الحساب
+            </p>
+          </div>
+        </div>
 
-      <BusinessMetricsStrip items={metricItems} />
-
-      <BusinessMobileSearchPanel
-        searchId="signup-coupon-search-mobile"
-        searchLabel="ابحث عن كوبون"
-        searchPlaceholder="ابحث بالاسم أو الكود"
-        searchValue={search}
-        searchAriaLabel="ابحث عن كوبون تسجيل"
-        onSearchChange={setSearch}
-        onSearchSubmit={() => {
-          void loadCoupons(search, stateFilter);
-        }}
-        onOpenFilters={() => setFilterSheetOpen(true)}
-        filterCount={activeFilterLabels.length}
-        summaryIcon={<Sparkles className="size-4" />}
-        summary={`تعرض ${coupons.length.toLocaleString("ar-EG")} كوبون`}
-        activeFilters={activeFilterLabels}
-      />
-
-      <BusinessFilterSheet
-        open={filterSheetOpen}
-        onOpenChange={setFilterSheetOpen}
-        title="فلاتر كوبونات التسجيل"
-        description="اختر الحالة التي تريد عرضها في شاشة الإدارة."
-        onClear={() => {
-          setStateFilter("all");
-        }}
-        onApply={() => {
-          setFilterSheetOpen(false);
-          void loadCoupons(search, stateFilter);
-        }}
-      >
-        <div className="space-y-2">
-          <Label>حالة الكوبون</Label>
-          <Select
-            value={stateFilter}
-            onValueChange={(value) =>
-              setStateFilter(value as CouponStateFilter)
-            }
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={openCreateDialog}
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform shadow-xs"
           >
-            <SelectTrigger>
-              <SelectValue placeholder="اختر الحالة" />
+            <Plus className="size-3.5" />
+            <span>إنشاء كوبون جديد</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void loadCoupons()}
+            disabled={loading}
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform"
+          >
+            <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
+            <span>تحديث</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Telemetry Ribbon */}
+      <div className="grid grid-cols-2 md:grid-cols-4 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">إجمالي الكوبونات</span>
+            <span className="size-1.5 rounded-full bg-blue-500" />
+          </div>
+          <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+            {summary.totalCoupons}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">أكواد مسجلة بالنظام</p>
+        </div>
+
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">كوبونات فعّالة</span>
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+          </div>
+          <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+            {summary.liveCoupons}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">جاهزة للاستخدام في شاشة التسجيل</p>
+        </div>
+
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">مرات الاستخدام الفعلية</span>
+            <span className="size-1.5 rounded-full bg-purple-500" />
+          </div>
+          <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+            {summary.totalRedemptions}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">شركات سجلت باستخدام كود</p>
+        </div>
+
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">مستهلك أو منتهي</span>
+            <span className="size-1.5 rounded-full bg-amber-500" />
+          </div>
+          <div className="text-2xl font-bold tracking-tight text-muted-foreground font-mono tabular-nums">
+            {summary.depletedCoupons + summary.expiredCoupons}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">يحتاج تجديد أو أرشفة</p>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl border border-border/80 bg-card/40">
+        <div className="flex items-center gap-2 flex-wrap flex-1 min-w-[260px]">
+          <div className="relative flex-1 min-w-[180px] max-w-sm">
+            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              className="h-8 pr-8 text-xs font-mono bg-background/50"
+              placeholder="بحث باسم الكوبون أو الكود..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          <Select value={stateFilter} onValueChange={(v) => setStateFilter(v as CouponStateFilter)}>
+            <SelectTrigger className="h-8 text-xs w-36 bg-background/50">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {stateOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
+              {stateOptions.map(opt => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-      </BusinessFilterSheet>
 
-      <BusinessSectionPanel
-        title="لوحة الكوبونات"
-        description="بحث سريع، فلترة، ومراجعة آخر استرداد لكل كوبون قبل التعديل."
-        headerAside={
-          <div className="hidden flex-wrap items-center gap-3 md:flex">
-            <div className="relative w-[18rem]">
-              <Search className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="ابحث بالاسم أو الكود"
-                className="pr-10 text-right"
-              />
-            </div>
+        <div className="text-xs font-mono text-muted-foreground">
+          {coupons.length} كوبون
+        </div>
+      </div>
 
-            <Select
-              value={stateFilter}
-              onValueChange={(value) =>
-                setStateFilter(value as CouponStateFilter)
-              }
-            >
-              <SelectTrigger className="w-[13rem]">
-                <SelectValue placeholder="كل الحالات" />
-              </SelectTrigger>
-              <SelectContent>
-                {stateOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        }
-        contentClassName="space-y-4 p-4 sm:p-6"
-      >
-        {loading ? (
-          <div className="rounded-3xl border border-dashed border-border/70 bg-background/70 px-6 py-12 text-center text-sm text-muted-foreground">
-            جاري تحميل كوبونات التسجيل...
-          </div>
-        ) : coupons.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-border/70 bg-background/70 px-6 py-12 text-center">
-            <div className="mx-auto flex max-w-xl flex-col items-center gap-3">
-              <Badge variant="outline" className="rounded-full px-3 py-1">
-                Empty State
-              </Badge>
-              <h3 className="text-xl font-semibold text-foreground">
-                لا توجد كوبونات مطابقة الآن
-              </h3>
-              <p className="text-sm leading-7 text-muted-foreground">
-                أنشئ أول كوبون onboarding ليحصل العميل الجديد على فترة مجانية
-                إضافية أو limits استخدام أعلى منذ أول يوم.
-              </p>
-              <Button type="button" className="rounded-2xl" onClick={openCreateDialog}>
-                <Plus />
-                إنشاء أول كوبون
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="grid gap-4 md:hidden">
-              {coupons.map((coupon) => {
-                const benefits = buildBenefitList(coupon);
-
-                return (
-                  <article
-                    key={coupon.id}
-                    className="rounded-[28px] border border-border/70 bg-card p-5 shadow-sm"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge
-                            variant="outline"
-                            className={`rounded-full px-3 py-1 ${stateBadgeClassName(coupon.state)}`}
-                          >
-                            {stateLabel(coupon.state)}
-                          </Badge>
-                          <Badge variant="secondary" className="rounded-full px-3 py-1">
-                            {coupon.code}
-                          </Badge>
+      {/* Single Surface Table Chassis */}
+      <div className="rounded-xl border border-border/80 bg-card/40 shadow-xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-border/60 bg-muted/30">
+                <TableHead className="text-right text-[11px] font-mono">الكود / الاسم</TableHead>
+                <TableHead className="text-right text-[11px] font-mono">الحالة</TableHead>
+                <TableHead className="text-right text-[11px] font-mono">المزايا والحوافز</TableHead>
+                <TableHead className="text-center text-[11px] font-mono">الاستخدام</TableHead>
+                <TableHead className="text-right text-[11px] font-mono">فترة الصلاحية</TableHead>
+                <TableHead className="text-left text-[11px] font-mono w-24">إجراءات</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-12">
+                    <LoadingSpinner size="sm" />
+                  </TableCell>
+                </TableRow>
+              ) : coupons.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-12 text-xs font-mono text-muted-foreground">
+                    لا توجد كوبونات مطابقة
+                  </TableCell>
+                </TableRow>
+              ) : (
+                coupons.map(coupon => {
+                  const benefits = buildBenefitList(coupon);
+                  return (
+                    <TableRow key={coupon.id} className="border-b border-border/60 hover:bg-muted/20 transition-colors">
+                      <TableCell>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-bold text-xs font-mono text-foreground tracking-wider">{coupon.code}</span>
+                          <span className="text-[11px] text-muted-foreground truncate">{coupon.name}</span>
                         </div>
-                        <h3 className="text-lg font-semibold text-foreground">
-                          {coupon.name}
-                        </h3>
-                        <p className="text-sm leading-7 text-muted-foreground">
-                          {coupon.description || "بدون وصف إضافي."}
-                        </p>
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="rounded-2xl"
-                          aria-label={`تعديل الكوبون ${coupon.code}`}
-                          onClick={() => openEditDialog(coupon)}
-                        >
-                          تعديل
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="rounded-2xl border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-                          aria-label={`حذف الكوبون ${coupon.code}`}
-                          onClick={() => openRemoveDialog(coupon)}
-                        >
-                          <Trash2 className="size-4" />
-                          حذف
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {benefits.map((benefit) => (
-                        <Badge key={benefit} variant="outline" className="rounded-full px-3 py-1">
-                          {benefit}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    <div className="mt-4 grid gap-3 rounded-3xl bg-background/80 p-4 text-sm">
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-muted-foreground">الفترة</span>
-                        <span className="font-medium text-foreground">
-                          {formatDate(coupon.validFrom)} - {formatDate(coupon.validTo)}
+                      </TableCell>
+                      <TableCell>
+                        <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border", stateBadgeClassName(coupon.state))}>
+                          {stateLabel(coupon.state)}
                         </span>
-                      </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-muted-foreground">الاستخدام</span>
-                        <span className="font-medium text-foreground">
-                          {coupon.usageCount.toLocaleString("ar-EG")}
-                          {coupon.usageLimit
-                            ? ` / ${coupon.usageLimit.toLocaleString("ar-EG")}`
-                            : " / غير محدود"}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-muted-foreground">آخر استرداد</span>
-                        <span className="font-medium text-foreground">
-                          {coupon.lastRedemption?.companyName || "لا يوجد بعد"}
-                        </span>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-
-            <div className="hidden md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">الكوبون</TableHead>
-                    <TableHead className="text-right">المزايا</TableHead>
-                    <TableHead className="text-right">الفترة</TableHead>
-                    <TableHead className="text-right">الاستخدام</TableHead>
-                    <TableHead className="text-right">آخر استرداد</TableHead>
-                    <TableHead className="text-right">إجراء</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {coupons.map((coupon) => {
-                    const benefits = buildBenefitList(coupon);
-
-                    return (
-                      <TableRow key={coupon.id}>
-                        <TableCell className="align-top">
-                          <div className="space-y-2">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-semibold text-foreground">
-                                {coupon.name}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {benefits.length > 0 ? (
+                            benefits.map((b, i) => (
+                              <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted/40 border border-border/60 text-[10px] font-mono text-foreground">
+                                {b}
                               </span>
-                              <Badge
-                                variant="outline"
-                                className={`rounded-full px-3 py-1 ${stateBadgeClassName(coupon.state)}`}
-                              >
-                                {stateLabel(coupon.state)}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              <span dir="ltr">{coupon.code}</span>
-                              {coupon.description ? ` • ${coupon.description}` : ""}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <div className="flex flex-wrap gap-2">
-                            {benefits.map((benefit) => (
-                              <Badge
-                                key={benefit}
-                                variant="outline"
-                                className="rounded-full px-3 py-1"
-                              >
-                                {benefit}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell className="align-top text-sm text-muted-foreground">
-                          <div>{formatDate(coupon.validFrom)}</div>
-                          <div>{formatDate(coupon.validTo)}</div>
-                        </TableCell>
-                        <TableCell className="align-top text-sm text-foreground">
-                          <div>
-                            {coupon.usageCount.toLocaleString("ar-EG")}
-                            {coupon.usageLimit
-                              ? ` / ${coupon.usageLimit.toLocaleString("ar-EG")}`
-                              : " / غير محدود"}
-                          </div>
-                          <div className="mt-1 text-muted-foreground">
-                            {coupon.redemptionsCount.toLocaleString("ar-EG")} شركة
-                          </div>
-                        </TableCell>
-                        <TableCell className="align-top text-sm text-muted-foreground">
-                          {coupon.lastRedemption ? (
-                            <>
-                              <div className="text-foreground">
-                                {coupon.lastRedemption.companyName || "شركة غير معروفة"}
-                              </div>
-                              <div>{formatDate(coupon.lastRedemption.redeemedAt)}</div>
-                            </>
+                            ))
                           ) : (
-                            "لا يوجد بعد"
+                            <span className="text-xs text-muted-foreground">—</span>
                           )}
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="rounded-2xl"
-                              aria-label={`تعديل الكوبون ${coupon.code}`}
-                              onClick={() => openEditDialog(coupon)}
-                            >
-                              تعديل
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="rounded-2xl border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-                              aria-label={`حذف الكوبون ${coupon.code}`}
-                              onClick={() => openRemoveDialog(coupon)}
-                            >
-                              <Trash2 className="size-4" />
-                              حذف
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          </>
-        )}
-      </BusinessSectionPanel>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="font-mono text-xs tabular-nums text-foreground">
+                          {coupon.usedCount} / {coupon.usageLimit ? coupon.usageLimit : "∞"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs font-mono text-muted-foreground">
+                        <span>{formatDate(coupon.validFrom)} — {formatDate(coupon.validTo)}</span>
+                      </TableCell>
+                      <TableCell className="text-left">
+                        <div className="flex items-center gap-1 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 text-muted-foreground hover:text-foreground"
+                            onClick={() => openEditDialog(coupon)}
+                            title="تعديل الكوبون"
+                          >
+                            <Edit3 className="size-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
+                            onClick={() => setCouponPendingRemoval(coupon)}
+                            title="حذف الكوبون"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
 
+      {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl p-0">
-          <DialogHeader className="border-b px-6 pt-6">
-            <DialogTitle>
+        <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold">
               {editingCoupon ? "تعديل كوبون التسجيل" : "إنشاء كوبون تسجيل جديد"}
             </DialogTitle>
-            <DialogDescription>
-              حدّد مزايا onboarding التي ستظهر مباشرة للعميل عند إدخال الكود في
-              شاشة التسجيل.
+            <DialogDescription className="text-xs text-muted-foreground">
+              حدد رمز الكود والمزايا الممنوحة تلقائياً للمشترك الجديد
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-6 px-6 py-5">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="coupon-name">اسم الكوبون</Label>
+          <div className="space-y-3 text-xs">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-[11px] font-mono text-muted-foreground mb-1 block">رمز الكود (CODE)</Label>
                 <Input
-                  id="coupon-name"
-                  value={formState.name}
-                  onChange={(event) =>
-                    setFormState((previous) => ({
-                      ...previous,
-                      name: event.target.value,
-                    }))
-                  }
-                  placeholder="Welcome PRO Launch"
+                  value={formState.code}
+                  onChange={e => setFormState(p => ({ ...p, code: e.target.value.toUpperCase() }))}
+                  placeholder="مثال: START2026"
+                  className="h-8 text-xs font-mono uppercase"
+                  required
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="coupon-code">كود الكوبون</Label>
+              <div>
+                <Label className="text-[11px] font-mono text-muted-foreground mb-1 block">اسم الحملة / الكوبون</Label>
                 <Input
-                  id="coupon-code"
-                  dir="ltr"
-                  value={formState.code}
-                  onChange={(event) =>
-                    setFormState((previous) => ({
-                      ...previous,
-                      code: event.target.value.toUpperCase(),
-                    }))
-                  }
-                  placeholder="WELCOME14"
+                  value={formState.name}
+                  onChange={e => setFormState(p => ({ ...p, name: e.target.value }))}
+                  placeholder="مثال: عرض إطلاق المنصة"
+                  className="h-8 text-xs"
+                  required
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="coupon-description">وصف مختصر</Label>
-              <Textarea
-                id="coupon-description"
+            <div>
+              <Label className="text-[11px] font-mono text-muted-foreground mb-1 block">الوصف (داخلي)</Label>
+              <Input
                 value={formState.description}
-                onChange={(event) =>
-                  setFormState((previous) => ({
-                    ...previous,
-                    description: event.target.value,
-                  }))
-                }
-                placeholder="الكوبون يمنح 14 يومًا إضافية و200 طلب شهريًا."
+                onChange={e => setFormState(p => ({ ...p, description: e.target.value }))}
+                placeholder="ملاحظات توضيحية عن الكوبون"
+                className="h-8 text-xs"
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="coupon-valid-from">بداية الصلاحية</Label>
-                <Input
-                  id="coupon-valid-from"
-                  type="datetime-local"
-                  value={formState.validFrom}
-                  onChange={(event) =>
-                    setFormState((previous) => ({
-                      ...previous,
-                      validFrom: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="coupon-valid-to">نهاية الصلاحية</Label>
-                <Input
-                  id="coupon-valid-to"
-                  type="datetime-local"
-                  value={formState.validTo}
-                  onChange={(event) =>
-                    setFormState((previous) => ({
-                      ...previous,
-                      validTo: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {numericBenefitFields.map((field) => (
-                <div key={field.key} className="space-y-2">
-                  <Label htmlFor={`benefit-${field.key}`}>{field.label}</Label>
+            <div className="rounded-lg border border-border/60 p-3 bg-muted/20 space-y-2">
+              <span className="font-semibold text-foreground text-xs block">المزايا والحوافز الإضافية:</span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div>
+                  <label className="text-[10px] font-mono text-muted-foreground mb-0.5 block">أيام تجربة مجانية</label>
                   <Input
-                    id={`benefit-${field.key}`}
                     type="number"
-                    min={0}
-                    value={formState[field.key]}
-                    onChange={(event) =>
-                      updateBenefitField(field.key, event.target.value)
-                    }
-                    placeholder={field.placeholder}
+                    value={formState.trialDays || ""}
+                    onChange={e => updateBenefitField("trialDays", e.target.value)}
+                    className="h-7 text-xs font-mono"
+                    placeholder="0"
                   />
                 </div>
-              ))}
+                <div>
+                  <label className="text-[10px] font-mono text-muted-foreground mb-0.5 block">مستخدمون إضافيون</label>
+                  <Input
+                    type="number"
+                    value={formState.bonusUsers || ""}
+                    onChange={e => updateBenefitField("bonusUsers", e.target.value)}
+                    className="h-7 text-xs font-mono"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-mono text-muted-foreground mb-0.5 block">منتجات إضافية</label>
+                  <Input
+                    type="number"
+                    value={formState.bonusProducts || ""}
+                    onChange={e => updateBenefitField("bonusProducts", e.target.value)}
+                    className="h-7 text-xs font-mono"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-mono text-muted-foreground mb-0.5 block">طلبات إضافية شهرياً</label>
+                  <Input
+                    type="number"
+                    value={formState.bonusOrdersPerMonth || ""}
+                    onChange={e => updateBenefitField("bonusOrdersPerMonth", e.target.value)}
+                    className="h-7 text-xs font-mono"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-mono text-muted-foreground mb-0.5 block">عملاء إضافيون</label>
+                  <Input
+                    type="number"
+                    value={formState.bonusCustomers || ""}
+                    onChange={e => updateBenefitField("bonusCustomers", e.target.value)}
+                    className="h-7 text-xs font-mono"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-mono text-muted-foreground mb-0.5 block">الحد الأقصى للاستخدام</label>
+                  <Input
+                    type="number"
+                    value={formState.usageLimit ?? ""}
+                    onChange={e => setFormState(p => ({ ...p, usageLimit: e.target.value ? Number(e.target.value) : null }))}
+                    className="h-7 text-xs font-mono"
+                    placeholder="غير محدود"
+                  />
+                </div>
+              </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="coupon-usage-limit">حد الاستخدام</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-[11px] font-mono text-muted-foreground mb-1 block">تاريخ البدء</Label>
                 <Input
-                  id="coupon-usage-limit"
-                  type="number"
-                  min={1}
-                  value={formState.usageLimit ?? ""}
-                  onChange={(event) =>
-                    setFormState((previous) => ({
-                      ...previous,
-                      usageLimit: event.target.value
-                        ? Math.max(1, Number.parseInt(event.target.value, 10) || 1)
-                        : null,
-                    }))
-                  }
-                  placeholder="اتركه فارغًا لغير المحدود"
+                  type="datetime-local"
+                  value={formState.validFrom}
+                  onChange={e => setFormState(p => ({ ...p, validFrom: e.target.value }))}
+                  className="h-8 text-xs font-mono"
+                />
+              </div>
+              <div>
+                <Label className="text-[11px] font-mono text-muted-foreground mb-1 block">تاريخ الانتهاء</Label>
+                <Input
+                  type="datetime-local"
+                  value={formState.validTo}
+                  onChange={e => setFormState(p => ({ ...p, validTo: e.target.value }))}
+                  className="h-8 text-xs font-mono"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-3xl border border-border/70 bg-background/70 px-4 py-4">
-              <div>
-                <p className="font-medium text-foreground">تفعيل الكوبون</p>
-                <p className="text-sm text-muted-foreground">
-                  عند الإيقاف سيظل ظاهرًا في السوبر أدمن لكن لن يقبل في التسجيل.
-                </p>
+            <div className="flex items-center justify-between pt-2 border-t border-border/60">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="active-toggle"
+                  checked={formState.isActive}
+                  onCheckedChange={c => setFormState(p => ({ ...p, isActive: c }))}
+                />
+                <Label htmlFor="active-toggle" className="text-xs cursor-pointer">
+                  تفعيل الكوبون فوراً
+                </Label>
               </div>
-              <Switch
-                checked={formState.isActive}
-                onCheckedChange={(checked) =>
-                  setFormState((previous) => ({
-                    ...previous,
-                    isActive: Boolean(checked),
-                  }))
-                }
-              />
             </div>
           </div>
 
-          <DialogFooter className="px-6">
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-2xl"
-              onClick={() => setDialogOpen(false)}
-              disabled={saving}
-            >
+          <DialogFooter className="mt-4 gap-2">
+            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)} className="h-8 text-xs font-mono">
               إلغاء
             </Button>
-            <Button
-              type="button"
-              className="rounded-2xl"
-              onClick={() => void handleSaveCoupon()}
-              disabled={saving}
-            >
-              {saving ? (
-                <>
-                  <RefreshCw className="animate-spin" />
-                  جاري الحفظ...
-                </>
-              ) : editingCoupon ? (
-                "حفظ التعديلات"
-              ) : (
-                "إنشاء الكوبون"
-              )}
+            <Button size="sm" onClick={handleSaveCoupon} disabled={saving} className="h-8 text-xs font-mono">
+              {saving ? "جاري الحفظ..." : "حفظ الكوبون"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={Boolean(couponPendingRemoval)}
-        onOpenChange={(open) => {
-          if (!open && !removing) {
-            setCouponPendingRemoval(null);
-          }
-        }}
-      >
-        <DialogContent className="max-w-md text-right sm:text-right">
-          <DialogHeader className="text-right">
-            <DialogTitle>
-              حذف كوبون التسجيل؟
-            </DialogTitle>
-            <DialogDescription>
-              {couponPendingRemoval?.redemptionsCount
-                ? `الكوبون ${couponPendingRemoval.code} تم استخدامه من قبل، لذلك سيتم إيقافه بدلًا من حذف السجل بالكامل.`
-                : `سيتم حذف الكوبون ${couponPendingRemoval?.code || ""} نهائيًا لأنه غير مستخدم بعد.`}
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!couponPendingRemoval} onOpenChange={o => !o && setCouponPendingRemoval(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold">تأكيد حذف الكوبون</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              هل أنت متأكد من حذف الكوبون <strong className="text-foreground font-mono">{couponPendingRemoval?.code}</strong>؟ لن تتمكن الشركات الجديدة من استخدامه.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="sm:flex-row-reverse">
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-2xl"
-              disabled={removing}
-              onClick={() => setCouponPendingRemoval(null)}
-            >
+          <DialogFooter className="mt-2 gap-2">
+            <Button variant="outline" size="sm" onClick={() => setCouponPendingRemoval(null)} className="h-8 text-xs font-mono">
               إلغاء
             </Button>
-            <Button
-              type="button"
-              className="rounded-2xl bg-rose-600 text-white hover:bg-rose-700"
-              disabled={removing}
-              onClick={() => void handleRemoveCoupon()}
-            >
-              {removing ? "جارٍ التنفيذ..." : "تأكيد الحذف"}
+            <Button variant="destructive" size="sm" onClick={handleRemoveCoupon} disabled={removing} className="h-8 text-xs font-mono">
+              {removing ? "جاري الحذف..." : "حذف نهائي"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </BusinessPageShell>
+    </div>
   );
 };
 

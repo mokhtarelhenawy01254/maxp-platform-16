@@ -19,6 +19,9 @@ import {
   type StatusFilter,
   type ViewMode,
 } from "./types";
+import { Briefcase, RefreshCw, Plus } from "lucide-react";
+import { Button } from "../../../components/ui/button";
+import { cn } from "../../../lib/utils";
 
 export const BusinessSpecialtiesPage: React.FC = () => {
   const [specialties, setSpecialties] = useState<BusinessSpecialty[]>([]);
@@ -118,7 +121,6 @@ export const BusinessSpecialtiesPage: React.FC = () => {
 
   // Handler: Instant Active Toggle
   const handleToggleActive = async (specialty: BusinessSpecialty, active: boolean) => {
-    // Optimistic UI update
     setSpecialties((prev) =>
       prev.map((s) => (s.id === specialty.id ? { ...s, isActive: active } : s)),
     );
@@ -145,7 +147,6 @@ export const BusinessSpecialtiesPage: React.FC = () => {
     } catch (error) {
       console.error("Failed to toggle specialty active state", error);
       toast.error(getErrorMessage(error, "فشل تعديل حالة النشاط"));
-      // Revert on failure
       setSpecialties((prev) =>
         prev.map((s) => (s.id === specialty.id ? { ...s, isActive: specialty.isActive } : s)),
       );
@@ -222,20 +223,52 @@ export const BusinessSpecialtiesPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto pb-10">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            النشاطات التجارية والتطبيقات
-          </h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            إدارة دليل الأنشطة المتاحة عند التسجيل والتطبيقات الافتراضية المرتبطة بها.
-          </p>
+    <div className="w-full max-w-[1440px] mx-auto p-4 sm:p-6 space-y-4" dir="rtl">
+      {/* Linear Single-Surface Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+            <Briefcase className="size-4.5 text-primary" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
+                الأنشطة التجارية والتطبيقات الافتراضية
+              </h1>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border border-border/80 bg-muted/30">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {specialties.length} نشاط مسجل
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              إدارة دليل الأنشطة المتاحة عند تسجيل الشركات الجديدة والتطبيقات التي تُثبت تلقائياً لكل نشاط
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={handleOpenCreate}
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform shadow-xs"
+          >
+            <Plus className="size-3.5" />
+            <span>إضافة نشاط تجاري</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void loadData()}
+            disabled={loading}
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform"
+          >
+            <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
+            <span>تحديث</span>
+          </Button>
         </div>
       </div>
 
-      {/* Stats Summary */}
+      {/* Stats Summary Ribbon */}
       <SpecialtyStats specialties={specialties} />
 
       {/* Control Bar: Search, Filters, View toggle, Create CTA */}
