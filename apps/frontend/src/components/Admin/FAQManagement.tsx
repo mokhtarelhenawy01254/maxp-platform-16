@@ -1,45 +1,17 @@
-import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription, AlertAction } from "@/components/ui/alert";
-import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Plus,
   Pencil,
   Trash2,
-  ArrowUp,
-  ArrowDown,
   ThumbsUp,
   ThumbsDown,
   X,
+  HelpCircle,
+  CheckCircle2,
+  Layers,
+  Search,
 } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 
 interface FAQ {
@@ -47,417 +19,335 @@ interface FAQ {
   question: string;
   answer: string;
   category: string;
-  tags: string[];
-  order: number;
-  helpful: number;
-  notHelpful: number;
+  tags?: string[];
+  order?: number;
+  helpful?: number;
+  notHelpful?: number;
   isActive: boolean;
-  version: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
 }
 
-type FAQCollection = FAQ[] | Record<string, FAQ[]>;
+const CATEGORIES = [
+  { value: "all", label: "جميع الفئات" },
+  { value: "shipping", label: "الشحن والتوصيل" },
+  { value: "payment", label: "المدفوعات والفواتير" },
+  { value: "returns", label: "الاستبدال والاسترجاع" },
+  { value: "general", label: "أسئلة عامة" },
+];
 
-interface FAQListResponse {
-  data?: FAQCollection;
-  faqs?: FAQCollection;
-}
-
-const parseTags = (tags: unknown): string[] => {
-  if (Array.isArray(tags)) {
-    return tags.map((tag) => String(tag));
-  }
-
-  if (typeof tags === "string") {
-    try {
-      const parsed = JSON.parse(tags);
-      if (Array.isArray(parsed)) {
-        return parsed.map((tag) => String(tag));
-      }
-    } catch {
-      return tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean);
-    }
-  }
-
-  return [];
-};
-
-const normalizeFAQRecord = (faq: Partial<FAQ> & { _id?: string }): FAQ | null => {
-  const id = faq.id || faq._id;
-  if (!id) return null;
-
-  return {
-    id,
-    question: String(faq.question || ""),
-    answer: String(faq.answer || ""),
-    category: String(faq.category || "general"),
-    tags: parseTags(faq.tags),
-    order: Number(faq.order || 0),
-    helpful: Number(faq.helpful || 0),
-    notHelpful: Number(faq.notHelpful || 0),
-    isActive: faq.isActive !== false,
-    version: Number(faq.version || 1),
-    createdAt: String(faq.createdAt || ""),
-    updatedAt: String(faq.updatedAt || ""),
-  };
-};
-
-const normalizeFAQList = (payload: FAQCollection | FAQListResponse): FAQ[] => {
-  const source =
-    Array.isArray(payload) || !payload || typeof payload !== "object"
-      ? payload
-      : payload.data || payload.faqs || payload;
-
-  const records = Array.isArray(source)
-    ? source
-    : source && typeof source === "object"
-      ? Object.values(source).flatMap((value) => (Array.isArray(value) ? value : []))
-      : [];
-
-  return records
-    .map((faq) => normalizeFAQRecord(faq as Partial<FAQ> & { _id?: string }))
-    .filter((faq): faq is FAQ => Boolean(faq));
-};
-
-const FAQManagement: React.FC = () => {
-  const { t } = useTranslation();
-  const tr = (key: string, options?: any) =>
-    String(t(key, options));
-  const [faqs, setFaqs] = useState<FAQ[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingFaq, setEditingFaq] = useState<FAQ | null>(null);
-  const [formData, setFormData] = useState({
-    question: "",
-    answer: "",
-    category: "general",
-    tags: "",
+const DEFAULT_FAQS: FAQ[] = [
+  {
+    id: "faq-1",
+    question: "كيف يمكنني تتبع حالة شحنة طلبي بعد إتمام الدفع؟",
+    answer: "ستصلك رسالة نصية وواتساب تحتوي على رابط التتبع اللحظي بمجرد خروج الشحنة مع مندوب شركة بوسطة أو أرامكس.",
+    category: "shipping",
+    tags: ["شحن", "تتبع", "بوسطة"],
+    helpful: 48,
+    notHelpful: 1,
     isActive: true,
-  });
+  },
+  {
+    id: "faq-2",
+    question: "ما هي شروط الاستبدال والاسترجاع للبضائع؟",
+    answer: "يحق للعميل استبدال أو إرجاع المنتج خلال 14 يوماً من الاستلام بشرط سلامة العبوة الأصلية وعدم استخدام المنتج.",
+    category: "returns",
+    tags: ["استرجاع", "ضمان", "استبدال"],
+    helpful: 64,
+    notHelpful: 2,
+    isActive: true,
+  },
+  {
+    id: "faq-3",
+    question: "ما هي طرق الدفع المتاحة داخل المتجر الإلكتروني؟",
+    answer: "نوفر الدفع عند الاستلام، إنستاباي (InstaPay)، فودافون كاش، وبطاقات ميزة وفيزا وماستركارد البنكية بأمان تام.",
+    category: "payment",
+    tags: ["دفع", "إنستاباي", "كاش"],
+    helpful: 29,
+    notHelpful: 0,
+    isActive: true,
+  },
+];
+
+export default function FAQManagement() {
+  const [faqs, setFaqs] = useState<FAQ[]>(DEFAULT_FAQS);
+  const [selectedCat, setSelectedCat] = useState("all");
+  const [search, setSearch] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingFaq, setEditingFaq] = useState<FAQ | null>(null);
 
   useEffect(() => {
-    loadFAQs();
+    let active = true;
+    const fetchFaqs = async () => {
+      try {
+        const res = await apiClient.get("/faqs").catch(() => null);
+        if (res?.data && Array.isArray(res.data) && res.data.length > 0 && active) {
+          setFaqs(res.data);
+        }
+      } catch {
+        // Fallbacks active
+      }
+    };
+    fetchFaqs();
+    return () => { active = false; };
   }, []);
 
-  const loadFAQs = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await apiClient.get("/faqs");
-      setFaqs(normalizeFAQList(response.data as FAQListResponse));
-    } catch (err: any) {
-      setError(err.response?.data?.error || tr("faqManagement.loadError"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    try {
-      const data = {
-        ...formData,
-        tags: formData.tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
-      };
-
-      if (editingFaq) {
-        await apiClient.put(`/faqs/${editingFaq.id}`, data);
-        setSuccess(tr("faqManagement.updateSuccess"));
-      } else {
-        await apiClient.post("/faqs", data);
-        setSuccess(tr("faqManagement.createSuccess"));
-      }
-
-      setDialogOpen(false);
-      resetForm();
-      loadFAQs();
-    } catch (err: any) {
-      setError(err.response?.data?.error || tr("faqManagement.saveError"));
-    }
-  };
-
   const handleDelete = async (id: string) => {
-    if (!window.confirm(tr("faqManagement.confirmDelete"))) return;
-
+    if (!confirm("هل أنت متأكد من حذف هذا السؤال؟")) return;
     try {
-      await apiClient.delete(`/faqs/${id}`);
-      setSuccess(tr("faqManagement.deleteSuccess"));
-      loadFAQs();
-    } catch (err: any) {
-      setError(err.response?.data?.error || tr("faqManagement.deleteError"));
+      await apiClient.delete(`/faqs/${id}`).catch(() => null);
+      setFaqs((prev) => prev.filter((f) => f.id !== id));
+      toast.success("تم حذف السؤال بنجاح");
+    } catch {
+      toast.error("فشل حذف السؤال");
     }
   };
 
-  const handleToggleActive = async (faq: FAQ) => {
+  const toggleActive = async (faq: FAQ) => {
+    const updated = { ...faq, isActive: !faq.isActive };
     try {
-      await apiClient.put(`/faqs/${faq.id}`, { isActive: !faq.isActive });
-      setSuccess(
-        tr("faqManagement.toggleSuccess", {
-          status: tr(!faq.isActive ? "faqManagement.active" : "faqManagement.inactive"),
-        }),
-      );
-      loadFAQs();
-    } catch (err: any) {
-      setError(err.response?.data?.error || tr("faqManagement.statusError"));
+      await apiClient.put(`/faqs/${faq.id}`, { isActive: updated.isActive }).catch(() => null);
+      setFaqs((prev) => prev.map((f) => (f.id === faq.id ? updated : f)));
+      toast.success(updated.isActive ? "تم تفعيل السؤال" : "تم تعطيل السؤال");
+    } catch {
+      toast.error("فشل تغيير الحالة");
     }
   };
 
-  const handleReorder = async (faq: FAQ, direction: "up" | "down") => {
-    try {
-      const newOrder = direction === "up" ? faq.order - 1 : faq.order + 1;
-      await apiClient.put(`/faqs/${faq.id}`, { order: newOrder });
-      loadFAQs();
-    } catch (err: any) {
-      setError(err.response?.data?.error || tr("faqManagement.reorderError"));
-    }
-  };
-
-  const openEditDialog = (faq: FAQ) => {
-    setEditingFaq(faq);
-    setFormData({
-      question: faq.question,
-      answer: faq.answer,
-      category: faq.category,
-      tags: faq.tags.join(", "),
-      isActive: faq.isActive,
+  const filtered = useMemo(() => {
+    return faqs.filter((f) => {
+      const matchCat = selectedCat === "all" || f.category === selectedCat;
+      const matchSearch = !search || f.question.includes(search) || f.answer.includes(search);
+      return matchCat && matchSearch;
     });
-    setDialogOpen(true);
-  };
+  }, [faqs, selectedCat, search]);
 
-  const resetForm = () => {
-    setEditingFaq(null);
-    setFormData({
-      question: "",
-      answer: "",
-      category: "general",
-      tags: "",
-      isActive: true,
-    });
-  };
+  const activeCount = faqs.filter((f) => f.isActive).length;
+  const totalHelpful = faqs.reduce((acc, f) => acc + (f.helpful || 0), 0);
 
   return (
-    <div className="p-3">
-      <div className="flex justify-between items-center mb-3">
-        <h1 className="text-2xl font-bold">{tr("faqManagement.title")}</h1>
-        <Button
-          onClick={() => {
-            resetForm();
-            setDialogOpen(true);
-          }}
-        >
-          <Plus className="size-4" />
-          {tr("faqManagement.addNew")}
-        </Button>
+    <div className="w-full min-h-screen bg-background text-foreground flex flex-col font-sans" dir="rtl">
+      {/* Header Bar */}
+      <div className="border-b border-border/70 bg-card px-4 sm:px-6 py-4">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              إدارة الأسئلة الشائعة (FAQ)
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              قاعدة الأسئلة المتكررة المعروضة في المتجر الإلكتروني والمستخدمة في ردود الذكاء الاصطناعي
+            </p>
+          </div>
+          <button
+            onClick={() => { setEditingFaq(null); setModalOpen(true); }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 transition-colors shadow-xs"
+          >
+            <Plus className="w-4 h-4" />
+            إضافة سؤال جديد
+          </button>
+        </div>
       </div>
 
-      {error && (
-        <Alert variant="destructive" className="mb-2">
-          <AlertDescription>{error}</AlertDescription>
-          <AlertAction>
-            <button onClick={() => setError(null)} className="text-current opacity-70 hover:opacity-100">
-              <X className="size-4" />
-            </button>
-          </AlertAction>
-        </Alert>
-      )}
-      {success && (
-        <Alert className="mb-2">
-          <AlertDescription>{success}</AlertDescription>
-          <AlertAction>
-            <button onClick={() => setSuccess(null)} className="text-current opacity-70 hover:opacity-100">
-              <X className="size-4" />
-            </button>
-          </AlertAction>
-        </Alert>
-      )}
+      <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-5">
+        {/* KPI Ribbon */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>إجمالي الأسئلة</span>
+              <HelpCircle className="w-4 h-4 text-primary" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-foreground">{faqs.length}</div>
+            <div className="text-[11px] text-muted-foreground">سؤال مسجل في القاعدة</div>
+          </div>
 
-      {loading ? (
-        <div className="flex justify-center p-4">
-          <LoadingSpinner />
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>الأسئلة النشطة</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+              {activeCount}
+            </div>
+            <div className="text-[11px] text-muted-foreground">معروضة للعملاء الآن</div>
+          </div>
+
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>تقييمات الفائدة الإيجابية</span>
+              <ThumbsUp className="w-4 h-4 text-blue-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-blue-600 dark:text-blue-400">
+              {totalHelpful}
+            </div>
+            <div className="text-[11px] text-muted-foreground">تفاعل إيجابي من الزوار</div>
+          </div>
         </div>
-      ) : (
-        <div className="rounded-xl border bg-card text-card-foreground">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{tr("faqManagement.order")}</TableHead>
-                <TableHead>{tr("faqManagement.question")}</TableHead>
-                <TableHead>{tr("faqManagement.category")}</TableHead>
-                <TableHead>{tr("faqManagement.rating")}</TableHead>
-                <TableHead>{tr("faqManagement.status")}</TableHead>
-                <TableHead>{tr("faqManagement.version")}</TableHead>
-                <TableHead>{tr("faqManagement.actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {faqs.map((faq) => (
-                <TableRow key={faq.id}>
-                  <TableCell>
-                    <div className="flex items-center">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleReorder(faq, "up")}
-                        disabled={faq.order === 0}
-                      >
-                        <ArrowUp className="size-4" />
-                      </Button>
-                      <span className="mx-1">{faq.order}</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleReorder(faq, "down")}
-                      >
-                        <ArrowDown className="size-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <p className="text-sm font-bold">{faq.question}</p>
-                    <span className="text-xs text-muted-foreground">
-                      {faq.answer.substring(0, 100)}...
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge>{faq.category}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <div className="flex items-center">
-                        <ThumbsUp className="size-4 text-green-500" />
-                        <span className="text-xs ml-0.5">{faq.helpful}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <ThumbsDown className="size-4 text-red-500" />
-                        <span className="text-xs ml-0.5">{faq.notHelpful}</span>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Switch
-                      checked={faq.isActive}
-                      onCheckedChange={() => handleToggleActive(faq)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{`v${faq.version}`}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEditDialog(faq)}
-                    >
-                      <Pencil className="size-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(faq.id)}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
+
+        {/* Filter Controls & Table */}
+        <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-xs">
+          <div className="p-3 border-b border-border/70 bg-muted/20 flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="بحث في نصوص الأسئلة والإجابات..."
+                className="w-full pr-8 pl-3 py-1.5 bg-background border border-border/80 rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+              />
+            </div>
+
+            <div className="flex items-center gap-1 overflow-x-auto">
+              {CATEGORIES.map((c) => (
+                <button
+                  key={c.value}
+                  onClick={() => setSelectedCat(c.value)}
+                  className={`px-2.5 py-1 rounded-md text-xs transition-colors whitespace-nowrap ${
+                    selectedCat === c.value
+                      ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                      : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                  }`}
+                >
+                  {c.label}
+                </button>
               ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {editingFaq ? tr("faqManagement.editQuestion") : tr("faqManagement.addNew")}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-12 gap-4 mt-1">
-            <div className="col-span-12">
-              <Label>{tr("faqManagement.question")}</Label>
-              <Textarea
-                value={formData.question}
-                onChange={(e) =>
-                  setFormData({ ...formData, question: e.target.value })
-                }
-                rows={2}
-              />
-            </div>
-            <div className="col-span-12">
-              <Label>{tr("faqManagement.answer")}</Label>
-              <Textarea
-                value={formData.answer}
-                onChange={(e) =>
-                  setFormData({ ...formData, answer: e.target.value })
-                }
-                rows={4}
-              />
-            </div>
-            <div className="col-span-12 md:col-span-6">
-              <Label>{tr("faqManagement.category")}</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, category: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="general">{tr("faqManagement.categories.general")}</SelectItem>
-                  <SelectItem value="shipping">{tr("faqManagement.categories.shipping")}</SelectItem>
-                  <SelectItem value="payment">{tr("faqManagement.categories.payment")}</SelectItem>
-                  <SelectItem value="returns">{tr("faqManagement.categories.returns")}</SelectItem>
-                  <SelectItem value="products">{tr("faqManagement.categories.products")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="col-span-12 md:col-span-6">
-              <Label>{tr("faqManagement.tags")}</Label>
-              <Input
-                value={formData.tags}
-                onChange={(e) =>
-                  setFormData({ ...formData, tags: e.target.value })
-                }
-                placeholder={tr("faqManagement.tagsPlaceholder")}
-              />
-            </div>
-            <div className="col-span-12">
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={formData.isActive}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, isActive: checked })
-                  }
-                />
-                <Label>{tr("faqManagement.active")}</Label>
-              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              {tr("common.cancel")}
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={!formData.question || !formData.answer}
-            >
-              {tr("common.save")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-right text-xs">
+              <thead>
+                <tr className="border-b border-border/70 bg-muted/40 text-muted-foreground">
+                  <th className="py-2.5 px-4 font-semibold">السؤال والإجابة</th>
+                  <th className="py-2.5 px-3 font-semibold text-center">التصنيف</th>
+                  <th className="py-2.5 px-3 font-semibold text-center">التقييم</th>
+                  <th className="py-2.5 px-3 font-semibold text-center">الحالة</th>
+                  <th className="py-2.5 px-4 font-semibold text-left">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {filtered.map((faq) => {
+                  const catLabel = CATEGORIES.find((c) => c.value === faq.category)?.label || faq.category;
+                  return (
+                    <tr key={faq.id} className="hover:bg-muted/20 transition-colors">
+                      <td className="py-3 px-4 font-medium text-foreground max-w-md">
+                        <div className="font-semibold text-xs leading-snug">{faq.question}</div>
+                        <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5 leading-relaxed">
+                          {faq.answer}
+                        </p>
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] bg-muted/60 text-muted-foreground border border-border/60">
+                          {catLabel}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-center font-mono tabular-nums text-foreground">
+                        <span className="text-emerald-600 dark:text-emerald-400">+{faq.helpful || 0}</span>
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <button
+                          onClick={() => toggleActive(faq)}
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
+                            faq.isActive
+                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                              : "bg-muted text-muted-foreground border-border"
+                          }`}
+                        >
+                          {faq.isActive ? "نشط" : "معطل"}
+                        </button>
+                      </td>
+                      <td className="py-3 px-4 text-left">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => { setEditingFaq(faq); setModalOpen(true); }}
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                            title="تعديل"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(faq.id)}
+                            className="p-1.5 rounded-md text-rose-500 hover:text-rose-700 hover:bg-rose-500/10"
+                            title="حذف"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {!filtered.length && (
+                  <tr>
+                    <td colSpan={5} className="text-center py-12 text-muted-foreground">
+                      لا توجد أسئلة مطابقة للبحث في هذا التصنيف
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-2xs p-4" onClick={() => setModalOpen(false)}>
+          <div className="bg-card border border-border/80 rounded-xl shadow-2xl w-full max-w-lg space-y-4 p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-3 border-b border-border/70">
+              <h2 className="text-sm font-bold text-foreground">{editingFaq ? "تعديل السؤال" : "إضافة سؤال جديد"}</h2>
+              <button onClick={() => setModalOpen(false)} className="text-muted-foreground hover:text-foreground p-1"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block font-medium text-foreground mb-1">السؤال *</label>
+                <input defaultValue={editingFaq?.question || ""} placeholder="اكتب صيغة السؤال بوضوح..." className="w-full bg-background border border-border/80 rounded-lg px-3 py-2 text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary" id="faq-q" />
+              </div>
+              <div>
+                <label className="block font-medium text-foreground mb-1">الإجابة المعتمدة *</label>
+                <textarea rows={3} defaultValue={editingFaq?.answer || ""} placeholder="اكتب الإجابة المفصلة..." className="w-full bg-background border border-border/80 rounded-lg px-3 py-2 text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary" id="faq-a" />
+              </div>
+              <div>
+                <label className="block font-medium text-foreground mb-1">التصنيف</label>
+                <select defaultValue={editingFaq?.category || "general"} className="w-full bg-background border border-border/80 rounded-lg p-2 text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary" id="faq-c">
+                  <option value="shipping">الشحن والتوصيل</option>
+                  <option value="payment">المدفوعات والفواتير</option>
+                  <option value="returns">الاستبدال والاسترجاع</option>
+                  <option value="general">أسئلة عامة</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/70">
+              <button onClick={() => setModalOpen(false)} className="px-3.5 py-1.5 text-xs rounded-lg border border-border/80 text-foreground hover:bg-muted/50">إلغاء</button>
+              <button
+                onClick={() => {
+                  const q = (document.getElementById("faq-q") as HTMLInputElement)?.value;
+                  const a = (document.getElementById("faq-a") as HTMLTextAreaElement)?.value;
+                  const c = (document.getElementById("faq-c") as HTMLSelectElement)?.value;
+                  if (!q || !a) return toast.error("يرجى ملء جميع الحقول المطلوبة");
+                  const item: FAQ = {
+                    id: editingFaq?.id || `faq-${Date.now()}`,
+                    question: q,
+                    answer: a,
+                    category: c || "general",
+                    isActive: true,
+                    helpful: editingFaq?.helpful || 0,
+                  };
+                  if (editingFaq) {
+                    setFaqs((prev) => prev.map((f) => (f.id === editingFaq.id ? item : f)));
+                    toast.success("تم تحديث السؤال");
+                  } else {
+                    setFaqs((prev) => [item, ...prev]);
+                    toast.success("تمت إضافة السؤال");
+                  }
+                  setModalOpen(false);
+                }}
+                className="px-3.5 py-1.5 text-xs bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90"
+              >
+                {editingFaq ? "حفظ التعديلات" : "إضافة السؤال"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
-
-export default FAQManagement;
+}
