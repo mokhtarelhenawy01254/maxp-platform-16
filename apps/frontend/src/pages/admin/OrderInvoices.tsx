@@ -20,16 +20,6 @@ import {
 import i18n from "../../i18n";
 import { apiClient } from "../../services/apiClient";
 import { cn } from "../../lib/utils";
-import {
-  BusinessPageHero,
-  BusinessPageShell,
-  BusinessSectionPanel,
-} from "../../components/business/BusinessSurface";
-import {
-  BusinessFilterSheet,
-  BusinessMobileSearchPanel,
-} from "../../components/business/BusinessFilters";
-import { BusinessMetricsStrip } from "../../components/business/BusinessMetrics";
 import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -416,69 +406,115 @@ const OrderInvoices: React.FC = () => {
 
   return (
     <TooltipProvider>
-      <BusinessPageShell className="space-y-4 md:space-y-6" dir={i18n.language === "ar" ? "rtl" : "ltr"}>
-        <BusinessPageHero
-          eyebrow="ORDERS · FINANCE"
-          title={
-            <span className="business-page-title-row">
-              <span className="business-page-title-copy">{t("orders.orderInvoices_title")}</span>
-              <span className="business-page-title-artwork">
-                <Receipt className="size-6" />
-              </span>
-            </span>
-          }
-          description={t("orders.orderInvoices_description")}
-          actions={
+      <div className="space-y-4 p-4 md:p-6" dir={i18n.language === "ar" ? "rtl" : "ltr"}>
+        {/* Unified Control Header */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl border border-border/80 bg-muted/40 text-foreground">
+              <Receipt className="size-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold tracking-tight text-foreground">
+                  {t("orders.orderInvoices_title")}
+                </h1>
+                <Badge variant="outline" className="h-5 px-1.5 font-mono text-xs tabular-nums text-muted-foreground border-border/60">
+                  {total}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {t("orders.orderInvoices_description")}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
             <Button
               type="button"
               variant="outline"
+              size="sm"
               onClick={() => void fetchInvoices()}
               disabled={loading}
-              className="h-11 w-full justify-center border-white/10 bg-white/10 px-4 text-white hover:bg-white/15 hover:text-white sm:w-auto"
+              className="h-9 gap-1.5 text-xs active:scale-[0.98] transition-transform"
             >
-              <RefreshCw
-                className={cn("size-4", loading ? "animate-spin" : "")}
-              />
-              {t("orders.orderInvoices_refresh")}
+              <RefreshCw className={cn("size-3.5", loading ? "animate-spin" : "")} />
+              <span>{t("orders.orderInvoices_refresh")}</span>
             </Button>
-          }
-        />
+          </div>
+        </div>
 
-        {stats ? <BusinessMetricsStrip items={metricItems} /> : null}
+        {/* Single-Surface Telemetry Strip */}
+        {stats ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/80 dark:border-border/60 bg-card/60 backdrop-blur-xs divide-y lg:divide-y-0 lg:divide-x lg:divide-x-reverse divide-border/60 overflow-hidden shadow-2xs">
+            <div className="p-3.5 sm:p-4 space-y-1">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{t("orders.orderInvoices_totalInvoices")}</span>
+                <Receipt className="size-3.5 text-primary" />
+              </div>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground">
+                {stats.totalInvoices}
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {t("orders.orderInvoices_totalInvoicesSub")}
+              </p>
+            </div>
 
-        <BusinessMobileSearchPanel
-          searchId="order-invoices-mobile-search"
-          searchName="orderInvoicesMobileSearch"
-          searchLabel={t("orders.orderInvoices_searchLabel")}
-          searchPlaceholder={t("orders.orderInvoices_searchPlaceholder")}
-          searchValue={search}
-          searchAriaLabel={t("orders.orderInvoices_searchAriaLabel")}
-          onSearchChange={setSearch}
-          onSearchSubmit={handleSearch}
-          onOpenFilters={() => setIsFiltersSheetOpen(true)}
-          filterCount={activeFiltersCount}
-          summaryIcon={<Receipt className="size-3.5" />}
-          summary={
-            loading
-              ? t("orders.orderInvoices_updating")
-              : total > 0
-                ? t("orders.orderInvoices_fromTotal", { from: currentFrom, to: currentTo, total })
-                : t("orders.orderInvoices_noResults")
-          }
-          activeFilters={activeFilterLabels}
-        />
+            <div className="p-3.5 sm:p-4 space-y-1">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-1.5 rounded-full bg-emerald-500" />
+                  {t("orders.orderInvoices_paidInvoices")}
+                </span>
+                <CheckCircle2 className="size-3.5 text-emerald-500" />
+              </div>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground">
+                {stats.paidInvoices}
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {t("orders.orderInvoices_paidInvoicesSub")}
+              </p>
+            </div>
 
-        <BusinessSectionPanel
-          className="hidden md:block"
-          title={t("orders.orderInvoices_filtersTitle")}
-          description={t("orders.orderInvoices_filtersDescription")}
-          contentClassName="space-y-4"
-        >
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_repeat(3,minmax(0,1fr))_auto]">
-              <div className="space-y-2">
-                <Label htmlFor="order-invoices-search">{t("orders.orderInvoices_search")}</Label>
-                <div className="relative">
-                  <Search className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <div className="p-3.5 sm:p-4 space-y-1">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-1.5 rounded-full bg-amber-500" />
+                  {t("orders.orderInvoices_pendingInvoices")}
+                </span>
+                <Clock3 className="size-3.5 text-amber-500" />
+              </div>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground">
+                {stats.pendingInvoices}
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {t("orders.orderInvoices_pendingInvoicesSub")}
+              </p>
+            </div>
+
+            <div className="p-3.5 sm:p-4 space-y-1">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{t("orders.orderInvoices_totalAmount")}</span>
+                <WalletCards className="size-3.5 text-blue-500" />
+              </div>
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground truncate">
+                {formatCurrency(stats.totalAmount)}
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {t("orders.orderInvoices_totalAmountSub")}
+              </p>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Main Chassis: Integrated Filter Toolbar + Data Table + Pagination */}
+        <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card/40 backdrop-blur-xs overflow-hidden shadow-2xs">
+          {/* Integrated Filter Ribbon */}
+          <div className="border-b border-border/70 p-3 sm:p-3.5 bg-muted/20">
+            <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+              {/* Search & Status Filter */}
+              <div className="flex flex-wrap items-center gap-2 flex-1">
+                <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+                  <Search className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="order-invoices-search"
                     name="orderInvoicesSearch"
@@ -490,14 +526,10 @@ const OrderInvoices: React.FC = () => {
                       }
                     }}
                     placeholder={t("orders.orderInvoices_searchInputPlaceholder")}
-                    className="h-11 pr-10 text-right"
-                    aria-label={t("orders.orderInvoices_searchInputAriaLabel")}
+                    className="h-8.5 text-xs pr-8 text-right bg-background/80"
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label>{t("orders.orderInvoices_paymentStatus")}</Label>
                 <Select
                   value={paymentStatus || "ALL"}
                   onValueChange={(value) => {
@@ -505,7 +537,7 @@ const OrderInvoices: React.FC = () => {
                     setPage(0);
                   }}
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-8.5 w-36 text-xs bg-background/80">
                     <SelectValue placeholder={t("orders.orderInvoices_allStatuses")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -517,462 +549,280 @@ const OrderInvoices: React.FC = () => {
                     <SelectItem value="REFUNDED">{t("orders.orderInvoices_statusRefunded")}</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="order-invoices-date-from">{t("orders.orderInvoices_fromDate")}</Label>
-                <Input
-                  id="order-invoices-date-from"
-                  name="orderInvoicesDateFrom"
-                  type="date"
-                  value={dateFrom}
-                  onChange={(event) => setDateFrom(event.target.value)}
-                  className="h-11"
-                  aria-label={t("orders.orderInvoices_fromDate")}
-                />
-              </div>
+                <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="h-8.5 w-32 text-xs bg-background/80"
+                    title={t("orders.orderInvoices_fromDate")}
+                  />
+                  <span>-</span>
+                  <Input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="h-8.5 w-32 text-xs bg-background/80"
+                    title={t("orders.orderInvoices_toDate")}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="order-invoices-date-to">{t("orders.orderInvoices_toDate")}</Label>
-                <Input
-                  id="order-invoices-date-to"
-                  name="orderInvoicesDateTo"
-                  type="date"
-                  value={dateTo}
-                  onChange={(event) => setDateTo(event.target.value)}
-                  className="h-11"
-                  aria-label={t("orders.orderInvoices_toDate")}
-                />
-              </div>
-
-              <div className="flex items-end">
                 <Button
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   onClick={handleSearch}
-                  className="h-11 w-full px-5 xl:w-auto"
+                  className="h-8.5 px-3 text-xs active:scale-[0.98]"
                 >
-                  <Search className="size-4" />
+                  <Search className="size-3 ml-1" />
                   {t("orders.orderInvoices_search")}
                 </Button>
+
+                {(search || paymentStatus || dateFrom || dateTo) && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearFilters}
+                    className="h-8.5 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    إعادة ضبط
+                  </Button>
+                )}
+              </div>
+
+              {/* Counter / Page size */}
+              <div className="flex items-center justify-between sm:justify-end gap-2 text-xs text-muted-foreground">
+                <span className="font-mono tabular-nums">
+                  {total > 0
+                    ? t("orders.orderInvoices_showing", { from: currentFrom, to: currentTo, total })
+                    : t("orders.orderInvoices_noMatchingResults")}
+                </span>
+
+                <Select
+                  value={rowsPerPage.toString()}
+                  onValueChange={handleRowsPerPageChange}
+                >
+                  <SelectTrigger className="h-8 w-24 text-xs bg-background/80">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZE_OPTIONS.map((size) => (
+                      <SelectItem key={size} value={size.toString()}>
+                        {t("orders.orderInvoices_perPage", { size })}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
+          </div>
 
-            {error ? (
+          {/* Error Message */}
+          {error ? (
+            <div className="p-3">
               <Alert variant="destructive" className="border-rose-500/30">
                 <AlertCircle className="size-4" />
                 <AlertTitle>{t("orders.orderInvoices_errorTitle")}</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
-            ) : null}
-        </BusinessSectionPanel>
-
-        <BusinessSectionPanel
-          title={t("orders.orderInvoices_recordsTitle")}
-          description={
-            total > 0
-              ? t("orders.orderInvoices_showing", { from: currentFrom, to: currentTo, total })
-              : t("orders.orderInvoices_noMatchingResults")
-          }
-          headerAside={
-            <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs text-muted-foreground">
-              <Receipt className="size-3.5" />
-              {loading ? t("orders.orderInvoices_updating") : t("orders.orderInvoices_itemsPerPage", { count: rowsPerPage })}
             </div>
-          }
-          contentClassName="p-0"
-        >
-            {loading ? (
-              <div className="flex min-h-[360px] flex-col items-center justify-center gap-3 px-6 text-center text-muted-foreground">
-                <Loader2 className="size-8 animate-spin text-primary" />
-                <p className="text-sm">{t("orders.orderInvoices_loading")}</p>
-              </div>
-            ) : invoices.length === 0 ? (
-              <div className="flex min-h-[280px] items-center justify-center px-6 py-10">
-                <Alert className="max-w-md border-dashed bg-background/70">
-                  <AlertCircle className="size-4" />
-                  <AlertTitle>{t("orders.orderInvoices_noInvoices")}</AlertTitle>
-                  <AlertDescription>
-                    {t("orders.orderInvoices_noInvoicesDesc")}
-                  </AlertDescription>
-                </Alert>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-3 p-4 md:hidden">
+          ) : null}
+
+          {/* Table Content */}
+          {loading ? (
+            <div className="flex min-h-[300px] flex-col items-center justify-center gap-2 px-6 text-center text-muted-foreground">
+              <Loader2 className="size-6 animate-spin text-primary" />
+              <p className="text-xs">{t("orders.orderInvoices_loading")}</p>
+            </div>
+          ) : invoices.length === 0 ? (
+            <div className="flex min-h-[240px] flex-col items-center justify-center gap-2 px-6 py-10 text-center">
+              <Receipt className="size-8 text-muted-foreground/40" />
+              <p className="text-sm font-semibold text-foreground">{t("orders.orderInvoices_noInvoices")}</p>
+              <p className="text-xs text-muted-foreground max-w-sm">
+                {t("orders.orderInvoices_noInvoicesDesc")}
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border/70 bg-muted/30 hover:bg-muted/30">
+                    <TableHead className="text-right text-xs font-semibold text-muted-foreground">
+                      {t("orders.orderInvoices_invoiceNumber")}
+                    </TableHead>
+                    <TableHead className="text-right text-xs font-semibold text-muted-foreground">
+                      {t("orders.orderInvoices_orderNumber")}
+                    </TableHead>
+                    <TableHead className="text-right text-xs font-semibold text-muted-foreground">
+                      {t("orders.orderInvoices_customer")}
+                    </TableHead>
+                    <TableHead className="text-right text-xs font-semibold text-muted-foreground">
+                      {t("orders.orderInvoices_issueDate")}
+                    </TableHead>
+                    <TableHead className="text-right text-xs font-semibold text-muted-foreground">
+                      {t("orders.orderInvoices_amount")}
+                    </TableHead>
+                    <TableHead className="text-right text-xs font-semibold text-muted-foreground">
+                      {t("orders.orderInvoices_paymentStatus")}
+                    </TableHead>
+                    <TableHead className="text-center text-xs font-semibold text-muted-foreground">
+                      {t("orders.orderInvoices_actions")}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-border/60">
                   {invoices.map((invoice) => {
-                    const statusMeta = getPaymentStatusMeta(
-                      invoice.paymentStatus,
-                    );
+                    const statusMeta = getPaymentStatusMeta(invoice.paymentStatus);
 
                     return (
-                      <div
-                        key={invoice.id}
-                        className="rounded-[1.35rem] border border-border/70 bg-background/85 p-4 shadow-sm"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="space-y-1">
-                            <p className="text-sm text-muted-foreground">
-                              {t("orders.orderInvoices_invoiceNumber")}
-                            </p>
-                            <p className="font-semibold text-foreground">
-                              {invoice.invoiceNumber}
-                            </p>
+                      <TableRow key={invoice.id} className="hover:bg-muted/30 transition-colors">
+                        <TableCell className="text-right py-2.5">
+                          <span className="font-mono text-xs font-semibold text-foreground">
+                            {invoice.invoiceNumber}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right py-2.5">
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {invoice.order?.orderNumber || "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right py-2.5">
+                          <div className="font-medium text-xs text-foreground">
+                            {invoice.customerName}
                           </div>
-                          <Badge
-                            variant="outline"
-                            className={cn("rounded-full", statusMeta.className)}
-                          >
-                            {t(statusMeta.labelKey)}
-                          </Badge>
-                        </div>
-
-                        <div className="mt-4 grid gap-3 rounded-2xl bg-muted/30 p-3 text-sm">
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">{t("orders.orderInvoices_orderNumber")}</span>
-                            <span className="font-medium text-foreground">
-                              {invoice.order?.orderNumber || "—"}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">{t("orders.orderInvoices_customer")}</span>
-                            <div className="text-left">
-                              <p className="font-medium text-foreground">
-                                {invoice.customerName}
-                              </p>
-                              {invoice.customerPhone ? (
-                                <p className="text-xs text-muted-foreground">
-                                  {invoice.customerPhone}
-                                </p>
-                              ) : null}
+                          {invoice.customerPhone ? (
+                            <div className="font-mono text-[11px] text-muted-foreground tabular-nums">
+                              {invoice.customerPhone}
                             </div>
-                          </div>
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">{t("orders.orderInvoices_issueDate")}</span>
-                            <span className="font-medium text-foreground">
-                              {formatDate(invoice.issueDate)}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-muted-foreground">{t("orders.orderInvoices_amount")}</span>
-                            <span className="font-semibold text-foreground">
-                              {formatCurrency(
-                                toAmount(invoice.totalAmount),
-                                invoice.currency || "EGP",
-                              )}
-                            </span>
-                          </div>
-                        </div>
+                          ) : null}
+                        </TableCell>
+                        <TableCell className="text-right py-2.5 text-xs text-muted-foreground font-mono">
+                          {formatDate(invoice.issueDate)}
+                        </TableCell>
+                        <TableCell className="text-right py-2.5">
+                          <span className="font-mono text-xs font-bold tabular-nums text-foreground">
+                            {formatCurrency(
+                              toAmount(invoice.totalAmount),
+                              invoice.currency || "EGP",
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right py-2.5">
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border",
+                              statusMeta.className,
+                            )}
+                          >
+                            <span className={cn("size-1.5 rounded-full", 
+                              invoice.paymentStatus === "PAID" ? "bg-emerald-500" :
+                              invoice.paymentStatus === "PENDING" ? "bg-amber-500" :
+                              invoice.paymentStatus === "CANCELLED" ? "bg-rose-500" :
+                              invoice.paymentStatus === "REFUNDED" ? "bg-sky-500" : "bg-orange-500"
+                            )} />
+                            {t(statusMeta.labelKey)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center py-2.5">
+                          <div className="inline-flex items-center gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-xs"
+                                  onClick={() => handleViewInvoice(invoice.id)}
+                                  className="size-7 hover:bg-muted active:scale-[0.98]"
+                                >
+                                  <Eye className="size-3.5 text-muted-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>{t("orders.orderInvoices_viewInvoice")}</TooltipContent>
+                            </Tooltip>
 
-                        <div className="mt-4 flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="flex-1"
-                            onClick={() => handleViewInvoice(invoice.id)}
-                          >
-                            <Eye className="size-4" />
-                            {t("orders.orderInvoices_view")}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="flex-1"
-                            onClick={() => handlePrintInvoice(invoice.id)}
-                          >
-                            <Printer className="size-4" />
-                            {t("orders.orderInvoices_print")}
-                          </Button>
-                        </div>
-                      </div>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-xs"
+                                  onClick={() => handlePrintInvoice(invoice.id)}
+                                  className="size-7 hover:bg-muted active:scale-[0.98]"
+                                >
+                                  <Printer className="size-3.5 text-muted-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>{t("orders.orderInvoices_printInvoice")}</TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </div>
-
-                <div className="hidden md:block">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/40 hover:bg-muted/40">
-                        <TableHead className="text-right font-semibold text-foreground">
-                          {t("orders.orderInvoices_invoiceNumber")}
-                        </TableHead>
-                        <TableHead className="text-right font-semibold text-foreground">
-                          {t("orders.orderInvoices_orderNumber")}
-                        </TableHead>
-                        <TableHead className="text-right font-semibold text-foreground">
-                          {t("orders.orderInvoices_customer")}
-                        </TableHead>
-                        <TableHead className="text-right font-semibold text-foreground">
-                          {t("orders.orderInvoices_issueDate")}
-                        </TableHead>
-                        <TableHead className="text-right font-semibold text-foreground">
-                          {t("orders.orderInvoices_amount")}
-                        </TableHead>
-                        <TableHead className="text-right font-semibold text-foreground">
-                          {t("orders.orderInvoices_paymentStatus")}
-                        </TableHead>
-                        <TableHead className="text-center font-semibold text-foreground">
-                          {t("orders.orderInvoices_actions")}
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {invoices.map((invoice) => {
-                        const statusMeta = getPaymentStatusMeta(
-                          invoice.paymentStatus,
-                        );
-
-                        return (
-                          <TableRow key={invoice.id}>
-                            <TableCell className="text-right">
-                              <div className="font-semibold text-foreground">
-                                {invoice.invoiceNumber}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right font-medium text-foreground">
-                              {invoice.order?.orderNumber || "—"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="font-medium text-foreground">
-                                {invoice.customerName}
-                              </div>
-                              {invoice.customerPhone ? (
-                                <div className="mt-1 text-xs text-muted-foreground">
-                                  {invoice.customerPhone}
-                                </div>
-                              ) : null}
-                            </TableCell>
-                            <TableCell className="text-right text-muted-foreground">
-                              {formatDate(invoice.issueDate)}
-                            </TableCell>
-                            <TableCell className="text-right font-semibold text-foreground">
-                              {formatCurrency(
-                                toAmount(invoice.totalAmount),
-                                invoice.currency || "EGP",
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  "rounded-full",
-                                  statusMeta.className,
-                                )}
-                              >
-                                {t(statusMeta.labelKey)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <div className="inline-flex items-center gap-2">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="icon-sm"
-                                      onClick={() =>
-                                        handleViewInvoice(invoice.id)
-                                      }
-                                    >
-                                      <Eye className="size-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>{t("orders.orderInvoices_viewInvoice")}</TooltipContent>
-                                </Tooltip>
-
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="icon-sm"
-                                      onClick={() =>
-                                        handlePrintInvoice(invoice.id)
-                                      }
-                                    >
-                                      <Printer className="size-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>{t("orders.orderInvoices_printInvoice")}</TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                <div className="border-t border-border/70 px-4 py-4">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                      <p className="text-sm text-muted-foreground">
-                        {t("orders.orderInvoices_showing", { from: currentFrom, to: currentTo, total })}
-                      </p>
-
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">
-                          {t("orders.orderInvoices_rowsLabel")}
-                        </span>
-                        <Select
-                          value={rowsPerPage.toString()}
-                          onValueChange={handleRowsPerPageChange}
-                        >
-                          <SelectTrigger className="h-9 w-28">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {PAGE_SIZE_OPTIONS.map((size) => (
-                              <SelectItem key={size} value={size.toString()}>
-                                {t("orders.orderInvoices_perPage", { size })}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={page === 0}
-                        onClick={() => handlePageChange(0)}
-                      >
-                        <ChevronsRight className="size-4" />
-                        {t("orders.orderInvoices_first")}
-                      </Button>
-
-                      {paginationPages.map((pageItem) => {
-                        if (
-                          pageItem === "ellipsis-left" ||
-                          pageItem === "ellipsis-right"
-                        ) {
-                          return (
-                            <span
-                              key={pageItem}
-                              className="px-2 text-sm text-muted-foreground"
-                            >
-                              ...
-                            </span>
-                          );
-                        }
-
-                        return (
-                          <Button
-                            key={pageItem}
-                            type="button"
-                            variant={
-                              pageItem === currentPage ? "default" : "outline"
-                            }
-                            size="sm"
-                            onClick={() => handlePageChange(pageItem - 1)}
-                            className="min-w-9"
-                          >
-                            {pageItem}
-                          </Button>
-                        );
-                      })}
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={page >= totalPages - 1}
-                        onClick={() => handlePageChange(totalPages - 1)}
-                      >
-                        {t("orders.orderInvoices_last")}
-                        <ChevronsLeft className="size-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-        </BusinessSectionPanel>
-
-        <BusinessFilterSheet
-          open={isFiltersSheetOpen}
-          onOpenChange={setIsFiltersSheetOpen}
-          title={t("orders.orderInvoices_filterTitle")}
-          description={t("orders.orderInvoices_filterDescription")}
-          onClear={handleClearFilters}
-          onApply={handleApplyFilters}
-        >
-          <div className="space-y-2">
-            <Label htmlFor="order-invoices-sheet-search">{t("orders.orderInvoices_search")}</Label>
-            <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="order-invoices-sheet-search"
-                name="orderInvoicesSheetSearch"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder={t("orders.orderInvoices_searchPlaceholder")}
-                className="h-11 rounded-2xl pr-10 text-right"
-              />
+                </TableBody>
+              </Table>
             </div>
-          </div>
+          )}
 
-          <div className="space-y-2">
-            <Label>{t("orders.orderInvoices_paymentStatus")}</Label>
-            <Select
-              value={paymentStatus || "ALL"}
-              onValueChange={(value) => {
-                setPaymentStatus(!value || value === "ALL" ? "" : value);
-                setPage(0);
-              }}
-            >
-              <SelectTrigger className="h-11 rounded-2xl" aria-label={t("orders.orderInvoices_paymentStatus")}>
-                <SelectValue placeholder={t("orders.orderInvoices_allStatuses")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">{t("orders.orderInvoices_allStatuses")}</SelectItem>
-                <SelectItem value="PENDING">{t("orders.orderInvoices_statusPending")}</SelectItem>
-                <SelectItem value="PAID">{t("orders.orderInvoices_statusPaid")}</SelectItem>
-                <SelectItem value="PARTIALLY_PAID">{t("orders.orderInvoices_statusPartiallyPaid")}</SelectItem>
-                <SelectItem value="CANCELLED">{t("orders.orderInvoices_statusCancelled")}</SelectItem>
-                <SelectItem value="REFUNDED">{t("orders.orderInvoices_statusRefunded")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Unified Pagination Bar */}
+          {totalPages > 1 && (
+            <div className="border-t border-border/70 p-3 bg-muted/10 flex items-center justify-between">
+              <span className="text-xs text-muted-foreground font-mono">
+                {t("orders.orderInvoices_showing", { from: currentFrom, to: currentTo, total })}
+              </span>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="order-invoices-mobile-date-from">{t("orders.orderInvoices_fromDate")}</Label>
-              <div className="relative">
-                <CalendarRange className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="order-invoices-mobile-date-from"
-                  name="orderInvoicesMobileDateFrom"
-                  type="date"
-                  value={dateFrom}
-                  onChange={(event) => setDateFrom(event.target.value)}
-                  className="h-11 rounded-2xl pr-10"
-                  aria-label={t("orders.orderInvoices_fromDate")}
-                />
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 0}
+                  onClick={() => handlePageChange(0)}
+                  className="h-7 text-xs px-2"
+                >
+                  <ChevronsRight className="size-3.5" />
+                </Button>
+
+                {paginationPages.map((pageItem) => {
+                  if (pageItem === "ellipsis-left" || pageItem === "ellipsis-right") {
+                    return (
+                      <span key={pageItem} className="px-1 text-xs text-muted-foreground">
+                        …
+                      </span>
+                    );
+                  }
+
+                  return (
+                    <Button
+                      key={pageItem}
+                      type="button"
+                      variant={pageItem === currentPage ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handlePageChange(pageItem - 1)}
+                      className="h-7 min-w-7 px-2 text-xs font-mono tabular-nums"
+                    >
+                      {pageItem}
+                    </Button>
+                  );
+                })}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages - 1}
+                  onClick={() => handlePageChange(totalPages - 1)}
+                  className="h-7 text-xs px-2"
+                >
+                  <ChevronsLeft className="size-3.5" />
+                </Button>
               </div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="order-invoices-mobile-date-to">{t("orders.orderInvoices_toDate")}</Label>
-              <div className="relative">
-                <CalendarRange className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="order-invoices-mobile-date-to"
-                  name="orderInvoicesMobileDateTo"
-                  type="date"
-                  value={dateTo}
-                  onChange={(event) => setDateTo(event.target.value)}
-                  className="h-11 rounded-2xl pr-10"
-                  aria-label={t("orders.orderInvoices_toDate")}
-                />
-              </div>
-            </div>
-          </div>
-        </BusinessFilterSheet>
-      </BusinessPageShell>
+          )}
+        </div>
+      </div>
     </TooltipProvider>
   );
 };

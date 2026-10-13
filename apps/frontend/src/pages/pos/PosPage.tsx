@@ -907,183 +907,206 @@ const PosPage = () => {
   };
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 flex" dir={i18n.language === "ar" ? "rtl" : "ltr"}>
-      <div className="flex-1 flex flex-col">
-        <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-4 py-3 flex gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+    <div className="bg-background flex min-h-screen" dir={i18n.language === "ar" ? "rtl" : "ltr"}>
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Control Bar */}
+        <div className="border-b border-border/80 bg-card/40 backdrop-blur-xs px-4 py-2.5 flex items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
             <input
               ref={searchRef}
               type="text"
               placeholder={t("posPage.searchPlaceholder")}
-              className="w-full pr-10 pl-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full pr-9 pl-12 py-1.5 text-xs bg-muted/40 border border-border/80 text-foreground placeholder-muted-foreground rounded-lg focus:outline-hidden focus:border-primary transition"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 font-mono text-[10px] text-muted-foreground border border-border/60 px-1 rounded bg-background/80">
+              F2
+            </span>
           </div>
 
-          <button
-            onClick={toggleTheme}
-            className="p-2.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            title={isDark ? t("posPage.toggleLightMode") : t("posPage.toggleDarkMode")}
-          >
-            {isDark ? (
-              <Sun className="h-5 w-5 text-yellow-500" />
-            ) : (
-              <Moon className="h-5 w-5" />
-            )}
-          </button>
-
-          <button
-            onClick={() =>
-              setIsFullscreen((f) => {
-                if (f) {
-                  void document.exitFullscreen();
-                } else {
-                  void document.documentElement.requestFullscreen();
-                }
-                return !f;
-              })
-            }
-            className="p-2.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-          >
-            {isFullscreen ? (
-              <Minimize className="h-5 w-5" />
-            ) : (
-              <Maximize className="h-5 w-5" />
-            )}
-          </button>
-
-          <a
-            href="/cafe/recipes"
-            className="p-2.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1 text-xs font-medium"
-            title="معايير الرسيبي وتكلفة المشروبات"
-          >
-            <Coffee className="h-5 w-5 text-amber-600" />
-            <span className="hidden sm:inline">الرسيبي</span>
-          </a>
-
-          <a
-            href="/cafe/audits"
-            className="p-2.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1 text-xs font-medium"
-            title="جلسات الجرد الفعلي للمخزن"
-          >
-            <FileText className="h-5 w-5 text-blue-600" />
-            <span className="hidden sm:inline">الجرد</span>
-          </a>
-        </div>
-        <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-4 py-2 flex gap-2 overflow-x-auto scrollbar-hide">
-          {categories.map((c) => (
-            <button
-              key={c}
-              onClick={() => setSelectedCategory(c)}
-              className={
-                "px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors " +
-                (selectedCategory === c
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600")
-              }
+          <div className="flex items-center gap-1.5">
+            <a
+              href="/cafe/recipes"
+              className="px-2.5 py-1.5 border border-border/80 bg-background/80 hover:bg-muted text-foreground rounded-lg transition active:scale-[0.98] flex items-center gap-1.5 text-xs font-medium"
+              title="معايير الرسيبي وتكلفة المشروبات"
             >
-              {c}
+              <Coffee className="size-3.5 text-amber-600" />
+              <span className="hidden sm:inline">الرسيبي</span>
+            </a>
+
+            <a
+              href="/cafe/audits"
+              className="px-2.5 py-1.5 border border-border/80 bg-background/80 hover:bg-muted text-foreground rounded-lg transition active:scale-[0.98] flex items-center gap-1.5 text-xs font-medium"
+              title="جلسات الجرد الفعلي للمخزن"
+            >
+              <FileText className="size-3.5 text-blue-600" />
+              <span className="hidden sm:inline">الجرد</span>
+            </a>
+
+            <button
+              onClick={() =>
+                setIsFullscreen((f) => {
+                  if (f) {
+                    void document.exitFullscreen();
+                  } else {
+                    void document.documentElement.requestFullscreen();
+                  }
+                  return !f;
+                })
+              }
+              className="p-1.5 border border-border/80 bg-background/80 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition active:scale-[0.98]"
+              title="ملء الشاشة"
+            >
+              {isFullscreen ? (
+                <Minimize className="size-4" />
+              ) : (
+                <Maximize className="size-4" />
+              )}
             </button>
-          ))}
+
+            <button
+              onClick={toggleTheme}
+              className="p-1.5 border border-border/80 bg-background/80 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition active:scale-[0.98]"
+              title={isDark ? t("posPage.toggleLightMode") : t("posPage.toggleDarkMode")}
+            >
+              {isDark ? (
+                <Sun className="size-4 text-amber-500" />
+              ) : (
+                <Moon className="size-4" />
+              )}
+            </button>
+          </div>
         </div>
+
+        {/* Categories Ribbon */}
+        <div className="border-b border-border/70 px-4 py-2 flex items-center gap-1.5 overflow-x-auto scrollbar-none bg-muted/20">
+          {categories.map((c) => {
+            const isSelected = selectedCategory === c;
+            return (
+              <button
+                key={c}
+                onClick={() => setSelectedCategory(c)}
+                className={`px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition active:scale-[0.98] ${
+                  isSelected
+                    ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                    : "border border-border/80 bg-background/80 text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                {c}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Products Grid */}
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-12 w-12 text-blue-600 animate-spin" />
+            <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
+              <Loader2 className="size-6 text-primary animate-spin" />
+              <p className="text-xs">جاري تحميل المنتجات...</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {filtered.map((p, index) => (
-                <div
-                  key={p.id}
-                  onClick={() => addToCart(p)}
-                  className={
-                    "bg-white dark:bg-gray-800 rounded-xl border-2 cursor-pointer hover:border-blue-400 hover:shadow-lg " +
-                    (p.stock <= 0
-                      ? "opacity-50"
-                      : "border-transparent dark:border-gray-700")
-                  }
-                >
-                  <div className="h-28 bg-gray-100 rounded-t-xl flex items-center justify-center relative">
-                    {p.images.length ? (
-                      <PosProductImage
-                        candidates={p.images}
-                        alt={p.name}
-                        className="h-full w-full object-cover rounded-t-xl"
-                        requestedWidth={320}
-                        responsiveWidths={[160, 240, 320]}
-                        responsiveSizes="(min-width: 1280px) 18vw, (min-width: 1024px) 22vw, (min-width: 640px) 30vw, 45vw"
-                        imageQuality={70}
-                        loading={index < 8 ? "eager" : "lazy"}
-                        fetchPriority={index < 8 ? "high" : "low"}
-                        fallback={<ImageIcon className="h-10 w-10 text-gray-300" />}
-                      />
-                    ) : (
-                      <ImageIcon className="h-10 w-10 text-gray-300" />
-                    )}
-                    <span
-                      className={
-                        "absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full font-medium text-white " +
-                        (p.stock <= 0
-                          ? "bg-red-500"
-                          : p.stock < 5
-                            ? "bg-yellow-500"
-                            : "bg-green-500")
-                      }
-                    >
-                      {p.stock <= 0 ? t("posPage.outOfStock") : p.stock}
-                    </span>
+              {filtered.map((p, index) => {
+                const isOutOfStock = p.trackInventory !== false && p.stock <= 0;
+                const isLowStock = p.trackInventory !== false && p.stock < 5 && p.stock > 0;
+
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => addToCart(p)}
+                    className={`rounded-xl border border-border/80 dark:border-border/60 bg-card/60 backdrop-blur-xs cursor-pointer hover:border-foreground/30 hover:shadow-2xs transition-all active:scale-[0.98] flex flex-col justify-between overflow-hidden ${
+                      isOutOfStock ? "opacity-50" : ""
+                    }`}
+                  >
+                    <div className="h-28 bg-muted/30 relative flex items-center justify-center overflow-hidden">
+                      {p.images.length ? (
+                        <PosProductImage
+                          candidates={p.images}
+                          alt={p.name}
+                          className="h-full w-full object-cover"
+                          requestedWidth={320}
+                          responsiveWidths={[160, 240, 320]}
+                          responsiveSizes="(min-width: 1280px) 18vw, (min-width: 1024px) 22vw, (min-width: 640px) 30vw, 45vw"
+                          imageQuality={70}
+                          loading={index < 8 ? "eager" : "lazy"}
+                          fetchPriority={index < 8 ? "high" : "low"}
+                          fallback={<ImageIcon className="size-8 text-muted-foreground/30" />}
+                        />
+                      ) : (
+                        <ImageIcon className="size-8 text-muted-foreground/30" />
+                      )}
+
+                      {/* Monospace Micro-Stock Pill */}
+                      <span
+                        className={`absolute top-2 right-2 font-mono text-[10px] px-1.5 py-0.5 rounded tabular-nums border shadow-2xs ${
+                          isOutOfStock
+                            ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 font-bold"
+                            : isLowStock
+                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-semibold"
+                            : "bg-background/90 text-foreground border-border/80 font-medium"
+                        }`}
+                      >
+                        {isOutOfStock ? t("posPage.outOfStock") : p.stock}
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 space-y-1">
+                      <h3 className="text-xs font-semibold truncate text-foreground">
+                        {p.name}
+                      </h3>
+                      <p className="font-mono text-xs font-bold tabular-nums text-foreground">
+                        {p.price.toLocaleString("en-US")} <span className="text-[10px] font-normal text-muted-foreground">EGP</span>
+                      </p>
+                    </div>
                   </div>
-                  <div className="p-3">
-                    <h3 className="text-sm font-medium truncate text-gray-900 dark:text-white">
-                      {p.name}
-                    </h3>
-                    <p className="text-blue-600 font-bold mt-1">
-                      {p.price.toLocaleString(i18n.language === "ar" ? "ar-EG" : "en-US")} {t("posPage.egp")}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
-        <div className="bg-white dark:bg-gray-800 border-t dark:border-gray-700 px-4 py-2 flex items-center gap-2 text-xs text-gray-500">
-          <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
+
+        {/* Bottom Shortcut Ribbon */}
+        <div className="border-t border-border/70 px-4 py-1.5 flex items-center gap-3 text-xs text-muted-foreground bg-muted/10">
+          <span className="font-mono text-[11px] bg-background border border-border/80 text-foreground px-1.5 py-0.5 rounded">
             {t("posPage.f2Search")}
           </span>
-          <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded">
+          <span className="font-mono text-[11px] bg-background border border-border/80 text-foreground px-1.5 py-0.5 rounded">
             {t("posPage.f4Pay")}
           </span>
         </div>
       </div>
 
-      <div className="w-96 bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col shadow-xl">
-        <div className="p-4 border-b dark:border-gray-700 flex items-center justify-between">
+      <div className="w-88 md:w-96 bg-card/60 backdrop-blur-xs border-r border-border/80 flex flex-col shrink-0">
+        <div className="p-3 border-b border-border/70 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <ShoppingCart className="h-6 w-6 text-blue-600" />
-            <span className="font-bold text-lg text-gray-900 dark:text-white">
+            <div className="size-8 rounded-lg border border-border/80 bg-muted/40 flex items-center justify-center">
+              <ShoppingCart className="size-4 text-foreground" />
+            </div>
+            <span className="font-bold text-sm text-foreground">
               {t('pos.k_46')}
             </span>
-            <span className="bg-blue-100 text-blue-600 text-sm px-2 py-0.5 rounded-full">
+            <span className="font-mono text-xs tabular-nums px-1.5 py-0.5 rounded border border-border/60 text-muted-foreground bg-muted/40">
               {cart.length}
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setShowParkModal(true)}
               disabled={!cart.length}
-              className="p-2 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors disabled:opacity-30"
+              className="p-1.5 border border-border/80 rounded-lg text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-30 active:scale-[0.98]"
               title="تعليق الطلب على طاولة"
             >
-              <Bookmark className="h-5 w-5" />
+              <Bookmark className="size-4" />
             </button>
             <button
               onClick={clearCart}
-              className="p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+              className="p-1.5 border border-border/80 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors active:scale-[0.98]"
+              title="تفريغ السلة"
             >
-              <Trash2 className="h-5 w-5" />
+              <Trash2 className="size-4" />
             </button>
           </div>
         </div>

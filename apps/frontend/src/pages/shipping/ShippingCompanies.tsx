@@ -333,371 +333,411 @@ const ShippingCompanies: React.FC = () => {
     toast.success("تم نسخ رابط الـ Webhook");
   };
 
+  const stats = useMemo(() => {
+    const total = displayedCompanies.length;
+    const active = displayedCompanies.filter((c) => c.isActive).length;
+    const live = displayedCompanies.filter((c) => c.integrationMode === "LIVE").length;
+    const manual = displayedCompanies.filter((c) => c.integrationMode === "MANUAL" || !c.integrationMode).length;
+    return { total, active, live, manual };
+  }, [displayedCompanies]);
+
   return (
-    <div className="w-full max-w-7xl mx-auto p-3 sm:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <TruckIcon className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
-            <span>مركز شركات الشحن والربط الآلي</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-            إدارة وتفعيل شركات الشحن والمناديب، وضبط مفاتيح الـ API وفحص الاتصال من مكان واحد
-          </p>
+    <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-4" dir="rtl">
+      {/* Unified Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 items-center justify-center rounded-xl border border-border/80 bg-muted/40 text-foreground">
+            <TruckIcon className="size-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
+                مركز شركات الشحن والربط الآلي
+              </h1>
+              <span className="font-mono text-xs tabular-nums px-1.5 py-0.5 rounded border border-border/60 text-muted-foreground bg-muted/30">
+                {stats.total}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              إدارة وتفعيل شركات الشحن والمناديب وضبط مفاتيح الـ API من مكان واحد
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <Link
             to="/settings/turbo/status-mapping"
-            className="px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+            className="px-3 py-1.5 text-xs font-medium text-foreground bg-muted/40 border border-border/80 rounded-lg hover:bg-muted/70 transition active:scale-[0.98]"
           >
             ربط حالات الشحن (Turbo)
           </Link>
           <Link
-            to="/shipping/couriers"
-            className="px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-          >
-            إدارة المناديب الداخليين
-          </Link>
-          <Link
             to="/orders/shipments"
-            className="px-3.5 py-2 text-xs sm:text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-100 transition"
+            className="px-3 py-1.5 text-xs font-medium text-foreground bg-muted/40 border border-border/80 rounded-lg hover:bg-muted/70 transition active:scale-[0.98]"
           >
             سجلات الشحنات
           </Link>
           <button
+            type="button"
             onClick={handleOpenNewModal}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition active:scale-[0.98] shadow-2xs"
           >
-            <PlusIcon className="h-4 w-4" />
-            <span>إضافة شركة شحن خاصة / مندوب</span>
+            <PlusIcon className="size-3.5" />
+            <span>إضافة شركة شحن</span>
           </button>
         </div>
       </div>
 
-      {/* Control Bar: Search, Filters & View Toggle */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4 space-y-3 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          {/* Search */}
-          <div className="relative flex-1 w-full">
-            <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="ابحث باسم شركة الشحن، الرمز، أو الهاتف..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-3 pr-9 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <XMarkIcon className="h-4 w-4" />
-              </button>
-            )}
+      {/* Single-Surface Telemetry Bar */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/80 dark:border-border/60 bg-card/60 backdrop-blur-xs divide-y lg:divide-y-0 lg:divide-x lg:divide-x-reverse divide-border/60 overflow-hidden shadow-2xs">
+        <div className="p-3.5 sm:p-4 space-y-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>إجمالي الشركات</span>
+            <TruckIcon className="size-3.5 text-primary" />
           </div>
+          <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground">
+            {stats.total}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            شركات الشحن والمناديب المسجلة
+          </p>
+        </div>
 
-          {/* Mode & Status Filters */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-            >
-              <option value="all">كل الحالات</option>
-              <option value="active">المفعلة للعمل</option>
-              <option value="inactive">المتوقفة</option>
-            </select>
+        <div className="p-3.5 sm:p-4 space-y-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              المفعلة للعمل
+            </span>
+            <CheckCircleIcon className="size-3.5 text-emerald-500" />
+          </div>
+          <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground">
+            {stats.active}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            تستقبل وتصدر بوليصات الشحن
+          </p>
+        </div>
 
-            <select
-              value={modeFilter}
-              onChange={(e) => setModeFilter(e.target.value)}
-              className="px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-            >
-              <option value="ALL">جميع أنواع الربط</option>
-              <option value="LIVE">ربط مباشر (LIVE)</option>
-              <option value="DEMO">تجريبي (DEMO)</option>
-              <option value="MANUAL">يدوي / مناديب (MANUAL)</option>
-            </select>
+        <div className="p-3.5 sm:p-4 space-y-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-sky-500" />
+              ربط مباشر API
+            </span>
+            <SignalIcon className="size-3.5 text-sky-500" />
+          </div>
+          <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground">
+            {stats.live}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            تكامل فوري تلقائي (Live API)
+          </p>
+        </div>
 
-            {/* View Switcher (Cards vs Table) */}
-            <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setViewMode("cards")}
-                className={`p-2 ${viewMode === "cards" ? "bg-indigo-600 text-white" : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
-                title="عرض بطاقات"
+        <div className="p-3.5 sm:p-4 space-y-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-amber-500" />
+              مناديب / يدوي
+            </span>
+            <KeyIcon className="size-3.5 text-amber-500" />
+          </div>
+          <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground">
+            {stats.manual}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            مناديب التوصيل الداخلي
+          </p>
+        </div>
+      </div>
+
+      {/* Main Single Chassis: Filter Ribbon + Cards / Table */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card/40 backdrop-blur-xs overflow-hidden shadow-2xs">
+        {/* Integrated Filter Ribbon */}
+        <div className="border-b border-border/70 p-3 sm:p-3.5 bg-muted/20">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5">
+            <div className="relative flex-1 w-full sm:max-w-sm">
+              <MagnifyingGlassIcon className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+              <input
+                type="text"
+                placeholder="ابحث باسم شركة الشحن، الرمز، أو الهاتف..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-7 pr-8 py-1.5 text-xs border border-border/80 rounded-lg bg-background/80 text-foreground placeholder-muted-foreground focus:outline-hidden focus:border-primary transition"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <XMarkIcon className="size-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                className="h-8 px-2.5 text-xs border border-border/80 rounded-lg bg-background/80 text-foreground"
               >
-                <Squares2X2Icon className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("table")}
-                className={`p-2 ${viewMode === "table" ? "bg-indigo-600 text-white" : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
-                title="عرض جدول"
+                <option value="all">كل الحالات</option>
+                <option value="active">المفعلة للعمل</option>
+                <option value="inactive">المتوقفة</option>
+              </select>
+
+              <select
+                value={modeFilter}
+                onChange={(e) => setModeFilter(e.target.value)}
+                className="h-8 px-2.5 text-xs border border-border/80 rounded-lg bg-background/80 text-foreground"
               >
-                <ListBulletIcon className="h-4 w-4" />
-              </button>
+                <option value="ALL">جميع أنواع الربط</option>
+                <option value="LIVE">ربط مباشر (LIVE)</option>
+                <option value="DEMO">تجريبي (DEMO)</option>
+                <option value="MANUAL">يدوي / مناديب (MANUAL)</option>
+              </select>
+
+              {/* View Switcher */}
+              <div className="flex items-center border border-border/80 rounded-lg overflow-hidden bg-background/80">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("cards")}
+                  className={`p-1.5 transition ${viewMode === "cards" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  title="عرض بطاقات"
+                >
+                  <Squares2X2Icon className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("table")}
+                  className={`p-1.5 transition ${viewMode === "table" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  title="عرض جدول"
+                >
+                  <ListBulletIcon className="size-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Content Area */}
-      {loading ? (
-        <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-3 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-            جاري جلب شركات الشحن وإعدادات الربط...
-          </p>
-        </div>
-      ) : displayedCompanies.length === 0 ? (
-        <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-          <TruckIcon className="h-14 w-14 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-            لا توجد شركات شحن مسجلة
-          </h3>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
-            ابدأ بإضافة أول شركة شحن أو تفعيل شركات الشحن المعتمدة
-          </p>
-          <button
-            onClick={handleOpenNewModal}
-            className="px-4 py-2 text-xs sm:text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm"
-          >
-            إضافة شركة شحن الآن
-          </button>
-        </div>
-      ) : viewMode === "cards" ? (
-        /* 1. CARDS / GRID VIEW (Modern Hub) */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {displayedCompanies.map((company) => {
-            const hasApiKey = Boolean(company.apiKey);
-            const isLive = company.integrationMode === "LIVE";
-            const isDemo = company.integrationMode === "DEMO";
-            const isManual = company.integrationMode === "MANUAL";
-
-            return (
-              <div
-                key={company.id}
-                className={`bg-white dark:bg-gray-800 rounded-xl border transition shadow-sm hover:shadow-md flex flex-col justify-between p-4 sm:p-5 ${
-                  company.isActive
-                    ? "border-gray-200 dark:border-gray-700"
-                    : "border-indigo-200 dark:border-indigo-800/80 bg-gradient-to-b from-indigo-50/25 to-transparent dark:from-indigo-950/20"
-                }`}
+        {/* Content Area */}
+        {loading ? (
+          <div className="p-12 text-center text-xs text-muted-foreground space-y-2">
+            <div className="size-6 border-2 border-primary border-t-transparent animate-spin rounded-full mx-auto" />
+            <p>جاري جلب شركات الشحن وإعدادات الربط...</p>
+          </div>
+        ) : displayedCompanies.length === 0 ? (
+          <div className="p-12 text-center space-y-2">
+            <TruckIcon className="size-10 text-muted-foreground/30 mx-auto" />
+            <h3 className="text-sm font-semibold text-foreground">
+              لا توجد شركات شحن مسجلة
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              ابدأ بإضافة أول شركة شحن أو تفعيل شركات الشحن المعتمدة
+            </p>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleOpenNewModal}
+                className="px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground rounded-lg hover:opacity-90 shadow-2xs active:scale-[0.98]"
               >
-                {/* Card Top: Logo, Name & Toggle Switch */}
-                <div>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2.5 rounded-xl ${
-                        company.isActive
-                          ? "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400"
-                          : "bg-indigo-100/70 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300"
-                      }`}>
-                        <TruckIcon className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                          {company.name}
-                        </h3>
-                        <p className="text-xs text-gray-400 font-mono">
-                          /{company.slug || company.id.slice(0, 8)}
-                        </p>
-                      </div>
-                    </div>
+                إضافة شركة شحن الآن
+              </button>
+            </div>
+          </div>
+        ) : viewMode === "cards" ? (
+          /* Cards View */
+          <div className="p-3 sm:p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {displayedCompanies.map((company) => {
+              const hasApiKey = Boolean(company.apiKey);
+              const isLive = company.integrationMode === "LIVE";
+              const isDemo = company.integrationMode === "DEMO";
 
-                    {/* Quick Toggle Active Switch */}
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-[11px] font-bold ${
-                        company.isActive ? "text-emerald-600 dark:text-emerald-400" : "text-indigo-600 dark:text-indigo-400"
-                      }`}>
-                        {company.isActive ? "مفعلة" : "جاهزة للربط"}
-                      </span>
+              return (
+                <div
+                  key={company.id}
+                  className="rounded-xl border border-border/80 dark:border-border/60 bg-card/60 backdrop-blur-xs p-4 flex flex-col justify-between hover:border-border transition-colors shadow-2xs"
+                >
+                  <div className="space-y-3">
+                    {/* Top Row: Name, Slug & Active Switch */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="size-9 rounded-lg border border-border/80 bg-muted/40 text-foreground flex items-center justify-center shrink-0">
+                          <TruckIcon className="size-4.5" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-foreground">
+                            {company.name}
+                          </h3>
+                          <p className="text-[11px] font-mono text-muted-foreground">
+                            /{company.slug || company.id.slice(0, 8)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Micro-LED Active Toggle */}
                       <button
                         type="button"
                         onClick={(e) => handleToggleActive(company, e)}
                         disabled={togglingId === company.id}
-                        className={`relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                          company.isActive ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-hidden ${
+                          company.isActive ? "bg-emerald-500" : "bg-muted-foreground/30"
                         }`}
                         title={company.isActive ? "إيقاف العمل بالشركة" : "تفعيل العمل بالشركة"}
                       >
                         <span
-                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                            company.isActive ? "translate-x-0" : "-translate-x-5"
+                          className={`pointer-events-none inline-block size-4 transform rounded-full bg-white shadow-2xs transition duration-200 ${
+                            company.isActive ? "translate-x-0" : "-translate-x-4"
                           }`}
                         />
                       </button>
                     </div>
-                  </div>
 
-                  {/* Status Badges */}
-                  <div className="flex flex-wrap items-center gap-1.5 mt-4">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                      isLive
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300"
-                        : isDemo
-                        ? "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300"
-                        : "bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300"
-                    }`}>
-                      <SignalIcon className="h-3 w-3" />
-                      <span>{company.integrationMode || "MANUAL"}</span>
-                    </span>
-
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                      {company.providerKey || "MANUAL"}
-                    </span>
-
-                    {!company.isActive && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300">
-                        ⚡ غير مفعلة (جاهزة للربط)
-                      </span>
-                    )}
-
-                    {/* Connection Indicator */}
-                    {isLive && (
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium ${
-                        company.providerKey === "QP_EXPRESS"
-                          ? (company.apiKey || (parseSettings(company.settings) as any).username) && (parseSettings(company.settings) as any).customerId
-                            ? "text-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-300"
-                            : "text-amber-600 dark:text-amber-400"
-                          : hasApiKey
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-amber-600 dark:text-amber-400"
+                    {/* Telemetry Chips */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                        isLive
+                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20"
+                          : isDemo
+                          ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20"
+                          : "bg-muted text-muted-foreground border-border/60"
                       }`}>
-                        {company.providerKey === "QP_EXPRESS"
-                          ? (parseSettings(company.settings) as any).customerId
-                            ? `● عميل كيو بي #${(parseSettings(company.settings) as any).customerId}`
-                            : "▲ ينقص كود العميل"
-                          : hasApiKey
-                          ? "● مفتاح الـ API مسجل"
-                          : "▲ ينقص الـ API Key"}
+                        <span className={`size-1.5 rounded-full ${isLive ? "bg-emerald-500" : isDemo ? "bg-amber-500" : "bg-muted-foreground"}`} />
+                        <span>{company.integrationMode || "MANUAL"}</span>
                       </span>
-                    )}
+
+                      <span className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-border/60 bg-muted/30 text-muted-foreground">
+                        {company.providerKey || "MANUAL"}
+                      </span>
+
+                      {/* Connection status */}
+                      {isLive && (
+                        <span className={`inline-flex items-center text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                          hasApiKey
+                            ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+                            : "text-amber-600 dark:text-amber-400 bg-amber-500/10"
+                        }`}>
+                          {hasApiKey ? "API: Configured" : "API: Missing Key"}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Card Bottom: Action Buttons */}
-                <div className="pt-4 mt-4 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenSettings(company, !company.isActive)}
-                    className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition shadow-sm ${
-                      company.isActive
-                        ? "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100"
-                        : "bg-indigo-600 text-white hover:bg-indigo-700"
-                    }`}
-                  >
-                    {company.isActive ? (
-                      <>
-                        <PencilIcon className="h-3.5 w-3.5" />
-                        <span>إعدادات الربط والـ API</span>
-                      </>
-                    ) : (
-                      <>
-                        <KeyIcon className="h-3.5 w-3.5" />
-                        <span>تفعيل وإعدادات الربط</span>
-                      </>
-                    )}
-                  </button>
-
-                  {isLive && company.isActive && (
-                    <button
-                      type="button"
-                      onClick={() => handleTestConnection(company.id)}
-                      disabled={testingConnection}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                      title="فحص واختبار الاتصال بالسيرفر"
-                    >
-                      <ArrowPathIcon className={`h-3 w-3 ${testingConnection ? "animate-spin" : ""}`} />
-                      <span>فحص</span>
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={(e) => handleDelete(company, e)}
-                    className="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                    title="حذف الشركة"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        /* 2. TABLE VIEW */
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-right">
-            <thead className="bg-gray-50 dark:bg-gray-900/60 text-xs font-semibold text-gray-600 dark:text-gray-400">
-              <tr>
-                <th className="px-5 py-3.5">شركة الشحن</th>
-                <th className="px-5 py-3.5">طريقة الربط</th>
-                <th className="px-5 py-3.5">حالة العمل</th>
-                <th className="px-5 py-3.5">تفعيل / إيقاف</th>
-                <th className="px-5 py-3.5 text-center">إجراءات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-xs sm:text-sm">
-              {displayedCompanies.map((company) => (
-                <tr key={company.id} className="hover:bg-gray-50/80 dark:hover:bg-gray-750">
-                  <td className="px-5 py-4 whitespace-nowrap font-bold text-gray-900 dark:text-white">
-                    {company.name}
-                  </td>
-                  <td className="px-5 py-4 whitespace-nowrap">
-                    <span className="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                      {company.integrationMode || "MANUAL"}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                      company.isActive
-                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-                        : "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300"
-                    }`}>
-                      {company.isActive ? "● مفعلة وتعمل" : "⚡ جاهزة للربط"}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 whitespace-nowrap">
-                    <button
-                      type="button"
-                      onClick={(e) => handleToggleActive(company, e)}
-                      disabled={togglingId === company.id}
-                      className={`relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
-                        company.isActive ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"
-                      }`}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ${
-                          company.isActive ? "translate-x-0" : "-translate-x-5"
-                        }`}
-                      />
-                    </button>
-                  </td>
-                  <td className="px-5 py-4 whitespace-nowrap text-center">
+                  {/* Bottom Row Actions */}
+                  <div className="pt-3 mt-3 border-t border-border/60 flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => handleOpenSettings(company, !company.isActive)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${
-                        company.isActive
-                          ? "text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-950/40"
-                          : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
-                      }`}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border/80 bg-background/80 hover:bg-muted text-foreground transition active:scale-[0.98]"
                     >
-                      {company.isActive ? "إعدادات الربط" : "تفعيل والربط"}
+                      <PencilIcon className="size-3.5 text-muted-foreground" />
+                      <span>{company.isActive ? "إعدادات الربط والـ API" : "تفعيل وإعدادات الربط"}</span>
                     </button>
-                  </td>
+
+                    {isLive && company.isActive && (
+                      <button
+                        type="button"
+                        onClick={() => handleTestConnection(company.id)}
+                        disabled={testingConnection}
+                        className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium border border-border/80 bg-background/80 hover:bg-muted text-foreground transition active:scale-[0.98]"
+                        title="فحص واختبار الاتصال"
+                      >
+                        <ArrowPathIcon className={`size-3 text-muted-foreground ${testingConnection ? "animate-spin" : ""}`} />
+                        <span>فحص</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={(e) => handleDelete(company, e)}
+                      className="p-1.5 text-muted-foreground hover:text-rose-600 rounded-lg hover:bg-rose-500/10 transition active:scale-[0.98]"
+                      title="حذف الشركة"
+                    >
+                      <TrashIcon className="size-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* Table View */
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-border/60 text-right">
+              <thead className="bg-muted/30 text-xs font-semibold text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-2.5">شركة الشحن</th>
+                  <th className="px-4 py-2.5">طريقة الربط</th>
+                  <th className="px-4 py-2.5">الحالة</th>
+                  <th className="px-4 py-2.5">تفعيل / إيقاف</th>
+                  <th className="px-4 py-2.5 text-center">إجراءات</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody className="divide-y divide-border/60 text-xs">
+                {displayedCompanies.map((company) => (
+                  <tr key={company.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="px-4 py-3 font-semibold text-foreground">
+                      <div className="flex items-center gap-2">
+                        <span>{company.name}</span>
+                        <span className="font-mono text-[11px] text-muted-foreground">
+                          /{company.slug || company.id.slice(0, 8)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-[11px] px-2 py-0.5 rounded-full border border-border/60 bg-muted/40 text-muted-foreground">
+                        {company.integrationMode || "MANUAL"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border border-border/60">
+                        <span className={`size-1.5 rounded-full ${company.isActive ? "bg-emerald-500" : "bg-muted-foreground"}`} />
+                        <span>{company.isActive ? "مفعلة وتعمل" : "متوقفة"}</span>
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleActive(company, e)}
+                        disabled={togglingId === company.id}
+                        className={`relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
+                          company.isActive ? "bg-emerald-500" : "bg-muted-foreground/30"
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block size-3.5 transform rounded-full bg-white shadow-2xs transition duration-200 ${
+                            company.isActive ? "translate-x-0" : "-translate-x-3.5"
+                          }`}
+                        />
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenSettings(company, !company.isActive)}
+                          className="px-2 py-1 text-xs rounded border border-border/80 bg-background/80 hover:bg-muted text-foreground transition active:scale-[0.98]"
+                        >
+                          إعدادات
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDelete(company, e)}
+                          className="p-1 text-muted-foreground hover:text-rose-600 rounded hover:bg-rose-500/10 transition"
+                        >
+                          <TrashIcon className="size-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* Settings / Configure Drawer Modal */}
       {showModal && (

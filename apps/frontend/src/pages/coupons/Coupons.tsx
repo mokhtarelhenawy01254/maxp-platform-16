@@ -385,170 +385,147 @@ const Coupons: React.FC = () => {
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 bg-slate-50/50 dark:bg-slate-950 min-h-screen space-y-4" dir="rtl">
       {/* Header */}
-      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800">
-              <TicketIcon className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
-            </div>
+          <h1 className="text-xl font-bold tracking-tight text-gray-950 dark:text-white sm:text-2xl flex items-center gap-2">
+            <TicketIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             {t("coupons.pageTitle")}
           </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 sm:text-sm">
             {t("coupons.pageDescription")}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={() => {
               fetchCoupons();
               fetchStats();
             }}
             title="تحديث البيانات"
-            className="p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/80 shadow-2xs active:scale-[0.98] transition-all"
           >
-            <ArrowPathIcon className={`h-5 w-5 ${loading ? "animate-spin text-indigo-600" : ""}`} />
+            <ArrowPathIcon className={`h-3.5 w-3.5 ${loading ? "animate-spin text-indigo-600" : ""}`} />
+            تحديث
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center px-4 py-2.5 border border-transparent text-sm font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-all"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 rounded-lg text-xs font-semibold shadow-xs active:scale-[0.98] transition-all"
           >
-            <PlusIcon className="h-5 w-5 ml-1.5 -mr-0.5 rtl:mr-1.5 rtl:-ml-0.5" />
+            <PlusIcon className="h-3.5 w-3.5" />
             {t("coupons.newCoupon")}
           </button>
         </div>
       </div>
 
-      {/* KPI Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700/80 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              {t("coupons.statsTotalCoupons")}
-            </p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+      {/* KPI Stats Strip - Linear Single Chassis */}
+      <div className="rounded-xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xs overflow-hidden">
+        <div className="grid grid-cols-2 divide-y divide-gray-100 dark:divide-gray-800 sm:grid-cols-4 sm:divide-y-0 sm:divide-x sm:divide-x-reverse rtl:sm:divide-x-reverse">
+          <div className="p-3 sm:p-4 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+              <span>{t("coupons.statsTotalCoupons")}</span>
+              <span className="flex h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+            </div>
+            <div className="text-lg sm:text-xl font-bold tracking-tight text-gray-950 dark:text-white font-mono tabular-nums">
               {statsLoading ? "..." : (stats?.totalCoupons ?? totalCount)}
-            </p>
+            </div>
+            <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 font-mono">
+              إجمالي الكوبونات المسجلة
+            </div>
           </div>
-          <div className="h-12 w-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-800/40">
-            <TicketIcon className="h-6 w-6" />
-          </div>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700/80 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              {t("coupons.statsActiveCoupons")}
-            </p>
-            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+          <div className="p-3 sm:p-4 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+              <span>{t("coupons.statsActiveCoupons")}</span>
+              <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            </div>
+            <div className="text-lg sm:text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
               {statsLoading ? "..." : (stats?.activeCoupons ?? "-")}
-            </p>
+            </div>
+            <div className="text-[11px] text-emerald-600/70 dark:text-emerald-400/70 mt-1 font-mono">
+              جاهزة للاستخدام الآن
+            </div>
           </div>
-          <div className="h-12 w-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-emerald-800/40">
-            <CheckCircleIcon className="h-6 w-6" />
-          </div>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700/80 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              {t("coupons.statsTotalUsages")}
-            </p>
-            <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">
+          <div className="p-3 sm:p-4 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+              <span>{t("coupons.statsTotalUsages")}</span>
+              <span className="flex h-1.5 w-1.5 rounded-full bg-indigo-500" />
+            </div>
+            <div className="text-lg sm:text-xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400 font-mono tabular-nums">
               {statsLoading ? "..." : (stats?.totalUsages ?? "-")}
-            </p>
+            </div>
+            <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 font-mono">
+              مرات التطبيق بالطلبات
+            </div>
           </div>
-          <div className="h-12 w-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/40">
-            <SparklesIcon className="h-6 w-6" />
-          </div>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700/80 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              {t("coupons.statsTotalDiscount")}
-            </p>
-            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
+          <div className="p-3 sm:p-4 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+              <span>{t("coupons.statsTotalDiscount")}</span>
+              <span className="flex h-1.5 w-1.5 rounded-full bg-amber-500" />
+            </div>
+            <div className="text-lg sm:text-xl font-bold tracking-tight text-amber-600 dark:text-amber-400 font-mono tabular-nums">
               {statsLoading ? "..." : formatPrice(stats?.totalDiscount || 0)}
-            </p>
-          </div>
-          <div className="h-12 w-12 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-100 dark:border-amber-800/40">
-            <CurrencyDollarIcon className="h-6 w-6" />
+            </div>
+            <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 font-mono">
+              قيمة الخصومات الممنوحة
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Filters & Search */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl p-5 mb-8 border border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* Search Box */}
-          <div className="lg:col-span-1">
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {t("coupons.searchPlaceholder")}
-            </label>
-            <div className="relative rounded-lg shadow-sm">
-              <div className="absolute inset-y-0 right-0 rtl:right-0 rtl:left-auto ltr:left-0 ltr:right-auto pr-3 rtl:pr-3 ltr:pl-3 flex items-center pointer-events-none text-gray-400">
-                <MagnifyingGlassIcon className="h-4 w-4" />
-              </div>
+      {/* Table Chassis with integrated control bar */}
+      <div className="rounded-xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xs overflow-hidden">
+        {/* Compact Integrated Filter Bar */}
+        <div className="p-3 border-b border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-2 bg-gray-50/50 dark:bg-gray-900/50">
+          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t("coupons.searchPlaceholder")}
-                className="w-full pr-9 rtl:pr-9 ltr:pl-9 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full pr-9 pl-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-slate-900 dark:focus:ring-white transition-all"
               />
             </div>
-          </div>
 
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {t("coupons.filterStatus")}
-            </label>
             <select
               value={filters.isActive}
               onChange={(e) => {
                 setFilters({ ...filters, isActive: e.target.value });
                 setPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="px-2.5 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-700 dark:text-gray-200 focus:outline-none"
             >
               <option value="">{t("coupons.filterAllStatuses")}</option>
               <option value="true">{t("coupons.filterActive")}</option>
               <option value="false">{t("coupons.filterInactive")}</option>
             </select>
-          </div>
 
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {t("coupons.filterType")}
-            </label>
             <select
               value={filters.type}
               onChange={(e) => {
                 setFilters({ ...filters, type: e.target.value });
                 setPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="px-2.5 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-700 dark:text-gray-200 focus:outline-none"
             >
               <option value="">{t("coupons.filterAllTypes")}</option>
               <option value="percentage">{t("coupons.filterPercentage")}</option>
               <option value="fixed">{t("coupons.filterFixed")}</option>
               <option value="free_shipping">{t("coupons.filterFreeShipping")}</option>
             </select>
-          </div>
 
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {t("coupons.filterSegment")}
-            </label>
             <select
               value={filters.customerSegment}
               onChange={(e) => {
                 setFilters({ ...filters, customerSegment: e.target.value });
                 setPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="px-2.5 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-700 dark:text-gray-200 focus:outline-none"
             >
               <option value="">{t("coupons.filterAllSegments")}</option>
               <option value="all">{t("coupons.filterAllCustomers")}</option>
@@ -558,54 +535,36 @@ const Coupons: React.FC = () => {
             </select>
           </div>
 
-          <div className="flex items-end">
+          {(searchQuery || filters.isActive || filters.type || filters.customerSegment) && (
             <button
               onClick={() => {
                 setFilters({ isActive: "", type: "", customerSegment: "" });
                 setSearchQuery("");
                 setPage(1);
               }}
-              className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
+              className="text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 underline px-2 py-1"
             >
               {t("coupons.filterReset")}
             </button>
-          </div>
+          )}
         </div>
-      </div>
 
-      {/* Coupons Table */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+        {/* Table directly inside chassis */}
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-right rtl:text-right ltr:text-left">
-            <thead className="bg-gray-50/80 dark:bg-gray-900/50">
+          <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-800 text-right rtl:text-right ltr:text-left">
+            <thead className="bg-slate-50/75 dark:bg-slate-900/75 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               <tr>
-                <th className="px-6 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {t("coupons.tableCode")}
-                </th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {t("coupons.tableName")}
-                </th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {t("coupons.tableType")}
-                </th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {t("coupons.tableValue")}
-                </th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {t("coupons.tableUsage")}
-                </th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {t("coupons.tableValidity")}
-                </th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {t("coupons.tableStatus")}
-                </th>
-                <th className="px-6 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">
-                  {t("coupons.tableActions")}
-                </th>
+                <th className="px-4 py-2.5">{t("coupons.tableCode")}</th>
+                <th className="px-4 py-2.5">{t("coupons.tableName")}</th>
+                <th className="px-4 py-2.5">{t("coupons.tableType")}</th>
+                <th className="px-4 py-2.5">{t("coupons.tableValue")}</th>
+                <th className="px-4 py-2.5">{t("coupons.tableUsage")}</th>
+                <th className="px-4 py-2.5">{t("coupons.tableValidity")}</th>
+                <th className="px-4 py-2.5">{t("coupons.tableStatus")}</th>
+                <th className="px-4 py-2.5 text-center">{t("coupons.tableActions")}</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700/60">
+            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800/80">
               {loading ? (
                 <tr>
                   <td colSpan={8} className="py-16 text-center">
@@ -617,11 +576,11 @@ const Coupons: React.FC = () => {
               ) : filteredCoupons.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-16 text-center">
-                    <TicketIcon className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
-                    <h3 className="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
+                    <TicketIcon className="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600" />
+                    <h3 className="mt-2 text-xs font-semibold text-gray-900 dark:text-white">
                       {t("coupons.noCoupons")}
                     </h3>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                       {t("coupons.noCouponsDesc")}
                     </p>
                   </td>
@@ -630,12 +589,12 @@ const Coupons: React.FC = () => {
                 filteredCoupons.map((coupon) => (
                   <tr
                     key={coupon.id}
-                    className="hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors"
+                    className="hover:bg-gray-50/70 dark:hover:bg-gray-800/40 transition-colors"
                   >
                     {/* Code */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="inline-flex items-center gap-2">
-                        <span className="font-mono text-sm font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2.5 py-1 rounded-md border border-indigo-200/60 dark:border-indigo-800/40">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
+                      <div className="inline-flex items-center gap-1.5">
+                        <span className="font-mono text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50/80 dark:bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-200/60 dark:border-indigo-800/40">
                           {coupon.code || coupon.id}
                         </span>
                         <button
@@ -643,33 +602,32 @@ const Coupons: React.FC = () => {
                           title="نسخ الكود"
                           className="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                         >
-                          <ClipboardDocumentIcon className="h-4 w-4" />
+                          <ClipboardDocumentIcon className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </td>
 
                     {/* Name & Description */}
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <td className="px-4 py-2.5">
+                      <div className="text-xs font-semibold text-gray-900 dark:text-white">
                         {coupon.name}
                       </div>
                       {coupon.description && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate max-w-xs">
-                          {coupon.description.slice(0, 60)}
-                          {coupon.description.length > 60 ? "..." : ""}
+                        <div className="text-[11px] text-gray-400 dark:text-gray-500 truncate max-w-xs">
+                          {coupon.description}
                         </div>
                       )}
                       {coupon.minOrderAmount && coupon.minOrderAmount > 0 ? (
-                        <div className="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5">
+                        <div className="text-[11px] text-indigo-600 dark:text-indigo-400 font-mono tabular-nums">
                           الحد الأدنى: {formatPrice(coupon.minOrderAmount)}
                         </div>
                       ) : null}
                     </td>
 
                     {/* Type */}
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
                       <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${getTypeColor(
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${getTypeColor(
                           coupon.type,
                         )}`}
                       >
@@ -678,7 +636,7 @@ const Coupons: React.FC = () => {
                     </td>
 
                     {/* Value */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-xs font-bold text-gray-900 dark:text-gray-100 font-mono tabular-nums" dir="ltr">
                       {coupon.type?.toLowerCase() === "percentage"
                         ? `${coupon.value}%`
                         : coupon.type?.toLowerCase() === "free_shipping"
@@ -687,14 +645,14 @@ const Coupons: React.FC = () => {
                     </td>
 
                     {/* Usage Progress */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
+                      <div className="text-xs font-medium text-gray-700 dark:text-gray-300 font-mono tabular-nums">
                         {coupon.usageCount || 0} / {coupon.usageLimit || "∞"}
                       </div>
                       {coupon.usageLimit && coupon.usageLimit > 0 ? (
-                        <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-1.5 overflow-hidden">
+                        <div className="w-20 bg-gray-100 dark:bg-gray-800 rounded-full h-1 mt-1 overflow-hidden">
                           <div
-                            className="bg-indigo-600 dark:bg-indigo-500 h-1.5 rounded-full transition-all"
+                            className="bg-indigo-600 dark:bg-indigo-500 h-1 rounded-full transition-all"
                             style={{
                               width: `${Math.min(
                                 100,
@@ -707,29 +665,25 @@ const Coupons: React.FC = () => {
                     </td>
 
                     {/* Validity */}
-                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-600 dark:text-gray-400">
-                      <div>
-                        {t("coupons.fromLabel")}: {formatDate(coupon.validFrom)}
-                      </div>
-                      <div>
-                        {t("coupons.toLabel")}: {formatDate(coupon.validTo)}
-                      </div>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-[11px] text-gray-500 dark:text-gray-400 font-mono tabular-nums">
+                      <div>من: {formatDate(coupon.validFrom)}</div>
+                      <div>إلى: {formatDate(coupon.validTo)}</div>
                     </td>
 
                     {/* Status & Quick Toggle */}
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
                       <button
                         onClick={() => handleToggleStatus(coupon)}
                         title="انقر للتبديل الفوري"
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all ${
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border transition-all ${
                           coupon.isActive
-                            ? "bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-300"
-                            : "bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/30 dark:border-emerald-900/50 dark:text-emerald-300"
+                            : "bg-rose-50 text-rose-700 border-rose-200/80 dark:bg-rose-950/30 dark:border-rose-900/50 dark:text-rose-300"
                         }`}
                       >
                         <span
                           className={`h-1.5 w-1.5 rounded-full ${
-                            coupon.isActive ? "bg-green-600" : "bg-red-600"
+                            coupon.isActive ? "bg-emerald-500" : "bg-rose-500"
                           }`}
                         />
                         {coupon.isActive ? t("coupons.active") : t("coupons.inactive")}
@@ -737,7 +691,7 @@ const Coupons: React.FC = () => {
                     </td>
 
                     {/* Actions */}
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-center">
                       <div className="inline-flex items-center gap-1">
                         <button
                           onClick={() => {
@@ -745,9 +699,9 @@ const Coupons: React.FC = () => {
                             setShowCouponModal(true);
                           }}
                           title="عرض التفاصيل"
-                          className="p-1.5 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                          className="p-1 rounded text-gray-400 hover:text-indigo-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                         >
-                          <EyeIcon className="h-4 w-4" />
+                          <EyeIcon className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={() => {
@@ -755,9 +709,9 @@ const Coupons: React.FC = () => {
                             setShowEditModal(true);
                           }}
                           title="تعديل الكوبون"
-                          className="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                          className="p-1 rounded text-gray-400 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                         >
-                          <PencilIcon className="h-4 w-4" />
+                          <PencilIcon className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={() => {
@@ -765,9 +719,9 @@ const Coupons: React.FC = () => {
                             setShowDeleteModal(true);
                           }}
                           title="حذف الكوبون"
-                          className="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                          className="p-1 rounded text-gray-400 hover:text-rose-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                         >
-                          <TrashIcon className="h-4 w-4" />
+                          <TrashIcon className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </td>

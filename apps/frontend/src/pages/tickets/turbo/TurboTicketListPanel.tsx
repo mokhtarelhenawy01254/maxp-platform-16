@@ -248,32 +248,34 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
   return (
     <aside className="w-full h-full min-h-0 flex flex-col overflow-hidden bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shrink-0">
       {/* Top Header Bar */}
-      <div className="p-2.5 sm:p-3 border-b border-zinc-200 dark:border-zinc-800 space-y-2 shrink-0 bg-white dark:bg-zinc-900 z-10">
+      <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 space-y-2 shrink-0 bg-white dark:bg-zinc-900 z-10">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200">
-              <TicketIcon className="h-4 w-4" />
+          <div className="flex items-center gap-2.5">
+            <div className="size-8 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-foreground flex items-center justify-center">
+              <TicketIcon className="size-4 text-zinc-600 dark:text-zinc-300" />
             </div>
             <div>
               <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                 <span>تذاكر وشات تربو</span>
-                {unreadCount > 0 && (
-                  <span className="tabular-nums px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-rose-500 text-white animate-pulse">
+                {unreadCount > 0 ? (
+                  <span className="font-mono tabular-nums px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-rose-500 text-white">
                     {unreadCount}
                   </span>
+                ) : (
+                  <span className="size-1.5 rounded-full bg-emerald-500" />
                 )}
               </h2>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             {onRequestNotificationPermission && (
               <button
                 type="button"
                 onClick={onRequestNotificationPermission}
                 title={
                   desktopNotificationPermission === "granted"
-                    ? "الإشعارات الصوتية وسطح المكتب مفعلة (اضغط لتجربة الصوت)"
+                    ? "الإشعارات الصوتية مفعلة"
                     : "تفعيل إشعارات سطح المكتب والصوت للتذاكر"
                 }
                 className={`p-1.5 rounded-lg transition relative ${
@@ -283,12 +285,12 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
                 }`}
               >
                 {desktopNotificationPermission === "granted" ? (
-                  <BellAlertIcon className="h-4 w-4" />
+                  <BellAlertIcon className="size-4" />
                 ) : (
-                  <BellIcon className="h-4 w-4" />
+                  <BellIcon className="size-4" />
                 )}
                 {unreadCount > 0 && (
-                  <span className="absolute 0.5 top-0.5 right-0.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-zinc-900" />
+                  <span className="absolute top-0.5 right-0.5 size-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-zinc-900" />
                 )}
               </button>
             )}
@@ -297,18 +299,18 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
               onClick={onRefresh}
               disabled={loading}
               title="تحديث التذاكر"
-              className="p-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition disabled:opacity-50"
+              className="p-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-[0.98] disabled:opacity-50"
             >
               <ArrowPathIcon
-                className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+                className={`size-3.5 ${loading ? "animate-spin" : ""}`}
               />
             </button>
             <button
               type="button"
               onClick={onOpenNewTicket}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 transition active:scale-97 shadow-xs"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 transition active:scale-[0.98] shadow-2xs"
             >
-              <PlusIcon className="h-3.5 w-3.5 stroke-[2.5]" />
+              <PlusIcon className="size-3.5 stroke-[2.5]" />
               <span>تذكرة جديدة</span>
             </button>
           </div>
