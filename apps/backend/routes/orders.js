@@ -2063,26 +2063,30 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       }
     }
     const timeRange = toDate ? { gte: since, lte: toDate } : { gte: since };
+    const cartWhereBase = { companyId, createdAt: timeRange };
 
-    const [totalAgg, activeAgg, lostAgg, windowAgg, convWindow, contactWindow, orderSourceAgg] = await Promise.all([
+    const [windowAgg, activeAgg, lostAgg, allTimeAgg, convWindow, contactWindow, windowCarts] = await Promise.all([
+      // سلات الفترة نفسها (المتبقية غير المكتملة)
+      prisma.guestCart.aggregate({
+        where: cartWhereBase,
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      // السلات النشطة داخل الفترة
+      prisma.guestCart.aggregate({
+        where: { ...cartWhereBase, ...activeClause },
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      // السلات المفقودة داخل الفترة
+      prisma.guestCart.aggregate({
+        where: { ...cartWhereBase, ...lostClause },
+        _count: { _all: true },
+        _sum: { total: true }
+      }),
+      // التراكمي الإجمالي التاريخي للشركة (مرجعي)
       prisma.guestCart.aggregate({
         where: { companyId },
-        _count: { _all: true },
-        _sum: { total: true }
-      }),
-      prisma.guestCart.aggregate({
-        where: { companyId, ...activeClause },
-        _count: { _all: true },
-        _sum: { total: true }
-      }),
-      prisma.guestCart.aggregate({
-        where: { companyId, ...lostClause },
-        _count: { _all: true },
-        _sum: { total: true }
-      }),
-      // سلات الفترة نفسها (اتعملت داخل النافذة ومازالت موجودة) — أساس مقام نسبة التحويل الصحيح
-      prisma.guestCart.aggregate({
-        where: { companyId, createdAt: timeRange },
         _count: { _all: true },
         _sum: { total: true }
       }),
@@ -2113,18 +2117,45 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
           createdAt: true
         }
       }),
-      prisma.order.groupBy({
-        where: { companyId, createdAt: timeRange },
-        by: ['sourceType'],
-        _count: { _all: true },
-        _sum: { total: true }
+      // سلات الفترة نفسها لحساب مصادر السلات غير المكتملة فقط بدون جلب كل طلبات المتجر الحقيقية
+      prisma.guestCart.findMany({
+        where: cartWhereBase,
+        select: {
+          cartId: true,
+          total: true,
+          checkoutData: true
+        }
       })
     ]);
 
-    const total = totalAgg._count._all || 0;
+    const total = windowAgg._count._all || 0;
     const converted = convWindow.length;
     const naturalConverted = convWindow.filter((c) => !c.employeeId && c.channel === 'natural').length;
     const byTeamConverted = converted - naturalConverted;
+
+    // استخراج مصادر السلات غير المكتملة في الفترة حصرياً من بيانات السلات (وليس كل طلبات المتجر الحقيقية!)
+    const sourcesMap = new Map();
+    windowCarts.forEach((c) => {
+      let attr = null;
+      try {
+        attr = extractAttributionFromCheckoutData(c.checkoutData);
+      } catch (_) {}
+      const rawPlatform = (attr?.platform || attr?.source || '').toLowerCase().trim();
+      let sourceKey = 'direct';
+      if (rawPlatform.includes('facebook') || rawPlatform.includes('fb')) sourceKey = 'facebook';
+      else if (rawPlatform.includes('instagram') || rawPlatform.includes('ig')) sourceKey = 'instagram';
+      else if (rawPlatform.includes('tiktok') || rawPlatform.includes('tt')) sourceKey = 'tiktok';
+      else if (rawPlatform.includes('snapchat') || rawPlatform.includes('snap')) sourceKey = 'snapchat';
+      else if (rawPlatform.includes('google')) sourceKey = 'google';
+      else if (rawPlatform && rawPlatform !== 'unknown') sourceKey = rawPlatform;
+
+      const val = typeof c.total === 'string' ? parseFloat(c.total) || 0 : Number(c.total || 0);
+      const entry = sourcesMap.get(sourceKey) || { source: sourceKey, count: 0, value: 0 };
+      entry.count += 1;
+      entry.value += val;
+      sourcesMap.set(sourceKey, entry);
+    });
+    const orderSources = Array.from(sourcesMap.values()).sort((a, b) => b.count - a.count);
 
     // تتبع مصير الطلبات المحولة وجودتها (كم اتسلم، كم رجع، كم اتلغى)
     // —— يُحل مبكرًا لأنه مصدر القيمة الموحد لكل أرقام الصفحة
@@ -2335,12 +2366,14 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
         to: toDate ? toDate.toISOString() : null,
         pipeline: {
           total,
-          windowTotal,
+          windowTotal: total,
           active: activeAgg._count._all || 0,
           lost: lostAgg._count._all || 0,
-          totalValue: Number(totalAgg._sum.total || 0),
+          totalValue: Number(windowAgg._sum.total || 0),
           activeValue: Number(activeAgg._sum.total || 0),
           lostValue: Number(lostAgg._sum.total || 0),
+          allTimeTotal: allTimeAgg._count._all || 0,
+          allTimeValue: Number(allTimeAgg._sum.total || 0),
         },
         recovery: {
           converted,
@@ -2354,11 +2387,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
         destiny: destinyStats,
         team,
         trend,
-        orderSources: orderSourceAgg.map((s) => ({
-          source: s.sourceType || 'unknown',
-          count: s._count._all || 0,
-          value: Number(s._sum.total || 0),
-        })).sort((a, b) => b.count - a.count),
+        orderSources,
         recent: convWindow.slice(0, 20).map((c) => {
           const matched = (c.orderNumber && orderMapByNumber.get(c.orderNumber)) ||
                           (c.orderId && orderMapById.get(c.orderId)) ||

@@ -14584,6 +14584,7 @@ declare module 'react-i18next' {
         incompleteSelectCustomDates: string;
         incompleteOrderSources: string;
         incompleteOrderSourcesHint: string;
+        incompleteNoSources: string;
         sourceInternalPush: string;
         incompleteToday: string;
         incompleteYesterday: string;

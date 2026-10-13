@@ -7,7 +7,7 @@ import {
     CheckCircle2,
     XCircle,
     Receipt as ReceiptIcon,
-    ArrowPathIcon,
+    RefreshCw as ArrowPathIcon,
     Wallet,
     Building2,
     Clock,

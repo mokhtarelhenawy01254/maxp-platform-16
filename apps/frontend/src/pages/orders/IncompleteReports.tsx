@@ -185,15 +185,21 @@ const IncompleteReports: React.FC = () => {
   const BackIcon = isRTL ? ArrowRightIcon : ArrowLeftIcon;
 
   const sourceMeta: Record<string, { label: string; color: string }> = {
-    storefront: { label: t("orders.sourceStorefront"), color: "bg-blue-500" },
-    ai_conversation: { label: t("orders.sourceAutoConversation"), color: "bg-purple-500" },
-    internal_push: { label: t("orders.sourceInternalPush"), color: "bg-amber-500" },
-    manual: { label: t("orders.sourceManual"), color: "bg-emerald-500" },
-    woocommerce: { label: t("orders.sourceWooCommerce"), color: "bg-teal-500" },
-    api: { label: t("orders.sourceAPI"), color: "bg-pink-500" },
-    import: { label: t("orders.sourceImport"), color: "bg-indigo-500" },
+    facebook: { label: t("orders.sourceFacebook", "فيسبوك (Facebook)"), color: "bg-blue-600" },
+    instagram: { label: t("orders.sourceInstagram", "إنستغرام (Instagram)"), color: "bg-gradient-to-r from-purple-500 to-pink-500" },
+    tiktok: { label: t("orders.sourceTikTok", "تيك توك (TikTok)"), color: "bg-neutral-900 dark:bg-neutral-100" },
+    snapchat: { label: t("orders.sourceSnapchat", "سناب شات (Snapchat)"), color: "bg-amber-400" },
+    google: { label: t("orders.sourceGoogle", "إعلانات جوجل (Google)"), color: "bg-red-500" },
+    direct: { label: t("orders.sourceDirect", "مباشر / بدون إعلان"), color: "bg-slate-400" },
+    storefront: { label: t("orders.sourceStorefront", "المتجر"), color: "bg-blue-500" },
+    ai_conversation: { label: t("orders.sourceAutoConversation", "محادثة ذكية"), color: "bg-purple-500" },
+    internal_push: { label: t("orders.sourceInternalPush", "إدخال داخلي"), color: "bg-amber-500" },
+    manual: { label: t("orders.sourceManual", "يدوي"), color: "bg-emerald-500" },
+    woocommerce: { label: t("orders.sourceWooCommerce", "ووكومرس"), color: "bg-teal-500" },
+    api: { label: t("orders.sourceAPI", "API"), color: "bg-pink-500" },
+    import: { label: t("orders.sourceImport", "استيراد"), color: "bg-indigo-500" },
   };
-  const unknownSourceMeta = { label: t("orders.sourceUnknown"), color: "bg-gray-400" };
+  const unknownSourceMeta = { label: t("orders.sourceUnknown", "غير محدد"), color: "bg-gray-400" };
   const totalOrderSources = data
     ? data.orderSources.reduce((sum, s) => sum + s.count, 0)
     : 0;
@@ -498,7 +504,7 @@ const IncompleteReports: React.FC = () => {
               </div>
             ) : (
               <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">
-                {t("orders.incompleteNoConversions")}
+                {t("orders.incompleteNoSources", t("orders.incompleteNoConversions"))}
               </p>
             )}
           </section>
