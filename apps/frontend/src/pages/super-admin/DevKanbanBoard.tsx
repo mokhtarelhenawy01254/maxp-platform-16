@@ -3,22 +3,26 @@ import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-import { useTheme } from "../../hooks/useTheme";
 import {
-  PlusIcon,
-  FunnelIcon,
-  MagnifyingGlassIcon,
-  ChatBubbleLeftIcon,
-  PaperClipIcon,
-  ClipboardDocumentListIcon,
-  BugAntIcon,
-  SparklesIcon,
-  WrenchScrewdriverIcon,
-  ExclamationTriangleIcon,
-  ArrowTrendingUpIcon,
-  CalendarDaysIcon,
-  EllipsisVerticalIcon,
-} from "@heroicons/react/24/outline";
+  Plus,
+  Filter,
+  Search,
+  MessageSquare,
+  CheckSquare,
+  Bug,
+  Sparkles,
+  Wrench,
+  AlertTriangle,
+  TrendingUp,
+  Calendar,
+  MoreVertical,
+  Kanban,
+  FileText,
+  ShieldAlert,
+  Zap,
+} from "lucide-react";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 
 interface KanbanTask {
   id: string;
@@ -49,60 +53,56 @@ const defaultColumns = [
   {
     key: "BACKLOG",
     label: "قائمة الانتظار",
-    color: "bg-gray-100 dark:bg-gray-700/50",
-    headerColor: "bg-gray-200 dark:bg-gray-700",
+    color: "bg-muted/30",
+    headerColor: "bg-muted/60",
   },
   {
     key: "TODO",
     label: "للتنفيذ",
-    color: "bg-yellow-50 dark:bg-yellow-900/20",
-    headerColor: "bg-yellow-100 dark:bg-yellow-900/30",
+    color: "bg-amber-500/5",
+    headerColor: "bg-amber-500/10",
   },
   {
     key: "IN_PROGRESS",
     label: "قيد العمل",
-    color: "bg-blue-50 dark:bg-blue-900/20",
-    headerColor: "bg-blue-100 dark:bg-blue-900/30",
+    color: "bg-blue-500/5",
+    headerColor: "bg-blue-500/10",
   },
   {
     key: "IN_REVIEW",
     label: "مراجعة",
-    color: "bg-purple-50 dark:bg-purple-900/20",
-    headerColor: "bg-purple-100 dark:bg-purple-900/30",
+    color: "bg-purple-500/5",
+    headerColor: "bg-purple-500/10",
   },
   {
     key: "TESTING",
     label: "اختبار",
-    color: "bg-orange-50 dark:bg-orange-900/20",
-    headerColor: "bg-orange-100 dark:bg-orange-900/30",
+    color: "bg-orange-500/5",
+    headerColor: "bg-orange-500/10",
   },
   {
     key: "DONE",
     label: "مكتمل",
-    color: "bg-green-50 dark:bg-green-900/20",
-    headerColor: "bg-green-100 dark:bg-green-900/30",
+    color: "bg-emerald-500/5",
+    headerColor: "bg-emerald-500/10",
   },
 ];
 
 const defaultPriorityColors: Record<string, string> = {
-  CRITICAL: "border-r-red-500",
-  HIGH: "border-r-orange-500",
-  MEDIUM: "border-r-yellow-500",
-  LOW: "border-r-green-500",
+  CRITICAL: "border-r-destructive",
+  HIGH: "border-r-amber-500",
+  MEDIUM: "border-r-blue-500",
+  LOW: "border-r-emerald-500",
 };
 
 const typeIcons: Record<string, React.ReactNode> = {
-  BUG: <BugAntIcon className="h-4 w-4 text-red-500" />,
-  FEATURE: <SparklesIcon className="h-4 w-4 text-green-500" />,
-  ENHANCEMENT: <WrenchScrewdriverIcon className="h-4 w-4 text-blue-500" />,
-  DOCUMENTATION: (
-    <ClipboardDocumentListIcon className="h-4 w-4 text-purple-500" />
-  ),
-  SECURITY: <ExclamationTriangleIcon className="h-4 w-4 text-orange-500" />,
-  PERFORMANCE: <ArrowTrendingUpIcon className="h-4 w-4 text-yellow-500" />,
+  BUG: <Bug className="size-3.5 text-destructive" />,
+  FEATURE: <Sparkles className="size-3.5 text-emerald-500" />,
+  ENHANCEMENT: <Wrench className="size-3.5 text-blue-500" />,
+  DOCUMENTATION: <FileText className="size-3.5 text-purple-500" />,
+  SECURITY: <ShieldAlert className="size-3.5 text-orange-500" />,
+  PERFORMANCE: <Zap className="size-3.5 text-amber-500" />,
 };
-
-// No static priority colors here, we'll derive them from settings
 
 const DevKanbanBoard: React.FC = () => {
   const navigate = useNavigate();
@@ -111,6 +111,7 @@ const DevKanbanBoard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [draggedTask, setDraggedTask] = useState<KanbanTask | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     projectId: "",
     assigneeId: "",
@@ -118,65 +119,63 @@ const DevKanbanBoard: React.FC = () => {
     priority: "",
     search: "",
   });
-  const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    fetchKanbanData();
-    fetchSettings();
-  }, [filters.projectId, filters.assigneeId, filters.type, filters.priority]);
-
-  const fetchSettings = async () => {
-    try {
-      const response = await fetch(buildApiUrl("super-admin/dev/settings"), {
-        headers: tokenManager.createAuthHeaders(),
-      });
-      const data = await response.json();
-      if (data.success) {
-        setSettings(data.data);
-      }
-    } catch (err) {
-      console.error("Error fetching settings:", err);
-    }
-  };
-
-  const fetchKanbanData = async () => {
+  const fetchKanbanData = useCallback(async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (filters.projectId) params.append("projectId", filters.projectId);
-      if (filters.assigneeId) params.append("assigneeId", filters.assigneeId);
-      if (filters.type) params.append("type", filters.type);
-      if (filters.priority) params.append("priority", filters.priority);
+      const queryParams = new URLSearchParams();
+      if (filters.projectId) queryParams.set("projectId", filters.projectId);
+      if (filters.assigneeId) queryParams.set("assigneeId", filters.assigneeId);
+      if (filters.type) queryParams.set("type", filters.type);
+      if (filters.priority) queryParams.set("priority", filters.priority);
 
       const response = await fetch(
-        buildApiUrl(`super-admin/dev/tasks/kanban?${params.toString()}`),
+        buildApiUrl(`admin/dev-tasks/kanban?${queryParams.toString()}`),
         {
-          headers: tokenManager.createAuthHeaders({
-            "Content-Type": "application/json",
-          }),
+          headers: tokenManager.createAuthHeaders(),
         },
       );
 
-      const data = await response.json();
-      if (data.success) {
-        setKanbanData(data.data);
+      if (response.ok) {
+        const result = await response.json();
+        setKanbanData(result.data || {});
       }
-    } catch (err) {
-      console.error("Error fetching kanban data:", err);
+    } catch (error) {
+      console.error("Error fetching kanban data:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters.projectId, filters.assigneeId, filters.type, filters.priority]);
+
+  const fetchSettings = useCallback(async () => {
+    try {
+      const response = await fetch(buildApiUrl("admin/dev-tasks/settings"), {
+        headers: tokenManager.createAuthHeaders(),
+      });
+      if (response.ok) {
+        const result = await response.json();
+        setSettings(result.data);
+      }
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
+  useEffect(() => {
+    fetchKanbanData();
+  }, [fetchKanbanData]);
 
   const handleDragStart = (e: React.DragEvent, task: KanbanTask) => {
     setDraggedTask(task);
-    e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", task.id);
   };
 
   const handleDragOver = (e: React.DragEvent, columnKey: string) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
     setDragOverColumn(columnKey);
   };
 
@@ -184,49 +183,54 @@ const DevKanbanBoard: React.FC = () => {
     setDragOverColumn(null);
   };
 
-  const handleDrop = async (e: React.DragEvent, newStatus: string) => {
+  const handleDrop = async (e: React.DragEvent, targetColumn: string) => {
     e.preventDefault();
     setDragOverColumn(null);
 
-    if (!draggedTask || draggedTask.status === newStatus) {
+    if (!draggedTask || draggedTask.status === targetColumn) {
       setDraggedTask(null);
       return;
     }
 
-    // Update locally first for instant feedback
-    const oldStatus = draggedTask.status;
+    const sourceColumn = draggedTask.status;
+    const taskId = draggedTask.id;
+
     setKanbanData((prev) => {
-      const newData = { ...prev };
-      newData[oldStatus as keyof KanbanData] = newData[
-        oldStatus as keyof KanbanData
-      ].filter((t) => t.id !== draggedTask.id);
-      newData[newStatus as keyof KanbanData] = [
-        ...newData[newStatus as keyof KanbanData],
-        { ...draggedTask, status: newStatus },
-      ];
-      return newData;
+      const sourceTasks = [...(prev[sourceColumn] || [])];
+      const targetTasks = [...(prev[targetColumn] || [])];
+      const taskIndex = sourceTasks.findIndex((t) => t.id === taskId);
+
+      if (taskIndex !== -1) {
+        const [movedTask] = sourceTasks.splice(taskIndex, 1);
+        if (movedTask) {
+          targetTasks.push({ ...movedTask, status: targetColumn });
+        }
+      }
+
+      return {
+        ...prev,
+        [sourceColumn]: sourceTasks,
+        [targetColumn]: targetTasks,
+      };
     });
 
-    // Update on server
     try {
       const response = await fetch(
-        buildApiUrl(`super-admin/dev/tasks/${draggedTask.id}/status`),
+        buildApiUrl(`admin/dev-tasks/${taskId}/status`),
         {
           method: "PATCH",
           headers: tokenManager.createAuthHeaders({
             "Content-Type": "application/json",
           }),
-          body: JSON.stringify({ status: newStatus }),
+          body: JSON.stringify({ status: targetColumn }),
         },
       );
 
-      const data = await response.json();
-      if (!data.success) {
-        // Revert on error
+      if (!response.ok) {
         fetchKanbanData();
       }
-    } catch (err) {
-      console.error("Error updating task status:", err);
+    } catch (error) {
+      console.error("Error updating task status:", error);
       fetchKanbanData();
     }
 
@@ -247,12 +251,14 @@ const DevKanbanBoard: React.FC = () => {
     [filters.search],
   );
 
+  const totalTasksCount = Object.values(kanbanData).reduce((sum, list) => sum + (list?.length || 0), 0);
+
   const TaskCard: React.FC<{ task: KanbanTask }> = ({ task }) => {
     const priorityInfo = settings?.taskPriorities?.find(
       (p: any) => p.value === task.priority,
     );
     const borderStyle = priorityInfo
-      ? { borderRightColor: priorityInfo.color, borderRightWidth: "4px" }
+      ? { borderRightColor: priorityInfo.color, borderRightWidth: "3px" }
       : undefined;
     const isOverdue = task.dueDate
       ? new Date(task.dueDate) < new Date() && task.status !== "DONE"
@@ -264,55 +270,56 @@ const DevKanbanBoard: React.FC = () => {
         onDragStart={(e) => handleDragStart(e, task)}
         onClick={() => navigate(`/super-admin/dev-tasks/${task.id}`)}
         className={`
-          bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 cursor-pointer
-          hover:shadow-md dark:hover:shadow-lg transition-all duration-200
-          ${!priorityInfo ? defaultPriorityColors[task.priority] + " border-r-4" || "border-r-gray-300 dark:border-r-gray-600" : ""}
-          ${draggedTask?.id === task.id ? "opacity-50" : ""}
+          bg-card rounded-lg border border-border/80 p-3 cursor-pointer
+          hover:shadow-xs hover:border-foreground/20 transition-all duration-150
+          ${!priorityInfo ? defaultPriorityColors[task.priority] + " border-r-[3px]" || "border-r-border" : ""}
+          ${draggedTask?.id === task.id ? "opacity-40" : ""}
         `}
         style={borderStyle}
       >
         {/* Type & Project */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            {typeIcons[task.type]}
+            {typeIcons[task.type] || <Sparkles className="size-3.5 text-muted-foreground" />}
             {task.projectName && (
-              <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+              <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-mono">
                 <span
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: task.projectColor || "#6366f1" }}
-                ></span>
+                  className="size-1.5 rounded-full"
+                  style={{ backgroundColor: task.projectColor || "hsl(var(--primary))" }}
+                />
                 {task.projectName}
               </span>
             )}
           </div>
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
             }}
-            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+            className="p-1 hover:bg-muted rounded text-muted-foreground"
           >
-            <EllipsisVerticalIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+            <MoreVertical className="size-3.5" />
           </button>
         </div>
 
         {/* Title */}
-        <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm mb-2 line-clamp-2">
+        <h4 className="font-medium text-foreground text-xs mb-2 line-clamp-2 leading-snug">
           {task.title}
         </h4>
 
         {/* Tags */}
-        {task.tags.length > 0 && (
+        {task.tags && task.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-2">
             {task.tags.slice(0, 3).map((tag, idx) => (
               <span
                 key={idx}
-                className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded-full"
+                className="px-1.5 py-0.5 bg-muted/60 text-muted-foreground text-[10px] rounded font-mono border border-border/40"
               >
                 {tag}
               </span>
             ))}
             {task.tags.length > 3 && (
-              <span className="px-2 py-0.5 text-gray-500 dark:text-gray-500 text-xs">
+              <span className="px-1.5 py-0.5 text-muted-foreground text-[10px] font-mono">
                 +{task.tags.length - 3}
               </span>
             )}
@@ -320,7 +327,7 @@ const DevKanbanBoard: React.FC = () => {
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50 text-xs">
           <div className="flex items-center gap-2">
             {/* Assignee */}
             {task.assigneeName ? (
@@ -328,25 +335,25 @@ const DevKanbanBoard: React.FC = () => {
                 <img
                   src={task.assigneeAvatar}
                   alt={task.assigneeName}
-                  className="w-6 h-6 rounded-full"
+                  className="size-5 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-medium">
+                <div className="size-5 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center text-[10px] font-bold">
                   {task.assigneeName.charAt(0)}
                 </div>
               )
             ) : (
-              <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 flex items-center justify-center">
-                <span className="text-xs">?</span>
+              <div className="size-5 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-[10px]">
+                ?
               </div>
             )}
 
             {/* Due Date */}
             {task.dueDate && (
               <span
-                className={`flex items-center gap-1 text-xs ${isOverdue ? "text-red-500 dark:text-red-400" : "text-gray-500 dark:text-gray-400"}`}
+                className={`flex items-center gap-1 text-[11px] font-mono tabular-nums ${isOverdue ? "text-destructive font-semibold" : "text-muted-foreground"}`}
               >
-                <CalendarDaysIcon className="h-3 w-3" />
+                <Calendar className="size-3" />
                 {new Date(task.dueDate).toLocaleDateString("ar-EG", {
                   month: "short",
                   day: "numeric",
@@ -356,16 +363,16 @@ const DevKanbanBoard: React.FC = () => {
           </div>
 
           {/* Counts */}
-          <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
+          <div className="flex items-center gap-2 text-muted-foreground text-[11px] font-mono tabular-nums">
             {task.subtasksCount > 0 && (
-              <span className="flex items-center gap-0.5 text-xs">
-                <ClipboardDocumentListIcon className="h-3 w-3" />
+              <span className="flex items-center gap-0.5">
+                <CheckSquare className="size-3" />
                 {task.subtasksCount}
               </span>
             )}
             {task.commentsCount > 0 && (
-              <span className="flex items-center gap-0.5 text-xs">
-                <ChatBubbleLeftIcon className="h-3 w-3" />
+              <span className="flex items-center gap-0.5">
+                <MessageSquare className="size-3" />
                 {task.commentsCount}
               </span>
             )}
@@ -375,70 +382,75 @@ const DevKanbanBoard: React.FC = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="h-full flex flex-col" dir={i18n.dir()}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            📋 Kanban Board
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-            اسحب المهام لتغيير حالتها
-          </p>
-        </div>
+    <div className="h-full flex flex-col p-4 md:p-6 space-y-4 max-w-7xl mx-auto w-full" dir={i18n.dir()}>
+      {/* Top Header Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Kanban className="size-4.5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
+                لوحة مهام التطوير (Kanban Board)
+              </h1>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border border-border/80 bg-muted/30">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {totalTasksCount} مهمة
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              اسحب المهام عبر الأعمدة لتحديث حالتها ومتابعة مسار التنفيذ
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           {/* Search */}
           <div className="relative">
-            <MagnifyingGlassIcon className="h-5 w-5 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-            <input
+            <Search className="size-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <Input
               type="text"
-              placeholder="بحث..."
+              placeholder="بحث في المهام..."
               value={filters.search}
               onChange={(e) =>
                 setFilters((prev) => ({ ...prev, search: e.target.value }))
               }
-              className="pl-4 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 w-64 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+              className="pr-8 h-8 text-xs font-mono w-48 sm:w-60 bg-background/50"
             />
           </div>
 
           {/* Filter Button */}
-          <button
+          <Button
+            type="button"
+            variant={showFilters ? "secondary" : "outline"}
+            size="sm"
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
-              showFilters
-                ? "bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-600 text-indigo-600 dark:text-indigo-400"
-                : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-            }`}
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98]"
           >
-            <FunnelIcon className="h-5 w-5" />
-            فلترة
-          </button>
+            <Filter className="size-3.5" />
+            <span>فلترة</span>
+          </Button>
 
           {/* Add Task */}
-          <button
+          <Button
+            type="button"
+            size="sm"
             onClick={() => navigate("/super-admin/dev-tasks/new")}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600"
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] shadow-xs"
           >
-            <PlusIcon className="h-5 w-5" />
-            مهمة جديدة
-          </button>
+            <Plus className="size-3.5" />
+            <span>مهمة جديدة</span>
+          </Button>
         </div>
       </div>
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-4 grid grid-cols-4 gap-4">
+        <div className="rounded-xl border border-border/80 bg-card/40 p-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-[11px] font-medium text-muted-foreground mb-1">
               النوع
             </label>
             <select
@@ -446,9 +458,9 @@ const DevKanbanBoard: React.FC = () => {
               onChange={(e) =>
                 setFilters((prev) => ({ ...prev, type: e.target.value }))
               }
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className="w-full border border-border rounded-lg px-2.5 py-1.5 bg-background text-foreground text-xs"
             >
-              <option value="">الكل</option>
+              <option value="">كل الأنواع</option>
               <option value="BUG">أخطاء</option>
               <option value="FEATURE">ميزات</option>
               <option value="ENHANCEMENT">تحسينات</option>
@@ -458,7 +470,7 @@ const DevKanbanBoard: React.FC = () => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-[11px] font-medium text-muted-foreground mb-1">
               الأولوية
             </label>
             <select
@@ -466,17 +478,20 @@ const DevKanbanBoard: React.FC = () => {
               onChange={(e) =>
                 setFilters((prev) => ({ ...prev, priority: e.target.value }))
               }
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className="w-full border border-border rounded-lg px-2.5 py-1.5 bg-background text-foreground text-xs"
             >
-              <option value="">الكل</option>
+              <option value="">كل الأولويات</option>
               <option value="CRITICAL">حرجة</option>
               <option value="HIGH">عالية</option>
               <option value="MEDIUM">متوسطة</option>
               <option value="LOW">منخفضة</option>
             </select>
           </div>
-          <div className="col-span-2 flex items-end">
-            <button
+          <div className="col-span-2 flex items-end justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={() =>
                 setFilters({
                   projectId: "",
@@ -486,34 +501,22 @@ const DevKanbanBoard: React.FC = () => {
                   search: "",
                 })
               }
-              className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+              className="h-8 text-xs font-mono text-muted-foreground hover:text-foreground"
             >
               مسح الفلاتر
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {/* Kanban Columns */}
-      <div className="flex-1 overflow-x-auto">
-        <div className="flex gap-4 h-full min-w-max pb-4">
+      <div className="flex-1 overflow-x-auto min-h-0">
+        <div className="flex gap-3 h-full min-w-max pb-4">
           {(settings?.taskStatuses || defaultColumns).map((column: any) => {
             const columnKey = column.value || column.key;
             const columnLabel = column.label;
             const columnTasks = filteredTasks(kanbanData[columnKey] || []);
             const isOver = dragOverColumn === columnKey;
-
-            // Handle color from settings
-            const bgColor = column.color ? undefined : column.color; // If it's a hex, we use style
-            const style = column.color?.startsWith("#")
-              ? {
-                  backgroundColor: column.color + "10",
-                  borderColor: column.color + "40",
-                }
-              : {};
-            const headerStyle = column.color?.startsWith("#")
-              ? { backgroundColor: column.color + "20" }
-              : {};
 
             return (
               <div
@@ -522,45 +525,41 @@ const DevKanbanBoard: React.FC = () => {
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, columnKey)}
                 className={`
-                  w-80 flex-shrink-0 rounded-xl overflow-hidden flex flex-col
-                  ${column.color?.startsWith("bg-") ? column.color : "bg-gray-50/50 dark:bg-gray-700/30"} 
-                  border-2 transition-colors duration-200
-                  ${isOver ? "border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30" : "border-transparent"}
+                  w-72 flex-shrink-0 rounded-xl overflow-hidden flex flex-col
+                  border transition-all duration-150 bg-card/30
+                  ${isOver ? "border-primary bg-primary/5 shadow-xs" : "border-border/70"}
                 `}
-                style={isOver ? {} : style}
               >
                 {/* Column Header */}
-                <div
-                  className={`${column.headerColor || ""} px-4 py-3 flex items-center justify-between`}
-                  style={headerStyle}
-                >
+                <div className="px-3 py-2.5 border-b border-border/60 bg-muted/40 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-200">
+                    <h3 className="font-medium text-xs text-foreground">
                       {columnLabel}
                     </h3>
-                    <span className="bg-white/60 dark:bg-gray-800/60 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full text-sm font-medium">
+                    <span className="bg-background border border-border/60 text-muted-foreground px-1.5 py-0.2 rounded-full text-[10px] font-mono tabular-nums">
                       {columnTasks.length}
                     </span>
                   </div>
                   <button
+                    type="button"
                     onClick={() =>
                       navigate(`/super-admin/dev-tasks/new?status=${columnKey}`)
                     }
-                    className="p-1 hover:bg-white/50 dark:hover:bg-gray-700/50 rounded transition-colors"
+                    className="p-1 hover:bg-muted rounded text-muted-foreground transition-colors"
                   >
-                    <PlusIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    <Plus className="size-3.5" />
                   </button>
                 </div>
 
-                {/* Tasks */}
-                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                {/* Tasks List */}
+                <div className="flex-1 overflow-y-auto p-2 space-y-2 max-h-[calc(100vh-280px)]">
                   {columnTasks.map((task) => (
                     <TaskCard key={task.id} task={task} />
                   ))}
 
                   {columnTasks.length === 0 && (
-                    <div className="text-center py-8 text-gray-400 dark:text-gray-500">
-                      <p className="text-sm">لا توجد مهام</p>
+                    <div className="text-center py-10 text-muted-foreground font-mono text-xs">
+                      لا توجد مهام
                     </div>
                   )}
                 </div>

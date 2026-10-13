@@ -66,9 +66,16 @@ const EscalationHistory = () => {
       );
       const data = await res.json();
       if (data.success) {
-        setLogs(data.data || []);
+        const rawLogs = Array.isArray(data.data)
+          ? data.data
+          : Array.isArray(data.data?.escalations)
+            ? data.data.escalations
+            : Array.isArray(data.data?.logs)
+              ? data.data.logs
+              : [];
+        setLogs(rawLogs);
         setTotalPages(data.pagination?.pages || 1);
-        setTotalCount(data.pagination?.total || (data.data?.length || 0));
+        setTotalCount(data.pagination?.total || rawLogs.length);
       }
     } catch (error) {
       console.error("Failed to fetch history", error);
@@ -79,7 +86,7 @@ const EscalationHistory = () => {
   };
 
   const uniqueTasksCount = useMemo(
-    () => new Set(logs.map((l) => l.taskId)).size,
+    () => (Array.isArray(logs) ? new Set(logs.map((l) => l.taskId).filter(Boolean)).size : 0),
     [logs],
   );
 
@@ -188,7 +195,7 @@ const EscalationHistory = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
-              {logs.length === 0 ? (
+              {!Array.isArray(logs) || logs.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="p-12 text-center text-muted-foreground">
                     لا توجد سجلات تصعيد حالياً
@@ -200,14 +207,14 @@ const EscalationHistory = () => {
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-0.5 max-w-xs">
                         <a
-                          href={`/super-admin/dev-tasks/${log.task.id}`}
+                          href={`/super-admin/dev-tasks/${log.task?.id || log.taskId || ""}`}
                           className="font-semibold text-foreground hover:text-primary transition-colors truncate"
-                          title={log.task.title}
+                          title={log.task?.title || "مهمة تطوير"}
                         >
-                          {log.task.title}
+                          {log.task?.title || log.taskId || "مهمة تطوير"}
                         </a>
                         <span className="text-[10px] text-muted-foreground font-mono">
-                          ID: {log.task.id.slice(0, 10)}
+                          ID: {(log.task?.id || log.taskId || "-").slice(0, 10)}
                         </span>
                       </div>
                     </td>
@@ -215,27 +222,27 @@ const EscalationHistory = () => {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 text-foreground/80 font-mono">
                         <span className="size-6 rounded-md bg-muted/60 border border-border/60 flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                          {log.fromUser.charAt(0)}
+                          {log.fromUser ? log.fromUser.charAt(0) : "؟"}
                         </span>
-                        <span>{log.fromUser}</span>
+                        <span>{log.fromUser || "النظام"}</span>
                       </div>
                     </td>
 
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 font-medium text-foreground font-mono">
                         <span className="size-6 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">
-                          {log.toUser.charAt(0)}
+                          {log.toUser ? log.toUser.charAt(0) : "؟"}
                         </span>
-                        <span>{log.toUser}</span>
+                        <span>{log.toUser || "المسؤول"}</span>
                       </div>
                     </td>
 
                     <td className="px-4 py-3 text-muted-foreground leading-relaxed max-w-md">
-                      {log.description}
+                      {log.description || "-"}
                     </td>
 
                     <td className="px-4 py-3 font-mono text-muted-foreground whitespace-nowrap">
-                      {format(new Date(log.createdAt), "yyyy/MM/dd - HH:mm", { locale: ar })}
+                      {log.createdAt ? format(new Date(log.createdAt), "yyyy/MM/dd - HH:mm", { locale: ar }) : "-"}
                     </td>
                   </tr>
                 ))

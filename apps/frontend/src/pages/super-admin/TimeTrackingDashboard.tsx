@@ -358,145 +358,57 @@ const TimeTrackingDashboard: React.FC = () => {
         )}
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div
-          className={`p-6 rounded-lg shadow-sm border transition-colors ${
-            "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700"
-          }`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div
-              className={`p-3 rounded-lg ${
-                "bg-blue-100 dark:bg-blue-900/50"
-              }`}
-            >
-              <Clock className="w-6 h-6 text-blue-600" />
-            </div>
-            <span
-              className={`text-2xl font-bold ${
-                "text-gray-900 dark:text-white"
-              }`}
-            >
-              {stats?.totalHours.toFixed(1)}h
-            </span>
+      {/* Unified Telemetry Ribbon */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs mb-6">
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">إجمالي ساعات العمل</span>
+            <span className="size-1.5 rounded-full bg-blue-500" />
           </div>
-          <h3
-            className={`text-sm text-gray-600 dark:text-gray-400`}
-          >
-            إجمالي ساعات العمل
-          </h3>
-          <p
-            className={`text-xs mt-1 ${
-              "text-gray-500"
-            }`}
-          >
-            قابل للفوترة: {stats?.billableHours.toFixed(1)}h
+          <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+            {(stats?.totalHours ?? 0).toFixed(1)}h
+          </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">
+            قابل للفوترة: {(stats?.billableHours ?? 0).toFixed(1)}h
           </p>
         </div>
 
-        <div
-          className={`p-6 rounded-lg shadow-sm border transition-colors ${
-            "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700"
-          }`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div
-              className={`p-3 rounded-lg ${
-                "bg-green-100 dark:bg-green-900/50"
-              }`}
-            >
-              <Users className="w-6 h-6 text-green-600" />
-            </div>
-            <span
-              className={`text-2xl font-bold ${
-                "text-gray-900 dark:text-white"
-              }`}
-            >
-              {stats?.activeMembers}/{stats?.totalMembers}
-            </span>
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">الأعضاء النشطون</span>
+            <span className="size-1.5 rounded-full bg-emerald-500" />
           </div>
-          <h3
-            className={`text-sm text-gray-600 dark:text-gray-400`}
-          >
-            الأعضاء النشطون
-          </h3>
-          <p
-            className={`text-xs mt-1 ${
-              "text-gray-500"
-            }`}
-          >
+          <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+            {stats?.activeMembers}/{stats?.totalMembers}
+          </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">
             يعملون الآن: {stats?.runningTimers.length || 0}
           </p>
         </div>
 
-        <div
-          className={`p-6 rounded-lg shadow-sm border transition-colors ${
-            "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700"
-          }`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div
-              className={`p-3 rounded-lg ${
-                "bg-purple-100 dark:bg-purple-900/50"
-              }`}
-            >
-              <CheckCircle className="w-6 h-6 text-purple-600" />
-            </div>
-            <span
-              className={`text-2xl font-bold ${
-                "text-gray-900 dark:text-white"
-              }`}
-            >
-              {stats?.tasksCompleted}
-            </span>
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">المهام المكتملة</span>
+            <span className="size-1.5 rounded-full bg-purple-500" />
           </div>
-          <h3
-            className={`text-sm text-gray-600 dark:text-gray-400`}
-          >
-            المهام المكتملة
-          </h3>
-          <p
-            className={`text-xs mt-1 ${
-              "text-gray-500"
-            }`}
-          >
+          <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+            {stats?.tasksCompleted || 0}
+          </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">
             في الفترة المحددة
           </p>
         </div>
 
-        <div
-          className={`p-6 rounded-lg shadow-sm border transition-colors ${
-            "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700"
-          }`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div
-              className={`p-3 rounded-lg ${
-                "bg-orange-100 dark:bg-orange-900/50"
-              }`}
-            >
-              <TrendingUp className="w-6 h-6 text-orange-600" />
-            </div>
-            <span
-              className={`text-2xl font-bold ${
-                "text-gray-900 dark:text-white"
-              }`}
-            >
-              {stats?.avgTimePerTask.toFixed(1)}h
-            </span>
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">متوسط وقت المهمة</span>
+            <span className="size-1.5 rounded-full bg-amber-500" />
           </div>
-          <h3
-            className={`text-sm text-gray-600 dark:text-gray-400`}
-          >
-            متوسط وقت المهمة
-          </h3>
-          <p
-            className={`text-xs mt-1 ${
-              "text-gray-500"
-            }`}
-          >
-            لكل مهمة مكتملة
+          <div className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400 font-mono tabular-nums">
+            {(stats?.avgTimePerTask ?? 0).toFixed(1)}h
+          </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">
+            لكل مهمة منجزة
           </p>
         </div>
       </div>
@@ -801,7 +713,7 @@ const TimeTrackingDashboard: React.FC = () => {
                         "text-gray-600 dark:text-gray-400"
                       }`}
                     >
-                      كفاءة: {member.efficiencyScore.toFixed(1)}
+                      كفاءة: {(member.efficiencyScore ?? 0).toFixed(1)}
                     </span>
                   </div>
                 </div>
