@@ -68,7 +68,7 @@ const STOREFRONT_THEME_DEFAULTS_MODULE_PATTERN =
 const STOREFRONT_RUNTIME_THEME_MODULE_PATTERN =
   /\/src\/storefront\/themes\/[^/]+\.json(?:\?url)?$/;
 const APP_UI_PRIMITIVES_MODULE_PATTERN =
-  /\/src\/(?:components\/ui\/|components\/theme-provider\.tsx?$|hooks\/useTheme\.tsx?$|lib\/utils\.ts$)/;
+  /\/src\/(?:components\/ui\/|components\/icons\/brands\.tsx?$|components\/theme-provider\.tsx?$|hooks\/useTheme\.tsx?$|lib\/utils\.ts$)/;
 
 // Tiny admin bootstrap utilities. These are statically imported by the entry
 // chunk (main.tsx) and must never be absorbed into a big route chunk — doing
@@ -87,8 +87,16 @@ const APP_I18N_MODULE_PATTERN = /\/src\/i18n\/index\.ts$/;
 
 // Shared HTTP layer + tiny cross-app utilities used by EVERY app page and by
 // the storefront.
+//
+// ⚠️ 2026-10-13: every module statically imported by App.tsx must be covered
+// by one of the neutral app-* patterns. Uncovered shared modules (then:
+// telephonyService, AndroidAppUpdateModal, …) got hoisted by Rollup into
+// whichever route chunk also imported them, producing STATIC App →
+// route-orders/route-settings edges that downloaded the whole admin graph
+// (~3.5MB / 80 files) on every page — public landings included. Guarded by
+// scripts/check-entry-chunks.cjs rule 1b.
 const APP_SHARED_CORE_MODULE_PATTERN =
-  /\/src\/(?:config\/(?:index|environment)|services\/(?:api|apiClient|uploadService|pushNotificationService)|hooks\/(?:useAuthSimple|useDebounce)|utils\/(?:pushNotifications|statusRegistry|tokenManager|imageUrl|urlHelper|storeShortcut|storeUrl)|components\/settings\/DefaultPageSelector)\.tsx?$/;
+  /\/src\/(?:config\/(?:index|environment|appRegistry|templates|themes\/index)|services\/(?:api|apiClient|uploadService|pushNotificationService|appUpdateService|orderSoundPatterns|socketService|telephonyService)|hooks\/(?:useAuthSimple|useDebounce)|utils\/(?:pushNotifications|statusRegistry|tokenManager|imageUrl|urlHelper|storeShortcut|storeUrl|deviceFingerprint|sessionRefresh|textEncoding)|components\/settings\/DefaultPageSelector)\.tsx?$/;
 
 // Shared TanStack Query Client instances
 const APP_QUERY_CLIENT_MODULE_PATTERN =
@@ -104,7 +112,7 @@ const APP_PROVIDERS_CORE_MODULE_PATTERN =
 
 // Route guards and post-auth navigation utilities (isolated from page chunks)
 const APP_ROUTE_GUARDS_MODULE_PATTERN =
-  /\/src\/(?:components\/protection\/(?:CompanyProtectedRoute|AppAccessRoute|AccessDenied)|components\/routing\/DefaultPageRedirect|components\/PerformanceOptimizer|components\/common\/PageSkeleton|utils\/(?:merchantAccess|postAuthRouting|routeAccess))\.tsx?$/;
+  /\/src\/(?:components\/protection\/(?:CompanyProtectedRoute|AppAccessRoute|AccessDenied)|components\/routing\/DefaultPageRedirect|components\/PerformanceOptimizer|components\/common\/(?:PageSkeleton|Skeleton|ErrorBoundary)|components\/mobile\/AndroidAppUpdateModal|utils\/(?:merchantAccess|postAuthRouting|routeAccess))\.tsx?$/;
 
 // Shared business-page shell components (BusinessPageShell, BusinessSurface,
 // BusinessFilters, BusinessMetrics).
