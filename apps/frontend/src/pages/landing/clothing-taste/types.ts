@@ -1,5 +1,3 @@
-export type TasteMode = "taste" | "slop";
-
 export interface PlatformToolItem {
   id: string;
   name: string;
@@ -32,13 +30,4 @@ export interface UtmData {
   utm_campaign?: string;
   utm_content?: string;
   utm_term?: string;
-}
-
-export interface AuditComparisonPoint {
-  pillar: string;
-  pillarTitle: string;
-  slopSymptom: string;
-  tasteExecution: string;
-  whyItMatters: string;
-  ruleCode: string;
 }

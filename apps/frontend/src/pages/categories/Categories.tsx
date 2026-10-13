@@ -9,12 +9,12 @@ import {
   Trash2,
   X,
   AlertTriangle,
-  Tag
+  Tag,
+  FolderTree,
 } from 'lucide-react';
 import { getDirection } from '../../i18n';
 import { apiClient } from '../../services/apiClient';
 import { getImageUrl } from '../../utils/imageUrl';
-import './Categories.css';
 import type { AxiosError } from 'axios';
 import { CategoryFormModal } from '../../components/category/CategoryFormModal';
 
@@ -47,6 +47,8 @@ const Categories: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
+  const isEn = i18n.language?.startsWith('en');
+
   const fetchCategories = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -69,7 +71,6 @@ const Categories: React.FC = () => {
     fetchCategories();
   }, [fetchCategories]);
 
-  // Update document attributes when language changes
   useEffect(() => {
     const dir = getDirection();
     document.documentElement.setAttribute('dir', dir);
@@ -118,202 +119,233 @@ const Categories: React.FC = () => {
   };
 
   return (
-    <div className="categories-page" dir={getDirection()}>
-      {/* Header */}
-      <div className="categories-header">
-        <div className="header-content">
-          <div className="header-info">
-            <h1 className="page-title">{t('categories.management.title')}</h1>
-            <p className="page-subtitle">{t('categories.management.subtitle')}</p>
+    <div className="space-y-4 max-w-7xl mx-auto pb-10" dir={getDirection()}>
+      {/* Header with Linear / Raycast Craft */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200/80 dark:border-zinc-800/80">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+              {t('categories.management.title')}
+            </h1>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200/60 dark:border-zinc-700 font-mono tabular-nums">
+              <FolderTree className="h-3 w-3 text-zinc-400" />
+              {categories.length} {isEn ? 'categories' : 'فئة'}
+            </span>
           </div>
-          <div className="header-actions">
-            <button className="add-category-btn" onClick={() => handleOpenModal()}>
-              <Plus size={18} />
-              <span>{t('categories.management.addCategory')}</span>
-            </button>
-          </div>
+          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            {t('categories.management.subtitle')}
+          </p>
         </div>
-      </div>
 
-      {/* Search & Filters */}
-      <div className="search-section">
-        <div className="search-container">
-          <div className="search-input-wrapper">
-            <Search className="search-icon" size={20} />
-            <input
-              type="text"
-              className="search-input"
-              placeholder={t('categories.management.searchPlaceholder') as string}
-              value={searchQuery}
-              onChange={handleSearch}
-            />
-            {searchQuery && (
-              <button className="clear-search-btn" onClick={() => setSearchQuery('')}>
-                <X size={16} />
-              </button>
-            )}
-          </div>
+        {/* Primary Action Button */}
+        <div className="flex items-center gap-2">
           <button
-            className="refresh-btn"
-            onClick={fetchCategories}
-            disabled={isLoading}
-            title={t('common.refresh') as string}
+            type="button"
+            onClick={() => handleOpenModal()}
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-200 shadow-2xs shadow-black/10 active:scale-[0.97] transition-all duration-150"
           >
-            <RefreshCw className={isLoading ? 'spinning' : ''} size={18} />
+            <Plus className="h-4 w-4 stroke-[2.5]" />
+            <span>{t('categories.management.addCategory')}</span>
           </button>
         </div>
       </div>
 
-      {/* Content area */}
-      <div className="content-area">
+      {/* Raycast-style Search & Action Strip */}
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl p-2.5 shadow-2xs space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className={`h-4 w-4 absolute ${isEn ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 pointer-events-none`} />
+            <input
+              type="text"
+              aria-label={t('categories.management.searchPlaceholder') as string}
+              placeholder={t('categories.management.searchPlaceholder') as string}
+              value={searchQuery}
+              onChange={handleSearch}
+              className={`w-full ${isEn ? 'pl-9 pr-14' : 'pr-9 pl-14'} py-2 text-xs sm:text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50/50 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-zinc-900 dark:focus:border-zinc-100 transition-all shadow-2xs`}
+            />
+            <div className={`absolute ${isEn ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 flex items-center gap-1`}>
+              {searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  aria-label="مسح البحث"
+                  className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700/60 transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              ) : (
+                <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-medium text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800 rounded border border-zinc-200 dark:border-zinc-700">
+                  ⌘K
+                </kbd>
+              )}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={fetchCategories}
+            disabled={isLoading}
+            title={t('common.refresh') as string}
+            className="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 active:scale-[0.94] transition-all disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Content Area */}
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl overflow-hidden shadow-2xs">
         {isLoading ? (
-          <div className="loading-state">
-            <div className="loading-spinner"></div>
-            <p>{t('common.loading')}</p>
+          <div className="flex flex-col items-center justify-center py-16 text-zinc-500">
+            <RefreshCw className="h-6 w-6 animate-spin text-zinc-400 mb-2" />
+            <p className="text-xs font-medium">{t('common.loading')}</p>
           </div>
         ) : error ? (
-          <div className="error-state">
-            <AlertTriangle size={48} color="#ef4444" />
-            <p>{error}</p>
-            <button onClick={fetchCategories} className="retry-btn">{t('common.refresh')}</button>
+          <div className="flex flex-col items-center justify-center py-16 text-rose-500 space-y-2">
+            <AlertTriangle className="h-8 w-8 text-rose-500" />
+            <p className="text-sm font-semibold">{error}</p>
+            <button
+              onClick={fetchCategories}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-950 active:scale-[0.97] transition-all"
+            >
+              {t('common.refresh')}
+            </button>
           </div>
         ) : filteredCategories.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">
-              <Tag size={64} />
+          <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+            <div className="h-12 w-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 mb-3 border border-zinc-200/60 dark:border-zinc-700">
+              <Tag className="h-6 w-6" />
             </div>
-            <h3>{t('categories.management.noCategories')}</h3>
-            <p>{t('categories.management.noCategoriesDesc')}</p>
+            <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-1">
+              {t('categories.management.noCategories')}
+            </h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mb-4">
+              {t('categories.management.noCategoriesDesc')}
+            </p>
             {!searchQuery && (
-              <button className="add-first-btn" onClick={() => handleOpenModal()}>
-                <Plus size={18} />
+              <button
+                type="button"
+                onClick={() => handleOpenModal()}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-950 active:scale-[0.97] transition-all"
+              >
+                <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
                 <span>{t('categories.management.addCategory')}</span>
               </button>
             )}
           </div>
         ) : (
-          <React.Fragment>
-            <div className="cat-cards-list">
-              {filteredCategories.map((cat) => (
-                <div key={cat.id} className="cat-card">
-                  <div className="cat-card-top">
-                    <div className="cat-image-cell">
-                      {cat.image ? (
-                        <img
-                          src={getImageUrl(cat.image, "thumbnail") || ""}
-                          alt={cat.name}
-                          loading="lazy"
-                          decoding="async"
-                          className="cat-thumbnail"
-                        />
-                      ) : (
-                        <div className="cat-placeholder-thumbnail">
-                          <ImageIcon size={20} />
-                        </div>
-                      )}
-                    </div>
-                    <div className="cat-card-info">
-                      <span className="cat-name">{cat.name}</span>
-                      <code className="cat-card-slug">{cat.slug}</code>
-                      {cat.description && (
-                        <span className="cat-desc-hint">{cat.description}</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="cat-card-bottom">
-                    <div className="cat-card-meta">
-                      <span className={`status-badge ${cat.isActive ? 'active' : 'inactive'}`}>
-                        {cat.isActive ? t('categories.management.status.active') : t('categories.management.status.inactive')}
-                      </span>
-                      <span className="product-count">
-                        {cat._count?.products || 0} {t('categories.management.table.products')}
-                      </span>
-                    </div>
-                    <div className="action-buttons">
-                      <button className="edit-btn" onClick={() => handleOpenModal(cat)} title={t('common.edit') as string}>
-                        <Pencil size={16} />
-                        <span className="btn-label">{t('common.edit')}</span>
-                      </button>
-                      <button
-                        className="delete-btn"
-                        onClick={() => handleDelete(cat.id, cat._count?.products || 0)}
-                        title={t('common.delete') as string}
-                      >
-                        <Trash2 size={16} />
-                        <span className="btn-label">{t('common.delete')}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="table-responsive">
-              <table className="categories-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: '60px' }}>{t('categories.management.table.image', 'Image')}</th>
-                    <th>{t('categories.management.table.name')}</th>
-                    <th>{t('categories.management.table.slug')}</th>
-                    <th>{t('categories.management.table.status')}</th>
-                    <th>{t('categories.management.table.products')}</th>
-                    <th>{t('categories.management.table.actions')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCategories.map((cat) => (
-                    <tr key={cat.id}>
-                      <td>
-                        <div className="cat-image-cell">
-                          {cat.image ? (
-                            <img
-                              src={getImageUrl(cat.image, "thumbnail") || ""}
-                              alt={cat.name}
-                              loading="lazy"
-                              decoding="async"
-                              className="cat-thumbnail"
-                            />
-                          ) : (
-                            <div className="cat-placeholder-thumbnail">
-                              <ImageIcon size={20} />
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <div className="cat-name-cell">
-                          <span className="cat-name">{cat.name}</span>
-                          {cat.description && <span className="cat-desc-hint">{cat.description}</span>}
-                        </div>
-                      </td>
-                      <td><code>{cat.slug}</code></td>
-                      <td>
-                        <span className={`status-badge ${cat.isActive ? 'active' : 'inactive'}`}>
-                          {cat.isActive ? t('categories.management.status.active') : t('categories.management.status.inactive')}
+          <div className="overflow-x-auto">
+            <table className="w-full text-right text-xs">
+              <thead className="bg-zinc-50/75 dark:bg-zinc-800/50 border-b border-zinc-200/80 dark:border-zinc-800/80 text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
+                <tr>
+                  <th className="py-2.5 px-3.5 w-14 text-center">{t('categories.management.table.image', 'صورة')}</th>
+                  <th className="py-2.5 px-3.5">{t('categories.management.table.name')}</th>
+                  <th className="py-2.5 px-3.5">{t('categories.management.table.slug')}</th>
+                  <th className="py-2.5 px-3.5">{t('categories.management.table.status')}</th>
+                  <th className="py-2.5 px-3.5">{t('categories.management.table.products')}</th>
+                  <th className="py-2.5 px-3.5 text-center w-24">{t('categories.management.table.actions')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200/60 dark:divide-zinc-800/60">
+                {filteredCategories.map((cat) => (
+                  <tr
+                    key={cat.id}
+                    className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors"
+                  >
+                    {/* Thumbnail */}
+                    <td className="py-2.5 px-3.5 text-center">
+                      <div className="h-9 w-9 rounded-lg border border-zinc-200/80 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 overflow-hidden flex items-center justify-center mx-auto shadow-2xs">
+                        {cat.image ? (
+                          <img
+                            src={getImageUrl(cat.image, 'thumbnail') || ''}
+                            alt={cat.name}
+                            loading="lazy"
+                            decoding="async"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <ImageIcon className="h-4 w-4 text-zinc-400" />
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Name & Description */}
+                    <td className="py-2.5 px-3.5">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-xs sm:text-sm">
+                          {cat.name}
                         </span>
-                      </td>
-                      <td>
-                        <span className="product-count">{cat._count?.products || 0}</span>
-                      </td>
-                      <td>
-                        <div className="action-buttons">
-                          <button className="edit-btn" onClick={() => handleOpenModal(cat)} title={t('common.edit') as string}>
-                            <Pencil size={16} />
-                          </button>
-                          <button
-                            className="delete-btn"
-                            onClick={() => handleDelete(cat.id, cat._count?.products || 0)}
-                            title={t('common.delete') as string}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </React.Fragment>
+                        {cat.description && (
+                          <span className="text-[11px] text-zinc-400 dark:text-zinc-500 line-clamp-1 max-w-md">
+                            {cat.description}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Slug */}
+                    <td className="py-2.5 px-3.5 font-mono text-[11px]">
+                      <code className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 border border-zinc-200/60 dark:border-zinc-700/60" dir="ltr">
+                        {cat.slug}
+                      </code>
+                    </td>
+
+                    {/* Status Pill with Micro-LED */}
+                    <td className="py-2.5 px-3.5">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                          cat.isActive
+                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25'
+                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700'
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            cat.isActive ? 'bg-emerald-500' : 'bg-zinc-400'
+                          }`}
+                        />
+                        {cat.isActive
+                          ? t('categories.management.status.active')
+                          : t('categories.management.status.inactive')}
+                      </span>
+                    </td>
+
+                    {/* Products Count */}
+                    <td className="py-2.5 px-3.5 font-mono tabular-nums text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                      <span>{cat._count?.products || 0}</span>
+                      <span className="text-[10px] text-zinc-400 font-sans mr-1">
+                        {isEn ? 'products' : 'منتج'}
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="py-2.5 px-3.5 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenModal(cat)}
+                          title={t('common.edit') as string}
+                          aria-label={t('common.edit') as string}
+                          className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-[0.94] transition-all"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(cat.id, cat._count?.products || 0)}
+                          title={t('common.delete') as string}
+                          aria-label={t('common.delete') as string}
+                          className="p-1.5 rounded-md text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-[0.94] transition-all"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -329,4 +361,3 @@ const Categories: React.FC = () => {
 };
 
 export default Categories;
-

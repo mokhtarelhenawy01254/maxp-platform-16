@@ -8,6 +8,8 @@ import {
     CheckIcon,
     PhotoIcon,
     ChevronLeftIcon,
+    ArrowRightIcon,
+    ArchiveBoxXMarkIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import i18n from "../../i18n";
@@ -107,16 +109,16 @@ const ProductsTrash: React.FC = () => {
             }
         } catch (error) {
             console.error("Error permanently deleting product:", error);
-            tToast.error("productsTrash.failed_delete_ec26");
+            tToast.error("productsTrash.failed_delete_c5b3");
         } finally {
             setDeleting(null);
         }
     };
 
-    // استعادة الكل
+    // استعادة الكل المحدد
     const handleRestoreAll = async () => {
         if (selectedProducts.size === 0) {
-            tToast.error("productsTrash.msg_8a1a");
+            tToast.error("productsTrash.msg_d600");
             return;
         }
 
@@ -142,7 +144,7 @@ const ProductsTrash: React.FC = () => {
             }
         } catch (error) {
             console.error("Error restoring all products:", error);
-            tToast.error("productsTrash.msg_2483");
+            tToast.error("productsTrash.failed_restore_ea6a");
         } finally {
             setLoading(false);
         }
@@ -216,112 +218,123 @@ const ProductsTrash: React.FC = () => {
         if (typeof firstImage === "string") {
             return firstImage;
         }
-        return firstImage?.url || firstImage?.src || null;
+        return (firstImage as any)?.url || (firstImage as any)?.src || null;
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            {/* Header */}
-            <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-                <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Link
-                                to="/products"
-                                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            >
-                                <ChevronLeftIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                            </Link>
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                    سلة المحذوفات
-                                </h1>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    {products.length} منتج محذوف
-                                </p>
-                            </div>
+        <div className="space-y-4 max-w-7xl mx-auto pb-12">
+            {/* Header with Linear Craft */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200/80 dark:border-zinc-800/80">
+                <div className="flex items-center gap-3">
+                    <Link
+                        to="/products"
+                        className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 active:scale-[0.94] transition-all shadow-2xs"
+                        title="العودة إلى المنتجات"
+                    >
+                        <ArrowRightIcon className="h-4 w-4" />
+                    </Link>
+                    <div>
+                        <div className="flex items-center gap-2.5">
+                            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                                سلة المحذوفات
+                            </h1>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200/60 dark:border-zinc-700 font-mono tabular-nums">
+                                <ArchiveBoxXMarkIcon className="h-3 w-3 text-zinc-400" />
+                                {products.length} منتج
+                            </span>
                         </div>
-
-                        <div className="flex items-center gap-3">
-                            {selectedProducts.size > 0 && (
-                                <>
-                                    <button
-                                        onClick={handleRestoreAll}
-                                        disabled={loading}
-                                        className="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-                                    >
-                                        <ArrowPathIcon className="h-5 w-5 mr-2" />
-                                        استعادة ({selectedProducts.size})
-                                    </button>
-                                    <button
-                                        onClick={handlePermanentDeleteAll}
-                                        disabled={loading}
-                                        className="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-                                    >
-                                        <TrashIcon className="h-5 w-5 mr-2" />
-                                        حذف نهائي ({selectedProducts.size})
-                                    </button>
-                                </>
-                            )}
-
-                            <button
-                                onClick={fetchDeletedProducts}
-                                disabled={loading}
-                                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                title="تحديث"
-                            >
-                                <ArrowPathIcon className={`h-5 w-5 text-gray-600 dark:text-gray-400 ${loading ? "animate-spin" : ""}`} />
-                            </button>
-                        </div>
+                        <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            المنتجات المحذوفة مؤقتاً يمكنك استعادتها أو تفريغها نهائياً
+                        </p>
                     </div>
+                </div>
+
+                {/* Bulk Actions */}
+                <div className="flex items-center gap-2">
+                    {selectedProducts.size > 0 && (
+                        <>
+                            <button
+                                type="button"
+                                onClick={handleRestoreAll}
+                                disabled={loading}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-950 hover:bg-zinc-800 active:scale-[0.97] transition-all shadow-2xs disabled:opacity-50"
+                            >
+                                <ArrowPathIcon className="h-3.5 w-3.5" />
+                                <span>استعادة ({selectedProducts.size})</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handlePermanentDeleteAll}
+                                disabled={loading}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200/80 dark:border-rose-900/60 hover:bg-rose-100 active:scale-[0.97] transition-all shadow-2xs disabled:opacity-50"
+                            >
+                                <TrashIcon className="h-3.5 w-3.5" />
+                                <span>حذف نهائي ({selectedProducts.size})</span>
+                            </button>
+                        </>
+                    )}
+
+                    <button
+                        type="button"
+                        onClick={fetchDeletedProducts}
+                        disabled={loading}
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 active:scale-[0.94] transition-all disabled:opacity-50"
+                        title="تحديث"
+                    >
+                        <ArrowPathIcon className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+                    </button>
                 </div>
             </div>
 
             {/* Content */}
-            <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div>
                 {loading && products.length === 0 ? (
-                    <div className="flex items-center justify-center py-20">
-                        <ArrowPathIcon className="h-8 w-8 text-gray-400 animate-spin" />
+                    <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
+                        <ArrowPathIcon className="h-6 w-6 text-zinc-400 animate-spin mb-2" />
+                        <p className="text-xs font-medium">جاري جلب سلة المحذوفات...</p>
                     </div>
                 ) : products.length === 0 ? (
-                    <div className="text-center py-20">
-                        <TrashIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl p-12 text-center shadow-2xs">
+                        <div className="h-12 w-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 mx-auto mb-3 border border-zinc-200/60 dark:border-zinc-700">
+                            <TrashIcon className="h-6 w-6 text-zinc-400" />
+                        </div>
+                        <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-1">
                             سلة المحذوفات فارغة
                         </h3>
-                        <p className="text-gray-500 dark:text-gray-400 mb-6">
-                            المنتجات المحذوفة ستظهر هنا
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto mb-4">
+                            لا توجد أي منتجات محذوفة حالياً. المنتجات التي تحذفها مؤقتاً تظهر هنا.
                         </p>
                         <Link
                             to="/products"
-                            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-950 active:scale-[0.97] transition-all shadow-2xs"
                         >
-                            العودة للمنتجات
+                            <ArrowRightIcon className="h-3.5 w-3.5" />
+                            <span>العودة للمنتجات</span>
                         </Link>
                     </div>
                 ) : (
-                    <>
-                        {/* Bulk Actions Bar */}
-                        <div className="mb-4 flex items-center justify-between">
-                            <label className="flex items-center gap-2 cursor-pointer">
+                    <div className="space-y-3">
+                        {/* Control Strip */}
+                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl px-3 py-2 flex items-center justify-between text-xs shadow-2xs">
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
                                 <input
                                     type="checkbox"
-                                    checked={selectedProducts.size === products.length}
+                                    checked={selectedProducts.size === products.length && products.length > 0}
                                     onChange={toggleSelectAll}
-                                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 focus:ring-zinc-900 dark:bg-zinc-800"
                                 />
-                                <span className="text-sm text-gray-700 dark:text-gray-300">
+                                <span className="font-medium text-zinc-700 dark:text-zinc-300">
                                     تحديد الكل ({products.length})
                                 </span>
                             </label>
 
-                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                            <span className="font-mono tabular-nums text-[11px] text-zinc-500">
                                 {selectedProducts.size} محدد
                             </span>
                         </div>
 
                         {/* Products Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {products.map((product) => {
                                 const image = getProductImage(product.images);
                                 const isSelected = selectedProducts.has(product.id);
@@ -331,109 +344,83 @@ const ProductsTrash: React.FC = () => {
                                 return (
                                     <div
                                         key={product.id}
-                                        className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border transition-all ${isSelected
-                                            ? "border-blue-500 ring-2 ring-blue-500/20"
-                                            : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                                            }`}
+                                        className={`bg-white dark:bg-zinc-900 rounded-xl border p-3.5 transition-all shadow-2xs ${
+                                            isSelected
+                                                ? "border-zinc-900 dark:border-zinc-100 ring-1 ring-zinc-900/10 dark:ring-zinc-100/10"
+                                                : "border-zinc-200/80 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700"
+                                        }`}
                                     >
-                                        <div className="p-4">
-                                            {/* Header with checkbox */}
-                                            <div className="flex items-start gap-3 mb-3">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isSelected}
-                                                    onChange={() => toggleSelect(product.id)}
-                                                    className="mt-1 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                />
+                                        <div className="flex items-start gap-3">
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => toggleSelect(product.id)}
+                                                className="mt-1 h-4 w-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 focus:ring-zinc-900 dark:bg-zinc-800 shrink-0"
+                                            />
 
-                                                {/* Image */}
-                                                <div className="flex-shrink-0">
-                                                    {image ? (
-                                                        <img
-                                                            src={image}
-                                                            alt={product.name}
-                                                            className="w-20 h-20 object-cover rounded-lg"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                                                            <PhotoIcon className="h-8 w-8 text-gray-400" />
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Info */}
-                                                <div className="flex-1 min-w-0">
-                                                    <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                                                        {product.name}
-                                                    </h3>
-                                                    {product.sku && (
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                            SKU: {product.sku}
-                                                        </p>
-                                                    )}
-                                                    <p className="text-sm font-bold text-blue-600 dark:text-blue-400 mt-1">
-                                                        {formatPrice(product.price)}
-                                                    </p>
-                                                </div>
+                                            <div className="h-14 w-14 rounded-lg border border-zinc-200/80 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
+                                                {image ? (
+                                                    <img
+                                                        src={image}
+                                                        alt={product.name}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <PhotoIcon className="h-5 w-5 text-zinc-400" />
+                                                )}
                                             </div>
 
-                                            {/* Meta */}
-                                            <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1 mb-4">
-                                                {product.category && (
-                                                    <p>
-                                                        <span className="font-medium">الفئة:</span>{" "}
-                                                        {product.category.name}
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 truncate">
+                                                    {product.name}
+                                                </h3>
+                                                {product.sku && (
+                                                    <p className="font-mono text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5" dir="ltr">
+                                                        SKU: {product.sku}
                                                     </p>
                                                 )}
-                                                <p>
-                                                    <span className="font-medium">تاريخ الحذف:</span>{" "}
-                                                    {formatDate(product.deletedAt)}
+                                                <p className="font-mono tabular-nums text-xs font-bold text-zinc-900 dark:text-zinc-100 mt-1">
+                                                    {formatPrice(product.price)}
                                                 </p>
-                                                {product.stock !== undefined && (
-                                                    <p>
-                                                        <span className="font-medium">المخزون:</span>{" "}
-                                                        {product.stock}
-                                                    </p>
-                                                )}
                                             </div>
+                                        </div>
 
-                                            {/* Actions */}
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => handleRestore(product.id)}
-                                                    disabled={isRestoring || isDeleting}
-                                                    className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-sm font-medium hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors disabled:opacity-50"
-                                                >
-                                                    {isRestoring ? (
-                                                        <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                                                    ) : (
-                                                        <>
-                                                            <ArrowPathIcon className="h-4 w-4 mr-1" />
-                                                            استعادة
-                                                        </>
-                                                    )}
-                                                </button>
-                                                <button
-                                                    onClick={() => handlePermanentDelete(product.id)}
-                                                    disabled={isRestoring || isDeleting}
-                                                    className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors disabled:opacity-50"
-                                                >
-                                                    {isDeleting ? (
-                                                        <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                                                    ) : (
-                                                        <>
-                                                            <TrashIcon className="h-4 w-4 mr-1" />
-                                                            حذف نهائي
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </div>
+                                        <div className="mt-3 pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between text-[11px] text-zinc-400 dark:text-zinc-500">
+                                            {product.category && (
+                                                <span className="truncate max-w-[120px]">
+                                                    {product.category.name}
+                                                </span>
+                                            )}
+                                            <span className="font-mono tabular-nums">
+                                                {formatDate(product.deletedAt)}
+                                            </span>
+                                        </div>
+
+                                        <div className="mt-3 flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRestore(product.id)}
+                                                disabled={isRestoring || isDeleting}
+                                                className="flex-1 inline-flex items-center justify-center gap-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 active:scale-[0.97] transition-all disabled:opacity-50"
+                                            >
+                                                <ArrowPathIcon className={`h-3 w-3 ${isRestoring ? "animate-spin" : ""}`} />
+                                                <span>استعادة</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handlePermanentDelete(product.id)}
+                                                disabled={isRestoring || isDeleting}
+                                                className="flex-1 inline-flex items-center justify-center gap-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-[0.97] transition-all disabled:opacity-50"
+                                            >
+                                                <TrashIcon className={`h-3 w-3 ${isDeleting ? "animate-spin" : ""}`} />
+                                                <span>حذف نهائي</span>
+                                            </button>
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
-                    </>
+                    </div>
                 )}
             </div>
         </div>

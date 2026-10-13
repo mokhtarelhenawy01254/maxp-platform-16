@@ -1,4 +1,4 @@
-﻿---
+---
 name: taste-skill
 description: Anti-slop frontend skill for landing pages, marketing sites, portfolios, and redesigns (taste-skill by Leonxlnx). The agent reads the brief, infers the right design direction, and ships interfaces that do not look templated. Use whenever designing or implementing landing pages, websites, portfolios, UI components, animations, or redesigns. Includes 3 dials (VARIANCE, MOTION, DENSITY), canonical GSAP/CSS skeletons, and strict anti-slop rules.
 ---
@@ -39,37 +39,46 @@ If you can confidently infer from context, **do not ask**. Just declare the desi
 ### 0.D Anti-Default Discipline
 Do not default to: AI-purple gradients, centered hero over dark mesh, three equal feature cards, generic glassmorphism on everything, infinite-loop micro-animations everywhere, Inter + slate-900. These are the LLM defaults. Reach past them deliberately based on the design read.
 
-#### 🔬 THE 6 AI-DETECTION PILLARS (2026 ENGINEERING STANDARD):
-1. **Aesthetic & Palette**: Ban purple/cyan fuzzy neon mesh and excessive glassmorphism. Use architectural OLED blacks (`#050505` / `#09090b`), titanium, matte graphite (`#121214`), or warm creams (`#FDFBF7`) with machined hairline borders (`border-white/10` or `ring-1 ring-border/40`) and inset specular highlights (`shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]`).
-2. **Typography & Micro-Typography**:
+#### 🔬 THE 6 AI-DETECTION PILLARS (DOMAIN-AWARE ENGINEERING STANDARD):
+1. **Domain-First Aesthetic & Palette (الملائمة القطاعية والجمهور المستهدف):**
+   - **Fashion, Apparel, Beauty & Lifestyle Commerce:** NEVER use dark hacker terminal themes, OLED black carbon, or cyber neon. Mandate warm luxury creams (`#FAF8F5`, `#FDFBF7`), clean porcelain whites (`#FFFFFF`), architectural ink contrast (`#141416`), soft tailored shadows, rich garment lookbooks, and high-fashion editorial typography (Zara, Massimo Dutti, Farfetch caliber).
+   - **Business Operations & Dashboards (Dental Lab, POS, Warehouses):** Clean, crisp, high-contrast, distraction-free daylight surfaces (`#FFFFFF` with `#F8FAFC` and subtle zinc dividers).
+   - **Developer Tools & Infrastructure Only:** Dark titanium/graphite palettes are strictly restricted to low-level engineering consoles, CLIs, or IDE extensions — PERMANENTLY BANNED on customer-facing commerce, merchants, clinics, or lifestyle pages.
+2. **Typography & Micro-Typography:**
    - Mandatory `text-wrap: balance` on headings and `text-pretty` on body copy (ban orphan words).
-   - Mandatory `font-variant-numeric: tabular-nums` (or `tabular-nums`) for all numbers, pricing, and telemetry.
+   - Mandatory `font-variant-numeric: tabular-nums` (or `tabular-nums`) for all numbers, pricing, and business metrics.
+   - For Arabic typography: NEVER apply monospace (`font-mono`) to Arabic words as it breaks cursive character connections; restrict monospace strictly to Latin codes, currencies, or digit-only tabular blocks.
    - Use true typographical glyphs: `…` (never `...`), curly quotes `“ ”` (never `"`), non-breaking spaces before units (`10&nbsp;MB`, `0.8&nbsp;s`, `⌘&nbsp;K`).
-3. **Interaction Physics & Micro-Haptics**:
+3. **Interaction Physics & Micro-Haptics:**
    - Buttons MUST feel physically responsive: `:active` state requires `transform: scale(0.97)` with `transition: transform 160ms ease-out`.
    - Popovers MUST be origin-aware: `transform-origin: var(--transform-origin)` (scale in from trigger, not center).
    - Tooltips MUST skip delay after first hover (`instant hover mode`). Strict `prefers-reduced-motion` compliance.
-4. **Layout Architecture (Anti-Symmetry & Unified Chassis)**:
-   - Ban cookie-cutter 3-column equal cards. Use asymmetrical Bento Grids (8:4 ratio) with varied visual weight.
-   - Mandate Unified Single-Surface Chassis (Linear/Cursor style) with hairline dividers (`border-r`, `border-l`), banning floating card islands separated by wide grey gaps (`bg-slate-100 gap-6`).
-5. **Telemetry over Buzzwords (Show, Don't Tell)**:
-   - Zero marketing buzzword fluff ("الذكاء الاصطناعي الخارق"). Replace with hard telemetry: latency (`P95 < 0.8s`), exact model names (`DeepSeek-V3`, `Llama 3.3 70B`), API signatures (`Meta Graph API v21`, `PostgreSQL Attribution`), and verifiable unit economics.
-6. **Accessibility & Edge-Case Resilience**:
+4. **Layout Architecture (Anti-Symmetry & Editorial Hierarchy):**
+   - Ban cookie-cutter 3-column equal cards. Use asymmetrical layouts and Bento Grids with varied visual weight.
+   - For SaaS workspaces & cockpits: Unified single-surface chassis with subtle hairline dividers, banning floating islands separated by wide grey gaps.
+   - For Commerce & Marketing: Spacious editorial hierarchy with high-contrast hero, clear visual product previews, and frictionless conversion actions. PERMANENTLY BAN forcing Linear/Cursor dark IDE layouts onto commerce or lifestyle products.
+5. **Real Business Economics & Telemetry over Jargon (الأرقام والنتائج التجارية الحقيقية):**
+   - Zero marketing buzzword fluff ("الذكاء الاصطناعي الخارق").
+   - For E-commerce & Fashion: Replace fluff with hard merchant economics: Return reduction % (e.g. 60%), 1-click Bosta AWB dispatch speed, real profit margin calculations, 0% sales commission, and verified local payment methods (InstaPay/Meeza).
+   - PERMANENTLY BAN developer metrics (P95 latency, model names like DeepSeek/Llama) on business merchant or consumer pages. Developer metrics belong strictly in engineering dashboards.
+6. **Accessibility & Edge-Case Resilience:**
    - Always use semantic HTML (`<button>`, `<a>`, `<label>`) with `aria-label` on icon-only buttons.
    - Replace `outline-none` with `focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1`.
    - Defensive layout: `min-w-0` on flex children with `truncate` or `line-clamp-*` to prevent overflow crashes.
 
-#### 🚫 THE 10 AI SLOP FLAGS (PERMANENTLY BANNED IN ALL DESIGNS):
+#### 🚫 THE 12 AI SLOP FLAGS (PERMANENTLY BANNED IN ALL DESIGNS):
 1. **Emoji Littering & Confetti Icons:** NEVER decorate headers, cards, buttons, or badges with generic emojis (`🤖`, `🚀`, `⚡`, `✨`, `🔥`, `💡`, `🎯`, `🛒`, `🧠`). Use only ultra-light vector icons (stroke 1.25px) or pure typographic hierarchy.
-2. **The "Purple/Cyan Dark Mesh" Cliché:** Never slap a centered fuzzy purple/indigo/cyan neon blur behind generic dark cards. Use true architectural palettes: deepest OLED blacks (`#050505` / `#09090b`), titanium, matte graphite, or warm creams (`#FDFBF7`), illuminated by tactile hairline borders (`border-white/10` or `ring-1 ring-border/40`) and inset specular highlights (`shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]`).
-3. **Cookie-Cutter Symmetrical Card Clones:** Never generate 3 identical cards in a row with an icon at the top, a 2-line title, a generic 3-line paragraph, and a bottom button. Break symmetry with asymmetrical visual weight, dense telemetry chips, real specs, Bento Grid proportions, and contextual actions.
-4. **Marketing Buzzword Fluff:** Never generate text like "الذكاء الاصطناعي الخارق"، "أحدث ثورة في عملك"، "قوة لا نهائية". Replace buzzwords with hard telemetry: latency benchmarks (`P95 < 0.8s`), exact model names (`DeepSeek-V3`, `Llama 3.3 70B`), real API integration signatures (`Meta Graph API v21`, `PostgreSQL Attribution`), and verifiable unit economics.
-5. **Everything-Is-Glassmorphism Abuse:** Never make every card, container, and row `backdrop-blur bg-white/5`. Reserve blur strictly for sticky floating headers or modal scrims. Main surfaces must have solid, tactile, machined opacity with crisp contrast and legible typography.
+2. **The "Purple/Cyan Dark Mesh" Cliché:** Never slap a centered fuzzy purple/indigo/cyan neon blur behind generic dark cards. Use true architectural palettes matching the domain: warm creams (`#FAF8F5`, `#FDFBF7`) for fashion/retail, crisp daylight whites for operations, and graphite only for technical tools.
+3. **Cookie-Cutter Symmetrical Card Clones:** Never generate 3 identical cards in a row with an icon at the top, a 2-line title, a generic 3-line paragraph, and a bottom button. Break symmetry with asymmetrical visual weight, contextual actions, and editorial layouts.
+4. **Marketing Buzzword Fluff:** Never generate text like "الذكاء الاصطناعي الخارق"، "أحدث ثورة في عملك"، "قوة لا نهائية". Replace buzzwords with real business metrics and unit economics.
+5. **Everything-Is-Glassmorphism Abuse:** Never make every card, container, and row `backdrop-blur bg-white/5`. Reserve blur strictly for sticky floating headers or modal scrims. Main surfaces must have solid, tactile opacity with crisp contrast and legible typography.
 6. **Fake Glowing Rainbow Borders & Shimmer Spam:** Never add infinite rotating rainbow borders, pulsing gradient outlines around random cards, or looping particle effects. Motion must be purposeful, spring-based, reacting only to user interaction or entry transition.
-7. **Floating Island Fragmentation:** Never render multiple disconnected cards with thick borders floating over a grey background with wide gaps between them. Mandate a Unified Single-Surface Chassis (Linear/Cursor style) with hairline dividers (`border-r`, `border-l`).
-8. **Stock 3D Cartoon Avatars:** Never use floating 3D Memoji heads with big headphones or generic smiling corporate stock photos. Use editorial studio-lit architectural portraits with realistic chiaroscuro lighting, or geometric monogram emblems.
-9. **The Centered Hero Trap:** Never default to: centered micro-tag -> centered H1 -> centered subtitle -> 2 centered buttons -> big screenshot below. Employ asymmetrical layouts, split editorial compositions, or direct edge-to-edge interactive cockpit previews.
-10. **Dead Unclickable UI Badges:** Never add colorful pill badges that convey no real data and cannot be clicked. Badges must strictly represent functional system state, live telemetry, or verifiable filters with semantic status colors.
+7. **Floating Island Fragmentation:** Never render multiple disconnected cards with thick borders floating over a grey background with wide gaps between them.
+8. **Stock 3D Cartoon Avatars:** Never use floating 3D Memoji heads with big headphones or generic smiling corporate stock photos. Use editorial studio-lit photography or authentic brand typography.
+9. **The Centered Hero Trap:** Never default to: centered micro-tag -> centered H1 -> centered subtitle -> 2 centered buttons -> big screenshot below. Employ asymmetrical layouts or split editorial compositions.
+10. **Dead Unclickable UI Badges:** Never add colorful pill badges that convey no real data and cannot be clicked. Badges must strictly represent functional system state or verifiable filters.
+11. **Banning Developer Terminal Aesthetics on Commerce/Fashion/Lifestyle:** Never use pitch black OLED/carbon or cyber themes for fashion, clothing, clinics, food, or retail.
+12. **Banning Developer Jargon on Business Landing Pages:** Never show P95 latency, API signatures, or LLM model names to merchant or consumer buyers; use real business unit economics instead.
 
 ---
 

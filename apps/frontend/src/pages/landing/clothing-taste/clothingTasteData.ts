@@ -1,4 +1,4 @@
-import { PlatformToolItem, PricingPlan, FaqItem, AuditComparisonPoint } from "./types";
+import { PlatformToolItem, PricingPlan, FaqItem } from "./types";
 
 export const OFFICIAL_WHATSAPP_NUMBER = "201123087745";
 export const WHATSAPP_CONSULT_URL = `https://wa.me/${OFFICIAL_WHATSAPP_NUMBER}?text=${encodeURIComponent(
@@ -12,7 +12,7 @@ export const FASHION_TOOLS: PlatformToolItem[] = [
     category: "store",
     description: "واجهة متجر احترافية مهيأة للشراء الفوري مع تصفح سريع لتشكيلات الملابس والصور عالية الدقة.",
     standalonePrice: 299,
-    keyFeature: "P95 < 0.65s زمن تحميل الكتالوج",
+    keyFeature: "تصفح سريع جداً للصور والكاتالوج بدون انتظار",
   },
   {
     id: "tool-matrix",
@@ -226,64 +226,5 @@ export const TASTE_FAQS: FaqItem[] = [
   {
     question: "كيف يتم ربط شركة شحن بوسطة؟",
     answer: "يتم ربط حسابك في بوسطة بمفتاح الـ API لمرة واحدة، لتتمكن بعدها من إنشاء البوليصة وطباعة استيكر الشحن بنقرة زر واحدة دون الحاجة لإعادة كتابة العناوين يدوياً.",
-  },
-];
-
-export const AUDIT_COMPARISON_MATRIX: AuditComparisonPoint[] = [
-  {
-    pillar: "Aesthetic & Palette",
-    pillarTitle: "لوحة الألوان والمادية البصرية",
-    slopSymptom: "تدرج نيون بنفسجي وأزرق عشوائي فوق خلفية مظلمة، أو بيج باهت (#FAF8F5) مستهلك مع زجاجيات مفرطة في الضبابية.",
-    tasteExecution: "لوحة كربون وتيتانيوم معمارية (#090A0F مع #121316) وحدود ميكانيكية فائقة الدقة (border-white/10) مع وميض أزرق أتيليه مركز.",
-    whyItMatters: "يوحي بالاحترافية والثقة التجارية كمنصة تشغيل مؤسسية للمتاجر، بدل أن يبدو كقالب تسويقي مولّد عشوائياً.",
-    ruleCode: "ANTI_SLOP_P01",
-  },
-  {
-    pillar: "Typography & Micro-Craft",
-    pillarTitle: "التايبوجرافي والأرقام الميكانيكية",
-    slopSymptom: "خلط خط سيريف عشوائي في العناوين لادعاء الفخامة، وأرقام متذبذبة العرض، ونصوص طويلة تتجاوز 4 أسطر في الهيرو.",
-    tasteExecution: "خط موحد متناسق (IBM Plex Sans Arabic) مع أرقام جدولية مصفوفة (tabular-nums)، وعلامات تنصيص حقيقية « »، وتوازن بصري text-wrap: balance.",
-    whyItMatters: "يمنع تشتت عين التاجر، ويجعل جداول الأسعار والأرقام مصطفة هندسياً بدقة دون اهتزاز الأرقام.",
-    ruleCode: "ANTI_SLOP_P02",
-  },
-  {
-    pillar: "Hero Space Discipline",
-    pillarTitle: "انضباط مساحة الهيرو والشاشات الأولى",
-    slopSymptom: "هيرو ضخم يبتلع الشاشة بأكثر من 7 طبقات نصية وشعارات متكدسة تدفع أزرار التحويل إلى ما تحت الطي (Below The Fold).",
-    tasteExecution: "هيرو منضبط لا يتجاوز شاشة العرض: عنوان مركز في سطرين، شرح لا يتجاوز 20 كلمة، وزر تحويل مباشر يظهر فوراً بدون تمرير.",
-    whyItMatters: "على شاشات اللابتوب العادية (1366x768)، التاجر يرى القيمة والزر في الثواني الثلاث الأولى دون الحاجة للتمرير.",
-    ruleCode: "ANTI_SLOP_P03",
-  },
-  {
-    pillar: "Layout Architecture",
-    pillarTitle: "معمارية الشبكة وشاسيه السطح الواحد",
-    slopSymptom: "ثلاث بطاقات متطابقة الحجم أفقياً (Cookie-Cutter) أو جزر متناثرة متباعدة بفواصل رمادية عريضة تشتت النظر.",
-    tasteExecution: "شبكة بينتو غير متناظرة بنسبة (8:4) وسطح تشغيلي موحد (Unified Chassis) بفواصل شعرية رقيقة (Hairline Dividers).",
-    whyItMatters: "يعكس وزناً بصرياً واقعياً لكل ميزة (محاكي المقاسات يأخذ 8 أعمدة والكاشير 4) ويوفر تجربة استخدام متماسكة.",
-    ruleCode: "ANTI_SLOP_P04",
-  },
-  {
-    pillar: "Telemetry vs Buzzwords",
-    pillarTitle: "البيانات التشغيلية الحقيقية مقابل الطنين التسويقي",
-    slopSymptom: "عبارات حشو تسويقية فارغة: «الذكاء الاصطناعي السحري الخارق الذي يغير مستقبلك إلى الأبد».",
-    tasteExecution: "أرقام تشغيلية موثقة: «P95 < 0.65s زمن تحميل الكتالوج»، «60% خفض مرتجعات المقاس»، «1-Click إصدار بوالص بوسطة»، «0% عمولة».",
-    whyItMatters: "التاجر المصري لا يهمه الكلام الإنشائي، بل يبحث عن خفض مصاريف الشحن ووقف نزيف المرتجعات.",
-    ruleCode: "ANTI_SLOP_P05",
-  },
-  {
-    pillar: "Micro-Haptics & Physics",
-    pillarTitle: "فيزياء التفاعل والحركة المحسوبة",
-    slopSymptom: "حركات خطية متكررة بلا نهاية (توهجات قوس قزح دوارة وبطاقات تهتز باستمرار) تشتت القراءة.",
-    tasteExecution: "فيزياء زنبركية محكومة: ضغط فيزيائي حقيقي عند النقر (scale(0.97)) وتجاوب فوري بدون تأخير، مع احترام تام للـ reduced-motion.",
-    whyItMatters: "يشعر المستخدم بلمسة برمجية عالية الجودة كأنه يتعامل مع تطبيق سطح مكتب فاخر مثل Linear أو Cursor.",
-    ruleCode: "ANTI_SLOP_P06",
-  },
-  {
-    pillar: "Emoji & Icon Hygiene",
-    pillarTitle: "نظافة الأيقونات وحظر الإيموجي العشوائي",
-    slopSymptom: "توزيع إيموجي كحشو في كل بطاقة وعنوان (🤖 🚀 ⚡ ✨ 🔥 💡 🎯) وشارات ملونة ميتة لا يمكن النقر عليها.",
-    tasteExecution: "حظر تام لإيموجي الحشو. الاعتماد فقط على أيقونات فيكتور خفيفة الوزن وشارات حالة ديناميكية تمثل أرقاماً وبيانات حية.",
-    whyItMatters: "المظهر النظيف الجاد يعكس منتجاً مخصصاً لرواد الأعمال، وليس موقعاً تجريبياً للهواة.",
-    ruleCode: "ANTI_SLOP_P07",
   },
 ];

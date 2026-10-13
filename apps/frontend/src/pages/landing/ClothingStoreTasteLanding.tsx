@@ -14,11 +14,10 @@ import { ClothingTastePricing } from "./clothing-taste/ClothingTastePricing";
 import { ClothingTasteLeadForm } from "./clothing-taste/ClothingTasteLeadForm";
 import { ClothingTasteFAQ } from "./clothing-taste/ClothingTasteFAQ";
 import { ClothingTasteFooter } from "./clothing-taste/ClothingTasteFooter";
-import { ClothingTasteAuditDrawer } from "./clothing-taste/ClothingTasteAuditDrawer";
 import { ClothingTasteTrustStrip } from "./clothing-taste/ClothingTasteTrustStrip";
 import { ClothingTasteActivationModal } from "./clothing-taste/ClothingTasteActivationModal";
 
-import { TasteMode, UtmData } from "./clothing-taste/types";
+import { UtmData } from "./clothing-taste/types";
 import { WHATSAPP_CONSULT_URL } from "./clothing-taste/clothingTasteData";
 import "./clothing-taste/clothingTaste.css";
 
@@ -30,13 +29,11 @@ export const ClothingStoreTasteLanding: React.FC = () => {
   const navigate = useNavigate();
   const [utm, setUtm] = useState<UtmData>({});
   const [, setIsCheckingOut] = useState(false);
-  const [mode, setMode] = useState<TasteMode>("taste");
-  const [isAuditOpen, setIsAuditOpen] = useState(false);
   const [isActivationOpen, setIsActivationOpen] = useState(false);
 
   // ── First-touch UTM capture & SEO tags ──
   useEffect(() => {
-    const LANDING_TITLE = "MaxP Apparel OS — المنظومة المتكاملة لمتاجر وبراندات الأزياء";
+    const LANDING_TITLE = "MaxP للأزياء والملابس — المنظومة المتكاملة للمتاجر والبراندات";
     const LANDING_DESCRIPTION = "منظومة متاجر وبراندات الملابس في مصر: متجر أونلاين مجاني، كاشير فروع متزامن، ربط شحن بوسطة، ومستشار مقاسات ذكي يخفض المرتجعات 60%.";
     document.title = LANDING_TITLE;
 
@@ -190,47 +187,40 @@ export const ClothingStoreTasteLanding: React.FC = () => {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className={`cst-root ${mode === "slop" ? "cst-slop-mode" : ""}`} dir="rtl">
+      <div className="cst-root" dir="rtl">
         
-        {/* Modern Ergonomic Navbar */}
+        {/* Modern Boutique Navbar */}
         <ClothingTasteNavbar
           onFreeRegister={handleFreeRegister}
           onLogin={handleLogin}
-          onOpenAudit={() => setIsAuditOpen(true)}
-          mode={mode}
-          onToggleMode={setMode}
         />
 
         <main>
-          {/* Asymmetrical Viewport-Disciplined Hero */}
+          {/* Luxury Fashion Editorial Hero */}
           <ClothingTasteHero
             onFreeRegister={handleFreeRegister}
             onPricingScroll={scrollToPricing}
-            mode={mode}
           />
 
           {/* Trusted Egyptian Integrations Strip (Bosta, Kashier, InstaPay) */}
           <ClothingTasteTrustStrip />
 
-          {/* Dedicated Telemetry Strip below Hero */}
-          <ClothingTasteTelemetry mode={mode} />
+          {/* Commercial Highlights Strip */}
+          <ClothingTasteTelemetry />
 
           {/* Asymmetric 8:4 Bento Grid */}
           <ClothingTasteBento
             onPricingScroll={scrollToPricing}
-            mode={mode}
           />
 
           {/* Interactive Lookbook & Size Matrix Live Sync */}
           <ClothingTasteLookbook
             onFreeRegister={handleFreeRegister}
-            mode={mode}
           />
 
           {/* 17 Fashion Tools Suite Matrix */}
           <ClothingTasteToolsMatrix
             onPricingScroll={scrollToPricing}
-            mode={mode}
           />
 
           {/* 3-Tier Pricing Engine */}
@@ -238,7 +228,6 @@ export const ClothingStoreTasteLanding: React.FC = () => {
             onFreeRegister={handleFreeRegister}
             onPaygRegister={handlePaygRegister}
             onBundleCheckout={handleBundleCheckout}
-            mode={mode}
           />
 
           {/* Frictionless Merchant Consultation & Lead Capture Form */}
@@ -254,15 +243,6 @@ export const ClothingStoreTasteLanding: React.FC = () => {
         {/* Footer */}
         <ClothingTasteFooter
           onFreeRegister={handleFreeRegister}
-          onOpenAudit={() => setIsAuditOpen(true)}
-        />
-
-        {/* Interactive Audit Matrix Comparison Modal / Drawer */}
-        <ClothingTasteAuditDrawer
-          isOpen={isAuditOpen}
-          onClose={() => setIsAuditOpen(false)}
-          mode={mode}
-          onToggleMode={setMode}
         />
 
         {/* 60-Second Fast Activation Modal */}

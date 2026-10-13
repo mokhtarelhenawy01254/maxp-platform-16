@@ -1,24 +1,15 @@
 import React from "react";
-import { ArrowLeft, ShieldCheck, MessageCircle, SlidersHorizontal } from "lucide-react";
-import { TasteMode } from "./types";
+import { ArrowLeft, MessageCircle } from "lucide-react";
 import { WHATSAPP_CONSULT_URL } from "./clothingTasteData";
 
 interface ClothingTasteNavbarProps {
   onFreeRegister: () => void;
   onLogin: () => void;
-  onOpenAudit: () => void;
-  mode: TasteMode;
-  onToggleMode: (mode: TasteMode) => void;
-  showDevTools?: boolean;
 }
 
 export const ClothingTasteNavbar: React.FC<ClothingTasteNavbarProps> = ({
   onFreeRegister,
   onLogin,
-  onOpenAudit,
-  mode,
-  onToggleMode,
-  showDevTools = false,
 }) => {
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
@@ -26,35 +17,35 @@ export const ClothingTasteNavbar: React.FC<ClothingTasteNavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-white/[0.08] bg-[#090A0F]/95 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-black/[0.06] bg-[#FAF8F5]/90 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         
-        {/* Brand & Technical Trust Sub-label */}
+        {/* Brand & Boutique Identity */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-extrabold text-lg tracking-tight text-white font-sans">
-              MaxP <span className="text-blue-500 text-xs font-mono font-medium px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">APPAREL OS</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
+            <span className="font-black text-lg tracking-tight text-[#141416] font-sans">
+              MaxP <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-black/5 border border-black/10 text-zinc-800">الأزياء والملابس</span>
             </span>
           </div>
 
-          <span className="hidden lg:inline-block h-4 w-px bg-white/10" />
+          <span className="hidden lg:inline-block h-4 w-px bg-black/10" />
 
           {/* Quick Anchor Links (Desktop) */}
-          <nav className="hidden lg:flex items-center gap-5 text-xs text-zinc-400 font-medium">
-            <button type="button" onClick={() => scrollTo("editorial-hero")} className="hover:text-white transition-colors">
+          <nav className="hidden lg:flex items-center gap-5 text-xs text-zinc-600 font-medium">
+            <button type="button" onClick={() => scrollTo("editorial-hero")} className="hover:text-black transition-colors">
               المزايا
             </button>
-            <button type="button" onClick={() => scrollTo("lookbook")} className="hover:text-white transition-colors">
+            <button type="button" onClick={() => scrollTo("lookbook")} className="hover:text-black transition-colors">
               الكاشير والفروع
             </button>
-            <button type="button" onClick={() => scrollTo("tools-matrix")} className="hover:text-white transition-colors">
+            <button type="button" onClick={() => scrollTo("tools-matrix")} className="hover:text-black transition-colors">
               الأدوات (17)
             </button>
-            <button type="button" onClick={() => scrollTo("pricing")} className="hover:text-white transition-colors">
+            <button type="button" onClick={() => scrollTo("pricing")} className="hover:text-black transition-colors">
               الأسعار
             </button>
-            <button type="button" onClick={() => scrollTo("consultation")} className="hover:text-white transition-colors">
+            <button type="button" onClick={() => scrollTo("consultation")} className="hover:text-black transition-colors">
               طلب استشارة
             </button>
           </nav>
@@ -62,38 +53,14 @@ export const ClothingTasteNavbar: React.FC<ClothingTasteNavbarProps> = ({
 
         {/* Action Controls & Navigation CTAs */}
         <div className="flex items-center gap-2.5 sm:gap-3">
-          
-          {/* Developer / Evaluation Lens (Only shown if debug=audit or dev mode) */}
-          {showDevTools && (
-            <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-lg border border-white/10">
-              <button
-                type="button"
-                onClick={onOpenAudit}
-                className="p-1 rounded text-zinc-400 hover:text-white transition-colors"
-                title="تشريح الفروقات الهندسية"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-blue-400" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onToggleMode(mode === "taste" ? "slop" : "taste")}
-                className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
-                  mode === "taste" ? "bg-white text-black" : "bg-purple-600 text-white"
-                }`}
-              >
-                {mode === "taste" ? "✨ المهارة" : "🤖 قبل المهارة"}
-              </button>
-            </div>
-          )}
-
           {/* Direct WhatsApp Concierge */}
           <a
             href={WHATSAPP_CONSULT_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden sm:inline-flex items-center gap-1.5 text-xs text-zinc-300 hover:text-white transition-colors px-2 py-1"
+            className="hidden sm:inline-flex items-center gap-1.5 text-xs text-zinc-700 hover:text-black transition-colors px-2 py-1 font-medium"
           >
-            <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+            <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
             <span>استشارة واتساب</span>
           </a>
 
@@ -101,12 +68,12 @@ export const ClothingTasteNavbar: React.FC<ClothingTasteNavbarProps> = ({
           <button
             type="button"
             onClick={onLogin}
-            className="hidden sm:inline-block text-xs text-zinc-400 hover:text-white transition-colors px-2 py-1"
+            className="hidden sm:inline-block text-xs text-zinc-600 hover:text-black transition-colors px-2 py-1 font-medium"
           >
             تسجيل الدخول
           </button>
 
-          {/* Primary Dominant CTA (Desktop only, mobile uses sticky bar) */}
+          {/* Primary Dominant CTA */}
           <button
             type="button"
             onClick={onFreeRegister}

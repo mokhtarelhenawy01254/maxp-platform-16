@@ -34,7 +34,7 @@ export default function DateRangeToolbar({
       <div className="flex items-center gap-2">
         <Select value={selectedFilterId} onValueChange={onSelectFilter}>
           <SelectTrigger className="h-8 w-32 sm:w-36 text-xs bg-background/80 border-border/60 shadow-none font-medium">
-            <SelectValue placeholder={rangeLabel} />
+            <SelectValue placeholder={rangeLabel}>{currentRangeLabel}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {presets.map((p) => (

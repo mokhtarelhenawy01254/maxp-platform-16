@@ -46,29 +46,26 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
   const isMessaging = primaryVertical === 'messaging';
 
   return (
-    <div className="relative overflow-hidden bg-slate-950 text-white rounded-2xl border border-slate-800 p-4 sm:p-6 shadow-[0_16px_40px_-16px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] space-y-5">
-      {/* Subtle architectural background grid glow */}
-      <div className="pointer-events-none absolute -top-24 right-0 w-96 h-96 bg-gradient-to-bl from-cyan-500/10 via-primary/5 to-transparent blur-3xl opacity-60" />
-
+    <div className="relative overflow-hidden bg-zinc-950 text-white rounded-2xl border border-zinc-800/80 p-4 sm:p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] space-y-4">
       {/* Header with Title & Badge */}
       <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center shrink-0 shadow-inner">
+          <div className="w-11 h-11 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center shrink-0 shadow-inner">
             {isMedical ? (
-              <HeartIcon className="w-6 h-6 text-rose-400" />
+              <HeartIcon className="w-5 h-5 text-rose-400" />
             ) : isDental ? (
-              <WrenchScrewdriverIcon className="w-6 h-6 text-cyan-400" />
+              <WrenchScrewdriverIcon className="w-5 h-5 text-zinc-300" />
             ) : isEducation ? (
-              <AcademicCapIcon className="w-6 h-6 text-indigo-400" />
+              <AcademicCapIcon className="w-5 h-5 text-indigo-400" />
             ) : isMarketing ? (
-              <MegaphoneIcon className="w-6 h-6 text-amber-400" />
+              <MegaphoneIcon className="w-5 h-5 text-amber-400" />
             ) : (
-              <ChatBubbleLeftRightIcon className="w-6 h-6 text-emerald-400" />
+              <ChatBubbleLeftRightIcon className="w-5 h-5 text-emerald-400" />
             )}
           </div>
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-base sm:text-lg font-extrabold text-white tracking-tight">
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
                 {isMedical
                   ? 'لوحة إدارة العيادات والمواعيد الطبية'
                   : isDental
@@ -79,12 +76,12 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
                   ? 'لوحة التسويق والحملات الرقمية'
                   : 'لوحة إدارة المحادثات وخدمة العملاء'}
               </h2>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span>{specialtyName || 'نشط ومتصل'}</span>
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-1 font-medium">
+            <p className="text-xs text-zinc-400 mt-0.5 font-normal">
               مركز القيادة والعمليات التشغيلية التخصصية
             </p>
           </div>
@@ -97,7 +94,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/appointments')}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-bold active:scale-[0.97] transition-[transform,background-color] duration-150 shadow-md shadow-rose-500/20 shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white text-zinc-950 text-xs font-semibold active:scale-[0.97] transition-all duration-150 shadow-2xs shrink-0"
               >
                 <PlusIcon className="w-4 h-4 stroke-[2.5]" />
                 حجز موعد
@@ -105,9 +102,9 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/doctor/schedule')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-white active:scale-[0.97] transition-[transform,background-color] duration-150 text-xs font-semibold shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-white active:scale-[0.97] transition-all duration-150 text-xs font-medium shrink-0"
               >
-                <CalendarDaysIcon className="w-4 h-4 text-slate-400" />
+                <CalendarDaysIcon className="w-4 h-4 text-zinc-400" />
                 الجدول الطبي
               </button>
             </>
@@ -118,7 +115,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/dental-lab')}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-xs font-bold active:scale-[0.97] transition-[transform,background-color] duration-150 shadow-md shadow-cyan-400/20 shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white text-zinc-950 text-xs font-semibold active:scale-[0.97] transition-all duration-150 shadow-2xs shadow-black/20 shrink-0"
               >
                 <PlusIcon className="w-4 h-4 stroke-[2.5]" />
                 استلام حالة معمل
@@ -126,9 +123,9 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/dental-lab/doctors')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-white active:scale-[0.97] transition-[transform,background-color] duration-150 text-xs font-semibold shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-white active:scale-[0.97] transition-all duration-150 text-xs font-medium shrink-0"
               >
-                <UsersIcon className="w-4 h-4 text-slate-400" />
+                <UsersIcon className="w-4 h-4 text-zinc-400" />
                 أطباء الأسنان
               </button>
             </>
@@ -139,7 +136,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/teacher/schedule')}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-400 hover:bg-indigo-300 text-slate-950 text-xs font-bold active:scale-[0.97] transition-[transform,background-color] duration-150 shadow-md shadow-indigo-400/20 shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white text-zinc-950 text-xs font-semibold active:scale-[0.97] transition-all duration-150 shadow-2xs shrink-0"
               >
                 <PlusIcon className="w-4 h-4 stroke-[2.5]" />
                 إضافة حصة
@@ -147,9 +144,9 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/parent/children')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-white active:scale-[0.97] transition-[transform,background-color] duration-150 text-xs font-semibold shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-white active:scale-[0.97] transition-all duration-150 text-xs font-medium shrink-0"
               >
-                <UsersIcon className="w-4 h-4 text-slate-400" />
+                <UsersIcon className="w-4 h-4 text-zinc-400" />
                 الطلاب
               </button>
             </>
@@ -160,7 +157,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/advertising/facebook-ads')}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold active:scale-[0.97] transition-[transform,background-color] duration-150 shadow-md shadow-amber-400/20 shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white text-zinc-950 text-xs font-semibold active:scale-[0.97] transition-all duration-150 shadow-2xs shrink-0"
               >
                 <PlusIcon className="w-4 h-4 stroke-[2.5]" />
                 حملة إعلانية
@@ -168,9 +165,9 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/marketing/facebook')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-white active:scale-[0.97] transition-[transform,background-color] duration-150 text-xs font-semibold shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-white active:scale-[0.97] transition-all duration-150 text-xs font-medium shrink-0"
               >
-                <BriefcaseIcon className="w-4 h-4 text-slate-400" />
+                <BriefcaseIcon className="w-4 h-4 text-zinc-400" />
                 الصفحات المتصلة
               </button>
             </>
@@ -181,15 +178,15 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
               <button
                 type="button"
                 onClick={() => navigate('/unified-inbox')}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-bold active:scale-[0.97] transition-[transform,background-color] duration-150 shadow-md shadow-emerald-400/20 shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white text-zinc-950 text-xs font-semibold active:scale-[0.97] transition-all duration-150 shadow-2xs shrink-0"
               >
-                <ChatBubbleLeftRightIcon className="w-4 h-4 stroke-[2.5]" />
+                <ChatBubbleLeftRightIcon className="w-4 h-4" />
                 صندوق الوارد الموحد
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/whatsapp')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-white active:scale-[0.97] transition-[transform,background-color] duration-150 text-xs font-semibold shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-white/10 bg-white/[0.05] hover:bg-white/[0.1] text-white active:scale-[0.97] transition-all duration-150 text-xs font-medium shrink-0"
               >
                 قنوات الواتساب
               </button>
@@ -237,7 +234,7 @@ export const SpecialtyDashboardHeader: React.FC<SpecialtyDashboardHeaderProps> =
           <>
             <div className="p-4 sm:p-5">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">الحالات النشطة</span>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-cyan-400 mt-1.5 font-mono">
+              <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-white mt-1.5 font-mono">
                 {specialtyMetrics.dentalLab?.activeCases ?? 0}
               </p>
               <span className="text-[11px] text-slate-500 mt-1 block">حالة قيد التصنيع حالياً</span>

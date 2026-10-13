@@ -109,30 +109,52 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
   - **Ban Redundant Cross-Panel Context Duplication**: Do not show the same selected entity (product, campaign, status) in 3 different headers and badges across the screen. Centralize the active entity in the top unified control bar.
   - **Ban Nested Border Nesting (Borders inside Borders)**: Do not wrap small stats and sub-sections with thick full-border boxes inside already bordered panels. Use subtle dividers, typography hierarchy, or single-surface groupings to keep the screen breathing and uncluttered.
 
-## 🚫 Rule: Anti-AI-Slop & Design Authenticity (Permanent Ban on AI Clichés)
-Any design resembling typical LLM-generated output is strictly rejected. Audit all code against these 6 core detection pillars & 10 slop flags:
+## 🛑 Rule: Absolute Ban on Meta-Explanatory Clutter in Production UI (حظر قطعي لحشو الشروحات والتنظير وأزرار المقارنة داخل واجهات المستخدم)
+- **Production UI is Strictly for Customers & Business (الواجهة للعميل فقط وليست للمهندس):**
+  - User interfaces, landing pages, dashboards, and client portals MUST NEVER contain design-theory lectures, rule codes, AI self-talk, or internal comparison widgets.
+  - **PERMANENT BAN on embedding inside production UI:**
+    - "Taste vs Slop" toggles, pills, or buttons in user-facing UI.
+    - "قبل المهارة / بعد المهارة" toggles.
+    - "Audit Matrix Drawers" or design breakdown drawers.
+    - Rule codes (`ANTI_SLOP_P01`, `ANTI_SLOP_P02`, etc.) or internal architecture labels.
+    - Text paragraphs lecturing the viewer on why the AI designed something or why an aesthetic is good.
+- **Comparisons Belong Strictly in Chat/Artifacts, NEVER in Code:**
+  - When the user asks to "show the difference between using a skill and not", or "compare approaches", the explanation, audit, and breakdown MUST be presented strictly in the chat conversation or an artifact markdown file. NEVER leak internal comparisons, debugging lenses, or explanatory drawers into the production frontend components or live landing pages.
+- **Show, Don't Tell — Zero Instructional Subtitle Bloat:**
+  - Pro SaaS pages and landing pages must never lecture the visitor with paragraphs explaining "why we designed this button" or "how this tool benefits you in 5 lines of prose".
+  - The UI must speak through crisp, self-evident actions, transparent pricing, visual demonstrations, and hard business metrics.
 
-### The 6 AI-Detection Pillars (2026 Engineering Standard):
-1. **Aesthetic & Palette**: Ban purple/cyan fuzzy neon mesh and excessive glassmorphism. Use architectural OLED blacks (`#050505` / `#09090b`), titanium, matte graphite (`#121214`), or warm creams (`#FDFBF7`) with machined hairline borders (`border-white/10` or `ring-1 ring-border/40`) and inset specular highlights (`shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]`).
-2. **Typography & Micro-Typography**:
+## 🚫 Rule: Anti-AI-Slop & Design Authenticity (Domain-First Aesthetic & Permanent Ban on AI Clichés)
+Any design resembling generic LLM output or blindly imposing developer-tool aesthetics onto non-technical domains is strictly rejected. Audit all code against these 6 core detection pillars & 12 slop flags:
+
+### The 6 AI-Detection Pillars (Domain-Aware Engineering Standard):
+1. **Domain-First Aesthetic & Palette (الملائمة القطاعية والجمهور المستهدف):**
+   - **Fashion, Apparel, Beauty & Lifestyle Commerce:** NEVER use dark hacker terminal themes, OLED black carbon, or cyber neon. Mandate warm luxury creams (`#FAF8F5`, `#FDFBF7`), clean porcelain whites (`#FFFFFF`), architectural ink contrast (`#141416`), soft tailored shadows, rich garment lookbooks, and high-fashion editorial typography (Zara, Massimo Dutti, Farfetch caliber).
+   - **Business Operations & Dashboards (Dental Lab, POS, Warehouses):** Clean, crisp, high-contrast, distraction-free daylight surfaces (`#FFFFFF` with `#F8FAFC` and subtle zinc dividers).
+   - **Developer Tools & Infrastructure Only:** Dark titanium/graphite palettes are strictly restricted to low-level engineering consoles, CLIs, or IDE extensions — PERMANENTLY BANNED on customer-facing commerce, merchants, clinics, or lifestyle pages.
+2. **Typography & Micro-Typography:**
    - Mandatory `text-wrap: balance` on headings and `text-pretty` on body copy (ban orphan words).
-   - Mandatory `font-variant-numeric: tabular-nums` (or `tabular-nums`) for all numbers, pricing, and telemetry.
+   - Mandatory `font-variant-numeric: tabular-nums` (or `tabular-nums`) for all numbers, pricing, and business metrics.
+   - For Arabic typography: NEVER apply monospace (`font-mono`) to Arabic words as it breaks cursive character connections; restrict monospace strictly to Latin codes, currencies, or digit-only tabular blocks.
    - Use true typographical glyphs: `…` (never `...`), curly quotes `“ ”` (never `"`), non-breaking spaces before units (`10&nbsp;MB`, `0.8&nbsp;s`, `⌘&nbsp;K`).
-3. **Interaction Physics & Micro-Haptics**:
+3. **Interaction Physics & Micro-Haptics:**
    - Buttons MUST feel physically responsive: `:active` state requires `transform: scale(0.97)` with `transition: transform 160ms ease-out`.
    - Popovers MUST be origin-aware: `transform-origin: var(--transform-origin)` (scale in from trigger, not center).
    - Tooltips MUST skip delay after first hover (`instant hover mode`). Strict `prefers-reduced-motion` compliance.
-4. **Layout Architecture (Anti-Symmetry & Unified Chassis)**:
-   - Ban cookie-cutter 3-column equal cards. Use asymmetrical Bento Grids (8:4 ratio) with varied visual weight.
-   - Mandate Unified Single-Surface Chassis (Linear/Cursor style) with hairline dividers (`border-r`, `border-l`), banning floating card islands separated by wide grey gaps (`bg-slate-100 gap-6`).
-5. **Telemetry over Buzzwords (Show, Don't Tell)**:
-   - Zero marketing buzzword fluff ("الذكاء الاصطناعي الخارق"). Replace with hard telemetry: latency (`P95 < 0.8s`), exact model names (`DeepSeek-V3`, `Llama 3.3 70B`), API signatures (`Meta Graph API v21`, `PostgreSQL Attribution`), and verifiable unit economics.
-6. **Accessibility & Edge-Case Resilience**:
+4. **Layout Architecture (Anti-Symmetry & Editorial Hierarchy):**
+   - Ban cookie-cutter 3-column equal cards. Use asymmetrical layouts and Bento Grids with varied visual weight.
+   - For SaaS workspaces & cockpits: Unified single-surface chassis with subtle hairline dividers, banning floating islands separated by wide grey gaps.
+   - For Commerce & Marketing: Spacious editorial hierarchy with high-contrast hero, clear visual product previews, and frictionless conversion actions. PERMANENTLY BAN forcing Linear/Cursor dark IDE layouts onto commerce or lifestyle products.
+5. **Real Business Economics & Telemetry over Jargon (الأرقام والنتائج التجارية الحقيقية):**
+   - Zero marketing buzzword fluff ("الذكاء الاصطناعي الخارق").
+   - For E-commerce & Fashion: Replace fluff with hard merchant economics: Return reduction % (e.g. 60%), 1-click Bosta AWB dispatch speed, real profit margin calculations, 0% sales commission, and verified local payment methods (InstaPay/Meeza).
+   - PERMANENTLY BAN developer metrics (P95 latency, model names like DeepSeek/Llama) on business merchant or consumer pages. Developer metrics belong strictly in engineering dashboards.
+6. **Accessibility & Edge-Case Resilience:**
    - Always use semantic HTML (`<button>`, `<a>`, `<label>`) with `aria-label` on icon-only buttons.
    - Replace `outline-none` with `focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1`.
    - Defensive layout: `min-w-0` on flex children with `truncate` or `line-clamp-*` to prevent overflow crashes.
 
-### The 10 Banned Slop Flags:
+### The 12 Banned Slop Flags:
 1. Zero Emoji Littering (`🤖`, `🚀`, `⚡`, `✨`, `🔥`, `💡`, `🎯`, `🛒`, `🧠`).
 2. Ban Purple/Cyan Dark Mesh Cliché.
 3. Ban Cookie-Cutter Symmetrical Card Clones.
@@ -143,6 +165,8 @@ Any design resembling typical LLM-generated output is strictly rejected. Audit a
 8. Ban Stock 3D Cartoon Avatars.
 9. Ban The Centered Hero Trap.
 10. Ban Dead Unclickable UI Badges.
+11. **Ban Developer Terminal Aesthetics on Commerce/Fashion/Lifestyle:** Never use pitch black OLED/carbon or cyber themes for fashion, clothing, clinics, food, or retail.
+12. **Ban Developer Jargon on Business Landing Pages:** Never show P95 latency, API signatures, or LLM model names to merchant or consumer buyers; use real business unit economics instead.
 
 ## 🧪 Rule: Mandatory Scenario Formulation & Browser Self-Verification Before Push (قاعدة السيناريو الإلزامي والاختبار الذاتي بالمتصفح قبل الرفع)
 - **Strict Law — NO PUSH WITHOUT LIVE PROOF (حظر قطعي للرفع بدون إثبات عملي حي):**
