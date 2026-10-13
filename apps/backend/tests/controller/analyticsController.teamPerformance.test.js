@@ -172,5 +172,40 @@ describe('analyticsController.getTeamPerformanceAnalytics', () => {
     expect(byName['Swan Test'].ordersCreated).toBe(1);
     expect(byName['Swan Test'].createdRevenue).toBe(250);
   });
+
+  test('includes multi-tenant userCompany members (e.g. cross-company staff) and retains roster members with 0 orders', async () => {
+    prismaMock.user.findMany.mockResolvedValue([
+      user('user-direct', 'Abdallah', 'abdallah@redline.com', 'OWNER')
+    ]);
+    prismaMock.userCompany = {
+      findMany: jest.fn().mockResolvedValue([
+        {
+          userId: 'user-cross',
+          role: 'COMPANY_ADMIN',
+          user: user('user-cross', 'Swan', 'swan@h2m.com', 'COMPANY_ADMIN')
+        }
+      ])
+    };
+    prismaMock.order.findMany.mockResolvedValue([
+      order('o-1', 'PROCESSING', '640.00', 'user-direct', 'user-direct', new Date())
+    ]);
+
+    const req = createRequest({ period: 'yesterday' });
+    const res = createResponse();
+    await getTeamPerformanceAnalytics(req, res);
+
+    expect(res.payload.success).toBe(true);
+    const data = res.payload.data;
+    const byEmail = Object.fromEntries(data.teamMembers.map((m) => [m.email, m]));
+
+    expect(byEmail['abdallah@redline.com']).toBeDefined();
+    expect(byEmail['abdallah@redline.com'].ordersCreated).toBe(1);
+
+    // Cross-tenant user from userCompany must be in the roster even if 0 orders
+    expect(byEmail['swan@h2m.com']).toBeDefined();
+    expect(byEmail['swan@h2m.com'].role).toBe('COMPANY_ADMIN');
+    expect(byEmail['swan@h2m.com'].ordersConfirmed).toBe(0);
+    expect(byEmail['swan@h2m.com'].totalRevenue).toBe(0);
+  });
 });
 

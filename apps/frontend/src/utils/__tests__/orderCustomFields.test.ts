@@ -154,6 +154,79 @@ describe("resolveCustomFieldsForDisplay", () => {
     ]);
     expect(result.displayNotes).toBe("يرجى التوصيل للمنزل");
   });
+
+  it("automatically displays custom fields when present even if showCustomFields is undefined", () => {
+    const orderWithCarSpecs = {
+      orderNumber: "ORD-REDLINE-101",
+      notes: "المواصفات والحقول المخصصة: هيونداي توسان 2022\nيرجى الاتصال قبل الوصول",
+    };
+    const result = resolveCustomFieldsForDisplay(orderWithCarSpecs);
+
+    expect(result.isEnabled).toBe(true);
+    expect(result.customFields).toEqual([
+      { label: "المواصفات والحقول المخصصة", value: "هيونداي توسان 2022" },
+    ]);
+    expect(result.displayNotes).toBe("يرجى الاتصال قبل الوصول");
+  });
+
+  it("extracts and cleans 'المواصفات: ...' and 'مواصفات خاصة: ...' prefixes properly", () => {
+    const orderWithSpecs = {
+      notes: "المواصفات: كيا سبورتاج 2024\nملاحظة: شحن سريع",
+    };
+    const result = resolveCustomFieldsForDisplay(orderWithSpecs);
+
+    expect(result.isEnabled).toBe(true);
+    expect(result.customFields).toEqual([
+      { label: "المواصفات", value: "كيا سبورتاج 2024" },
+    ]);
+    expect(result.displayNotes).toBe("ملاحظة: شحن سريع");
+  });
+
+  it("handles combined order notes and invoice notes properly, displaying custom fields and retaining invoice notes", () => {
+    const combinedNotes = "المواصفات والحقول المخصصة: تويوتا كورولا 2020\nشكراً لتعاملكم معنا. يرجى الدفع عند الاستلام.";
+    const invoiceData = {
+      notes: combinedNotes,
+      order: {
+        orderNumber: "ORD-REDLINE-777",
+        notes: "المواصفات والحقول المخصصة: تويوتا كورولا 2020",
+      },
+    };
+    const result = resolveCustomFieldsForDisplay(invoiceData);
+
+    expect(result.isEnabled).toBe(true);
+    expect(result.customFields).toEqual([
+      { label: "المواصفات والحقول المخصصة", value: "تويوتا كورولا 2020" },
+    ]);
+    expect(result.displayNotes).toBe("شكراً لتعاملكم معنا. يرجى الدفع عند الاستلام.");
+  });
+
+  it("extracts custom fields from items attributes and carModel correctly", () => {
+    const invoiceWithItemAttrs = {
+      order: {
+        orderItems: [
+          {
+            productName: "فرش سيارة جلد طبيعي",
+            quantity: 1,
+            price: 1500,
+            carModel: "هيونداي النترا CN7 2023",
+            customFields: [
+              { label: "سنة الموديل", value: "2023" },
+            ],
+          },
+        ],
+      },
+    };
+    const result = resolveCustomFieldsForDisplay(invoiceWithItemAttrs);
+
+    expect(result.isEnabled).toBe(true);
+    expect(result.customFields).toEqual(
+      expect.arrayContaining([
+        { label: "سنة الموديل", value: "2023" },
+        { label: "نوع وموديل وسنة صنع السيارة", value: "هيونداي النترا CN7 2023" },
+      ])
+    );
+  });
 });
+
 
 

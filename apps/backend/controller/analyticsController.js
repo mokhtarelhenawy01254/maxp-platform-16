@@ -4045,7 +4045,7 @@ const getTeamPerformanceAnalytics = async (req, res) => {
       ];
     }
 
-    const [users, orders] = await Promise.all([
+    const [directUsers, userCompanyRecords, orders] = await Promise.all([
       prisma.user.findMany({
         where: { companyId: String(companyId), isActive: true },
         select: {
@@ -4056,6 +4056,23 @@ const getTeamPerformanceAnalytics = async (req, res) => {
           role: true
         }
       }),
+      prisma.userCompany?.findMany
+        ? prisma.userCompany.findMany({
+            where: { companyId: String(companyId), isActive: true },
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                  role: true,
+                  isActive: true
+                }
+              }
+            }
+          })
+        : Promise.resolve([]),
       prisma.order.findMany({
         where: whereClause,
         select: {
@@ -4073,13 +4090,74 @@ const getTeamPerformanceAnalytics = async (req, res) => {
       })
     ]);
 
+    const userMap = new Map();
+    const isCompanyStaffSet = new Set();
+
+    directUsers.forEach(u => {
+      userMap.set(u.id, {
+        id: u.id,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        email: u.email,
+        role: u.role
+      });
+      isCompanyStaffSet.add(u.id);
+    });
+
+    userCompanyRecords.forEach(uc => {
+      if (uc.user && uc.user.isActive) {
+        userMap.set(uc.user.id, {
+          id: uc.user.id,
+          firstName: uc.user.firstName,
+          lastName: uc.user.lastName,
+          email: uc.user.email,
+          role: uc.role || uc.user.role
+        });
+        isCompanyStaffSet.add(uc.user.id);
+      }
+    });
+
+    // Also collect any user IDs present in orders who might not be in the rosters above
+    const orderUserIds = new Set();
+    orders.forEach(o => {
+      if (o.createdBy && !userMap.has(o.createdBy) && !String(o.createdBy).startsWith('SYSTEM_')) orderUserIds.add(o.createdBy);
+      if (o.confirmedBy && !userMap.has(o.confirmedBy) && !String(o.confirmedBy).startsWith('SYSTEM_')) orderUserIds.add(o.confirmedBy);
+      if (o.assignedTo && !userMap.has(o.assignedTo) && !String(o.assignedTo).startsWith('SYSTEM_')) orderUserIds.add(o.assignedTo);
+    });
+
+    if (orderUserIds.size > 0) {
+      const referencedUsers = await prisma.user.findMany({
+        where: { id: { in: Array.from(orderUserIds) } },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true
+        }
+      });
+      referencedUsers.forEach(u => {
+        userMap.set(u.id, {
+          id: u.id,
+          firstName: u.firstName,
+          lastName: u.lastName,
+          email: u.email,
+          role: u.role
+        });
+      });
+    }
+
     const userPerformance = {};
-    users.forEach(user => {
-      userPerformance[user.id] = {
-        userId: user.id,
+    for (const [userId, user] of userMap.entries()) {
+      const isInternalBridge = String(user.email || '').toLowerCase().endsWith('@ai-bridge.internal.maxp');
+      if (isInternalBridge) continue;
+
+      userPerformance[userId] = {
+        userId,
         userName: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email,
         email: user.email,
         role: user.role,
+        isRosterMember: isCompanyStaffSet.has(userId),
         ordersCreated: 0,
         ordersConfirmed: 0,
         ordersAssigned: 0,
@@ -4091,7 +4169,7 @@ const getTeamPerformanceAnalytics = async (req, res) => {
         successfulOrders: 0,
         confirmedSuccessfulOrders: 0
       };
-    });
+    }
 
     const CONFIRMED_OR_FULFILLED_STATUSES = new Set([
       'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED',
@@ -4158,7 +4236,7 @@ const getTeamPerformanceAnalytics = async (req, res) => {
 
 
     const teamStats = Object.values(userPerformance)
-      .filter(u => u.ordersCreated > 0 || u.ordersConfirmed > 0 || u.ordersAssigned > 0)
+      .filter(u => u.isRosterMember || u.ordersCreated > 0 || u.ordersConfirmed > 0 || u.ordersAssigned > 0)
       .map(u => {
         // Effective revenue: confirmed revenue if confirmed orders exist, else created revenue
         const effectiveRevenue = u.confirmedRevenue > 0 ? u.confirmedRevenue : u.createdRevenue;
@@ -4175,7 +4253,7 @@ const getTeamPerformanceAnalytics = async (req, res) => {
         }
 
         const avgDivisor = u.ordersConfirmed > 0 ? u.ordersConfirmed : (u.ordersCreated > 0 ? u.ordersCreated : 1);
-        const avgOrderValue = avgDivisor > 0
+        const avgOrderValue = (effectiveRevenue > 0 && avgDivisor > 0)
           ? parseFloat((effectiveRevenue / avgDivisor).toFixed(2))
           : 0;
 
@@ -4196,7 +4274,7 @@ const getTeamPerformanceAnalytics = async (req, res) => {
           avgOrderValue
         };
       })
-      .sort((a, b) => (b.ordersConfirmed - a.ordersConfirmed) || (b.totalRevenue - a.totalRevenue));
+      .sort((a, b) => (b.ordersConfirmed - a.ordersConfirmed) || (b.ordersCreated - a.ordersCreated) || (b.ordersAssigned - a.ordersAssigned) || (b.totalRevenue - a.totalRevenue));
 
     res.json({
       success: true,

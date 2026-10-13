@@ -2129,9 +2129,6 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     ]);
 
     const total = windowAgg._count._all || 0;
-    const converted = convWindow.length;
-    const naturalConverted = convWindow.filter((c) => !c.employeeId && c.channel === 'natural').length;
-    const byTeamConverted = converted - naturalConverted;
 
     // استخراج مصادر السلات غير المكتملة في الفترة حصرياً من بيانات السلات (وليس كل طلبات المتجر الحقيقية!)
     const sourcesMap = new Map();
@@ -2223,17 +2220,24 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
                       null;
       return matched && matched.total != null ? Number(matched.total) : Number(c.cartValue || 0);
     };
-    const convertedValue = convWindow.reduce((s, c) => s + resolvedValue(c), 0);
 
-    // قاعدة القمع: سلات الفترة نفسها (المتبقية + اللي اتحولت واتحذفت) — مش كل تاريخ الشركة.
-    // المقام القديم (كل السلات التراكمية) كان بيبخس النسبة كل ما التاريخ يتراكم من غير مسح:
-    // مثال حقيقي (Swan): 12 ألف سلة متراكمة خلّت نسبة اليوم تظهر ~0.2% بدل ~7%.
+    // 🎯 فصل تحويلات الفريق عن إكمالات المتجر الطبيعية التلقائية
+    const teamConvWindow = convWindow.filter((c) => c.employeeId || c.channel !== 'natural');
+    const naturalConvWindow = convWindow.filter((c) => !c.employeeId && c.channel === 'natural');
+
+    const byTeamConverted = teamConvWindow.length;
+    const naturalConverted = naturalConvWindow.length;
+    const teamConvertedValue = teamConvWindow.reduce((s, c) => s + resolvedValue(c), 0);
+    const naturalConvertedValue = naturalConvWindow.reduce((s, c) => s + resolvedValue(c), 0);
+    const convertedValue = teamConvertedValue + naturalConvertedValue;
+
+    // قاعدة القمع: سلات الفترة نفسها (المتبقية + اللي استردها الفريق)
     const windowTotal = windowAgg._count._all || 0;
-    const recoveryFunnelBase = windowTotal + converted;
+    const teamFunnelBase = windowTotal + byTeamConverted;
 
-    // trend by day (JS aggregation over the window rows)
+    // ترند استرداد الفريق الزمني باليوم
     const dayMap = new Map();
-    convWindow.forEach((c) => {
+    teamConvWindow.forEach((c) => {
       const day = c.convertedAt ? localDayKey(c.convertedAt) : 'unknown';
       const entry = dayMap.get(day) || { date: day, conversions: 0, value: 0 };
       entry.conversions += 1;
@@ -2242,17 +2246,19 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     });
     const trend = Array.from(dayMap.values()).sort((a, b) => (a.date < b.date ? -1 : 1));
 
-    // team performance by employee (skips natural conversions - no employee)
+    // أداء فريق الاسترداد (تجميع دقيق لمجهود الموظفين: تحويلات، استبعاد، تواصل)
     const teamMap = new Map();
-    convWindow.forEach((c) => {
+    teamConvWindow.forEach((c) => {
       if (!c.employeeId) return;
       const key = c.employeeId;
       const entry = teamMap.get(key) || {
         employeeId: c.employeeId,
         employeeName: c.employeeName || 'غير معروف',
+        displayName: c.employeeName || 'غير معروف',
         conversions: 0,
         value: 0,
         contacts: 0,
+        dismissed: 0,
         responses: 0,
       };
       entry.conversions += 1;
@@ -2260,7 +2266,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       teamMap.set(key, entry);
     });
 
-    // add contact/response stats per employee
+    // إضافة إحصائيات التواصل والاستبعاد لكل موظف
     contactWindow.forEach((ct) => {
       if (!ct.employeeId) return;
       const key = ct.employeeId;
@@ -2269,29 +2275,63 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
         entry = {
           employeeId: ct.employeeId,
           employeeName: ct.employeeName || 'غير معروف',
+          displayName: ct.employeeName || 'غير معروف',
           conversions: 0,
           value: 0,
           contacts: 0,
+          dismissed: 0,
           responses: 0,
         };
         teamMap.set(key, entry);
       }
       entry.contacts += 1;
-      if ((ct.result || '').toString().toLowerCase() === 'answered') {
+      const res = (ct.result || '').toString().toLowerCase();
+      const meth = (ct.method || '').toString().toLowerCase();
+      if (meth === 'dismissed' || res === 'cancelled') {
+        entry.dismissed += 1;
+      }
+      if (res === 'answered' || res === 'contacted' || res === 'interested' || res === 'confirmed') {
         entry.responses += 1;
       }
     });
 
+    // استعلام الأسماء الحقيقية للموظفين من قاعدة البيانات لعرض اسم واضح بدلاً من البريد الإلكتروني
+    const employeeIds = Array.from(teamMap.keys()).filter(Boolean);
+    if (employeeIds.length > 0) {
+      try {
+        const userRecords = await prisma.user.findMany({
+          where: { id: { in: employeeIds } },
+          select: { id: true, firstName: true, lastName: true, email: true, avatar: true }
+        });
+        const userMap = new Map(userRecords.map((u) => [u.id, u]));
+        teamMap.forEach((entry, empId) => {
+          const u = userMap.get(empId);
+          if (u) {
+            const fullName = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
+            if (fullName) {
+              entry.displayName = fullName;
+            }
+            entry.email = u.email;
+            entry.avatar = u.avatar || null;
+          }
+        });
+      } catch (_) {}
+    }
+
     const team = Array.from(teamMap.values())
-      .map((e) => ({
-        ...e,
-        avgValue: e.conversions ? e.value / e.conversions : 0,
-        responseRate: e.contacts ? (e.responses / e.contacts) * 100 : 0,
-      }))
-      .sort((a, b) => b.value - a.value);
+      .map((e) => {
+        const handledTotal = e.conversions + (e.dismissed || 0);
+        return {
+          ...e,
+          avgValue: e.conversions ? e.value / e.conversions : 0,
+          handledTotal,
+          conversionRate: handledTotal > 0 ? (e.conversions / handledTotal) * 100 : 0,
+          responseRate: e.contacts ? (e.responses / e.contacts) * 100 : 0,
+        };
+      })
+      .sort((a, b) => b.conversions - a.conversions || b.value - a.value);
 
-    // مصير الطلبات المحولة اتحدد فوق (orderMapById / orderMapByNumber) — هنا الحساب بس
-
+    // 🎯 مصير الطلبات المحولة بواسطة الفريق وجودتها (كم قيد الانتظار/الشحن، كم ملغي، كم تسلم)
     const duplicateSettings = await orderService.getDuplicateSettings(companyId);
     const treatDuplicateAsCancelled = duplicateSettings?.reportTreatment === 'cancelled';
     const DELIVERED_SET = new Set(['DELIVERED', 'PARTIALLY_DELIVERED', 'COMPLETED']);
@@ -2301,7 +2341,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       : new Set(['CANCELLED', 'FAILED', 'TRASH', 'TRASH_ORDER', 'PENDING_CANCELLATION']);
 
     const destinyStats = {
-      totalConverted: converted,
+      totalConverted: byTeamConverted,
       delivered: { count: 0, value: 0, rate: 0 },
       returned: { count: 0, value: 0, rate: 0 },
       cancelled: { count: 0, value: 0, rate: 0 },
@@ -2313,7 +2353,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
 
     const statusMap = new Map();
 
-    convWindow.forEach((c) => {
+    teamConvWindow.forEach((c) => {
       const matched = (c.orderNumber && orderMapByNumber.get(c.orderNumber)) ||
                       (c.orderId && orderMapById.get(c.orderId)) ||
                       null;
@@ -2340,11 +2380,11 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       }
     });
 
-    if (converted > 0) {
-      destinyStats.delivered.rate = (destinyStats.delivered.count / converted) * 100;
-      destinyStats.returned.rate = (destinyStats.returned.count / converted) * 100;
-      destinyStats.cancelled.rate = (destinyStats.cancelled.count / converted) * 100;
-      destinyStats.inProgress.rate = (destinyStats.inProgress.count / converted) * 100;
+    if (byTeamConverted > 0) {
+      destinyStats.delivered.rate = (destinyStats.delivered.count / byTeamConverted) * 100;
+      destinyStats.returned.rate = (destinyStats.returned.count / byTeamConverted) * 100;
+      destinyStats.cancelled.rate = (destinyStats.cancelled.count / byTeamConverted) * 100;
+      destinyStats.inProgress.rate = (destinyStats.inProgress.count / byTeamConverted) * 100;
       destinyStats.deliveryRate = destinyStats.delivered.rate;
 
       const finalizedCount = destinyStats.delivered.count + destinyStats.returned.count + destinyStats.cancelled.count;
@@ -2354,7 +2394,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     destinyStats.statusBreakdown = Array.from(statusMap.values())
       .map((s) => ({
         ...s,
-        rate: converted > 0 ? (s.count / converted) * 100 : 0,
+        rate: byTeamConverted > 0 ? (s.count / byTeamConverted) * 100 : 0,
       }))
       .sort((a, b) => b.count - a.count);
 
@@ -2376,33 +2416,43 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
           allTimeValue: Number(allTimeAgg._sum.total || 0),
         },
         recovery: {
-          converted,
-          convertedValue,
-          avgConvertedValue: converted ? convertedValue / converted : 0,
-          recoveryRate: recoveryFunnelBase ? (converted / recoveryFunnelBase) * 100 : 0,
-          funnelBase: recoveryFunnelBase,
+          converted: byTeamConverted,
+          convertedValue: teamConvertedValue,
+          avgConvertedValue: byTeamConverted ? teamConvertedValue / byTeamConverted : 0,
+          recoveryRate: teamFunnelBase ? (byTeamConverted / teamFunnelBase) * 100 : 0,
+          funnelBase: teamFunnelBase,
           byTeam: byTeamConverted,
+          byTeamValue: teamConvertedValue,
           natural: naturalConverted,
+          naturalValue: naturalConvertedValue,
+          allConverted: convWindow.length,
+          allConvertedValue: convertedValue,
         },
         destiny: destinyStats,
         team,
         trend,
         orderSources,
-        recent: convWindow.slice(0, 20).map((c) => {
-          const matched = (c.orderNumber && orderMapByNumber.get(c.orderNumber)) ||
-                          (c.orderId && orderMapById.get(c.orderId)) ||
-                          null;
-          return {
-            cartId: c.cartId,
-            orderId: matched?.id || c.orderId || null,
-            orderNumber: c.orderNumber || matched?.orderNumber || null,
-            orderStatus: matched?.status || null,
-            employeeName: c.employeeName,
-            value: resolvedValue(c),
-            governorate: c.governorate,
-            convertedAt: c.convertedAt,
-          };
-        }),
+        recent: [...teamConvWindow, ...naturalConvWindow]
+          .sort((a, b) => new Date(b.convertedAt || 0) - new Date(a.convertedAt || 0))
+          .slice(0, 20)
+          .map((c) => {
+            const matched = (c.orderNumber && orderMapByNumber.get(c.orderNumber)) ||
+                            (c.orderId && orderMapById.get(c.orderId)) ||
+                            null;
+            const isTeam = Boolean(c.employeeId || c.channel !== 'natural');
+            return {
+              cartId: c.cartId,
+              orderId: matched?.id || c.orderId || null,
+              orderNumber: c.orderNumber || matched?.orderNumber || null,
+              orderStatus: matched?.status || null,
+              employeeName: c.employeeName || (isTeam ? 'فريق الاسترداد' : 'إكمال تلقائي من المتجر'),
+              isTeam,
+              channel: c.channel,
+              value: resolvedValue(c),
+              governorate: c.governorate,
+              convertedAt: c.convertedAt,
+            };
+          }),
       },
     });
   } catch (error) {

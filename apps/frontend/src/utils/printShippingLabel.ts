@@ -117,6 +117,10 @@ export function toOrderDetailsType(order: SimpleOrderForLabel): OrderDetailsType
         quantity: Number(item.quantity || 0),
         total: Number(item.total || 0),
         metadata: meta,
+        attributes: (item as any).attributes || (item as any).customAttributes || (item as any).customFields || null,
+        customAttributes: (item as any).customAttributes || null,
+        customFields: (item as any).customFields || null,
+        carModel: (item as any).carModel || (item as any).car_model || null,
       };
     }),
     subtotal: Number(order.subtotal || 0),
@@ -621,9 +625,8 @@ function buildShippingLabelPageMarkup(
   settings?: ShippingLabelSettings,
 ): string {
   const ctx = resolveLabelContext(order);
-  const showCustomFields = settings?.showCustomFields === true;
   const { customFields, displayNotes } = resolveCustomFieldsForDisplay(order, {
-    showCustomFields,
+    showCustomFields: settings?.showCustomFields ? true : undefined,
   });
   const orderBarcode = order.orderNumber
     ? `<div style="text-align:center;margin-bottom:4px">${generateBarcodeSvg(order.orderNumber)}<div style="font-size:10px;font-weight:600;color:#000">كود الطلب</div></div>`
@@ -688,7 +691,7 @@ function buildShippingLabelPageMarkup(
         </div>
 
         <!-- Row 3b: Custom Fields (Car Make, Model & Year / Custom Specs) -->
-        ${showCustomFields && customFields.length > 0 ? `
+        ${customFields.length > 0 ? `
           <div class="label-custom-fields" style="border-bottom: 2px solid #000; padding: 6px 12px; background-color: #f8fafc;">
             ${customFields.map((cf) => `
               <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:2px;">

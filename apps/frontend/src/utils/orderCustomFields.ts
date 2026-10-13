@@ -8,13 +8,29 @@ export interface ExtractOrderCustomFieldsOptions {
 }
 
 const CAR_BRAND_KEYWORDS = [
-  "سيار", "موديل", "عربيه", "عربية", "ماركة", "طراز",
+  "سيار", "موديل", "عربيه", "عربية", "ماركة", "طراز", "مواصفات", "مواصفة", "حقول مخصصة", "مخصص", "حقل مخصص",
   "هيونداي", "تويوتا", "كيا", "سيراتو", "النترا", "توسان", "نيسان", "صني", "سنترا", "قشقاي",
   "شيفروليه", "شيفرولي", "اوبترا", "افيو", "كروز", "رينو", "ميجان", "لوجان", "داستر", "ستيب واي",
   "مرسيدس", "بي ام", "بي إم", "bmw", "شيري", "تيجو", "اريزو", "ام جي", "mg", "جيلى", "جيلي",
   "امجراند", "ميتسوبيشي", "لانسر", "اكليبس", "سوزوكي", "سويفت", "ديزاير", "فورد", "فوكاس", "فيستا",
   "فيات", "تيبو", "بونتو", "سكودا", "اوكتافيا", "فولكس", "فولكسفاجن", "باسات", "جولف", "بيجو",
   "اوبل", "استرا", "كورسا", "انسيجنيا", "هوندا", "سيفيك", "جيب", "شيروكي", "رينيجيد", "سوبارو"
+];
+
+const CUSTOM_FIELD_PREFIXES = [
+  "تفاصيل الطلب:",
+  "تفاصيل الطلب",
+  "المواصفات والحقول المخصصة:",
+  "المواصفات والحقول المخصصة",
+  "المواصفات والتفاصيل:",
+  "المواصفات والتفاصيل",
+  "المواصفات الخاصة:",
+  "مواصفات خاصة:",
+  "المواصفات:",
+  "مواصفات:",
+  "حقول مخصصة:",
+  "الحقول المخصصة:",
+  "بيانات السيارة:"
 ];
 
 const matchesCarSpec = (line: string): boolean => {
@@ -145,9 +161,10 @@ export function extractOrderCustomFields(
       const line = rawLine.trim();
       if (!line) continue;
 
-      // Match "تفاصيل الطلب: <label>: <val>" or "تفاصيل الطلب: <content>"
-      if (line.startsWith("تفاصيل الطلب:") || line.startsWith("تفاصيل الطلب")) {
-        const afterPrefix = line.replace(/^تفاصيل الطلب:?\s*/, "").trim();
+      // Match known custom field prefixes
+      const matchedPrefix = CUSTOM_FIELD_PREFIXES.find((p) => line.startsWith(p));
+      if (matchedPrefix) {
+        const afterPrefix = line.slice(matchedPrefix.length).replace(/^:?\s*/, "").trim();
         if (afterPrefix.includes(":")) {
           const parts = afterPrefix.split(":");
           const label = parts[0].trim();
@@ -158,8 +175,15 @@ export function extractOrderCustomFields(
           const label = parts[0].trim();
           const value = parts.slice(1).join("-").trim();
           addEntry(label, value);
-        } else {
-          addEntry(configuredFallbackLabel || "مواصفات وتفاصيل الطلب", afterPrefix);
+        } else if (afterPrefix) {
+          const fallbackPrefixLabel = matchedPrefix.replace(/:$/, "").trim();
+          addEntry(
+            configuredFallbackLabel ||
+              (fallbackPrefixLabel !== "تفاصيل الطلب"
+                ? fallbackPrefixLabel
+                : "مواصفات وتفاصيل الطلب"),
+            afterPrefix,
+          );
         }
       } else if (matchesCarSpec(line)) {
         if (line.includes(":")) {
@@ -191,8 +215,9 @@ export function cleanNotesWithoutCustomFields(
     const line = rawLine.trim();
     if (!line) return false;
 
-    // Filter out lines starting with "تفاصيل الطلب:"
-    if (line.startsWith("تفاصيل الطلب:") || line.startsWith("تفاصيل الطلب")) return false;
+    // Filter out lines starting with known custom field prefixes
+    const startsWithPrefix = CUSTOM_FIELD_PREFIXES.some((p) => line.startsWith(p));
+    if (startsWithPrefix) return false;
 
     // Filter out lines mentioning car specs
     if (matchesCarSpec(line)) {
@@ -230,14 +255,22 @@ export function resolveCustomFieldsForDisplay(
     defaultLabel?: string;
   },
 ): OrderCustomFieldsDisplayResult {
-  const isEnabled = options?.showCustomFields === true;
+  const customFields = extractOrderCustomFields(source, options?.defaultLabel);
+  const hasCustomFields = customFields.length > 0;
+
+  // Explicit opt-out check: when options?.showCustomFields === false, keep disabled
+  const isExplicitlyDisabled = options?.showCustomFields === false;
+  const isEnabled =
+    options?.showCustomFields === true || (hasCustomFields && !isExplicitlyDisabled);
+
   const rawNotesPool = [
     typeof source?.notes === "string" ? source.notes : "",
     typeof source?.order?.notes === "string" ? source.order.notes : "",
+    typeof source?.customerNotes === "string" ? source.customerNotes : "",
   ].filter((n) => Boolean(n && n.trim()));
   const rawNotes = Array.from(new Set(rawNotesPool)).join("\n").trim();
 
-  if (!isEnabled) {
+  if (!isEnabled || !hasCustomFields) {
     return {
       isEnabled: false,
       customFields: [],
@@ -245,7 +278,6 @@ export function resolveCustomFieldsForDisplay(
     };
   }
 
-  const customFields = extractOrderCustomFields(source, options?.defaultLabel);
   const displayNotes = cleanNotesWithoutCustomFields(rawNotes, customFields);
 
   return {

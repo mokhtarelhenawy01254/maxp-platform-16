@@ -40,16 +40,26 @@ interface ReportData {
     recoveryRate: number;
     funnelBase?: number;
     byTeam: number;
+    byTeamValue?: number;
     natural: number;
+    naturalValue?: number;
+    allConverted?: number;
+    allConvertedValue?: number;
   };
   destiny?: ConvertedOrdersDestiny;
   team: Array<{
     employeeId: string | null;
     employeeName: string;
+    displayName?: string;
+    email?: string;
+    avatar?: string | null;
     conversions: number;
     value: number;
     avgValue: number;
     contacts: number;
+    dismissed?: number;
+    handledTotal?: number;
+    conversionRate?: number;
     responses: number;
     responseRate: number;
   }>;
@@ -61,6 +71,8 @@ interface ReportData {
     orderNumber: string | null;
     orderStatus?: string | null;
     employeeName: string | null;
+    isTeam?: boolean;
+    channel?: string | null;
     value: number;
     governorate: string | null;
     convertedAt: string | null;
@@ -207,19 +219,28 @@ const IncompleteReports: React.FC = () => {
   const recoveryCards: StatCard[] = data
     ? [
         {
-          label: t("orders.incompleteRecovered"),
-          value: data.recovery.converted.toLocaleString(),
+          label: t("orders.incompleteRecoveredByTeam", "طلبات مستردة بواسطة الفريق"),
+          value: data.recovery.byTeam.toLocaleString(),
+          sub:
+            data.recovery.natural > 0
+              ? `+ ${data.recovery.natural.toLocaleString()} إكمال تلقائي من المتجر`
+              : undefined,
           icon: CheckCircleIcon,
           color: "text-emerald-600 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-900/30",
         },
         {
-          label: t("orders.incompleteRecoveredValue"),
-          value: formatPrice(data.recovery.convertedValue),
+          label: t("orders.incompleteRecoveredValueByTeam", "القيمة المستردة (الفريق)"),
+          value: formatPrice(data.recovery.byTeamValue ?? data.recovery.convertedValue),
+          sub:
+            data.recovery.allConvertedValue &&
+            data.recovery.allConvertedValue > (data.recovery.byTeamValue ?? data.recovery.convertedValue)
+              ? `إجمالي كل التحويلات: ${formatPrice(data.recovery.allConvertedValue)}`
+              : undefined,
           icon: CurrencyDollarIcon,
           color: "text-green-600 bg-green-50 dark:text-green-300 dark:bg-green-900/30",
         },
         {
-          label: t("orders.incompleteRecoveryRate"),
+          label: t("orders.incompleteRecoveryRate", "معدل استرداد الفريق"),
           value: `${data.recovery.recoveryRate.toFixed(1)}%`,
           sub:
             data.recovery.funnelBase != null
@@ -229,7 +250,7 @@ const IncompleteReports: React.FC = () => {
           color: "text-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-900/30",
         },
         {
-          label: t("orders.incompleteAvgConvertedValue"),
+          label: t("orders.incompleteAvgConvertedValue", "متوسط طلب الفريق"),
           value: formatPrice(data.recovery.avgConvertedValue),
           icon: UserGroupIcon,
           color: "text-purple-600 bg-purple-50 dark:text-purple-300 dark:bg-purple-900/30",
@@ -390,9 +411,16 @@ const IncompleteReports: React.FC = () => {
             </div>
           )}
           <section>
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-              {t("orders.incompleteRecoveryOverview")}
-            </h2>
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+                {t("orders.incompleteRecoveryOverview", "نظرة عامة على استرداد الفريق")}
+              </h2>
+              {data.recovery.allConverted != null && data.recovery.allConverted > data.recovery.byTeam && (
+                <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 px-2.5 py-1 rounded-full border border-gray-100 dark:border-gray-700">
+                  إجمالي كل تحويلات المتجر: <strong className="text-gray-900 dark:text-white tabular-nums">{data.recovery.allConverted.toLocaleString()}</strong> طلب ({formatPrice(data.recovery.allConvertedValue ?? 0)})
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {recoveryCards.map((card, idx) => (
                 <div
@@ -407,21 +435,28 @@ const IncompleteReports: React.FC = () => {
                       <card.icon className="h-4 w-4" />
                     </div>
                   </div>
-                  <div className="text-xl font-bold text-gray-900 dark:text-white">{card.value}</div>
+                  <div className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">{card.value}</div>
                   {card.sub && (
                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{card.sub}</div>
                   )}
                 </div>
               ))}
             </div>
-            <div className="flex items-center gap-3 mt-3 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-                {t("orders.incompleteRecoveryByTeam")}: {data.recovery.byTeam.toLocaleString()}
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                {t("orders.incompleteRecoveryNatural")}: {data.recovery.natural.toLocaleString()}
+            <div className="flex items-center justify-between gap-3 mt-3 text-xs text-gray-500 dark:text-gray-400 flex-wrap bg-gray-50/70 dark:bg-gray-800/40 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700/60">
+              <div className="flex items-center gap-4 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-300">
+                  <span className="h-2 w-2 rounded-full bg-blue-600" />
+                  {t("orders.incompleteRecoveryByTeam", "استرداد فريق المبيعات")}: <strong className="text-blue-600 dark:text-blue-400 tabular-nums">{data.recovery.byTeam.toLocaleString()}</strong> ({formatPrice(data.recovery.byTeamValue ?? data.recovery.convertedValue)})
+                </span>
+                {data.recovery.natural > 0 && (
+                  <span className="inline-flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    {t("orders.incompleteRecoveryNatural", "إكمال تلقائي من العميل بالمتجر")}: <span className="tabular-nums font-semibold">{data.recovery.natural.toLocaleString()}</span> ({formatPrice(data.recovery.naturalValue ?? 0)})
+                  </span>
+                )}
+              </div>
+              <span className="text-[11px] text-gray-400">
+                * أرقام الاسترداد ومصير الطلبات أدناه تركز حصرياً على جهود وتحويلات فريق العمل
               </span>
             </div>
           </section>
@@ -592,9 +627,18 @@ const IncompleteReports: React.FC = () => {
                             )}
                             {statusInfo && (
                               <span
-                                className={`text-[10px] px-1.5 py-0.2 rounded font-medium ${statusInfo.primary.colorClass}`}
+                                className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${statusInfo.primary.colorClass}`}
                               >
                                 {statusInfo.primary.label}
+                              </span>
+                            )}
+                            {c.isTeam === false ? (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                {t("orders.incompleteRecoveryNatural", "إكمال تلقائي")}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                {t("orders.incompleteRecoveryByTeam", "استرداد الفريق")}
                               </span>
                             )}
                           </div>
@@ -603,7 +647,7 @@ const IncompleteReports: React.FC = () => {
                             {c.governorate ? ` · ${c.governorate}` : ""}
                           </div>
                         </div>
-                        <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 shrink-0 tabular-nums">
                           {formatPrice(c.value)}
                         </div>
                       </div>
@@ -619,72 +663,194 @@ const IncompleteReports: React.FC = () => {
           </div>
 
           <section className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-              {t("orders.incompleteTeamPerformance")}
-            </h2>
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {t("orders.incompleteTeamPerformance", "أداء فريق استرداد السلات")}
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  تفصيل إنجاز كل موظف: السلات المتداولة، التحويلات الناجحة، السلات المستبعدة، والقيمة المالية المستردة
+                </p>
+              </div>
+              {data.team.length > 0 && (
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  عدد أعضاء الفريق: <strong className="text-gray-900 dark:text-white tabular-nums">{data.team.length}</strong>
+                </div>
+              )}
+            </div>
+
             {data.team.length ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-start min-w-[700px]">
-                  <thead>
-                    <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
-                      <th className="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {t("orders.incompleteTeamEmployee")}
+              <div className="overflow-x-auto rounded-lg border border-gray-100 dark:border-gray-700/60">
+                <table className="w-full text-start min-w-[760px] divide-y divide-gray-100 dark:divide-gray-700/60">
+                  <thead className="bg-gray-50/70 dark:bg-gray-700/30">
+                    <tr>
+                      <th className="px-4 py-3 text-start text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {t("orders.incompleteTeamEmployee", "الموظف")}
                       </th>
-                      <th className="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {t("orders.incompleteTeamContacts")}
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {t("orders.incompleteTeamConversions", "التحويلات الناجحة")}
                       </th>
-                      <th className="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {t("orders.incompleteTeamResponses")}
+                      <th className="px-4 py-3 text-end text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {t("orders.incompleteTeamValue", "القيمة المستردة")}
                       </th>
-                      <th className="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {t("orders.incompleteTeamResponseRate")}
+                      <th className="px-4 py-3 text-end text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {t("orders.incompleteTeamAvg", "متوسط الطلب")}
                       </th>
-                      <th className="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {t("orders.incompleteTeamConversions")}
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {t("orders.incompleteTeamDismissed", "سلات مستبعدة")}
                       </th>
-                      <th className="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {t("orders.incompleteTeamValue")}
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {t("orders.incompleteTeamHandledTotal", "إجمالي التعامل")}
                       </th>
-                      <th className="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {t("orders.incompleteTeamAvg")}
+                      <th className="px-4 py-3 text-end text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {t("orders.incompleteTeamConversionRate", "معدل التحويل")}
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {data.team.map((member, idx) => (
-                      <tr
-                        key={`${member.employeeId || member.employeeName}-${idx}`}
-                        className="border-b border-gray-50 dark:border-gray-700/50 last:border-0"
-                      >
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                          {member.employeeName}
+                  <tbody className="divide-y divide-gray-50 dark:divide-gray-700/40 bg-white dark:bg-gray-800">
+                    {data.team.map((member, idx) => {
+                      const name = member.displayName || member.employeeName || t("orders.incompleteTeamUnknown", "غير معروف");
+                      const initials =
+                        name
+                          .split(" ")
+                          .filter(Boolean)
+                          .slice(0, 2)
+                          .map((part) => part[0])
+                          .join("")
+                          .toUpperCase() || "U";
+                      const handled = Number(member.handledTotal ?? (member.conversions + (member.dismissed || 0)));
+                      const convRate = Number(
+                        member.conversionRate ?? (handled > 0 ? (member.conversions / handled) * 100 : 0),
+                      );
+
+                      return (
+                        <tr
+                          key={`${member.employeeId || member.employeeName}-${idx}`}
+                          className="hover:bg-gray-50/60 dark:hover:bg-gray-700/20 transition-colors"
+                        >
+                          {/* الموظف مع الأفاتار أو الحروف الأولى */}
+                          <td className="px-4 py-3 text-start">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-bold text-gray-400 dark:text-gray-500 w-4 text-center tabular-nums">
+                                #{idx + 1}
+                              </span>
+                              {member.avatar ? (
+                                <img
+                                  src={member.avatar}
+                                  alt={name}
+                                  className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700 shrink-0"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 border border-blue-200/60 dark:border-blue-800/40">
+                                  {initials}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                                  {name}
+                                </div>
+                                {member.email && member.email !== name && (
+                                  <div className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">
+                                    {member.email}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* التحويلات الناجحة */}
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/50 tabular-nums">
+                              {member.conversions.toLocaleString()}
+                            </span>
+                          </td>
+
+                          {/* القيمة المستردة */}
+                          <td className="px-4 py-3 text-end font-bold text-sm text-emerald-600 dark:text-emerald-400 tabular-nums">
+                            {formatPrice(member.value)}
+                          </td>
+
+                          {/* متوسط الطلب */}
+                          <td className="px-4 py-3 text-end text-sm text-gray-700 dark:text-gray-300 tabular-nums">
+                            {formatPrice(member.avgValue)}
+                          </td>
+
+                          {/* سلات مستبعدة */}
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700/60 dark:text-gray-300 tabular-nums">
+                              {Number(member.dismissed || 0).toLocaleString()}
+                            </span>
+                          </td>
+
+                          {/* إجمالي التعامل */}
+                          <td className="px-4 py-3 text-center text-sm font-medium text-gray-900 dark:text-white tabular-nums">
+                            {handled.toLocaleString()}
+                          </td>
+
+                          {/* معدل التحويل مع ميني بار */}
+                          <td className="px-4 py-3 text-end">
+                            <div className="inline-flex flex-col items-end gap-1">
+                              <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 tabular-nums">
+                                {convRate.toFixed(1)}%
+                              </span>
+                              <div className="w-16 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className="bg-blue-600 dark:bg-blue-500 h-1.5 rounded-full transition-all"
+                                  style={{ width: `${Math.min(100, Math.max(0, convRate))}%` }}
+                                />
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  {/* صف الإجمالي لفريق العمل */}
+                  {data.team.length > 1 && (
+                    <tfoot className="bg-gray-50/80 dark:bg-gray-700/40 font-semibold border-t-2 border-gray-200 dark:border-gray-700 text-xs">
+                      <tr>
+                        <td className="px-4 py-3 text-start text-gray-900 dark:text-white">
+                          {t("orders.incompleteTeamTotal", "إجمالي أداء الفريق")}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
-                          {member.contacts.toLocaleString()}
+                        <td className="px-4 py-3 text-center text-emerald-700 dark:text-emerald-300 tabular-nums">
+                          {data.team.reduce((s, m) => s + m.conversions, 0).toLocaleString()}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
-                          {member.responses.toLocaleString()}
+                        <td className="px-4 py-3 text-end text-emerald-600 dark:text-emerald-400 tabular-nums">
+                          {formatPrice(data.team.reduce((s, m) => s + m.value, 0))}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
-                          {member.responseRate.toFixed(0)}%
+                        <td className="px-4 py-3 text-end text-gray-700 dark:text-gray-300 tabular-nums">
+                          {(() => {
+                            const totalConv = data.team.reduce((s, m) => s + m.conversions, 0);
+                            const totalVal = data.team.reduce((s, m) => s + m.value, 0);
+                            return formatPrice(totalConv > 0 ? totalVal / totalConv : 0);
+                          })()}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
-                          {member.conversions.toLocaleString()}
+                        <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400 tabular-nums">
+                          {data.team.reduce((s, m) => s + Number(m.dismissed || 0), 0).toLocaleString()}
                         </td>
-                        <td className="px-4 py-3 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                          {formatPrice(member.value)}
+                        <td className="px-4 py-3 text-center text-gray-900 dark:text-white tabular-nums">
+                          {data.team
+                            .reduce((s, m) => s + Number(m.handledTotal ?? (m.conversions + (m.dismissed || 0))), 0)
+                            .toLocaleString()}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
-                          {formatPrice(member.avgValue)}
+                        <td className="px-4 py-3 text-end text-blue-600 dark:text-blue-400 tabular-nums">
+                          {(() => {
+                            const totalConv = data.team.reduce((s, m) => s + m.conversions, 0);
+                            const totalHandled = data.team.reduce(
+                              (s, m) => s + Number(m.handledTotal ?? (m.conversions + (m.dismissed || 0))),
+                              0,
+                            );
+                            return `${totalHandled > 0 ? ((totalConv / totalHandled) * 100).toFixed(1) : "0.0"}%`;
+                          })()}
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
+                    </tfoot>
+                  )}
                 </table>
               </div>
             ) : (
               <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">
-                {t("orders.incompleteNoConversions")}
+                {t("orders.incompleteNoConversions", "لا توجد تحويلات مسجلة للفريق في هذه الفترة")}
               </p>
             )}
           </section>

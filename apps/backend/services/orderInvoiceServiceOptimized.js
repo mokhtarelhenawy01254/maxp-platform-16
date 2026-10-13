@@ -285,6 +285,8 @@ function mapGuestOrderForPrint(guestOrder) {
         metadata = { ...metadata, ...parsed };
       }
     } catch (e) { /* تجاهل */ }
+  } else if (guestOrder.metadata && typeof guestOrder.metadata === 'object' && !Array.isArray(guestOrder.metadata)) {
+    metadata = { ...metadata, ...guestOrder.metadata };
   }
 
   return {
@@ -310,6 +312,11 @@ function mapGuestOrderForPrint(guestOrder) {
       price: Number(item.price || 0),
       quantity: Number(item.quantity || 1),
       total: Number(item.total != null ? item.total : (Number(item.price || 0) * Number(item.quantity || 1))),
+      attributes: item.attributes || item.customAttributes || item.customFields || null,
+      customAttributes: item.customAttributes || null,
+      customFields: item.customFields || null,
+      metadata: item.metadata || null,
+      carModel: item.carModel || item.car_model || null,
     })),
     subtotal: Number(guestOrder.total || 0),
     tax: 0,
@@ -458,7 +465,11 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
         }
 
         // إضافة بيانات الطلب للفاتورة الموجودة مع التأكد من وجود كود المنتج والبيانات المخصصة
-        existingInvoice.notes = existingInvoice.notes || order.notes || null;
+        const orderNotes = typeof order.notes === 'string' ? order.notes : '';
+        const invNotes = typeof existingInvoice.notes === 'string' ? existingInvoice.notes : '';
+        const mergedNotes = Array.from(new Set([orderNotes, invNotes].filter(n => Boolean(n && n.trim())))).join('\n').trim() || null;
+
+        existingInvoice.notes = mergedNotes;
         existingInvoice.governorate = existingInvoice.governorate || order.governorate || null;
         existingInvoice.order = {
           orderNumber: order.orderNumber,
@@ -467,7 +478,7 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
           shipping: order.shipping,
           discount: order.discount,
           tax: order.tax,
-          notes: order.notes || null,
+          notes: order.notes || mergedNotes,
           metadata: order.metadata || null,
           shippingAddress: order.shippingAddress || null,
           city: order.city || null,
@@ -475,7 +486,12 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
           customerAddress: order.customerAddress || null,
           orderItems: (order.orderItems || []).map(item => ({
             ...item,
-            productSku: item.productSku || extractSkuFromOrderItem(item) || null
+            productSku: item.productSku || extractSkuFromOrderItem(item) || null,
+            attributes: item.attributes || item.customAttributes || item.customFields || null,
+            customAttributes: item.customAttributes || null,
+            customFields: item.customFields || null,
+            metadata: item.metadata || null,
+            carModel: item.carModel || item.car_model || null
           }))
         };
         
@@ -534,7 +550,12 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
         if (inv.order?.orderItems) {
           inv.order.orderItems = inv.order.orderItems.map(item => ({
             ...item,
-            productSku: item.productSku || extractSkuFromOrderItem(item) || null
+            productSku: item.productSku || extractSkuFromOrderItem(item) || null,
+            attributes: item.attributes || item.customAttributes || item.customFields || null,
+            customAttributes: item.customAttributes || null,
+            customFields: item.customFields || null,
+            metadata: item.metadata || null,
+            carModel: item.carModel || item.car_model || null
           }));
         }
         newInvoiceMap.set(inv.orderId, inv);

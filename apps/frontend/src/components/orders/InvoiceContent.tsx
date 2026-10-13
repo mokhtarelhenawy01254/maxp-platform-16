@@ -174,7 +174,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
   
   const addressText = invoice.customerAddress ? formatAddress(invoice.customerAddress) : "";
   const { customFields, displayNotes } = resolveCustomFieldsForDisplay(invoice, {
-    showCustomFields: s.showCustomFields,
+    showCustomFields: s.showCustomFields ? true : undefined,
   });
   
   let governorate = invoice.governorate;
@@ -289,7 +289,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
         </div>
 
         {/* Row 4b: Custom Fields (Car Make & Model / Custom Specs) */}
-        {s.showCustomFields && customFields.length > 0 && (
+        {customFields.length > 0 && (
           <div
             style={{
               borderBottom: borderStyle,

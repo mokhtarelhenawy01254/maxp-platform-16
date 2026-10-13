@@ -28,7 +28,14 @@ function resolveItemSku(item) {
     item.barcode ||
     item.product?.barcode ||
     null;
-  return { ...item, productSku };
+  return {
+    ...item,
+    productSku,
+    attributes: item.attributes || item.customAttributes || item.customFields || null,
+    customAttributes: item.customAttributes || null,
+    customFields: item.customFields || null,
+    carModel: item.carModel || item.car_model || null
+  };
 }
 
 async function syncInvoiceWithOrder(invoice, prisma) {

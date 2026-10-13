@@ -68,8 +68,14 @@ function toInvoiceData(inv: Invoice): InvoiceData {
     shipping: inv.shipping,
     discount: inv.discount,
     totalAmount: inv.totalAmount,
-    notes: inv.notes || inv.order?.notes || null,
-    metadata: inv.metadata || inv.order?.metadata || null,
+    notes: (() => {
+      const orderNotes = typeof inv.order?.notes === "string" ? inv.order.notes : "";
+      const invoiceNotes = typeof inv.notes === "string" ? inv.notes : "";
+      return (
+        Array.from(new Set([orderNotes, invoiceNotes].filter((n) => Boolean(n && n.trim())))).join("\n").trim() || null
+      );
+    })(),
+    metadata: inv.order?.metadata || inv.metadata || null,
     order: {
       orderNumber: inv.order?.orderNumber,
       total: (inv.order as any)?.total != null ? (inv.order as any).total : inv.totalAmount,
@@ -79,7 +85,13 @@ function toInvoiceData(inv: Invoice): InvoiceData {
       tax: (inv.order as any)?.tax != null ? (inv.order as any).tax : inv.tax,
       trackingNumber: (inv.order as any)?.trackingNumber || inv.order?.turboTrackingNumber || null,
       turboTrackingNumber: inv.order?.turboTrackingNumber,
-      notes: inv.order?.notes || inv.notes || null,
+      notes: (() => {
+        const orderNotes = typeof inv.order?.notes === "string" ? inv.order.notes : "";
+        const invoiceNotes = typeof inv.notes === "string" ? inv.notes : "";
+        return (
+          Array.from(new Set([orderNotes, invoiceNotes].filter((n) => Boolean(n && n.trim())))).join("\n").trim() || null
+        );
+      })(),
       metadata: inv.order?.metadata || inv.metadata || null,
       shippingAddress: (inv.order as any)?.shippingAddress || null,
       orderItems: inv.order?.orderItems?.map((item: any) => ({
@@ -111,6 +123,11 @@ function toInvoiceData(inv: Invoice): InvoiceData {
           null,
         productColor: item.productColor,
         productSize: item.productSize,
+        attributes: item.attributes || item.customAttributes || item.customFields || null,
+        customAttributes: item.customAttributes || null,
+        customFields: item.customFields || null,
+        metadata: item.metadata || null,
+        carModel: item.carModel || item.car_model || null,
       })),
     },
   };
@@ -225,6 +242,11 @@ function guestOrderToInvoiceData(guest: GuestOrderPrint, company: GuestPrintComp
         productSku: item.productSku || item.sku || item.code || item.barcode || item.variant?.sku || item.product?.sku || null,
         productColor: item.productColor,
         productSize: item.productSize,
+        attributes: item.attributes || item.customAttributes || item.customFields || null,
+        customAttributes: item.customAttributes || null,
+        customFields: item.customFields || null,
+        metadata: item.metadata || null,
+        carModel: item.carModel || item.car_model || null,
       })),
     },
   };
