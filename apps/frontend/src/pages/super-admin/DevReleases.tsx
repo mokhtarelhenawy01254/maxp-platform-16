@@ -220,53 +220,45 @@ const DevReleases: React.FC = () => {
       </header>
 
       {/* Telemetry Summary Ribbon */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">إجمالي الإصدارات</span>
-            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-foreground tabular-nums">
-              {stats.total}
-            </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/80 bg-card shadow-2xs divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60 overflow-hidden">
+        <div className="p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">إجمالي الإصدارات</span>
+            <Package className="size-3.5 text-muted-foreground" />
           </div>
-          <span className="p-2.5 rounded-lg bg-muted text-muted-foreground">
-            <Package className="size-5" />
-          </span>
+          <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-foreground tabular-nums">
+            {stats.total}
+          </div>
         </div>
 
-        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">قيد التطوير والتجهيز</span>
-            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-blue-600 dark:text-blue-400 tabular-nums">
-              {stats.inProgress}
-            </div>
+        <div className="p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">قيد التطوير والتجهيز</span>
+            <Clock className="size-3.5 text-blue-500" />
           </div>
-          <span className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
-            <Clock className="size-5" />
-          </span>
+          <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-blue-600 dark:text-blue-400 tabular-nums">
+            {stats.inProgress}
+          </div>
         </div>
 
-        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">صدرت رسمياً</span>
-            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">
-              {stats.released}
-            </div>
+        <div className="p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">صدرت رسمياً</span>
+            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
           </div>
-          <span className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="size-5" />
-          </span>
+          <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">
+            {stats.released}
+          </div>
         </div>
 
-        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">المهام المجدولة</span>
-            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-primary tabular-nums">
-              {stats.totalTasks}
-            </div>
+        <div className="p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">المهام المجدولة</span>
+            <Sparkles className="size-3.5 text-primary" />
           </div>
-          <span className="p-2.5 rounded-lg bg-primary/10 text-primary">
-            <Sparkles className="size-5" />
-          </span>
+          <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-primary tabular-nums">
+            {stats.totalTasks}
+          </div>
         </div>
       </div>
 

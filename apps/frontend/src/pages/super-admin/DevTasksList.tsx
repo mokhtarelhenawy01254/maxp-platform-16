@@ -612,92 +612,76 @@ const DevTasksList: React.FC = () => {
       </div>
 
       {/* Quick Stats */}
+      {/* Quick Stats Telemetry Ribbon */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div className="rounded-xl border border-border/40 bg-card p-4 ring-1 ring-foreground/5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">المهام النشطة</p>
-                <p className="text-2xl font-black text-foreground mt-1">
-                  {stats.overview?.totalTasks || 0}
-                </p>
-                <p className="text-[10px] text-muted-foreground/70 mt-0.5">غير المكتملة</p>
-              </div>
-              <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <ClipboardDocumentListIcon className="size-5" />
-              </div>
+        <div className="grid grid-cols-2 sm:grid-cols-5 rounded-xl border border-border/80 bg-card shadow-2xs divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60 overflow-hidden">
+          <div className="p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">المهام النشطة</span>
+              <ClipboardDocumentListIcon className="size-3.5 text-primary" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {stats.overview?.totalTasks || 0}
             </div>
           </div>
-          <div className="rounded-xl border border-border/40 bg-card p-4 ring-1 ring-foreground/5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">قيد العمل</p>
-                <p className="text-2xl font-black text-foreground mt-1">
-                  {stats.tasksByStatus?.IN_PROGRESS || 0}
-                </p>
-              </div>
-              <div className="flex size-10 items-center justify-center rounded-xl bg-warning/10 text-warning">
-                <ClockIcon className="size-5" />
-              </div>
+
+          <div className="p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">قيد العمل</span>
+              <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400 font-mono tabular-nums">
+              {stats.tasksByStatus?.IN_PROGRESS || 0}
             </div>
           </div>
-          <div className="rounded-xl border border-border/40 bg-card p-4 ring-1 ring-foreground/5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">مكتملة</p>
-                <p className="text-2xl font-black text-foreground mt-1">
-                  {stats.tasksByStatus?.DONE || 0}
-                </p>
-              </div>
-              <div className="flex size-10 items-center justify-center rounded-xl bg-success/10 text-success">
-                <CheckCircleIcon className="size-5" />
-              </div>
+
+          <div className="p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">مكتملة</span>
+              <CheckCircleIcon className="size-3.5 text-emerald-500" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+              {stats.tasksByStatus?.DONE || 0}
             </div>
           </div>
-          <div className="rounded-xl border border-border/40 bg-card p-4 ring-1 ring-foreground/5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">متأخرة</p>
-                <p className="text-2xl font-black text-foreground mt-1">
-                  {stats.overview?.overdueTasks || 0}
-                </p>
-              </div>
-              <div className="flex size-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
-                <ExclamationTriangleIcon className="size-5" />
-              </div>
+
+          <div className="p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">متأخرة</span>
+              <ExclamationTriangleIcon className="size-3.5 text-destructive" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight text-destructive font-mono tabular-nums">
+              {stats.overview?.overdueTasks || 0}
             </div>
           </div>
-          <div className="rounded-xl border border-border/40 bg-card p-4 ring-1 ring-foreground/5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">مشاريع نشطة</p>
-                <p className="text-2xl font-black text-foreground mt-1">
-                  {stats.overview?.activeProjects || 0}
-                </p>
-              </div>
-              <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <TagIcon className="size-5" />
-              </div>
+
+          <div className="p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">مشاريع نشطة</span>
+              <TagIcon className="size-3.5 text-primary" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight text-primary font-mono tabular-nums">
+              {stats.overview?.activeProjects || 0}
             </div>
           </div>
         </div>
       )}
 
       {/* Search & Filters */}
-      <div className="rounded-xl border border-border/40 bg-card ring-1 ring-foreground/5 p-4">
-        <div className="flex items-center gap-4 flex-wrap">
+      <div className="rounded-xl border border-border/80 bg-card p-3.5 shadow-2xs">
+        <div className="flex items-center gap-3 flex-wrap">
           {/* Search */}
-          <form onSubmit={handleSearch} className="flex-1">
+          <form onSubmit={handleSearch} className="flex-1 min-w-[200px]">
             <div className="relative">
-              <MagnifyingGlassIcon className="size-5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <MagnifyingGlassIcon className="size-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
               <input
                 type="text"
-                placeholder="بحث في المهام..."
+                placeholder="بحث في المهام بالاسم، الوصف، أو الرقم..."
                 value={filters.search}
                 onChange={(e) =>
                   setFilters((prev) => ({ ...prev, search: e.target.value }))
                 }
-                className="w-full rounded-lg border border-input bg-background py-2 pr-10 pl-4 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10"
+                className="w-full h-8 rounded-lg border border-border bg-background py-1.5 pr-9 pl-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </form>
@@ -706,7 +690,7 @@ const DevTasksList: React.FC = () => {
           <select
             value={filters.status}
             onChange={(e) => handleFilterChange("status", e.target.value)}
-            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            className="h-8 border border-border rounded-lg px-2.5 bg-background text-foreground text-xs focus:ring-1 focus:ring-primary outline-none"
           >
             <option value="">كل الحالات</option>
             {(
@@ -725,7 +709,7 @@ const DevTasksList: React.FC = () => {
           <select
             value={filters.priority}
             onChange={(e) => handleFilterChange("priority", e.target.value)}
-            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            className="h-8 border border-border rounded-lg px-2.5 bg-background text-foreground text-xs focus:ring-1 focus:ring-primary outline-none"
           >
             <option value="">كل الأولويات</option>
             {(
@@ -744,7 +728,7 @@ const DevTasksList: React.FC = () => {
           <select
             value={filters.type}
             onChange={(e) => handleFilterChange("type", e.target.value)}
-            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            className="h-8 border border-border rounded-lg px-2.5 bg-background text-foreground text-xs focus:ring-1 focus:ring-primary outline-none"
           >
             <option value="">كل الأنواع</option>
             {Object.entries(TASK_TYPES).map(([key, { label }]) => (
@@ -754,24 +738,24 @@ const DevTasksList: React.FC = () => {
             ))}
           </select>
 
-          <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 cursor-pointer">
+          <label className="flex items-center gap-1.5 h-8 px-3 border border-border rounded-lg hover:bg-muted/40 bg-background text-foreground text-xs cursor-pointer select-none">
             <input
               type="checkbox"
               checked={hideCompleted}
               onChange={(e) => setHideCompleted(e.target.checked)}
-              className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
+              className="rounded size-3.5 border-border text-primary focus:ring-primary"
             />
-            <span className="text-sm">إخفاء المكتملة</span>
+            <span>إخفاء المكتملة</span>
           </label>
 
-          <label className="flex items-center gap-2 px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/10 bg-blue-50/50 dark:bg-blue-900/5 text-blue-700 dark:text-blue-300 cursor-pointer transition-colors">
+          <label className="flex items-center gap-1.5 h-8 px-3 border border-border rounded-lg hover:bg-muted/40 bg-background text-foreground text-xs cursor-pointer select-none">
             <input
               type="checkbox"
               checked={showMyTasksOnly}
               onChange={(e) => setShowMyTasksOnly(e.target.checked)}
-              className="rounded border-blue-300 dark:border-blue-600 text-blue-600 focus:ring-blue-500"
+              className="rounded size-3.5 border-border text-primary focus:ring-primary"
             />
-            <span className="text-sm font-medium">مهامي فقط</span>
+            <span className="font-medium">مهامي فقط</span>
           </label>
 
           <button

@@ -41,8 +41,13 @@ const DevLeaderboard: React.FC = () => {
         headers: tokenManager.createAuthHeaders(),
       });
       const data = await response.json();
-      if (data.success && Array.isArray(data.data)) {
-        setLeaderboard(data.data);
+      if (data.success) {
+        const list = Array.isArray(data.data)
+          ? data.data
+          : Array.isArray(data.data?.leaderboard)
+            ? data.data.leaderboard
+            : [];
+        setLeaderboard(list);
       }
     } catch (error) {
       console.error("Error fetching leaderboard:", error);
@@ -104,53 +109,45 @@ const DevLeaderboard: React.FC = () => {
       </header>
 
       {/* Telemetry Summary Ribbon */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">إجمالي المطورين</span>
-            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-foreground tabular-nums">
-              {stats.totalDevs}
-            </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/80 bg-card shadow-2xs divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60 overflow-hidden">
+        <div className="p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">إجمالي المطورين</span>
+            <User className="size-3.5 text-muted-foreground" />
           </div>
-          <span className="p-2.5 rounded-lg bg-muted text-muted-foreground">
-            <User className="size-5" />
-          </span>
+          <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-foreground tabular-nums">
+            {stats.totalDevs}
+          </div>
         </div>
 
-        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">أعلى نقاط XP</span>
-            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-amber-500 tabular-nums">
-              {stats.topXP.toLocaleString()}
-            </div>
+        <div className="p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">أعلى نقاط XP</span>
+            <Zap className="size-3.5 text-amber-500" />
           </div>
-          <span className="p-2.5 rounded-lg bg-amber-500/10 text-amber-500">
-            <Zap className="size-5" />
-          </span>
+          <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-amber-500 tabular-nums">
+            {stats.topXP.toLocaleString()}
+          </div>
         </div>
 
-        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">متوسط المستوى</span>
-            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-primary tabular-nums">
-              Lv. {stats.avgLevel}
-            </div>
+        <div className="p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">متوسط المستوى</span>
+            <TrendingUp className="size-3.5 text-primary" />
           </div>
-          <span className="p-2.5 rounded-lg bg-primary/10 text-primary">
-            <TrendingUp className="size-5" />
-          </span>
+          <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-primary tabular-nums">
+            Lv. {stats.avgLevel}
+          </div>
         </div>
 
-        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">الشارات الممنوحة</span>
-            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">
-              {stats.totalBadges}
-            </div>
+        <div className="p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">الشارات الممنوحة</span>
+            <Award className="size-3.5 text-emerald-500" />
           </div>
-          <span className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-            <Award className="size-5" />
-          </span>
+          <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">
+            {stats.totalBadges}
+          </div>
         </div>
       </div>
 
