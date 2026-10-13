@@ -26,8 +26,8 @@ export const CsbCompare: React.FC = () => {
       <div className="csb-risk csb-reveal" style={{ marginTop: 14 }}>
         <div className="csb-risk-item">
           <ShieldCheck size={18} strokeWidth={2} aria-hidden="true" />
-          <strong>تجربة 7 أيام كاملة</strong>
-          <span>كل الـ17 أداة شغالة من أول دقيقة — من غير كارت بنكي.</span>
+          <strong>تفعيل فوري للأدوات</strong>
+          <span>أول ما الدفع يعدّي، الـ17 أداة بتشتغل على حسابك في نفس الدقيقة.</span>
         </div>
         <div className="csb-risk-item">
           <XCircle size={18} strokeWidth={2} aria-hidden="true" />

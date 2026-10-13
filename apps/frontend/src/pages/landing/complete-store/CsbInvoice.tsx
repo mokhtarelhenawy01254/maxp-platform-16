@@ -6,7 +6,6 @@ import {
   INDIVIDUAL_TOTAL,
   MONTHLY_SAVING,
   DISCOUNT_PCT,
-  TRIAL_DAYS,
   csbFmt,
 } from "./csbData";
 import { useCountUp } from "./csbHooks";
@@ -17,9 +16,8 @@ import { useCountUp } from "./csbHooks";
  */
 export const CsbInvoice: React.FC<{
   ctaRef?: React.RefObject<HTMLDivElement | null>;
-  onTrial?: () => void;
   onSubscribe?: () => void;
-}> = ({ ctaRef, onTrial, onSubscribe }) => {
+}> = ({ ctaRef, onSubscribe }) => {
   const [openId, setOpenId] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const { ref: oldTotalRef, value: animatedOld } = useCountUp(INDIVIDUAL_TOTAL, 1100);
@@ -93,8 +91,8 @@ export const CsbInvoice: React.FC<{
             </span>
           </div>
           <div className="csb-total-line">
-            <span>التجربة المجانية ({TRIAL_DAYS} أيام)</span>
-            <span>0 ج.م</span>
+            <span>اشتراك الباقة الشهري — كل الأدوات</span>
+            <span style={{ color: "var(--csb-green)", fontWeight: 700 }}>فعّال من أول يوم</span>
           </div>
           <div className="csb-total-final">
             <strong>
@@ -108,18 +106,11 @@ export const CsbInvoice: React.FC<{
 
         <p className="csb-receipt-foot">الأسعار من كتالوج سوق MaxP الرسمي — اضغط على أي بند تعرف بيعمل إيه</p>
 
-        {(onTrial || onSubscribe) && (
+        {onSubscribe && (
           <div className="csb-receipt-ctas">
-            {onTrial && (
-              <button type="button" className="csb-btn csb-btn-primary csb-btn-sm" onClick={onTrial}>
-                ابدأ التجربة المجانية
-              </button>
-            )}
-            {onSubscribe && (
-              <button type="button" className="csb-btn csb-btn-ghost csb-btn-sm" onClick={onSubscribe}>
-                اشترك الآن
-              </button>
-            )}
+            <button type="button" className="csb-btn csb-btn-primary csb-btn-sm" onClick={onSubscribe}>
+              اشترك الآن — تفعيل فوري
+            </button>
           </div>
         )}
       </div>

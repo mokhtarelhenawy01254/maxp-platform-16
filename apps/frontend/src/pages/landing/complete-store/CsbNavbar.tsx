@@ -1,12 +1,12 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { CreditCard } from "lucide-react";
 
 interface Props {
-  onTrial: () => void;
-  activated?: boolean;
+  onSubscribe: () => void;
 }
 
-export const CsbNavbar: React.FC<Props> = ({ onTrial, activated }) => {
+export const CsbNavbar: React.FC<Props> = ({ onSubscribe }) => {
   return (
     <nav className="csb-nav">
       <div className="csb-nav-inner">
@@ -32,12 +32,9 @@ export const CsbNavbar: React.FC<Props> = ({ onTrial, activated }) => {
           <Link to="/auth/login" className="csb-btn csb-btn-ghost csb-btn-sm">
             دخول
           </Link>
-          <button
-            type="button"
-            className={activated ? "csb-btn csb-btn-ghost csb-btn-sm" : "csb-btn csb-btn-primary csb-btn-sm"}
-            onClick={onTrial}
-          >
-            {activated ? "الباقة مفعّلة" : "ابدأ مجانًا"}
+          <button type="button" className="csb-btn csb-btn-primary csb-btn-sm" onClick={onSubscribe}>
+            <CreditCard size={13} strokeWidth={2.2} />
+            اشترك — 999/شهر
           </button>
         </div>
       </div>
