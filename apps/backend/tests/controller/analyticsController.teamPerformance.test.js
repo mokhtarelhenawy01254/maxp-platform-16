@@ -111,7 +111,7 @@ describe('analyticsController.getTeamPerformanceAnalytics', () => {
     expect(res.payload.success).toBe(true);
     const data = res.payload.data;
     expect(data.totalOrdersProcessed).toBe(1);
-    expect(data.totalTeamMembers).toBe(1);
+    expect(data.totalTeamMembers).toBe(2);
     expect(data.teamMembers[0].userName).toBe('Swan Test');
     expect(data.teamMembers[0].ordersCreated).toBe(1);
     expect(data.teamMembers[0].ordersConfirmed).toBe(1);
@@ -186,8 +186,9 @@ describe('analyticsController.getTeamPerformanceAnalytics', () => {
         }
       ])
     };
+    const yesterdayDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
     prismaMock.order.findMany.mockResolvedValue([
-      order('o-1', 'PROCESSING', '640.00', 'user-direct', 'user-direct', new Date())
+      order('o-1', 'PROCESSING', '640.00', 'user-direct', 'user-direct', yesterdayDate)
     ]);
 
     const req = createRequest({ period: 'yesterday' });

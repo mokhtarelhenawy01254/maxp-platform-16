@@ -4105,15 +4105,16 @@ const getTeamPerformanceAnalytics = async (req, res) => {
     });
 
     userCompanyRecords.forEach(uc => {
-      if (uc.user && uc.user.isActive) {
-        userMap.set(uc.user.id, {
-          id: uc.user.id,
-          firstName: uc.user.firstName,
-          lastName: uc.user.lastName,
-          email: uc.user.email,
-          role: uc.role || uc.user.role
+      const u = uc.user;
+      if (u && u.isActive !== false && uc.isActive !== false) {
+        userMap.set(u.id, {
+          id: u.id,
+          firstName: u.firstName,
+          lastName: u.lastName,
+          email: u.email,
+          role: uc.role || u.role
         });
-        isCompanyStaffSet.add(uc.user.id);
+        isCompanyStaffSet.add(u.id);
       }
     });
 
