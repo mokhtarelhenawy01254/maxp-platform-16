@@ -181,38 +181,46 @@ const StatCard = ({ icon: Icon, label, value, sub, color, onClick }: {
 const UnifiedTableRow = ({ c, isSelected, onSelect }: { c: UnifiedCustomer; isSelected: boolean; onSelect: () => void }) => (
   <tr
     onClick={onSelect}
-    className={`cursor-pointer transition-colors ${isSelected ? "bg-indigo-50 dark:bg-indigo-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700/30"} border-b border-gray-100 dark:border-gray-700`}
+    className={`cursor-pointer transition-colors ${isSelected ? "bg-slate-100/80 dark:bg-slate-800/80" : "hover:bg-gray-50/70 dark:hover:bg-gray-800/40"} border-b border-gray-100 dark:border-gray-800/80 last:border-0`}
   >
-    <td className="py-3 px-4">
-      <p className="font-medium text-gray-900 dark:text-white text-sm">{c.name}</p>
-      <p className="text-xs text-gray-500">{c.phone || c.email || "-"}</p>
+    <td className="py-2.5 px-4">
+      <p className="font-semibold text-gray-900 dark:text-white text-xs sm:text-sm">{c.name}</p>
+      <p className="text-[11px] text-gray-400 dark:text-gray-500 font-mono tabular-nums">{c.phone || c.email || "-"}</p>
     </td>
-    <td className="py-3 px-4"><QualityTierBadge tier={c.qualityTier} /></td>
-    <td className="py-3 px-4">
-      <span className="text-sm font-medium" style={{ color: c.loyaltyTier ? "#8B5CF6" : "#9CA3AF" }}>
+    <td className="py-2.5 px-4"><QualityTierBadge tier={c.qualityTier} /></td>
+    <td className="py-2.5 px-4">
+      <span className="text-xs font-semibold" style={{ color: c.loyaltyTier ? "#8B5CF6" : "#9CA3AF" }}>
         {c.loyaltyTier || "-"}
       </span>
     </td>
-    <td className="py-3 px-4"><RatingBadge rating={c.rating} /></td>
-    <td className="py-3 px-4 text-sm font-bold text-gray-900 dark:text-white" dir="ltr">
-      {c.loyaltyPoints > 0 ? c.loyaltyPoints.toLocaleString("ar-EG") : "-"}
+    <td className="py-2.5 px-4"><RatingBadge rating={c.rating} /></td>
+    <td className="py-2.5 px-4 text-xs sm:text-sm font-bold font-mono tabular-nums text-gray-900 dark:text-white" dir="ltr">
+      {c.loyaltyPoints > 0 ? c.loyaltyPoints.toLocaleString() : "-"}
     </td>
-    <td className="py-3 px-4">
+    <td className="py-2.5 px-4">
       <div className="flex gap-1 flex-wrap">
         {c.tags.slice(0, 3).map(t => (
-          <span key={t} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{t}</span>
+          <span key={t} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200/60 dark:border-gray-700">{t}</span>
         ))}
-        {c.tags.length > 3 && <span className="text-[10px] text-gray-400">+{c.tags.length - 3}</span>}
+        {c.tags.length > 3 && <span className="text-[10px] text-gray-400 font-mono">+{c.tags.length - 3}</span>}
       </div>
     </td>
-    <td className="py-3 px-4">
-      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-        c.status === "ACTIVE" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-        c.status === "VIP" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" :
-        c.status === "LEAD" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
-        c.status === "BLOCKED" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
-        "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
-      }`}>{c.status}</span>
+    <td className="py-2.5 px-4">
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
+        c.status === "ACTIVE" ? "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/30 dark:border-emerald-900/50 dark:text-emerald-300" :
+        c.status === "VIP" ? "bg-purple-50 text-purple-700 border-purple-200/80 dark:bg-purple-950/30 dark:border-purple-900/50 dark:text-purple-300" :
+        c.status === "LEAD" ? "bg-blue-50 text-blue-700 border-blue-200/80 dark:bg-blue-950/30 dark:border-blue-900/50 dark:text-blue-300" :
+        c.status === "BLOCKED" ? "bg-rose-50 text-rose-700 border-rose-200/80 dark:bg-rose-950/30 dark:border-rose-900/50 dark:text-rose-300" :
+        "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300"
+      }`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${
+          c.status === "ACTIVE" ? "bg-emerald-500" :
+          c.status === "VIP" ? "bg-purple-500" :
+          c.status === "LEAD" ? "bg-blue-500" :
+          c.status === "BLOCKED" ? "bg-rose-500" : "bg-gray-400"
+        }`} />
+        {c.status}
+      </span>
     </td>
   </tr>
 );
@@ -254,8 +262,8 @@ const CustomerSegments: React.FC = () => {
     setLoading(true);
     try {
       const [qualityRes, loyaltyRes, tiersRes, customersRes] = await Promise.all([
-        analyticsService.getCustomerQualityAnalytics(),
-        apiClient.get("/hr/customer-loyalty/customers").catch(() => ({ data: { data: [] } })),
+        analyticsService.getCustomerQualityAnalytics().catch(() => null),
+        apiClient.get("/hr/customer-loyalty/customers", { timeout: 5000 }).catch(() => ({ data: { data: [] } })),
         apiClient.get("/hr/customer-loyalty/tiers").catch(() => ({ data: { data: [] } })),
         apiClient.get("/customers?limit=200").catch(() => ({ data: { data: [] } })),
       ]);
@@ -458,32 +466,39 @@ const CustomerSegments: React.FC = () => {
 
   // ── Render ───────────────────────────────────
   return (
-    <div className="space-y-6">
+    <div className="space-y-4" dir="rtl">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">مركز تقسيم العملاء</h1>
-          <p className="text-gray-600 dark:text-gray-400">إدارة شاملة لتصنيفات العملاء وجودتهم وولائهم</p>
+          <h1 className="text-xl font-bold tracking-tight text-gray-950 dark:text-white sm:text-2xl">
+            مركز تقسيم العملاء
+          </h1>
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 sm:text-sm">
+            إدارة شاملة لتصنيفات العملاء وجودتهم وولائهم
+          </p>
         </div>
-        <button onClick={fetchAll} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
-          <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+        <button
+          onClick={fetchAll}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/80 shadow-2xs active:scale-[0.98] transition-all self-start sm:self-auto"
+        >
+          <svg className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
           تحديث
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-white dark:bg-gray-800 p-1.5 rounded-lg shadow dark:shadow-md overflow-x-auto">
+      {/* Tabs - Modern Segmented Control */}
+      <div className="flex gap-1 bg-gray-100/80 dark:bg-gray-800/80 p-1 rounded-xl border border-gray-200/60 dark:border-gray-700/60 overflow-x-auto shadow-2xs">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
               activeTab === tab.key
-                ? "bg-indigo-600 text-white shadow-sm"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                ? "bg-white dark:bg-gray-900 text-gray-950 dark:text-white shadow-xs"
+                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
-            <tab.icon className="h-4 w-4" />
+            <tab.icon className="h-3.5 w-3.5" />
             {tab.label}
           </button>
         ))}
@@ -491,54 +506,86 @@ const CustomerSegments: React.FC = () => {
 
       {/* ════════════ TAB: Overview ════════════ */}
       {activeTab === "overview" && (
-        <div className="space-y-6">
-          {/* Bento Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard
-              icon={Shield} label="إجمالي العملاء" value={stats.total} color="#6366F1"
-              sub={`المتوسط: ${qualityData?.avgCustomerScore || 0}`}
-            />
-            <StatCard
-              icon={Crown} label="VIP / عالي" value={stats.vipCount + stats.highCount} color="#8B5CF6"
-              sub={`VIP: ${stats.vipCount} · عالي: ${stats.highCount}`}
-              onClick={() => { setFilterQuality("VIP"); setActiveTab("quality"); }}
-            />
-            <StatCard
-              icon={Star} label="أعضاء الولاء" value={stats.loyaltyMembers} color="#F59E0B"
-              sub={`إجمالي النقاط: ${stats.totalPoints.toLocaleString("ar-EG")}`}
-              onClick={() => setActiveTab("loyalty")}
-            />
-            <StatCard
-              icon={TrendingUp} label="معدل التميز" value={stats.excellentCount} color="#10B981"
-              sub={`عملاء ممتازون`}
-            />
+        <div className="space-y-4">
+          {/* Telemetry Strip - Linear Single Chassis */}
+          <div className="rounded-xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xs overflow-hidden">
+            <div className="grid grid-cols-2 divide-y divide-gray-100 dark:divide-gray-800 sm:grid-cols-4 sm:divide-y-0 sm:divide-x sm:divide-x-reverse rtl:sm:divide-x-reverse">
+              <div className="p-3 sm:p-4 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+                  <span>إجمالي العملاء</span>
+                  <span className="flex h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+                </div>
+                <div className="text-lg sm:text-xl font-bold tracking-tight text-gray-950 dark:text-white font-mono tabular-nums">
+                  {stats.total.toLocaleString()}
+                </div>
+                <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 font-mono">
+                  المتوسط: {qualityData?.avgCustomerScore || 0}
+                </div>
+              </div>
+              <div className="p-3 sm:p-4 flex flex-col justify-between cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition-colors" onClick={() => { setFilterQuality("VIP"); setActiveTab("quality"); }}>
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+                  <span>VIP / عالي</span>
+                  <span className="flex h-1.5 w-1.5 rounded-full bg-purple-500" />
+                </div>
+                <div className="text-lg sm:text-xl font-bold tracking-tight text-gray-950 dark:text-white font-mono tabular-nums">
+                  {(stats.vipCount + stats.highCount).toLocaleString()}
+                </div>
+                <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 font-mono">
+                  VIP: {stats.vipCount} · عالي: {stats.highCount}
+                </div>
+              </div>
+              <div className="p-3 sm:p-4 flex flex-col justify-between cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition-colors" onClick={() => setActiveTab("loyalty")}>
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+                  <span>أعضاء الولاء</span>
+                  <span className="flex h-1.5 w-1.5 rounded-full bg-amber-500" />
+                </div>
+                <div className="text-lg sm:text-xl font-bold tracking-tight text-gray-950 dark:text-white font-mono tabular-nums">
+                  {stats.loyaltyMembers.toLocaleString()}
+                </div>
+                <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 font-mono tabular-nums">
+                  النقاط: {stats.totalPoints.toLocaleString()}
+                </div>
+              </div>
+              <div className="p-3 sm:p-4 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+                  <span>عملاء ممتازون</span>
+                  <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                </div>
+                <div className="text-lg sm:text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+                  {stats.excellentCount.toLocaleString()}
+                </div>
+                <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                  تقييم مرتفع
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Filter Bar */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-            <div className="flex flex-col sm:flex-row gap-3">
+          <div className="rounded-xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-2.5 sm:p-3 shadow-2xs">
+            <div className="flex flex-col sm:flex-row gap-2.5">
               <div className="relative flex-1">
-                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Search className="absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input
                   type="text" value={searchQuery}
                   onChange={e => { setSearchQuery(e.target.value); setSelectedCustomerId(null); }}
                   placeholder="ابحث باسم العميل، إيميل، رقم الهاتف..."
-                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 py-2.5 pl-4 pr-10 text-right text-sm text-gray-900 dark:text-white outline-none focus:border-indigo-500"
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 py-1.5 pl-3 pr-9 text-right text-xs sm:text-sm text-gray-900 dark:text-white outline-none focus:bg-white dark:focus:bg-gray-800 focus:border-gray-400 transition-all"
                 />
               </div>
               <select value={filterQuality} onChange={e => setFilterQuality(e.target.value)}
-                className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-indigo-500">
+                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-xs text-gray-900 dark:text-white outline-none cursor-pointer">
                 <option value="ALL">كل المستويات (Quality)</option>
                 {QUALITY_TIER_ORDER.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
               <select value={filterLoyalty} onChange={e => setFilterLoyalty(e.target.value)}
-                className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-indigo-500">
+                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-xs text-gray-900 dark:text-white outline-none cursor-pointer">
                 <option value="ALL">كل مستويات الولاء</option>
                 <option value="NONE">بدون مستوى</option>
                 {loyaltyTiers.map(t => <option key={t.id} value={t.nameAr || t.name}>{t.nameAr || t.name}</option>)}
               </select>
               <select value={filterRating} onChange={e => setFilterRating(e.target.value)}
-                className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-indigo-500">
+                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-xs text-gray-900 dark:text-white outline-none cursor-pointer">
                 <option value="ALL">كل التقييمات</option>
                 <option value="EXCELLENT">ممتاز</option>
                 <option value="GOOD">جيد</option>
@@ -558,10 +605,10 @@ const CustomerSegments: React.FC = () => {
           </div>
 
           {/* Unified Table */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <div className="rounded-xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xs overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-900/50">
+              <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
+                <thead className="bg-gray-50/70 dark:bg-gray-800/40 border-b border-gray-200/80 dark:border-gray-800">
                   <tr>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400">العميل</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400">مستوى الجودة</th>

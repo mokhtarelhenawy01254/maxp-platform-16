@@ -307,11 +307,11 @@ const ManualOrderPage = () => {
 
   return (
     <div
-      className="relative flex h-[calc(100dvh-64px)] min-h-[560px] flex-col overflow-y-auto bg-slate-50 p-3 dark:bg-gray-900 sm:p-4 lg:h-[calc(100dvh-64px)]"
+      className="relative flex h-[calc(100dvh-64px)] min-h-[560px] flex-col overflow-y-auto bg-slate-50/70 p-2.5 dark:bg-gray-950 sm:p-3 lg:h-[calc(100dvh-64px)]"
       dir={isEn ? "ltr" : "rtl"}
     >
       {access?.subscription === "EXPIRED" ? (
-        <div className="mb-3 shrink-0 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/25 dark:text-amber-200">
+        <div className="mb-2.5 shrink-0 rounded-xl border border-amber-200/80 bg-amber-50/80 px-3.5 py-2.5 text-xs text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-200 shadow-2xs">
           {isEn ? (
             <>
               Your Manual Orders subscription has expired. You can still create new orders, but if your wallet balance is zero, they will be <b className="font-semibold">held (hidden)</b> on the orders page until you renew.
@@ -324,26 +324,31 @@ const ManualOrderPage = () => {
         </div>
       ) : null}
 
-      <header className="mb-3 flex shrink-0 items-start justify-between gap-3">
+      <header className="mb-2.5 flex shrink-0 items-center justify-between gap-3 px-1">
         <div className="min-w-0">
-          <h1 className="text-lg font-bold text-slate-950 dark:text-white sm:text-xl">
-            {pageTitle}
-          </h1>
-          <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500 dark:text-slate-400 sm:text-sm">
+          <div className="flex items-center gap-2">
+            <h1 className="text-base font-bold tracking-tight text-slate-950 dark:text-white sm:text-lg">
+              {pageTitle}
+            </h1>
+            <span className="hidden sm:inline-flex items-center rounded-md border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-0.5 text-[10px] font-mono text-slate-500">
+              POS v2
+            </span>
+          </div>
+          <p className="mt-0.5 max-w-2xl text-xs text-slate-500 dark:text-slate-400 truncate">
             {pageSubtitle}
           </p>
         </div>
 
         <button
           onClick={() => setShowShortcuts((prev) => !prev)}
-          className="shrink-0 rounded-lg p-2 text-slate-400 transition-colors hover:bg-white hover:text-slate-700 dark:text-slate-500 dark:hover:bg-gray-800 dark:hover:text-slate-200"
+          className="shrink-0 rounded-lg border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 shadow-2xs active:scale-[0.98]"
           title={`${t("manualOrder.keyboardShortcuts", isEn ? "Keyboard Shortcuts" : "اختصارات لوحة المفاتيح")} (F1)`}
         >
-          <InformationCircleIcon className="h-5 w-5" />
+          <InformationCircleIcon className="h-4 w-4" />
         </button>
       </header>
 
-      <div className="mb-3 grid shrink-0 grid-cols-3 gap-2 rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-gray-700 dark:bg-gray-800 lg:hidden">
+      <div className="mb-2.5 grid shrink-0 grid-cols-3 gap-1.5 rounded-xl border border-slate-200/80 bg-white p-1 shadow-2xs dark:border-gray-800 dark:bg-gray-900 lg:hidden">
         {mobilePanels.map((panel) => {
           const Icon = panel.icon;
           const isActive = activeMobilePanel === panel.id;
@@ -353,20 +358,20 @@ const ManualOrderPage = () => {
               key={panel.id}
               type="button"
               onClick={() => setActiveMobilePanel(panel.id)}
-              className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-bold transition-colors ${
+              className={`flex min-h-10 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-semibold transition-all ${
                 isActive
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-gray-700"
+                  ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xs"
+                  : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-gray-800"
               }`}
             >
-              <Icon className="h-4 w-4 shrink-0" />
+              <Icon className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">{panel.label}</span>
               {typeof panel.count === "number" && panel.count > 0 && (
                 <span
-                  className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] ${
+                  className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-mono ${
                     isActive
-                      ? "bg-white/20 text-white"
-                      : "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200"
+                      ? "bg-white/20 text-white dark:bg-black/10 dark:text-slate-900"
+                      : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
                   }`}
                 >
                   {panel.count}

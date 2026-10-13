@@ -506,113 +506,107 @@ const IncompleteOrders: React.FC = () => {
   const NextIcon = isRTL ? ChevronLeftIcon : ChevronRightIcon;
 
   return (
-    <div className="space-y-6" dir={getDirection()}>
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="space-y-4" dir={getDirection()}>
+      {/* Top Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3 pb-1">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-xl font-bold tracking-tight text-gray-950 dark:text-white sm:text-2xl">
             {t("orders.incompleteTitle")}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 sm:text-sm">
             {t("orders.incompleteSubtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Link
             to="/settings/orders?tab=incomplete"
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 shadow-2xs hover:bg-gray-50 dark:hover:bg-gray-700/80 active:scale-[0.98] transition-all"
           >
-            <Cog6ToothIcon className="h-4 w-4" />
+            <Cog6ToothIcon className="h-3.5 w-3.5" />
             {t("orders.incompleteSettings")}
           </Link>
           <Link
             to="/orders/incomplete/reports"
-            className="inline-flex items-center gap-2 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 dark:border-blue-900/50 bg-blue-50/70 dark:bg-blue-900/20 px-3 py-1.5 text-xs font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 active:scale-[0.98] transition-all"
           >
-            <ChartBarIcon className="h-4 w-4" />
+            <ChartBarIcon className="h-3.5 w-3.5" />
             {t("orders.incompleteReports")}
           </Link>
           <button
             type="button"
             onClick={handleExport}
             disabled={exporting || loading}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 shadow-2xs hover:bg-gray-50 dark:hover:bg-gray-700/80 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {exporting ? (
-              <ArrowPathIcon className="h-4 w-4 animate-spin" />
+              <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <ArrowDownTrayIcon className="h-4 w-4" />
+              <ArrowDownTrayIcon className="h-3.5 w-3.5" />
             )}
             {exporting ? t("orders.incompleteExporting") : t("orders.incompleteExport")}
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((card, idx) => (
-          <div
-            key={idx}
-            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 transition-shadow hover:shadow-md"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                {card.label}
-              </span>
-              <div className={`p-1.5 rounded-lg ${card.color}`}>
-                <card.icon className="h-4 w-4" />
+      {/* Telemetry Strip - Linear Single Chassis */}
+      <div className="rounded-xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xs overflow-hidden">
+        <div className="grid grid-cols-2 divide-y divide-gray-100 dark:divide-gray-800 sm:grid-cols-4 sm:divide-y-0 sm:divide-x sm:divide-x-reverse rtl:sm:divide-x-reverse">
+          {statCards.map((card, idx) => (
+            <div key={idx} className="p-3 sm:p-4 flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+                <span>{card.label}</span>
+                <span className="flex h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
               </div>
-            </div>
-            <div className="text-xl font-bold text-gray-900 dark:text-white">
-              {typeof card.value === "number" ? card.value.toLocaleString() : card.value}
-            </div>
-            {card.sub && (
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {card.sub}
+              <div className="text-lg sm:text-xl font-bold tracking-tight text-gray-950 dark:text-white font-mono tabular-nums">
+                {typeof card.value === "number" ? card.value.toLocaleString() : card.value}
               </div>
-            )}
-          </div>
-        ))}
+              {card.sub && (
+                <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 truncate">
+                  {card.sub}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-        <div className="flex flex-col sm:flex-row gap-3">
+      {/* Filters and Search Bar - Cohesive Single Surface */}
+      <div className="rounded-xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-2.5 shadow-2xs">
+        <div className="flex flex-col sm:flex-row gap-2.5">
           <div className="relative flex-1">
             <label htmlFor="incomplete-orders-search" className="sr-only">
               {t("orders.incompleteSearchLabel")}
             </label>
-            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute start-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <MagnifyingGlassIcon className="h-4 w-4 text-gray-400 absolute start-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               id="incomplete-orders-search"
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder={t("orders.incompleteSearchPlaceholder")}
-              className="w-full ps-10 pe-10 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm placeholder-gray-400 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
+              className="w-full ps-9 pe-9 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50/50 dark:bg-gray-800/50 text-xs sm:text-sm placeholder-gray-400 focus:bg-white dark:focus:bg-gray-800 focus:border-gray-400 focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-700 outline-none transition-all"
             />
           </div>
           <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <div className="flex items-center rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 p-0.5">
+            {/* Segmented active/lost toggle */}
+            <div className="flex items-center rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100/70 dark:bg-gray-800 p-0.5">
               <button
                 type="button"
                 onClick={() => {
                   setStatusFilter("active");
                   setPage(1);
                 }}
-                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                   statusFilter === "active"
-                    ? "bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-300 shadow-sm"
-                    : "text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50"
+                    ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                 }`}
                 aria-pressed={statusFilter === "active"}
               >
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                 {t("orders.incompleteStatusActive")}
-                <span
-                  className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold ${
-                    statusFilter === "active"
-                      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-                      : "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                  }`}
-                >
-                  {stats.active}
+                <span className="font-mono tabular-nums text-[11px] opacity-75">
+                  ({stats.active})
                 </span>
               </button>
               <button
@@ -621,25 +615,21 @@ const IncompleteOrders: React.FC = () => {
                   setStatusFilter("lost");
                   setPage(1);
                 }}
-                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                   statusFilter === "lost"
-                    ? "bg-white dark:bg-gray-800 text-red-700 dark:text-red-300 shadow-sm"
-                    : "text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50"
+                    ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                 }`}
                 aria-pressed={statusFilter === "lost"}
               >
+                <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
                 {t("orders.incompleteStatusLost")}
-                <span
-                  className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold ${
-                    statusFilter === "lost"
-                      ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                      : "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                  }`}
-                >
-                  {stats.lost}
+                <span className="font-mono tabular-nums text-[11px] opacity-75">
+                  ({stats.lost})
                 </span>
               </button>
             </div>
+
             <label htmlFor="incomplete-orders-phone" className="sr-only">
               {t("orders.incompletePhoneLabel")}
             </label>
@@ -650,12 +640,13 @@ const IncompleteOrders: React.FC = () => {
                 setPhoneFilter(e.target.value as PhoneFilter);
                 setPage(1);
               }}
-              className="px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
+              className="px-2.5 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-xs font-medium focus:border-gray-400 focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-700 outline-none transition-all cursor-pointer"
             >
               <option value="with_phone">{t("orders.incompletePhoneWith")}</option>
               <option value="no_phone">{t("orders.incompletePhoneWithout")}</option>
               <option value="all">{t("orders.incompletePhoneAll")}</option>
             </select>
+
             <label htmlFor="incomplete-orders-sort" className="sr-only">
               {t("orders.incompleteSort")}
             </label>
@@ -666,13 +657,14 @@ const IncompleteOrders: React.FC = () => {
                 setSortValue(e.target.value as SortValue);
                 setPage(1);
               }}
-              className="px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
+              className="px-2.5 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-xs font-medium focus:border-gray-400 focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-700 outline-none transition-all cursor-pointer"
             >
               <option value="priority">{t("orders.incompleteSortPriority")}</option>
               <option value="recent">{t("orders.incompleteSortLastUpdated")}</option>
               <option value="value_desc">{t("orders.incompleteSortValueDesc")}</option>
               <option value="value_asc">{t("orders.incompleteSortValueAsc")}</option>
             </select>
+
             <label htmlFor="incomplete-orders-per-page" className="sr-only">
               {t("orders.incompletePerPage")}
             </label>
@@ -683,17 +675,18 @@ const IncompleteOrders: React.FC = () => {
                 setLimit(Number(e.target.value));
                 setPage(1);
               }}
-              className="px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
+              className="px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-xs font-medium focus:border-gray-400 focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-700 outline-none transition-all cursor-pointer font-mono"
             >
               <option value={10}>10</option>
               <option value={20}>20</option>
               <option value={50}>50</option>
               <option value={100}>100</option>
             </select>
+
             <button
               type="button"
               onClick={handleRetry}
-              className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/80 active:scale-[0.98] transition-all"
               title={t("orders.incompleteRetry")}
               aria-label={t("orders.incompleteRetry")}
             >
@@ -703,15 +696,16 @@ const IncompleteOrders: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      {/* Orders Table - Single Surface Chassis */}
+      <div className="rounded-xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-start min-w-[1350px]">
             <thead>
-              <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
-                <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <tr className="border-b border-gray-200/80 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40">
+                <th className="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   {t("orders.customer")}
                 </th>
-                <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   {t("orders.contact")}
                 </th>
                 <th className="px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -803,17 +797,17 @@ const IncompleteOrders: React.FC = () => {
                     <tr
                       key={order.cartId}
                       onClick={() => navigate(`/orders/incomplete/${encodeURIComponent(order.cartId)}`)}
-                      className={`group border-b border-gray-50 dark:border-gray-700/50 last:border-0 transition-all cursor-pointer hover:bg-blue-50/40 dark:hover:bg-blue-900/10 ${
-                        idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50/30 dark:bg-gray-800/50"
+                      className={`group border-b border-gray-100 dark:border-gray-800/80 last:border-0 transition-colors cursor-pointer hover:bg-gray-50/70 dark:hover:bg-gray-800/50 ${
+                        idx % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/20 dark:bg-gray-900/40"
                       }`}
                     >
-                      <td className="px-5 py-4">
+                      <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 flex items-center justify-center text-xs font-bold text-blue-600 dark:text-blue-400 shrink-0">
+                          <div className="h-7 w-7 rounded-full bg-slate-100 dark:bg-slate-850 flex items-center justify-center text-xs font-semibold text-slate-700 dark:text-slate-300 shrink-0">
                             {name ? name.charAt(0).toUpperCase() : "?"}
                           </div>
                           <div className="min-w-0">
-                            <div className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[160px]">
+                            <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate max-w-[160px]">
                               {name || (
                                 <span className="text-gray-400 dark:text-gray-500 italic">
                                   {t("orders.notSpecified")}
@@ -821,7 +815,7 @@ const IncompleteOrders: React.FC = () => {
                               )}
                             </div>
                             <div className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
-                              <span className="font-mono truncate max-w-[120px]" title={order.cartId}>
+                              <span className="font-mono tabular-nums truncate max-w-[120px]" title={order.cartId}>
                                 {order.cartId.slice(0, 12)}...
                               </span>
                               {governorate && (
@@ -834,45 +828,45 @@ const IncompleteOrders: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-4">
-                        <div className="text-sm text-gray-900 dark:text-white font-medium">
+                      <td className="px-4 py-3">
+                        <div className="text-xs sm:text-sm text-gray-900 dark:text-white font-mono tabular-nums font-medium">
                           {contact.phone || (
-                            <span className="text-gray-400 dark:text-gray-500">{t("orders.notSpecified")}</span>
+                            <span className="text-gray-400 dark:text-gray-500 font-sans">{t("orders.notSpecified")}</span>
                           )}
                         </div>
-                        <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                        <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 truncate max-w-[140px]">
                           {contact.email || "-"}
                         </div>
                       </td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs sm:text-sm font-semibold font-mono tabular-nums text-gray-900 dark:text-white">
                             {order.itemsCount || 0}
                           </span>
-                          <span className="text-xs text-gray-400 dark:text-gray-500">
+                          <span className="text-[11px] text-gray-400 dark:text-gray-500">
                             {t("orders.items")}
                           </span>
                         </div>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-4 py-3">
                         <div
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-sm font-medium transition-colors group-hover:shadow-sm ${getValueColor(valueTier)}`}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/60 text-xs font-semibold font-mono tabular-nums text-gray-900 dark:text-white"
                           title={getValueLabel(valueTier, t)}
                         >
                           <span>{formatPrice(order.total || 0)}</span>
                         </div>
                       </td>
                       {canShowAttribution && (
-                        <td className="px-5 py-4">
+                        <td className="px-4 py-3">
                           <AttributionCell attribution={getOrderAttribution(order)} />
                         </td>
                       )}
-                      <td className="px-5 py-4">
-                        <div className="text-sm text-gray-600 dark:text-gray-300" title={lastUpdated ? formatDateTimeCompact(lastUpdated, lang) : ""}>
+                      <td className="px-4 py-3">
+                        <div className="text-xs text-gray-600 dark:text-gray-300" title={lastUpdated ? formatDateTimeCompact(lastUpdated, lang) : ""}>
                           {lastUpdated ? getRelativeTime(lastUpdated, t) || formatDateTimeCompact(lastUpdated, lang) : "-"}
                         </div>
                         {lastUpdated && (
-                          <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                          <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 font-mono tabular-nums">
                             {formatDateTimeCompact(lastUpdated, lang)}
                           </div>
                         )}

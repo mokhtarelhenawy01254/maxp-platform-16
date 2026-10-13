@@ -33,10 +33,10 @@ const CartColumn: React.FC<CartColumnProps> = ({
   );
 
     return (
-        <div className="flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden" style={{ height: '100%', maxHeight: '100%' }}>
-            <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 flex justify-between items-center">
-                <h2 className="font-semibold text-gray-800 dark:text-gray-100">{t('manualOrder.k_72')}{items.length})</h2>
-                <div className="text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full">
+        <div className="flex flex-col bg-white dark:bg-gray-900 rounded-xl shadow-2xs border border-gray-200/80 dark:border-gray-800 overflow-hidden" style={{ height: '100%', maxHeight: '100%' }}>
+            <div className="px-4 py-3 border-b border-gray-200/80 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 flex justify-between items-center">
+                <h2 className="text-xs sm:text-sm font-semibold tracking-tight text-gray-900 dark:text-white">{t('manualOrder.k_72')}{items.length})</h2>
+                <div className="text-xs font-semibold font-mono tabular-nums text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700 px-2.5 py-1 rounded-md shadow-2xs">
                     {t('manualOrder.k_77')} {totalAmount.toLocaleString()} {t('manualOrder.k_84')}
                 </div>
             </div>

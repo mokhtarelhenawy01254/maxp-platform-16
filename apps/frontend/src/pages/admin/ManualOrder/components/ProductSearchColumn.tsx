@@ -303,13 +303,13 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
 
   return (
     <div
-      className="flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden relative"
+      className="flex flex-col bg-white dark:bg-gray-900 rounded-xl shadow-2xs border border-gray-200/80 dark:border-gray-800 overflow-hidden relative"
       style={{ height: "100%", maxHeight: "100%" }}
     >
       {/* Search Header */}
-      <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-100">
+      <div className="px-4 py-3 border-b border-gray-200/80 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40">
+        <div className="flex items-center justify-between mb-2.5">
+          <h2 className="text-xs sm:text-sm font-semibold tracking-tight text-gray-900 dark:text-white">
             {isAffiliateMode ? t('manualOrder.affiliateProducts') : t('manualOrder.products')}
           </h2>
           <button
@@ -317,10 +317,10 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
             onClick={handleRefresh}
             disabled={loading}
             title={t('manualOrder.refreshProducts')}
-            className="p-1.5 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+            className="p-1 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors disabled:opacity-50 active:scale-[0.98]"
             aria-label={t('manualOrder.refreshProducts')}
           >
-            <ArrowPathIcon className={`w-4 h-4 ${loading ? "animate-spin text-blue-600 dark:text-blue-400" : ""}`} />
+            <ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? "animate-spin text-slate-800 dark:text-slate-200" : ""}`} />
           </button>
         </div>
         <div className="relative">
@@ -328,7 +328,7 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
             id="manual-order-product-search"
             type="text"
             placeholder={t('manualOrder.searchPlaceholder')}
-            className="w-full pl-4 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
+            className="w-full pl-3 pr-9 py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-gray-400 focus:border-gray-400 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 outline-none transition-all"
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -337,7 +337,7 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
               if (e.key === "Enter") fetchProducts(searchQuery);
             }}
           />
-          <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 absolute right-3 top-2.5" />
+          <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute right-3 top-2.5 pointer-events-none" />
         </div>
       </div>
 

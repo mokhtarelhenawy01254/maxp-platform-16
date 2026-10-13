@@ -158,28 +158,17 @@ const ProductAvailabilityGrid: React.FC = () => {
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const all: AvailabilityRow[] = [];
-      let currentPage = 1;
-      let total = 0;
-      const limit = 500;
-      do {
-        const response = await apiClient.get<AvailabilityResponse>("products", {
-          params: { page: currentPage, limit, sortBy: "name", sortOrder: "asc" },
-        });
-        const data = response.data;
-        if (data.success) {
-          total = data.pagination?.total ?? total;
-          const mapped = (data.data || []).map((p) =>
-            mapProductRow(p),
-          );
-          all.push(...mapped);
-          currentPage += 1;
-        } else {
-          break;
-        }
-      } while (all.length < total);
-      setRows(all);
-      setTotalItems(total);
+      const limit = 100;
+      const response = await apiClient.get<AvailabilityResponse>("/products", {
+        params: { page: 1, limit, sortBy: "name", sortOrder: "asc" },
+      });
+      const data = response.data;
+      if (data.success) {
+        const total = data.pagination?.total ?? (data.data || []).length;
+        const mapped = (data.data || []).map((p) => mapProductRow(p));
+        setRows(mapped);
+        setTotalItems(total);
+      }
     } catch (err) {
       console.error("Error loading availability grid:", err);
       toast.error(t("productAvailability.loadError", "فشل في جلب المنتجات") as string);
@@ -433,131 +422,112 @@ const ProductAvailabilityGrid: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8" dir="rtl">
-      <div className="mx-auto max-w-[1400px]">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <TableCellsIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
-              {t("productAvailability.title", "المخزون المتاح")}
-            </h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {t(
-                "productAvailability.subtitle",
-                "كل منتجات المتجر في جدول واحد: تتبع المخزون، الطلب المسبق، والكميات المتاحة",
-              )}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" onClick={exportCsv} className="gap-2">
-              <ArrowDownTrayIcon className="h-4 w-4" />
-              {t("productAvailability.export", "تصدير Excel / CSV")}
-            </Button>
-            <Button variant="outline" onClick={loadAll} className="gap-2">
-              <ArrowPathIcon className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              {t("productAvailability.refresh", "تحديث")}
-            </Button>
-          </div>
+    <div className="space-y-4" dir="rtl">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-gray-950 dark:text-white sm:text-2xl">
+            {t("productAvailability.title", "المخزون المتاح")}
+          </h1>
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 sm:text-sm">
+            {t(
+              "productAvailability.subtitle",
+              "كل منتجات المتجر في جدول واحد: تتبع المخزون، الطلب المسبق، والكميات المتاحة",
+            )}
+          </p>
         </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={exportCsv} className="gap-1.5 text-xs shadow-2xs active:scale-[0.98]">
+            <ArrowDownTrayIcon className="h-3.5 w-3.5" />
+            {t("productAvailability.export", "تصدير CSV")}
+          </Button>
+          <Button variant="outline" size="sm" onClick={loadAll} className="gap-1.5 text-xs shadow-2xs active:scale-[0.98]">
+            <ArrowPathIcon className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            {t("productAvailability.refresh", "تحديث")}
+          </Button>
+        </div>
+      </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {/* Telemetry Strip - Linear Single Chassis */}
+      <div className="rounded-xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xs overflow-hidden">
+        <div className="grid grid-cols-2 divide-y divide-gray-100 dark:divide-gray-800 sm:grid-cols-4 sm:divide-y-0 sm:divide-x sm:divide-x-reverse rtl:sm:divide-x-reverse">
           {metricCards.map((card, index) => (
-            <div
-              key={index}
-              className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-sm overflow-hidden relative"
-            >
-              <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} pointer-events-none`} />
-              <div className="relative flex items-center gap-4">
-                <div className="rounded-xl bg-white/80 dark:bg-gray-900/60 p-3">
-                  <card.icon className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    {card.title}
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {loading ? "..." : card.value}
-                  </p>
-                </div>
+            <div key={index} className="p-3 sm:p-4 flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+                <span>{card.title}</span>
+                <span className="flex h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+              </div>
+              <div className="text-lg sm:text-xl font-bold tracking-tight text-gray-950 dark:text-white font-mono tabular-nums">
+                {loading ? "..." : (typeof card.value === "number" ? card.value.toLocaleString() : card.value)}
               </div>
             </div>
           ))}
         </div>
+      </div>
 
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
-              <div className="relative">
-                <MagnifyingGlassIcon className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <Input
-                  value={search}
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setPage(1);
-                  }}
-                  placeholder={t("productAvailability.search", "بحث بالاسم أو SKU...") as string}
-                  aria-label={t("productAvailability.search", "بحث بالاسم أو SKU...") as string}
-                  className="pl-9 w-full xl:w-60"
-                />
+      {/* Filter and Table Card */}
+      <div className="rounded-xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xs overflow-hidden">
+        <div className="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+          <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+            <div className="relative">
+              <MagnifyingGlassIcon className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Input
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+                placeholder={t("productAvailability.search", "بحث بالاسم أو SKU...") as string}
+                aria-label={t("productAvailability.search", "بحث بالاسم أو SKU...") as string}
+                className="pr-9 pl-3 h-9 text-xs sm:text-sm w-full xl:w-64 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v ?? "all"); setPage(1); }}>
+                  <SelectTrigger id="availability-category-filter" className="h-8 w-36 text-xs border-gray-200 dark:border-gray-700" aria-label={t("productAvailability.filterCategory", "القسم")}>
+                    <SelectValue placeholder={t("productAvailability.allCategories", "كل الأقسام")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("productAvailability.allCategories", "كل الأقسام")}</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex flex-col gap-1">
-                  <Label className="text-[11px] text-gray-500 dark:text-gray-400" htmlFor="availability-category-filter">
-                    {t("productAvailability.filterCategory", "القسم")}
-                  </Label>
-                  <div className="flex items-center gap-1.5">
-                    <FunnelIcon className="h-4 w-4 text-gray-400" />
-                    <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v ?? "all"); setPage(1); }}>
-                      <SelectTrigger id="availability-category-filter" className="w-40" aria-label={t("productAvailability.filterCategory", "القسم")}>
-                        <SelectValue placeholder={t("productAvailability.allCategories", "كل الأقسام")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{t("productAvailability.allCategories", "كل الأقسام")}</SelectItem>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <Label className="text-[11px] text-gray-500 dark:text-gray-400" htmlFor="availability-preorder-filter">
-                    {t("productAvailability.filterPreOrder", "الطلب المسبق")}
-                  </Label>
-                  <Select value={preOrderFilter} onValueChange={(v) => { setPreOrderFilter(v ?? "all"); setPage(1); }}>
-                    <SelectTrigger id="availability-preorder-filter" className="w-40" aria-label={t("productAvailability.filterPreOrder", "الطلب المسبق")}>
-                      <SelectValue placeholder={t("productAvailability.allPreOrder", "الطلب المسبق")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t("productAvailability.allPreOrder", "الطلب المسبق")}</SelectItem>
-                      <SelectItem value="on">{t("productAvailability.preOrderOn", "مفعل")}</SelectItem>
-                      <SelectItem value="off">{t("productAvailability.preOrderOff", "معطل")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <Label className="text-[11px] text-gray-500 dark:text-gray-400" htmlFor="availability-tracking-filter">
-                    {t("productAvailability.filterTracking", "تتبع المخزون")}
-                  </Label>
-                  <Select value={trackFilter} onValueChange={(v) => { setTrackFilter(v ?? "all"); setPage(1); }}>
-                    <SelectTrigger id="availability-tracking-filter" className="w-40" aria-label={t("productAvailability.filterTracking", "تتبع المخزون")}>
-                      <SelectValue placeholder={t("productAvailability.allTracking", "تتبع المخزون")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t("productAvailability.allTracking", "تتبع المخزون")}</SelectItem>
-                      <SelectItem value="on">{t("productAvailability.trackingOn", "مفعل")}</SelectItem>
-                      <SelectItem value="off">{t("productAvailability.trackingOff", "معطل")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <Label className="text-[11px] text-gray-500 dark:text-gray-400" htmlFor="availability-stock-filter">
-                    {t("productAvailability.filterStock", "حالة المخزون")}
-                  </Label>
-                  <Select value={stockFilter} onValueChange={(v) => { setStockFilter(v ?? "all"); setPage(1); }}>
-                    <SelectTrigger id="availability-stock-filter" className="w-40" aria-label={t("productAvailability.filterStock", "حالة المخزون")}>
-                      <SelectValue placeholder={t("productAvailability.allStock", "حالة المخزون")} />
-                    </SelectTrigger>
+
+              <div className="flex items-center gap-1.5">
+                <Select value={preOrderFilter} onValueChange={(v) => { setPreOrderFilter(v ?? "all"); setPage(1); }}>
+                  <SelectTrigger id="availability-preorder-filter" className="h-8 w-32 text-xs border-gray-200 dark:border-gray-700" aria-label={t("productAvailability.filterPreOrder", "الطلب المسبق")}>
+                    <SelectValue placeholder={t("productAvailability.allPreOrder", "الطلب المسبق")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("productAvailability.allPreOrder", "الطلب المسبق: الكل")}</SelectItem>
+                    <SelectItem value="on">{t("productAvailability.preOrderOn", "مفعل")}</SelectItem>
+                    <SelectItem value="off">{t("productAvailability.preOrderOff", "معطل")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Select value={trackFilter} onValueChange={(v) => { setTrackFilter(v ?? "all"); setPage(1); }}>
+                  <SelectTrigger id="availability-tracking-filter" className="h-8 w-32 text-xs border-gray-200 dark:border-gray-700" aria-label={t("productAvailability.filterTracking", "تتبع المخزون")}>
+                    <SelectValue placeholder={t("productAvailability.allTracking", "تتبع المخزون")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("productAvailability.allTracking", "تتبع: الكل")}</SelectItem>
+                    <SelectItem value="on">{t("productAvailability.trackingOn", "مفعل")}</SelectItem>
+                    <SelectItem value="off">{t("productAvailability.trackingOff", "معطل")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Select value={stockFilter} onValueChange={(v) => { setStockFilter(v ?? "all"); setPage(1); }}>
+                  <SelectTrigger id="availability-stock-filter" className="h-8 w-32 text-xs border-gray-200 dark:border-gray-700" aria-label={t("productAvailability.filterStock", "حالة المخزون")}>
+                    <SelectValue placeholder={t("productAvailability.allStock", "حالة المخزون")} />
+                  </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">{t("productAvailability.allStock", "حالة المخزون")}</SelectItem>
                       <SelectItem value="in-stock">{STOCK_STATUS_META["in-stock"].label}</SelectItem>
@@ -566,32 +536,30 @@ const ProductAvailabilityGrid: React.FC = () => {
                       <SelectItem value="untracked">{STOCK_STATUS_META.untracked.label}</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
               </div>
             </div>
-          </CardHeader>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="pt-4">
-            <ErrorBoundary>
-            {loading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-            ) : paginated.length === 0 ? (
-              <div className="py-16 text-center">
-                <ArchiveBoxIcon className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600" />
-                <p className="mt-4 text-gray-500 dark:text-gray-400">
-                  {t("productAvailability.empty", "لا توجد منتجات مطابقة")}
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+        <div className="p-0">
+          <ErrorBoundary>
+          {loading ? (
+            <div className="p-4 space-y-3">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : paginated.length === 0 ? (
+            <div className="py-16 text-center">
+              <ArchiveBoxIcon className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600" />
+              <p className="mt-4 text-gray-500 dark:text-gray-400">
+                {t("productAvailability.empty", "لا توجد منتجات مطابقة")}
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
                 <Table className="border-collapse">
                   <TableHeader>
                     <TableRow className="bg-gray-100 dark:bg-gray-800">
@@ -655,18 +623,19 @@ const ProductAvailabilityGrid: React.FC = () => {
                               {row.categoryName || "—"}
                             </span>
                           </TableCell>
-                          <TableCell className="text-center">
-                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                          <TableCell className="text-center font-mono tabular-nums">
+                            <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
                               {formatPrice(row.price)}
                             </span>
                           </TableCell>
-                          <TableCell className="text-center">
-                            <span className={`text-sm font-bold ${row.stock === 0 ? "text-red-600" : row.stock <= 5 ? "text-yellow-600" : "text-gray-900 dark:text-white"}`}>
+                          <TableCell className="text-center font-mono tabular-nums">
+                            <span className={`text-xs sm:text-sm font-bold ${row.stock === 0 ? "text-rose-600 dark:text-rose-400" : row.stock <= 5 ? "text-amber-600 dark:text-amber-400" : "text-gray-900 dark:text-white"}`}>
                               {row.stock}
                             </span>
                           </TableCell>
                           <TableCell className="text-center">
-                            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${status.className}`}>
+                            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${status.className}`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${row.stock === 0 ? "bg-rose-500" : row.stock <= 5 ? "bg-amber-500" : "bg-emerald-500"}`} />
                               {status.label}
                             </span>
                           </TableCell>
@@ -806,17 +775,16 @@ const ProductAvailabilityGrid: React.FC = () => {
               </div>
             )}
             </ErrorBoundary>
-          </CardContent>
-        </Card>
-
-        <p className="mt-4 text-xs text-gray-400 dark:text-gray-500 text-center">
-          <CheckCircleIcon className="inline h-3.5 w-3.5 ml-1" />
-          {t(
-            "productAvailability.hint",
-            "جدول شبيه ببرنامج Excel: عدّل مفاتيح التتبع والطلب المسبق مباشرة من الجدول واحفظ تلقائياً",
-          )}
-        </p>
+        </div>
       </div>
+
+      <p className="mt-3 text-xs text-gray-400 dark:text-gray-500 text-center font-mono">
+        <CheckCircleIcon className="inline h-3.5 w-3.5 ml-1" />
+        {t(
+          "productAvailability.hint",
+          "جدول شبيه ببرنامج Excel: عدّل مفاتيح التتبع والطلب المسبق مباشرة من الجدول واحفظ تلقائياً",
+        )}
+      </p>
     </div>
   );
 };

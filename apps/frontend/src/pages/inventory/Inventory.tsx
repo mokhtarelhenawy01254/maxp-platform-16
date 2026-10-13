@@ -406,14 +406,14 @@ const Inventory: React.FC = () => {
 
   const getStockStatus = (item: InventoryItem) => {
     if (item.available === 0) {
-      return { status: "نفد المخزون", color: "text-red-600 bg-red-100" };
+      return { status: "نفد المخزون", color: "text-rose-700 bg-rose-50 border border-rose-200/80 dark:bg-rose-950/30 dark:border-rose-900/50 dark:text-rose-300", dot: "bg-rose-500" };
     }
 
     if (item.available <= (item.reorderPoint || 0)) {
-      return { status: "مخزون منخفض", color: "text-yellow-600 bg-yellow-100" };
+      return { status: "مخزون منخفض", color: "text-amber-700 bg-amber-50 border border-amber-200/80 dark:bg-amber-950/30 dark:border-amber-900/50 dark:text-amber-300", dot: "bg-amber-500" };
     }
 
-    return { status: "متوفر", color: "text-green-600 bg-green-100" };
+    return { status: "متوفر", color: "text-emerald-700 bg-emerald-50 border border-emerald-200/80 dark:bg-emerald-950/30 dark:border-emerald-900/50 dark:text-emerald-300", dot: "bg-emerald-500" };
   };
 
   const getAlertPriorityColor = (priority: string) => {
@@ -469,87 +469,90 @@ const Inventory: React.FC = () => {
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+    <div className="space-y-4" dir="rtl">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
-              <CubeIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400 mr-3" />
-              {isMerchant ? "مخزوني" : "إدارة المخزون"}
-            </h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
-              {isMerchant
-                ? "متابعة المنتجات المسندة لك والأرصدة المتاحة في مخازنك أو مخازن الشركة"
-                : "متابعة وإدارة مستويات المخزون والتنبيهات لجميع منتجات الشركة"}
-            </p>
-          </div>
-          <div className="flex space-x-2 space-x-reverse">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-gray-950 dark:text-white sm:text-2xl">
+            {isMerchant ? "مخزوني" : "إدارة المخزون"}
+          </h1>
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 sm:text-sm">
+            {isMerchant
+              ? "متابعة المنتجات المسندة لك والأرصدة المتاحة في مخازنك أو مخازن الشركة"
+              : "متابعة وإدارة مستويات المخزون والتنبيهات لجميع منتجات الشركة"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={downloadCSV}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/80 shadow-2xs active:scale-[0.98] transition-all"
+          >
+            تصدير CSV
+          </button>
+          <button
+            onClick={() => setShowCreateProductModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 shadow-2xs active:scale-[0.98] transition-all"
+          >
+            <PlusIcon className="h-3.5 w-3.5" />
+            إضافة منتج للمخزن
+          </button>
+          {canEditAnyStock && (
             <button
-              onClick={downloadCSV}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm"
+              onClick={() => {
+                setStockUpdate((previous) => ({
+                  ...previous,
+                  warehouseId: previous.warehouseId || warehouses[0]?.id || "",
+                }));
+                setShowStockUpdateModal(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/80 shadow-2xs active:scale-[0.98] transition-all"
             >
-              تصدير CSV
+              <ArrowPathIcon className="h-3.5 w-3.5" />
+              تحديث المخزون
             </button>
-            <button
-              onClick={() => setShowCreateProductModal(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-md text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-all"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              إضافة منتج للمخزن
-            </button>
-            {canEditAnyStock && (
-              <button
-                onClick={() => {
-                  setStockUpdate((previous) => ({
-                    ...previous,
-                    warehouseId: previous.warehouseId || warehouses[0]?.id || "",
-                  }));
-                  setShowStockUpdateModal(true);
-                }}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-all"
-              >
-                <ArrowPathIcon className="h-5 w-5 mr-2" />
-                تحديث المخزون
-              </button>
-            )}
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Stats Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            إجمالي المنتجات
-          </p>
-          <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-            {stats.totalItems}
-          </p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            إجمالي قيمة المخزون
-          </p>
-          <p className="mt-2 text-3xl font-bold text-indigo-600 dark:text-indigo-400">
-            {formatPrice(stats.totalValue)}
-          </p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            فئات منخفضة المخزون
-          </p>
-          <p className="mt-2 text-3xl font-bold text-yellow-600 dark:text-yellow-400">
-            {stats.lowStockCount}
-          </p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            نفد من المخزون
-          </p>
-          <p className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
-            {stats.outOfStockCount}
-          </p>
+      {/* Telemetry Strip - Linear Single Chassis */}
+      <div className="rounded-xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xs overflow-hidden">
+        <div className="grid grid-cols-2 divide-y divide-gray-100 dark:divide-gray-800 sm:grid-cols-4 sm:divide-y-0 sm:divide-x sm:divide-x-reverse rtl:sm:divide-x-reverse">
+          <div className="p-3 sm:p-4 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+              <span>إجمالي المنتجات</span>
+              <span className="flex h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+            </div>
+            <div className="text-lg sm:text-xl font-bold tracking-tight text-gray-950 dark:text-white font-mono tabular-nums">
+              {stats.totalItems.toLocaleString()}
+            </div>
+          </div>
+          <div className="p-3 sm:p-4 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+              <span>إجمالي قيمة المخزون</span>
+              <span className="flex h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+            </div>
+            <div className="text-lg sm:text-xl font-bold tracking-tight text-gray-950 dark:text-white font-mono tabular-nums">
+              {formatPrice(stats.totalValue)}
+            </div>
+          </div>
+          <div className="p-3 sm:p-4 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+              <span>مخزون منخفض</span>
+              <span className="flex h-1.5 w-1.5 rounded-full bg-amber-500" />
+            </div>
+            <div className="text-lg sm:text-xl font-bold tracking-tight text-amber-600 dark:text-amber-400 font-mono tabular-nums">
+              {stats.lowStockCount}
+            </div>
+          </div>
+          <div className="p-3 sm:p-4 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">
+              <span>نفد من المخزون</span>
+              <span className="flex h-1.5 w-1.5 rounded-full bg-rose-500" />
+            </div>
+            <div className="text-lg sm:text-xl font-bold tracking-tight text-rose-600 dark:text-rose-400 font-mono tabular-nums">
+              {stats.outOfStockCount}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -596,22 +599,21 @@ const Inventory: React.FC = () => {
       )}
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-8 border border-transparent dark:border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="rounded-xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 sm:p-4 shadow-2xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
               بحث عن منتج
             </label>
             <input
               type="text"
               placeholder="ابحث باسم المنتج أو الـ SKU..."
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              // Add a search filter if needed in state, or just use frontend filter
+              className="w-full px-3 py-1.5 text-xs sm:text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
               المستودع
             </label>
             <select
@@ -619,7 +621,7 @@ const Inventory: React.FC = () => {
               onChange={(e) =>
                 setFilters({ ...filters, warehouseId: e.target.value })
               }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-2.5 py-1.5 text-xs sm:text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 cursor-pointer transition-all"
             >
               <option value="">جميع المستودعات</option>
               {warehouses.map((wh) => (
@@ -639,46 +641,42 @@ const Inventory: React.FC = () => {
                   outOfStock: false,
                 })
               }
-              className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+              className="w-full px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-medium rounded-lg active:scale-[0.98] transition-all"
             >
               إعادة تعيين
             </button>
           </div>
         </div>
 
-        <div className="mt-4 flex gap-6">
-          <label className="flex items-center cursor-pointer">
+        <div className="mt-3 flex gap-4 pt-2 border-t border-gray-100 dark:border-gray-800">
+          <label className="flex items-center gap-1.5 cursor-pointer text-xs font-medium text-gray-600 dark:text-gray-400">
             <input
               type="checkbox"
               checked={filters.lowStock}
               onChange={(e) =>
                 setFilters({ ...filters, lowStock: e.target.checked })
               }
-              className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 dark:bg-gray-700"
+              className="rounded border-gray-300 dark:border-gray-600 text-slate-900 focus:ring-slate-500 dark:bg-gray-700"
             />
-            <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">
-              مخزون منخفض فقط
-            </span>
+            <span>مخزون منخفض فقط</span>
           </label>
 
-          <label className="flex items-center cursor-pointer">
+          <label className="flex items-center gap-1.5 cursor-pointer text-xs font-medium text-gray-600 dark:text-gray-400">
             <input
               type="checkbox"
               checked={filters.outOfStock}
               onChange={(e) =>
                 setFilters({ ...filters, outOfStock: e.target.checked })
               }
-              className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 dark:bg-gray-700"
+              className="rounded border-gray-300 dark:border-gray-600 text-slate-900 focus:ring-slate-500 dark:bg-gray-700"
             />
-            <span className="mr-2 text-sm text-gray-700 dark:text-gray-300">
-              نفد المخزون فقط
-            </span>
+            <span>نفد المخزون فقط</span>
           </label>
         </div>
       </div>
 
       {/* Inventory Mobile Cards & Desktop Table */}
-      <div className="bg-white/90 dark:bg-gray-800/90 shadow-sm rounded-xl overflow-hidden border border-gray-200/70 dark:border-gray-700/60">
+      <div className="bg-white dark:bg-gray-900 shadow-2xs rounded-xl overflow-hidden border border-gray-200/80 dark:border-gray-800">
         {/* Mobile View (< sm:) */}
         <div className="block sm:hidden divide-y divide-gray-100 dark:divide-gray-700/60 p-3 space-y-3">
           {inventory.map((item) => {
@@ -838,60 +836,61 @@ const Inventory: React.FC = () => {
                 return (
                   <tr
                     key={item.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    className="hover:bg-gray-50/70 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800/80 last:border-0"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
                         {item.productName}
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="text-[11px] text-gray-400 dark:text-gray-500 font-mono tabular-nums">
                         {item.sku}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                    <td className="px-4 py-3 whitespace-nowrap text-xs sm:text-sm text-gray-800 dark:text-gray-200">
                       <div>{item.warehouseName}</div>
                       {item.stockLocationLabel && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                        <div className="text-[11px] text-gray-400 dark:text-gray-500">
                           {item.stockLocationLabel}
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400 font-mono tabular-nums">
                       <div>{item.batchNumber || "---"}</div>
                       {item.expiryDate && (
-                        <div className="text-xs text-rose-500">
+                        <div className="text-[10px] text-rose-500">
                           {formatDate(item.expiryDate)}
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 font-bold">
+                    <td className="px-4 py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white font-mono tabular-nums font-bold">
                       {item.quantity}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-emerald-600 dark:text-emerald-400 font-semibold">
+                    <td className="px-4 py-3 whitespace-nowrap text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 font-mono tabular-nums font-semibold">
                       {item.available}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockStatus.color}`}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${stockStatus.color}`}
                       >
+                        <span className={`h-1.5 w-1.5 rounded-full ${stockStatus.dot}`} />
                         {stockStatus.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                    <td className="px-4 py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white font-mono tabular-nums font-semibold">
                       {formatPrice(item.price)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2 space-x-reverse">
+                    <td className="px-4 py-3 whitespace-nowrap text-xs font-medium">
+                      <div className="flex items-center space-x-1.5 space-x-reverse">
                         <button
                           type="button"
                           onClick={() => {
                             setSelectedItem(item);
                             setShowItemModal(true);
                           }}
-                          className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          className="p-1 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
                           title="عرض التفاصيل"
                         >
-                          <EyeIcon className="h-5 w-5" />
+                          <EyeIcon className="h-4 w-4" />
                         </button>
                         {item.canEditStock !== false && (
                           <>

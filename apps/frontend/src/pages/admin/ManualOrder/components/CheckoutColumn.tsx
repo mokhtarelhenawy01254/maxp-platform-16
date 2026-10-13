@@ -688,16 +688,16 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
 
   return (
     <div
-      className="flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+      className="flex flex-col bg-white dark:bg-gray-900 rounded-xl shadow-2xs border border-gray-200/80 dark:border-gray-800 overflow-hidden"
       style={{ height: "100%", maxHeight: "100%" }}
     >
-      <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
-        <h2 className="font-semibold text-gray-800 dark:text-gray-100">
+      <div className="px-4 py-3 border-b border-gray-200/80 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40">
+        <h2 className="text-xs sm:text-sm font-semibold tracking-tight text-gray-900 dark:text-white">
           {t('manualOrder.k_89')}
         </h2>
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-6 manual-order-scroll manual-order-column">
+      <div className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-4 space-y-5 manual-order-scroll manual-order-column">
         {/* Customer Info */}
         <div className="space-y-4">
           <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
