@@ -1,3 +1,7 @@
+/**
+ * Team Performance Analytics Page
+ * Tracks multi-dimensional employee attribution: created, confirmed, and assigned orders with Cairo timezone precision.
+ */
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
