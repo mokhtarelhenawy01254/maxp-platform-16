@@ -34,8 +34,8 @@ export const ClothingStoreTasteLanding: React.FC = () => {
 
   // ── First-touch UTM capture & SEO tags ──
   useEffect(() => {
-    const LANDING_TITLE = "MaxP للأزياء والملابس — المنظومة المتكاملة للمتاجر والبراندات";
-    const LANDING_DESCRIPTION = "منظومة متاجر وبراندات الملابس في مصر: متجر أونلاين مجاني، كاشير فروع متزامن، ربط شحن بوسطة، ومستشار مقاسات ذكي يخفض المرتجعات 60%.";
+    const LANDING_TITLE = "MaxP للأزياء والملابس — 17 أداة لإدارة المتجر والفروع والشحن";
+    const LANDING_DESCRIPTION = "منظومة متاجر وبراندات الملابس في مصر: 17 أداة في باقة واحدة تشمل متجر أونلاين، كاشير فروع بالباركود، ربط شحن بوسطة وتوربو، تأكيد واتساب، وتشخيص أسباب المرتجعات.";
     document.title = LANDING_TITLE;
 
     const metaChanges: Array<{ el: HTMLMetaElement; prev: string | null }> = [];

@@ -1,4 +1,5 @@
 import React from "react";
+import { PLATFORM_TELEMETRY } from "./clothingTasteData";
 
 export const ClothingTasteTelemetry: React.FC = () => {
   return (
@@ -7,28 +8,38 @@ export const ClothingTasteTelemetry: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-6 items-center">
           
           <div className="flex flex-col text-right">
-            <span className="text-2xl font-black text-[#141416] cst-tabular tracking-tight">0 ج.م</span>
-            <span className="text-xs text-zinc-600 font-medium">متجر أونلاين مجاني دائم</span>
+            <span className="text-2xl font-black text-[#141416] cst-tabular tracking-tight">
+              {PLATFORM_TELEMETRY.activeStores} متجر
+            </span>
+            <span className="text-xs text-zinc-600 font-medium">نشط يدير مبيعاته على MaxP</span>
           </div>
 
           <div className="flex flex-col text-right">
-            <span className="text-2xl font-black text-[#141416] cst-tabular tracking-tight">1 ج.م/أوردر</span>
-            <span className="text-xs text-zinc-600 font-medium">ادفع فقط لما تشحن أوردر</span>
+            <span className="text-2xl font-black text-[#141416] cst-tabular tracking-tight">
+              {PLATFORM_TELEMETRY.monthlyOrders} أوردر
+            </span>
+            <span className="text-xs text-zinc-600 font-medium">تمت معالجته وشحنه في آخر 30 يوم</span>
           </div>
 
           <div className="flex flex-col text-right">
-            <span className="text-2xl font-black text-emerald-800 cst-tabular tracking-tight">60%</span>
-            <span className="text-xs text-zinc-600 font-medium">انخفاض في مرتجعات المقاسات</span>
+            <span className="text-2xl font-black text-emerald-800 cst-tabular tracking-tight">
+              17 أداة
+            </span>
+            <span className="text-xs text-zinc-600 font-medium">في باقة واحدة بـ 999 ج.م/شهر</span>
           </div>
 
           <div className="flex flex-col text-right">
-            <span className="text-2xl font-black text-[#141416] cst-tabular tracking-tight">0% عمولة</span>
-            <span className="text-xs text-zinc-600 font-medium">أرباح مبيعاتك كاملة في جيبك</span>
+            <span className="text-2xl font-black text-emerald-800 cst-tabular tracking-tight">
+              1,937 ج.م
+            </span>
+            <span className="text-xs text-zinc-600 font-medium">وفر شهري (قيمة منفردة 2,936 ج.م)</span>
           </div>
 
           <div className="col-span-2 md:col-span-1 flex flex-col text-right border-t md:border-t-0 md:border-r border-black/10 pt-4 md:pt-0 md:pr-6">
-            <span className="text-2xl font-black text-amber-700 cst-tabular tracking-tight">1-Click</span>
-            <span className="text-xs text-zinc-600 font-medium">بوالص بوسطة وتأكيد واتساب</span>
+            <span className="text-2xl font-black text-[#141416] cst-tabular tracking-tight">
+              0% عمولة
+            </span>
+            <span className="text-xs text-zinc-600 font-medium">أرباح مبيعاتك بالكامل في جيبك</span>
           </div>
 
         </div>

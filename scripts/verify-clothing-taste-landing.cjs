@@ -78,12 +78,12 @@ async function runVerification() {
   await page.waitForTimeout(400);
   console.log("PASS: Switched to POS Live Sync tab");
 
-  const bostaTab = page.getByRole("button", { name: "بوليصة بوسطة", exact: true });
+  const bostaTab = page.locator("button:has-text('بوليصة بوسطة وتوربو')");
   await bostaTab.click();
   await page.waitForTimeout(400);
-  console.log("PASS: Switched to Bosta AWB tab");
+  console.log("PASS: Switched to Bosta & Turbo AWB tab");
 
-  const advisorTab = page.getByRole("button", { name: "مستشار المقاسات", exact: true });
+  const advisorTab = page.locator("button:has-text('مستشار المقاسات')").first();
   await advisorTab.click();
   await page.waitForTimeout(400);
   console.log("PASS: Returned to Size Advisor tab");
@@ -112,21 +112,26 @@ async function runVerification() {
   await page.waitForTimeout(400);
   console.log("PASS: Decremented stock in branch POS simulation & generated thermal receipt");
 
-  // Test Real Social Proof & Case Studies Switcher
-  console.log("\n[4] Testing Authentic Social Proof & Merchant Stories...");
-  const urbanThreadsTab = page.locator("button:has-text('Urban Threads')");
-  await urbanThreadsTab.click();
+  // Test Real Social Proof & Operational Workflows Switcher
+  console.log("\n[4] Testing Real MaxP Operational Workflows & Telemetry...");
+  const workflow2Tab = page.locator("button:has-text('مسار العمل 02')");
+  await workflow2Tab.click();
   await page.waitForTimeout(400);
-  console.log("PASS: Switched to Urban Threads (Mohandessin & Nasr City) Case Study");
+  console.log("PASS: Switched to Workflow 02 (Return Prevention & Reason Diagnosis)");
 
-  const zahraTab = page.locator("button:has-text('Zahra Modest Wear')");
-  await zahraTab.click();
+  const workflow3Tab = page.locator("button:has-text('مسار العمل 03')");
+  await workflow3Tab.click();
   await page.waitForTimeout(400);
-  console.log("PASS: Switched to Zahra Modest Wear Case Study");
+  console.log("PASS: Switched to Workflow 03 (Campaign Attribution & Profit Analytics)");
+
+  const workflow1Tab = page.locator("button:has-text('مسار العمل 01')");
+  await workflow1Tab.click();
+  await page.waitForTimeout(400);
+  console.log("PASS: Switched back to Workflow 01 (Fast Dispatch Pipeline)");
 
   // Test 4 Core Operational Pillars & Expandable 17 Tools
-  console.log("\n[5] Testing 4 Core Pillars & Tools Expansion...");
-  const expandToolsBtn = page.locator("button:has-text('عرض قائمة الـ 17 أداة بالتفصيل الفردي')");
+  console.log("\n[5] Testing 4 Core CSB Families & 17 Tools Expansion...");
+  const expandToolsBtn = page.locator("button:has-text('عرض تفاصيل الـ 17 أداة كاملة بالأسعار المنفردة')");
   await expandToolsBtn.scrollIntoViewIfNeeded();
   await expandToolsBtn.click();
   await page.waitForTimeout(400);
@@ -141,9 +146,9 @@ async function runVerification() {
 
   // Test Egyptian Logistics & Payments Trust Strip
   console.log("\n[7] Testing Egyptian Logistics & Payment Trust Strip...");
-  const bostaPartner = page.locator("text=Bosta API");
+  const bostaPartner = page.locator("text=بوسطة • Turbo • QP Express");
   await bostaPartner.waitFor({ state: "visible", timeout: 5000 });
-  console.log("PASS: Bosta API trust badge verified");
+  console.log("PASS: Bosta & Turbo trust badge verified");
   const kashierPartner = page.locator("text=Kashier");
   await kashierPartner.waitFor({ state: "visible", timeout: 5000 });
   console.log("PASS: Kashier trust badge verified");
@@ -177,7 +182,7 @@ async function runVerification() {
   console.log("PASS: Fast Activation Modal opened successfully");
 
   const brandInput = page.locator("input[placeholder='مثال: Cairo Wear أو اسم المحل']");
-  await brandInput.fill("Cairo Atelier");
+  await brandInput.fill("Cairo Wear");
 
   const modalPhoneInput = page.locator(".fixed input[type='tel']");
   await modalPhoneInput.fill("01099887766");
@@ -188,9 +193,9 @@ async function runVerification() {
   await page.waitForTimeout(300);
   console.log("PASS: Closed Fast Activation Modal cleanly");
 
-  // Test FAQ Accordion with the 3 Dealbreaker Questions
+  // Test FAQ Accordion with the Dealbreaker Questions
   console.log("\n[11] Testing FAQ Accordion with Dealbreaker Inquiries...");
-  const excelFaqBtn = page.locator("button:has-text('عندي بضاعة ومخزون مسجلين على شيت إكسيل')");
+  const excelFaqBtn = page.locator("button:has-text('عندي مخزون مسجل على شيت إكسيل')");
   await excelFaqBtn.click();
   await page.waitForTimeout(400);
   console.log("PASS: Toggled Excel migration FAQ item");

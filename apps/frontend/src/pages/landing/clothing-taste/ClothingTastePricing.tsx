@@ -25,8 +25,8 @@ export const ClothingTastePricing: React.FC<ClothingTastePricingProps> = ({
           <h2 className="text-2xl sm:text-4xl font-black text-[#141416] tracking-tight leading-tight mb-3">
             اختر الخطة المناسبة لحجم مبيعات براندك
           </h2>
-          <p className="text-sm sm:text-base text-zinc-600">
-            ابدأ مجاناً 0 ج.م لاختبار المتجر، أو اشترك في الباقة الشاملة (999 ج.م) لتشغيل الكاشير وربط بوسطة وفروعك مع هدية الإعداد المجاني.
+          <p className="text-sm sm:text-base text-zinc-600 max-w-xl mx-auto leading-relaxed">
+            ابدأ مجاناً (0 ج.م) لاختبار المتجر بدون أي عمولة، أو اشترك في باقة الـ 17 أداة الشاملة (999 ج.م) ووفر 1,937 ج.م شهرياً مع ربط بوسطة وتوربو وكاشير الفروع.
           </p>
         </div>
 

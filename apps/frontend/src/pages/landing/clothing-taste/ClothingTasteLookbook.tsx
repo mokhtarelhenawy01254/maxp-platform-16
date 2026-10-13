@@ -55,7 +55,7 @@ export const ClothingTasteLookbook: React.FC<ClothingTasteLookbookProps> = ({
   };
 
   return (
-    <section className="py-20 border-b border-black/[0.06] bg-[#FAF8F5]">
+    <section id="lookbook" className="py-20 border-b border-black/[0.06] bg-[#FAF8F5]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         
         {/* Section Header */}

@@ -1,74 +1,115 @@
 import React, { useState } from "react";
-import { CheckCircle2, MessageSquare, Star, TrendingDown, Store, ShieldCheck, MapPin } from "lucide-react";
+import {
+  CheckCircle2,
+  TrendingDown,
+  ShieldCheck,
+  Truck,
+  RotateCcw,
+  BarChart3,
+  GitFork,
+  MessageSquare,
+  Layers,
+  ArrowLeft,
+} from "lucide-react";
+import { PLATFORM_TELEMETRY } from "./clothingTasteData";
 
 export const ClothingTasteSocialProof: React.FC = () => {
-  const [activeStory, setActiveStory] = useState<number>(0);
+  const [activeWorkflow, setActiveWorkflow] = useState<number>(0);
 
-  const stories = [
+  const workflows = [
     {
-      brand: "Cairo Atelier",
-      location: "المعادي، القاهرة",
-      niche: "براند ملابس كاجوال وأوفرسايز (أونلاين + ستوديو)",
-      highlight: "انخفاض المرتجعات من 34% إلى 8%",
-      monthlySavings: "وفروا 29,400 ج.م شهرياً في مصاريف الشحن رايح-جاي",
-      story:
-        "قبل ماكس بي، كل 10 أوردرات كان بيرجع منهم 3 أو 4 بسبب لغبطة مقاسات الأوفرسايز ومصاريف بوسطة رايح-جاي كانت بتضيع كل الأرباح. بعد تشغيل مستشار المقاسات الذكي، الزبون بقى يختار مقاسه بدقة السنتيمتر، والأوردرات المرتجعة نزلت لأقل من 8% والزبائن بقت تطلب تاني بثقة.",
-      metrics: [
-        { label: "انخفاض المرتجعات", value: "60%-" },
-        { label: "وفر شهري في الشحن", value: "29,400 ج.م" },
-        { label: "زمن إعداد الأوردر", value: "Click-1" },
+      id: "workflow-dispatch",
+      title: "مسار الطلب السريع: من إعلان الميديا باير إلى تسليم بوسطة",
+      tagline: "كيف يتعامل النظام مع 50 إلى 200 أوردر يومياً بدون مكالمة هاتفية واحدة وبدون أخطاء كتابة",
+      icon: Truck,
+      steps: [
+        {
+          stage: "1. تسجيل الأوردر من المتجر",
+          desc: "الزبون يختار المقاس واللون من المتجر الإلكتروني. يتم تسجيل الأوردر برقم تسلسلي فوري وإسناده لـ UTM الحملة الإعلانية.",
+          tool: "المتجر + Campaign Attribution",
+        },
+        {
+          stage: "2. تأكيد فوري عبر WhatsApp API",
+          desc: "يرسل النظام رسالة رسمية باسم متجرك على واتساب الزبون بمحتوى الأوردر والعنوان لتأكيده بنقرة واحدة، مما يمنع الأوردرات الوهمية.",
+          tool: "WhatsApp Business API",
+        },
+        {
+          stage: "3. تحديث مسار الطلبات (Order Workflow)",
+          desc: "بمجرد تأكيد الزبون، يتحول الأوردر تلقائياً إلى حالة «مؤكد»، وتظهر تنبيهات بنواقص المقاسات في شاشة تجهيز الطلبات.",
+          tool: "مسار الطلبات + تجهيز الطلبات",
+        },
+        {
+          stage: "4. طباعة جماعية لبوالص الشحن بنقرة زر",
+          desc: "يحدد مسؤول الشحن 50 أوردر دفعة واحدة في شاشة الطلبات الجماعية، ويصدر بوالص بوسطة وتوربو وتطبع الطابعة الحرارية ملصقات الشحن فوراً.",
+          tool: "معالجة الطلبات الجماعية + الشحن الذكي",
+        },
       ],
+      resultMetric: "توفير 4 ساعات يومياً",
+      resultDetail: "إصدار وتجهيز 50 بوليصة شحن في أقل من 3 دقائق بدلاً من كتابتها يدوياً واحدة تلو الأخرى.",
     },
     {
-      brand: "Urban Threads",
-      location: "المهندسين ومدينة نصر",
-      niche: "سلسلة محلات أزياء بفرعين + متجر ويب",
-      highlight: "إنهاء خناقات البيع المزدوج وتضارب المخزون",
-      monthlySavings: "ضبط جرد فرعين بدقة 100% بدون أي قطعة مفقودة",
-      story:
-        "كانت أكبر مشكلتنا إن الزبونة تطلب قطعة من إنستجرام وتدفع، ونتفاجأ إن العامل في فرع المهندسين باعها في نفس اللحظة في المحل! كاشير ماكس بي السحابي حل المشكلة جذرياً: أي قطعة بتتبس بالباركود في المحل بتتحذف فورياً في نفس الثانية من المتجر الإلكتروني.",
-      metrics: [
-        { label: "تزامن مخزون الفروع", value: "لحظي 100%" },
-        { label: "خطأ البيع المزدوج", value: "0 قطعة" },
-        { label: "تدريب كاشير المحل", value: "15 دقيقة" },
+      id: "workflow-returns",
+      title: "مسار كبح المرتجعات: تشخيص السبب الحقيقي بالأرقام وعلاجه",
+      tagline: "تحويل نزيف مصاريف الشحن رايح-جاي إلى تشخيص عملي بالأرقام يعالج المشكلة من جذورها",
+      icon: RotateCcw,
+      steps: [
+        {
+          stage: "1. تصنيف سبب الارتجاع في السيستم",
+          desc: "عند رجوع أي شحنة من شركة الشحن، يسجل السيستم السبب الدقيق: مقاس غير ملائم، تأخر مندوب الشحن، معاينة وإلغاء، أو عيب تصنيع.",
+          tool: "إعدادات وقواعد المرتجعات",
+        },
+        {
+          stage: "2. تحليل أسباب المرتجعات بالنسبة المئوية",
+          desc: "تظهر شاشة التحليلات نسبة كل سبب بدقة: (42% مقاس، 28% تأخر شحن، 20% معاينة وإلغاء، 10% عيب قماش).",
+          tool: "تحليلات أسباب المرتجعات",
+        },
+        {
+          stage: "3. معالجة سبب المقاس بمستشار السنتيمترات",
+          desc: "بناءً على البيانات، يتم تدقيق جدول مقاسات القطعة بالسنتيمتر وتفعيل مستشار المقاسات، مما يخفض مرتجعات المقاس إلى 8%.",
+          tool: "مصفوفة المقاسات والمستودعات",
+        },
+        {
+          stage: "4. توجيه الشحن للشركة الأسرع تسليماً",
+          desc: "إسناد شحنات الصعيد لشركة بوسطة وشحنات الإسكندرية والقاهرة لتوربو بناءً على معدلات التسليم الفعلي لكل شركة.",
+          tool: "بوابة الشحن الذكي",
+        },
       ],
+      resultMetric: "انخفاض المرتجعات إلى 8%",
+      resultDetail: "معرفة التاجر لسبب المرتجع بدقة يمنع إهدار آلاف الجنيهات شهرياً في مصاريف الشحن المرتجع.",
     },
     {
-      brand: "Zahra Modest Wear",
-      location: "الإسكندرية + شحن لكل محافظات مصر",
-      niche: "براند أزياء محجبات وعبايات (أونلاين)",
-      highlight: "طباعة 80 بوليصة بوسطة يومياً بضغطة زر واحدة",
-      monthlySavings: "ارتفاع نسبة استلام الأوردرات مع بوسطة إلى 92%",
-      story:
-        "كنا بنضيع 4 ساعات يومياً كل يوم بعد العصر في كتابة بوالص الشحن اليدوية وإرسال رسايل الواتساب للزباين لتأكيد العنوان. مع ربط بوسطة الرسمي في ماكس بي، البوالص بتطلع دفعة واحدة ورسائل التتبع بتروح أوتوماتيك للزبون، ومعدل الاستلام وصل 92%.",
-      metrics: [
-        { label: "معدل استلام الأوردرات", value: "92%" },
-        { label: "توفير وقت بوالص الشحن", value: "4 ساعات/يوم" },
-        { label: "تأكيد واتساب", value: "أوتوماتيك" },
+      id: "workflow-profit",
+      title: "مسار إحكام الأرباح: حساب صافي الربح الحقيقي لكل قطعة بالجنيه",
+      tagline: "معرفة صافي الربح في الخزينة بعد خصم تكلفة التصنيع ومصاريف الشحن وتكلفة الإعلان الممول",
+      icon: BarChart3,
+      steps: [
+        {
+          stage: "1. إسناد الأوردر للحملة الإعلانية (UTM)",
+          desc: "كل أوردر يتم ربطه بالحملة والمجموعة الإعلانية على فيسبوك وتيك توك لمعرفة الإعلان الذي جلب البيعة بالضبط.",
+          tool: "إسناد الحملات (Campaign Attribution)",
+        },
+        {
+          stage: "2. تسجيل تكلفة تصنيع القطعة",
+          desc: "تسجيل تكلفة متر القماش والمصنعية والتغليف لكل موديل في شاشة المخزون لحساب تكلفة البضاعة المباعة (COGS).",
+          tool: "المخزون والمستودعات",
+        },
+        {
+          stage: "3. خصم مصاريف الشحن والتحصيل النقدي",
+          desc: "تسجيل رسوم بوليصة الشحن وعمولة التحصيل (COD) ومطابقتها مع كشف حساب شركة الشحن عند تسوية المبالغ.",
+          tool: "الشحن الذكي + تحليلات الطلبات",
+        },
+        {
+          stage: "4. تقرير صافي الربح الحقيقي بالجنيه",
+          desc: "حساب المعادلة الصافية: سعر البيع - تكلفة التصنيع - مصاريف الشحن - تكلفة الإعلان = صافي الربح الفعلي وهامش الربحية.",
+          tool: "تحليلات الأرباح وصافي الهامش",
+        },
       ],
+      resultMetric: "صافي ربح واضح 100%",
+      resultDetail: "رؤية رقمية دقيقة للمكسب الصافي بدون مفاجآت في نهاية الشهر وبدون التخبط في شيتات إكسيل مبعثرة.",
     },
   ];
 
-  const whatsappQuotes = [
-    {
-      sender: "أحمد الشريف — صاحب براند ملابس شبابي",
-      message:
-        "يا باشا الله يباركلك، بوسطة استلمت النهاردة 48 أوردر في ربع ساعة وكلهم مربوطين أوتوماتيك بالبوالص، شغل احترافي بجد وفر علينا مجهود كان بياخد نص اليوم.",
-      tag: "ربط بوسطة الرسمي",
-    },
-    {
-      sender: "مريم عبد الرحمن — مديرة فرع المهندسين",
-      message:
-        "البنات في المحل اتعلموا على شاشة الكاشير في ربع ساعة بس، وميزة مسح الباركود سريعة جداً وحسابات الوردية بقت تقفل بالمللي مفيش ربع جنيه عجز.",
-      tag: "كاشير الفروع السحابي",
-    },
-    {
-      sender: "كريم النجار — مؤسس براند ملابس كاجوال",
-      message:
-        "مستشار المقاسات فرق معانا جداً في أرقام الأسبوع ده.. الزباين بطلت تطلب مقاسين عشان تجرب وترجع واحد، معدل المرتجع نزل للنص تقريباً.",
-      tag: "مستشار المقاسات",
-    },
-  ];
+  const current = workflows[activeWorkflow];
 
   return (
     <section className="py-20 border-b border-black/[0.06] bg-white text-right">
@@ -76,152 +117,145 @@ export const ClothingTasteSocialProof: React.FC = () => {
         
         {/* Section Header */}
         <div className="max-w-2xl mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-xs font-mono text-emerald-800 mb-3">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
-            <span>نتائج تجارية حقيقية وموثقة</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-zinc-100 border border-zinc-200 text-xs font-mono text-zinc-700 mb-3">
+            <ShieldCheck className="w-3.5 h-3.5 text-zinc-800" />
+            <span>واقع التشغيل العملي للمنظومة</span>
           </div>
           <h2 className="text-2xl sm:text-4xl font-black text-[#141416] tracking-tight leading-tight mb-3">
-            براندات ومحلات ملابس حقيقية تعتمد على MaxP يومياً في مصر
+            كيف تدير وتضبط مبيعات براندك على أرض الواقع؟
           </h2>
           <p className="text-sm sm:text-base text-zinc-600 leading-relaxed">
-            من محلات المعادي والمهندسين إلى براندات إنستجرام في القاهرة والإسكندرية — هكذا تحولت عملياتهم من الفوضى ونزيف المرتجعات إلى الاستقرار والربحية.
+            بدلاً من الوعود التسويقية الإنشائية، إليك كيف تعمل منظومة MaxP فعلياً لحل التحديات اليومية الثلاثة الأكبر لأي تاجر ملابس في مصر: تدفق الطلبات، كبح المرتجعات، وإحكام الأرباح.
           </p>
         </div>
 
-        {/* 3 Interactive Case Studies Tabs */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-16">
-          
-          {/* Brand Switcher Sidebar (4 cols) */}
-          <div className="lg:col-span-4 space-y-3">
-            {stories.map((st, idx) => {
-              const isSelected = activeStory === idx;
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setActiveStory(idx)}
-                  className={`w-full p-4 rounded-xl text-right transition-all cursor-pointer border ${
-                    isSelected
-                      ? "bg-[#FAF8F5] border-[#141416] shadow-sm ring-1 ring-[#141416]"
-                      : "bg-white border-black/[0.06] hover:bg-zinc-50"
+        {/* 3 Workflows Tab Switcher */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
+          {workflows.map((wf, idx) => {
+            const isSelected = activeWorkflow === idx;
+            const Icon = wf.icon;
+            return (
+              <button
+                key={wf.id}
+                type="button"
+                onClick={() => setActiveWorkflow(idx)}
+                className={`p-4 rounded-xl text-right transition-all border flex items-start gap-3 cursor-pointer ${
+                  isSelected
+                    ? "bg-[#FAF8F5] border-[#141416] shadow-sm ring-1 ring-[#141416]"
+                    : "bg-white border-black/[0.08] hover:border-black/20 text-zinc-700"
+                }`}
+              >
+                <div
+                  className={`p-2.5 rounded-lg shrink-0 ${
+                    isSelected ? "bg-[#141416] text-white" : "bg-zinc-100 text-zinc-700"
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-black text-[#141416]">{st.brand}</span>
-                    <span className="text-[11px] text-zinc-500 font-mono flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-zinc-400" />
-                      {st.location.split("،")[0]}
-                    </span>
-                  </div>
-                  <div className="text-xs text-zinc-500 mb-2">{st.niche}</div>
-                  <div className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md inline-block">
-                    {st.highlight}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Active Story Deep-Dive Card (8 cols) */}
-          <div className="lg:col-span-8 p-6 sm:p-8 rounded-2xl bg-[#FAF8F5] border border-black/[0.08] shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-black/[0.06] mb-6">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-black text-[#141416]">
-                    {stories[activeStory].brand}
-                  </h3>
-                  <span className="text-xs text-zinc-500 font-mono px-2 py-0.5 rounded bg-white border border-black/[0.06]">
-                    {stories[activeStory].location}
-                  </span>
+                  <Icon className="w-5 h-5" />
                 </div>
-                <div className="text-xs text-zinc-600 mt-1">
-                  {stories[activeStory].niche}
-                </div>
-              </div>
-
-              <div className="text-right">
-                <div className="text-[11px] text-zinc-500">الأثر المالي المباشر:</div>
-                <div className="text-xs sm:text-sm font-bold text-emerald-800">
-                  {stories[activeStory].monthlySavings}
-                </div>
-              </div>
-            </div>
-
-            {/* Story Paragraph */}
-            <p className="text-sm text-zinc-700 leading-relaxed mb-6 font-normal">
-              "{stories[activeStory].story}"
-            </p>
-
-            {/* Metrics Ticker */}
-            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-black/[0.06]">
-              {stories[activeStory].metrics.map((m, mIdx) => (
-                <div key={mIdx} className="p-3 rounded-xl bg-white border border-black/[0.06] text-center">
-                  <div className="text-lg sm:text-2xl font-black text-[#141416] font-mono cst-tabular mb-0.5">
-                    {m.value}
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-zinc-500 mb-0.5 font-mono">
+                    مسار العمل 0{idx + 1}
                   </div>
-                  <div className="text-[11px] text-zinc-500 font-medium">
-                    {m.label}
+                  <div className="text-sm font-black text-[#141416] leading-snug line-clamp-2">
+                    {wf.title.split(":")[0]}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-
+              </button>
+            );
+          })}
         </div>
 
-        {/* Real Merchant WhatsApp Messages Strip */}
-        <div className="mt-12">
-          <div className="flex items-center gap-2 mb-6">
-            <MessageSquare className="w-4 h-4 text-emerald-700" />
-            <h4 className="text-base font-black text-[#141416]">
-              رسائل مباشرة من تجار ومسؤولي محلات بعد تفعيل المنظومة
-            </h4>
+        {/* Active Workflow Operational Deep-Dive Box */}
+        <div className="cst-panel rounded-2xl p-6 sm:p-8 bg-[#FAF8F5] border border-black/[0.08] shadow-md mb-12">
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 mb-8 border-b border-black/[0.06]">
+            <div>
+              <div className="text-xs font-bold text-emerald-800 font-mono mb-1">
+                تشغيل المنظومة خطوة بخطوة
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-[#141416] mb-1">
+                {current.title}
+              </h3>
+              <p className="text-xs sm:text-sm text-zinc-600">
+                {current.tagline}
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white border border-black/[0.08] text-right shrink-0 shadow-2xs">
+              <div className="text-[11px] text-zinc-500 font-medium">النتيجة التشغيلية المباشرة</div>
+              <div className="text-base font-black text-emerald-800 font-mono cst-tabular">
+                {current.resultMetric}
+              </div>
+              <div className="text-[11px] text-zinc-600 mt-0.5 max-w-xs">
+                {current.resultDetail}
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {whatsappQuotes.map((q, idx) => (
+          {/* 4 Execution Steps */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {current.steps.map((st, sIdx) => (
               <div
-                key={idx}
-                className="p-5 rounded-2xl bg-[#FAF8F5] border border-black/[0.08] shadow-xs flex flex-col justify-between"
+                key={sIdx}
+                className="p-4 rounded-xl bg-white border border-black/[0.06] flex flex-col justify-between shadow-2xs"
               >
                 <div>
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                      {q.tag}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-black text-[#141416] font-mono">
+                      خطوة 0{sIdx + 1}
                     </span>
-                    <div className="flex text-amber-500">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-3 h-3 fill-current" />
-                      ))}
-                    </div>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-700" />
                   </div>
-                  <p className="text-xs text-zinc-700 leading-relaxed mb-4">
-                    "{q.message}"
+                  <h4 className="text-sm font-black text-[#141416] mb-2 leading-snug">
+                    {st.stage}
+                  </h4>
+                  <p className="text-xs text-zinc-600 leading-relaxed mb-4">
+                    {st.desc}
                   </p>
                 </div>
 
-                <div className="pt-3 border-t border-black/[0.06] text-[11px] font-bold text-zinc-900 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-600" />
-                  <span>{q.sender}</span>
+                <div className="pt-2 border-t border-black/[0.06] text-[10px] font-mono font-bold text-zinc-500">
+                  الأداة: {st.tool}
                 </div>
               </div>
             ))}
           </div>
+
         </div>
 
-        {/* Official Corporate Assurance Strip */}
-        <div className="mt-12 p-4 rounded-xl bg-zinc-50 border border-black/[0.06] flex flex-wrap items-center justify-between gap-4 text-xs text-zinc-600 font-medium">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-700" />
-            <span>شركة مصرية رسمية متخصصة في أنظمة تجارة التجزئة والأزياء</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-700" />
-            <span>دعم فني واستشارات متجر الملابس متاحة 7 أيام في الأسبوع عبر واتساب</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-700" />
-            <span>ربط وتفعيل مع بوسطة وكاشير خلال أقل من 24 ساعة عمل</span>
+        {/* Live Platform Proof Summary (Production Stats Ledger) */}
+        <div className="rounded-2xl p-6 bg-zinc-900 text-white border border-zinc-800">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            
+            <div className="text-right">
+              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md bg-zinc-800 text-zinc-300 text-xs font-mono mb-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                <span>سجل المنصة الحي • {PLATFORM_TELEMETRY.verifiedDate}</span>
+              </div>
+              <h3 className="text-lg sm:text-xl font-black mb-1">
+                منظومة سحابية مجربة تدير عمليات التجارة في مصر على مدار الساعة
+              </h3>
+              <p className="text-xs sm:text-sm text-zinc-400 max-w-2xl leading-relaxed">
+                كل أداة في الباقة تم بناؤها واختبارها وتطويرها لتناسب طبيعة السوق المصري: الدفع عند الاستلام (COD)، بوالص بوسطة وتوربو، أرقام المحمول والواتساب، ومقاسات الأزياء.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-6 shrink-0 border-t md:border-t-0 md:border-r border-zinc-800 pt-4 md:pt-0 md:pr-6">
+              <div className="text-center">
+                <div className="text-3xl font-black text-white font-mono cst-tabular">
+                  {PLATFORM_TELEMETRY.activeStores}
+                </div>
+                <div className="text-[11px] text-zinc-400 font-medium">متجر نشط</div>
+              </div>
+              <div className="w-px h-10 bg-zinc-800" />
+              <div className="text-center">
+                <div className="text-3xl font-black text-emerald-400 font-mono cst-tabular">
+                  {PLATFORM_TELEMETRY.monthlyOrders}
+                </div>
+                <div className="text-[11px] text-zinc-400 font-medium">أوردر معالج في 30 يوم</div>
+              </div>
+            </div>
+
           </div>
         </div>
 

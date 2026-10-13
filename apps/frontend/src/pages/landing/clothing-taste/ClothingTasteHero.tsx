@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { ArrowLeft, Check, MessageCircle } from "lucide-react";
-import { WHATSAPP_CONSULT_URL } from "./clothingTasteData";
+import { ArrowLeft, Check, MessageCircle, ShieldCheck } from "lucide-react";
+import { WHATSAPP_CONSULT_URL, PLATFORM_TELEMETRY } from "./clothingTasteData";
 
 interface ClothingTasteHeroProps {
   onFreeRegister: () => void;
@@ -36,19 +36,21 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
             {/* 1. Eyebrow: Trust & Platform Definition */}
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/5 border border-black/10 text-xs text-zinc-700 mb-4 font-sans">
               <span className="w-2 h-2 rounded-full bg-emerald-600" />
-              <span className="font-bold text-zinc-900">نظام إدارة الفروع والمتجر لبراندات الملابس في مصر</span>
+              <span className="font-bold text-zinc-900">{PLATFORM_TELEMETRY.activeStores} متجر نشط في مصر</span>
               <span className="text-zinc-400">•</span>
-              <span>متجر، كاشير، وشحن بوسطة</span>
+              <span>17 أداة في باقة واحدة</span>
+              <span className="text-zinc-400">•</span>
+              <span>ربط بوسطة وتوربو وواتساب API</span>
             </div>
 
             {/* 2. Headline (Outcome-Focused, Clear, Specific) */}
             <h1 className="text-3xl sm:text-5xl font-black text-[#141416] tracking-tight leading-[1.18] mb-4 cst-text-balance">
-              اخفض مرتجعات المقاسات إلى 8%، واضبط مخزون محلاتك مع متجر الأونلاين بالمللي
+              المنظومة التشغيلية لبراندات ومحلات الملابس: 17 أداة تحكم مبيعاتك ومخزونك وشحنك
             </h1>
 
             {/* 3. Subtext (Benefits over features, customer language) */}
             <p className="text-base sm:text-lg text-zinc-600 font-normal leading-relaxed mb-6 max-w-xl cst-text-pretty">
-              منظومة متكاملة لبراندات ومحلات الأزياء: متجر ويب سريع بمستشار مقاسات ذكي، كاشير بالباركود يدعم شاشات اللمس ويعمل دون إنترنت، وطباعة بوالص بوسطة بضغطة زر واحدة.
+              من استقبال الأوردر وتأكيد واتساب التلقائي، إلى طباعة بوالص بوسطة وتوربو الجماعية، وتزامن كاشير الفروع بالباركود، وتشخيص أسباب المرتجعات بالأرقام.
             </p>
 
             {/* 4. Single Dominant Primary CTA + Direct WhatsApp Link */}
@@ -69,7 +71,7 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
                 className="inline-flex items-center justify-center gap-2 py-3 px-5 rounded-lg border border-black/10 bg-white hover:bg-zinc-50 text-xs sm:text-sm font-semibold text-zinc-800 transition-all whitespace-nowrap min-h-[44px] shadow-xs"
               >
                 <MessageCircle className="w-4 h-4 text-emerald-600" />
-                <span>استشارة واتساب مع خبير</span>
+                <span>استشارة واتساب مع خبير المنظومة</span>
               </a>
             </div>
 
@@ -80,7 +82,7 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
                 0% عمولة مبيعات
               </span>
               <span>• بدون فيزا دولارية وبدون شوبيفاي</span>
-              <span>• ربط رسمي مباشر مع بوسطة</span>
+              <span>• وفر 1,937 ج.م شهرياً في باقة 999</span>
             </div>
 
             <div className="text-[11px] text-zinc-500 font-medium">
@@ -104,7 +106,7 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
                   <button
                     type="button"
                     onClick={() => setActiveTab("advisor")}
-                    className={`py-1 px-3 rounded-md text-xs font-bold transition-all ${
+                    className={`py-1 px-3 rounded-md text-xs font-bold transition-all cursor-pointer ${
                       activeTab === "advisor" ? "bg-white text-black shadow-xs" : "text-zinc-600 hover:text-black"
                     }`}
                   >
@@ -113,7 +115,7 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
                   <button
                     type="button"
                     onClick={() => setActiveTab("pos")}
-                    className={`py-1 px-3 rounded-md text-xs font-bold transition-all ${
+                    className={`py-1 px-3 rounded-md text-xs font-bold transition-all cursor-pointer ${
                       activeTab === "pos" ? "bg-white text-black shadow-xs" : "text-zinc-600 hover:text-black"
                     }`}
                   >
@@ -122,18 +124,18 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
                   <button
                     type="button"
                     onClick={() => setActiveTab("bosta")}
-                    className={`py-1 px-3 rounded-md text-xs font-bold transition-all ${
+                    className={`py-1 px-3 rounded-md text-xs font-bold transition-all cursor-pointer ${
                       activeTab === "bosta" ? "bg-white text-black shadow-xs" : "text-zinc-600 hover:text-black"
                     }`}
                   >
-                    بوليصة بوسطة
+                    بوليصة بوسطة وتوربو
                   </button>
                 </div>
               </div>
 
               {/* Tab 1: Interactive Size Advisor */}
               {activeTab === "advisor" && (
-                <div className="space-y-4">
+                <div className="space-y-4 text-right">
                   <div className="flex items-center justify-between text-xs text-zinc-600">
                     <span className="font-bold text-zinc-900">جرّب مستشار المقاس التفاعلي للمشتري:</span>
                     <span className="text-emerald-700 font-bold">خفض المرتجعات 60%</span>
@@ -148,7 +150,7 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
                           <button
                             type="button"
                             onClick={() => setTestHeight((h) => Math.max(150, h - 2))}
-                            className="w-6 h-6 rounded bg-white border border-zinc-200 text-zinc-700 flex items-center justify-center text-xs hover:bg-zinc-100 font-bold"
+                            className="w-6 h-6 rounded bg-white border border-zinc-200 text-zinc-700 flex items-center justify-center text-xs hover:bg-zinc-100 font-bold cursor-pointer"
                             aria-label="تقليل الطول"
                           >
                             -
@@ -156,7 +158,7 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
                           <button
                             type="button"
                             onClick={() => setTestHeight((h) => Math.min(205, h + 2))}
-                            className="w-6 h-6 rounded bg-white border border-zinc-200 text-zinc-700 flex items-center justify-center text-xs hover:bg-zinc-100 font-bold"
+                            className="w-6 h-6 rounded bg-white border border-zinc-200 text-zinc-700 flex items-center justify-center text-xs hover:bg-zinc-100 font-bold cursor-pointer"
                             aria-label="زيادة الطول"
                           >
                             +
@@ -173,7 +175,7 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
                           <button
                             type="button"
                             onClick={() => setTestWeight((w) => Math.max(45, w - 2))}
-                            className="w-6 h-6 rounded bg-white border border-zinc-200 text-zinc-700 flex items-center justify-center text-xs hover:bg-zinc-100 font-bold"
+                            className="w-6 h-6 rounded bg-white border border-zinc-200 text-zinc-700 flex items-center justify-center text-xs hover:bg-zinc-100 font-bold cursor-pointer"
                             aria-label="تقليل الوزن"
                           >
                             -
@@ -181,7 +183,7 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
                           <button
                             type="button"
                             onClick={() => setTestWeight((w) => Math.min(140, w + 2))}
-                            className="w-6 h-6 rounded bg-white border border-zinc-200 text-zinc-700 flex items-center justify-center text-xs hover:bg-zinc-100 font-bold"
+                            className="w-6 h-6 rounded bg-white border border-zinc-200 text-zinc-700 flex items-center justify-center text-xs hover:bg-zinc-100 font-bold cursor-pointer"
                             aria-label="زيادة الوزن"
                           >
                             +
@@ -210,9 +212,9 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
 
               {/* Tab 2: POS Live Synchronization */}
               {activeTab === "pos" && (
-                <div className="space-y-3">
+                <div className="space-y-3 text-right">
                   <div className="text-xs text-zinc-700 font-bold">
-                    محاكاة بيع قطعة من فرع (المعادي) عبر كاشير الفروع:
+                    محاكاة بيع قطعة من فرع المحل عبر كاشير الفروع (Cloud POS):
                   </div>
                   <div className="p-3.5 rounded-xl bg-zinc-50 border border-black/[0.06] space-y-2">
                     <div className="flex items-center justify-between text-xs">
@@ -221,7 +223,7 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
                     </div>
                     <div className="text-[11px] text-zinc-500 flex items-center justify-between">
                       <span>باركود: <span className="font-mono">62230098412</span></span>
-                      <span className="text-emerald-700 font-bold">تم المسح ضوئياً ✓</span>
+                      <span className="text-emerald-700 font-bold">تم المسح ضوئياً بالباركود ✓</span>
                     </div>
                   </div>
                   <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center gap-2">
@@ -233,9 +235,9 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
 
               {/* Tab 3: Bosta AWB Generation */}
               {activeTab === "bosta" && (
-                <div className="space-y-3">
+                <div className="space-y-3 text-right">
                   <div className="text-xs text-zinc-700 font-bold">
-                    إصدار بوليصة شحن بوسطة بنقرة واحدة:
+                    إصدار بوليصة شحن بوسطة وتوربو بنقرة واحدة:
                   </div>
                   <div className="p-3.5 rounded-xl bg-zinc-50 border border-black/[0.06] space-y-2">
                     <div className="flex items-center justify-between text-xs">

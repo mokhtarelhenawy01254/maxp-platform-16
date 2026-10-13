@@ -1,6 +1,22 @@
 import React, { useState } from "react";
-import { ArrowLeft, Check, Layers, Store, Barcode, Truck, Calculator, ChevronDown, ChevronUp } from "lucide-react";
-import { FASHION_TOOLS, TOTAL_STANDALONE_PRICE, MONTHLY_BUNDLE_PRICE, SAVINGS_AMOUNT } from "./clothingTasteData";
+import {
+  ArrowLeft,
+  Check,
+  Layers,
+  Store,
+  MessageSquare,
+  Truck,
+  BarChart3,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+} from "lucide-react";
+import {
+  FASHION_TOOLS,
+  TOTAL_STANDALONE_PRICE,
+  MONTHLY_BUNDLE_PRICE,
+  SAVINGS_AMOUNT,
+} from "./clothingTasteData";
 
 interface ClothingTasteToolsMatrixProps {
   onPricingScroll: () => void;
@@ -13,65 +29,66 @@ export const ClothingTasteToolsMatrix: React.FC<ClothingTasteToolsMatrixProps> =
 
   const pillars = [
     {
-      id: "store",
-      title: "منظومة المتجر وكتالوج الأزياء الذكي",
+      id: "selling",
+      title: "البيع والتشغيل الميداني",
       icon: Store,
-      headline: "متجر أنيق وسريع مخصص للملابس مع مستشار المقاسات",
+      headline: "كتالوج سريع، مسار طلبات مخصص، وطباعة جماعية",
       toolsCount: "4 أدوات مدمجة",
-      standaloneCost: 677,
+      standaloneCost: 947,
       highlights: [
-        "متجر ويب متجاوب عالي السرعة مصمم لعرض كوليكشنات الأزياء",
-        "مستشار المقاسات الذكي الذي يقترح المقاس بالسنتيمتر ويخفض المرتجع 60%",
-        "بوابة التبديل والمرتجعات المنظمة لتسهيل تجربة العميل",
-        "محرك العروض والأطقم (Bundles) لزيادة متوسط قيمة السلة",
+        "المتجر الإلكتروني المتكامل (699 ج.م) — كتالوج وسلة شراء وكاشير فروع بالباركود",
+        "مسار الطلبات المخصص (149 ج.م) — تنظيم حالات الأوردر من جديد للتسليم",
+        "معالجة الطلبات الجماعية (99 ج.م) — تعديل حالات وطباعة مئات الطلبات دفعة واحدة",
+        "تجهيز الطلبات ومعالجة النواقص (0 ج.م — بونص) — حصر نواقص المقاسات قبل الشحن",
       ],
     },
     {
-      id: "pos",
-      title: "كاشير الفروع والمخزون المتزامن لحظياً",
-      icon: Barcode,
-      headline: "كاشير باللمس للمحلات يمنع البيع المزدوج ويسرّع البيع",
-      toolsCount: "5 أدوات مدمجة",
-      standaloneCost: 747,
+      id: "conversations",
+      title: "المحادثات والتأكيد الآلي",
+      icon: MessageSquare,
+      headline: "واتساب رسمي وتجميع رسائل كل المنصات في شاشة واحدة",
+      toolsCount: "3 أدوات مدمجة",
+      standaloneCost: 798,
       highlights: [
-        "كاشير Cloud POS يدعم شاشات اللمس والباركود ويعمل حتى لو فصل الإنترنت",
-        "تزامن مخزون فوري: القطعة المباعة في المحل تختفي من الأونلاين في نفس الثانية",
-        "طباعة فواتير حرارية سريعة (80mm) بشعار المحل وسياسة التبديل",
-        "جرد تلقائي للمقاسات والألوان مع تنبيهات عند اقتراب نفاد المقاس",
+        "WhatsApp Business API رسمي (350 ج.م) — تأكيد فوري يمنع الأوردرات الوهمية",
+        "صندوق الوارد الموحد Unified Inbox (299 ج.م) — تجميع رسائل فيسبوك وإنستجرام وواتساب",
+        "أتمتة المحادثات والرد الآلي (149 ج.م) — ردود فورية بالكلمات المفتاحية على المقاسات والأسعار",
       ],
     },
     {
-      id: "shipping",
-      title: "ماكينة الشحن الآلي مع بوسطة وتأكيد واتساب",
+      id: "logistics",
+      title: "الشحن والمخزون والمرتجعات",
       icon: Truck,
-      headline: "طباعة 100 بوليصة بضغطة زر ورسائل تتبع أوتوماتيكية للزبون",
+      headline: "ربط بوسطة وتوربو، جرد المستودعات، وتشخيص المرتجعات",
       toolsCount: "4 أدوات مدمجة",
-      standaloneCost: 847,
+      standaloneCost: 546,
       highlights: [
-        "ربط API رسمي مع بوسطة بدون أي وسيط لإصدار البوالص دفعة واحدة",
-        "رسائل واتساب آلية ترسل بوليصة التتبع للزبون فور تسليم المندوب",
-        "تأكيد العناوين وأرقام الموبايل قبل الشحن لمنع خروج الأوردرات الوهمية",
-        "تتبع حالات التسليم وتوريدات الكاش (COD) في جدول مالي واحد",
+        "الشحن الذكي Turbo وبوسطة وQP Express (149 ج.م) — إصدار بوالص وتتبع بنقرة واحدة",
+        "المخزون والمستودعات ومصفوفة المقاسات (199 ج.م) — جرد دقيق لمقاسات S إلى 2XL وتنبيهات النفاد",
+        "إعدادات وقواعد المرتجعات (99 ج.م) — شروط وسياسات مراجعة واضحة للإرجاع والاستبدال",
+        "تحليلات أسباب المرتجعات (99 ج.م) — تشخيص دقيق لسبب الارتجاع لعلاجه وخفض الهدر المالي",
       ],
     },
     {
-      id: "finance",
-      title: "حاسبة هوامش القماش والتصنيع والأرباح",
-      icon: Calculator,
-      headline: "معرفة صافي ربح كل قطعة بالجنيه بدلاً من التخمين وشيتات الإكسيل",
-      toolsCount: "4 أدوات مدمجة",
-      standaloneCost: 673,
+      id: "measurement",
+      title: "القياس وصافي الأرباح والإعلانات",
+      icon: BarChart3,
+      headline: "إسناد كل أوردر لحملته الإعلانية وحساب صافي الربح الحقيقي",
+      toolsCount: "6 أدوات مدمجة",
+      standaloneCost: 645,
       highlights: [
-        "حساب تكلفة المتر والمصنعية والشحن لمعرفة الربح الصافي للقطعة",
-        "ربط بكسل فيسبوك وتيك توك (CAPI) لرفع كفاءة إعلانات البراند",
-        "استيراد وتصدير سريع لملفات الإكسيل في ثوانٍ لنقل المخزون بسهولة",
-        "لوحة تحكم للمدير تظهر مبيعات كل فرع ونسبة المبيعات أونلاين vs المحل",
+        "إسناد الحملات Campaign Attribution (149 ج.م) — معرفة الإعلان الممول المباشر لكل أوردر",
+        "إعلانات فيسبوك وانستجرام الذكية (199 ج.م) — إدارة الحملات ومزامنة الكتالوج من اللوحة",
+        "تحليلات الأرباح وصافي الهامش (99 ج.م) — حساب صافي الربح بعد خصم التصنيع والشحن والإعلان",
+        "تحليلات الطلبات والمبيعات (99 ج.م) — مؤشرات المبيعات النقدية والملغاة والمقارنات الزمنية",
+        "ربط صفحات فيسبوك والمنشورات (99 ج.م) — تحويل تفاعلات المنشورات لطلبات شراء",
+        "بيانات أداء الحملات التسويقية (0 ج.م — بونص) — تحليل عائد الصرف الإعلاني (ROAS)",
       ],
     },
   ];
 
   return (
-    <section className="py-20 border-b border-black/[0.06] bg-white text-right">
+    <section id="tools-matrix" className="py-20 border-b border-black/[0.06] bg-white text-right">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         
         {/* Section Header */}
@@ -82,11 +99,11 @@ export const ClothingTasteToolsMatrix: React.FC<ClothingTasteToolsMatrixProps> =
               <span>ترسانة براند الأزياء الموحدة</span>
             </div>
             <h2 className="text-2xl sm:text-4xl font-black text-[#141416] tracking-tight leading-tight mb-2">
-              4 ركائز تشغيلية مدمجة تريحك من تشتت البرامج المتعددة
+              17 أداة تشغيلية في 4 محاور تحميك من تشتت الاشتراكات
             </h2>
             <p className="text-sm sm:text-base text-zinc-600 max-w-xl leading-relaxed">
-              بدلاً من دفع اشتراكات متفرقة لبرنامج كاشير، ومنصة متجر، وبرنامج بوالص شحن، وبرنامج حسابات بتكلفة تفوق{" "}
-              <strong className="text-[#141416] cst-tabular">{TOTAL_STANDALONE_PRICE.toLocaleString("en-US")} ج.م</strong> شهرياً، تحصل على منظومة واحدة متكاملة بـ{" "}
+              بدلاً من دفع اشتراكات متفرقة لمنصة متجر، وبرنامج واتساب، وبرنامج بوالص شحن، وبرنامج مخزون بتكلفة إجمالية{" "}
+              <strong className="text-[#141416] cst-tabular">{TOTAL_STANDALONE_PRICE.toLocaleString("en-US")} ج.م</strong> شهرياً، تحصل على كل الأدوات في باقة واحدة بـ{" "}
               <strong className="text-emerald-700 cst-tabular">{MONTHLY_BUNDLE_PRICE} ج.م</strong> فقط.
             </p>
           </div>
@@ -94,119 +111,131 @@ export const ClothingTasteToolsMatrix: React.FC<ClothingTasteToolsMatrixProps> =
           {/* Arbitrage Callout Card */}
           <div className="p-4 rounded-xl bg-[#FAF8F5] border border-black/[0.08] flex items-center gap-6 shadow-sm shrink-0">
             <div className="text-right">
-              <div className="text-[11px] text-zinc-500 font-medium">البرامج المنفصلة</div>
+              <div className="text-[11px] text-zinc-500 font-medium">الاشتراكات المنفردة</div>
               <div className="text-xs text-zinc-400 line-through cst-tabular font-bold">
                 {TOTAL_STANDALONE_PRICE.toLocaleString("en-US")} ج.م/شهر
               </div>
             </div>
-            <div className="h-7 w-px bg-zinc-300" />
+            <div className="w-px h-8 bg-black/10" />
             <div className="text-right">
-              <div className="text-[11px] text-zinc-600 font-medium">باقة MaxP الشاملة</div>
-              <div className="text-xl font-black text-[#141416] font-mono cst-tabular">
-                {MONTHLY_BUNDLE_PRICE} ج.م<span className="text-xs font-normal text-zinc-500">/شهر</span>
+              <div className="text-[11px] text-emerald-800 font-bold">سعر الباقة الموحدة</div>
+              <div className="text-xl font-black text-[#141416] cst-tabular">
+                {MONTHLY_BUNDLE_PRICE} ج.م<span className="text-xs font-normal text-zinc-600">/شهر</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 4 Power Pillars Grid (2x2) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {pillars.map((pil) => {
-            const Icon = pil.icon;
+        {/* 4 Pillars Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-10">
+          {pillars.map((pillar) => {
+            const Icon = pillar.icon;
             return (
               <div
-                key={pil.id}
-                className="p-6 sm:p-7 rounded-2xl bg-[#FAF8F5] border border-black/[0.08] shadow-sm flex flex-col justify-between hover:border-black/20 transition-all"
+                key={pillar.id}
+                className="cst-panel rounded-2xl p-6 bg-[#FAF8F5] border border-black/[0.08] shadow-xs flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2.5 rounded-xl bg-white border border-black/[0.06] text-[#141416]">
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <h3 className="text-lg font-black text-[#141416]">
-                        {pil.title}
-                      </h3>
-                    </div>
-                    <span className="text-[11px] font-mono text-zinc-600 bg-white border border-black/[0.06] px-2.5 py-1 rounded-md">
-                      {pil.toolsCount}
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-mono font-bold text-zinc-600 px-2.5 py-1 rounded-md bg-white border border-black/[0.06]">
+                      {pillar.toolsCount}
                     </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono text-zinc-500">
+                        قيمة منفردة: {pillar.standaloneCost} ج.م
+                      </span>
+                      <div className="p-2 rounded-lg bg-[#141416] text-white">
+                        <Icon className="w-4 h-4" />
+                      </div>
+                    </div>
                   </div>
 
-                  <p className="text-xs sm:text-sm font-bold text-zinc-800 mb-4">
-                    {pil.headline}
+                  <h3 className="text-lg font-black text-[#141416] mb-1">
+                    {pillar.title}
+                  </h3>
+                  <p className="text-xs text-zinc-600 font-medium mb-4">
+                    {pillar.headline}
                   </p>
 
-                  <div className="space-y-2.5 mb-6">
-                    {pil.highlights.map((h, i) => (
-                      <div key={i} className="flex items-start gap-2 text-xs text-zinc-600 leading-relaxed">
+                  <ul className="space-y-2 mb-6 text-xs text-zinc-700 leading-relaxed">
+                    {pillar.highlights.map((h, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
                         <Check className="w-3.5 h-3.5 text-emerald-700 shrink-0 mt-0.5" />
                         <span>{h}</span>
-                      </div>
+                      </li>
                     ))}
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-black/[0.06] flex items-center justify-between text-xs font-mono">
-                  <span className="text-zinc-500">سعر البرامج المنفصلة المشابهة:</span>
-                  <span className="text-zinc-600 font-bold line-through cst-tabular">
-                    {pil.standaloneCost} ج.م/شهر
-                  </span>
+                  </ul>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Toggle to view all 17 discrete tools */}
-        <div className="text-center pt-2">
+        {/* Expandable 17-Tool Comprehensive Breakdown Table */}
+        <div className="rounded-2xl border border-black/[0.08] bg-[#FAF8F5] overflow-hidden">
           <button
             type="button"
             onClick={() => setShowAllTools(!showAllTools)}
-            className="inline-flex items-center gap-2 text-xs font-bold text-zinc-700 hover:text-black py-2 px-4 rounded-lg bg-zinc-100 hover:bg-zinc-200 transition-colors cursor-pointer"
+            className="w-full p-4 sm:p-5 flex items-center justify-between bg-white hover:bg-zinc-50 transition-colors text-right cursor-pointer"
           >
-            <span>{showAllTools ? "إخفاء التفاصيل الفردية" : "عرض قائمة الـ 17 أداة بالتفصيل الفردي"}</span>
-            {showAllTools ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <div className="flex items-center gap-3">
+              <span className="text-xs sm:text-sm font-bold text-zinc-900">
+                {showAllTools ? "إخفاء جدول تفاصيل الأدوات" : "عرض تفاصيل الـ 17 أداة كاملة بالأسعار المنفردة"}
+              </span>
+              <span className="text-xs text-emerald-700 font-bold px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
+                وفر {SAVINGS_AMOUNT.toLocaleString("en-US")} ج.م شهرياً
+              </span>
+            </div>
+            <div className="text-zinc-500">
+              {showAllTools ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </div>
           </button>
-        </div>
 
-        {/* Expandable list of 17 tools if merchant wants exhaustive breakdown */}
-        {showAllTools && (
-          <div className="mt-6 pt-6 border-t border-black/[0.06] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {FASHION_TOOLS.map((tool) => (
-              <div
-                key={tool.id}
-                className="p-3.5 rounded-xl bg-white border border-black/[0.06] flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <h4 className="text-xs font-black text-[#141416]">{tool.name}</h4>
-                    <span className="text-[10px] font-mono text-zinc-500 bg-zinc-50 px-1.5 py-0.5 rounded">
-                      {tool.standalonePrice} ج.م
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-zinc-500 leading-relaxed mb-2">
-                    {tool.description}
-                  </p>
-                </div>
-                <div className="text-[10px] font-mono text-emerald-700 font-bold border-t border-black/[0.04] pt-1.5">
-                  مشمول بالباقة الشاملة ✓
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Bottom CTA trigger */}
-        <div className="mt-10 text-center">
-          <button
-            type="button"
-            onClick={onPricingScroll}
-            className="cst-btn-secondary text-xs sm:text-sm py-3 px-7 font-bold cursor-pointer"
-          >
-            <span>اشترك في المنظومة الشاملة (وفر {SAVINGS_AMOUNT.toLocaleString("en-US")} ج.م شهرياً)</span>
-            <ArrowLeft className="w-4 h-4 mr-1.5" />
-          </button>
+          {showAllTools && (
+            <div className="p-4 sm:p-6 border-t border-black/[0.06] overflow-x-auto">
+              <table className="w-full text-right text-xs">
+                <thead>
+                  <tr className="border-b border-black/10 text-zinc-500 font-medium">
+                    <th className="pb-3 pr-2">الأداة التشغيلية</th>
+                    <th className="pb-3">الوظيفة الأساسية في متجر ملابسك</th>
+                    <th className="pb-3 text-left pl-2">السعر المنفرد</th>
+                    <th className="pb-3 text-left pl-2">داخل باقة 999</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black/[0.04]">
+                  {FASHION_TOOLS.map((tool) => (
+                    <tr key={tool.id} className="hover:bg-black/[0.02]">
+                      <td className="py-3 pr-2 font-bold text-[#141416] whitespace-nowrap">
+                        {tool.name}
+                      </td>
+                      <td className="py-3 text-zinc-600 max-w-md">
+                        {tool.description}
+                      </td>
+                      <td className="py-3 text-left pl-2 font-mono text-zinc-500 cst-tabular whitespace-nowrap">
+                        {tool.standalonePrice === 0 ? "بونص شامل" : `${tool.standalonePrice} ج.م`}
+                      </td>
+                      <td className="py-3 text-left pl-2 font-mono font-bold text-emerald-800 whitespace-nowrap">
+                        مشمولة مجاناً ✓
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-black/10 font-bold">
+                    <td colSpan={2} className="pt-4 text-sm text-[#141416]">
+                      الإجمالي المنفرد vs باقة المتجر الكاملة
+                    </td>
+                    <td className="pt-4 text-left pl-2 text-zinc-400 line-through font-mono cst-tabular text-sm">
+                      {TOTAL_STANDALONE_PRICE.toLocaleString("en-US")} ج.م
+                    </td>
+                    <td className="pt-4 text-left pl-2 text-emerald-700 font-mono cst-tabular text-base">
+                      {MONTHLY_BUNDLE_PRICE} ج.م/شهر
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
         </div>
 
       </div>

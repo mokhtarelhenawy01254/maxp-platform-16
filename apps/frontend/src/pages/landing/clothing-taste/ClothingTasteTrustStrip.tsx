@@ -16,10 +16,10 @@ export const ClothingTasteTrustStrip: React.FC = () => {
           {/* Integrated Partners Grid */}
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs text-zinc-700">
             
-            {/* Bosta */}
+            {/* Bosta & Turbo & QP Express */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-50 border border-black/[0.06] hover:border-black/15 transition-colors">
               <Truck className="w-3.5 h-3.5 text-amber-600" />
-              <span className="text-zinc-900 font-bold">بوسطة • <span className="font-mono">Bosta API</span></span>
+              <span className="text-zinc-900 font-bold">بوسطة • Turbo • QP Express</span>
               <span className="text-[10px] text-emerald-700 font-bold">شحن آلي ✓</span>
             </div>
 
