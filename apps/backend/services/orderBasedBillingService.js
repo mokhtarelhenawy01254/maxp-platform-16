@@ -192,22 +192,25 @@ async function billOrderPpuApps({ companyId, orderNumber, orderTotal, itemsCount
             where: { id: orderId },
             select: { metadata: true },
           });
-          const meta = parseOrderMetadata(existing?.metadata);
-          meta.billingHold = {
-            heldAt: heldAt.toISOString(),
-            amount: totalCost,
-            billingHistoryId: created.id,
-            apps,
-          };
 
-          await tx.order.update({
-            where: { id: orderId },
-            data: {
-              billingHoldAt: heldAt,
-              billingHoldAmount: totalCost,
-              metadata: JSON.stringify(meta),
-            },
-          });
+          if (existing) {
+            const meta = parseOrderMetadata(existing.metadata);
+            meta.billingHold = {
+              heldAt: heldAt.toISOString(),
+              amount: totalCost,
+              billingHistoryId: created.id,
+              apps,
+            };
+
+            await tx.order.update({
+              where: { id: orderId },
+              data: {
+                billingHoldAt: heldAt,
+                billingHoldAmount: totalCost,
+                metadata: JSON.stringify(meta),
+              },
+            });
+          }
 
           return created;
         });

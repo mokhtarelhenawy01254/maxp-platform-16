@@ -2641,10 +2641,12 @@ router.post('/', async (req, res) => {
       let couponMetadata = null;
       let couponCodeMetadata = null;
       let sessionDetailsMetadata = null;
+      let guestOrderMeta = null;
 
       if (order.metadata) {
         try {
-          const metadata = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : order.metadata;
+          guestOrderMeta = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : order.metadata;
+          const metadata = guestOrderMeta;
           if (metadata.affiliateReferralId) {
             affiliateReferralId = metadata.affiliateReferralId;
             affiliateId = metadata.affiliateId;
@@ -2751,11 +2753,11 @@ router.post('/', async (req, res) => {
       if (promoDiscount > 0) {
         regularOrderMetadata.storePromotion = { discount: promoDiscount, label: promoLabel };
       }
-      if (metadata?.appliedDiscount) {
-        regularOrderMetadata.appliedDiscount = metadata.appliedDiscount;
+      if (guestOrderMeta?.appliedDiscount) {
+        regularOrderMetadata.appliedDiscount = guestOrderMeta.appliedDiscount;
       }
-      if (metadata?.bundleItems) {
-        regularOrderMetadata.bundleItems = metadata.bundleItems;
+      if (guestOrderMeta?.bundleItems) {
+        regularOrderMetadata.bundleItems = guestOrderMeta.bundleItems;
       }
       // Wallet payment metadata (proof screenshot + transfer details + discounts)
       if (walletPaymentProofMetadata) {
@@ -3191,7 +3193,7 @@ router.post('/', async (req, res) => {
         orderTotal: trackedTotal,
         itemsCount,
         metadata: { paymentMethod },
-        orderId: createdOrder?.id || order?.id || null,
+        orderId: createdOrder?.id || null,
       });
     } catch (ppuError) {
       console.error('❌ [PPU-BILLING] Error billing PPU apps:', ppuError.message);
