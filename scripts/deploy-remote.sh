@@ -116,8 +116,19 @@ sync_frontend_dist() {
     --exclude 'sw-v4.js.gz' \
     "$source_dir/" /var/www/frontend2/dist/
   sudo rm -rf /var/www/frontend2/dist/products
-  sudo chown -R $USER:$USER /var/www/frontend2/dist
-  sudo chmod -R a+rX /var/www/frontend2/dist
+
+  # Preserve persistent desktop & mobile installers and manifests
+  sudo mkdir -p /var/www/downloads_storage /var/www/frontend2/dist/download /var/www/frontend2/dist/downloads
+  if [ -d "/var/www/downloads_storage" ] && [ "$(ls -A /var/www/downloads_storage 2>/dev/null)" ]; then
+    sudo cp -u /var/www/downloads_storage/* /var/www/frontend2/dist/download/ 2>/dev/null || true
+    sudo cp -u /var/www/downloads_storage/* /var/www/frontend2/dist/downloads/ 2>/dev/null || true
+  fi
+  if [ -d "/var/www/frontend2/dist/download" ] && [ "$(ls -A /var/www/frontend2/dist/download 2>/dev/null)" ]; then
+    sudo cp -u /var/www/frontend2/dist/download/* /var/www/downloads_storage/ 2>/dev/null || true
+  fi
+
+  sudo chown -R $USER:$USER /var/www/frontend2/dist /var/www/downloads_storage
+  sudo chmod -R a+rX /var/www/frontend2/dist /var/www/downloads_storage
 
   # ── INTEGRITY GATE (BEFORE publishing index.html) ──────────────────────
   # Verify every hashed asset referenced by index.html actually arrived on
