@@ -8,7 +8,7 @@ import {
   AlertCircle,
   FileText,
   Search,
-  Receipt
+  Receipt,
 } from "lucide-react";
 
 interface Invoice {
@@ -38,7 +38,7 @@ const mockInvoicesList: Invoice[] = [
     amountPaid: 800,
     status: "PAID",
     patientName: "عبد الرحمن كمال الملاح",
-    date: "2026-10-12"
+    date: "2026-10-12",
   },
   {
     id: "inv-102",
@@ -48,7 +48,7 @@ const mockInvoicesList: Invoice[] = [
     amountPaid: 600,
     status: "PAID",
     patientName: "فاطمة الزهراء الشناوي",
-    date: "2026-10-11"
+    date: "2026-10-11",
   },
   {
     id: "inv-103",
@@ -58,7 +58,7 @@ const mockInvoicesList: Invoice[] = [
     amountPaid: 500,
     status: "PARTIAL",
     patientName: "محمد هاني القاضي",
-    date: "2026-10-10"
+    date: "2026-10-10",
   },
   {
     id: "inv-104",
@@ -68,8 +68,8 @@ const mockInvoicesList: Invoice[] = [
     amountPaid: 0,
     status: "UNPAID",
     patientName: "نادية عبد المجيد رضوان",
-    date: "2026-10-09"
-  }
+    date: "2026-10-09",
+  },
 ];
 
 const DoctorPaymentsPage: React.FC = () => {
@@ -84,7 +84,7 @@ const DoctorPaymentsPage: React.FC = () => {
       setRefreshing(true);
       const token = localStorage.getItem("doctorToken");
       const res = await fetch("/api/v1/booking/doctor-portal/payments", {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();
       if (json.success && json.data) {
@@ -94,7 +94,7 @@ const DoctorPaymentsPage: React.FC = () => {
           invoices: mockInvoicesList,
           totalRevenue: 3100,
           collected: 1900,
-          outstanding: 1200
+          outstanding: 1200,
         });
       }
     } catch {
@@ -102,7 +102,7 @@ const DoctorPaymentsPage: React.FC = () => {
         invoices: mockInvoicesList,
         totalRevenue: 3100,
         collected: 1900,
-        outstanding: 1200
+        outstanding: 1200,
       });
     } finally {
       setLoading(false);
@@ -134,9 +134,11 @@ const DoctorPaymentsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[360px] space-y-3">
-        <RefreshCw className="w-8 h-8 text-primary animate-spin" />
-        <p className="text-xs font-mono text-muted-foreground uppercase">جاري تحميل سجل المدفوعات...</p>
+      <div className="flex min-h-[380px] items-center justify-center rounded-2xl border border-border/70 bg-card">
+        <div className="flex items-center gap-2.5 font-mono text-xs text-muted-foreground">
+          <RefreshCw className="h-4 w-4 animate-spin text-primary" />
+          <span>جاري تحميل سجل المدفوعات...</span>
+        </div>
       </div>
     );
   }
@@ -145,28 +147,28 @@ const DoctorPaymentsPage: React.FC = () => {
     switch (status) {
       case "PAID":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-            <CheckCircle2 className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="h-3 w-3" />
             مسددة
           </span>
         );
       case "PARTIAL":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-600 border border-blue-500/20">
-            <Clock className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 rounded-md border border-blue-500/20 bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+            <Clock className="h-3 w-3" />
             مسدد جزئياً
           </span>
         );
       case "UNPAID":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 border border-amber-500/20">
-            <AlertCircle className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/20 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+            <AlertCircle className="h-3 w-3" />
             غير مسددة
           </span>
         );
       default:
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground border border-border/50">
+          <span className="rounded-md border border-border/50 bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
             {status}
           </span>
         );
@@ -174,80 +176,82 @@ const DoctorPaymentsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-10" dir="rtl">
+    <div className="space-y-6" dir="rtl">
       {/* Telemetry Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-xl border border-border/70 bg-card text-card-foreground shadow-sm">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-5 shadow-xs md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+            <span className="inline-flex items-center rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 font-mono text-[11px] font-semibold text-primary">
               FINANCIAL SETTLEMENTS
             </span>
-            <span className="text-xs text-muted-foreground font-mono">
+            <span className="font-mono text-xs text-muted-foreground">
               إجمالي {invoices.length} فاتورة مسجلة
             </span>
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">المدفوعات والفواتير السريرية</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            المدفوعات والفواتير السريرية
+          </h1>
           <p className="text-xs text-muted-foreground">
             متابعة الإيرادات المحصلة، الفواتير المعلقة، ومستحقات العيادة
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={fetchPayments}
             disabled={refreshing}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border/80 bg-background hover:bg-muted text-foreground transition-all focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-background px-3 py-2 text-xs font-medium text-foreground shadow-xs transition-all hover:bg-muted/40 active:scale-[0.98]"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
             <span>تحديث البيانات</span>
           </button>
         </div>
       </div>
 
       {/* Overview Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-        <div className="p-4 rounded-xl border border-border/70 bg-card text-card-foreground shadow-sm">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">إجمالي الإيرادات</span>
-            <Receipt className="w-4 h-4 text-primary" />
+            <span className="text-xs font-medium text-muted-foreground">إجمالي الإيرادات</span>
+            <Receipt className="h-4 w-4 text-primary" />
           </div>
-          <div className="text-2xl font-bold font-mono tabular-nums text-foreground mt-2">
+          <div className="mt-2 font-mono text-2xl font-bold tabular-nums text-foreground">
             {totalRev.toLocaleString("ar-EG")} ج.م
           </div>
-          <div className="text-[11px] text-muted-foreground mt-1">كافة الفواتير الصادرة</div>
+          <div className="mt-1 font-mono text-[11px] text-muted-foreground">كافة الفواتير الصادرة</div>
         </div>
 
-        <div className="p-4 rounded-xl border border-border/70 bg-card text-card-foreground shadow-sm">
+        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">المبالغ المحصلة</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            <span className="text-xs font-medium text-muted-foreground">المبالغ المحصلة</span>
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold font-mono tabular-nums text-emerald-600 mt-2">
+          <div className="mt-2 font-mono text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
             {coll.toLocaleString("ar-EG")} ج.م
           </div>
-          <div className="text-[11px] text-muted-foreground mt-1">تم سدادها بنجاح</div>
+          <div className="mt-1 font-mono text-[11px] text-muted-foreground">تم سدادها بنجاح</div>
         </div>
 
-        <div className="p-4 rounded-xl border border-border/70 bg-card text-card-foreground shadow-sm">
+        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">المتبقي غير المسدد</span>
-            <Clock className="w-4 h-4 text-amber-500" />
+            <span className="text-xs font-medium text-muted-foreground">المتبقي غير المسدد</span>
+            <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
           </div>
-          <div className="text-2xl font-bold font-mono tabular-nums text-amber-600 mt-2">
+          <div className="mt-2 font-mono text-2xl font-bold tabular-nums text-amber-600 dark:text-amber-400">
             {outst.toLocaleString("ar-EG")} ج.م
           </div>
-          <div className="text-[11px] text-muted-foreground mt-1">فواتير معلقة قيد التحصيل</div>
+          <div className="mt-1 font-mono text-[11px] text-muted-foreground">فواتير معلقة قيد التحصيل</div>
         </div>
       </div>
 
       {/* Filter and Search Ribbon */}
-      <div className="p-4 rounded-xl border border-border/70 bg-card text-card-foreground shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg border border-border/50 text-xs">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-1 rounded-xl border border-border/60 bg-muted/30 p-1 text-xs">
           <button
             onClick={() => setStatusFilter("ALL")}
-            className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+            className={`rounded-lg px-3 py-1.5 font-medium transition-all ${
               statusFilter === "ALL"
-                ? "bg-background text-foreground shadow-xs border border-border/60"
+                ? "border border-border/70 bg-background text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -255,9 +259,9 @@ const DoctorPaymentsPage: React.FC = () => {
           </button>
           <button
             onClick={() => setStatusFilter("PAID")}
-            className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+            className={`rounded-lg px-3 py-1.5 font-medium transition-all ${
               statusFilter === "PAID"
-                ? "bg-background text-foreground shadow-xs border border-border/60"
+                ? "border border-border/70 bg-background text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -265,9 +269,9 @@ const DoctorPaymentsPage: React.FC = () => {
           </button>
           <button
             onClick={() => setStatusFilter("PARTIAL")}
-            className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+            className={`rounded-lg px-3 py-1.5 font-medium transition-all ${
               statusFilter === "PARTIAL"
-                ? "bg-background text-foreground shadow-xs border border-border/60"
+                ? "border border-border/70 bg-background text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -275,9 +279,9 @@ const DoctorPaymentsPage: React.FC = () => {
           </button>
           <button
             onClick={() => setStatusFilter("UNPAID")}
-            className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+            className={`rounded-lg px-3 py-1.5 font-medium transition-all ${
               statusFilter === "UNPAID"
-                ? "bg-background text-foreground shadow-xs border border-border/60"
+                ? "border border-border/70 bg-background text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -285,23 +289,23 @@ const DoctorPaymentsPage: React.FC = () => {
           </button>
         </div>
 
-        <div className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
             placeholder="بحث برقم الفاتورة أو المريض..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-3 pr-8 py-1.5 text-xs rounded-lg border border-border/70 bg-background text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-1 focus:ring-ring"
+            className="w-full rounded-xl border border-border/70 bg-background py-1.5 pl-3 pr-9 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-xs outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
           />
         </div>
       </div>
 
-      {/* Invoices Table Container */}
-      <div className="rounded-xl border border-border/70 bg-card text-card-foreground shadow-sm overflow-hidden">
+      {/* Invoices Table Container Chassis */}
+      <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs">
         {filteredInvoices.length === 0 ? (
-          <div className="text-center py-12 px-4 space-y-2">
-            <Wallet className="w-10 h-10 text-muted-foreground mx-auto stroke-1" />
+          <div className="space-y-2 py-12 text-center">
+            <Wallet className="mx-auto h-10 w-10 text-muted-foreground stroke-1" />
             <p className="text-sm font-medium text-foreground">لا توجد فواتير مطابقة للمعايير</p>
             <p className="text-xs text-muted-foreground">جرب تغيير حالة الفلتر أو مصطلح البحث</p>
           </div>
@@ -309,36 +313,36 @@ const DoctorPaymentsPage: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
               <thead>
-                <tr className="border-b border-border/60 bg-muted/40 text-muted-foreground font-medium">
-                  <th className="py-3 px-4">رقم الفاتورة</th>
-                  <th className="py-3 px-4">المريض</th>
-                  <th className="py-3 px-4">الإجمالي</th>
-                  <th className="py-3 px-4">الخصم</th>
-                  <th className="py-3 px-4">المسدد</th>
-                  <th className="py-3 px-4">الحالة</th>
-                  <th className="py-3 px-4">التاريخ</th>
+                <tr className="border-b border-border/60 bg-muted/30 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <th className="px-4 py-3 font-medium">رقم الفاتورة</th>
+                  <th className="px-4 py-3 font-medium">المريض</th>
+                  <th className="px-4 py-3 font-medium">الإجمالي</th>
+                  <th className="px-4 py-3 font-medium">الخصم</th>
+                  <th className="px-4 py-3 font-medium">المسدد</th>
+                  <th className="px-4 py-3 font-medium">الحالة</th>
+                  <th className="px-4 py-3 font-medium">التاريخ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
                 {filteredInvoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-medium text-foreground" dir="ltr">
+                  <tr key={inv.id} className="transition-colors hover:bg-muted/30">
+                    <td className="px-4 py-3.5 font-mono font-semibold text-primary" dir="ltr">
                       {inv.invoiceNumber}
                     </td>
-                    <td className="py-3.5 px-4 font-semibold text-foreground">
+                    <td className="px-4 py-3.5 font-semibold text-foreground">
                       {inv.patientName || "مريض العيادة"}
                     </td>
-                    <td className="py-3.5 px-4 font-mono tabular-nums text-foreground">
+                    <td className="px-4 py-3.5 font-mono tabular-nums text-foreground">
                       {inv.total.toLocaleString("ar-EG")} ج.م
                     </td>
-                    <td className="py-3.5 px-4 font-mono tabular-nums text-muted-foreground">
+                    <td className="px-4 py-3.5 font-mono tabular-nums text-muted-foreground">
                       {inv.discount > 0 ? `${inv.discount.toLocaleString("ar-EG")} ج.م` : "—"}
                     </td>
-                    <td className="py-3.5 px-4 font-mono tabular-nums font-semibold text-emerald-600">
+                    <td className="px-4 py-3.5 font-mono font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
                       {inv.amountPaid.toLocaleString("ar-EG")} ج.م
                     </td>
-                    <td className="py-3.5 px-4">{renderStatusBadge(inv.status)}</td>
-                    <td className="py-3.5 px-4 font-mono text-muted-foreground">
+                    <td className="px-4 py-3.5">{renderStatusBadge(inv.status)}</td>
+                    <td className="px-4 py-3.5 font-mono text-muted-foreground">
                       {inv.date ? new Date(inv.date).toLocaleDateString("ar-EG") : "—"}
                     </td>
                   </tr>
