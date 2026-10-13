@@ -486,9 +486,9 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     );
   }
 
-  if (isSuperAdmin && (location.pathname === "/apps" || location.pathname.startsWith("/apps/"))) {
-    return <Navigate to="/super-admin/dashboard" replace />;
-  }
+  // SUPER_ADMIN is bound to its platform company (max-p) and uses the merchant
+  // app dashboard like any OWNER — the old "/apps is forbidden for super admin"
+  // redirect was removed with the single-company model (2026-10-13).
 
   const isValidSuperAdminSession = (): boolean => {
     const superAuth = localStorage.getItem("superAuth");

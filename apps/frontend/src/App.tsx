@@ -3162,7 +3162,7 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <RoleProtectedRoute
-                        allowedRoles={['COMPANY_ADMIN', 'OWNER', 'MANAGER', 'TEAM_LEADER', 'MODERATOR', 'EMPLOYEE', 'ADMIN', 'HR_MANAGER', 'Team Lead', 'Project Manager', 'Developer', 'Tester', 'Agent', 'AGENT']}
+                        allowedRoles={['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'TEAM_LEADER', 'MODERATOR', 'EMPLOYEE', 'ADMIN', 'HR_MANAGER', 'Team Lead', 'Project Manager', 'Developer', 'Tester', 'Agent', 'AGENT']}
                         fallback={<Navigate to="/super-admin/dev-dashboard" replace />}
                       >
                         <div />
@@ -3175,7 +3175,7 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <RoleProtectedRoute
-                        allowedRoles={['COMPANY_ADMIN', 'OWNER', 'MANAGER', 'TEAM_LEADER', 'MODERATOR', 'EMPLOYEE', 'ADMIN', 'HR_MANAGER', 'Team Lead', 'Project Manager', 'Developer', 'Tester', 'Agent', 'AGENT']}
+                        allowedRoles={['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'TEAM_LEADER', 'MODERATOR', 'EMPLOYEE', 'ADMIN', 'HR_MANAGER', 'Team Lead', 'Project Manager', 'Developer', 'Tester', 'Agent', 'AGENT']}
                         fallback={<Navigate to="/super-admin/dev-dashboard" replace />}
                       >
                         <div />
