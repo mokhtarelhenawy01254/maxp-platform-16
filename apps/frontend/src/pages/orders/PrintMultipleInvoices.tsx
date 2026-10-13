@@ -46,6 +46,21 @@ interface Invoice {
   };
 }
 
+function cleanBulkNotes(note: string | null | undefined): string {
+  if (!note || typeof note !== "string") return "";
+  const trimmed = note.trim();
+  if (
+    trimmed === "Bulk status update" ||
+    trimmed === "Bulk preparation queue update" ||
+    trimmed === "Bulk restore" ||
+    trimmed === "Bulk move to trash" ||
+    /^bulk\s+/i.test(trimmed)
+  ) {
+    return "";
+  }
+  return trimmed;
+}
+
 /** Convert API Invoice to InvoiceData shape */
 function toInvoiceData(inv: Invoice): InvoiceData {
   return {
@@ -69,10 +84,10 @@ function toInvoiceData(inv: Invoice): InvoiceData {
     discount: inv.discount,
     totalAmount: inv.totalAmount,
     notes: (() => {
-      const orderNotes = typeof inv.order?.notes === "string" ? inv.order.notes : "";
-      const invoiceNotes = typeof inv.notes === "string" ? inv.notes : "";
+      const orderNotes = cleanBulkNotes(inv.order?.notes);
+      const invoiceNotes = cleanBulkNotes(inv.notes);
       return (
-        Array.from(new Set([orderNotes, invoiceNotes].filter((n) => Boolean(n && n.trim())))).join("\n").trim() || null
+        Array.from(new Set([orderNotes, invoiceNotes].filter(Boolean))).join("\n").trim() || null
       );
     })(),
     metadata: inv.order?.metadata || inv.metadata || null,
@@ -86,10 +101,10 @@ function toInvoiceData(inv: Invoice): InvoiceData {
       trackingNumber: (inv.order as any)?.trackingNumber || inv.order?.turboTrackingNumber || null,
       turboTrackingNumber: inv.order?.turboTrackingNumber,
       notes: (() => {
-        const orderNotes = typeof inv.order?.notes === "string" ? inv.order.notes : "";
-        const invoiceNotes = typeof inv.notes === "string" ? inv.notes : "";
+        const orderNotes = cleanBulkNotes(inv.order?.notes);
+        const invoiceNotes = cleanBulkNotes(inv.notes);
         return (
-          Array.from(new Set([orderNotes, invoiceNotes].filter((n) => Boolean(n && n.trim())))).join("\n").trim() || null
+          Array.from(new Set([orderNotes, invoiceNotes].filter(Boolean))).join("\n").trim() || null
         );
       })(),
       metadata: inv.order?.metadata || inv.metadata || null,
@@ -224,13 +239,13 @@ function guestOrderToInvoiceData(guest: GuestOrderPrint, company: GuestPrintComp
     shipping: Number(guest.shipping || 0),
     discount: Number(guest.discount || 0),
     totalAmount: Number(guest.total || 0),
-    notes: guest.notes || null,
+    notes: cleanBulkNotes(guest.notes) || null,
     metadata: guest.metadata || null,
     order: {
       orderNumber: guest.orderNumber,
       trackingNumber: guest.trackingNumber || guest.turboTrackingNumber || null,
       turboTrackingNumber: guest.turboTrackingNumber,
-      notes: guest.notes || null,
+      notes: cleanBulkNotes(guest.notes) || null,
       metadata: guest.metadata || null,
       shippingAddress: guest.shippingAddress || null,
       orderItems: (guest.items || []).map((item: any) => ({

@@ -6,6 +6,40 @@ const {
 } = require('./orderInvoiceDocumentUtils');
 
 // Helper لاستخراج الكود من العنصر أو الـ metadata
+function isSystemBulkStatusNote(note) {
+  if (!note || typeof note !== 'string') return false;
+  const trimmed = note.trim();
+  return (
+    trimmed === 'Bulk status update' ||
+    trimmed === 'Bulk preparation queue update' ||
+    trimmed === 'Bulk restore' ||
+    trimmed === 'Bulk move to trash' ||
+    /^bulk\s+/i.test(trimmed)
+  );
+}
+
+function resolveItemCustomAttributes(item) {
+  if (!item) return { attributes: null, customAttributes: null, customFields: null, carModel: null, metadata: null };
+  let itemMeta = null;
+  if (typeof item.metadata === 'string' && item.metadata.trim()) {
+    try { itemMeta = JSON.parse(item.metadata); } catch (e) { itemMeta = null; }
+  } else if (item.metadata && typeof item.metadata === 'object') {
+    itemMeta = item.metadata;
+  }
+  const attrValues = itemMeta?.attributeValues || item.attributeValues || (typeof item.attributes === 'object' && !Array.isArray(item.attributes) ? item.attributes : null);
+  const carModelVal = item.carModel || item.car_model || itemMeta?.carModel || itemMeta?.car_model || (attrValues ? (attrValues.car_model || attrValues.carModel || attrValues['نوع وموديل وسنة صنع السيارة'] || attrValues['موديل السيارة'] || null) : null);
+  const customAttrs = item.customAttributes || itemMeta?.customAttributes || attrValues || null;
+  const customFlds = item.customFields || itemMeta?.customFields || null;
+
+  return {
+    attributes: item.attributes || customAttrs || customFlds || null,
+    customAttributes: customAttrs,
+    customFields: customFlds,
+    metadata: itemMeta || item.metadata || null,
+    carModel: carModelVal,
+  };
+}
+
 function extractSkuFromOrderItem(item) {
   if (!item) return null;
   if (item.productSku && String(item.productSku).trim()) return String(item.productSku).trim();
@@ -131,6 +165,10 @@ async function fetchOrdersBatch(orderIds) {
     include: {
       customer: true,
       company: true,
+      statusHistory: {
+        orderBy: { createdAt: 'desc' },
+        take: 10
+      },
       orderItems: {
         include: {
           product: true,
@@ -156,6 +194,12 @@ async function fetchGuestOrdersBatch(orderIds) {
         { id: { in: orderIds } },
         { orderNumber: { in: orderIds } }
       ]
+    },
+    include: {
+      OrderStatusHistory: {
+        orderBy: { createdAt: 'desc' },
+        take: 10
+      }
     }
   });
 
@@ -289,6 +333,26 @@ function mapGuestOrderForPrint(guestOrder) {
     metadata = { ...metadata, ...guestOrder.metadata };
   }
 
+  const rawNotes = typeof guestOrder.notes === 'string' ? guestOrder.notes.trim() : '';
+  let cleanNotes = (!isSystemBulkStatusNote(rawNotes) && rawNotes) ? rawNotes : null;
+
+  if (!cleanNotes) {
+    if (metadata.customerNotes && !isSystemBulkStatusNote(metadata.customerNotes)) {
+      cleanNotes = metadata.customerNotes;
+    } else if (metadata.notes && !isSystemBulkStatusNote(metadata.notes)) {
+      cleanNotes = metadata.notes;
+    } else if (metadata.originalNotes && !isSystemBulkStatusNote(metadata.originalNotes)) {
+      cleanNotes = metadata.originalNotes;
+    } else if (Array.isArray(guestOrder.OrderStatusHistory)) {
+      for (const h of guestOrder.OrderStatusHistory) {
+        if (h.reason && !isSystemBulkStatusNote(h.reason) && typeof h.reason === 'string' && h.reason.trim()) {
+          cleanNotes = h.reason.trim();
+          break;
+        }
+      }
+    }
+  }
+
   return {
     id: guestOrder.id,
     orderNumber: guestOrder.orderNumber,
@@ -302,29 +366,32 @@ function mapGuestOrderForPrint(guestOrder) {
     status: guestOrder.status || 'PENDING',
     paymentStatus: 'PENDING',
     paymentMethod: guestOrder.paymentMethod || 'cod',
-    items: (Array.isArray(items) ? items : []).map((item) => ({
-      id: item.productId || item.id || '',
-      productId: item.productId || null,
-      productName: item.productName || item.name || 'منتج',
-      productColor: item.productColor || item.color || null,
-      productSize: item.productSize || item.size || null,
-      productSku: item.sku || item.productSku || item.code || item.barcode || item.variant?.sku || null,
-      price: Number(item.price || 0),
-      quantity: Number(item.quantity || 1),
-      total: Number(item.total != null ? item.total : (Number(item.price || 0) * Number(item.quantity || 1))),
-      attributes: item.attributes || item.customAttributes || item.customFields || null,
-      customAttributes: item.customAttributes || null,
-      customFields: item.customFields || null,
-      metadata: item.metadata || null,
-      carModel: item.carModel || item.car_model || null,
-    })),
+    items: (Array.isArray(items) ? items : []).map((item) => {
+      const { attributes, customAttributes, customFields, metadata: itemMeta, carModel } = resolveItemCustomAttributes(item);
+      return {
+        id: item.productId || item.id || '',
+        productId: item.productId || null,
+        productName: item.productName || item.name || 'منتج',
+        productColor: item.productColor || item.color || null,
+        productSize: item.productSize || item.size || null,
+        productSku: item.sku || item.productSku || item.code || item.barcode || item.variant?.sku || null,
+        price: Number(item.price || 0),
+        quantity: Number(item.quantity || 1),
+        total: Number(item.total != null ? item.total : (Number(item.price || 0) * Number(item.quantity || 1))),
+        attributes,
+        customAttributes,
+        customFields,
+        metadata: itemMeta,
+        carModel,
+      };
+    }),
     subtotal: Number(guestOrder.total || 0),
     tax: 0,
     shipping: Number(guestOrder.shippingCost || 0),
     discount: Number(guestOrder.discountAmount || 0),
     total: Number(guestOrder.finalTotal || guestOrder.total || 0),
     currency: 'EGP',
-    notes: guestOrder.notes || null,
+    notes: cleanNotes,
     metadata,
     turboTrackingNumber: guestOrder.turboTrackingNumber || null,
     invoiceNumber: guestOrder.orderNumber,
@@ -465,9 +532,25 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
         }
 
         // إضافة بيانات الطلب للفاتورة الموجودة مع التأكد من وجود كود المنتج والبيانات المخصصة
-        const orderNotes = typeof order.notes === 'string' ? order.notes : '';
-        const invNotes = typeof existingInvoice.notes === 'string' ? existingInvoice.notes : '';
-        const mergedNotes = Array.from(new Set([orderNotes, invNotes].filter(n => Boolean(n && n.trim())))).join('\n').trim() || null;
+        const orderNotes = (typeof order.notes === 'string' && !isSystemBulkStatusNote(order.notes)) ? order.notes : '';
+        const invNotes = (typeof existingInvoice.notes === 'string' && !isSystemBulkStatusNote(existingInvoice.notes)) ? existingInvoice.notes : '';
+        let mergedNotes = Array.from(new Set([orderNotes, invNotes].filter(n => Boolean(n && n.trim())))).join('\n').trim() || null;
+
+        if (!mergedNotes) {
+          const meta = typeof order.metadata === 'string' ? (() => { try { return JSON.parse(order.metadata); } catch(e) { return {}; } })() : (order.metadata || {});
+          if (meta.customerNotes && !isSystemBulkStatusNote(meta.customerNotes)) {
+            mergedNotes = meta.customerNotes;
+          } else if (meta.notes && !isSystemBulkStatusNote(meta.notes)) {
+            mergedNotes = meta.notes;
+          } else if (Array.isArray(order.statusHistory)) {
+            for (const h of order.statusHistory) {
+              if (h.reason && !isSystemBulkStatusNote(h.reason) && typeof h.reason === 'string' && h.reason.trim()) {
+                mergedNotes = h.reason.trim();
+                break;
+              }
+            }
+          }
+        }
 
         existingInvoice.notes = mergedNotes;
         existingInvoice.governorate = existingInvoice.governorate || order.governorate || null;
@@ -478,21 +561,24 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
           shipping: order.shipping,
           discount: order.discount,
           tax: order.tax,
-          notes: order.notes || mergedNotes,
+          notes: mergedNotes || null,
           metadata: order.metadata || null,
           shippingAddress: order.shippingAddress || null,
           city: order.city || null,
           governorate: order.governorate || null,
           customerAddress: order.customerAddress || null,
-          orderItems: (order.orderItems || []).map(item => ({
-            ...item,
-            productSku: item.productSku || extractSkuFromOrderItem(item) || null,
-            attributes: item.attributes || item.customAttributes || item.customFields || null,
-            customAttributes: item.customAttributes || null,
-            customFields: item.customFields || null,
-            metadata: item.metadata || null,
-            carModel: item.carModel || item.car_model || null
-          }))
+          orderItems: (order.orderItems || []).map(item => {
+            const { attributes, customAttributes, customFields, metadata: itemMeta, carModel } = resolveItemCustomAttributes(item);
+            return {
+              ...item,
+              productSku: item.productSku || extractSkuFromOrderItem(item) || null,
+              attributes,
+              customAttributes,
+              customFields,
+              metadata: itemMeta,
+              carModel
+            };
+          })
         };
         
         results.existing.push({
@@ -547,16 +633,22 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
       // ربط النتائج
       const newInvoiceMap = new Map();
       newInvoices.forEach(inv => {
+        if (isSystemBulkStatusNote(inv.notes)) {
+          inv.notes = null;
+        }
         if (inv.order?.orderItems) {
-          inv.order.orderItems = inv.order.orderItems.map(item => ({
-            ...item,
-            productSku: item.productSku || extractSkuFromOrderItem(item) || null,
-            attributes: item.attributes || item.customAttributes || item.customFields || null,
-            customAttributes: item.customAttributes || null,
-            customFields: item.customFields || null,
-            metadata: item.metadata || null,
-            carModel: item.carModel || item.car_model || null
-          }));
+          inv.order.orderItems = inv.order.orderItems.map(item => {
+            const { attributes, customAttributes, customFields, metadata: itemMeta, carModel } = resolveItemCustomAttributes(item);
+            return {
+              ...item,
+              productSku: item.productSku || extractSkuFromOrderItem(item) || null,
+              attributes,
+              customAttributes,
+              customFields,
+              metadata: itemMeta,
+              carModel
+            };
+          });
         }
         newInvoiceMap.set(inv.orderId, inv);
       });

@@ -1227,6 +1227,20 @@ const updateAnyOrderStatus = async ({
   const { skipTransitionValidation = false } = options;
   const normalizedStatus = String(status || '').trim().toUpperCase();
 
+  const isSystemBulkStatusNote = (note) => {
+    if (!note || typeof note !== 'string') return false;
+    const trimmed = note.trim();
+    return (
+      trimmed === 'Bulk status update' ||
+      trimmed === 'Bulk preparation queue update' ||
+      trimmed === 'Bulk restore' ||
+      trimmed === 'Bulk move to trash' ||
+      /^bulk\s+/i.test(trimmed)
+    );
+  };
+  const shouldPersistOrderNote = notes && typeof notes === 'string' && notes.trim().length > 0 && !isSystemBulkStatusNote(notes);
+  const auditReason = options?.statusReason || notes || 'Bulk preparation queue update';
+
   if (PREPARATION_ONLY_STATUSES.has(normalizedStatus)) {
     const prisma = getSharedPrismaClient();
     const order = await prisma.order.findFirst({
@@ -1312,13 +1326,13 @@ const updateAnyOrderStatus = async ({
           // 🛡️ PRODUCTION-FIX (custom-status-persist): حالات التجهيز حالات نظامية —
           // أمسح أي كود مخصص قديم عشان "الحالة الفعلية" تبقى مرحلة التجهيز.
           customStatusCode: null,
-          notes: notes || undefined,
+          notes: shouldPersistOrderNote ? notes : undefined,
           metadata: JSON.stringify(nextMetadata),
           statusHistory: {
             create: {
               status: normalizedStatus,
               oldStatus: previousPreparationStatus,
-              reason: notes || 'Bulk preparation queue update',
+              reason: auditReason,
               changedBy: userId,
               userName
             }
@@ -1361,13 +1375,13 @@ const updateAnyOrderStatus = async ({
         where: { id: guestOrder.id },
         data: {
           status: normalizedStatus,
-          notes: notes || undefined,
+          notes: shouldPersistOrderNote ? notes : undefined,
           metadata: JSON.stringify(nextMetadata),
           OrderStatusHistory: {
             create: {
               status: normalizedStatus,
               oldStatus: guestOrder.status,
-              reason: notes || 'Bulk preparation queue update',
+              reason: auditReason,
               changedBy: userId,
               userName
             }
@@ -1413,7 +1427,7 @@ const updateAnyOrderStatus = async ({
       orderIdentifier,
       companyId,
       status,
-      notes,
+      shouldPersistOrderNote ? notes : undefined,
       userId,
       userName,
       null,
@@ -1431,7 +1445,7 @@ const updateAnyOrderStatus = async ({
         },
         data: {
           status: normalizedStatus,
-          notes: notes || undefined,
+          notes: shouldPersistOrderNote ? notes : undefined,
           updatedAt: new Date()
         }
       }).catch((err) => {
@@ -1451,7 +1465,7 @@ const updateAnyOrderStatus = async ({
       orderIdentifier,
       companyId,
       status,
-      notes,
+      shouldPersistOrderNote ? notes : undefined,
       userId,
       userName,
       null,
@@ -1468,7 +1482,7 @@ const updateAnyOrderStatus = async ({
         },
         data: {
           status: normalizedStatus,
-          notes: notes || undefined,
+          notes: shouldPersistOrderNote ? notes : undefined,
           updatedAt: new Date()
         }
       }).catch((err) => {
@@ -8697,6 +8711,7 @@ router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
     }
 
     const bulkNote = statusNotes || getBulkStatusNote(normalizedStatus);
+    const safeOrderNotes = (statusNotes && !isSystemBulkStatusNote(statusNotes)) ? statusNotes : undefined;
     const results = [];
     const userId = req.user?.id;
     const userName = `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || 'System';
@@ -8724,10 +8739,10 @@ router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
           orderIdentifier: id,
           companyId,
           status: normalizedStatus,
-          notes: bulkNote,
+          notes: safeOrderNotes,
           userId,
           userName,
-          options: { skipTransitionValidation: true }
+          options: { skipTransitionValidation: true, statusReason: bulkNote }
         });
         results.push({ id, success: true, orderType: updateResult.orderType });
       } catch (err) {

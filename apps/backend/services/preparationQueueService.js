@@ -124,16 +124,32 @@ const notifyPreparationStageChange = async ({ companyId, orderPayload, status })
   }
 };
 
+const isSystemBulkStatusNote = (note) => {
+  if (!note || typeof note !== 'string') return false;
+  const trimmed = note.trim();
+  return (
+    trimmed === 'Bulk status update' ||
+    trimmed === 'Bulk preparation queue update' ||
+    trimmed === 'Bulk restore' ||
+    trimmed === 'Bulk move to trash' ||
+    /^bulk\s+/i.test(trimmed)
+  );
+};
+
 const updatePreparationOrderStatus = async ({
   orderIdentifier,
   companyId,
   status,
   notes,
+  statusReason = null,
   userId,
   userName,
 }) => {
   const normalizedStatus = String(status || '').trim().toUpperCase();
   const prisma = getSharedPrismaClient();
+
+  const shouldPersistOrderNote = notes && typeof notes === 'string' && notes.trim().length > 0 && !isSystemBulkStatusNote(notes);
+  const auditReason = statusReason || notes || 'Bulk preparation queue update';
 
   if (!PREPARATION_ONLY_STATUSES.has(normalizedStatus)) {
     const customStatus = await prisma.orderStatusConfig.findFirst({
@@ -181,13 +197,13 @@ const updatePreparationOrderStatus = async ({
       data: {
         status: mappedStatus,
         customStatusCode: PREPARATION_ONLY_STATUSES.has(normalizedStatus) ? null : undefined,
-        notes: notes || undefined,
+        notes: shouldPersistOrderNote ? notes : undefined,
         metadata: JSON.stringify(nextMetadata),
         statusHistory: {
           create: {
             status: normalizedStatus,
             oldStatus: previousPreparationStatus,
-            reason: notes || 'Bulk preparation queue update',
+            reason: auditReason,
             changedBy: userId,
             userName
           }
@@ -252,13 +268,13 @@ const updatePreparationOrderStatus = async ({
       where: { id: guestOrder.id },
       data: {
         status: normalizedStatus,
-        notes: notes || undefined,
+        notes: shouldPersistOrderNote ? notes : undefined,
         metadata: JSON.stringify(nextMetadata),
         OrderStatusHistory: {
           create: {
             status: normalizedStatus,
             oldStatus: guestOrder.status,
-            reason: notes || 'Bulk preparation queue update',
+            reason: auditReason,
             changedBy: userId,
             userName
           }
@@ -2041,6 +2057,7 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
   }
 
   const bulkNote = notes || getBulkStatusNote(normalizedStatus);
+  const safeOrderNotes = (notes && !isSystemBulkStatusNote(notes)) ? notes : undefined;
   const results = [];
 
   for (const orderNumber of matchingOrderNumbers) {
@@ -2049,7 +2066,8 @@ const bulkUpdateByFilters = async ({ user, query, targetStatus, notes, userId, u
         orderIdentifier: orderNumber,
         companyId,
         status: normalizedStatus,
-        notes: bulkNote,
+        notes: safeOrderNotes,
+        statusReason: bulkNote,
         userId,
         userName,
       });

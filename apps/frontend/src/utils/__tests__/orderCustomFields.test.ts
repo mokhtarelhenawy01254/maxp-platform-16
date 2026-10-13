@@ -226,6 +226,51 @@ describe("resolveCustomFieldsForDisplay", () => {
       ])
     );
   });
+
+  it("filters out 'Bulk status update' and does not render it as customer notes", () => {
+    const bulkUpdatedInvoice = {
+      notes: "Bulk status update",
+      order: {
+        notes: "Bulk status update",
+        metadata: {
+          customerNotes: "نوع وموديل وسنة صنع السيارة: بيجوه٥٠٥ ١٩٨٨",
+        },
+      },
+    };
+    const result = resolveCustomFieldsForDisplay(bulkUpdatedInvoice);
+
+    expect(result.isEnabled).toBe(true);
+    expect(result.customFields).toEqual([
+      { label: "نوع وموديل وسنة صنع السيارة", value: "بيجوه٥٠٥ ١٩٨٨" },
+    ]);
+    expect(result.displayNotes).toBe("");
+  });
+
+  it("extracts car specs from item.metadata.attributeValues when order.notes was overwritten by bulk update", () => {
+    const bulkInvoiceWithItemAttrs = {
+      notes: "Bulk status update",
+      order: {
+        notes: "Bulk status update",
+        orderItems: [
+          {
+            productName: "طقم كفرات مفاتيح",
+            metadata: JSON.stringify({
+              attributeValues: {
+                car_model: "سوزوكي اسبريسو 2022",
+              },
+            }),
+          },
+        ],
+      },
+    };
+    const result = resolveCustomFieldsForDisplay(bulkInvoiceWithItemAttrs);
+
+    expect(result.isEnabled).toBe(true);
+    expect(result.customFields).toEqual([
+      { label: "نوع وموديل وسنة صنع السيارة", value: "سوزوكي اسبريسو 2022" },
+    ]);
+    expect(result.displayNotes).toBe("");
+  });
 });
 
 

@@ -9188,6 +9188,7 @@ declare module 'react-i18next' {
           emoji: string;
           template: string;
           products: string;
+          imageGallery: string;
         };
       };
       whatsappAnalytics: {

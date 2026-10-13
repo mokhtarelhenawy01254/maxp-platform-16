@@ -33,6 +33,18 @@ const CUSTOM_FIELD_PREFIXES = [
   "بيانات السيارة:"
 ];
 
+export const isSystemBulkStatusNote = (note: string | null | undefined): boolean => {
+  if (!note || typeof note !== "string") return false;
+  const trimmed = note.trim();
+  return (
+    trimmed === "Bulk status update" ||
+    trimmed === "Bulk preparation queue update" ||
+    trimmed === "Bulk restore" ||
+    trimmed === "Bulk move to trash" ||
+    /^bulk\s+/i.test(trimmed)
+  );
+};
+
 const matchesCarSpec = (line: string): boolean => {
   const lower = line.toLowerCase();
   return CAR_BRAND_KEYWORDS.some((kw) => lower.includes(kw));
@@ -110,6 +122,24 @@ export function extractOrderCustomFields(
       });
     }
 
+    // Direct object of attributeValues in order metadata
+    if (
+      metadata.attributeValues &&
+      typeof metadata.attributeValues === "object" &&
+      !Array.isArray(metadata.attributeValues)
+    ) {
+      Object.entries(metadata.attributeValues).forEach(([k, v]) => {
+        if (v && typeof v === "string") {
+          const lowerK = k.toLowerCase().replace(/[-_]/g, "");
+          const isCarKey = lowerK === "carmodel" || lowerK === "car" || matchesCarSpec(k) || matchesCarSpec(v) || k.includes("سيار") || k.includes("موديل") || k.includes("مواصف");
+          if (isCarKey) {
+            const label = (lowerK === "carmodel" || lowerK === "car") ? defaultFallbackLabel : k;
+            addEntry(label, v);
+          }
+        }
+      });
+    }
+
     // Specific known keys like carModel / car_model
     if (metadata.carModel && typeof metadata.carModel === "string") {
       addEntry(defaultFallbackLabel, metadata.carModel);
@@ -129,7 +159,16 @@ export function extractOrderCustomFields(
     : [];
   for (const item of items) {
     if (!item) continue;
-    const itemAttrs = item.attributes || item.customAttributes || item.customFields;
+    let itemMeta: any = item.metadata;
+    if (typeof itemMeta === "string" && itemMeta.trim()) {
+      try {
+        itemMeta = JSON.parse(itemMeta);
+      } catch {
+        itemMeta = null;
+      }
+    }
+
+    const itemAttrs = item.attributes || item.customAttributes || item.customFields || itemMeta?.customAttributes || itemMeta?.customFields;
     if (Array.isArray(itemAttrs)) {
       for (const attr of itemAttrs) {
         if (attr && typeof attr === "object") {
@@ -143,8 +182,23 @@ export function extractOrderCustomFields(
         if (v && typeof v === "string") addEntry(k, v);
       });
     }
-    if (item.carModel) addEntry(defaultFallbackLabel, String(item.carModel));
-    if (item.car_model) addEntry(defaultFallbackLabel, String(item.car_model));
+
+    const attrValues = itemMeta?.attributeValues || item.attributeValues;
+    if (attrValues && typeof attrValues === "object" && !Array.isArray(attrValues)) {
+      Object.entries(attrValues).forEach(([k, v]) => {
+        if (v && typeof v === "string") {
+          const lowerK = k.toLowerCase().replace(/[-_]/g, "");
+          const isCarKey = lowerK === "carmodel" || lowerK === "car" || matchesCarSpec(k) || matchesCarSpec(v) || k.includes("سيار") || k.includes("موديل") || k.includes("مواصف");
+          if (isCarKey) {
+            const label = (lowerK === "carmodel" || lowerK === "car") ? defaultFallbackLabel : k;
+            addEntry(label, v);
+          }
+        }
+      });
+    }
+
+    const resolvedCarModel = item.carModel || item.car_model || itemMeta?.carModel || itemMeta?.car_model;
+    if (resolvedCarModel) addEntry(defaultFallbackLabel, String(resolvedCarModel));
   }
 
   // 3. Check notes (both source.notes AND source.order.notes, preserving all candidates)
@@ -152,14 +206,17 @@ export function extractOrderCustomFields(
     typeof source.notes === "string" ? source.notes : "",
     typeof source.order?.notes === "string" ? source.order.notes : "",
     typeof source.customerNotes === "string" ? source.customerNotes : "",
-  ].filter((n) => Boolean(n && n.trim()));
+    typeof metadata?.customerNotes === "string" ? metadata.customerNotes : "",
+    typeof metadata?.notes === "string" ? metadata.notes : "",
+    typeof metadata?.originalNotes === "string" ? metadata.originalNotes : "",
+  ].filter((n) => Boolean(n && n.trim() && !isSystemBulkStatusNote(n)));
 
   const notesStr = Array.from(new Set(notesPool)).join("\n").trim();
   if (notesStr) {
     const lines = notesStr.split(/\r?\n/);
     for (const rawLine of lines) {
       const line = rawLine.trim();
-      if (!line) continue;
+      if (!line || isSystemBulkStatusNote(line)) continue;
 
       // Match known custom field prefixes
       const matchedPrefix = CUSTOM_FIELD_PREFIXES.find((p) => line.startsWith(p));
@@ -208,12 +265,12 @@ export function cleanNotesWithoutCustomFields(
   customFields?: OrderCustomFieldEntry[]
 ): string {
   const notesStr = String(notes || "").trim();
-  if (!notesStr) return "";
+  if (!notesStr || isSystemBulkStatusNote(notesStr)) return "";
 
   const lines = notesStr.split(/\r?\n/);
   const filteredLines = lines.filter((rawLine) => {
     const line = rawLine.trim();
-    if (!line) return false;
+    if (!line || isSystemBulkStatusNote(line)) return false;
 
     // Filter out lines starting with known custom field prefixes
     const startsWithPrefix = CUSTOM_FIELD_PREFIXES.some((p) => line.startsWith(p));
