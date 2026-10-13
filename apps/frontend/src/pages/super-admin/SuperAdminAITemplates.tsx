@@ -133,55 +133,88 @@ const SuperAdminAITemplates: React.FC = () => {
   if (loading) return <div className="flex justify-center items-center h-[60vh]"><LoadingSpinner size="lg" /></div>;
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-64px)] bg-gradient-to-br from-slate-50 to-blue-50/30">
-      {/* Header */}
-      <div className="px-4 py-2 border-b bg-white/80 backdrop-blur-sm shrink-0 flex items-center gap-2">
-        <Layers className="size-6 text-primary" />
-        <div className="flex-1">
-          <p className="text-sm font-bold">قوالب الذكاء الاصطناعي</p>
-          <p className="text-xs text-muted-foreground">إدارة ونشر قوالب وكلاء AI — {stats.total} قالب</p>
+    <div className="w-full space-y-4 p-4 md:p-6 max-w-7xl mx-auto" dir="rtl">
+      {/* Linear Taste Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Layers className="size-4.5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
+                سوق قوالب الذكاء الاصطناعي
+              </h1>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border border-border/80 bg-muted/30">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {stats.total} قالب معتمد
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              إدارة ونشر قوالب وكلاء الذكاء الاصطناعي والمهارات والأدوات المركزية للمنصة
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleSyncTemplates} disabled={syncing}>
-            <RefreshCw className={`size-3.5 ml-1 ${syncing ? "animate-spin" : ""}`} />
-            مزامنة القوالب
+
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Button variant="outline" size="sm" onClick={handleSyncTemplates} disabled={syncing} className="h-8 text-xs font-mono gap-1.5 active:scale-[0.98]">
+            <RefreshCw className={`size-3.5 ${syncing ? "animate-spin" : ""}`} />
+            <span>مزامنة الملفات</span>
           </Button>
-          <Button onClick={() => setShowCreate(true)} size="sm"><Plus className="size-4 ml-1" /> قالب جديد</Button>
+          <Button onClick={() => setShowCreate(true)} size="sm" className="h-8 text-xs font-mono gap-1.5 active:scale-[0.98] shadow-xs">
+            <Plus className="size-3.5" />
+            <span>قالب جديد</span>
+          </Button>
         </div>
       </div>
 
-      {/* Stats bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 px-4 py-2 bg-white/50 border-b shrink-0">
-        <StatBox label="إجمالي القوالب" value={stats.total} />
-        <StatBox label="أدوات" value={stats.totalTools} />
-        <StatBox label="مهارات" value={stats.totalSkills} />
-        <StatBox label="قوالب بميزانية" value={stats.withDailyBudget} />
-        <StatBox label="أدوار مختلفة" value={Object.keys(stats.byRole).length} />
+      {/* Unified Telemetry Ribbon */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+        <div className="p-3 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <span className="text-[11px] font-medium text-muted-foreground">إجمالي القوالب</span>
+          <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums mt-1">{stats.total}</div>
+        </div>
+        <div className="p-3 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <span className="text-[11px] font-medium text-muted-foreground">الأدوات المفعلة</span>
+          <div className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums mt-1">{stats.totalTools}</div>
+        </div>
+        <div className="p-3 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <span className="text-[11px] font-medium text-muted-foreground">المهارات المسجلة</span>
+          <div className="text-xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400 font-mono tabular-nums mt-1">{stats.totalSkills}</div>
+        </div>
+        <div className="p-3 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <span className="text-[11px] font-medium text-muted-foreground">قوالب بميزانية يومية</span>
+          <div className="text-xl font-bold tracking-tight text-amber-600 dark:text-amber-400 font-mono tabular-nums mt-1">{stats.withDailyBudget}</div>
+        </div>
+        <div className="p-3 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <span className="text-[11px] font-medium text-muted-foreground">الأدوار الوظيفية</span>
+          <div className="text-xl font-bold tracking-tight text-purple-600 dark:text-purple-400 font-mono tabular-nums mt-1">{Object.keys(stats.byRole).length}</div>
+        </div>
       </div>
 
-      {/* Search & Filter */}
-      <div className="px-4 py-2 border-b bg-white/50 shrink-0 flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="size-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={e => setFilter("search", e.target.value)} placeholder="ابحث عن قالب..." className="pr-9 h-9 text-sm" />
+      {/* Search & Filter Bar */}
+      <div className="flex flex-wrap items-center gap-2 p-2 rounded-xl border border-border/80 bg-card/40">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="size-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Input value={search} onChange={e => setFilter("search", e.target.value)} placeholder="ابحث برقم القالب أو الدور أو الاسم..." className="pr-8 h-8 text-xs font-mono bg-background/50" />
         </div>
         <select value={roleFilter} onChange={e => setFilter("role", e.target.value)}
-          className="h-9 rounded-lg border border-input bg-background px-3 text-xs text-muted-foreground">
+          className="h-8 rounded-lg border border-input bg-background/50 px-2.5 text-xs text-foreground focus:outline-none">
           <option value="">كل الأدوار</option>
           {allRoles.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
         <select value={industryFilter} onChange={e => setFilter("industry", e.target.value)}
-          className="h-9 rounded-lg border border-input bg-background px-3 text-xs text-muted-foreground">
+          className="h-8 rounded-lg border border-input bg-background/50 px-2.5 text-xs text-foreground focus:outline-none">
           <option value="">كل المجالات</option>
           {allIndustries.map(ind => <option key={ind} value={ind}>{ind}</option>)}
         </select>
         <select value={statusFilter} onChange={e => setFilter("status", e.target.value)}
-          className="h-9 rounded-lg border border-input bg-background px-3 text-xs text-muted-foreground">
+          className="h-8 rounded-lg border border-input bg-background/50 px-2.5 text-xs text-foreground focus:outline-none">
           <option value="">كل الحالات</option>
           <option value="active">نشط</option>
           <option value="hidden">مخفي</option>
         </select>
-        <span className="text-xs text-muted-foreground">{filtered.length} من {templates.length}</span>
+        <span className="text-[11px] font-mono text-muted-foreground mr-auto">{filtered.length} من {templates.length}</span>
       </div>
 
       {error && <Alert variant="destructive" className="mx-4 mt-2 shrink-0"><AlertDescription>{error}</AlertDescription><div className="mt-1"><Button variant="outline" size="sm" onClick={fetchTemplates}>إعادة المحاولة</Button></div></Alert>}
