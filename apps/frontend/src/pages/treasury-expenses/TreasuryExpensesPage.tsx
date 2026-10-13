@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Receipt, Landmark, Loader2, ArrowUpRight, ShieldCheck } from "lucide-react";
+import { Receipt, Landmark, Loader2, ArrowUpRight, ShieldCheck, Wallet } from "lucide-react";
 import {
   TreasuryAccount,
   ExpenseCategory,
@@ -27,10 +27,11 @@ export default function TreasuryExpensesPage() {
         fetchAccounts(),
         fetchCategories(),
       ]);
-      const rawAccounts = accRes.accounts || [];
+      const rawAccounts = Array.isArray(accRes) ? accRes : (accRes?.accounts || []);
       const seenAccountKeys = new Set<string>();
       const uniqueAccounts: TreasuryAccount[] = [];
       for (const a of rawAccounts) {
+        if (!a || !a.name) continue;
         const key = `${a.name.trim().toLowerCase()}_${a.type}`;
         if (!seenAccountKeys.has(key)) {
           seenAccountKeys.add(key);
@@ -38,10 +39,11 @@ export default function TreasuryExpensesPage() {
         }
       }
 
-      const rawCategories = catRes || [];
+      const rawCategories = Array.isArray(catRes) ? catRes : (catRes?.categories || []);
       const seenCatKeys = new Set<string>();
       const uniqueCategories: ExpenseCategory[] = [];
       for (const c of rawCategories) {
+        if (!c || !c.name) continue;
         const key = c.name.trim().toLowerCase();
         if (!seenCatKeys.has(key)) {
           seenCatKeys.add(key);
@@ -68,20 +70,22 @@ export default function TreasuryExpensesPage() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-zinc-50/60 dark:bg-zinc-950 p-3 sm:p-5 lg:p-6 space-y-4" dir="rtl">
-      {/* Unified Top Chassis Bar */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        {/* Title & Total Liquidity Badge */}
+    <div className="w-full space-y-4 p-4 md:p-6 max-w-7xl mx-auto" dir="rtl">
+      {/* Top Header Control Bar */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-b border-border/60 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <Wallet className="size-5" />
+            </div>
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
               إدارة النفقات والخزينة ورأس المال
             </h1>
-            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-mono">
-              FinOps 2026
+            <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-mono">
+              FinOps & Treasury
             </span>
           </div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+          <p className="text-xs md:text-sm text-muted-foreground mt-1">
             ربط محاسبي محكم بين المصروفات التشغيلية، الأصول، ورصيد الخزائن الفعلي
           </p>
         </div>
@@ -90,60 +94,48 @@ export default function TreasuryExpensesPage() {
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
           {/* Liquidity Chip */}
           <div
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-mono tabular-nums ${
               totalLiquidity < 0
-                ? "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/60"
-                : "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/60"
+                ? "bg-destructive/10 text-destructive border-destructive/20"
+                : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
             }`}
           >
             <span
-              className={`w-2 h-2 rounded-full ${
-                totalLiquidity < 0 ? "bg-red-500" : "bg-emerald-500"
+              className={`size-1.5 rounded-full ${
+                totalLiquidity < 0 ? "bg-destructive" : "bg-emerald-500"
               } animate-pulse`}
             />
-            <span
-              className={`text-xs font-medium ${
-                totalLiquidity < 0
-                  ? "text-red-800 dark:text-red-300"
-                  : "text-emerald-800 dark:text-emerald-300"
-              }`}
-            >
+            <span className="font-sans font-medium">
               {totalLiquidity < 0 ? "عجز السيولة الإجمالي:" : "إجمالي السيولة:"}
             </span>
-            <span
-              className={`text-xs font-bold font-mono tabular-nums ${
-                totalLiquidity < 0
-                  ? "text-red-700 dark:text-red-300"
-                  : "text-emerald-700 dark:text-emerald-300"
-              }`}
-            >
+            <span className="font-bold">
               {formatMoney(totalLiquidity)}
             </span>
           </div>
 
           {/* Segmented Control */}
-          <div className="inline-flex p-1 bg-zinc-100 dark:bg-zinc-800/80 rounded-xl border border-zinc-200/80 dark:border-zinc-700/60">
+          <div className="inline-flex p-0.5 bg-muted rounded-lg border border-border">
             <button
               onClick={() => handleTabChange("expenses")}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition-all ${
                 currentTab === "expenses"
-                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                  ? "bg-card text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Receipt className="w-3.5 h-3.5 text-red-500" />
+              <Receipt className="size-3.5 text-rose-500" />
               <span>النفقات والمصروفات</span>
             </button>
 
             <button
               onClick={() => handleTabChange("treasury")}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition-all ${
                 currentTab === "treasury"
-                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                  ? "bg-card text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Landmark className="w-3.5 h-3.5 text-emerald-600" />
+              <Landmark className="size-3.5 text-emerald-600" />
               <span>الخزنة ورأس المال</span>
             </button>
           </div>
@@ -152,9 +144,9 @@ export default function TreasuryExpensesPage() {
 
       {/* Main Content Area */}
       {loading ? (
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-16 flex flex-col items-center justify-center gap-3">
-          <Loader2 className="w-7 h-7 text-zinc-400 animate-spin" />
-          <p className="text-xs font-medium text-zinc-500">جاري تهيئة الخزينة ودفاتر النفقات...</p>
+        <div className="rounded-xl border border-border bg-card p-16 flex flex-col items-center justify-center gap-3">
+          <Loader2 className="size-7 text-muted-foreground animate-spin" />
+          <p className="text-xs font-medium text-muted-foreground">جاري تهيئة الخزينة ودفاتر النفقات...</p>
         </div>
       ) : (
         <>
