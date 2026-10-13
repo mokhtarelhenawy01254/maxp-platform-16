@@ -51,7 +51,7 @@ export const DailyOrdersHourlyChart: React.FC<DailyOrdersHourlyChartProps> = ({
   const totalInChart = timeline.reduce((acc, curr) => acc + curr.ordersCount, 0);
 
   return (
-    <div className="rounded-xl border border-border/50 bg-card/60 p-4 shadow-sm backdrop-blur-sm">
+    <div className="rounded-xl border border-border/80 bg-card/40 p-4 shadow-xs">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2">
           <div className="flex size-7 items-center justify-center rounded-md bg-muted text-muted-foreground">

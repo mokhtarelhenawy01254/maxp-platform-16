@@ -70,96 +70,101 @@ export default function SuperAdminFollowUp() {
   };
 
   return (
-    <div dir="rtl" className="min-h-full pb-6">
-      <div className="flex w-full flex-col gap-1.5 p-1 md:p-1.5">
-        <Card className="rounded-lg bg-white shadow-sm ring-0 dark:bg-card">
-          <CardHeader className="p-2 pb-0 md:p-3 md:pb-0">
-            <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <div className="flex size-5 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <Building2 className="size-2.5" />
-                  </div>
-                  <Badge variant="outline" className="h-5 rounded-full border-primary/20 bg-primary/5 px-2 text-[11px] font-black uppercase tracking-widest text-primary">
-                    <Sparkles className="ml-1 size-2" /> مركز المتابعة
-                  </Badge>
-                  <span className="text-[11px] font-bold text-muted-foreground/50">{formatDate(new Date().toISOString())}</span>
-                </div>
-                <h1 className="text-xl font-black tracking-tight text-foreground md:text-2xl">
-                  متابعة <span className="text-primary">الشركات</span>
-                </h1>
-                <CardDescription className="text-sm text-muted-foreground/60">
-                  إدارة ومتابعة حالات الشركات — تذكيرات، تصعيد، واتصالات.
-                </CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button type="button" variant="outline" className="h-9 rounded-lg border-border/60 px-4 text-[13px] font-black" onClick={() => navigate("/super-admin/companies-v2")}>
-                  <ArrowLeft className="ml-1.5 size-3.5" /> العودة للشركات
-                </Button>
-                <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/10 px-4 py-2">
-                  <span className="text-[13px] font-black text-foreground">{total} شركة</span>
-                </div>
-              </div>
+    <div dir="rtl" className="w-full space-y-4">
+      {/* Linear Taste Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+            <Building2 className="size-4 text-foreground/80" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold tracking-tight text-foreground">
+                مركز متابعة الشركات
+              </h1>
+              <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] font-mono tabular-nums text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-amber-500" />
+                {total} شركة
+              </span>
             </div>
+            <p className="text-xs text-muted-foreground">
+              إدارة ومتابعة حالات الشركات — تذكيرات، تصعيد، واتصالات
+            </p>
+          </div>
+        </div>
 
-            {/* View tabs */}
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {VIEW_TABS.map((view) => (
-                <button
-                  key={view.value}
-                  type="button"
-                  onClick={() => { setActiveView(view.value); setCurrentPage(1); }}
-                  className={`rounded-lg px-3.5 py-2 text-xs font-black transition-all ${
-                    activeView === view.value
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-muted/30 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                  }`}
-                >
-                  {view.label}
-                </button>
-              ))}
-            </div>
-          </CardHeader>
-          <CardContent className="p-2 pt-0 space-y-1.5 md:p-3 md:pt-0">
-            {error ? (
-              <Alert variant="destructive" className="rounded-xl border-destructive/30 bg-white dark:bg-card/90">
-                <AlertTriangle className="size-4" />
-                <AlertTitle>تعذر التحميل</AlertTitle>
-                <AlertDescription>{(error as Error).message}</AlertDescription>
-              </Alert>
-            ) : null}
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/super-admin/companies-v2")}
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>العودة للشركات</span>
+          </Button>
+        </div>
+      </div>
 
-            <CompaniesTable
-              companies={enriched}
-              totalPages={totalPages}
-              currentPage={Math.min(currentPage, totalPages)}
-              onPageChange={setCurrentPage}
-              pageSize={20}
-              totalItems={total}
-              selectedIds={selectedIds}
-              onToggleSelect={(id) => setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
-              onToggleSelectAll={(checked) => {
-                if (checked) setSelectedIds((prev) => [...new Set([...prev, ...visibleIds])]);
-                else setSelectedIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
-              }}
-              isAllVisibleSelected={isAllVisibleSelected}
-              isSomeVisibleSelected={isSomeVisibleSelected}
-              loading={isLoading}
-              onOpenDetails={(c) => navigate(`/super-admin/companies/${c.id}`)}
-              onEdit={() => {}}
-              onDelete={() => {}}
-              onOpenUsers={() => {}}
-              onOpenFollowUp={() => {}}
-              onOpenFacebookPages={() => {}}
-              onOpenWhatsApp={handleOpenWhatsApp}
-              onTransferOwnership={() => {}}
-              onAddEmployee={() => {}}
-              onLoginAsAdmin={handleLoginAsAdmin}
-              onRunFollowUpAction={handleRunFollowUpAction}
-              isMobile={isMobile}
-            />
-          </CardContent>
-        </Card>
+      {/* Segmented Pill Tabs */}
+      <div className="flex items-center gap-1 border-b border-border/60 pb-1 overflow-x-auto no-scrollbar">
+        {VIEW_TABS.map((view) => (
+          <button
+            key={view.value}
+            type="button"
+            onClick={() => { setActiveView(view.value); setCurrentPage(1); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer ${
+              activeView === view.value
+                ? "bg-muted text-foreground font-semibold shadow-xs border border-border/80"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {view.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Error state */}
+      {error ? (
+        <Alert variant="destructive" className="rounded-xl border-destructive/30">
+          <AlertTriangle className="size-4" />
+          <AlertTitle>تعذر التحميل</AlertTitle>
+          <AlertDescription>{(error as Error).message}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {/* Single Chassis Table */}
+      <div className="rounded-xl border border-border/80 bg-card/40 shadow-xs overflow-hidden">
+        <CompaniesTable
+          companies={enriched}
+          totalPages={totalPages}
+          currentPage={Math.min(currentPage, totalPages)}
+          onPageChange={setCurrentPage}
+          pageSize={20}
+          totalItems={total}
+          selectedIds={selectedIds}
+          onToggleSelect={(id) => setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
+          onToggleSelectAll={(checked) => {
+            if (checked) setSelectedIds((prev) => [...new Set([...prev, ...visibleIds])]);
+            else setSelectedIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+          }}
+          isAllVisibleSelected={isAllVisibleSelected}
+          isSomeVisibleSelected={isSomeVisibleSelected}
+          loading={isLoading}
+          onOpenDetails={(c) => navigate(`/super-admin/companies/${c.id}`)}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          onOpenUsers={() => {}}
+          onOpenFollowUp={() => {}}
+          onOpenFacebookPages={() => {}}
+          onOpenWhatsApp={handleOpenWhatsApp}
+          onTransferOwnership={() => {}}
+          onAddEmployee={() => {}}
+          onLoginAsAdmin={handleLoginAsAdmin}
+          onRunFollowUpAction={handleRunFollowUpAction}
+          isMobile={isMobile}
+        />
       </div>
     </div>
   );

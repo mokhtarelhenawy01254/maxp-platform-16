@@ -130,199 +130,245 @@ export default function SuperAdminCompaniesReports() {
   }
 
   return (
-    <div dir="rtl" className="p-4 md:p-6 space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-black tracking-tight text-foreground">
-          تقارير <span className="text-primary">الشركات</span>
-        </h1>
-        <p className="text-sm font-medium text-muted-foreground/60">تحليلات وإحصائيات شاملة عن الشركات المسجلة.</p>
-      </div>
-
-      {/* Filters */}
-      <div className="rounded-lg border border-border/60 bg-white p-4 shadow-sm dark:bg-slate-950">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex-1 min-w-[180px]">
-            <label className="mb-1 block text-xs font-bold text-muted-foreground/70">بحث</label>
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
-              <Input value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} placeholder="اسم الشركة..."
-                className="pr-9 text-sm h-9" onKeyDown={(e) => e.key === "Enter" && applyFilters()} />
+    <div dir="rtl" className="w-full space-y-4">
+      {/* Linear Taste Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+            <Building2 className="size-4 text-foreground/80" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold tracking-tight text-foreground">
+                تقارير وتحليلات الشركات
+              </h1>
+              <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] font-mono tabular-nums text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-blue-500" />
+                {stats.totalCompanies} شركة
+              </span>
             </div>
+            <p className="text-xs text-muted-foreground">
+              تحليلات نمو الحسابات، تفاعل الفرق، ومعدلات النشاط والتصعيد
+            </p>
           </div>
-          <div className="w-[140px]">
-            <label className="mb-1 block text-xs font-bold text-muted-foreground/70">الحالة</label>
-            <Select value={filters.status} onValueChange={(v) => setFilters({ ...filters, status: v })}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">الكل</SelectItem>
-                <SelectItem value="ACTIVE">نشطة</SelectItem>
-                <SelectItem value="INACTIVE">متوقفة</SelectItem>
-              </SelectContent>
-            </Select>
+        </div>
+
+        {/* Streamlined Inline Filter */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-full sm:w-48">
+            <Search className="absolute right-2.5 top-2.5 size-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              placeholder="بحث بالاسم..."
+              className="pr-8 text-xs h-8 font-mono bg-background/50"
+              onKeyDown={(e) => e.key === "Enter" && applyFilters()}
+            />
           </div>
-          <div className="w-[160px]">
-            <label className="mb-1 block text-xs font-bold text-muted-foreground/70">من تاريخ</label>
-            <Input type="date" value={filters.startDate} onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-              className="h-9 text-sm" />
-          </div>
-          <div className="w-[160px]">
-            <label className="mb-1 block text-xs font-bold text-muted-foreground/70">إلى تاريخ</label>
-            <Input type="date" value={filters.endDate} onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-              className="h-9 text-sm" />
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={applyFilters} size="sm" className="h-9">تطبيق</Button>
-            {hasActiveFilters && (
-              <Button onClick={resetFilters} variant="ghost" size="sm" className="h-9">
-                <X className="size-4 ml-1" /> إعادة
-              </Button>
-            )}
-          </div>
+          <Select value={filters.status} onValueChange={(v) => setFilters({ ...filters, status: v })}>
+            <SelectTrigger className="h-8 text-xs w-28 bg-background/50"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">كل الحالات</SelectItem>
+              <SelectItem value="ACTIVE">نشطة</SelectItem>
+              <SelectItem value="INACTIVE">متوقفة</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={applyFilters} size="sm" className="h-8 text-xs font-mono active:scale-[0.98] transition-transform">تطبيق</Button>
+          {hasActiveFilters && (
+            <Button onClick={resetFilters} variant="ghost" size="sm" className="h-8 text-xs font-mono">
+              <X className="size-3.5 ml-1" /> مسح
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Company Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard icon={Building2} label="إجمالي الشركات" value={stats.totalCompanies} sub={`${stats.activeCompanies} نشطة`} color="#2563eb" />
-        <StatCard icon={Users} label="إجمالي الأعضاء" value={totalMembers} sub={`${stats.totalCompanies} شركة`} color="#10b981" />
-        <StatCard icon={Facebook} label="صفحات فيسبوك" value={totalFacebookPages} sub="مرتبطة" color="#1877F2" />
-        <StatCard icon={AlertTriangle} label="تصعيدات" value={totalEscalations} sub="بحاجة متابعة" color="#ef4444" />
+      {/* Unified Telemetry Ribbon - Companies */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">إجمالي الشركات</span>
+            <span className="size-1.5 rounded-full bg-blue-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+              {stats.totalCompanies}
+            </span>
+          </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">{stats.activeCompanies} شركة نشطة</p>
+        </div>
+
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">أعضاء الفرق</span>
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">
+              {totalMembers}
+            </span>
+          </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">عبر {stats.totalCompanies} شركة</p>
+        </div>
+
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">صفحات فيسبوك</span>
+            <span className="size-1.5 rounded-full bg-indigo-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-indigo-600 dark:text-indigo-400">
+              {totalFacebookPages}
+            </span>
+          </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">صفحة مرتبطة</p>
+        </div>
+
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground">حالات التصعيد</span>
+            <span className="size-1.5 rounded-full bg-rose-500" />
+          </div>
+          <div className="mt-2">
+            <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-rose-600 dark:text-rose-400">
+              {totalEscalations}
+            </span>
+          </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">بحاجة متابعة عاجلة</p>
+        </div>
       </div>
 
-      {/* System Overview Cards */}
+      {/* System Overview Ribbon */}
       {overview && (
-        <div>
-          <h2 className="mb-3 text-lg font-black text-foreground">نظرة عامة على النظام</h2>
-          <div className="grid gap-4 md:grid-cols-4">
-            <StatCard icon={Users} label="إجمالي المستخدمين" value={overview.totalUsers} sub="عبر كل الشركات" color="#8b5cf6" />
-            <StatCard icon={Smartphone} label="إجمالي العملاء" value={overview.totalCustomers} sub="عبر كل الشركات" color="#06b6d4" />
-            <StatCard icon={MessageSquare} label="المحادثات" value={overview.totalConversations} sub={`${overview.totalMessages} رسالة`} color="#f97316" />
-            <StatCard icon={TrendingUp} label={`نشاط آخر 30 يوم`} value={recentActivity?.newCompaniesLast30Days ?? 0}
-              sub={`${recentActivity?.newUsersLast30Days ?? 0} مستخدم · ${recentActivity?.newCustomersLast30Days ?? 0} عميل`} color="#10b981" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+          <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-muted-foreground">مستخدمو المنصة</span>
+              <span className="size-1.5 rounded-full bg-purple-500" />
+            </div>
+            <div className="mt-2">
+              <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+                {overview.totalUsers}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">عبر كل الشركات</p>
+          </div>
+
+          <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-muted-foreground">إجمالي العملاء</span>
+              <span className="size-1.5 rounded-full bg-cyan-500" />
+            </div>
+            <div className="mt-2">
+              <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+                {overview.totalCustomers}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">قاعدة عملاء المتاجر</p>
+          </div>
+
+          <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-muted-foreground">المحادثات</span>
+              <span className="size-1.5 rounded-full bg-amber-500" />
+            </div>
+            <div className="mt-2">
+              <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+                {overview.totalConversations}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">{overview.totalMessages} رسالة مسجلة</p>
+          </div>
+
+          <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-muted-foreground">نمو 30 يوم</span>
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+            </div>
+            <div className="mt-2">
+              <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">
+                {recentActivity?.newCompaniesLast30Days ?? 0}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">شركة جديدة مسجلة</p>
           </div>
         </div>
       )}
 
-      {/* Charts */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="rounded-lg border-border/60 bg-white shadow-sm dark:bg-slate-950">
-          <CardHeader>
-            <CardTitle className="text-base font-black text-right">مراحل القمع (Funnel Stages)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {funnelData.length ? (
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={funnelData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar dataKey="value" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : <p className="text-sm font-bold text-muted-foreground/60 text-center py-8">لا توجد بيانات</p>}
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-lg border-border/60 bg-white shadow-sm dark:bg-slate-950">
-          <CardHeader>
-            <CardTitle className="text-base font-black text-right">الشركات المسجلة شهرياً</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {monthlyData.length ? (
-              <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" height={60} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : <p className="text-sm font-bold text-muted-foreground/60 text-center py-8">لا توجد بيانات</p>}
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-lg border-border/60 bg-white shadow-sm dark:bg-slate-950">
-          <CardHeader>
-            <CardTitle className="text-base font-black text-right">حالة المتابعة</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {followUpData.length ? (
-              <div className="space-y-4">
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie data={followUpData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                      {followUpData.map((entry, idx) => <Cell key={idx} fill={entry.color || "#6b7280"} />)}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="flex flex-wrap justify-center gap-4">
-                  {followUpData.map((d) => (
-                    <div key={d.name} className="flex items-center gap-2">
-                      <div className="size-3 rounded-full" style={{ backgroundColor: d.color || "#6b7280" }} />
-                      <span className="text-xs font-bold text-foreground">{d.name}: {d.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : <p className="text-sm font-bold text-muted-foreground/60 text-center py-8">لا توجد بيانات</p>}
-          </CardContent>
-        </Card>
-      </div>
-
+      {/* Charts Single Chassis Grid */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="rounded-lg border-border/60 bg-white shadow-sm dark:bg-slate-950">
-          <CardHeader>
-            <CardTitle className="text-base font-black text-right">حالة النشاط</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-xs font-bold text-muted-foreground">نشطة</span>
-                  <span className="text-xs font-black text-foreground">{stats.activeCompanies} / {stats.totalCompanies}</span>
-                </div>
-                <div className="h-3 w-full rounded-full bg-muted/30 overflow-hidden">
-                  <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${stats.totalCompanies ? (stats.activeCompanies / stats.totalCompanies) * 100 : 0}%` }} />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-xs font-bold text-muted-foreground">بحاجة متابعة عاجلة</span>
-                  <span className="text-xs font-black text-foreground">{stats.urgentEscalationDue}</span>
-                </div>
-                <div className="h-3 w-full rounded-full bg-muted/30 overflow-hidden">
-                  <div className="h-full rounded-full bg-rose-500 transition-all" style={{ width: `${stats.totalCompanies ? (stats.urgentEscalationDue / stats.totalCompanies) * 100 : 0}%` }} />
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-border/80 bg-card/40 shadow-xs overflow-hidden p-4">
+          <h3 className="text-xs font-semibold text-foreground mb-3 text-right">مراحل القمع (Funnel Stages)</h3>
+          {funnelData.length ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={funnelData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-10" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12, backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }} />
+                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : <p className="text-xs font-mono text-muted-foreground text-center py-8">لا توجد بيانات</p>}
+        </div>
 
-        <Card className="rounded-lg border-border/60 bg-white shadow-sm dark:bg-slate-950">
-          <CardHeader>
-            <CardTitle className="text-base font-black text-right">ملخص سريع</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: "متوقفة", value: stats.totalCompanies - stats.activeCompanies, color: "text-rose-600" },
-                { label: "متابعة الآن", value: stats.followUpNow, color: "text-amber-600" },
-                { label: "تصعيد", value: stats.escalationDue, color: "text-orange-600" },
-                { label: "راكد 72س", value: stats.stale72h, color: "text-slate-600" },
-                { label: "تسجيل بدون بدء", value: serverStats?.registeredNoStart ?? 0, color: "text-blue-600" },
-                { label: "تفعيل قيد التنفيذ", value: serverStats?.activationInProgress ?? 0, color: "text-emerald-600" },
-              ].map((item) => (
-                <div key={item.label} className="rounded-lg border border-border/40 bg-muted/10 p-3 text-center dark:bg-slate-900/30">
-                  <p className="text-xs font-bold text-muted-foreground/60">{item.label}</p>
-                  <p className={`text-xl font-black ${item.color}`}>{item.value}</p>
-                </div>
-              ))}
+        <div className="rounded-xl border border-border/80 bg-card/40 shadow-xs overflow-hidden p-4">
+          <h3 className="text-xs font-semibold text-foreground mb-3 text-right">الشركات المسجلة شهرياً</h3>
+          {monthlyData.length ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-10" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" height={50} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12, backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }} />
+                <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 2.5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : <p className="text-xs font-mono text-muted-foreground text-center py-8">لا توجد بيانات</p>}
+        </div>
+
+        <div className="rounded-xl border border-border/80 bg-card/40 shadow-xs overflow-hidden p-4">
+          <h3 className="text-xs font-semibold text-foreground mb-3 text-right">حالة المتابعة</h3>
+          {followUpData.length ? (
+            <div className="space-y-4">
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={followUpData} cx="50%" cy="50%" outerRadius={75} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {followUpData.map((entry, idx) => <Cell key={idx} fill={entry.color || "#6b7280"} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12, backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-wrap justify-center gap-3">
+                {followUpData.map((d) => (
+                  <div key={d.name} className="flex items-center gap-1.5 text-xs font-mono">
+                    <div className="size-2 rounded-full" style={{ backgroundColor: d.color || "#6b7280" }} />
+                    <span className="text-foreground">{d.name}:</span>
+                    <span className="tabular-nums font-semibold">{d.value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          ) : <p className="text-xs font-mono text-muted-foreground text-center py-8">لا توجد بيانات</p>}
+        </div>
+
+        <div className="rounded-xl border border-border/80 bg-card/40 shadow-xs overflow-hidden p-4">
+          <h3 className="text-xs font-semibold text-foreground mb-3 text-right">ملخص النشاط وحالات المتابعة</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: "متوقفة", value: stats.totalCompanies - stats.activeCompanies, color: "text-rose-600 dark:text-rose-400" },
+              { label: "متابعة الآن", value: stats.followUpNow, color: "text-amber-600 dark:text-amber-400" },
+              { label: "تصعيد", value: stats.escalationDue, color: "text-orange-600 dark:text-orange-400" },
+              { label: "راكد 72س", value: stats.stale72h, color: "text-slate-600 dark:text-slate-400" },
+              { label: "تسجيل بدون بدء", value: serverStats?.registeredNoStart ?? 0, color: "text-blue-600 dark:text-blue-400" },
+              { label: "تفعيل قيد التنفيذ", value: serverStats?.activationInProgress ?? 0, color: "text-emerald-600 dark:text-emerald-400" },
+            ].map((item) => (
+              <div key={item.label} className="rounded-lg border border-border/60 bg-muted/20 p-2.5 text-center">
+                <p className="text-[10px] font-mono text-muted-foreground">{item.label}</p>
+                <p className={`text-lg font-bold font-mono tabular-nums ${item.color}`}>{item.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

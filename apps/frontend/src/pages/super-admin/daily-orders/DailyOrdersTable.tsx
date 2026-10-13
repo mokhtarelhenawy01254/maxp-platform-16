@@ -160,9 +160,9 @@ export const DailyOrdersTable: React.FC<DailyOrdersTableProps> = ({
   };
 
   return (
-    <div className="rounded-xl border border-border/50 bg-card/60 shadow-sm backdrop-blur-sm overflow-hidden">
+    <div className="rounded-xl border border-border/80 bg-card/40 shadow-xs overflow-hidden">
       {/* Header & Controls */}
-      <div className="p-3.5 sm:p-4 border-b border-border/40 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div className="p-3.5 sm:p-4 border-b border-border/60 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="flex size-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
             <Store className="size-3.5" />

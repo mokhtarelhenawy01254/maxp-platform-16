@@ -85,12 +85,7 @@ function daysLabel(days: number) {
 
 function SuperAdminCompanyActivity() {
   return (
-    <div className="p-4 max-w-[1440px] mx-auto">
-      <h1 className="text-2xl font-bold mb-1">نشاط الشركات</h1>
-      <p className="text-xs text-muted-foreground mb-4">
-        «شغل النهاردة» = نبضة نشاط لكل ساعة كحد أقصى من أي تطبيق (معمل، موارد بشرية، طلبات…)، و«آخر حركة» = الأحدث من
-        (تسجيل دخول · عمل داخل أي تطبيق · طلب/محادثة/ذكاء اصطناعي). التصنيف: نشط ≤ 7 أيام · خامل ≤ 30 يوم · ميتة &gt; 30 يوم.
-      </p>
+    <div dir="rtl" className="w-full space-y-4">
       <Content />
     </div>
   );
@@ -145,34 +140,68 @@ function Content() {
 
   if (error) {
     return (
-      <Alert variant="destructive">
-        <AlertDescription>فشل تحميل بيانات نشاط الشركات. يرجى المحاولة مرة أخرى.</AlertDescription>
+      <Alert variant="destructive" className="rounded-xl">
+        <AlertDescription className="text-xs">فشل تحميل بيانات نشاط الشركات. يرجى المحاولة مرة أخرى.</AlertDescription>
       </Alert>
     );
   }
 
   return (
-    <div>
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input className="pr-9" placeholder="بحث عن شركة..." value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }} />
+    <div className="space-y-4">
+      {/* Linear Taste Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+            <Activity className="size-4 text-foreground/80" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold tracking-tight text-foreground">
+                متابعة نشاط وتفاعل الشركات
+              </h1>
+              <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] font-mono tabular-nums text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {summary?.total ?? companies.length} شركة مراقبة
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              نبضات الاستخدام اللحظي، آخر تسجيل دخول، وحالات النشاط عبر التطبيقات
+            </p>
+          </div>
         </div>
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0); }}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="الحالة" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">جميع الشركات</SelectItem>
-            <SelectItem value="active">النشطة</SelectItem>
-            <SelectItem value="dormant">الخاملة</SelectItem>
-            <SelectItem value="dead">الميتة</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button variant="outline" size="icon" onClick={() => refetch()} title="تحديث">
-          <RefreshCw className="size-4" />
-        </Button>
+
+        {/* Action Controls */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-full sm:w-48">
+            <Search className="absolute right-2.5 top-2.5 size-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              className="h-8 pr-8 text-xs font-mono bg-background/50"
+              placeholder="بحث بالاسم أو البريد..."
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }}
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0); }}>
+            <SelectTrigger className="h-8 text-xs w-32 bg-background/50">
+              <SelectValue placeholder="الحالة" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">جميع الشركات</SelectItem>
+              <SelectItem value="active">النشطة</SelectItem>
+              <SelectItem value="dormant">الخاملة</SelectItem>
+              <SelectItem value="dead">الميتة</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform"
+          >
+            <RefreshCw className="size-3.5" />
+            <span>تحديث</span>
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -181,123 +210,133 @@ function Content() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">إجمالي الشركات</p>
-                    <p className="text-2xl font-bold">{summary?.total ?? "—"}</p>
-                  </div>
-                  <div className="size-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                    <Building2 className="size-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">نشطة</p>
-                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{summary?.active ?? "—"}</p>
-                  </div>
-                  <div className="size-10 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center">
-                    <Activity className="size-5 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">خاملة</p>
-                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{summary?.dormant ?? "—"}</p>
-                  </div>
-                  <div className="size-10 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center">
-                    <Zap className="size-5 text-amber-600 dark:text-amber-400" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">ميتة</p>
-                    <p className="text-2xl font-bold text-slate-500">{summary?.dead ?? "—"}</p>
-                  </div>
-                  <div className="size-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                    <Skull className="size-5 text-slate-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">اشتُغل عليها النهاردة</p>
-                    <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{summary?.workedToday ?? "—"}</p>
-                  </div>
-                  <div className="size-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
-                    <Hammer className="size-5 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">دخل عليها مستخدمون النهاردة</p>
-                    <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">{summary?.loggedInToday ?? "—"}</p>
-                  </div>
-                  <div className="size-10 rounded-full bg-cyan-100 dark:bg-cyan-900 flex items-center justify-center">
-                    <UserCheck className="size-5 text-cyan-600 dark:text-cyan-400" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Unified Telemetry Ribbon (6 stats) */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+            <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-muted-foreground">إجمالي الشركات</span>
+                <span className="size-1.5 rounded-full bg-blue-500" />
+              </div>
+              <div className="mt-2">
+                <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-foreground">
+                  {summary?.total ?? "—"}
+                </span>
+              </div>
+              <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">كل المسجلين</p>
+            </div>
+
+            <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-muted-foreground">نشطة (≤7 أيام)</span>
+                <span className="size-1.5 rounded-full bg-emerald-500" />
+              </div>
+              <div className="mt-2">
+                <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">
+                  {summary?.active ?? "—"}
+                </span>
+              </div>
+              <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">تفاعل منتظم</p>
+            </div>
+
+            <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-muted-foreground">خاملة (≤30 يوم)</span>
+                <span className="size-1.5 rounded-full bg-amber-500" />
+              </div>
+              <div className="mt-2">
+                <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-amber-600 dark:text-amber-400">
+                  {summary?.dormant ?? "—"}
+                </span>
+              </div>
+              <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">تحتاج تنشيط</p>
+            </div>
+
+            <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-muted-foreground">ميتة (&gt;30 يوم)</span>
+                <span className="size-1.5 rounded-full bg-slate-500" />
+              </div>
+              <div className="mt-2">
+                <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-muted-foreground">
+                  {summary?.dead ?? "—"}
+                </span>
+              </div>
+              <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">انقطاع تام</p>
+            </div>
+
+            <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-muted-foreground">نشاط اليوم</span>
+                <span className="size-1.5 rounded-full bg-indigo-500" />
+              </div>
+              <div className="mt-2">
+                <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-indigo-600 dark:text-indigo-400">
+                  {summary?.workedToday ?? "—"}
+                </span>
+              </div>
+              <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">نبضات عمل اليوم</p>
+            </div>
+
+            <div className="p-3 sm:p-3.5 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-muted-foreground">دخول اليوم</span>
+                <span className="size-1.5 rounded-full bg-cyan-500" />
+              </div>
+              <div className="mt-2">
+                <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-cyan-600 dark:text-cyan-400">
+                  {summary?.loggedInToday ?? "—"}
+                </span>
+              </div>
+              <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">تسجيل دخول مسجل</p>
+            </div>
           </div>
 
-          <div className="border rounded bg-card overflow-x-auto">
+          {/* Single Chassis Table */}
+          <div className="rounded-xl border border-border/80 bg-card/40 shadow-xs overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>الشركة</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead className="text-center">شغل النهاردة</TableHead>
-                  <TableHead>آخر حركة</TableHead>
-                  <TableHead>آخر دخول</TableHead>
-                  <TableHead className="text-center">مستخدمون / عملاء</TableHead>
-                  <TableHead className="text-center">طلبات / محادثات / AI (30 يوم)</TableHead>
-                  <TableHead>الاشتراك</TableHead>
+                <TableRow className="border-b border-border/60 bg-muted/30">
+                  <TableHead className="text-right text-[11px] font-mono">الشركة</TableHead>
+                  <TableHead className="text-right text-[11px] font-mono">الحالة</TableHead>
+                  <TableHead className="text-center text-[11px] font-mono">شغل النهاردة</TableHead>
+                  <TableHead className="text-right text-[11px] font-mono">آخر حركة</TableHead>
+                  <TableHead className="text-right text-[11px] font-mono">آخر دخول</TableHead>
+                  <TableHead className="text-center text-[11px] font-mono">مستخدمون / عملاء</TableHead>
+                  <TableHead className="text-center text-[11px] font-mono">العمليات (30 يوم)</TableHead>
+                  <TableHead className="text-right text-[11px] font-mono">الاشتراك</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paged.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                      لا توجد شركات
+                    <TableCell colSpan={8} className="text-center text-xs font-mono text-muted-foreground py-8">
+                      لا توجد شركات مطابقة
                     </TableCell>
                   </TableRow>
                 ) : (
                   paged.map((c) => (
-                    <TableRow key={c.id}>
+                    <TableRow key={c.id} className="border-b border-border/60 hover:bg-muted/20 transition-colors">
                       <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-sm">{c.name}</span>
-                          <span className="text-xs text-muted-foreground">{c.email}</span>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-semibold text-xs text-foreground">{c.name}</span>
+                          <span className="text-[10px] font-mono text-muted-foreground">{c.email}</span>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <Badge className={`text-xs ${statusColors[c.status] || ""}`}>
+                        <div className="flex flex-col gap-0.5">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border ${
+                            c.status === "active"
+                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                              : c.status === "dormant"
+                              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                              : "bg-slate-500/10 text-slate-500 border-slate-500/20"
+                          }`}>
+                            <span className={`size-1.5 rounded-full ${
+                              c.status === "active" ? "bg-emerald-500" : c.status === "dormant" ? "bg-amber-500" : "bg-slate-400"
+                            }`} />
                             {statusLabels[c.status] || c.status}
-                          </Badge>
-                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          </span>
+                          <span className="text-[10px] font-mono text-muted-foreground whitespace-nowrap">
                             {daysLabel(c.daysSinceLastActivity)}
                           </span>
                         </div>
@@ -306,51 +345,51 @@ function Content() {
                         {c.today?.actions ? (
                           <div className="flex flex-col items-center"
                             title={(c.today.apps || []).map(a => APP_LABELS[a] || a).join(" · ")}>
-                            <Badge className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-medium">
                               {c.today.actions} نبضة
-                            </Badge>
-                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                            </span>
+                            <span className="text-[10px] font-mono text-muted-foreground whitespace-nowrap">
                               {c.today.users} مستخدم
                             </span>
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-400">—</span>
+                          <span className="text-xs font-mono text-muted-foreground/60">—</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">
                         {c.lastActivity ? (
                           <div className="flex flex-col">
                             <span>{formatDate(c.lastActivity)}</span>
-                            <span className="text-[10px]">{formatRelative(c.lastActivity)}</span>
+                            <span className="text-[10px] text-muted-foreground/75">{formatRelative(c.lastActivity)}</span>
                           </div>
                         ) : (
-                          <span className="text-slate-400">لا يوجد</span>
+                          <span className="text-xs font-mono text-muted-foreground/60">لا يوجد</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-xs whitespace-nowrap">
+                      <TableCell className="text-xs font-mono whitespace-nowrap">
                         {c.login?.lastAt ? (
                           <div className="flex flex-col"
                             title={`${c.login.logins30d} تسجيل دخول · ${c.login.users30d} مستخدم مختلف (30 يوم)`}>
-                            <span className="font-medium">{c.login.lastUserName || "—"}</span>
+                            <span className="font-semibold text-foreground text-xs">{c.login.lastUserName || "—"}</span>
                             <span className="text-[10px] text-muted-foreground">{formatDate(c.login.lastAt)}</span>
                           </div>
                         ) : (
-                          <span className="text-slate-400">لا يوجد</span>
+                          <span className="text-xs font-mono text-muted-foreground/60">لا يوجد</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-center font-mono text-sm">
+                      <TableCell className="text-center font-mono text-xs tabular-nums text-foreground">
                         {c.metrics.users} / {c.metrics.customers}
                       </TableCell>
-                      <TableCell className="text-center font-mono text-sm">
-                        {c.metrics.recentOrders} / {c.metrics.recentConversations} / {c.metrics.recentAiInteractions}
+                      <TableCell className="text-center font-mono text-xs tabular-nums text-muted-foreground">
+                        {c.metrics.recentOrders} · {c.metrics.recentConversations} · {c.metrics.recentAiInteractions}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-xs">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md border border-border/70 bg-muted/30 text-[10px] font-mono text-foreground">
                           {c.subscription.status === "ACTIVE" ? "فعال" :
                            c.subscription.status === "TRIAL" ? "تجريبي" :
                            c.subscription.status === "CANCELLED" ? "ملغي" :
                            c.subscription.status === "NONE" ? "—" : c.subscription.status}
-                        </Badge>
+                        </span>
                       </TableCell>
                     </TableRow>
                   ))
@@ -361,14 +400,14 @@ function Content() {
 
           {sorted.length > PAGE_SIZE && (
             <div className="flex items-center justify-center gap-3 mt-4">
-              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>
-                <ChevronRight className="size-4 ml-1" /> السابق
+              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)} className="h-8 text-xs font-mono">
+                <ChevronRight className="size-3.5 ml-1" /> السابق
               </Button>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs font-mono text-muted-foreground">
                 صفحة {page + 1} من {totalPages} ({sorted.length} شركة)
               </span>
-              <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>
-                التالي <ChevronLeft className="size-4 mr-1" />
+              <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} className="h-8 text-xs font-mono">
+                التالي <ChevronLeft className="size-3.5 mr-1" />
               </Button>
             </div>
           )}
