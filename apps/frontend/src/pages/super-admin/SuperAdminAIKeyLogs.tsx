@@ -87,8 +87,7 @@ function timeAgo(iso: string) {
 
 function SuperAdminAIKeyLogs() {
   return (
-    <div className="p-4 max-w-[1440px] mx-auto">
-      <h1 className="text-2xl font-bold mb-4">سجل استخدام المفاتيح</h1>
+    <div className="space-y-4">
       <KeyLogsContent />
     </div>
   );
@@ -97,9 +96,9 @@ function SuperAdminAIKeyLogs() {
 function KeyLogsContent() {
   const navigate = useNavigate();
   const { data: keys } = useAiKeys();
-  const [providerFilter, setProviderFilter] = useState("");
-  const [keyFilter, setKeyFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [providerFilter, setProviderFilter] = useState("ALL");
+  const [keyFilter, setKeyFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL");
   const [page, setPage] = useState(0);
 
   const [refreshTick, setRefreshTick] = useState(0);
@@ -123,9 +122,9 @@ function KeyLogsContent() {
   const offset = page * PAGE_SIZE;
 
   const { data: logsRes, isLoading, isFetching, error, refetch } = useAiKeyLogs({
-    provider: providerFilter || undefined,
-    key_id: keyFilter || undefined,
-    status: statusFilter || undefined,
+    provider: providerFilter && providerFilter !== "ALL" ? providerFilter : undefined,
+    key_id: keyFilter && keyFilter !== "ALL" ? keyFilter : undefined,
+    status: statusFilter && statusFilter !== "ALL" ? statusFilter : undefined,
     limit: PAGE_SIZE,
     offset,
   }, refreshTick);
@@ -154,7 +153,7 @@ function KeyLogsContent() {
 
   const keyOptions = useMemo(() => {
     if (!Array.isArray(keys)) return [];
-    return keys.filter((k) => !providerFilter || k.provider === providerFilter)
+    return keys.filter((k) => !providerFilter || providerFilter === "ALL" || k.provider === providerFilter)
       .map((k) => ({ id: k.id, name: k.name }));
   }, [keys, providerFilter]);
 
@@ -192,148 +191,154 @@ function KeyLogsContent() {
     URL.revokeObjectURL(url);
   }, [logs, keyNameMap]);
 
-
   return (
-    <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border-blue-500/20 dark:border-blue-500/10 shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">إجمالي السجلات</p>
-                <p className="text-3xl font-extrabold mt-2 tracking-tight text-slate-900 dark:text-white">{total.toLocaleString()}</p>
-              </div>
-              <div className="size-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0 border border-blue-500/20">
-                <Activity className="size-5 text-blue-500" />
-              </div>
-            </div>
-            <div className="mt-4 h-1.5 bg-blue-500/10 rounded-full overflow-hidden">
-              <div className="h-full w-full bg-blue-500/40 rounded-full animate-pulse" />
-            </div>
-          </CardContent>
-        </Card>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono uppercase bg-primary/10 text-primary border border-primary/20">
+              <Key className="h-3 w-3" />
+              الذكاء الاصطناعي المركزي
+            </span>
+            <span className="text-xs text-muted-foreground font-mono">/ ai-key-logs</span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            سجل استخدام مفاتيح الذكاء الاصطناعي
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            تدقيق لحظي لعمليات توليد النصوص، استهلاك النماذج، وأزمنة الاستجابة
+          </p>
+        </div>
 
-        <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/20 dark:border-emerald-500/10 shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">ناجح</p>
-                <p className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2 tracking-tight">
-                  {stats.success.toLocaleString()}
-                  <span className="text-xs font-normal text-emerald-500/70 mr-1.5">
-                    ({total > 0 ? ((stats.success / total) * 100).toFixed(1) : 0}%)
-                  </span>
-                </p>
-              </div>
-              <div className="size-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0 border border-emerald-500/20">
-                <CheckCircle2 className="size-5 text-emerald-500" />
-              </div>
-            </div>
-            <div className="mt-4 h-1.5 bg-emerald-500/10 rounded-full overflow-hidden">
-              <div 
-                className="h-full rounded-full bg-emerald-500/50 transition-all duration-500"
-                style={{ width: `${total > 0 ? (stats.success / total) * 100 : 0}%` }}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isFetching}
+            className="h-8 text-xs font-mono gap-1.5"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+            <span>تحديث</span>
+          </Button>
 
-        <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-transparent border-rose-500/20 dark:border-rose-500/10 shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">فاشل</p>
-                <p className="text-3xl font-extrabold text-rose-600 dark:text-rose-400 mt-2 tracking-tight">
-                  {stats.failed.toLocaleString()}
-                  <span className="text-xs font-normal text-rose-500/70 mr-1.5">
-                    ({total > 0 ? ((stats.failed / total) * 100).toFixed(1) : 0}%)
-                  </span>
-                </p>
-              </div>
-              <div className="size-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0 border border-rose-500/20">
-                <XCircle className="size-5 text-rose-500" />
-              </div>
-            </div>
-            <div className="mt-4 h-1.5 bg-rose-500/10 rounded-full overflow-hidden">
-              <div 
-                className="h-full rounded-full bg-rose-500/50 transition-all duration-500"
-                style={{ width: `${total > 0 ? (stats.failed / total) * 100 : 0}%` }}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/20 dark:border-amber-800/20 shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">متوسط الزمن</p>
-                <p className="text-3xl font-extrabold mt-2 tracking-tight text-slate-900 dark:text-white">
-                  {stats.avgLatency.toLocaleString()} <span className="text-sm font-medium text-slate-500 dark:text-slate-400">ms</span>
-                </p>
-              </div>
-              <div className="size-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0 border border-amber-500/20">
-                <Zap className="size-5 text-amber-500" />
-              </div>
-            </div>
-            <div className="mt-4 h-1.5 bg-amber-500/10 rounded-full overflow-hidden">
-              <div 
-                className="h-full rounded-full bg-gradient-to-r from-green-500 via-amber-400 to-red-500 transition-all duration-500"
-                style={{ width: `${Math.min(100, stats.avgLatency / 20)}%` }}
-              />
-            </div>
-          </CardContent>
-        </Card>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportCSV}
+            disabled={!logs || logs.length === 0}
+            className="h-8 text-xs font-mono gap-1.5"
+          >
+            <Download className="h-3.5 w-3.5" />
+            <span>تصدير CSV</span>
+          </Button>
+        </div>
       </div>
 
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
-        <Select value={providerFilter} onValueChange={(v) => { setProviderFilter(v || ""); setKeyFilter(""); setPage(0); }}>
-          <SelectTrigger className="w-[150px]">
+      {/* Telemetry Ribbon */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+        <div className="rounded-xl border border-border/70 bg-card p-3 flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-mono text-muted-foreground uppercase">إجمالي السجلات</span>
+            <div className="text-xl font-bold font-mono tabular-nums text-foreground mt-0.5">
+              {total.toLocaleString()}
+            </div>
+          </div>
+          <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+            <Activity className="h-4 w-4" />
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-3 flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-mono text-muted-foreground uppercase">الطلبات الناجحة</span>
+            <div className="text-xl font-bold font-mono tabular-nums text-emerald-500 mt-0.5">
+              {stats.success.toLocaleString()}{" "}
+              <span className="text-xs font-normal text-muted-foreground">
+                ({total > 0 ? ((stats.success / total) * 100).toFixed(1) : 0}%)
+              </span>
+            </div>
+          </div>
+          <div className="h-8 w-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+            <CheckCircle2 className="h-4 w-4" />
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-3 flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-mono text-muted-foreground uppercase">الطلبات الفاشلة</span>
+            <div className="text-xl font-bold font-mono tabular-nums text-rose-500 mt-0.5">
+              {stats.failed.toLocaleString()}{" "}
+              <span className="text-xs font-normal text-muted-foreground">
+                ({total > 0 ? ((stats.failed / total) * 100).toFixed(1) : 0}%)
+              </span>
+            </div>
+          </div>
+          <div className="h-8 w-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500">
+            <XCircle className="h-4 w-4" />
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-3 flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-mono text-muted-foreground uppercase">متوسط الاستجابة</span>
+            <div className="text-xl font-bold font-mono tabular-nums text-amber-500 mt-0.5">
+              {stats.avgLatency.toLocaleString()}{" "}
+              <span className="text-xs font-normal text-muted-foreground">ms</span>
+            </div>
+          </div>
+          <div className="h-8 w-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+            <Zap className="h-4 w-4" />
+          </div>
+        </div>
+      </div>
+
+      {/* Filters Bar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Select value={providerFilter} onValueChange={(v) => { setProviderFilter(v); setKeyFilter("ALL"); setPage(0); }}>
+          <SelectTrigger className="w-[140px] h-8 text-xs font-mono">
             <SelectValue placeholder="كل المزودين" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">كل المزودين</SelectItem>
+            <SelectItem value="ALL">كل المزودين</SelectItem>
             {providerList.map((p) => (
               <SelectItem key={p} value={p}>{p}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select value={keyFilter} onValueChange={(v) => { setKeyFilter(v || ""); setPage(0); }}>
-          <SelectTrigger className="w-[180px]">
+
+        <Select value={keyFilter} onValueChange={(v) => { setKeyFilter(v); setPage(0); }}>
+          <SelectTrigger className="w-[160px] h-8 text-xs font-mono">
             <SelectValue placeholder="كل المفاتيح" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">كل المفاتيح</SelectItem>
+            <SelectItem value="ALL">كل المفاتيح</SelectItem>
             {keyOptions.map((k) => (
               <SelectItem key={k.id} value={k.id}>{k.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v || ""); setPage(0); }}>
-          <SelectTrigger className="w-[130px]">
+
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0); }}>
+          <SelectTrigger className="w-[130px] h-8 text-xs font-mono">
             <SelectValue placeholder="كل الحالات" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">كل الحالات</SelectItem>
+            <SelectItem value="ALL">كل الحالات</SelectItem>
             <SelectItem value="success">نجاح</SelectItem>
             <SelectItem value="failed">فشل</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" size="icon" onClick={handleRefresh} title="تحديث" className={isFetching ? "animate-spin" : ""}>
-          <RefreshCw className="size-4" />
-        </Button>
-        <Button variant="outline" size="sm" onClick={exportCSV} title="تصدير السجلات المعروضة في الصفحة الحالية"
-          disabled={!logs || logs.length === 0}>
-          <Download className="size-4 ml-1" /> تصدير الصفحة (CSV)
-        </Button>
-        {isFetching && <span className="text-xs text-muted-foreground">جاري التحديث…</span>}
+
+        {isFetching && <span className="text-xs font-mono text-muted-foreground animate-pulse">جاري المزامنة...</span>}
       </div>
 
       {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription className="flex items-center justify-between">
-            <span>فشل تحميل السجل. يرجى المحاولة مرة أخرى.</span>
-            <Button variant="outline" size="sm" onClick={() => refetch()} className="mr-2 h-8">
+        <Alert variant="destructive" className="rounded-xl border-destructive/30">
+          <AlertDescription className="flex items-center justify-between text-xs font-mono">
+            <span>فشل تحميل سجل المفاتيح. يرجى المحاولة لاحقاً.</span>
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="h-7 text-xs font-mono">
               <RefreshCw className="size-3 ml-1" /> إعادة المحاولة
             </Button>
           </AlertDescription>
@@ -341,11 +346,14 @@ function KeyLogsContent() {
       )}
 
       {isLoading ? (
-        <div className="flex items-center justify-center min-h-[300px]">
-          <LoadingSpinner size="lg" />
+        <div className="flex items-center justify-center min-h-[300px] rounded-xl border border-border/80 bg-card">
+          <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+            <LoadingSpinner size="sm" />
+            <span>جاري استدعاء سجلات المفاتيح...</span>
+          </div>
         </div>
       ) : (
-        <div className="border rounded-xl bg-card/80 backdrop-blur-xl shadow-sm">
+        <div className="rounded-xl border border-border/80 bg-card overflow-hidden shadow-xs">
           <Table>
             <TableHeader>
               <TableRow>

@@ -5,22 +5,26 @@ import { useAuth } from "../hooks/useAuthSimple";
 import { socketService } from "../services/socketService";
 import { toast } from "sonner";
 import {
-  BellIcon,
-  CheckIcon,
-  EyeIcon,
-  TrashIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-  XCircleIcon,
-  CheckCircleIcon,
-  Cog6ToothIcon,
-  ArrowPathIcon,
-  ArrowRightIcon,
-  ShoppingBagIcon,
-  ClockIcon,
-  ArrowTopRightOnSquareIcon,
-} from "@heroicons/react/24/outline";
-import { BellIcon as BellSolidIcon } from "@heroicons/react/24/solid";
+  Bell,
+  Check,
+  Eye,
+  Trash2,
+  AlertTriangle,
+  Info,
+  AlertCircle,
+  CheckCircle2,
+  Settings,
+  RefreshCw,
+  ShoppingBag,
+  Clock,
+  ExternalLink,
+  Zap,
+  ShieldAlert,
+  Calendar,
+  CheckCheck,
+} from "lucide-react";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
 
 export interface NotificationItem {
   id: string;
@@ -247,21 +251,21 @@ const Notifications: React.FC = () => {
   const getIcon = (type: string) => {
     const normalized = type.toLowerCase();
     if (normalized.includes("order")) {
-      return <ShoppingBagIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />;
+      return <ShoppingBag className="size-4 text-emerald-600 dark:text-emerald-400" />;
     }
     if (normalized.includes("error")) {
-      return <XCircleIcon className="h-5 w-5 text-red-500" />;
+      return <AlertCircle className="size-4 text-rose-500" />;
     }
     if (normalized.includes("warning")) {
-      return <ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />;
+      return <AlertTriangle className="size-4 text-amber-500" />;
     }
     if (normalized.includes("success")) {
-      return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+      return <CheckCircle2 className="size-4 text-emerald-500" />;
     }
-    if (normalized.includes("test")) {
-      return <BellSolidIcon className="h-5 w-5 text-blue-500" />;
+    if (normalized.includes("incident") || normalized.includes("stoppage")) {
+      return <ShieldAlert className="size-4 text-rose-500" />;
     }
-    return <InformationCircleIcon className="h-5 w-5 text-blue-500" />;
+    return <Info className="size-4 text-sky-500" />;
   };
 
   const getTypeBadge = (type: string) => {
@@ -269,66 +273,54 @@ const Notifications: React.FC = () => {
     if (normalized.includes("stoppage") || normalized.includes("order_sync")) {
       return {
         label: "توقف أوردرات",
-        className: "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-700 font-bold",
+        className: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 font-medium",
       };
     }
     if (normalized.includes("ad_campaign") || normalized.includes("ads_stopped")) {
       return {
         label: "توقف إعلانات",
-        className: "bg-rose-100 text-rose-900 border-rose-300 dark:bg-rose-950/70 dark:text-rose-200 dark:border-rose-700 font-bold",
+        className: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 font-medium",
       };
     }
     if (normalized.includes("automation")) {
       return {
         label: "أتمتة",
-        className: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800",
+        className: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/30 font-medium",
       };
     }
     if (normalized.includes("incident") || normalized.includes("disconnect")) {
       return {
         label: "عطل سيستم",
-        className: "bg-red-100 text-red-900 border-red-300 dark:bg-red-950/70 dark:text-red-200 dark:border-red-700 font-bold",
+        className: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 font-medium",
       };
     }
     if (normalized.includes("order")) {
       return {
-        label: "طلب",
-        className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
+        label: "طلب بيع",
+        className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 font-medium",
       };
     }
     if (normalized.includes("error")) {
       return {
         label: "خطأ",
-        className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800",
+        className: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 font-medium",
       };
     }
     if (normalized.includes("warning")) {
       return {
         label: "تحذير",
-        className: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800",
+        className: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 font-medium",
       };
     }
     if (normalized.includes("success")) {
       return {
         label: "نجاح",
-        className: "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800",
-      };
-    }
-    if (normalized.includes("test")) {
-      return {
-        label: "تجريبي",
-        className: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
-      };
-    }
-    if (normalized.includes("attendance")) {
-      return {
-        label: "حضور",
-        className: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800",
+        className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 font-medium",
       };
     }
     return {
       label: "معلومات",
-      className: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
+      className: "bg-muted text-muted-foreground border-border/60 font-medium",
     };
   };
 
@@ -378,189 +370,245 @@ const Notifications: React.FC = () => {
     [notifications],
   );
 
+  const incidentsCount = useMemo(
+    () =>
+      notifications.filter((n) => {
+        const t = n.type.toLowerCase();
+        return t.includes("incident") || t.includes("stoppage") || t.includes("error");
+      }).length,
+    [notifications],
+  );
+
+  const todayCount = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return notifications.filter((n) => n.timestamp >= today).length;
+  }, [notifications]);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-3 border-blue-600 border-t-transparent mb-4"></div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">جاري تحميل الإشعارات...</p>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mb-3" />
+        <p className="text-xs font-mono text-muted-foreground">جاري استدعاء مركز الإشعارات...</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-3 sm:space-y-4 pb-20 sm:pb-8">
-      {/* Consolidated Clean Header Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-gray-200/80 dark:border-gray-700/60 p-3 sm:p-4 shadow-sm space-y-2.5">
-        {/* Row 1: Title & Actions (Never truncated) */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white whitespace-nowrap">
-              الإشعارات
-            </h1>
-            {unreadCount > 0 ? (
-              <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 shrink-0">
-                {unreadCount} غير مقروء
-              </span>
-            ) : (
-              <span className="text-xs text-gray-400 dark:text-gray-500">
-                ({notifications.length})
-              </span>
-            )}
+    <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
+      {/* Linear Control Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-card flex items-center justify-center text-foreground shadow-2xs">
+            <Bell className="size-4.5 text-primary" />
           </div>
-
-          {/* Actions: Mark all read + Refresh + Settings */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={markAllAsRead}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition shadow-xs touch-manipulation"
-                title="تحديد الكل كمقروء"
-              >
-                <CheckIcon className="h-3.5 w-3.5" />
-                <span className="whitespace-nowrap">قراءة الكل</span>
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => fetchNotifications(false)}
-              disabled={refreshing}
-              className="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition border border-gray-200 dark:border-gray-700 touch-manipulation disabled:opacity-50"
-              title="تحديث القائمة"
-              aria-label="تحديث"
-            >
-              <ArrowPathIcon className={`h-4 w-4 ${refreshing ? "animate-spin text-blue-600" : ""}`} />
-            </button>
-
-            <Link
-              to="/notification-settings"
-              className="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition border border-gray-200 dark:border-gray-700 touch-manipulation no-underline"
-              title="إعدادات الإشعارات"
-              aria-label="الإعدادات"
-            >
-              <Cog6ToothIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-            </Link>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">مركز التنبيهات</h1>
+              {unreadCount > 0 && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+                  {unreadCount} غير مقروء
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">متابعة فورية للأحداث التشغيلية، ومبيعات المتاجر، والتنبيهات النظامية</p>
           </div>
         </div>
 
-        {/* Row 2: Status Tabs (3 Equal Columns - Zero Collision) */}
-        <div className="grid grid-cols-3 gap-1 bg-gray-100 dark:bg-gray-900/80 p-1 rounded-xl text-xs">
-          <button
-            type="button"
-            onClick={() => setFilter("all")}
-            className={`py-1.5 text-xs font-medium rounded-lg transition-all touch-manipulation text-center ${
-              filter === "all"
-                ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs font-semibold"
-                : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-            }`}
-          >
-            الكل ({notifications.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter("unread")}
-            className={`py-1.5 text-xs font-medium rounded-lg transition-all touch-manipulation text-center ${
-              filter === "unread"
-                ? "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-xs font-semibold"
-                : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-            }`}
-          >
-            غير مقروءة ({unreadCount})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter("read")}
-            className={`py-1.5 text-xs font-medium rounded-lg transition-all touch-manipulation text-center ${
-              filter === "read"
-                ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs font-semibold"
-                : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-            }`}
-          >
-            مقروءة ({notifications.length - unreadCount})
-          </button>
-        </div>
-
-        {/* Row 3: Category Filter Chips (Consistent text-xs, no browser select quirks) */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-0.5 no-scrollbar text-xs">
-          <span className="text-xs font-medium text-gray-400 dark:text-gray-500 shrink-0 ml-1">
-            التصنيف:
-          </span>
-          {[
-            { key: "all", label: "الجميع" },
-            { key: "incidents", label: "🚨 أعطال السيستم" },
-            { key: "order", label: "طلبات البيع" },
-            { key: "info", label: "معلومات" },
-            { key: "warning", label: "تنبيهات" },
-            { key: "error", label: "أخطاء" },
-            { key: "success", label: "نجاح" },
-          ].map((cat) => (
-            <button
-              key={cat.key}
-              type="button"
-              onClick={() => setTypeFilter(cat.key)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors touch-manipulation ${
-                typeFilter === cat.key
-                  ? "bg-blue-600 text-white shadow-xs"
-                  : "bg-gray-100 dark:bg-gray-900/70 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-              }`}
+        <div className="flex items-center gap-1.5 self-end sm:self-auto">
+          {unreadCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={markAllAsRead}
+              className="h-8 text-xs font-medium gap-1.5 shadow-2xs active:scale-[0.98] transition-transform"
             >
-              {cat.label}
-            </button>
-          ))}
+              <CheckCheck className="size-3.5 text-primary" />
+              <span>قراءة الكل</span>
+            </Button>
+          )}
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => fetchNotifications(false)}
+            disabled={refreshing}
+            className="size-8 rounded-lg shadow-2xs active:scale-[0.98] transition-transform"
+            title="تحديث القائمة"
+          >
+            <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
+          </Button>
+
+          <Link
+            to="/notification-settings"
+            className="inline-flex items-center justify-center size-8 rounded-lg border border-border/80 bg-card hover:bg-muted/80 text-muted-foreground hover:text-foreground shadow-2xs active:scale-[0.98] transition-transform"
+            title="إعدادات الإشعارات"
+          >
+            <Settings className="size-3.5" />
+          </Link>
         </div>
       </div>
 
-      {/* Notifications List */}
-      <div className="space-y-2.5">
-        {filteredNotifications.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/60 p-8 sm:p-12 text-center shadow-sm">
-            <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700/50 text-gray-400 mx-auto mb-3 flex items-center justify-center">
-              <BellIcon className="h-7 w-7" />
+      {/* Linear Telemetry Strip */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">إجمالي الإشعارات</span>
+              <span className="size-1.5 rounded-full bg-primary" />
             </div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-1">
-              لا توجد إشعارات حالياً
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {notifications.length}
+            </div>
+          </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">غير مقروءة</span>
+              <span className="size-1.5 rounded-full bg-blue-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {unreadCount}
+            </div>
+          </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">أعطال وتنبيهات حرجة</span>
+              <span className="size-1.5 rounded-full bg-rose-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {incidentsCount}
+            </div>
+          </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">وارد اليوم</span>
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {todayCount}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Single-Surface Chassis */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+        {/* Chassis Control Bar */}
+        <div className="p-2.5 sm:p-3 border-b border-border/60 bg-muted/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+          {/* Read Status Filter */}
+          <div className="flex items-center p-0.5 rounded-lg bg-muted/60 border border-border/40 text-xs shrink-0 self-start">
+            <button
+              type="button"
+              onClick={() => setFilter("all")}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                filter === "all"
+                  ? "bg-card text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              الكل ({notifications.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter("unread")}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                filter === "unread"
+                  ? "bg-card text-primary shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              غير مقروءة ({unreadCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter("read")}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                filter === "read"
+                  ? "bg-card text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              مقروءة ({notifications.length - unreadCount})
+            </button>
+          </div>
+
+          {/* Category Filter Chips */}
+          <div className="flex items-center gap-1 overflow-x-auto pb-0.5 sm:pb-0 no-scrollbar text-xs">
+            {[
+              { key: "all", label: "الجميع" },
+              { key: "incidents", label: "أعطال النظام" },
+              { key: "order", label: "طلبات البيع" },
+              { key: "info", label: "معلومات" },
+              { key: "warning", label: "تنبيهات" },
+              { key: "error", label: "أخطاء" },
+              { key: "success", label: "نجاح" },
+            ].map((cat) => (
+              <button
+                key={cat.key}
+                type="button"
+                onClick={() => setTypeFilter(cat.key)}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-all ${
+                  typeFilter === cat.key
+                    ? "bg-foreground text-background font-semibold"
+                    : "bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Notifications List Container */}
+        {filteredNotifications.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="size-12 rounded-xl bg-muted/50 text-muted-foreground mx-auto mb-3 flex items-center justify-center">
+              <Bell className="size-6" />
+            </div>
+            <h3 className="text-sm font-semibold text-foreground mb-1">
+              لا توجد إشعارات تطابق التصفية
             </h3>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-4">
+            <p className="text-xs text-muted-foreground max-w-xs mx-auto mb-4">
               {filter === "unread"
                 ? "رائع! لقد قرأت جميع الإشعارات المتاحة."
                 : "ستظهر هنا أي تنبيهات أو طلبات جديدة فور وصولها."}
             </p>
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => fetchNotifications(false)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-medium rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 transition touch-manipulation"
+              className="h-8 text-xs font-medium gap-1.5"
             >
-              <ArrowPathIcon className="h-4 w-4" />
+              <RefreshCw className="size-3" />
               <span>إعادة التحقق</span>
-            </button>
+            </Button>
           </div>
         ) : (
-          filteredNotifications.map((notification) => {
-            const targetUrl = resolveTargetUrl(notification);
-            const badge = getTypeBadge(notification.type);
-            const isClickable = Boolean(targetUrl);
+          <div className="divide-y divide-border/60">
+            {filteredNotifications.map((notification) => {
+              const targetUrl = resolveTargetUrl(notification);
+              const badge = getTypeBadge(notification.type);
+              const isClickable = Boolean(targetUrl);
 
-            return (
-              <div
-                key={notification.id}
-                onClick={() => handleNotificationClick(notification)}
-                className={`group relative rounded-2xl border transition-all duration-200 overflow-hidden ${
-                  isClickable ? "cursor-pointer" : ""
-                } ${
-                  !notification.isRead
-                    ? "bg-blue-50/40 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800/60 shadow-xs"
-                    : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 shadow-xs"
-                }`}
-              >
-                {/* Visual Unread Accent Indicator */}
-                {!notification.isRead && (
-                  <div className="absolute top-0 bottom-0 right-0 w-1.5 bg-blue-600 dark:bg-blue-500" />
-                )}
+              return (
+                <div
+                  key={notification.id}
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`group relative p-3.5 sm:p-4 flex items-start gap-3 transition-colors ${
+                    isClickable ? "cursor-pointer" : ""
+                  } ${
+                    !notification.isRead
+                      ? "bg-primary/[0.03] hover:bg-primary/[0.06]"
+                      : "hover:bg-muted/30"
+                  }`}
+                >
+                  {/* Visual Unread Accent Indicator */}
+                  {!notification.isRead && (
+                    <div className="absolute top-0 bottom-0 right-0 w-1 bg-primary" />
+                  )}
 
-                <div className="p-3.5 sm:p-5 flex items-start gap-3 sm:gap-4">
-                  {/* Notification Icon Bubble */}
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-50 dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700 flex items-center justify-center shrink-0 mt-0.5">
+                  {/* Icon Bubble */}
+                  <div className="size-8.5 rounded-lg bg-muted/60 border border-border/60 flex items-center justify-center shrink-0 mt-0.5">
                     {getIcon(notification.type)}
                   </div>
 
@@ -569,84 +617,84 @@ const Notifications: React.FC = () => {
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <div className="flex items-center gap-2 flex-wrap min-w-0">
                         <h2
-                          className={`text-sm sm:text-base font-semibold leading-snug truncate ${
+                          className={`text-xs sm:text-sm font-semibold leading-snug truncate ${
                             !notification.isRead
-                              ? "text-gray-900 dark:text-white"
-                              : "text-gray-700 dark:text-gray-300"
+                              ? "text-foreground font-bold"
+                              : "text-foreground/80"
                           }`}
                         >
                           {notification.title}
                         </h2>
                         <span
-                          className={`px-2 py-0.5 text-[11px] font-medium rounded-full border ${badge.className}`}
+                          className={`px-1.5 py-0.2 rounded text-[10px] border ${badge.className}`}
                         >
                           {badge.label}
                         </span>
                       </div>
 
-                      {/* Card Action Buttons (Eye & Trash) - Touch Friendly */}
-                      <div className="flex items-center gap-1 shrink-0 -mt-1 -ml-1">
+                      {/* Micro Actions */}
+                      <div className="flex items-center gap-1 shrink-0">
                         {!notification.isRead && (
-                          <button
-                            type="button"
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={(e) => {
                               e.stopPropagation();
                               markAsRead(notification.id);
                             }}
-                            className="p-1.5 sm:p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors touch-manipulation"
+                            className="size-7 text-muted-foreground hover:text-primary rounded-md"
                             title="تحديد كمقروء"
-                            aria-label="تحديد كمقروء"
                           >
-                            <EyeIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                          </button>
+                            <Eye className="size-3.5" />
+                          </Button>
                         )}
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
                             deleteNotification(notification.id);
                           }}
-                          className="p-1.5 sm:p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors touch-manipulation"
+                          className="size-7 text-muted-foreground hover:text-rose-600 rounded-md"
                           title="حذف الإشعار"
-                          aria-label="حذف الإشعار"
                         >
-                          <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                        </button>
+                          <Trash2 className="size-3.5" />
+                        </Button>
                       </div>
                     </div>
 
                     {/* Message Body */}
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap leading-relaxed mb-2.5">
+                    <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed mb-2">
                       {notification.message}
                     </p>
 
-                    {/* Footer Details: Relative Time + Target Link */}
-                    <div className="flex items-center justify-between gap-2 text-[10.5px] sm:text-[11px] text-gray-400 dark:text-gray-500 pt-1 border-t border-gray-100/80 dark:border-gray-700/40">
-                      <div className="flex items-center gap-1">
-                        <ClockIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-400/80 shrink-0" />
-                        <span className="leading-none" title={notification.timestamp.toLocaleString("ar-EG")}>
+                    {/* Footer Details: Time + Target Link */}
+                    <div className="flex items-center justify-between gap-2 text-[10.5px] text-muted-foreground pt-1.5 border-t border-border/40">
+                      <div className="flex items-center gap-1.5 font-mono">
+                        <Clock className="size-3 text-muted-foreground/70 shrink-0" />
+                        <span title={notification.timestamp.toLocaleString("ar-EG")}>
                           {formatNotificationTime(notification.timestamp)}
                         </span>
                         {notification.isRead && (
-                          <span className="inline-flex items-center gap-0.5 text-gray-400 mr-1.5 text-[10px] sm:text-[11px]">
-                            <CheckIcon className="h-3 w-3 text-green-500 shrink-0" />
+                          <span className="inline-flex items-center gap-1 text-muted-foreground/70 mr-1.5">
+                            <Check className="size-2.5 text-emerald-500" />
                             <span>مقروء</span>
                           </span>
                         )}
                       </div>
 
                       {targetUrl && (
-                        <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium text-blue-600 dark:text-blue-400 group-hover:underline">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary group-hover:underline">
                           <span>عرض التفاصيل</span>
-                          <ArrowTopRightOnSquareIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                          <ExternalLink className="size-3 shrink-0" />
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

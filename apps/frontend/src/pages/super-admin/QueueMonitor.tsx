@@ -149,173 +149,158 @@ export default function QueueMonitor() {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-slate-50/50" dir={i18n.dir()}>
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
-      >
+    <div className="space-y-4" dir={i18n.dir()}>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
-            مراقبة النظام
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono uppercase bg-primary/10 text-primary border border-primary/20">
+              <Activity className="h-3 w-3" />
+              الخوادم والبنية التحتية
+            </span>
+            <span className="text-xs text-muted-foreground font-mono">/ queue-monitor</span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            مراقبة طوابير العمليات والمهام
           </h1>
-          <p className="text-slate-500 mt-1 flex items-center gap-2">
-            <Activity className="w-4 h-4 text-primary animate-pulse" />
-            إحصائيات الأداء في الوقت الفعلي والعمليات التاريخية
+          <p className="text-xs text-muted-foreground mt-0.5">
+            متابعة لحظية لمعالجة الـ Webhooks، بوالص الشحن، وإرسال الرسائل
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex bg-white border rounded-lg p-1 shadow-sm">
-            <Button
-              variant={autoRefresh ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              className="text-xs h-8"
-            >
-              <Activity
-                className={`w-3.5 h-3.5 ml-1.5 ${autoRefresh ? "animate-pulse" : ""}`}
-              />
-              {autoRefresh ? "تحديث تلقائي" : "تحديث يدوي"}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={fetchData}
-              disabled={loading}
-              className="text-xs h-8"
-            >
-              <RefreshCw
-                className={`w-3.5 h-3.5 ml-1.5 ${loading ? "animate-spin" : ""}`}
-              />
-              تحديث
-            </Button>
-            <div className="w-px h-4 bg-slate-200 self-center mx-1" />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleExport}
-              disabled={recentJobs.length === 0}
-              className="text-xs h-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-            >
-              <Download className="w-3.5 h-3.5 ml-1.5" />
-              تصدير Excel
-            </Button>
-          </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant={autoRefresh ? "default" : "outline"}
+            size="sm"
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            className="h-8 text-xs font-mono gap-1.5"
+          >
+            <Activity className={`h-3 w-3 ${autoRefresh ? "animate-pulse" : ""}`} />
+            <span>{autoRefresh ? "تحديث تلقائي" : "تحديث يدوي"}</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchData}
+            disabled={loading}
+            className="h-8 text-xs font-mono gap-1.5"
+          >
+            <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+            <span>تحديث</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={recentJobs.length === 0}
+            className="h-8 text-xs font-mono gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+          >
+            <Download className="h-3 w-3" />
+            <span>تصدير Excel</span>
+          </Button>
         </div>
-      </motion.div>
+      </div>
 
       {error && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <Card className="border-red-200 bg-red-50/50 backdrop-blur-sm">
-            <CardContent className="pt-6 flex items-center gap-3 text-red-600">
-              <XCircle className="w-5 h-5" />
-              <p className="font-medium text-sm">{error}</p>
-            </CardContent>
-          </Card>
-        </motion.div>
+        <Card className="rounded-xl border-destructive/30 bg-destructive/5">
+          <CardContent className="p-3 flex items-center gap-2 text-destructive text-xs font-mono">
+            <XCircle className="w-4 h-4 shrink-0" />
+            <p>{error}</p>
+          </CardContent>
+        </Card>
       )}
 
+      {/* 6-Metric Telemetry Ribbon */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
           {[
             {
               label: "قيد المعالجة",
               value: stats.active,
               icon: Activity,
               color: "text-blue-500",
-              bg: "bg-blue-50",
+              bg: "bg-blue-500/10 border-blue-500/20",
             },
             {
               label: "في الانتظار",
               value: stats.waiting,
               icon: Clock,
-              color: "text-yellow-500",
-              bg: "bg-yellow-50",
+              color: "text-amber-500",
+              bg: "bg-amber-500/10 border-amber-500/20",
             },
             {
               label: "مكتملة",
               value: stats.completed,
               icon: CheckCircle2,
               color: "text-emerald-500",
-              bg: "bg-emerald-50",
+              bg: "bg-emerald-500/10 border-emerald-500/20",
             },
             {
               label: "فاشلة",
               value: stats.failed,
               icon: XCircle,
               color: "text-rose-500",
-              bg: "bg-rose-50",
+              bg: "bg-rose-500/10 border-rose-500/20",
             },
             {
               label: "مؤجلة",
               value: stats.delayed,
               icon: Clock,
               color: "text-orange-500",
-              bg: "bg-orange-50",
+              bg: "bg-orange-500/10 border-orange-500/20",
             },
             {
               label: "متوقفة",
               value: stats.paused,
               icon: Pause,
-              color: "text-slate-500",
-              bg: "bg-slate-50",
+              color: "text-muted-foreground",
+              bg: "bg-muted border-border",
             },
-          ].map((item, idx) => (
-            <motion.div
+          ].map((item) => (
+            <div
               key={item.label}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: idx * 0.05 }}
+              className="rounded-xl border border-border/70 bg-card p-3 flex items-center justify-between"
             >
-              <Card className="overflow-hidden border-none shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader className="p-4 pb-2 space-y-0">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-xs font-semibold text-slate-500">
-                      {item.label}
-                    </CardTitle>
-                    <div className={`p-1.5 rounded-lg ${item.bg}`}>
-                      <item.icon className={`w-4 h-4 ${item.color}`} />
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="text-2xl font-bold text-slate-900 tracking-tight">
-                    {item.value.toLocaleString()}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+              <div>
+                <span className="text-[11px] font-mono text-muted-foreground uppercase">{item.label}</span>
+                <div className="text-xl font-bold font-mono tabular-nums text-foreground mt-0.5">
+                  {item.value.toLocaleString()}
+                </div>
+              </div>
+              <div className={`h-8 w-8 rounded-lg flex items-center justify-center border ${item.bg} ${item.color}`}>
+                <item.icon className="h-4 w-4" />
+              </div>
+            </div>
           ))}
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Bento Grid: Analytics Chart + Recent Jobs Stream */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Historical Analytics Chart */}
-        <Card className="lg:col-span-8 border-none shadow-sm overflow-hidden bg-white">
-          <CardHeader className="flex flex-row items-center justify-between border-b bg-slate-50/50 px-6 py-4">
+        <Card className="lg:col-span-8 rounded-xl border border-border/80 bg-card overflow-hidden shadow-xs">
+          <CardHeader className="flex flex-row items-center justify-between border-b border-border/60 bg-muted/20 px-4 py-3">
             <div className="flex items-center gap-2">
-              <History className="w-5 h-5 text-primary" />
-              <CardTitle className="text-lg font-bold">
-                تحليلات الأداء
+              <History className="w-4 h-4 text-primary" />
+              <CardTitle className="text-xs font-mono uppercase tracking-wider text-foreground">
+                تحليلات الأداء التاريخية
               </CardTitle>
             </div>
-            <div className="flex bg-slate-200/50 p-1 rounded-lg">
-              <Button
-                variant={timeRange === "1" ? "secondary" : "ghost"}
-                size="sm"
+            <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg border border-border/40">
+              <button
                 onClick={() => setTimeRange("1")}
-                className={`text-xs h-7 px-3 ${timeRange === "1" ? "bg-white shadow-sm" : ""}`}
+                className={`text-xs font-mono px-2.5 py-1 rounded-md transition-colors ${timeRange === "1" ? "bg-background text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"}`}
               >
-                ٢٤ ساعة
-              </Button>
-              <Button
-                variant={timeRange === "7" ? "secondary" : "ghost"}
-                size="sm"
+                24 ساعة
+              </button>
+              <button
                 onClick={() => setTimeRange("7")}
-                className={`text-xs h-7 px-3 ${timeRange === "7" ? "bg-white shadow-sm" : ""}`}
+                className={`text-xs font-mono px-2.5 py-1 rounded-md transition-colors ${timeRange === "7" ? "bg-background text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"}`}
               >
-                ٧ أيام
-              </Button>
+                7 أيام
+              </button>
             </div>
           </CardHeader>
           <CardContent className="p-6">
@@ -438,17 +423,18 @@ export default function QueueMonitor() {
         </Card>
 
         {/* Recent Jobs List */}
-        <Card className="lg:col-span-4 border-none shadow-sm overflow-hidden flex flex-col bg-white">
-          <CardHeader className="border-b bg-slate-50/50 px-6 py-4">
+        <Card className="lg:col-span-4 rounded-xl border border-border/80 bg-card overflow-hidden flex flex-col shadow-xs">
+          <CardHeader className="border-b border-border/60 bg-muted/20 px-4 py-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-bold">
-                العمليات الأخيرة
+              <CardTitle className="text-xs font-mono uppercase tracking-wider text-foreground">
+                تدفق العمليات اللحظي
               </CardTitle>
-              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                Live
+              <span className="inline-flex items-center gap-1 text-[10px] font-mono bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-2 py-0.5 rounded-full font-semibold">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                LIVE
               </span>
             </div>
-            <div className="flex gap-1.5 mt-4 overflow-x-auto pb-1 no-scrollbar">
+            <div className="flex gap-1 mt-2.5 overflow-x-auto pb-0.5 no-scrollbar">
               {[
                 { id: "all", label: "الكل" },
                 { id: "message", label: "رسائل" },
@@ -459,10 +445,10 @@ export default function QueueMonitor() {
                 <button
                   key={item.id}
                   onClick={() => setFilter(item.id as any)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                  className={`px-2.5 py-0.5 rounded-md text-[11px] font-mono transition-colors ${
                     filter === item.id
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "bg-white border text-slate-600 hover:border-slate-400"
+                      ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   {item.label}
@@ -470,55 +456,47 @@ export default function QueueMonitor() {
               ))}
             </div>
           </CardHeader>
-          <CardContent className="p-4 flex-1 overflow-auto max-h-[450px]">
+          <CardContent className="p-3 flex-1 overflow-auto max-h-[420px]">
             <AnimatePresence mode="popLayout">
               {recentJobs.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex flex-col items-center justify-center h-48 text-slate-400"
-                >
-                  <Info className="w-8 h-8 mb-2 opacity-10" />
-                  <p className="text-sm">لا توجد عمليات حالياً</p>
-                </motion.div>
+                <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                  <Info className="w-6 h-6 mb-1.5 opacity-30" />
+                  <p className="text-xs font-mono">لا توجد عمليات مسجلة في هذا التصنيف</p>
+                </div>
               ) : (
                 <div className="space-y-1.5">
                   {recentJobs.map((job) => (
-                    <motion.div
+                    <div
                       key={job.id}
-                      layout
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
                       onClick={() => setSelectedJob(job)}
-                      className="group flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50/80 transition-all cursor-pointer"
+                      className="group flex items-center justify-between p-2.5 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all cursor-pointer bg-card/60"
                     >
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <div className="shrink-0 p-2.5 bg-slate-50 border border-slate-100 rounded-xl group-hover:bg-white transition-colors">
+                      <div className="flex items-center gap-2.5 overflow-hidden">
+                        <div className="shrink-0 p-1.5 rounded-md bg-muted/60 border border-border/40 text-muted-foreground group-hover:text-foreground transition-colors">
                           {job.name === "facebook-message" && (
-                            <MessageSquare className="w-4 h-4 text-blue-500" />
+                            <MessageSquare className="w-3.5 h-3.5 text-blue-500" />
                           )}
                           {job.name === "facebook-read-receipt" && (
-                            <CheckCheck className="w-4 h-4 text-emerald-500" />
+                            <CheckCheck className="w-3.5 h-3.5 text-emerald-500" />
                           )}
                           {job.name === "facebook-comment" && (
-                            <MessageCircle className="w-4 h-4 text-purple-500" />
+                            <MessageCircle className="w-3.5 h-3.5 text-purple-500" />
                           )}
                           {![
                             "facebook-message",
                             "facebook-read-receipt",
                             "facebook-comment",
                           ].includes(job.name) && (
-                            <Activity className="w-4 h-4 text-slate-400" />
+                            <Activity className="w-3.5 h-3.5 text-primary" />
                           )}
                         </div>
 
                         <div className="flex flex-col min-w-0">
-                          <span className="text-sm font-bold text-slate-700 leading-tight">
+                          <span className="text-xs font-semibold text-foreground leading-tight truncate">
                             {job.name.replace("facebook-", "")}
                           </span>
                           <span
-                            className="text-[10px] text-slate-400 font-mono truncate max-w-[120px]"
+                            className="text-[10px] text-muted-foreground font-mono truncate max-w-[140px]"
                             title={job.data}
                           >
                             {job.data}
@@ -526,10 +504,10 @@ export default function QueueMonitor() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2 shrink-0">
                         <div className="flex flex-col items-end">
                           {job.finishedOn && (
-                            <span className="text-[10px] text-slate-400 font-medium">
+                            <span className="text-[10px] font-mono text-muted-foreground tabular-nums">
                               {new Date(job.finishedOn).toLocaleTimeString(
                                 "ar-EG",
                                 { hour: "2-digit", minute: "2-digit" },
@@ -544,13 +522,13 @@ export default function QueueMonitor() {
                                   ? "bg-blue-500 animate-pulse"
                                   : job.status === "waiting"
                                     ? "bg-amber-500 animate-bounce"
-                                    : "bg-rose-500"
+                                    : "bg-destructive"
                             }`}
                           />
                         </div>
-                        <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400 transition-colors" />
+                        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -560,11 +538,10 @@ export default function QueueMonitor() {
       </div>
 
       {data?.timestamp && (
-        <div className="flex items-center justify-center gap-2 py-4">
+        <div className="flex items-center justify-center gap-1.5 py-2">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <p className="text-xs text-slate-400 font-medium tracking-wide">
-            آخر تحديث للبيانات:{" "}
-            {new Date(data.timestamp).toLocaleString("ar-EG")}
+          <p className="text-[11px] font-mono text-muted-foreground">
+            آخر تحديث للحالة: {new Date(data.timestamp).toLocaleString("ar-EG")}
           </p>
         </div>
       )}
@@ -573,72 +550,67 @@ export default function QueueMonitor() {
       <AnimatePresence>
         {selectedJob && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            <div
+              className="absolute inset-0 bg-background/80 backdrop-blur-xs"
               onClick={() => setSelectedJob(null)}
             />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white border rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl"
+            <div
+              className="relative bg-card border border-border rounded-xl max-w-lg w-full overflow-hidden shadow-xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="border-b bg-slate-50/50 p-6">
+              <div className="border-b border-border/60 bg-muted/20 p-4">
                 <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white rounded-lg border shadow-sm">
-                      <Info className="w-5 h-5 text-primary" />
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-muted rounded-md border border-border/50 text-primary">
+                      <Info className="w-4 h-4" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-800">
-                      تفاصيل المهمة
+                    <h3 className="text-sm font-semibold text-foreground">
+                      تفاصيل مهمة الطابور
                     </h3>
                   </div>
                   <button
                     onClick={() => setSelectedJob(null)}
-                    className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+                    className="p-1 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors"
                   >
-                    <XCircle className="w-6 h-6 text-slate-400" />
+                    <XCircle className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
-              <div className="p-6 space-y-6 overflow-y-auto max-h-[70vh]">
-                <div className="grid grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
+              <div className="p-4 space-y-4 overflow-y-auto max-h-[70vh]">
+                <div className="grid grid-cols-2 gap-3 bg-muted/20 p-3 rounded-lg border border-border/50">
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    <p className="text-[10px] font-mono text-muted-foreground uppercase mb-0.5">
                       المعرف (Job ID)
                     </p>
-                    <p className="text-sm font-mono text-slate-700 bg-white p-2 rounded border">
+                    <p className="text-xs font-mono font-medium text-foreground bg-card p-1.5 rounded border border-border/50 truncate">
                       {selectedJob.id}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    <p className="text-[10px] font-mono text-muted-foreground uppercase mb-0.5">
                       النوع
                     </p>
-                    <p className="text-sm font-bold text-slate-700 bg-white p-2 rounded border">
+                    <p className="text-xs font-mono font-medium text-foreground bg-card p-1.5 rounded border border-border/50 truncate">
                       {selectedJob.name}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    <p className="text-[10px] font-mono text-muted-foreground uppercase mb-0.5">
                       الحالة
                     </p>
                     <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold leading-5 ${
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono font-medium border ${
                         selectedJob.status === "completed"
-                          ? "bg-emerald-100 text-emerald-800"
+                          ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                           : selectedJob.status === "active"
-                            ? "bg-blue-100 text-blue-800"
+                            ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
                             : selectedJob.status === "waiting"
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-rose-100 text-rose-800"
+                              ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                              : "bg-destructive/10 text-destructive border-destructive/20"
                       }`}
                     >
+                      <span className="h-1.5 w-1.5 rounded-full bg-current" />
                       {selectedJob.status === "completed"
                         ? "ناجحة"
                         : selectedJob.status === "active"
@@ -649,25 +621,25 @@ export default function QueueMonitor() {
                     </span>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    <p className="text-[10px] font-mono text-muted-foreground uppercase mb-0.5">
                       الوقت
                     </p>
-                    <p className="text-sm font-medium text-slate-600">
+                    <p className="text-xs font-mono text-muted-foreground">
                       {selectedJob.finishedOn
                         ? new Date(selectedJob.finishedOn).toLocaleString(
                             "ar-EG",
                           )
-                        : "N/A"}
+                        : "—"}
                     </p>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-sm font-bold text-slate-800">
+                <div className="space-y-1.5">
+                  <p className="text-xs font-mono text-foreground font-semibold">
                     حزمة البيانات (Payload):
                   </p>
                   <div
-                    className="bg-slate-900 text-blue-100 p-4 rounded-xl text-[11px] font-mono overflow-auto max-h-[200px]"
+                    className="bg-muted/40 border border-border/60 text-foreground p-3 rounded-lg text-[11px] font-mono overflow-auto max-h-[180px]"
                     dir="ltr"
                   >
                     <pre>
@@ -677,26 +649,26 @@ export default function QueueMonitor() {
                 </div>
 
                 {selectedJob.failedReason && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-bold text-rose-600">
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-mono text-destructive font-semibold">
                       سبب الفشل:
                     </p>
-                    <div className="bg-rose-50 text-rose-700 p-4 rounded-xl text-xs font-medium border border-rose-100">
+                    <div className="bg-destructive/10 text-destructive p-3 rounded-lg text-xs font-mono border border-destructive/20">
                       {selectedJob.failedReason}
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="p-6 pt-0">
+              <div className="p-4 pt-0">
                 <Button
-                  className="w-full h-11 rounded-xl font-bold"
+                  className="w-full h-8 text-xs font-mono rounded-lg"
                   onClick={() => setSelectedJob(null)}
                 >
                   إغلاق النافذة
                 </Button>
               </div>
-            </motion.div>
+            </div>
           </div>
         )}
       </AnimatePresence>

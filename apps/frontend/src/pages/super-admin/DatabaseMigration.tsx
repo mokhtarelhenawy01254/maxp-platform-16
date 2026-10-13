@@ -35,7 +35,7 @@ const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
 
 const DatabaseMigration: React.FC = () => {
   const [sourceUrl, setSourceUrl] = useState(
-    "mysql://u339372869_test2:0165676135Aa%40A@92.113.22.70:3306/u339372869_test2?charset=utf8mb4&collation=utf8mb4_unicode_ci",
+    "",
   );
   const [testing, setTesting] = useState(false);
   const [migrating, setMigrating] = useState(false);
@@ -147,147 +147,152 @@ const DatabaseMigration: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6" dir={i18n.dir()}>
+    <div className="space-y-4" dir={i18n.dir()}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <ServerIcon className="h-8 w-8 text-indigo-500" />
-            استيراد بيانات التطوير
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono uppercase bg-primary/10 text-primary border border-primary/20">
+              <ServerIcon className="h-3 w-3" />
+              إدارة النظام والبيانات
+            </span>
+            <span className="text-xs text-muted-foreground font-mono">/ db-migration</span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            استيراد وترحيل قواعد البيانات
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            نقل المهام والمشاريع من قاعدة بيانات خارجية
+          <p className="text-xs text-muted-foreground mt-0.5">
+            نقل ومزامنة المهام والمشاريع وبيانات المنظومة من خوادم وقواعد بيانات خارجية
           </p>
         </div>
       </div>
 
       {/* Configuration Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-          <CommandLineIcon className="h-5 w-5 text-indigo-500" />
-          إعدادات المصدر
-        </h3>
+      <div className="rounded-xl border border-border/80 bg-card p-4 space-y-3 shadow-xs">
+        <div className="flex items-center gap-2">
+          <CommandLineIcon className="h-4 w-4 text-primary" />
+          <h3 className="text-xs font-mono uppercase tracking-wider text-foreground font-semibold">
+            إعدادات مصدر قاعدة البيانات
+          </h3>
+        </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              رابط الاتصال (Connection URL)
+            <label className="block text-xs font-mono text-muted-foreground mb-1">
+              رابط الاتصال المشفر (Database Connection URI)
             </label>
             <input
-              type="text"
+              type="password"
               value={sourceUrl}
               onChange={(e) => setSourceUrl(e.target.value)}
               disabled={migrating}
-              placeholder="mysql://user:pass@host:port/db"
-              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-gray-900 dark:text-gray-100 font-mono text-sm"
+              placeholder="mysql://username:password@hostname:3306/database_name"
+              className="w-full px-3 py-2 bg-muted/30 border border-border/70 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none text-foreground font-mono text-xs placeholder:text-muted-foreground/50 transition-all"
             />
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex items-center gap-2 pt-1">
             <button
               onClick={testConnection}
-              disabled={testing || migrating}
-              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-colors disabled:opacity-50"
+              disabled={testing || migrating || !sourceUrl}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card text-foreground hover:bg-muted/50 text-xs font-mono transition-colors disabled:opacity-40"
             >
               {testing ? (
-                <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <CheckCircleIcon className="h-5 w-5" />
+                <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-500" />
               )}
-              فحص الاتصال
+              <span>فحص الاتصال</span>
             </button>
             <button
               onClick={startMigration}
-              disabled={testing || migrating}
-              className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50 shadow-md shadow-indigo-200 dark:shadow-none"
+              disabled={testing || migrating || !sourceUrl}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-mono font-medium transition-colors disabled:opacity-40"
             >
               {migrating ? (
-                <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <PlayIcon className="h-5 w-5" />
+                <PlayIcon className="h-3.5 w-3.5" />
               )}
-              بدء الاستيراد
+              <span>بدء الاستيراد</span>
             </button>
           </div>
         </div>
 
         {error && (
-          <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-3 text-red-700 dark:text-red-400">
-            <XCircleIcon className="h-6 w-6 flex-shrink-0" />
-            <p className="text-sm">{error}</p>
+          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2 text-destructive text-xs font-mono">
+            <XCircleIcon className="h-4 w-4 shrink-0" />
+            <p>{error}</p>
           </div>
         )}
 
         {success && (
-          <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-3 text-green-700 dark:text-green-400">
-            <CheckCircleIcon className="h-6 w-6 flex-shrink-0" />
-            <p className="text-sm">{success}</p>
+          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-mono">
+            <CheckCircleIcon className="h-4 w-4 shrink-0" />
+            <p>{success}</p>
           </div>
         )}
       </div>
 
       {/* Progress Section */}
       {(migrating || progress) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Progress Stats */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
-              <ArrowDownTrayIcon className="h-5 w-5 text-indigo-500" />
-              حالة النقل الحالية
-            </h3>
+          <div className="rounded-xl border border-border/80 bg-card p-4 space-y-4 shadow-xs">
+            <div className="flex items-center gap-2">
+              <ArrowDownTrayIcon className="h-4 w-4 text-primary" />
+              <h3 className="text-xs font-mono uppercase tracking-wider text-foreground font-semibold">
+                حالة تقدم الترحيل اللحظية
+              </h3>
+            </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Progress Bar */}
-              <div>
-                <div className="flex justify-between items-end mb-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    الإنجاز الكلي
-                  </span>
-                  <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs font-mono">
+                  <span className="text-muted-foreground">الإنجاز التراكمي</span>
+                  <span className="font-bold text-foreground tabular-nums">
                     {progress?.percentage || 0}%
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                <div className="w-full bg-muted rounded-full h-2 overflow-hidden" dir="ltr">
                   <div
-                    className="bg-indigo-600 h-3 rounded-full transition-all duration-500 shadow-inner"
+                    className="bg-primary h-2 rounded-full transition-all duration-500"
                     style={{ width: `${progress?.percentage || 0}%` }}
                   ></div>
                 </div>
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 animate-pulse">
-                  الخطوة الحالية:{" "}
-                  <span className="text-indigo-600 dark:text-indigo-400 font-semibold">
-                    {progress?.message || "جاري المعالجة..."}
-                  </span>
+                <p className="text-[11px] font-mono text-muted-foreground animate-pulse">
+                  المرحلة: <strong className="text-foreground font-semibold">{progress?.message || "جاري المعالجة..."}</strong>
                 </p>
               </div>
 
               {/* Detailed Stats */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2.5">
                 <StatBox
                   label="المستخدمين"
                   stats={progress?.users}
-                  icon={<UserGroupIcon className="h-5 w-5" />}
+                  icon={<UserGroupIcon className="h-4 w-4" />}
                 />
                 <StatBox
                   label="فريق العمل"
                   stats={progress?.teamMembers}
-                  icon={<UserGroupIcon className="h-5 w-5" />}
+                  icon={<UserGroupIcon className="h-4 w-4" />}
                 />
                 <StatBox
                   label="المشاريع"
                   stats={progress?.projects}
-                  icon={<FolderIcon className="h-5 w-5" />}
+                  icon={<FolderIcon className="h-4 w-4" />}
                 />
                 <StatBox
                   label="الإصدارات"
                   stats={progress?.releases}
-                  icon={<TagIcon className="h-5 w-5" />}
+                  icon={<TagIcon className="h-4 w-4" />}
                 />
                 <div className="col-span-2">
                   <StatBox
                     label="المهام"
                     stats={progress?.tasks}
-                    icon={<ClipboardDocumentListIcon className="h-5 w-5" />}
+                    icon={<ClipboardDocumentListIcon className="h-4 w-4" />}
                   />
                 </div>
               </div>
@@ -295,33 +300,33 @@ const DatabaseMigration: React.FC = () => {
           </div>
 
           {/* Terminal Logs */}
-          <div className="bg-gray-900 rounded-xl border border-gray-800 p-4 shadow-xl flex flex-col h-[400px]">
-            <div className="flex items-center justify-between mb-3 border-b border-gray-800 pb-2">
-              <div className="flex items-center gap-2 text-gray-400">
-                <CommandLineIcon className="h-4 w-4" />
-                <span className="text-xs font-mono uppercase tracking-wider font-bold">
-                  Migration Terminal
+          <div className="rounded-xl border border-border/80 bg-card p-3 shadow-xs flex flex-col h-[380px]">
+            <div className="flex items-center justify-between pb-2 border-b border-border/60 mb-2">
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <CommandLineIcon className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-mono uppercase tracking-wider font-semibold text-foreground">
+                  Migration Terminal Log
                 </span>
               </div>
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-red-500/30"></div>
-                <div className="w-3 h-3 rounded-full bg-yellow-500/30"></div>
-                <div className="w-3 h-3 rounded-full bg-green-500/30"></div>
+              <div className="flex gap-1">
+                <div className="w-2 h-2 rounded-full bg-destructive/60"></div>
+                <div className="w-2 h-2 rounded-full bg-amber-500/60"></div>
+                <div className="w-2 h-2 rounded-full bg-emerald-500/60"></div>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto font-mono text-sm space-y-1.5 custom-scrollbar pr-2">
+            <div className="flex-1 overflow-y-auto font-mono text-xs space-y-1 pr-1 bg-muted/20 p-2.5 rounded-lg border border-border/40" dir="ltr">
               {logs.map((log, i) => (
                 <div
                   key={i}
                   className={`flex gap-2 ${
                     log.level === "error"
-                      ? "text-red-400"
+                      ? "text-destructive"
                       : log.level === "warn"
-                        ? "text-yellow-400"
-                        : "text-green-400/80"
+                        ? "text-amber-500"
+                        : "text-emerald-500/90"
                   }`}
                 >
-                  <span className="text-gray-600">
+                  <span className="text-muted-foreground/60 select-none">
                     [{new Date(log.timestamp).toLocaleTimeString()}]
                   </span>
                   <span>{log.message}</span>
@@ -333,27 +338,17 @@ const DatabaseMigration: React.FC = () => {
         </div>
       )}
 
-      {/* Info Box */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 flex gap-4">
-        <InformationCircleIcon className="h-10 w-10 text-blue-500 flex-shrink-0" />
-        <div>
-          <h4 className="font-bold text-blue-900 dark:text-blue-200 mb-1 leading-tight">
-            معلومات هامة
+      {/* Info Notice Strip */}
+      <div className="rounded-xl border border-border/70 bg-card p-4 flex items-start gap-3 shadow-xs">
+        <InformationCircleIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <h4 className="text-xs font-mono font-semibold text-foreground uppercase tracking-wider">
+            ملاحظات الأمان وتكامل البيانات
           </h4>
-          <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-disc list-inside">
-            <li>
-              يتم تجاهل البيانات الموجودة مسبقاً (Skipped) لتفادي التكرار.
-            </li>
-            <li>
-              يفضل فحص الاتصال (Test Connection) قبل البدء في الاستيراد الفعلي.
-            </li>
-            <li>
-              تأكد من وجود صلاحيات كافية للقراءة من قاعدة البيانات المصدر.
-            </li>
-            <li>
-              العملية تتم في الخلفية، يمكنك مغادرة الصفحة والعودة لمتابعة
-              التقدم.
-            </li>
+          <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside font-mono">
+            <li>يتم تخطي السجلات المكررة مسبقاً (Skipped) تلقائياً لتفادي تضارب المعرفات.</li>
+            <li>ينصح دائماً بفحص الاتصال (Test Connection) للتأكد من استجابة خادم قاعدة البيانات.</li>
+            <li>تتم العملية في الخلفية بالكامل مع تسجيل دوري للتقدم في سجل الأحداث.</li>
           </ul>
         </div>
       </div>
@@ -368,39 +363,39 @@ interface StatBoxProps {
 }
 
 const StatBox: React.FC<StatBoxProps> = ({ label, stats, icon }) => (
-  <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-100 dark:border-gray-700/50">
-    <div className="flex items-center gap-2 mb-2">
-      <div className="p-1.5 bg-white dark:bg-gray-800 rounded shadow-sm text-gray-500">
+  <div className="p-2.5 bg-muted/20 rounded-lg border border-border/50">
+    <div className="flex items-center gap-1.5 mb-2">
+      <div className="p-1 rounded bg-card border border-border/40 text-muted-foreground">
         {icon}
       </div>
-      <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">
+      <span className="text-[11px] font-mono font-semibold text-muted-foreground uppercase">
         {label}
       </span>
     </div>
-    <div className="flex justify-between items-center px-1">
+    <div className="flex justify-between items-center px-1 font-mono">
       <div className="text-center">
-        <p className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-none">
+        <p className="text-sm font-bold tabular-nums text-foreground">
           {stats?.total || 0}
         </p>
-        <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">
+        <p className="text-[10px] text-muted-foreground uppercase">
           إجمالي
         </p>
       </div>
-      <div className="h-8 w-px bg-gray-200 dark:bg-gray-800"></div>
+      <div className="h-6 w-px bg-border/60"></div>
       <div className="text-center">
-        <p className="text-lg font-bold text-green-600 dark:text-green-500 leading-none">
+        <p className="text-sm font-bold tabular-nums text-emerald-500">
           {stats?.imported || 0}
         </p>
-        <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">
-          تـم
+        <p className="text-[10px] text-muted-foreground uppercase">
+          تم
         </p>
       </div>
-      <div className="h-8 w-px bg-gray-200 dark:bg-gray-800"></div>
+      <div className="h-6 w-px bg-border/60"></div>
       <div className="text-center">
-        <p className="text-lg font-bold text-yellow-600 dark:text-yellow-500 leading-none">
+        <p className="text-sm font-bold tabular-nums text-amber-500">
           {stats?.skipped || 0}
         </p>
-        <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">
+        <p className="text-[10px] text-muted-foreground uppercase">
           تخطي
         </p>
       </div>
