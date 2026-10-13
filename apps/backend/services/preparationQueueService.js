@@ -201,6 +201,20 @@ const updatePreparationOrderStatus = async ({
       notifyPreparationStageChange({ companyId, orderPayload: updatedOrder, status: normalizedStatus });
     });
 
+    // 🚚 Turbo Auto-Create shipment if status mapped/updated to CONFIRMED
+    if (mappedStatus === 'CONFIRMED' || normalizedStatus === 'CONFIRMED') {
+      setImmediate(() => {
+        try {
+          const orderService = require('./orderService');
+          orderService.autoCreateTurboShipmentForOrder(updatedOrder.id, companyId).catch(err => {
+            console.warn(`[PREPARATION-QUEUE] Turbo auto-create failed for ${updatedOrder.id}:`, err.message);
+          });
+        } catch (prepTurboErr) {
+          console.warn('[PREPARATION-QUEUE] Turbo auto-create require failed:', prepTurboErr.message);
+        }
+      });
+    }
+
     return { orderType: 'regular', order: updatedOrder };
   }
 
@@ -252,6 +266,20 @@ const updatePreparationOrderStatus = async ({
         updatedAt: new Date()
       }
     });
+
+    // 🚚 Turbo Auto-Create shipment if guest status updated to CONFIRMED
+    if (normalizedStatus === 'CONFIRMED') {
+      setImmediate(() => {
+        try {
+          const orderService = require('./orderService');
+          orderService.autoCreateTurboShipmentForGuestOrder(updatedGuestOrder.id, companyId).catch(err => {
+            console.warn(`[PREPARATION-QUEUE] Turbo auto-create failed for guest ${updatedGuestOrder.id}:`, err.message);
+          });
+        } catch (prepTurboErr) {
+          console.warn('[PREPARATION-QUEUE] Turbo auto-create require failed for guest:', prepTurboErr.message);
+        }
+      });
+    }
 
     // 🛡️ PRODUCTION-FIX (prep-stage-notify): نفس الإشعار لطلبات الضيوف — بنحوّل
     // guestPhone/guestName إلى شكل الـ orderPayload المتوقّع في الخدمة.

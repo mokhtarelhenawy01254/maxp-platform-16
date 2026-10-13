@@ -149,33 +149,36 @@ export default function QueueMonitor() {
   };
 
   return (
-    <div className="space-y-4" dir={i18n.dir()}>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono uppercase bg-primary/10 text-primary border border-primary/20">
-              <Activity className="h-3 w-3" />
-              الخوادم والبنية التحتية
-            </span>
-            <span className="text-xs text-muted-foreground font-mono">/ queue-monitor</span>
+    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto" dir={i18n.dir()}>
+      {/* Linear Control Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-card flex items-center justify-center text-foreground shadow-2xs">
+            <Activity className="size-4.5 text-primary" />
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            مراقبة طوابير العمليات والمهام
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            متابعة لحظية لمعالجة الـ Webhooks، بوالص الشحن، وإرسال الرسائل
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
+                مراقبة طوابير العمليات والمهام
+              </h1>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+                Queue Monitor
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              متابعة لحظية لمعالجة الـ Webhooks، بوالص الشحن، وإرسال الرسائل
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
           <Button
             variant={autoRefresh ? "default" : "outline"}
             size="sm"
             onClick={() => setAutoRefresh(!autoRefresh)}
-            className="h-8 text-xs font-mono gap-1.5"
+            className="h-8 text-xs font-mono gap-1.5 active:scale-[0.98]"
           >
-            <Activity className={`h-3 w-3 ${autoRefresh ? "animate-pulse" : ""}`} />
+            <Activity className={`size-3.5 ${autoRefresh ? "animate-pulse" : ""}`} />
             <span>{autoRefresh ? "تحديث تلقائي" : "تحديث يدوي"}</span>
           </Button>
 
@@ -184,9 +187,9 @@ export default function QueueMonitor() {
             size="sm"
             onClick={fetchData}
             disabled={loading}
-            className="h-8 text-xs font-mono gap-1.5"
+            className="h-8 text-xs font-mono gap-1.5 active:scale-[0.98]"
           >
-            <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
             <span>تحديث</span>
           </Button>
 
@@ -195,9 +198,9 @@ export default function QueueMonitor() {
             size="sm"
             onClick={handleExport}
             disabled={recentJobs.length === 0}
-            className="h-8 text-xs font-mono gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+            className="h-8 text-xs font-mono gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 active:scale-[0.98]"
           >
-            <Download className="h-3 w-3" />
+            <Download className="size-3.5" />
             <span>تصدير Excel</span>
           </Button>
         </div>
@@ -206,74 +209,62 @@ export default function QueueMonitor() {
       {error && (
         <Card className="rounded-xl border-destructive/30 bg-destructive/5">
           <CardContent className="p-3 flex items-center gap-2 text-destructive text-xs font-mono">
-            <XCircle className="w-4 h-4 shrink-0" />
+            <XCircle className="size-4 shrink-0" />
             <p>{error}</p>
           </CardContent>
         </Card>
       )}
 
-      {/* 6-Metric Telemetry Ribbon */}
+      {/* Single-Surface 6-Metric Telemetry Ribbon */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
-          {[
-            {
-              label: "قيد المعالجة",
-              value: stats.active,
-              icon: Activity,
-              color: "text-blue-500",
-              bg: "bg-blue-500/10 border-blue-500/20",
-            },
-            {
-              label: "في الانتظار",
-              value: stats.waiting,
-              icon: Clock,
-              color: "text-amber-500",
-              bg: "bg-amber-500/10 border-amber-500/20",
-            },
-            {
-              label: "مكتملة",
-              value: stats.completed,
-              icon: CheckCircle2,
-              color: "text-emerald-500",
-              bg: "bg-emerald-500/10 border-emerald-500/20",
-            },
-            {
-              label: "فاشلة",
-              value: stats.failed,
-              icon: XCircle,
-              color: "text-rose-500",
-              bg: "bg-rose-500/10 border-rose-500/20",
-            },
-            {
-              label: "مؤجلة",
-              value: stats.delayed,
-              icon: Clock,
-              color: "text-orange-500",
-              bg: "bg-orange-500/10 border-orange-500/20",
-            },
-            {
-              label: "متوقفة",
-              value: stats.paused,
-              icon: Pause,
-              color: "text-muted-foreground",
-              bg: "bg-muted border-border",
-            },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="rounded-xl border border-border/70 bg-card p-3 flex items-center justify-between"
-            >
-              <div>
-                <span className="text-[11px] font-mono text-muted-foreground uppercase">{item.label}</span>
-                <div className="text-xl font-bold font-mono tabular-nums text-foreground mt-0.5">
+        <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
+            {[
+              {
+                label: "قيد المعالجة",
+                value: stats.active,
+                dot: "bg-blue-500 animate-pulse",
+              },
+              {
+                label: "في الانتظار",
+                value: stats.waiting,
+                dot: "bg-amber-500",
+              },
+              {
+                label: "مكتملة",
+                value: stats.completed,
+                dot: "bg-emerald-500",
+              },
+              {
+                label: "فاشلة",
+                value: stats.failed,
+                dot: "bg-rose-500",
+              },
+              {
+                label: "مؤجلة",
+                value: stats.delayed,
+                dot: "bg-orange-500",
+              },
+              {
+                label: "متوقفة",
+                value: stats.paused,
+                dot: "bg-muted-foreground",
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="p-3 flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span className="font-medium text-[11px]">{item.label}</span>
+                  <span className={`size-1.5 rounded-full ${item.dot}`} />
+                </div>
+                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
                   {item.value.toLocaleString()}
                 </div>
               </div>
-              <div className={`h-8 w-8 rounded-lg flex items-center justify-center border ${item.bg} ${item.color}`}>
-                <item.icon className="h-4 w-4" />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 

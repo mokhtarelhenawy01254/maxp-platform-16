@@ -529,6 +529,19 @@ class OrderWorkflowService {
                 console.warn(`[WORKFLOW] metadata sync failed for ${request.orderId}:`, prepErr.message);
             }
 
+            // 🚚 Turbo Auto-Create shipment on approval to CONFIRMED
+            const targetStatusCode = String(request.toStatus?.code || apprStored || '').trim().toUpperCase();
+            if (targetStatusCode === 'CONFIRMED') {
+                try {
+                    const orderService = require('./orderService');
+                    orderService.autoCreateTurboShipmentForOrder(request.orderId, companyId).catch(err => {
+                        console.warn(`[WORKFLOW] Turbo auto-create on approval failed for ${request.orderId}:`, err.message);
+                    });
+                } catch (turboWfErr) {
+                    console.warn('[WORKFLOW] Turbo auto-create require failed on approval:', turboWfErr.message);
+                }
+            }
+
             // 2. Log Audit
             await this.logAudit(
                 companyId,

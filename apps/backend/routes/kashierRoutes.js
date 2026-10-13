@@ -3,6 +3,7 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const orderService = require('../services/orderService');
 const KashierService = require('../services/kashierService');
 const { extractSubdomainMiddleware, requireCompany } = require('../middleware/subdomainMiddleware');
+const { resolvePublicShippingQuote } = require('../controller/shippingZoneController');
 const { toCanonicalE164 } = require('../utils/phoneNormalization');
 const { findCustomerByPhone, safeCreateCustomer, buildPhoneWhere } = require('../utils/customerIdentity');
 
@@ -15,8 +16,9 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
     const {
       guestName, guestEmail, guestPhone,
       shippingAddress, items, notes,
-      subtotal, shippingCost, total,
       couponCode, cartId, pixelEventId, attribution,
+      // NOTE: client-sent subtotal/shippingCost/total are intentionally NOT read —
+      // every monetary value is computed server-side from the database.
     } = req.body;
 
     const resolvedGuestName = String(guestName || req.body.customerName || req.body.name || '').trim();
@@ -63,43 +65,43 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
     // Generate order number
     const orderNumber = await orderService.generateOrderNumber(companyId);
 
-    // Prepare order items safely checking FK existence
-    const orderItemsData = await Promise.all((items || []).map(async (item) => {
-      const price = Number(item.price) || 0;
-      const quantity = Number(item.quantity) || 1;
-      const image = item.image || item.productImage || null;
+    // ─── Server-side pricing: the database is the single source of truth ────
+    // Items with unknown/inactive product ids are dropped — client-provided
+    // prices are never trusted.
+    const orderItemsData = [];
+    for (const item of items || []) {
+      if (!item || !item.productId) continue;
 
-      let validProductId = null;
+      const product = await prisma.product.findFirst({
+        where: { id: item.productId, companyId, isActive: true },
+        select: { id: true, name: true, price: true },
+      }).catch(() => null);
+      if (!product) continue;
+
       let validVariantId = null;
-
-      if (item.productId) {
-        const productExists = await prisma.product.findFirst({
-          where: { id: item.productId, companyId },
-          select: { id: true },
+      let variant = null;
+      if (item.variantId) {
+        variant = await prisma.productVariant.findFirst({
+          where: { id: item.variantId, productId: product.id },
+          select: { id: true, price: true },
         }).catch(() => null);
-
-        if (productExists) {
-          validProductId = productExists.id;
-          if (item.variantId) {
-            const variantExists = await prisma.productVariant.findFirst({
-              where: { id: item.variantId, productId: productExists.id },
-              select: { id: true },
-            }).catch(() => null);
-            if (variantExists) {
-              validVariantId = variantExists.id;
-            }
-          }
+        if (variant) {
+          validVariantId = variant.id;
         }
       }
 
-      return {
-        productId: validProductId,
+      const unitPrice = variant && variant.price != null ? Number(variant.price) : (Number(product.price) || 0);
+      const quantity = Math.min(Math.max(1, Math.floor(Number(item.quantity) || 1)), 999);
+      const image = item.image || item.productImage || null;
+
+      orderItemsData.push({
+        productId: product.id,
         variantId: validVariantId,
-        productName: item.name || 'Product',
+        productName: item.name || product.name || 'Product',
         productImage: image,
-        price,
+        price: unitPrice,
         quantity,
-        total: price * quantity,
+        total: Math.round(unitPrice * quantity * 100) / 100,
         productSku: item.sku || null,
         productColor: item.color ? String(item.color) : (item.attributes?.color ? String(item.attributes.color) : (item.attributes?.Colour ? String(item.attributes.Colour) : null)),
         productSize: item.size != null ? String(item.size) : (item.attributes?.size != null ? String(item.attributes.size) : null),
@@ -107,13 +109,77 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
           attributes: item.attributes || {},
           image,
         }),
-      };
-    }));
+      });
+    }
 
-    const orderSubtotal = Number(subtotal) || orderItemsData.reduce((sum, i) => sum + i.price * i.quantity, 0);
-    const orderShipping = Number(shippingCost) || 0;
-    const orderTotal = Number(total) || (orderSubtotal + orderShipping);
-    const orderDiscount = Math.max(0, Math.round(((orderSubtotal + orderShipping) - orderTotal) * 100) / 100);
+    if (orderItemsData.length === 0) {
+      return res.status(400).json({
+        success: false, error: 'لا توجد منتجات صالحة في الطلب',
+      });
+    }
+
+    const round2 = (n) => Math.round(n * 100) / 100;
+    const orderSubtotal = round2(orderItemsData.reduce((sum, i) => sum + i.total, 0));
+
+    // Shipping from the company's own zones — same governorate matching logic
+    // as the reference storefront order flow, never the client's number.
+    let orderShipping = 0;
+    try {
+      const shippingQuote = await resolvePublicShippingQuote({
+        companyId,
+        governorate: resolvedShippingAddress?.governorate || resolvedShippingAddress?.city || '',
+      });
+      orderShipping = Number(shippingQuote?.price) || 0;
+    } catch (shippingErr) {
+      console.warn('[KASHIER-CHECKOUT] Shipping quote failed, defaulting to 0:', shippingErr.message);
+      orderShipping = 0;
+    }
+
+    // ─── Server-side coupon validation & application ────────────────────────
+    // Mirrors the reference storefront flow (public/orders): company-scoped,
+    // active window, usage limit, min order amount, capped percentage.
+    let discountAmount = 0;
+    let appliedCoupon = null;
+    let couponFreeShipping = false;
+    if (couponCode) {
+      const now = new Date();
+      const coupon = await prisma.coupon.findFirst({
+        where: {
+          code: String(couponCode).trim().toUpperCase(),
+          companyId,
+          isActive: true,
+          validFrom: { lte: now },
+          validTo: { gte: now },
+        },
+      });
+
+      if (coupon) {
+        const usageLimitReached = coupon.usageLimit && coupon.usageCount >= coupon.usageLimit;
+        const minOrderMet = !coupon.minOrderAmount || orderSubtotal >= Number(coupon.minOrderAmount);
+
+        if (!usageLimitReached && minOrderMet) {
+          if (coupon.type === 'PERCENTAGE') {
+            discountAmount = (orderSubtotal * Number(coupon.value)) / 100;
+            if (coupon.maxDiscountAmount && discountAmount > Number(coupon.maxDiscountAmount)) {
+              discountAmount = Number(coupon.maxDiscountAmount);
+            }
+          } else if (coupon.type === 'FREE_SHIPPING') {
+            couponFreeShipping = true;
+            discountAmount = 0;
+          } else {
+            discountAmount = Number(coupon.value);
+          }
+          discountAmount = round2(Math.max(0, Math.min(orderSubtotal, Number(discountAmount))));
+          appliedCoupon = coupon;
+        }
+      }
+    }
+    if (couponFreeShipping) {
+      orderShipping = 0;
+    }
+
+    const orderTotal = round2(Math.max(0, orderSubtotal - discountAmount + orderShipping));
+    const orderDiscount = discountAmount;
 
     // Create Kashier session with store origin redirect
     const baseDomain = process.env.MAIN_DOMAIN || 'maxp.online';
@@ -184,6 +250,31 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
         },
       },
     });
+
+    // Record coupon usage (same as the reference storefront flow) — only after
+    // the order exists, so a failed payment session never consumes a use.
+    if (appliedCoupon) {
+      try {
+        await prisma.$transaction([
+          prisma.couponUsage.create({
+            data: {
+              couponId: appliedCoupon.id,
+              companyId,
+              customerId: customer.id,
+              orderId: order.id,
+              discountAmount: Number(discountAmount || 0),
+              orderAmount: Number(orderTotal),
+            },
+          }),
+          prisma.coupon.update({
+            where: { id: appliedCoupon.id },
+            data: { usageCount: { increment: 1 } },
+          }),
+        ]);
+      } catch (couponUsageErr) {
+        console.error('⚠️ [KASHIER-CHECKOUT] Failed to record coupon usage:', couponUsageErr);
+      }
+    }
 
     // Clean up guestCart if provided
     if (cartId) {

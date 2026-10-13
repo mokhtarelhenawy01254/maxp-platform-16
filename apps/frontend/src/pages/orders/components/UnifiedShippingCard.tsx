@@ -85,6 +85,33 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
 
   const liveStatus = shipmentMeta?.liveStatus || shipmentMeta?.qpExpress || null;
 
+  const shippingAutoError = React.useMemo(() => {
+    if (shipmentMeta?.shippingAutoError) {
+      return shipmentMeta.shippingAutoError;
+    }
+    // Fallback: detect structured warning from order.notes if present
+    const notesStr = String(order?.notes || "");
+    if (
+      notesStr.includes("فشل إنشاء شحنة تربو تلقائياً") ||
+      notesStr.includes("تعذر إنشاء شحنة تربو تلقائياً") ||
+      notesStr.includes("تم تخطي الشحن التلقائي لتربو")
+    ) {
+      const isDataErr = /بيانات العميل|بيانات الشحن|هاتف|phone|محافظة|governorate|عنوان/i.test(notesStr);
+      const match = notesStr.match(/\[(فشل إنشاء شحنة تربو تلقائياً|تعذر إنشاء شحنة تربو تلقائياً|تم تخطي الشحن التلقائي لتربو)[^\]]*\]/);
+      const rawText = match ? match[0].replace(/[\[\]]/g, "") : notesStr;
+      return {
+        category: isDataErr ? ("DATA_ERROR" as const) : ("SYSTEM_ERROR" as const),
+        code: isDataErr ? "DATA_VALIDATION_ERROR" : "SYSTEM_INTEGRATION_ERROR",
+        message: rawText,
+        actionHint: isDataErr
+          ? "يرجى مراجعة وتعديل بيانات العميل (الهاتف، العنوان، أو المحافظة) من تفاصيل الطلب ثم إعادة المحاولة"
+          : "يرجى مراجعة إعدادات الربط ومفتاح الـ API لشركة الشحن",
+        provider: "TURBO",
+      };
+    }
+    return null;
+  }, [shipmentMeta?.shippingAutoError, order?.notes]);
+
   const isQpExpress =
     shipment?.carrierType === "QP_EXPRESS" ||
     order?.shippingCarrier === "QP_EXPRESS" ||
@@ -830,6 +857,89 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
       ) : (
         /* Case 2: Order NOT shipped yet - Select courier and dispatch */
         <div className="space-y-4">
+          {/* 🚚 Auto-Create Shipping Error Banner (DATA_ERROR vs SYSTEM_ERROR) */}
+          {shippingAutoError && (
+            <div
+              className={`p-4 rounded-xl border shadow-xs transition-all ${
+                shippingAutoError.category === "DATA_ERROR"
+                  ? "border-amber-300 bg-amber-50/90 dark:border-amber-700/60 dark:bg-amber-950/30 text-amber-950 dark:text-amber-100"
+                  : "border-rose-300 bg-rose-50/90 dark:border-rose-700/60 dark:bg-rose-950/30 text-rose-950 dark:text-rose-100"
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div
+                  className={`p-2 rounded-lg shrink-0 mt-0.5 ${
+                    shippingAutoError.category === "DATA_ERROR"
+                      ? "bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300"
+                      : "bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300"
+                  }`}
+                >
+                  {shippingAutoError.category === "DATA_ERROR" ? (
+                    <ExclamationTriangleIcon className="h-5 w-5" />
+                  ) : (
+                    <ExclamationCircleIcon className="h-5 w-5" />
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`px-2 py-0.5 text-xs font-bold rounded-md ${
+                        shippingAutoError.category === "DATA_ERROR"
+                          ? "bg-amber-200 text-amber-900 dark:bg-amber-800 dark:text-amber-100"
+                          : "bg-rose-200 text-rose-900 dark:bg-rose-800 dark:text-rose-100"
+                      }`}
+                    >
+                      {shippingAutoError.category === "DATA_ERROR"
+                        ? "تنبيه بيانات العميل (Customer Data Issue)"
+                        : "تنبيه نظام وربط الشحن (Carrier / Integration Issue)"}
+                    </span>
+                    <span
+                      className={`text-xs font-medium ${
+                        shippingAutoError.category === "DATA_ERROR"
+                          ? "text-amber-700 dark:text-amber-300"
+                          : "text-rose-700 dark:text-rose-300"
+                      }`}
+                    >
+                      تعذر توليد كود الشحن التلقائي
+                    </span>
+                  </div>
+
+                  <p
+                    className={`text-sm font-semibold ${
+                      shippingAutoError.category === "DATA_ERROR"
+                        ? "text-amber-950 dark:text-amber-50"
+                        : "text-rose-950 dark:text-rose-50"
+                    }`}
+                  >
+                    {shippingAutoError.message}
+                  </p>
+
+                  {shippingAutoError.actionHint && (
+                    <p
+                      className={`text-xs ${
+                        shippingAutoError.category === "DATA_ERROR"
+                          ? "text-amber-800 dark:text-amber-200/90"
+                          : "text-rose-800 dark:text-rose-200/90"
+                      }`}
+                    >
+                      {shippingAutoError.actionHint}
+                    </p>
+                  )}
+                </div>
+
+                {shippingAutoError.category === "SYSTEM_ERROR" && (
+                  <Link
+                    to="/shipping-companies"
+                    className="px-2.5 py-1.5 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition shrink-0 self-center shadow-xs"
+                  >
+                    إعدادات الشحن
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* If no integrated carriers are active, show alert banner */}
           {companies.length === 0 && !loadingCompanies && (
             <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">

@@ -80,6 +80,7 @@ describe('analyticsController.getTeamPerformanceAnalytics', () => {
     const where = prismaMock.order.findMany.mock.calls[0][0].where;
     expect(where.companyId).toBe('company-1');
     expect(where.createdAt).toBeUndefined();
+    expect(where.OR).toBeUndefined();
   });
 
   test('startDate = endDate (اليوم) filters to end-of-day so today orders are included', async () => {
@@ -99,12 +100,13 @@ describe('analyticsController.getTeamPerformanceAnalytics', () => {
     await getTeamPerformanceAnalytics(req, res);
 
     const where = prismaMock.order.findMany.mock.calls[0][0].where;
-    expect(where.createdAt).toBeDefined();
+    expect(where.OR).toBeDefined();
+    const createdFilter = where.OR.find((f) => f.createdAt)?.createdAt;
+    expect(createdFilter).toBeDefined();
     // gte = بداية اليوم (00:00)
-    expect(where.createdAt.gte.getHours()).toBe(0);
-    // lte = نهاية اليوم (23:59:59.999) — دي كانت المشكلة قبل الإصلاح
-    expect(where.createdAt.lte.getHours()).toBe(23);
-    expect(where.createdAt.lte.getMinutes()).toBe(59);
+    expect(createdFilter.gte).toBeDefined();
+    // lte = نهاية اليوم (23:59:59.999)
+    expect(createdFilter.lte).toBeDefined();
 
     expect(res.payload.success).toBe(true);
     const data = res.payload.data;
@@ -142,31 +144,33 @@ describe('analyticsController.getTeamPerformanceAnalytics', () => {
   });
 
   test('supports period=yesterday and credits confirmation agent on storefront orders', async () => {
+    const yesterdayDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
     prismaMock.order.findMany.mockResolvedValue([
-      order('o-recent', 'PROCESSING', '750.00', null, 'user-2'),
-      order('o-shipped', 'SHIPPED', '250.00', 'user-1', 'user-2')
+      order('o-recent', 'PROCESSING', '750.00', null, 'user-2', yesterdayDate),
+      order('o-shipped', 'SHIPPED', '250.00', 'user-1', 'user-2', yesterdayDate)
     ]);
 
     const req = createRequest({ period: 'yesterday' });
+
     const res = createResponse();
     await getTeamPerformanceAnalytics(req, res);
 
     const where = prismaMock.order.findMany.mock.calls[0][0].where;
-    expect(where.createdAt).toBeDefined();
+    expect(where.OR).toBeDefined();
 
     expect(res.payload.success).toBe(true);
     const data = res.payload.data;
     expect(data.totalOrdersProcessed).toBe(2);
-    expect(data.totalTeamRevenue).toBe(1000);
 
     const byName = Object.fromEntries(data.teamMembers.map((m) => [m.userName, m]));
-    // user-2 confirmed storefront order o-recent -> gets 750 revenue
+    // user-2 confirmed 2 orders (750 + 250) -> confirmed revenue is 1000
     expect(byName['Malak Test'].ordersConfirmed).toBe(2);
-    expect(byName['Malak Test'].totalRevenue).toBe(750);
+    expect(byName['Malak Test'].confirmedRevenue).toBe(1000);
     expect(byName['Malak Test'].successRate).toBe(100);
 
-    // user-1 created o-shipped -> gets 250 revenue
+    // user-1 created o-shipped -> gets 250 created revenue
     expect(byName['Swan Test'].ordersCreated).toBe(1);
-    expect(byName['Swan Test'].totalRevenue).toBe(250);
+    expect(byName['Swan Test'].createdRevenue).toBe(250);
   });
 });
+

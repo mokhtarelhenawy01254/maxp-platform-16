@@ -3,15 +3,19 @@ import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import {
-  ServerIcon,
-  PlayIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ArrowPathIcon,
-  CommandLineIcon,
-  ArrowDownTrayIcon,
-  InformationCircleIcon,
-} from "@heroicons/react/24/outline";
+  Database,
+  Play,
+  CheckCircle2,
+  XCircle,
+  RefreshCw,
+  Terminal,
+  Download,
+  Info,
+  Users,
+  Folder,
+  Tag,
+  ClipboardList,
+} from "lucide-react";
 
 interface MigrationProgress {
   step: string;
@@ -147,30 +151,33 @@ const DatabaseMigration: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4" dir={i18n.dir()}>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono uppercase bg-primary/10 text-primary border border-primary/20">
-              <ServerIcon className="h-3 w-3" />
-              إدارة النظام والبيانات
-            </span>
-            <span className="text-xs text-muted-foreground font-mono">/ db-migration</span>
+    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto" dir={i18n.dir()}>
+      {/* Linear Control Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-card flex items-center justify-center text-foreground shadow-2xs">
+            <Database className="size-4.5 text-primary" />
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            استيراد وترحيل قواعد البيانات
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            نقل ومزامنة المهام والمشاريع وبيانات المنظومة من خوادم وقواعد بيانات خارجية
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
+                استيراد وترحيل قواعد البيانات
+              </h1>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+                DB Migration
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              نقل ومزامنة المهام والمشاريع وبيانات المنظومة من خوادم وقواعد بيانات خارجية
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Configuration Card */}
-      <div className="rounded-xl border border-border/80 bg-card p-4 space-y-3 shadow-xs">
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card p-4 space-y-3.5 shadow-2xs">
         <div className="flex items-center gap-2">
-          <CommandLineIcon className="h-4 w-4 text-primary" />
+          <Terminal className="size-4 text-primary" />
           <h3 className="text-xs font-mono uppercase tracking-wider text-foreground font-semibold">
             إعدادات مصدر قاعدة البيانات
           </h3>
@@ -178,7 +185,7 @@ const DatabaseMigration: React.FC = () => {
 
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-mono text-muted-foreground mb-1">
+            <label className="block text-xs font-mono text-muted-foreground mb-1.5">
               رابط الاتصال المشفر (Database Connection URI)
             </label>
             <input
@@ -195,24 +202,24 @@ const DatabaseMigration: React.FC = () => {
             <button
               onClick={testConnection}
               disabled={testing || migrating || !sourceUrl}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card text-foreground hover:bg-muted/50 text-xs font-mono transition-colors disabled:opacity-40"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card text-foreground hover:bg-muted/50 text-xs font-mono transition-colors disabled:opacity-40 active:scale-[0.98]"
             >
               {testing ? (
-                <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
+                <RefreshCw className="size-3.5 animate-spin text-primary" />
               ) : (
-                <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-500" />
+                <CheckCircle2 className="size-3.5 text-emerald-500" />
               )}
               <span>فحص الاتصال</span>
             </button>
             <button
               onClick={startMigration}
               disabled={testing || migrating || !sourceUrl}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-mono font-medium transition-colors disabled:opacity-40"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-mono font-medium transition-colors disabled:opacity-40 active:scale-[0.98]"
             >
               {migrating ? (
-                <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
+                <RefreshCw className="size-3.5 animate-spin" />
               ) : (
-                <PlayIcon className="h-3.5 w-3.5" />
+                <Play className="size-3.5 fill-current" />
               )}
               <span>بدء الاستيراد</span>
             </button>
@@ -221,14 +228,14 @@ const DatabaseMigration: React.FC = () => {
 
         {error && (
           <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2 text-destructive text-xs font-mono">
-            <XCircleIcon className="h-4 w-4 shrink-0" />
+            <XCircle className="size-4 shrink-0" />
             <p>{error}</p>
           </div>
         )}
 
         {success && (
           <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-mono">
-            <CheckCircleIcon className="h-4 w-4 shrink-0" />
+            <CheckCircle2 className="size-4 shrink-0" />
             <p>{success}</p>
           </div>
         )}
@@ -238,9 +245,9 @@ const DatabaseMigration: React.FC = () => {
       {(migrating || progress) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Progress Stats */}
-          <div className="rounded-xl border border-border/80 bg-card p-4 space-y-4 shadow-xs">
+          <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card p-4 space-y-4 shadow-2xs">
             <div className="flex items-center gap-2">
-              <ArrowDownTrayIcon className="h-4 w-4 text-primary" />
+              <Download className="size-4 text-primary" />
               <h3 className="text-xs font-mono uppercase tracking-wider text-foreground font-semibold">
                 حالة تقدم الترحيل اللحظية
               </h3>
@@ -271,28 +278,28 @@ const DatabaseMigration: React.FC = () => {
                 <StatBox
                   label="المستخدمين"
                   stats={progress?.users}
-                  icon={<UserGroupIcon className="h-4 w-4" />}
+                  icon={<Users className="size-3.5" />}
                 />
                 <StatBox
                   label="فريق العمل"
                   stats={progress?.teamMembers}
-                  icon={<UserGroupIcon className="h-4 w-4" />}
+                  icon={<Users className="size-3.5" />}
                 />
                 <StatBox
                   label="المشاريع"
                   stats={progress?.projects}
-                  icon={<FolderIcon className="h-4 w-4" />}
+                  icon={<Folder className="size-3.5" />}
                 />
                 <StatBox
                   label="الإصدارات"
                   stats={progress?.releases}
-                  icon={<TagIcon className="h-4 w-4" />}
+                  icon={<Tag className="size-3.5" />}
                 />
                 <div className="col-span-2">
                   <StatBox
                     label="المهام"
                     stats={progress?.tasks}
-                    icon={<ClipboardDocumentListIcon className="h-4 w-4" />}
+                    icon={<ClipboardList className="size-3.5" />}
                   />
                 </div>
               </div>
@@ -300,18 +307,18 @@ const DatabaseMigration: React.FC = () => {
           </div>
 
           {/* Terminal Logs */}
-          <div className="rounded-xl border border-border/80 bg-card p-3 shadow-xs flex flex-col h-[380px]">
+          <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card p-3 shadow-2xs flex flex-col h-[380px]">
             <div className="flex items-center justify-between pb-2 border-b border-border/60 mb-2">
               <div className="flex items-center gap-1.5 text-muted-foreground">
-                <CommandLineIcon className="h-3.5 w-3.5 text-primary" />
+                <Terminal className="size-3.5 text-primary" />
                 <span className="text-xs font-mono uppercase tracking-wider font-semibold text-foreground">
                   Migration Terminal Log
                 </span>
               </div>
               <div className="flex gap-1">
-                <div className="w-2 h-2 rounded-full bg-destructive/60"></div>
-                <div className="w-2 h-2 rounded-full bg-amber-500/60"></div>
-                <div className="w-2 h-2 rounded-full bg-emerald-500/60"></div>
+                <div className="size-2 rounded-full bg-destructive/60"></div>
+                <div className="size-2 rounded-full bg-amber-500/60"></div>
+                <div className="size-2 rounded-full bg-emerald-500/60"></div>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto font-mono text-xs space-y-1 pr-1 bg-muted/20 p-2.5 rounded-lg border border-border/40" dir="ltr">
@@ -339,8 +346,8 @@ const DatabaseMigration: React.FC = () => {
       )}
 
       {/* Info Notice Strip */}
-      <div className="rounded-xl border border-border/70 bg-card p-4 flex items-start gap-3 shadow-xs">
-        <InformationCircleIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+      <div className="rounded-xl border border-border/70 dark:border-border/60 bg-card p-4 flex items-start gap-3 shadow-2xs">
+        <Info className="size-4.5 text-primary shrink-0 mt-0.5" />
         <div className="space-y-1">
           <h4 className="text-xs font-mono font-semibold text-foreground uppercase tracking-wider">
             ملاحظات الأمان وتكامل البيانات
@@ -401,71 +408,6 @@ const StatBox: React.FC<StatBoxProps> = ({ label, stats, icon }) => (
       </div>
     </div>
   </div>
-);
-
-// Re-importing missing components from HeroIcons
-const UserGroupIcon = (props: any) => (
-  <svg
-    fill="none"
-    viewBox="0 0 24 24"
-    strokeWidth={1.5}
-    stroke="currentColor"
-    {...props}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.998 5.998 0 00-1.261-3.613m-2.482-4.469A4.5 4.5 0 0115 7.5a4.5 4.5 0 01-3.358 4.358m0 0a4.5 4.5 0 01-3.359-4.358m0 0A4.5 4.5 0 0112 3a4.5 4.5 0 015.753 5.432m-9.43 4.498a4.49 4.49 0 01-1.223 3.18m0 0a4.49 4.49 0 001.223 3.181m0 0a4.493 4.493 0 01-3.18-1.223m0 0a4.491 4.491 0 00-3.181 1.223m0 0A4.49 4.49 0 013 18.72a4.49 4.49 0 003.741-.479a3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.998 5.998 0 00-1.261-3.613m-2.482-4.469A4.5 4.5 0 0115 7.5a4.5 4.5 0 01-3.358 4.358m0 0a4.5 4.5 0 01-3.359-4.358"
-    />
-  </svg>
-);
-
-const FolderIcon = (props: any) => (
-  <svg
-    fill="none"
-    viewBox="0 0 24 24"
-    strokeWidth={1.5}
-    stroke="currentColor"
-    {...props}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.625-12a2.25 2.25 0 00-2.25 2.25v2.25H3a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 003 21.75h18a2.25 2.25 0 002.25-2.25V8.25A2.25 2.25 0 0021 6h-8.25V3.75m0 0A2.25 2.25 0 0115.75 6h-3.75v-2.25A2.25 2.25 0 0114.25 1.5h-.75"
-    />
-  </svg>
-);
-
-const TagIcon = (props: any) => (
-  <svg
-    fill="none"
-    viewBox="0 0 24 24"
-    strokeWidth={1.5}
-    stroke="currentColor"
-    {...props}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.659A2.25 2.25 0 009.568 3zm.432 0v4.5M4.5 12l4.5 4.5m10.5-1.5l1.5-1.5"
-    />
-  </svg>
-);
-
-const ClipboardDocumentListIcon = (props: any) => (
-  <svg
-    fill="none"
-    viewBox="0 0 24 24"
-    strokeWidth={1.5}
-    stroke="currentColor"
-    {...props}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018 4.5h-1.35m-10.5 0H4.5A2.25 2.25 0 002.25 6.75v12a2.25 2.25 0 002.25 2.25h1.35m10.5-15V3.75A.75.75 0 0015 3h-6a.75.75 0 00-.75.75V4.5m10.5 0H7.5"
-    />
-  </svg>
 );
 
 export default DatabaseMigration;

@@ -240,6 +240,119 @@ describe('OrderService - Turbo Auto-Shipment Creation & Idempotency', () => {
         })
       );
     });
+
+    test('9. Repeat customer placed another order within 48h is NOT blocked (per-order idempotency)', async () => {
+      const order = {
+        id: 'ord_2_repeat',
+        orderNumber: 'ORD-456',
+        companyId: 'comp_1',
+        customerPhone: '01012345678',
+        turboShipmentId: null,
+        turboTrackingNumber: null,
+        shipments: [],
+        customer: { name: 'Repeat Customer', phone: '01012345678' },
+        orderItems: [{ id: 'item_2' }],
+        company: { turboEnabled: true, turboAutoCreate: true, turboApiKey: 'key_123' }
+      };
+
+      const result = await orderService.autoCreateTurboShipmentForOrder(order, 'comp_1');
+
+      expect(result.success).toBe(true);
+      expect(result.shipmentId).toBe('TURBO-SHP-001');
+      expect(result.trackingNumber).toBe('TRK-998877');
+      expect(TurboService).toHaveBeenCalled();
+    });
+
+    test('10. Attaches structured shippingAutoError (DATA_ERROR) to metadata on invalid phone', async () => {
+      const order = {
+        id: 'ord_phone_err',
+        orderNumber: 'ORD-789',
+        companyId: 'comp_1',
+        customerPhone: '010123',
+        turboShipmentId: null,
+        metadata: JSON.stringify({ someKey: 'val' }),
+        customer: { name: 'John' },
+        orderItems: [{ id: 'item_1' }],
+        company: { turboEnabled: true, turboAutoCreate: true, turboApiKey: 'key_123' }
+      };
+
+      mockTurboInstance.createShipment.mockRejectedValue(new Error('رقم هاتف العميل غير صحيح: الرقم مكون من 6 أرقام بدلاً من 11 رقماً'));
+
+      const result = await orderService.autoCreateTurboShipmentForOrder(order, 'comp_1');
+
+      expect(result.success).toBe(false);
+      expect(result.errorInfo.category).toBe('DATA_ERROR');
+      expect(result.errorInfo.code).toBe('INVALID_PHONE');
+
+      expect(mockPrisma.order.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'ord_phone_err' },
+          data: expect.objectContaining({
+            metadata: expect.stringContaining('"category":"DATA_ERROR"')
+          })
+        })
+      );
+    });
+
+    test('11. Attaches structured shippingAutoError (SYSTEM_ERROR) to metadata on carrier timeout', async () => {
+      const order = {
+        id: 'ord_sys_err',
+        orderNumber: 'ORD-999',
+        companyId: 'comp_1',
+        customerPhone: '01012345678',
+        turboShipmentId: null,
+        metadata: null,
+        customer: { name: 'John' },
+        orderItems: [{ id: 'item_1' }],
+        company: { turboEnabled: true, turboAutoCreate: true, turboApiKey: 'key_123' }
+      };
+
+      mockTurboInstance.createShipment.mockRejectedValue(new Error('تعذر الاتصال بسيرفر تربو، timeout'));
+
+      const result = await orderService.autoCreateTurboShipmentForOrder(order, 'comp_1');
+
+      expect(result.success).toBe(false);
+      expect(result.errorInfo.category).toBe('SYSTEM_ERROR');
+      expect(result.errorInfo.code).toBe('CARRIER_CONNECTION_ERROR');
+
+      expect(mockPrisma.order.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'ord_sys_err' },
+          data: expect.objectContaining({
+            metadata: expect.stringContaining('"category":"SYSTEM_ERROR"')
+          })
+        })
+      );
+    });
+
+    test('12. Clears shippingAutoError from metadata upon successful shipment creation', async () => {
+      const order = {
+        id: 'ord_recovered',
+        orderNumber: 'ORD-RECOVER',
+        companyId: 'comp_1',
+        customerPhone: '01012345678',
+        turboShipmentId: null,
+        metadata: JSON.stringify({
+          previousFlag: true,
+          shippingAutoError: { category: 'DATA_ERROR', code: 'INVALID_PHONE' }
+        }),
+        customer: { name: 'John' },
+        orderItems: [{ id: 'item_1' }],
+        company: { turboEnabled: true, turboAutoCreate: true, turboApiKey: 'key_123' }
+      };
+
+      const result = await orderService.autoCreateTurboShipmentForOrder(order, 'comp_1');
+
+      expect(result.success).toBe(true);
+      expect(mockPrisma.order.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'ord_recovered' },
+          data: expect.objectContaining({
+            metadata: expect.not.stringContaining('shippingAutoError')
+          })
+        })
+      );
+    });
   });
 
   describe('autoCreateTurboShipmentForGuestOrder', () => {
@@ -283,3 +396,4 @@ describe('OrderService - Turbo Auto-Shipment Creation & Idempotency', () => {
     });
   });
 });
+

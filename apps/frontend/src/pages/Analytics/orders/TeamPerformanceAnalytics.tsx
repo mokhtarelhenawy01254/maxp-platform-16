@@ -17,24 +17,30 @@ import PeriodSelector, {
   getPeriodLabel,
 } from "../../../components/common/PeriodSelector";
 
+export interface TeamMemberStat {
+  userId: string;
+  userName: string;
+  email: string;
+  role: string;
+  ordersCreated: number;
+  ordersConfirmed: number;
+  ordersAssigned?: number;
+  createdRevenue?: number;
+  confirmedRevenue?: number;
+  totalRevenue: number;
+  deliveredOrders: number;
+  cancelledOrders: number;
+  successRate: number;
+  avgOrderValue: number;
+}
+
 interface TeamStats {
-  teamMembers: Array<{
-    userId: string;
-    userName: string;
-    email: string;
-    role: string;
-    ordersCreated: number;
-    ordersConfirmed: number;
-    totalRevenue: number;
-    deliveredOrders: number;
-    cancelledOrders: number;
-    successRate: number;
-    avgOrderValue: number;
-  }>;
+  teamMembers: TeamMemberStat[];
   totalTeamMembers: number;
   totalOrdersProcessed: number;
   totalTeamRevenue: number;
 }
+
 
 const STORAGE_KEY = "maxp_analytics_team_performance_period";
 const VALID_PERIODS: PeriodKey[] = [
@@ -118,6 +124,33 @@ const TeamPerformanceAnalytics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<TeamStats | null>(null);
+  const [sortField, setSortField] = useState<keyof TeamMemberStat>("ordersConfirmed");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const handleSort = (field: keyof TeamMemberStat) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("desc");
+    }
+  };
+
+  const sortedMembers = React.useMemo(() => {
+    if (!stats?.teamMembers) return [];
+    return [...stats.teamMembers].sort((a, b) => {
+      const valA = a[sortField];
+      const valB = b[sortField];
+      if (typeof valA === "string" && typeof valB === "string") {
+        return sortOrder === "asc"
+          ? valA.localeCompare(valB, "ar")
+          : valB.localeCompare(valA, "ar");
+      }
+      const numA = Number(valA) || 0;
+      const numB = Number(valB) || 0;
+      return sortOrder === "asc" ? numA - numB : numB - numA;
+    });
+  }, [stats?.teamMembers, sortField, sortOrder]);
 
   // Sync to URL & localStorage on initial mount if not yet present in URL
   useEffect(() => {
@@ -347,7 +380,7 @@ const TeamPerformanceAnalytics: React.FC = () => {
           </h3>
           <div style={{ width: "100%", height: 350 }}>
             <ResponsiveContainer width="100%" height={350} minHeight={350}>
-              <BarChart data={stats.teamMembers} layout="vertical">
+              <BarChart data={sortedMembers} layout="vertical">
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="#374151"
@@ -359,10 +392,16 @@ const TeamPerformanceAnalytics: React.FC = () => {
                   type="category"
                   stroke="#9CA3AF"
                   fontSize={12}
-                  width={120}
+                  width={140}
                 />
                 <Tooltip />
                 <Legend verticalAlign="top" height={36} />
+                <Bar
+                  dataKey="ordersConfirmed"
+                  fill="#10B981"
+                  name={t("teamPerformance.ordersConfirmed", "طلبات مؤكدة")}
+                  radius={[0, 4, 4, 0]}
+                />
                 <Bar
                   dataKey="ordersCreated"
                   fill="#3B82F6"
@@ -370,9 +409,9 @@ const TeamPerformanceAnalytics: React.FC = () => {
                   radius={[0, 4, 4, 0]}
                 />
                 <Bar
-                  dataKey="ordersConfirmed"
-                  fill="#10B981"
-                  name={t("teamPerformance.ordersConfirmed", "طلبات مؤكدة")}
+                  dataKey="ordersAssigned"
+                  fill="#F59E0B"
+                  name={t("teamPerformance.ordersAssigned", "طلبات مسندة")}
                   radius={[0, 4, 4, 0]}
                 />
               </BarChart>
@@ -383,41 +422,81 @@ const TeamPerformanceAnalytics: React.FC = () => {
 
       {stats?.teamMembers && stats.teamMembers.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <TrophyIcon className="h-5 w-5 text-yellow-500" />
-            {t("teamPerformance.performanceDetails")}
-          </h3>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <TrophyIcon className="h-5 w-5 text-yellow-500" />
+              {t("teamPerformance.performanceDetails")}
+            </h3>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {t("teamPerformance.sortHint", "انقر على أي عمود للفرز التفاعلي")}
+            </span>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                    {t("teamPerformance.employee")}
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-xs sm:text-sm font-semibold select-none">
+                  <th
+                    onClick={() => handleSort("userName")}
+                    className="text-right py-3 px-4 text-gray-600 dark:text-gray-300 cursor-pointer hover:text-blue-600"
+                  >
+                    {t("teamPerformance.employee")}{" "}
+                    {sortField === "userName" ? (sortOrder === "desc" ? "▼" : "▲") : ""}
                   </th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                    {t("teamPerformance.role")}
+                  <th
+                    onClick={() => handleSort("role")}
+                    className="text-right py-3 px-4 text-gray-600 dark:text-gray-300 cursor-pointer hover:text-blue-600"
+                  >
+                    {t("teamPerformance.role")}{" "}
+                    {sortField === "role" ? (sortOrder === "desc" ? "▼" : "▲") : ""}
                   </th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                    {t("teamPerformance.ordersCreated")}
+                  <th
+                    onClick={() => handleSort("ordersCreated")}
+                    className="text-right py-3 px-4 text-blue-600 cursor-pointer hover:underline"
+                  >
+                    {t("teamPerformance.ordersCreated")}{" "}
+                    {sortField === "ordersCreated" ? (sortOrder === "desc" ? "▼" : "▲") : ""}
                   </th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                    {t("teamPerformance.ordersConfirmed")}
+                  <th
+                    onClick={() => handleSort("ordersConfirmed")}
+                    className="text-right py-3 px-4 text-green-600 cursor-pointer hover:underline"
+                  >
+                    {t("teamPerformance.ordersConfirmed")}{" "}
+                    {sortField === "ordersConfirmed" ? (sortOrder === "desc" ? "▼" : "▲") : ""}
                   </th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                    {t("teamPerformance.totalRevenue")}
+                  <th
+                    onClick={() => handleSort("ordersAssigned")}
+                    className="text-right py-3 px-4 text-amber-600 cursor-pointer hover:underline"
+                  >
+                    {t("teamPerformance.ordersAssigned", "طلبات مسندة")}{" "}
+                    {sortField === "ordersAssigned" ? (sortOrder === "desc" ? "▼" : "▲") : ""}
                   </th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                    {t("teamPerformance.successRate")}
+                  <th
+                    onClick={() => handleSort("totalRevenue")}
+                    className="text-right py-3 px-4 text-purple-600 cursor-pointer hover:underline"
+                  >
+                    {t("teamPerformance.totalRevenue")}{" "}
+                    {sortField === "totalRevenue" ? (sortOrder === "desc" ? "▼" : "▲") : ""}
                   </th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                    {t("teamPerformance.avgOrderValue")}
+                  <th
+                    onClick={() => handleSort("successRate")}
+                    className="text-right py-3 px-4 text-gray-600 dark:text-gray-300 cursor-pointer hover:text-blue-600"
+                  >
+                    {t("teamPerformance.successRate")}{" "}
+                    {sortField === "successRate" ? (sortOrder === "desc" ? "▼" : "▲") : ""}
+                  </th>
+                  <th
+                    onClick={() => handleSort("avgOrderValue")}
+                    className="text-right py-3 px-4 text-orange-600 cursor-pointer hover:underline"
+                  >
+                    {t("teamPerformance.avgOrderValue")}{" "}
+                    {sortField === "avgOrderValue" ? (sortOrder === "desc" ? "▼" : "▲") : ""}
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {stats.teamMembers.map((member, index) => (
+                {sortedMembers.map((member, index) => (
                   <tr
-                    key={index}
+                    key={member.userId || index}
                     className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                   >
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white font-medium">
@@ -429,13 +508,16 @@ const TeamPerformanceAnalytics: React.FC = () => {
                     <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-300">
                       {member.role}
                     </td>
-                    <td className="py-3 px-4 text-sm text-blue-600">
-                      {member.ordersCreated?.toLocaleString()}
+                    <td className="py-3 px-4 text-sm text-blue-600 font-semibold">
+                      {member.ordersCreated?.toLocaleString() || 0}
                     </td>
-                    <td className="py-3 px-4 text-sm text-green-600">
-                      {member.ordersConfirmed?.toLocaleString()}
+                    <td className="py-3 px-4 text-sm text-green-600 font-semibold">
+                      {member.ordersConfirmed?.toLocaleString() || 0}
                     </td>
-                    <td className="py-3 px-4 text-sm text-purple-600">
+                    <td className="py-3 px-4 text-sm text-amber-600 font-semibold">
+                      {(member.ordersAssigned || 0).toLocaleString()}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-purple-600 font-semibold">
                       {member.totalRevenue?.toLocaleString()}{" "}
                       {t("teamPerformance.currency")}
                     </td>
@@ -457,7 +539,7 @@ const TeamPerformanceAnalytics: React.FC = () => {
                         </span>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-sm text-orange-600">
+                    <td className="py-3 px-4 text-sm text-orange-600 font-semibold">
                       {member.avgOrderValue?.toLocaleString()}{" "}
                       {t("teamPerformance.currency")}
                     </td>
@@ -468,6 +550,7 @@ const TeamPerformanceAnalytics: React.FC = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };

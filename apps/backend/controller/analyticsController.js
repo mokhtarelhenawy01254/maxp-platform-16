@@ -4,7 +4,13 @@ const {
   effectiveOrderStatusSql,
   computeEffectiveOrderStatus,
 } = require('../utils/orderEffectiveStatus');
-const { buildDateRangeFilter, EGYPT_TIMEZONE } = require('../utils/dateUtils');
+const {
+  buildDateRangeFilter,
+  getStartOfDayInTimezone,
+  getEndOfDayInTimezone,
+  getDateStringInTimezone,
+  EGYPT_TIMEZONE
+} = require('../utils/dateUtils');
 
 const ANALYTICS_DAY_MS = 24 * 60 * 60 * 1000;
 const DELIVERED_ORDER_STATUSES = new Set(['DELIVERED']);
@@ -4007,49 +4013,65 @@ const getTeamPerformanceAnalytics = async (req, res) => {
     const { startDate, endDate, period } = req.query;
     const prisma = getSharedPrismaClient();
 
-    // Smart date handling
+    let start, end;
+    const normalizedPeriod = String(period || '').trim().toLowerCase();
+
+    if (startDate || endDate) {
+      const dateFilter = buildDateRangeFilter(startDate || endDate, endDate || startDate, EGYPT_TIMEZONE);
+      start = dateFilter.gte || getStartOfDayInTimezone(new Date(), EGYPT_TIMEZONE);
+      end = dateFilter.lte || getEndOfDayInTimezone(new Date(), EGYPT_TIMEZONE);
+    } else if (normalizedPeriod === 'yesterday') {
+      const yesterdayLocalStr = getDateStringInTimezone(new Date(Date.now() - ANALYTICS_DAY_MS), EGYPT_TIMEZONE);
+      start = getStartOfDayInTimezone(yesterdayLocalStr, EGYPT_TIMEZONE);
+      end = getEndOfDayInTimezone(yesterdayLocalStr, EGYPT_TIMEZONE);
+    } else if (normalizedPeriod === 'today' || normalizedPeriod === '1') {
+      const todayLocalStr = getDateStringInTimezone(new Date(), EGYPT_TIMEZONE);
+      start = getStartOfDayInTimezone(todayLocalStr, EGYPT_TIMEZONE);
+      end = getEndOfDayInTimezone(todayLocalStr, EGYPT_TIMEZONE);
+    } else if (period) {
+      const { start: pStart, end: pEnd } = parseAnalyticsDateRange({ period });
+      start = pStart;
+      end = pEnd;
+    }
+
     let whereClause = {
       companyId: String(companyId)
     };
 
-    if (startDate || endDate || period) {
-      try {
-        const { start, end } = parseAnalyticsDateRange({
-          startDate,
-          endDate,
-          period: period || '30'
-        });
-        whereClause.createdAt = {
-          gte: start,
-          lte: end
-        };
-      } catch (err) {
-        console.error('Date parsing error:', err);
-      }
+    if (start && end) {
+      whereClause.OR = [
+        { createdAt: { gte: start, lte: end } },
+        { confirmedAt: { gte: start, lte: end } }
+      ];
     }
 
-    const users = await prisma.user.findMany({
-      where: { companyId: String(companyId), isActive: true },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        role: true
-      }
-    });
-
-    const orders = await prisma.order.findMany({
-      where: whereClause,
-      select: {
-        id: true,
-        status: true,
-        total: true,
-        createdBy: true,
-        confirmedBy: true,
-        createdAt: true
-      }
-    });
+    const [users, orders] = await Promise.all([
+      prisma.user.findMany({
+        where: { companyId: String(companyId), isActive: true },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true
+        }
+      }),
+      prisma.order.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          customStatusCode: true,
+          total: true,
+          createdBy: true,
+          confirmedBy: true,
+          assignedTo: true,
+          createdAt: true,
+          confirmedAt: true
+        }
+      })
+    ]);
 
     const userPerformance = {};
     users.forEach(user => {
@@ -4060,6 +4082,9 @@ const getTeamPerformanceAnalytics = async (req, res) => {
         role: user.role,
         ordersCreated: 0,
         ordersConfirmed: 0,
+        ordersAssigned: 0,
+        createdRevenue: 0,
+        confirmedRevenue: 0,
         totalRevenue: 0,
         deliveredOrders: 0,
         cancelledOrders: 0,
@@ -4082,54 +4107,76 @@ const getTeamPerformanceAnalytics = async (req, res) => {
       const isDelivered = order.status === 'DELIVERED';
       const isCancelled = CANCELLED_STATUSES.has(order.status);
 
-      if (order.createdBy && userPerformance[order.createdBy]) {
-        userPerformance[order.createdBy].ordersCreated += 1;
+      const isCreatedInRange = !start || !order.createdAt || (order.createdAt >= start && order.createdAt <= end);
+      const isConfirmedInRange = !start || (
+        order.confirmedAt
+          ? (order.confirmedAt >= start && order.confirmedAt <= end)
+          : (isCreatedInRange || Boolean(order.confirmedBy))
+      );
+
+      // Attribution to Creator
+      if (isCreatedInRange && order.createdBy && userPerformance[order.createdBy]) {
+        const creator = userPerformance[order.createdBy];
+        creator.ordersCreated += 1;
         if (isConfirmedOrDelivered) {
-          userPerformance[order.createdBy].totalRevenue += orderAmount;
-          userPerformance[order.createdBy].successfulOrders += 1;
+          creator.createdRevenue += orderAmount;
+          creator.successfulOrders += 1;
         }
         if (isDelivered) {
-          userPerformance[order.createdBy].deliveredOrders += 1;
+          creator.deliveredOrders += 1;
         }
         if (isCancelled) {
-          userPerformance[order.createdBy].cancelledOrders += 1;
+          creator.cancelledOrders += 1;
         }
       }
 
-      if (order.confirmedBy && userPerformance[order.confirmedBy]) {
-        userPerformance[order.confirmedBy].ordersConfirmed += 1;
+      // Attribution to Confirmer
+      const effectiveConfirmer = order.confirmedBy || (isConfirmedOrDelivered && order.createdBy ? order.createdBy : null);
+      if (isConfirmedInRange && effectiveConfirmer && userPerformance[effectiveConfirmer]) {
+        const confirmer = userPerformance[effectiveConfirmer];
+        confirmer.ordersConfirmed += 1;
         if (isConfirmedOrDelivered) {
-          userPerformance[order.confirmedBy].confirmedSuccessfulOrders += 1;
+          confirmer.confirmedSuccessfulOrders += 1;
+          confirmer.confirmedRevenue += orderAmount;
         }
-        // If order has no internal creator (e.g. from storefront/chat), attribute revenue and success to confirmer
+        // Only attribute delivered/cancelled to confirmer if order has no internal creator to avoid double counting
         if (!order.createdBy || !userPerformance[order.createdBy]) {
-          if (isConfirmedOrDelivered) {
-            userPerformance[order.confirmedBy].totalRevenue += orderAmount;
-            userPerformance[order.confirmedBy].successfulOrders += 1;
-          }
           if (isDelivered) {
-            userPerformance[order.confirmedBy].deliveredOrders += 1;
+            confirmer.deliveredOrders += 1;
           }
           if (isCancelled) {
-            userPerformance[order.confirmedBy].cancelledOrders += 1;
+            confirmer.cancelledOrders += 1;
           }
         }
+      }
+
+      // Attribution to Assigned Agent
+      if (isCreatedInRange && order.assignedTo && userPerformance[order.assignedTo]) {
+        userPerformance[order.assignedTo].ordersAssigned += 1;
       }
     });
 
+
     const teamStats = Object.values(userPerformance)
-      .filter(u => u.ordersCreated > 0 || u.ordersConfirmed > 0)
+      .filter(u => u.ordersCreated > 0 || u.ordersConfirmed > 0 || u.ordersAssigned > 0)
       .map(u => {
-        const totalActivity = u.ordersCreated > 0 ? u.ordersCreated : u.ordersConfirmed;
-        const relevantSuccess = u.ordersCreated > 0
-          ? (u.successfulOrders > 0 ? u.successfulOrders : u.deliveredOrders)
-          : (u.confirmedSuccessfulOrders > 0 ? u.confirmedSuccessfulOrders : u.successfulOrders);
-        const successRate = totalActivity > 0
-          ? parseFloat(Math.min(100, (relevantSuccess / totalActivity) * 100).toFixed(2))
-          : 0;
-        const avgDivisor = u.successfulOrders > 0 ? u.successfulOrders : (u.deliveredOrders > 0 ? u.deliveredOrders : u.confirmedSuccessfulOrders);
+        // Effective revenue: confirmed revenue if confirmed orders exist, else created revenue
+        const effectiveRevenue = u.confirmedRevenue > 0 ? u.confirmedRevenue : u.createdRevenue;
+
+        const totalDecided = u.ordersConfirmed + u.cancelledOrders;
+        const totalWork = u.ordersConfirmed > 0 ? u.ordersConfirmed : u.ordersCreated;
+        const relevantSuccess = u.ordersConfirmed > 0 ? u.confirmedSuccessfulOrders : u.successfulOrders;
+
+        let successRate = 0;
+        if (totalDecided > 0) {
+          successRate = parseFloat(Math.min(100, (u.ordersConfirmed / totalDecided) * 100).toFixed(2));
+        } else if (totalWork > 0) {
+          successRate = parseFloat(Math.min(100, (relevantSuccess / totalWork) * 100).toFixed(2));
+        }
+
+        const avgDivisor = u.ordersConfirmed > 0 ? u.ordersConfirmed : (u.ordersCreated > 0 ? u.ordersCreated : 1);
         const avgOrderValue = avgDivisor > 0
-          ? parseFloat((u.totalRevenue / avgDivisor).toFixed(2))
+          ? parseFloat((effectiveRevenue / avgDivisor).toFixed(2))
           : 0;
 
         return {
@@ -4139,14 +4186,17 @@ const getTeamPerformanceAnalytics = async (req, res) => {
           role: u.role,
           ordersCreated: u.ordersCreated,
           ordersConfirmed: u.ordersConfirmed,
-          totalRevenue: parseFloat(u.totalRevenue.toFixed(2)),
+          ordersAssigned: u.ordersAssigned,
+          createdRevenue: parseFloat(u.createdRevenue.toFixed(2)),
+          confirmedRevenue: parseFloat(u.confirmedRevenue.toFixed(2)),
+          totalRevenue: parseFloat(effectiveRevenue.toFixed(2)),
           deliveredOrders: u.deliveredOrders,
           cancelledOrders: u.cancelledOrders,
           successRate,
           avgOrderValue
         };
       })
-      .sort((a, b) => b.totalRevenue - a.totalRevenue);
+      .sort((a, b) => (b.ordersConfirmed - a.ordersConfirmed) || (b.totalRevenue - a.totalRevenue));
 
     res.json({
       success: true,
@@ -4157,6 +4207,7 @@ const getTeamPerformanceAnalytics = async (req, res) => {
         totalTeamRevenue: parseFloat(teamStats.reduce((sum, u) => sum + u.totalRevenue, 0).toFixed(2))
       }
     });
+
   } catch (error) {
     console.error('❌ Error in getTeamPerformanceAnalytics:', error);
     console.error('Error details:', {

@@ -80,43 +80,359 @@ const MarketplaceCoverageCenter: React.FC = () => {
     try { const catalogApp = entry.appSlug ? catalogAppsMap.get(entry.appSlug) : null; await axios.post(buildApiUrl(`super-admin/marketplace-management/coverage/companies/${company.id}/apps/${entry.appSlug}/install`), { pricingModel: catalogApp?.pricingModel || "SUBSCRIPTION" }, { headers: getAuthHeaders({ "Content-Type": "application/json" }) }); toast.success(i18n.t("superAdmin.marketplaceCoverage.activated")); await fetchCoverage({ quiet: true }); } catch (e: any) { toast.error(e.response?.data?.message || i18n.t("superAdmin.marketplaceCoverage.activateFailed")); } finally { setInstallingKey(null); }
   };
 
-  if (loading) return <div className="flex justify-center p-6"><LoadingSpinner size="lg" /></div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+          <RefreshCw className="size-4 animate-spin text-primary" />
+          <span>جاري فحص تغطية التطبيقات عبر الشركات...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="rtl">
-      <div className="relative overflow-hidden mb-3 p-4 md:p-5 rounded-2xl text-white bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900">
-        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "linear-gradient(90deg, rgba(255,255,255,.22) 1px, transparent 1px), linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px)", backgroundSize: "34px 34px" }} />
-        <div className="relative z-10 flex flex-col md:flex-row justify-between gap-3"><div><Badge className="bg-white/20 text-white border-white/30 mb-2"><Shield className="size-3" /> Marketplace Coverage Center</Badge><h1 className="text-xl sm:text-2xl font-bold max-w-[760px]">غرفة مراقبة التطبيقات الناقصة لكل شركة</h1><p className="mt-1.5 max-w-[760px] text-sm text-white/80">الصفحة دي بتكشف الشركات اللي عندها أجزاء ظاهرة بفallback قديم أو ناقص لها التطبيق الفعلي، وتسمح بتفعيل التطبيق المطلوب بأمان من السوبر أدمن.</p></div>
-          <div className="flex flex-col items-stretch md:items-end gap-2"><Button className="bg-amber-500 text-gray-900 font-bold hover:bg-amber-400" onClick={() => fetchCoverage({ quiet: true })} disabled={refreshing}><RefreshCw className="size-4" /> تحديث التغطية</Button><p className="text-xs text-white/70">آخر قراءة: {payload?.generatedAt ? new Date(payload.generatedAt).toLocaleString("ar-EG") : "-"}</p></div></div>
-      </div>
-
-      {error && <Alert variant="destructive" className="mb-3"><AlertDescription>{error}</AlertDescription></Alert>}
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-        {[{ label: "الشركات المقروءة", value: totals.companies, color: "#2563eb", icon: <Package className="size-5" /> }, { label: "تحتاج مراجعة", value: totals.riskCompanies, color: "#d97706", icon: <AlertTriangle className="size-5" /> }, { label: "Fallback قديم", value: totals.fallbackCompanies, color: "#f59e0b", icon: <Zap className="size-5" /> }, { label: "نظيفة", value: totals.cleanCompanies, color: "#059669", icon: <CheckCircle className="size-5" /> }].map(card => <Card key={card.label} className="border" style={{ borderColor: `${card.color}40`, background: `linear-gradient(135deg, ${card.color}15, transparent 56%)` }}><CardContent><div className="flex justify-between items-center"><div><p className="text-xs text-muted-foreground">{card.label}</p><p className="text-xl font-bold tabular-nums">{card.value}</p></div><div style={{ color: card.color }}>{card.icon}</div></div></CardContent></Card>)}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(320px,0.85fr)_minmax(0,1.65fr)] gap-3">
-        <div className="rounded-xl border bg-card p-3">
-          <div className="space-y-2 mb-2"><Input placeholder="بحث عن شركة" value={query} onChange={e => setQuery(e.target.value)} /><Select value={filter} onValueChange={v => setFilter(v as CompanyFilter)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="risk">تحتاج مراجعة</SelectItem><SelectItem value="fallback">Fallback فقط</SelectItem><SelectItem value="missing">ناقص تطبيق</SelectItem><SelectItem value="clean">نظيفة</SelectItem><SelectItem value="all">كل الشركات</SelectItem></SelectContent></Select></div>
-          <div className="space-y-1 max-h-[640px] overflow-auto">{filteredCoverage.map(summary => { const active = selectedCoverage?.company.id === summary.company.id; const tone = getRowTone(summary); return <div key={summary.company.id} onClick={() => setSelectedCompanyId(summary.company.id)} className={`rounded-xl border p-3 cursor-pointer transition-all ${active ? "border-2" : "border"}`} style={{ borderColor: active ? tone : "var(--border)", backgroundColor: active ? `${tone}15` : "var(--card)" }}><div className="flex justify-between items-center gap-1"><div className="min-w-0"><p className="font-semibold truncate">{summary.company.name}</p><p className="text-xs text-muted-foreground truncate">{summary.company.email || summary.company.slug || "بدون بريد"}</p></div><Badge className="shrink-0 font-bold tabular-nums" style={{ backgroundColor: `${tone}20`, color: tone, border: "none" }}>{summary.coverageScore}%</Badge></div><div className="mt-2 h-[7px] rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width: `${summary.coverageScore}%`, backgroundColor: tone }} /></div><div className="flex gap-1 mt-2 flex-wrap"><Badge variant="outline" className="text-xs">ناقص {summary.counts.missing}</Badge><Badge variant="outline" className="text-xs">Fallback {summary.counts.fallback}</Badge><Badge variant="outline" className="text-xs">Exact {summary.counts.exact}</Badge></div></div>; })}{filteredCoverage.length === 0 && <Alert><AlertDescription>لا توجد شركات مطابقة للفلتر الحالي.</AlertDescription></Alert>}</div>
+    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto" dir={i18n.dir()}>
+      {/* Linear Control Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-card flex items-center justify-center text-foreground shadow-2xs">
+            <Shield className="size-4.5 text-primary" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
+                غرفة مراقبة تغطية التطبيقات
+              </h1>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+                Marketplace Coverage
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              كشف التطبيقات الناقصة وحالات الـ Fallback عبر حسابات الشركات وتفعيلها بأمان
+            </p>
+          </div>
         </div>
 
-        <div className="rounded-xl border bg-card p-3">
-          {selectedCoverage ? <>
-            <div className="flex flex-col md:flex-row justify-between gap-2"><div><h2 className="text-lg font-bold">{selectedCoverage.company.name}</h2><p className="text-sm text-muted-foreground">{selectedCoverage.company.email || "بدون بريد"}</p></div><div className="flex gap-1 flex-wrap"><Badge variant="success">{`مثبت مباشر ${selectedCoverage.counts.exact}`}</Badge><Badge variant="warning">{`Fallback ${selectedCoverage.counts.fallback}`}</Badge><Badge variant="destructive">{`ناقص ${selectedCoverage.counts.missing + selectedCoverage.counts.catalogMissing}`}</Badge></div></div>
-            <Separator className="my-3" />
-            <div className="flex justify-between items-center gap-2 mb-2"><div><p className="font-semibold">الأجزاء التي تحتاج قرار</p><p className="text-xs text-muted-foreground">نعرض فقط الـ missing/fallback/catalog-missing عشان القرار يبقى واضح وسريع.</p></div><Badge variant="outline" className="border-blue-500 text-blue-500"><Sparkles className="size-3" /> {getInstallableRows(selectedCoverage.entries).length} قابل للتفعيل</Badge></div>
-            <Table><TableHeader><TableRow><TableHead>الجزء</TableHead><TableHead>المجال</TableHead><TableHead>التطبيق المطلوب</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراء</TableHead></TableRow></TableHeader>
-              <TableBody>{selectedCoverage.entries.filter(e => e.coverageStatus !== "core" && e.coverageStatus !== "exact").map(entry => { const installable = entry.appSlug && entry.catalogExists && (entry.coverageStatus === "missing" || entry.coverageStatus === "fallback"); const installKey = `${selectedCoverage.company.id}:${entry.appSlug}`; return <TableRow key={entry.id}><TableCell><p className="font-bold">{entry.label}</p><p className="text-xs text-muted-foreground">{entry.description}</p></TableCell><TableCell>{areaLabels[entry.area]}</TableCell><TableCell><div><p className="text-sm font-bold">{entry.appLabel || entry.appSlug || statusLabels.core}</p>{entry.legacyGate && <p className="text-xs text-muted-foreground">fallback: {entry.legacyGate}</p>}</div></TableCell><TableCell><Badge variant={statusMeta[entry.coverageStatus].variant} className={entry.coverageStatus === "missing" || entry.coverageStatus === "catalog-missing" ? "flex items-center gap-1" : ""}>{(entry.coverageStatus === "missing" || entry.coverageStatus === "catalog-missing") && <AlertCircle className="size-3" />}{statusMeta[entry.coverageStatus].label}</Badge></TableCell><TableCell className="text-center"><Button size="sm" disabled={!installable || installingKey === installKey} onClick={() => setConfirmDialog({ company: selectedCoverage.company, entry })} className="rounded-full font-bold">{installingKey === installKey ? "جاري..." : "تفعيل"}</Button></TableCell></TableRow>; })}{selectedCoverage.counts.risk === 0 && <TableRow><TableCell colSpan={5}><Alert variant="default"><AlertDescription>هذه الشركة نظيفة: كل الأجزاء القابلة للتطبيق مثبتة مباشرة.</AlertDescription></Alert></TableCell></TableRow>}</TableBody></Table>
-          </> : <Alert><AlertDescription>لا توجد شركة محددة للعرض.</AlertDescription></Alert>}
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          {payload?.generatedAt && (
+            <span className="text-[11px] font-mono text-muted-foreground hidden md:inline-block">
+              آخر فحص: {new Date(payload.generatedAt).toLocaleTimeString("ar-EG")}
+            </span>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchCoverage({ quiet: true })}
+            disabled={refreshing}
+            className="h-8 text-xs font-mono gap-1.5 shadow-2xs active:scale-[0.98]"
+          >
+            <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
+            <span>تحديث التغطية</span>
+          </Button>
         </div>
       </div>
 
-      <Dialog open={!!confirmDialog} onOpenChange={o => { if (!o) setConfirmDialog(null); }}>
-        <DialogContent><DialogHeader><DialogTitle>{t("superAdmin.marketplaceCoverage.confirmTitle")}</DialogTitle></DialogHeader>
-          <AlertDescription>{t("superAdmin.marketplaceCoverage.confirmPrefix")} <strong>{confirmDialog?.entry?.appLabel || confirmDialog?.entry?.appSlug}</strong> {t("superAdmin.marketplaceCoverage.confirmSuffix", { companyName: confirmDialog?.company?.name || "" })}</AlertDescription>
-          <DialogFooter><Button variant="outline" onClick={() => setConfirmDialog(null)}>{t("superAdmin.marketplaceCoverage.cancel")}</Button><Button onClick={executeInstall}>{t("superAdmin.marketplaceCoverage.confirmActivate")}</Button></DialogFooter>
+      {error && (
+        <Alert variant="destructive" className="rounded-xl border-destructive/30 bg-destructive/5">
+          <AlertDescription className="text-xs font-mono">{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Linear Telemetry Strip */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">الشركات المفحوصة</span>
+              <span className="size-1.5 rounded-full bg-blue-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {totals.companies}
+            </div>
+          </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">تحتاج مراجعة</span>
+              <span className="size-1.5 rounded-full bg-amber-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {totals.riskCompanies}
+            </div>
+          </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">Fallback قديم</span>
+              <span className="size-1.5 rounded-full bg-orange-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {totals.fallbackCompanies}
+            </div>
+          </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">نظيفة ومكتملة</span>
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {totals.cleanCompanies}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bento Grid: Left Search & Companies List, Right Active Coverage Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(320px,0.85fr)_minmax(0,1.65fr)] gap-4">
+        {/* Company Selector Panel */}
+        <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card p-3 shadow-2xs space-y-3 flex flex-col">
+          <div className="space-y-2">
+            <Input
+              placeholder="بحث عن شركة بالاسم أو Slug..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="h-8 text-xs font-mono rounded-lg bg-card border-border/60"
+            />
+            <Select value={filter} onValueChange={(v) => setFilter(v as CompanyFilter)}>
+              <SelectTrigger className="h-8 text-xs font-mono">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="risk">تحتاج مراجعة (Risk)</SelectItem>
+                <SelectItem value="fallback">Fallback قديم فقط</SelectItem>
+                <SelectItem value="missing">ناقص تطبيق</SelectItem>
+                <SelectItem value="clean">نظيفة ومكتملة</SelectItem>
+                <SelectItem value="all">كل الشركات</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5 max-h-[580px] overflow-auto pr-0.5 divide-y divide-border/40">
+            {filteredCoverage.map((summary) => {
+              const active = selectedCoverage?.company.id === summary.company.id;
+              const hasRisk = summary.counts.risk > 0;
+              return (
+                <div
+                  key={summary.company.id}
+                  onClick={() => setSelectedCompanyId(summary.company.id)}
+                  className={`pt-2 pb-2 px-2.5 rounded-lg cursor-pointer transition-colors ${
+                    active
+                      ? "bg-primary/10 border border-primary/30"
+                      : "hover:bg-muted/30 border border-transparent"
+                  }`}
+                >
+                  <div className="flex justify-between items-center gap-1.5">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-xs text-foreground truncate">
+                        {summary.company.name}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground font-mono truncate">
+                        {summary.company.email || summary.company.slug || "بدون معرف"}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold tabular-nums border ${
+                        hasRisk
+                          ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                          : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                      }`}
+                    >
+                      {summary.coverageScore}%
+                    </span>
+                  </div>
+
+                  <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        hasRisk ? "bg-amber-500" : "bg-emerald-500"
+                      }`}
+                      style={{ width: `${summary.coverageScore}%` }}
+                    />
+                  </div>
+
+                  <div className="flex gap-1 mt-2 flex-wrap text-[10px] font-mono">
+                    {summary.counts.missing > 0 && (
+                      <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                        ناقص {summary.counts.missing}
+                      </span>
+                    )}
+                    {summary.counts.fallback > 0 && (
+                      <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                        Fallback {summary.counts.fallback}
+                      </span>
+                    )}
+                    <span className="px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/60">
+                      مثبت {summary.counts.exact}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+            {filteredCoverage.length === 0 && (
+              <div className="p-8 text-center text-muted-foreground text-xs font-mono">
+                لا توجد شركات مطابقة للفلتر المحدد
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Detailed Decision Table Panel */}
+        <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card p-4 shadow-2xs">
+          {selectedCoverage ? (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-border/60">
+                <div>
+                  <h2 className="text-base font-bold text-foreground">
+                    {selectedCoverage.company.name}
+                  </h2>
+                  <p className="text-xs text-muted-foreground font-mono">
+                    {selectedCoverage.company.email || selectedCoverage.company.slug || "بدون بريد إلكتروني"}
+                  </p>
+                </div>
+                <div className="flex gap-1.5 flex-wrap">
+                  <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-medium">
+                    مثبت مباشر {selectedCoverage.counts.exact}
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
+                    Fallback {selectedCoverage.counts.fallback}
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-medium">
+                    ناقص {selectedCoverage.counts.missing + selectedCoverage.counts.catalogMissing}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center gap-2">
+                <div>
+                  <p className="font-semibold text-xs text-foreground">
+                    الأجزاء التي تتطلب قراراً فنياً
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    عرض المميزات بحالة missing أو fallback فقط لاتخاذ الإجراء السريع
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+                  <Sparkles className="size-3" />
+                  {getInstallableRows(selectedCoverage.entries).length} قابل للتفعيل
+                </span>
+              </div>
+
+              <div className="overflow-x-auto rounded-lg border border-border/60">
+                <Table className="text-xs">
+                  <TableHeader className="bg-muted/20 border-b border-border/60">
+                    <TableRow>
+                      <TableHead className="text-right font-mono text-[11px]">الجزء</TableHead>
+                      <TableHead className="text-right font-mono text-[11px]">المجال</TableHead>
+                      <TableHead className="text-right font-mono text-[11px]">التطبيق المطلوب</TableHead>
+                      <TableHead className="text-right font-mono text-[11px]">الحالة</TableHead>
+                      <TableHead className="text-center font-mono text-[11px]">إجراء</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-border/60">
+                    {selectedCoverage.entries
+                      .filter((e) => e.coverageStatus !== "core" && e.coverageStatus !== "exact")
+                      .map((entry) => {
+                        const installable =
+                          entry.appSlug &&
+                          entry.catalogExists &&
+                          (entry.coverageStatus === "missing" || entry.coverageStatus === "fallback");
+                        const installKey = `${selectedCoverage.company.id}:${entry.appSlug}`;
+                        return (
+                          <TableRow key={entry.id} className="hover:bg-muted/20">
+                            <TableCell>
+                              <p className="font-semibold text-foreground">{entry.label}</p>
+                              <p className="text-[10px] text-muted-foreground">{entry.description}</p>
+                            </TableCell>
+                            <TableCell className="font-mono text-muted-foreground text-[11px]">
+                              {areaLabels[entry.area]}
+                            </TableCell>
+                            <TableCell>
+                              <p className="font-medium text-foreground text-xs">
+                                {entry.appLabel || entry.appSlug || statusLabels.core}
+                              </p>
+                              {entry.legacyGate && (
+                                <p className="text-[10px] text-muted-foreground font-mono">
+                                  fallback: {entry.legacyGate}
+                                </p>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium border ${
+                                  entry.coverageStatus === "fallback"
+                                    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                                    : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                                }`}
+                              >
+                                {entry.coverageStatus === "fallback" ? (
+                                  <AlertTriangle className="size-3" />
+                                ) : (
+                                  <AlertCircle className="size-3" />
+                                )}
+                                {statusMeta[entry.coverageStatus].label}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Button
+                                size="sm"
+                                disabled={!installable || installingKey === installKey}
+                                onClick={() =>
+                                  setConfirmDialog({ company: selectedCoverage.company, entry })
+                                }
+                                className="h-7 px-3 text-xs font-mono font-medium active:scale-[0.98]"
+                              >
+                                {installingKey === installKey ? (
+                                  <RefreshCw className="size-3 animate-spin" />
+                                ) : (
+                                  "تفعيل"
+                                )}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    {selectedCoverage.counts.risk === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="p-8 text-center text-muted-foreground text-xs font-mono">
+                          هذه الشركة مكتملة ونظيفة: جميع التطبيقات المطلوبة مثبتة ومفعلة مباشرة.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          ) : (
+            <div className="p-12 text-center text-muted-foreground text-xs font-mono">
+              يرجى اختيار شركة لعرض تفاصيل التغطية
+            </div>
+          )}
+        </div>
+      </div>
+
+      <Dialog open={!!confirmDialog} onOpenChange={(o) => { if (!o) setConfirmDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-foreground">
+              {t("superAdmin.marketplaceCoverage.confirmTitle")}
+            </DialogTitle>
+          </DialogHeader>
+          <AlertDescription className="text-xs text-muted-foreground leading-relaxed py-2">
+            {t("superAdmin.marketplaceCoverage.confirmPrefix")}{" "}
+            <strong className="text-foreground">
+              {confirmDialog?.entry?.appLabel || confirmDialog?.entry?.appSlug}
+            </strong>{" "}
+            {t("superAdmin.marketplaceCoverage.confirmSuffix", {
+              companyName: confirmDialog?.company?.name || "",
+            })}
+          </AlertDescription>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" size="sm" onClick={() => setConfirmDialog(null)} className="text-xs">
+              {t("superAdmin.marketplaceCoverage.cancel")}
+            </Button>
+            <Button size="sm" onClick={executeInstall} className="text-xs font-medium">
+              {t("superAdmin.marketplaceCoverage.confirmActivate")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
