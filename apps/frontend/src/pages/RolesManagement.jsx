@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { cn } from "../lib/utils";
 import tokenManager from "../utils/tokenManager";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -241,14 +242,60 @@ const RolesManagement = () => {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
+      {/* Linear Control Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <div>
-          <h1 className="text-2xl font-bold">إدارة الأدوار والصلاحيات</h1>
-          <p className="text-sm text-muted-foreground">إدارة أدوار المستخدمين وصلاحياتهم في النظام</p>
+          <h1 className="text-xl font-bold tracking-tight text-foreground">إدارة الأدوار والصلاحيات</h1>
+          <p className="text-xs text-muted-foreground">تخصيص مستويات الوصول وتعيين الصلاحيات لفريق العمل</p>
         </div>
-        <Button onClick={() => { setFormData({ name: "", description: "", permissions: [], isActive: true }); setModalOpen(true); }}>
-          <Plus className="size-4" /> إضافة دور جديد
+        <Button
+          onClick={() => { setFormData({ name: "", description: "", permissions: [], isActive: true }); setModalOpen(true); }}
+          className="h-8.5 px-3 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-all active:scale-[0.98] gap-1.5"
+        >
+          <Plus className="size-3.5" /> إضافة دور جديد
         </Button>
+      </div>
+
+      {/* Linear Telemetry Strip */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden mb-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">إجمالي الأدوار</span>
+              <span className="size-1.5 rounded-full bg-indigo-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {Object.keys(roles).length}
+            </div>
+          </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">أدوار النظام الأساسية</span>
+              <span className="size-1.5 rounded-full bg-sky-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {Object.values(roles).filter(r => r.isBuiltIn).length}
+            </div>
+          </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">أدوار مخصصة</span>
+              <span className="size-1.5 rounded-full bg-violet-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {Object.values(roles).filter(r => !r.isBuiltIn).length}
+            </div>
+          </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">الأدوار النشطة</span>
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {Object.values(roles).filter(r => r.isActive !== false).length}
+            </div>
+          </div>
+        </div>
       </div>
 
       {error && (
@@ -258,7 +305,8 @@ const RolesManagement = () => {
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Role Architectural Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {Object.entries(roles).map(([roleKey, role]) => {
           const colors = getRoleColor(roleKey);
           const isExpanded = expandedRole === roleKey;
@@ -266,56 +314,85 @@ const RolesManagement = () => {
           const displayPerms = isExpanded ? perms : perms.slice(0, 8);
           const hasMore = perms.length > 8;
           return (
-            <Card key={roleKey} className={`h-full border-2 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${colors.border} ${colors.bg} relative`}>
-              {role.isBuiltIn && (
-                <div className={`absolute top-2 right-2 ${colors.label} text-white px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1 z-10`}>
-                  <Lock className="size-3" /> أساسي
+            <div
+              key={roleKey}
+              className="rounded-xl border border-border/80 dark:border-border/60 bg-card hover:border-border shadow-2xs transition-all duration-150 flex flex-col justify-between overflow-hidden"
+            >
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-md bg-muted/60 text-foreground">
+                      <Shield className="size-4 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-bold text-foreground leading-snug">{role.name}</h2>
+                      <span className="text-[10px] font-mono text-muted-foreground">{roleKey}</span>
+                    </div>
+                  </div>
+                  {role.isBuiltIn ? (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                      <Lock className="size-2.5" /> أساسي
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300">
+                      مخصص
+                    </span>
+                  )}
                 </div>
-              )}
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Shield className={`size-6 ${colors.icon}`} />
-                  <h2 className="text-base font-bold">{role.name}</h2>
-                </div>
-                <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{role.description}</p>
+
+                <p className="text-xs text-muted-foreground mb-3 line-clamp-2 min-h-[32px]">{role.description || "بدون وصف إضافي"}</p>
+
                 <div className="mb-2">
-                  <p className="text-xs font-semibold mb-1 text-muted-foreground">
-                    الصلاحيات ({perms.length}):
-                    {hasMore && !isExpanded && <span className="mr-1 text-primary">— عرض الكل</span>}
-                  </p>
-                  <div className={`flex flex-wrap gap-0.5 ${perms.length > 8 && !isExpanded ? "max-h-[72px] overflow-hidden" : ""}`}>
+                  <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground mb-1.5">
+                    <span>الصلاحيات المرتبطة:</span>
+                    <span className="font-mono tabular-nums">{perms.length} صلاحية</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
                     {perms.length > 0 ? (
-                      displayPerms.map((p, i) => <Badge key={i} variant="outline" className={`text-xs ${colors.badge}`}>{getPermName(p)}</Badge>)
+                      displayPerms.map((p, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-normal bg-muted/60 text-foreground/80 border border-border/40"
+                        >
+                          {getPermName(p)}
+                        </span>
+                      ))
                     ) : (
                       <span className="text-xs text-muted-foreground">لا توجد صلاحيات</span>
                     )}
                   </div>
                   {hasMore && (
-                    <button onClick={() => setExpandedRole(isExpanded ? null : roleKey)} className="text-xs text-primary hover:underline mt-1">
-                      {isExpanded ? "عرض أقل" : `عرض الكل (${perms.length})`}
+                    <button onClick={() => setExpandedRole(isExpanded ? null : roleKey)} className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline mt-1.5 font-medium">
+                      {isExpanded ? "عرض أقل" : `عرض باقي الصلاحيات (+${perms.length - 8})`}
                     </button>
                   )}
                 </div>
-                <div className="flex justify-between items-center pt-2 border-t">
-                  <Badge variant={role.isActive !== false ? "default" : "secondary"}>
-                    {role.isActive !== false ? "نشط" : "غير نشط"}
-                  </Badge>
-                  <div className="flex gap-1">
-                    {role.isBuiltIn ? (
-                      <span className="text-xs text-muted-foreground italic">مضمن</span>
-                    ) : (
-                      <>
-                        <Button variant="ghost" size="icon" onClick={() => handleEditRole(roleKey, role)}><Edit className="size-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(role)} className="text-destructive hover:text-destructive"><Trash2 className="size-4" /></Button>
-                      </>
-                    )}
-                    <Button variant="ghost" size="icon" onClick={() => handleDuplicateRole(roleKey, role)} title="نسخ الدور">
-                      <Copy className="size-4" />
-                    </Button>
-                  </div>
+              </div>
+
+              <div className="px-3.5 py-2.5 bg-muted/20 border-t border-border/60 flex justify-between items-center text-xs">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium">
+                  <span className={cn("size-1.5 rounded-full", role.isActive !== false ? "bg-emerald-500" : "bg-zinc-400")} />
+                  {role.isActive !== false ? "نشط" : "غير نشط"}
+                </span>
+                <div className="flex items-center gap-1">
+                  {role.isBuiltIn ? (
+                    <span className="text-[10px] text-muted-foreground">نظام محمي</span>
+                  ) : (
+                    <>
+                      <Button variant="ghost" size="icon" className="size-7 rounded-md" onClick={() => handleEditRole(roleKey, role)}>
+                        <Edit className="size-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="size-7 rounded-md text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20" onClick={() => setDeleteTarget(role)}>
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </>
+                  )}
+                  <Button variant="ghost" size="icon" className="size-7 rounded-md text-muted-foreground hover:text-foreground" onClick={() => handleDuplicateRole(roleKey, role)} title="نسخ الدور">
+                    <Copy className="size-3.5" />
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           );
         })}
       </div>

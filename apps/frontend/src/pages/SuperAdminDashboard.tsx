@@ -55,32 +55,31 @@ const MetricCard = ({ title, value, icon: Icon, color, growth, subtext, classNam
   const isPositive = growth !== undefined && growth > 0;
   const isNegative = growth !== undefined && growth < 0;
   return (
-    <div className={cn("group relative overflow-hidden rounded-[24px] border bg-card/75 p-6 shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-md", colorMap[color] || "border-border/50", className)}>
-      <div className={cn("absolute -left-12 -top-12 size-32 rounded-full blur-3xl transition-all duration-500 group-hover:scale-125", glowMap[color] || "bg-primary/5")} />
-      <div className="relative flex items-center justify-between">
-        <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-muted-foreground">{title}</p>
-          <div className="flex items-baseline gap-2">
-            <h3 className="text-3xl sm:text-4xl font-bold tracking-tight tabular-nums text-foreground">
-              {typeof value === 'number' ? value.toLocaleString() : value}
-            </h3>
+    <div className={cn("rounded-xl border border-border/80 dark:border-border/60 bg-card p-4 shadow-2xs transition-all duration-150 hover:border-border select-none", className)}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className={cn("size-1.5 rounded-full shrink-0", color === "indigo" ? "bg-indigo-500" : color === "emerald" ? "bg-emerald-500" : color === "blue" ? "bg-sky-500" : "bg-amber-500")} />
+            <span className="font-medium text-[11px]">{title}</span>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+            {typeof value === 'number' ? value.toLocaleString() : value}
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
             {subtext && (
-              <Badge variant="outline" className={cn("mt-0.5 rounded-full border-none px-2.5 py-0.5 text-[11px] font-medium", colorMap[color]?.split(' ')[2])}>
-                <Activity className="ml-0.5 size-3" />{subtext}
-              </Badge>
+              <span className="text-[11px] text-muted-foreground font-medium">
+                {subtext}
+              </span>
             )}
             {growth !== undefined && (
-              <Badge variant="outline" className={cn("mt-0.5 rounded-full border-none px-2 py-0.5 text-[11px] font-medium tabular-nums", isPositive ? "bg-emerald-500/10 text-emerald-600" : isNegative ? "bg-rose-500/10 text-rose-600" : "bg-gray-500/10 text-gray-500")}>
-                {isPositive ? <ArrowUp className="ml-0.5 size-3" /> : isNegative ? <ArrowDown className="ml-0.5 size-3" /> : null}
+              <span className={cn("text-[11px] font-mono font-semibold tabular-nums", isPositive ? "text-emerald-600 dark:text-emerald-400" : isNegative ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground")}>
                 {isPositive ? "+" : ""}{growth?.toFixed(1)}%
-              </Badge>
+              </span>
             )}
           </div>
         </div>
-        <div className={cn("flex size-12 items-center justify-center rounded-2xl shadow-inner transition-all duration-300 group-hover:scale-110", colorMap[color]?.split(' ').slice(0, 2).join(' '))}>
-          <Icon className="size-6" />
+        <div className="p-2 rounded-lg bg-muted/60 text-muted-foreground shrink-0">
+          <Icon className="size-4" />
         </div>
       </div>
     </div>
@@ -409,80 +408,69 @@ const SuperAdminDashboard = () => {
             subtext="عبر كل القنوات" />
         </div>
 
-        {/* Recent Activity + Growth */}
-        <Card className="rounded-2xl border-border/50 bg-card/75 shadow-sm backdrop-blur-xl">
-          <CardHeader className="p-5 pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 shadow-inner">
-                  <TrendingUp className="size-5" />
-                </div>
-                <div>
-                  <CardTitle className="text-base font-bold">النشاط الأخير</CardTitle>
-                  <CardDescription className="text-xs font-medium text-muted-foreground">معدل النمو خلال آخر 30 يوماً</CardDescription>
-                </div>
-              </div>
-              <Badge variant="outline" className="rounded-full border-emerald-500/20 bg-emerald-500/10 px-3 py-0.5 text-xs font-medium text-emerald-600">
-                + نمو إيجابي
-              </Badge>
+        {/* Recent Activity + Growth Chassis */}
+        <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+          <div className="p-3.5 border-b border-border/60 flex items-center justify-between gap-3 bg-muted/20">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="size-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-xs font-semibold text-foreground">النشاط ومعدل النمو الأخير</span>
+              <span className="text-[11px] text-muted-foreground">(آخر 30 يوماً)</span>
             </div>
-          </CardHeader>
-          <CardContent className="p-5 pt-2">
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="group relative overflow-hidden rounded-xl border border-border/50 bg-background/50 p-4 transition-all hover:bg-background">
-                <div className="absolute -left-6 -top-6 size-16 rounded-full bg-indigo-500/5 blur-xl" />
-                <div className="relative space-y-2">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600">
-                    <Briefcase className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold tabular-nums text-foreground">{data?.recentActivity?.newCompaniesLast30Days || 0}</p>
-                    <p className="text-xs font-medium text-muted-foreground">شركات جديدة</p>
-                    {data?.comparison?.companiesGrowth !== undefined && (
-                      <p className={cn("mt-0.5 text-[11px] font-semibold tabular-nums", data.comparison.companiesGrowth >= 0 ? "text-emerald-600" : "text-rose-600")}>
-                        {data.comparison.companiesGrowth >= 0 ? '↑' : '↓'} {Math.abs(data.comparison.companiesGrowth).toFixed(1)}% عن الشهر الماضي
-                      </p>
-                    )}
-                  </div>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              نمو إيجابي
+            </span>
+          </div>
+
+          <div className="p-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span className="text-[11px] font-medium">شركات جديدة</span>
+                  <Briefcase className="size-3.5 text-indigo-500" />
                 </div>
+                <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums mb-1">
+                  {data?.recentActivity?.newCompaniesLast30Days || 0}
+                </div>
+                {data?.comparison?.companiesGrowth !== undefined && (
+                  <p className={cn("text-[11px] font-mono font-semibold tabular-nums", data.comparison.companiesGrowth >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
+                    {data.comparison.companiesGrowth >= 0 ? '↑' : '↓'} {Math.abs(data.comparison.companiesGrowth).toFixed(1)}% عن الشهر الماضي
+                  </p>
+                )}
               </div>
-              <div className="group relative overflow-hidden rounded-xl border border-border/50 bg-background/50 p-4 transition-all hover:bg-background">
-                <div className="absolute -left-6 -top-6 size-16 rounded-full bg-emerald-500/5 blur-xl" />
-                <div className="relative space-y-2">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
-                    <Users2 className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold tabular-nums text-foreground">{data?.recentActivity?.newUsersLast30Days || 0}</p>
-                    <p className="text-xs font-medium text-muted-foreground">مستخدمين جدد</p>
-                    {data?.comparison?.usersGrowth !== undefined && (
-                      <p className={cn("mt-0.5 text-[11px] font-semibold tabular-nums", data.comparison.usersGrowth >= 0 ? "text-emerald-600" : "text-rose-600")}>
-                        {data.comparison.usersGrowth >= 0 ? '↑' : '↓'} {Math.abs(data.comparison.usersGrowth).toFixed(1)}% عن الشهر الماضي
-                      </p>
-                    )}
-                  </div>
+
+              <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span className="text-[11px] font-medium">مستخدمون جدد</span>
+                  <Users2 className="size-3.5 text-emerald-500" />
                 </div>
+                <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums mb-1">
+                  {data?.recentActivity?.newUsersLast30Days || 0}
+                </div>
+                {data?.comparison?.usersGrowth !== undefined && (
+                  <p className={cn("text-[11px] font-mono font-semibold tabular-nums", data.comparison.usersGrowth >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
+                    {data.comparison.usersGrowth >= 0 ? '↑' : '↓'} {Math.abs(data.comparison.usersGrowth).toFixed(1)}% عن الشهر الماضي
+                  </p>
+                )}
               </div>
-              <div className="group relative overflow-hidden rounded-xl border border-border/50 bg-background/50 p-4 transition-all hover:bg-background">
-                <div className="absolute -left-6 -top-6 size-16 rounded-full bg-blue-500/5 blur-xl" />
-                <div className="relative space-y-2">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600">
-                    <Users className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold tabular-nums text-foreground">{data?.recentActivity?.newCustomersLast30Days || 0}</p>
-                    <p className="text-xs font-medium text-muted-foreground">عملاء جدد</p>
-                    {data?.comparison?.customersGrowth !== undefined && (
-                      <p className={cn("mt-0.5 text-[11px] font-semibold tabular-nums", data.comparison.customersGrowth >= 0 ? "text-emerald-600" : "text-rose-600")}>
-                        {data.comparison.customersGrowth >= 0 ? '↑' : '↓'} {Math.abs(data.comparison.customersGrowth).toFixed(1)}% عن الشهر الماضي
-                      </p>
-                    )}
-                  </div>
+
+              <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span className="text-[11px] font-medium">عملاء جدد</span>
+                  <Users className="size-3.5 text-sky-500" />
                 </div>
+                <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums mb-1">
+                  {data?.recentActivity?.newCustomersLast30Days || 0}
+                </div>
+                {data?.comparison?.customersGrowth !== undefined && (
+                  <p className={cn("text-[11px] font-mono font-semibold tabular-nums", data.comparison.customersGrowth >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
+                    {data.comparison.customersGrowth >= 0 ? '↑' : '↓'} {Math.abs(data.comparison.customersGrowth).toFixed(1)}% عن الشهر الماضي
+                  </p>
+                )}
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Trend Chart */}
         {data?.trends && data.trends.length > 0 && <TrendChart data={data.trends} />}

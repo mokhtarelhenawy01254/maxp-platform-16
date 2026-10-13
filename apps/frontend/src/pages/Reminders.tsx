@@ -203,153 +203,114 @@ const Reminders: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-            <BellIcon className="h-8 w-8 text-blue-600 dark:text-blue-400 ml-3" />
-            التذكيرات
+    <div className="p-4 md:p-6 space-y-4 w-full">
+      {/* Header Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2">
+        <div className="space-y-0.5">
+          <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <BellIcon className="size-5 text-indigo-600 dark:text-indigo-400" />
+            التذكيرات والمتابعة
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            إدارة التذكيرات والمتابعة مع العملاء
+          <p className="text-xs text-muted-foreground">
+            إدارة تنبيهات المهام والمتابعات اليومية مع العملاء
           </p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setShowCreateForm(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+            className="h-8.5 px-3 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-all active:scale-[0.98] flex items-center gap-1.5"
           >
-            <PlusIcon className="h-4 w-4 ml-2" />
+            <PlusIcon className="size-3.5" />
             تذكير جديد
           </button>
           <button
             onClick={loadData}
             disabled={loading}
-            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 disabled:opacity-50 flex items-center"
+            className="h-8.5 px-3 rounded-lg text-xs font-medium border border-border/70 hover:bg-muted/50 text-foreground transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-1.5"
           >
-            <ArrowPathIcon
-              className={`h-4 w-4 ml-2 ${loading ? "animate-spin" : ""}`}
-            />
+            <ArrowPathIcon className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
             تحديث
           </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <ClockIcon className="h-8 w-8 text-blue-600" />
-              </div>
-              <div className="mr-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                    التذكيرات النشطة
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                    {stats.active.total}
-                  </dd>
-                </dl>
-              </div>
+      {/* Linear Telemetry Strip */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">التذكيرات النشطة</span>
+              <span className="size-1.5 rounded-full bg-indigo-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {stats?.active?.total ?? activeReminders.length}
             </div>
           </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <ExclamationTriangleIcon className="h-8 w-8 text-red-600" />
-              </div>
-              <div className="mr-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                    متأخرة
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                    {stats.active.overdue}
-                  </dd>
-                </dl>
-              </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">متأخرة عن الموعد</span>
+              <span className="size-1.5 rounded-full bg-rose-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {stats?.active?.overdue ?? 0}
             </div>
           </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <CheckCircleIcon className="h-8 w-8 text-green-600" />
-              </div>
-              <div className="mr-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                    مكتملة هذا الأسبوع
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                    {stats.completed.thisWeek}
-                  </dd>
-                </dl>
-              </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">مكتملة هذا الأسبوع</span>
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {stats?.completed?.thisWeek ?? completedReminders.length}
             </div>
           </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <BellIcon className="h-8 w-8 text-purple-600" />
-              </div>
-              <div className="mr-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                    معدل الإنجاز
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                    {Math.round(stats.performance.completionRate * 100)}%
-                  </dd>
-                </dl>
-              </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">معدل الإنجاز</span>
+              <span className="size-1.5 rounded-full bg-violet-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {stats?.performance?.completionRate ? `${Math.round(stats.performance.completionRate * 100)}%` : "0%"}
             </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => setActiveTab("active")}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === "active"
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
-          >
-            <ClockIcon className="h-5 w-5 inline ml-2" />
-            التذكيرات النشطة ({activeReminders.length})
-          </button>
-          <button
-            onClick={() => setActiveTab("completed")}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === "completed"
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
-          >
-            <CheckCircleIcon className="h-5 w-5 inline ml-2" />
-            المكتملة ({completedReminders.length})
-          </button>
-          <button
-            onClick={() => setActiveTab("stats")}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === "stats"
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
-          >
-            <CalendarIcon className="h-5 w-5 inline ml-2" />
-            الإحصائيات
-          </button>
-        </nav>
+      {/* Segmented Control Tabs */}
+      <div className="flex items-center gap-1 p-1 bg-muted/40 border border-border/60 rounded-lg w-fit">
+        <button
+          onClick={() => setActiveTab("active")}
+          className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+            activeTab === "active"
+              ? "bg-background text-foreground shadow-2xs font-semibold"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <ClockIcon className="size-3.5 inline ml-1.5" />
+          النشطة ({activeReminders.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("completed")}
+          className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+            activeTab === "completed"
+              ? "bg-background text-foreground shadow-2xs font-semibold"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <CheckCircleIcon className="size-3.5 inline ml-1.5" />
+          المكتملة ({completedReminders.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("stats")}
+          className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+            activeTab === "stats"
+              ? "bg-background text-foreground shadow-2xs font-semibold"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <CalendarIcon className="size-3.5 inline ml-1.5" />
+          الإحصائيات
+        </button>
       </div>
 
       {/* Create Reminder Modal */}

@@ -678,84 +678,86 @@ const NotificationSettings: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-2">
-          <h1 className="flex items-center text-2xl font-bold text-gray-900 dark:text-white">
-            <CogIcon className="ml-3 h-8 w-8 text-blue-600 dark:text-blue-400" />
-            إعدادات الإشعارات
+    <div className="p-4 md:p-6 space-y-4 w-full">
+      {/* Linear Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2">
+        <div className="space-y-0.5">
+          <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <CogIcon className="size-5 text-indigo-600 dark:text-indigo-400" />
+            إعدادات التنبيهات والإشعارات
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            تخصيص تفضيلات الإشعارات وقنوات التواصل، مع إشعارات المتصفح للطلبات والرسائل اللحظية.
+          <p className="text-xs text-muted-foreground">
+            تخصيص قنوات التنبيه اللحظية وإشعارات المتصفح
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
-              hasUnsavedChanges
-                ? "bg-amber-50 text-amber-700"
-                : "bg-green-50 text-green-700"
-            }`}
-          >
-            {hasUnsavedChanges ? "تغييرات غير محفوظة" : "كل شيء محفوظ"}
-          </span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/40 border border-border/60 text-xs text-muted-foreground">
+            <span
+              className={`size-1.5 rounded-full ${
+                hasUnsavedChanges ? "bg-amber-500 animate-pulse" : "bg-emerald-500"
+              }`}
+            />
+            <span className="text-[11px] font-medium">
+              {hasUnsavedChanges ? "تغييرات غير محفوظة" : "الإعدادات متزامنة"}
+            </span>
+          </div>
+
           <button
             type="button"
             onClick={handleSaveSettings}
             disabled={saving || !hasUnsavedChanges}
-            className="inline-flex items-center rounded-lg bg-blue-600 px-6 py-2 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-8.5 px-3 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-1.5"
           >
             {saving ? (
-              <ArrowPathIcon className="ml-2 h-4 w-4 animate-spin" />
+              <ArrowPathIcon className="size-3.5 animate-spin" />
             ) : (
-              <CheckCircleIcon className="ml-2 h-4 w-4" />
+              <CheckCircleIcon className="size-3.5" />
             )}
-            حفظ الإعدادات
+            حفظ التغييرات
           </button>
         </div>
       </div>
 
       {feedback ? (
         <div
-          className={`rounded-2xl border px-4 py-3 text-sm ${
+          className={`rounded-lg border px-3.5 py-2 text-xs font-medium flex items-center gap-2 ${
             feedback.type === "success"
-              ? "border-green-100 bg-green-50 text-green-700"
+              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
               : feedback.type === "error"
-                ? "border-red-100 bg-red-50 text-red-700"
-                : "border-blue-100 bg-blue-50 text-blue-700"
+                ? "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+                : "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300"
           }`}
         >
           {feedback.message}
         </div>
       ) : null}
 
-      <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="-mb-px flex gap-6 overflow-x-auto">
-          {[
-            { id: "general", label: "الإعدادات العامة", icon: CogIcon },
-            { id: "types", label: "أنواع الإشعارات", icon: BellIcon },
-            { id: "stats", label: "الإحصائيات", icon: ClockIcon },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id as SettingsTab)}
-                className={`inline-flex items-center border-b-2 px-1 py-3 text-sm font-medium whitespace-nowrap transition ${
-                  isActive
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                }`}
-              >
-                <Icon className="ml-2 h-5 w-5" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
+      {/* Segmented Control Tabs */}
+      <div className="flex items-center gap-1 p-1 bg-muted/40 border border-border/60 rounded-lg w-fit">
+        {[
+          { id: "general", label: "الإعدادات العامة", icon: CogIcon },
+          { id: "types", label: "أنواع الإشعارات", icon: BellIcon },
+          { id: "stats", label: "الإحصائيات", icon: ClockIcon },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id as SettingsTab)}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+                isActive
+                  ? "bg-background text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon className="size-3.5" />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {activeTab === "general" ? (

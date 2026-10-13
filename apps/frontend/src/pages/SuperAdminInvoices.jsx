@@ -182,45 +182,98 @@ const SuperAdminInvoices = () => {
   }
 
   return (
-    <div className="p-3">
-      <div className="flex justify-between items-center mb-3">
-        <h1 className="text-2xl font-bold">النظام المركزي للفواتير</h1>
-        {activeTab === 0 && <Button onClick={() => setCreateDialogOpen(true)}>فاتورة جديدة</Button>}
+    <div className="p-4 md:p-6 space-y-4 w-full">
+      {/* Header Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2">
+        <div className="space-y-0.5">
+          <h1 className="text-xl font-bold tracking-tight text-foreground">النظام المركزي للفواتير</h1>
+          <p className="text-xs text-muted-foreground">إدارة ومتابعة فواتير الاشتراكات والطلبات لشركات المنصة</p>
+        </div>
+        {activeTab === 0 && (
+          <Button
+            onClick={() => setCreateDialogOpen(true)}
+            className="h-8.5 px-3 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-all active:scale-[0.98]"
+          >
+            فاتورة جديدة
+          </Button>
+        )}
       </div>
 
       {error && <Alert variant="destructive" className="mb-3"><AlertDescription>{error}</AlertDescription></Alert>}
 
-      <div className="border-b mb-3">
-        <div className="flex gap-0">
-          {["فواتير المنصة", "الإحصائيات", "فواتير الطلبات"].map((tab, i) => (
-            <button key={tab} onClick={() => { setActiveTab(i); setError(""); }}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === i ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{tab}</button>
-          ))}
-        </div>
+      {/* Segmented Control Tabs */}
+      <div className="flex items-center gap-1 p-1 bg-muted/40 border border-border/60 rounded-lg w-fit">
+        {["فواتير المنصة", "الإحصائيات", "فواتير الطلبات"].map((tab, i) => (
+          <button
+            key={tab}
+            onClick={() => { setActiveTab(i); setError(""); }}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+              activeTab === i
+                ? "bg-background text-foreground shadow-2xs font-semibold"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
 
       {/* ============ TAB 0: Platform Invoices ============ */}
       {activeTab === 0 && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-            {[
-              { label: "إجمالي الفواتير", value: stats.total || 0, color: "" },
-              { label: "الفواتير المدفوعة", value: stats.byStatus?.PAID?.count || 0, color: "text-green-600" },
-              { label: "الفواتير المتأخرة", value: stats.byStatus?.OVERDUE?.count || 0, color: "text-red-600" },
-              { label: "إجمالي الإيرادات", value: formatPrice(stats.totalRevenue || 0), color: "text-primary" },
-            ].map((card, i) => (
-              <div key={i} className="rounded-xl border bg-card text-card-foreground p-4">
-                <p className="text-sm text-muted-foreground">{card.label}</p>
-                <p className={`text-xl font-bold ${card.color}`}>{card.value}</p>
+          {/* Linear Telemetry Strip */}
+          <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+            <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
+              <div className="p-3 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span className="font-medium text-[11px]">إجمالي الفواتير</span>
+                  <span className="size-1.5 rounded-full bg-indigo-500" />
+                </div>
+                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                  {stats.total || 0}
+                </div>
               </div>
-            ))}
+              <div className="p-3 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span className="font-medium text-[11px]">الفواتير المدفوعة</span>
+                  <span className="size-1.5 rounded-full bg-emerald-500" />
+                </div>
+                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                  {stats.byStatus?.PAID?.count || 0}
+                </div>
+              </div>
+              <div className="p-3 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span className="font-medium text-[11px]">الفواتير المتأخرة</span>
+                  <span className="size-1.5 rounded-full bg-rose-500" />
+                </div>
+                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                  {stats.byStatus?.OVERDUE?.count || 0}
+                </div>
+              </div>
+              <div className="p-3 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span className="font-medium text-[11px]">إجمالي الإيرادات</span>
+                  <span className="size-1.5 rounded-full bg-violet-500" />
+                </div>
+                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                  {formatPrice(stats.totalRevenue || 0)}
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="rounded-xl border bg-card mb-3 p-4">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-              <Input placeholder="البحث" value={filters.search} onChange={e => handleFilterChange("search", e.target.value)} />
+          {/* Unified Table Chassis with Integrated Filter Bar */}
+          <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+            <div className="p-3 border-b border-border/60 flex flex-wrap items-center gap-2 bg-muted/20">
+              <Input
+                placeholder="البحث برقم الفاتورة أو اسم الشركة..."
+                value={filters.search}
+                onChange={e => handleFilterChange("search", e.target.value)}
+                className="h-8 text-xs max-w-xs bg-background"
+              />
               <Select value={filters.status} onValueChange={v => handleFilterChange("status", v)}>
-                <SelectTrigger><SelectValue placeholder="الحالة" /></SelectTrigger>
+                <SelectTrigger className="h-8 text-xs w-28 bg-background"><SelectValue placeholder="الحالة" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">الكل</SelectItem>
                   <SelectItem value="DRAFT">مسودة</SelectItem>
@@ -231,7 +284,7 @@ const SuperAdminInvoices = () => {
                 </SelectContent>
               </Select>
               <Select value={filters.type} onValueChange={v => handleFilterChange("type", v)}>
-                <SelectTrigger><SelectValue placeholder="النوع" /></SelectTrigger>
+                <SelectTrigger className="h-8 text-xs w-28 bg-background"><SelectValue placeholder="النوع" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">الكل</SelectItem>
                   <SelectItem value="SUBSCRIPTION">اشتراك</SelectItem>
@@ -240,12 +293,20 @@ const SuperAdminInvoices = () => {
                   <SelectItem value="DOWNGRADE">تخفيض</SelectItem>
                 </SelectContent>
               </Select>
-              <Input type="date" value={filters.dateFrom} onChange={e => handleFilterChange("dateFrom", e.target.value)} />
-              <Input type="date" value={filters.dateTo} onChange={e => handleFilterChange("dateTo", e.target.value)} />
+              <Input
+                type="date"
+                value={filters.dateFrom}
+                onChange={e => handleFilterChange("dateFrom", e.target.value)}
+                className="h-8 text-xs w-36 bg-background"
+              />
+              <Input
+                type="date"
+                value={filters.dateTo}
+                onChange={e => handleFilterChange("dateTo", e.target.value)}
+                className="h-8 text-xs w-36 bg-background"
+              />
             </div>
-          </div>
 
-          <div className="rounded-xl border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -293,54 +354,102 @@ const SuperAdminInvoices = () => {
       {/* ============ TAB 2: Order Invoices ============ */}
       {activeTab === 2 && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
-            {[
-              { label: "إجمالي فواتير الطلبات", value: orderStats.total || 0, color: "" },
-              { label: "مدفوعة", value: (orderStats.byPaymentStatus?.PAID?.count || 0) + (orderStats.byPaymentStatus?.COMPLETED?.count || 0), color: "text-green-600" },
-              { label: "قيد الانتظار", value: orderStats.byPaymentStatus?.PENDING?.count || 0, color: "text-amber-600" },
-              { label: "ملغية", value: orderStats.byPaymentStatus?.CANCELLED?.count || 0, color: "text-red-600" },
-              { label: "إجمالي الإيرادات", value: formatPrice(orderStats.totalRevenue || 0), color: "text-primary" },
-            ].map((card, i) => (
-              <div key={i} className="rounded-xl border bg-card text-card-foreground p-4">
-                <p className="text-sm text-muted-foreground">{card.label}</p>
-                <p className={`text-xl font-bold ${card.color}`}>{card.value}</p>
+          {/* Order Invoices Telemetry Strip */}
+          <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden mb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
+              <div className="p-3 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span className="font-medium text-[11px]">إجمالي فواتير الطلبات</span>
+                  <span className="size-1.5 rounded-full bg-indigo-500" />
+                </div>
+                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                  {orderStats.total || 0}
+                </div>
               </div>
-            ))}
-          </div>
-
-          <div className="rounded-xl border bg-card mb-3 p-4">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-              <Input placeholder="بحث (رقم فاتورة / عميل / شركة)" value={orderFilters.search} onChange={e => handleOrderFilterChange("search", e.target.value)} />
-              <Select value={orderFilters.companyId} onValueChange={v => handleOrderFilterChange("companyId", v)}>
-                <SelectTrigger><SelectValue placeholder="الشركة" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">كل الشركات</SelectItem>
-                  {companies.map(c => (
-                    <SelectItem key={c.companyId} value={c.companyId}>{c.companyName} ({c.invoiceCount})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={orderFilters.paymentStatus} onValueChange={v => handleOrderFilterChange("paymentStatus", v)}>
-                <SelectTrigger><SelectValue placeholder="حالة الدفع" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">الكل</SelectItem>
-                  <SelectItem value="PAID">مدفوعة</SelectItem>
-                  <SelectItem value="COMPLETED">مدفوعة</SelectItem>
-                  <SelectItem value="PENDING">قيد الانتظار</SelectItem>
-                  <SelectItem value="CANCELLED">ملغية</SelectItem>
-                  <SelectItem value="REFUNDED">مستردة</SelectItem>
-                  <SelectItem value="PARTIALLY_PAID">مدفوعة جزئياً</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input type="date" value={orderFilters.dateFrom} onChange={e => handleOrderFilterChange("dateFrom", e.target.value)} />
-              <Input type="date" value={orderFilters.dateTo} onChange={e => handleOrderFilterChange("dateTo", e.target.value)} />
+              <div className="p-3 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span className="font-medium text-[11px]">مدفوعة</span>
+                  <span className="size-1.5 rounded-full bg-emerald-500" />
+                </div>
+                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                  {(orderStats.byPaymentStatus?.PAID?.count || 0) + (orderStats.byPaymentStatus?.COMPLETED?.count || 0)}
+                </div>
+              </div>
+              <div className="p-3 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span className="font-medium text-[11px]">قيد الانتظار</span>
+                  <span className="size-1.5 rounded-full bg-amber-500" />
+                </div>
+                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                  {orderStats.byPaymentStatus?.PENDING?.count || 0}
+                </div>
+              </div>
+              <div className="p-3 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span className="font-medium text-[11px]">ملغية</span>
+                  <span className="size-1.5 rounded-full bg-rose-500" />
+                </div>
+                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                  {orderStats.byPaymentStatus?.CANCELLED?.count || 0}
+                </div>
+              </div>
+              <div className="p-3 flex flex-col justify-between">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span className="font-medium text-[11px]">إجمالي الإيرادات</span>
+                  <span className="size-1.5 rounded-full bg-violet-500" />
+                </div>
+                <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                  {formatPrice(orderStats.totalRevenue || 0)}
+                </div>
+              </div>
             </div>
           </div>
 
           {orderLoading ? (
             <div className="flex justify-center items-center min-h-[300px]"><LoadingSpinner size="lg" /></div>
           ) : (
-            <div className="rounded-xl border bg-card">
+            <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+              <div className="p-3 border-b border-border/60 flex flex-wrap items-center gap-2 bg-muted/20">
+                <Input
+                  placeholder="بحث (رقم فاتورة / عميل / شركة)..."
+                  value={orderFilters.search}
+                  onChange={e => handleOrderFilterChange("search", e.target.value)}
+                  className="h-8 text-xs max-w-xs bg-background"
+                />
+                <Select value={orderFilters.companyId} onValueChange={v => handleOrderFilterChange("companyId", v)}>
+                  <SelectTrigger className="h-8 text-xs w-36 bg-background"><SelectValue placeholder="الشركة" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">كل الشركات</SelectItem>
+                    {companies.map(c => (
+                      <SelectItem key={c.companyId} value={c.companyId}>{c.companyName} ({c.invoiceCount})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={orderFilters.paymentStatus} onValueChange={v => handleOrderFilterChange("paymentStatus", v)}>
+                  <SelectTrigger className="h-8 text-xs w-28 bg-background"><SelectValue placeholder="حالة الدفع" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">الكل</SelectItem>
+                    <SelectItem value="PAID">مدفوعة</SelectItem>
+                    <SelectItem value="COMPLETED">مدفوعة</SelectItem>
+                    <SelectItem value="PENDING">قيد الانتظار</SelectItem>
+                    <SelectItem value="CANCELLED">ملغية</SelectItem>
+                    <SelectItem value="REFUNDED">مستردة</SelectItem>
+                    <SelectItem value="PARTIALLY_PAID">مدفوعة جزئياً</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="date"
+                  value={orderFilters.dateFrom}
+                  onChange={e => handleOrderFilterChange("dateFrom", e.target.value)}
+                  className="h-8 text-xs w-36 bg-background"
+                />
+                <Input
+                  type="date"
+                  value={orderFilters.dateTo}
+                  onChange={e => handleOrderFilterChange("dateTo", e.target.value)}
+                  className="h-8 text-xs w-36 bg-background"
+                />
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>

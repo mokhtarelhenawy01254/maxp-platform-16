@@ -1497,31 +1497,32 @@ const UsersManagement: React.FC = () => {
 
   return (
     <TooltipProvider>
-      <div className="p-4 md:p-6 lg:p-8 space-y-6 w-full">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("users.title", "إدارة المستخدمين")}</h1>
-            <p className="text-sm text-muted-foreground">{t("users.pageDescription", "إدارة ومتابعة أعضاء الفريق، صلاحيات الوصول، والدعوات من مكان واحد.")}</p>
+      <div className="p-4 md:p-6 space-y-4 w-full">
+        {/* Header Control Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2">
+          <div className="space-y-0.5">
+            <h1 className="text-xl font-bold text-foreground tracking-tight">{t("users.title", "إدارة المستخدمين")}</h1>
+            <p className="text-xs text-muted-foreground">{t("users.pageDescription", "إدارة ومتابعة أعضاء الفريق، صلاحيات الوصول، والدعوات من مكان واحد.")}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
-              className="h-11 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-sm transition-all active:scale-95"
+              className="h-8.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium shadow-2xs transition-all active:scale-[0.98]"
               onClick={() => setEmployeeInviteModalOpen(true)}
             >
-              <Link2 className="size-4 ml-1.5" />
+              <Link2 className="size-3.5 ml-1.5" />
               دعوة موظف برابط
             </Button>
-            <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={openAddUser}>
-              <Plus className="size-4" />
+            <Button type="button" variant="outline" className="h-8.5 px-3 rounded-lg text-xs font-medium border-border/70 hover:bg-muted/50 transition-all active:scale-[0.98]" onClick={openAddUser}>
+              <Plus className="size-3.5 ml-1" />
               {t("users.addNewUser")}
             </Button>
-            <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={openInviteDialog}>
-              <UserPlus className="size-4" />
+            <Button type="button" variant="outline" className="h-8.5 px-3 rounded-lg text-xs font-medium border-border/70 hover:bg-muted/50 transition-all active:scale-[0.98]" onClick={openInviteDialog}>
+              <UserPlus className="size-3.5 ml-1" />
               {t("users.inviteUser")}
             </Button>
-            <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={exportCurrentUsers} disabled={users.length === 0}>
-              <ArrowDownToLine className="size-4" />
+            <Button type="button" variant="outline" className="h-8.5 px-3 rounded-lg text-xs font-medium border-border/70 hover:bg-muted/50 transition-all active:scale-[0.98]" onClick={exportCurrentUsers} disabled={users.length === 0}>
+              <ArrowDownToLine className="size-3.5 ml-1" />
               {t("users.exportCsv", "تصدير CSV")}
             </Button>
           </div>
@@ -1540,98 +1541,86 @@ const UsersManagement: React.FC = () => {
           </Alert>
         ) : null}
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-          {metrics.map((m, idx) => {
-            const Icon = m.icon;
-            const tones: Record<string, { bar: string; icon: string }> = {
-              primary: { bar: "from-violet-500 to-indigo-500", icon: "text-violet-600 dark:text-violet-300 bg-violet-500/10 dark:bg-violet-500/20" },
-              success: { bar: "from-emerald-500 to-teal-500", icon: "text-emerald-600 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/20" },
-              warning: { bar: "from-amber-500 to-orange-500", icon: "text-amber-600 dark:text-amber-300 bg-amber-500/10 dark:bg-amber-500/20" },
-              danger: { bar: "from-rose-500 to-red-500", icon: "text-rose-600 dark:text-rose-300 bg-rose-500/10 dark:bg-rose-500/20" },
-              secondary: { bar: "from-sky-500 to-blue-500", icon: "text-sky-600 dark:text-sky-300 bg-sky-500/10 dark:bg-sky-500/20" },
-            };
-            const t = tones[m.tone] || tones.primary;
-            const isCurrent = activeTab === m.id;
-            return (
-              <motion.div
-                key={m.title}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.06 }}
-                onClick={() => handleTabChange(m.id)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleTabChange(m.id);
-                  }
-                }}
-                className={cn(
-                  "relative overflow-hidden rounded-2xl border bg-card p-4 shadow-sm cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 select-none",
-                  isCurrent
-                    ? "border-primary ring-2 ring-primary/20 shadow-md"
-                    : "border-border/50 hover:border-border",
-                )}
-              >
-                <div className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${t.bar}`} />
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-muted-foreground">{m.title}</p>
-                    <p className="mt-1 text-2xl font-bold tracking-tight text-foreground tabular-nums">{m.value}</p>
+        {/* Linear Telemetry Strip */}
+        <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+          <div className="grid grid-cols-2 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
+            {metrics.map((m) => {
+              const isCurrent = activeTab === m.id;
+              const dotColors: Record<string, string> = {
+                primary: "bg-indigo-500",
+                success: "bg-emerald-500",
+                warning: "bg-amber-500",
+                danger: "bg-rose-500",
+                secondary: "bg-sky-500",
+              };
+              return (
+                <div
+                  key={m.title}
+                  onClick={() => handleTabChange(m.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleTabChange(m.id);
+                    }
+                  }}
+                  className={cn(
+                    "p-3 flex flex-col justify-between cursor-pointer transition-colors select-none",
+                    isCurrent
+                      ? "bg-muted/40 dark:bg-muted/20 border-b-2 sm:border-b-0 sm:border-t-2 border-indigo-600 dark:border-indigo-400"
+                      : "hover:bg-muted/20"
+                  )}
+                >
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                    <span className="font-medium text-[11px]">{m.title}</span>
+                    <span className={cn("size-1.5 rounded-full shrink-0", dotColors[m.tone] || "bg-indigo-500")} />
                   </div>
-                  <div className={`rounded-xl ${t.icon} p-2.5 shrink-0`}>
-                    <Icon className="size-5" />
+                  <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+                    {m.value}
                   </div>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground truncate">{m.subtitle}</p>
-              </motion.div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="gap-4">
-          <TabsList className="w-full justify-start overflow-x-auto rounded-2xl bg-muted/60 p-1">
-            <TabsTrigger value="all" className="min-w-[8.5rem] rounded-xl gap-2">
-              <Users className="size-4" />
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+          <TabsList className="w-full justify-start overflow-x-auto rounded-lg bg-muted/40 p-1 border border-border/60 h-auto">
+            <TabsTrigger value="all" className="rounded-md px-3 py-1 text-xs gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-2xs">
+              <Users className="size-3.5" />
               <span>كل المستخدمين</span>
-              <span className="rounded-full bg-muted-foreground/15 px-2 py-0.5 text-[11px] font-semibold text-foreground tabular-nums">
+              <span className="rounded bg-muted px-1.5 py-0.2 text-[10px] font-mono font-semibold tabular-nums">
                 {statusCounts.total || (filters.isActive === "" ? totalCount : "-")}
               </span>
             </TabsTrigger>
-            <TabsTrigger value="active" className="min-w-[8.5rem] rounded-xl gap-2">
-              <UserCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
+            <TabsTrigger value="active" className="rounded-md px-3 py-1 text-xs gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-2xs">
+              <UserCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>النشطون فعلياً</span>
-              <span className="rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[11px] font-semibold tabular-nums">
+              <span className="rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 text-[10px] font-mono font-semibold tabular-nums">
                 {statusCounts.active}
               </span>
             </TabsTrigger>
-            <TabsTrigger value="never_logged_in" className="min-w-[8.5rem] rounded-xl gap-2">
-              <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
+            <TabsTrigger value="never_logged_in" className="rounded-md px-3 py-1 text-xs gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-2xs">
+              <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400" />
               <span>لم يسجلوا الدخول</span>
-              <span className="rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 px-2 py-0.5 text-[11px] font-semibold tabular-nums">
+              <span className="rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 px-1.5 py-0.2 text-[10px] font-mono font-semibold tabular-nums">
                 {statusCounts.neverLoggedIn}
               </span>
             </TabsTrigger>
-            <TabsTrigger value="inactive" className="min-w-[8.5rem] rounded-xl gap-2">
-              <UserX className="size-4 text-rose-600 dark:text-rose-400" />
+            <TabsTrigger value="inactive" className="rounded-md px-3 py-1 text-xs gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-2xs">
+              <UserX className="size-3.5 text-rose-600 dark:text-rose-400" />
               <span>غير النشطين</span>
-              <span className="rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-300 px-2 py-0.5 text-[11px] font-semibold tabular-nums">
+              <span className="rounded bg-rose-500/10 text-rose-700 dark:text-rose-300 px-1.5 py-0.2 text-[10px] font-mono font-semibold tabular-nums">
                 {statusCounts.inactive}
               </span>
             </TabsTrigger>
-            <TabsTrigger value="invitations" className="min-w-[8.5rem] rounded-xl gap-2">
-              <MailPlus className="size-4 text-sky-600 dark:text-sky-400" />
+            <TabsTrigger value="invitations" className="rounded-md px-3 py-1 text-xs gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-2xs">
+              <MailPlus className="size-3.5 text-sky-600 dark:text-sky-400" />
               <span>الدعوات المعلقة</span>
-              {invitations.length > 0 ? (
-                <span className="rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[11px] font-semibold tabular-nums">
-                  {invitations.length}
-                </span>
-              ) : (
-                <span className="rounded-full bg-muted-foreground/15 px-2 py-0.5 text-[11px] font-semibold text-foreground tabular-nums">
-                  0
-                </span>
-              )}
+              <span className="rounded bg-sky-500/10 text-sky-700 dark:text-sky-300 px-1.5 py-0.2 text-[10px] font-mono font-semibold tabular-nums">
+                {invitations.length}
+              </span>
             </TabsTrigger>
           </TabsList>
 
@@ -1753,41 +1742,35 @@ const UsersManagement: React.FC = () => {
               </FormField>
             </BusinessFilterSheet>
 
-            <Card>
-              <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-1">
-                  <CardTitle>
+            <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+              <div className="p-3 border-b border-border/60 flex items-center justify-between gap-3 bg-muted/20">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-foreground">
                     {activeTab === "active"
-                      ? `النشطون فعلياً (${totalCount})`
+                      ? "النشطون فعلياً"
                       : activeTab === "never_logged_in"
-                        ? `مستخدمون لم يسجلوا الدخول بعد (${totalCount})`
+                        ? "لم يسجلوا الدخول بعد"
                         : activeTab === "inactive"
-                          ? `المستخدمون غير النشطين (${totalCount})`
-                          : t("users.userList", { count: totalCount })}
-                  </CardTitle>
-                  <CardDescription>
-                    {activeTab === "active"
-                      ? "عرض وإدارة حسابات الفريق المفعلة والتي سجلت دخول للمنصة."
-                      : activeTab === "never_logged_in"
-                        ? "حسابات تم إنشاؤها أو دعوتها لكنها لم تسجل الدخول للمنصة حتى الآن."
-                        : activeTab === "inactive"
-                          ? "عرض وإدارة حسابات الفريق المعطلة أو المستقيلة مع إمكانية إعادة التفعيل."
-                          : t("users.userListDescription", "قائمة بجميع حسابات فريق العمل والدعوات النشطة والمعلقة مع إمكانية إدارة الصلاحيات.")}
-                  </CardDescription>
+                          ? "المستخدمون غير النشطين"
+                          : "قائمة المستخدمين"}
+                  </span>
+                  <span className="rounded bg-muted px-1.5 py-0.2 text-[11px] font-mono text-muted-foreground tabular-nums">
+                    {totalCount}
+                  </span>
                 </div>
-                <Button type="button" variant="outline" className="h-10 rounded-2xl" onClick={() => void fetchUsers()}>
-                  <RefreshCw className={cn("size-4", loading ? "animate-spin" : undefined)} />
+                <Button type="button" variant="outline" size="sm" className="h-7.5 px-2.5 text-xs rounded-lg border-border/70 active:scale-[0.98]" onClick={() => void fetchUsers()}>
+                  <RefreshCw className={cn("size-3.5 ml-1", loading ? "animate-spin" : undefined)} />
                   تحديث
                 </Button>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              </div>
+
               {isInitialLoading ? (
                 <div className="flex min-h-[18rem] items-center justify-center">
                   <Loader2 className="size-6 animate-spin text-muted-foreground" />
                 </div>
               ) : (
                 <>
-                  <div className="hidden overflow-hidden rounded-[1.5rem] border border-border/70 md:block">
+                  <div className="overflow-x-auto">
                     <Table>
                       <TableHeader className="bg-muted/40">
                         <TableRow className="hover:bg-transparent">
@@ -2054,8 +2037,7 @@ const UsersManagement: React.FC = () => {
                   </div>
                 </>
               )}
-            </CardContent>
-            </Card>
+            </div>
           </>
         ) : (
           <Card>
