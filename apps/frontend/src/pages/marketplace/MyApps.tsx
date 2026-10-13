@@ -156,9 +156,16 @@ const STATUS_CONFIG = {
     barClass: "bg-destructive/60",
     icon: X,
   },
+  EXPIRED: {
+    labelKey: "expired",
+    fallbackLabel: "انتهى الاشتراك",
+    badgeClass: "bg-destructive/10 text-destructive border-destructive/20",
+    barClass: "bg-destructive",
+    icon: X,
+  },
 } as const;
 
-type StatusFilter = "ALL" | "ACTIVE" | "TRIAL" | "CANCELLED";
+type StatusFilter = "ALL" | "ACTIVE" | "TRIAL" | "CANCELLED" | "EXPIRED";
 type SortOption = "newest" | "name" | "usage" | "trial_ending";
 
 function getDaysRemaining(trialEndsAt?: string): number | null {
@@ -813,6 +820,18 @@ export function MyApps() {
                 )}
               >
                 ملغاة ({apps.filter((a) => a.status === "CANCELLED").length})
+              </button>
+            )}
+            {apps.some((a) => a.status === "EXPIRED") && (
+              <button
+                type="button"
+                onClick={() => setStatusFilter("EXPIRED")}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg transition-all",
+                  statusFilter === "EXPIRED" ? "bg-background text-destructive shadow-sm font-bold" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                منتهية ({apps.filter((a) => a.status === "EXPIRED").length})
               </button>
             )}
           </div>

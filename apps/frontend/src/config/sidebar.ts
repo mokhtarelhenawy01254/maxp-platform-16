@@ -236,12 +236,20 @@ export const getSidebarConfig = (
 
     const currentCompany = user?.companies?.find((c) => c.isCurrent) || user?.company;
     const activeApps = currentCompany?.activeApps || [];
-    // ponytail: plan-based superCompany check removed
+    const installedApps = (currentCompany as any)?.installedApps || [];
+    const installedAppSlugs: string[] = (
+        (currentCompany as any)?.installedAppSlugs ||
+        (Array.isArray(installedApps)
+            ? installedApps.map((a: any) => typeof a === 'string' ? a : a?.slug || a?.app?.slug)
+            : []) ||
+        activeApps
+    ).filter(Boolean).map((s: string) => String(s).trim().toLowerCase());
 
     if (shouldDebugSidebar) {
         console.log('🔍 [SIDEBAR-DEBUG] Current Company:', currentCompany?.name);
         console.log('🔍 [SIDEBAR-DEBUG] Active Apps Count:', activeApps?.length);
         console.log('🔍 [SIDEBAR-DEBUG] Active Apps List:', activeApps);
+        console.log('🔍 [SIDEBAR-DEBUG] Installed App Slugs:', installedAppSlugs);
     }
 
     const FEATURE_FLAG_MAP: Record<string, boolean | undefined> = {
@@ -263,6 +271,15 @@ export const getSidebarConfig = (
         });
     };
     const isAnyAppActive = (slugs: string[]) => slugs.some((slug) => isAppActive(slug));
+
+    const isAppInstalled = (slug: string) => {
+        if (!slug) return false;
+        const targetSlug = slug.trim().toLowerCase();
+        if (installedAppSlugs.includes(targetSlug)) return true;
+        return isAppActive(slug);
+    };
+    const isAnyAppInstalled = (slugs: string[]) => slugs.some((slug) => isAppInstalled(slug));
+
     const isStoreActive = () => isAnyAppActive([...STORE_APP_SLUGS]);
     const hasMultipleCompanies = (user?.companies?.length ?? 0) > 1;
     const canManageTaskIntegrations = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'].includes(user?.role || '');
@@ -522,7 +539,7 @@ export const getSidebarConfig = (
                 { to: '/unified-inbox', icon: MessageSquare, label: t('sidebar.unifiedInbox') },
                 { to: '/unified-inbox/connections', icon: Link, label: t('sidebar.platformConnections') },
             ],
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('unified-inbox')
+            hidden: user?.role === 'AFFILIATE' || !isAppInstalled('unified-inbox')
         },
 
         // 1️⃣.6 العميل الذكي AI (للأدمن والمالك - عند تفعيل ai-chat-basic)
@@ -602,7 +619,7 @@ export const getSidebarConfig = (
                 { to: '/whatsapp/customer-journey', icon: RefreshCcw, label: t('sidebar.whatsappCustomerJourney'), requiredPermissions: ['inbox.view'] },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-business')
+            hidden: user?.role === 'AFFILIATE' || !isAppInstalled('whatsapp-business')
         },
 
         // ????? ????????? (?????)
@@ -613,7 +630,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/automation/bot-studio', icon: Send, label: t('sidebar.botStudio') },
             ],
-            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['bot-automation', 'whatsapp-business', 'facebook-pages-connect', 'crm-basic'])
+            hidden: user?.role === 'AFFILIATE' || (!isAnyAppInstalled(['bot-automation', 'whatsapp-business']) && !isAnyAppActive(['facebook-pages-connect', 'crm-basic']))
         },
 
         // 2??.6 ????????
@@ -632,7 +649,7 @@ export const getSidebarConfig = (
                 { to: '/settings/telegram', icon: Cog, label: t('sidebar.telegramSettings') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('telegram-business'),
+            hidden: user?.role === 'AFFILIATE' || !isAppInstalled('telegram-business'),
         },
 
         // 3️⃣ إدارة الطلبات (قسم مستقل شامل)
@@ -1369,7 +1386,7 @@ export const getSidebarConfig = (
             id: 'appointments',
             title: t('sidebar.appointments'),
             icon: Calendar,
-            hidden: !isAppActive('booking-app'),
+            hidden: !isAppInstalled('booking-app'),
             items: [
                 { to: '/appointments', icon: Calendar, label: t('sidebar.appointments') },
             ]
@@ -1380,7 +1397,7 @@ export const getSidebarConfig = (
             id: 'medical-center',
             title: t('sidebar.medicalCenter'),
             icon: Heart,
-            hidden: !isAppActive('medical-system'),
+            hidden: !isAppInstalled('medical-system'),
             items: [
                 { to: '/admin/booking/dashboard', icon: BarChart3, label: t('sidebar.bookingDashboard') },
                 { to: '/admin/booking/appointments', icon: Calendar, label: t('sidebar.bookingAppointments') },
@@ -1404,7 +1421,7 @@ export const getSidebarConfig = (
             id: 'lab',
             title: t('sidebar.labModule'),
             icon: FlaskConical,
-            hidden: !isAppActive('lab-app'),
+            hidden: !isAppInstalled('lab-app'),
             items: [
                 { to: '/lab/dashboard', icon: BarChart3, label: t('sidebar.labDashboard') },
                 { to: '/lab/reception', icon: Inbox, label: t('sidebar.labReception') },
@@ -1428,7 +1445,7 @@ export const getSidebarConfig = (
             id: 'dental-lab',
             title: t('sidebar.dentalLabModule'),
             icon: Stethoscope,
-            hidden: !isAppActive('dental-lab-app'),
+            hidden: !isAppInstalled('dental-lab-app'),
             items: [
                 { to: '/dental-lab/dashboard', icon: BarChart3, label: t('sidebar.dentalLabDashboard') },
                 { to: '/dental-lab/cases', icon: ListChecks, label: t('sidebar.dentalLabCases') },
@@ -1448,7 +1465,7 @@ export const getSidebarConfig = (
             id: 'academy',
             title: isEn ? 'MaxP Academy' : t('sidebar.academyModule', 'أكاديمية ماكس بي'),
             icon: GraduationCap,
-            hidden: !isAppActive('academy-app') && !isAppActive('academy'),
+            hidden: !isAppInstalled('academy-app') && !isAppInstalled('academy'),
             items: [
                 { to: '/academy/dashboard', icon: BarChart3, label: isEn ? 'Academy Dashboard' : t('sidebar.academyDashboard', 'لوحة الأكاديمية') },
                 { to: '/academy/courses', icon: BookOpen, label: isEn ? 'Courses Management' : t('sidebar.academyCourses', 'إدارة الكورسات') },
@@ -1462,7 +1479,7 @@ export const getSidebarConfig = (
             id: 'radiology',
             title: t('sidebar.radiologyModule'),
             icon: Radiation,
-            hidden: !isAppActive('radiology-app'),
+            hidden: !isAppInstalled('radiology-app'),
             items: [
                 { to: '/radiology/dashboard', icon: BarChart3, label: t('sidebar.radiologyDashboard') },
                 {
@@ -1532,7 +1549,7 @@ export const getSidebarConfig = (
             id: 'education',
             title: t('sidebar.educationModule'),
             icon: GraduationCap,
-            hidden: !isAppActive('education-app'),
+            hidden: !isAppInstalled('education-app'),
             items: [
                 { to: '/admin/education/dashboard', icon: BarChart3, label: t('sidebar.educationDashboard') },
                 { to: '/admin/education/subjects', icon: BookOpen, label: t('sidebar.educationSubjects') },
@@ -1552,7 +1569,7 @@ export const getSidebarConfig = (
             id: 'hotel',
             title: t('sidebar.hotelModule'),
             icon: Building2,
-            hidden: !isAppActive('hotel-app'),
+            hidden: !isAppInstalled('hotel-app'),
             items: [
                 { to: '/admin/hotel', icon: Building2, label: t('sidebar.hotelDashboard') },
             ]
@@ -1563,7 +1580,7 @@ export const getSidebarConfig = (
             id: 'forms',
             title: t('sidebar.formsBuilder'),
             icon: FileText,
-            hidden: !isAppActive('forms-app'),
+            hidden: !isAppInstalled('forms-app'),
             items: [
                 { to: '/admin/forms', icon: FileText, label: t('sidebar.forms') },
             ]
@@ -1574,7 +1591,7 @@ export const getSidebarConfig = (
             id: 'service-requests',
             title: t('sidebar.serviceRequests'),
             icon: ClipboardList,
-            hidden: !isAppActive('service-request-app'),
+            hidden: !isAppInstalled('service-request-app'),
             items: [
                 { to: '/admin/services', icon: SquarePen, label: t('sidebar.serviceManagement') },
                 { to: '/admin/service-orders', icon: ClipboardList, label: t('sidebar.serviceOrders') },

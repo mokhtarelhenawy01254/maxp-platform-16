@@ -147,7 +147,8 @@ export interface AppBundle {
 
 export interface InstalledApp {
   id: string;
-  status: "ACTIVE" | "TRIAL" | "CANCELLED";
+  status: "ACTIVE" | "TRIAL" | "CANCELLED" | "EXPIRED";
+  isExpired?: boolean;
   activePricingModel: string;
   trialEndsAt?: string;
   validUntil?: string;

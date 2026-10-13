@@ -118,7 +118,7 @@ const fetchCompanySpecialtyAndApps = async (companyId, prisma) => {
         const rawApps = await prisma.companyApp.findMany({
             where: {
                 companyId,
-                status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial'] }
+                status: { in: ['ACTIVE', 'TRIAL', 'EXPIRED', 'active', 'trial', 'expired'] }
             },
             include: {
                 app: {

@@ -27,7 +27,7 @@ exports.getMyApps = async (req, res) => {
         prisma.companyApp.findMany({
           where: {
             companyId,
-            status: { in: ['TRIAL', 'ACTIVE'] },
+            status: { in: ['TRIAL', 'ACTIVE', 'EXPIRED', 'trial', 'active', 'expired'] },
             app: {
               category: {
                 notIn: ['THEME', 'TEMPLATE'],
@@ -57,7 +57,14 @@ exports.getMyApps = async (req, res) => {
       ]);
     });
 
-    const apps = rawApps.filter((ca) => isCompanyAppInstallationValid(ca, company));
+    const apps = rawApps.map((ca) => {
+      const isValid = isCompanyAppInstallationValid(ca, company);
+      return {
+        ...ca,
+        status: !isValid ? 'EXPIRED' : ca.status,
+        isExpired: !isValid,
+      };
+    });
 
     // ONE grouped aggregate instead of one query per app: with ~45 installed
     // apps, the per-app Promise.all herd fired 45 parallel RLS transactions

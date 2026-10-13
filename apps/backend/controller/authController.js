@@ -13,8 +13,28 @@ const {
 const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 const { getJwtSecret, getJwtRefreshSecret } = require('../utils/jwtSecret');
 const businessSpecialtyService = require('../services/businessSpecialtyService');
-const { filterActiveCompanyAppSlugs } = require('../middleware/checkAppAccess');
+const { filterActiveCompanyAppSlugs, isCompanyAppInstallationValid } = require('../middleware/checkAppAccess');
 const normalizeEmail = (value = '') => value.trim().toLowerCase();
+
+const sanitizeInstalledApps = (rawInstalledApps = [], company = null) => {
+  if (!Array.isArray(rawInstalledApps) || rawInstalledApps.length === 0) {
+    return [];
+  }
+  return rawInstalledApps.map((ca) => {
+    const slug = String(ca?.app?.slug || ca?.slug || '').trim();
+    const isValid = isCompanyAppInstallationValid(ca, company);
+    return {
+      slug,
+      status: ca.status,
+      trialEndsAt: ca.trialEndsAt,
+      validUntil: ca.validUntil,
+      nextBillingAt: ca.nextBillingAt,
+      isExpired: !isValid,
+      monthlyPrice: ca.app?.monthlyPrice ?? null,
+      pricingModel: ca.activePricingModel || ca.app?.pricingModel || 'SUBSCRIPTION',
+    };
+  }).filter((a) => Boolean(a.slug));
+};
 
 const getSessionExpiryConfig = (req) => {
   const headers = req?.headers || {};
@@ -999,19 +1019,24 @@ const login = async (req, res) => {
     if (user.company) {
       const roleInPrimary = findRoleInCompany(user.companyId);
       const activeApps = filterActiveCompanyAppSlugs(user.company.installedApps, user.company);
+      const installedApps = sanitizeInstalledApps(user.company.installedApps, user.company);
+      const installedAppSlugs = [...new Set(installedApps.map((a) => a.slug))];
       const responseCompany = {
         ...buildCompanyResponseWithOnboarding(user.company, user),
-        activeApps
+        activeApps,
+        installedApps,
+        installedAppSlugs
       };
       user.company = responseCompany;
       companiesMap.set(user.companyId, {
         ...responseCompany,
         activeApps,
+        installedApps,
+        installedAppSlugs,
         role: roleInPrimary,
         isDefault: true,
         isCurrent: true // Current company on login
       });
-      delete companiesMap.get(user.companyId).installedApps;
       if (user.role !== 'SUPER_ADMIN') {
         currentActiveRole = roleInPrimary;
       }
@@ -1023,18 +1048,23 @@ const login = async (req, res) => {
         if (uc.company && uc.company.isActive) {
           if (!companiesMap.has(uc.companyId)) {
             const activeApps = filterActiveCompanyAppSlugs(uc.company.installedApps, uc.company);
+            const installedApps = sanitizeInstalledApps(uc.company.installedApps, uc.company);
+            const installedAppSlugs = [...new Set(installedApps.map((a) => a.slug))];
             const responseCompany = {
               ...buildCompanyResponseWithOnboarding(uc.company, user),
-              activeApps
+              activeApps,
+              installedApps,
+              installedAppSlugs
             };
             companiesMap.set(uc.companyId, {
               ...responseCompany,
               activeApps,
+              installedApps,
+              installedAppSlugs,
               role: uc.roleRef?.key || uc.role,
               isDefault: uc.isDefault,
               isCurrent: uc.companyId === user.companyId
             });
-            delete companiesMap.get(uc.companyId).installedApps;
           }
         }
       }
@@ -1311,9 +1341,13 @@ const me = async (req, res) => {
     if (user.company) {
       const roleInPrimary = findRoleInCompany(user.companyId);
       const activeApps = filterActiveCompanyAppSlugs(user.company.installedApps, user.company);
+      const installedApps = sanitizeInstalledApps(user.company.installedApps, user.company);
+      const installedAppSlugs = [...new Set(installedApps.map((a) => a.slug))];
       const responseCompany = {
         ...buildCompanyResponseWithOnboarding(user.company, user),
-        activeApps
+        activeApps,
+        installedApps,
+        installedAppSlugs
       };
       user.company = responseCompany;
 
@@ -1325,11 +1359,12 @@ const me = async (req, res) => {
       companiesMap.set(user.companyId, {
         ...responseCompany,
         activeApps,
+        installedApps,
+        installedAppSlugs,
         role: roleInPrimary,
         isDefault: true,
         isCurrent: user.companyId === decoded.companyId
       });
-      delete companiesMap.get(user.companyId).installedApps;
 
       // If this is the currently active company, ensure we use its role (unless user is global SUPER_ADMIN)
       if (user.role !== 'SUPER_ADMIN' && user.companyId === decoded.companyId) {
@@ -1342,18 +1377,23 @@ const me = async (req, res) => {
       if (uc.company && uc.company.isActive) {
         if (!companiesMap.has(uc.companyId)) {
           const activeApps = filterActiveCompanyAppSlugs(uc.company.installedApps, uc.company);
+          const installedApps = sanitizeInstalledApps(uc.company.installedApps, uc.company);
+          const installedAppSlugs = [...new Set(installedApps.map((a) => a.slug))];
           const responseCompany = {
             ...buildCompanyResponseWithOnboarding(uc.company, user),
-            activeApps
+            activeApps,
+            installedApps,
+            installedAppSlugs
           };
           companiesMap.set(uc.companyId, {
             ...responseCompany,
             activeApps,
+            installedApps,
+            installedAppSlugs,
             role: uc.roleRef?.key || uc.role,
             isDefault: uc.isDefault,
             isCurrent: uc.companyId === decoded.companyId
           });
-          delete companiesMap.get(uc.companyId).installedApps;
         }
 
         // If this secondary company is the current one, update active role (unless user is global SUPER_ADMIN)
@@ -2101,7 +2141,9 @@ const switchCompany = async (req, res) => {
     });
     const targetCompany = rawTargetCompany ? {
       ...rawTargetCompany,
-      activeApps: filterActiveCompanyAppSlugs(rawTargetCompany.installedApps, rawTargetCompany)
+      activeApps: filterActiveCompanyAppSlugs(rawTargetCompany.installedApps, rawTargetCompany),
+      installedApps: sanitizeInstalledApps(rawTargetCompany.installedApps, rawTargetCompany),
+      installedAppSlugs: [...new Set(sanitizeInstalledApps(rawTargetCompany.installedApps, rawTargetCompany).map(a => a.slug))]
     } : null;
 
     if (!targetCompany) {

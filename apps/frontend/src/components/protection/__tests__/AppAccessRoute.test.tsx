@@ -146,4 +146,40 @@ describe("AppAccessRoute with overlay-blur mode", () => {
     expect(screen.getByTestId("whatsapp-live-content")).toBeInTheDocument();
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
+
+  it("defaults to overlay-blur mode and shows reassuring dental lab copy for expired dental lab app", () => {
+    mockAuth.current = {
+      isAuthenticated: true,
+      user: {
+        id: "user-dental-1",
+        role: "OWNER",
+        activeApps: [], // Expired
+        company: {
+          id: "company-dental-1",
+          activeApps: [],
+        },
+      },
+    };
+
+    render(
+      <AppAccessRoute requiredAppSlugs={["dental-lab-app", "dental-lab"]}>
+        <div data-testid="dental-cases-bench">Dental Lab Active Cases Bench</div>
+      </AppAccessRoute>
+    );
+
+    // Underlying app is preserved and rendered in blurred state (not redirected to /marketplace!)
+    expect(screen.getByTestId("dental-cases-bench")).toBeInTheDocument();
+
+    // Alert dialog overlay is present
+    const dialog = screen.getByRole("alertdialog");
+    expect(dialog).toBeInTheDocument();
+    expect(screen.getByText("انتهى الاشتراك الشهري")).toBeInTheDocument();
+    expect(screen.getByText(/اشتراك «معمل الأسنان» منتهي/)).toBeInTheDocument();
+    expect(screen.getByText(/جميع بياناتك، سجلات الحالات، أطباء الأسنان، الفواتير، وفريق العمل محفوظة بالكامل/)).toBeInTheDocument();
+
+    const renewBtn = screen.getByText("تجديد الاشتراك الآن");
+    expect(renewBtn).toBeInTheDocument();
+    fireEvent.click(renewBtn);
+    expect(mockNavigate).toHaveBeenCalledWith("/marketplace/dental-lab-app");
+  });
 });

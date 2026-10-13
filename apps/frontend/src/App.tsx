@@ -8458,7 +8458,7 @@ const AppContent = () => {
                   path="/dental-lab/cases/:id"
                   element={
                     <Layout fullWidth>
-                      <AppAccessRoute requiredAppSlugs={['dental-lab-app', 'dental-lab']}>
+                      <AppAccessRoute requiredAppSlugs={['dental-lab-app', 'dental-lab']} redirectMode="overlay-blur">
                         <DentalCaseDetailPage />
                       </AppAccessRoute>
                     </Layout>
@@ -8468,7 +8468,7 @@ const AppContent = () => {
                   path="/dental-lab/doctors/:id"
                   element={
                     <Layout fullWidth>
-                      <AppAccessRoute requiredAppSlugs={['dental-lab-app', 'dental-lab']}>
+                      <AppAccessRoute requiredAppSlugs={['dental-lab-app', 'dental-lab']} redirectMode="overlay-blur">
                         <DentalDoctorDetailPage />
                       </AppAccessRoute>
                     </Layout>
@@ -8478,7 +8478,7 @@ const AppContent = () => {
                   path="/dental-lab/*"
                   element={
                     <Layout fullWidth>
-                      <AppAccessRoute requiredAppSlugs={['dental-lab-app', 'dental-lab']}>
+                      <AppAccessRoute requiredAppSlugs={['dental-lab-app', 'dental-lab']} redirectMode="overlay-blur">
                         <DentalLabManagementPage />
                       </AppAccessRoute>
                     </Layout>

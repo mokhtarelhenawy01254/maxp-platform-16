@@ -78,7 +78,7 @@ interface AppAccessRouteProps {
 export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
   children,
   requiredAppSlugs,
-  redirectMode = "redirect",
+  redirectMode = "overlay-blur",
 }) => {
   const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
@@ -95,17 +95,17 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
   }
 
   const currentCompany = user?.companies?.find((c) => c.isCurrent) || user?.company;
-  const activeApps = Array.isArray(currentCompany?.activeApps)
-    ? currentCompany.activeApps
-    : Array.isArray(user?.company?.activeApps)
-      ? user.company.activeApps
-      : Array.isArray(user?.activeApps)
-        ? user.activeApps
+  const activeApps: any[] = Array.isArray((currentCompany as any)?.activeApps)
+    ? (currentCompany as any).activeApps
+    : Array.isArray((user?.company as any)?.activeApps)
+      ? (user.company as any).activeApps
+      : Array.isArray((user as any)?.activeApps)
+        ? (user as any).activeApps
         : [];
 
   const hasAccess = requiredAppSlugs.some((requiredSlug) => {
     const candidates = getCandidateSlugs(requiredSlug);
-    return activeApps.some((a) => {
+    return activeApps.some((a: any) => {
       const slugVal = typeof a === "string" ? a : (a as { slug?: string; app?: { slug?: string } })?.slug || (a as { app?: { slug?: string } })?.app?.slug;
       if (!slugVal || typeof slugVal !== "string") return false;
       const lower = slugVal.trim().toLowerCase();
@@ -114,6 +114,13 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
   });
 
   const primarySlug = requiredAppSlugs[0]?.trim() || "marketplace";
+
+  const isDental = requiredAppSlugs.some((s) => s.toLowerCase().includes("dental"));
+  const isMessaging = requiredAppSlugs.some((s) =>
+    s.toLowerCase().includes("whatsapp") ||
+    s.toLowerCase().includes("telegram") ||
+    s.toLowerCase().includes("inbox")
+  );
 
   const formattedAppNames = React.useMemo(() => {
     if (requiredAppSlugs.some((s) => s.toLowerCase().startsWith("whatsapp"))) {
@@ -141,7 +148,7 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
           a.requiredApps?.some((r) => r.toLowerCase() === lower)
       );
       if (reg) {
-        const translated = t(reg.nameKey);
+        const translated = (t as any)(reg.nameKey);
         if (translated && translated !== reg.nameKey) return translated;
         return reg.displayName || slug;
       }
@@ -150,6 +157,16 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
 
     return Array.from(new Set(names)).join(" أو ");
   }, [requiredAppSlugs, t]);
+
+  const modalDescription = React.useMemo(() => {
+    if (isDental) {
+      return `لقد انتهت فترة الاشتراك في نظام «${formattedAppNames}». جميع بياناتك، سجلات الحالات، أطباء الأسنان، الفواتير، وفريق العمل محفوظة بالكامل ومؤمنة في حسابك. يرجى تجديد الاشتراك لمواصلة العمل وإدارة الحالات.`;
+    }
+    if (isMessaging) {
+      return `لقد انتهت فترة الاشتراك في خدمة «${formattedAppNames}». تطبيقك وبيانات الربط والمحادثات محفوظة ومثبتة بالكامل، وتم تعليق إمكانية إرسال واستقبال الرسائل مؤقتاً لحين تجديد الاشتراك.`;
+    }
+    return `لقد انتهت فترة الاشتراك في تطبيق «${formattedAppNames}». جميع بياناتك وسجلاتك محفوظة ومؤمنة بالكامل في حسابك، وتم تعليق الوصول مؤقتاً لحين تجديد الاشتراك.`;
+  }, [isDental, isMessaging, formattedAppNames]);
 
   useEffect(() => {
     if (!hasAccess && isAuthenticated && user && user.role !== "SUPER_ADMIN") {
@@ -200,7 +217,7 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
                   اشتراك «{formattedAppNames}» منتهي
                 </h2>
                 <p id="expired-subscription-desc" className="text-sm text-muted-foreground leading-relaxed text-pretty">
-                  لقد انتهت فترة الاشتراك في خدمة «{formattedAppNames}». تطبيقك وبيانات الربط والمحادثات محفوظة ومثبتة بالكامل، وتم إيقاف وتشفير إمكانية إرسال واستقبال المحادثات مؤقتاً لحين تجديد الاشتراك.
+                  {modalDescription}
                 </p>
               </div>
 
