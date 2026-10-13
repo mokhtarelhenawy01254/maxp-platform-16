@@ -1,10 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-import { ArrowUturnLeftIcon, ClockIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowRight,
+  Clock,
+  RefreshCw,
+  AlertTriangle,
+  User,
+  ArrowLeftRight,
+  ExternalLink,
+  ChevronLeft,
+  ChevronRight,
+  ShieldAlert,
+} from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { Button } from "../../components/ui/button";
 
 interface EscalationLog {
   id: string;
@@ -28,17 +41,22 @@ interface EscalationLog {
 }
 
 const EscalationHistory = () => {
+  const navigate = useNavigate();
   const [logs, setLogs] = useState<EscalationLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
-    fetchHistory();
+    fetchHistory(true);
   }, [page]);
 
-  const fetchHistory = async () => {
-    setLoading(true);
+  const fetchHistory = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
+    else setRefreshing(true);
+
     try {
       const res = await fetch(
         buildApiUrl(`super-admin/dev/escalations?page=${page}&limit=20`),
@@ -48,107 +66,176 @@ const EscalationHistory = () => {
       );
       const data = await res.json();
       if (data.success) {
-        setLogs(data.data);
-        setTotalPages(data.pagination.pages);
+        setLogs(data.data || []);
+        setTotalPages(data.pagination?.pages || 1);
+        setTotalCount(data.pagination?.total || (data.data?.length || 0));
       }
     } catch (error) {
       console.error("Failed to fetch history", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  return (
-    <div className="space-y-6" dir={i18n.dir()}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <ClockIcon className="h-8 w-8 text-indigo-500" />
-            سجل تصعيد المهام
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            تتبع المهام التي تم نقلها تلقائياً بسبب التأخير.
-          </p>
+  const uniqueTasksCount = useMemo(
+    () => new Set(logs.map((l) => l.taskId)).size,
+    [logs],
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+          <RefreshCw className="size-4 animate-spin text-primary" />
+          <span>جاري استدعاء سجل التصعيد...</span>
         </div>
-        <button
-          onClick={() => window.history.back()}
-          className="px-4 py-2 text-gray-600 hover:text-gray-800 flex items-center gap-2"
-        >
-          <ArrowUturnLeftIcon className="h-5 w-5" />
-          عودة
-        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto" dir={i18n.dir()}>
+      {/* Linear Control Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-card flex items-center justify-center text-foreground shadow-2xs">
+            <ShieldAlert className="size-4.5 text-primary" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
+                سجل تصعيد المهام
+              </h1>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+                {totalCount} تصعيد
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              تدقيق ومتابعة المهام التي تم تحويلها أو تصعيدها تلقائياً بسبب فوات مواعيد التنفيذ
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 self-end sm:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchHistory(false)}
+            disabled={refreshing}
+            className="h-8 text-xs font-medium gap-1.5 shadow-2xs active:scale-[0.98] transition-transform"
+          >
+            <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
+            <span>تحديث</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.history.back()}
+            className="h-8 text-xs font-medium gap-1.5 shadow-2xs active:scale-[0.98] transition-transform"
+          >
+            <ArrowRight className="size-3.5 rtl:rotate-0 rotate-180" />
+            <span>عودة</span>
+          </Button>
+        </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+      {/* Linear Telemetry Strip */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">إجمالي سجلات التصعيد</span>
+              <span className="size-1.5 rounded-full bg-primary" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {totalCount}
+            </div>
+          </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">مهام تم تصعيدها</span>
+              <span className="size-1.5 rounded-full bg-amber-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {uniqueTasksCount}
+            </div>
+          </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">الصفحة الحالية</span>
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {page} / {totalPages}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Single-Surface Table Chassis */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-right">
-            <thead className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 text-sm uppercase">
+          <table className="w-full text-right border-collapse text-xs">
+            <thead className="border-b border-border/60 bg-muted/20 text-muted-foreground uppercase text-[11px] font-mono">
               <tr>
-                <th className="px-6 py-4 font-medium">المهمة</th>
-                <th className="px-6 py-4 font-medium">نقل من</th>
-                <th className="px-6 py-4 font-medium">نقل إلى</th>
-                <th className="px-6 py-4 font-medium">السبب / الوصف</th>
-                <th className="px-6 py-4 font-medium">التاريخ</th>
+                <th className="px-4 py-3 font-semibold">المهمة المستهدفة</th>
+                <th className="px-4 py-3 font-semibold">المُصعّد منه</th>
+                <th className="px-4 py-3 font-semibold">المُصعّد إليه</th>
+                <th className="px-4 py-3 font-semibold">سبب التصعيد والوصف</th>
+                <th className="px-4 py-3 font-semibold">تاريخ وساعة الإجراء</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {loading ? (
+            <tbody className="divide-y divide-border/60">
+              {logs.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="px-6 py-8 text-center text-gray-500"
-                  >
-                    جاري التحميل...
-                  </td>
-                </tr>
-              ) : logs.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="px-6 py-8 text-center text-gray-500"
-                  >
-                    لا توجد سجلات تصعيد حتى الآن.
+                  <td colSpan={5} className="p-12 text-center text-muted-foreground">
+                    لا توجد سجلات تصعيد حالياً
                   </td>
                 </tr>
               ) : (
                 logs.map((log) => (
-                  <tr
-                    key={log.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <a
-                        href={`/super-admin/dev-tasks/${log.task.id}`}
-                        className="font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 block truncate max-w-xs"
-                        title={log.task.title}
-                      >
-                        {log.task.title}
-                      </a>
-                      <span className="text-xs text-gray-400 font-mono">
-                        {log.task.id.slice(0, 8)}
-                      </span>
+                  <tr key={log.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col gap-0.5 max-w-xs">
+                        <a
+                          href={`/super-admin/dev-tasks/${log.task.id}`}
+                          className="font-semibold text-foreground hover:text-primary transition-colors truncate"
+                          title={log.task.title}
+                        >
+                          {log.task.title}
+                        </a>
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          ID: {log.task.id.slice(0, 10)}
+                        </span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
+
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5 text-foreground/80 font-mono">
+                        <span className="size-6 rounded-md bg-muted/60 border border-border/60 flex items-center justify-center text-[10px] font-bold text-muted-foreground">
                           {log.fromUser.charAt(0)}
-                        </div>
+                        </span>
                         <span>{log.fromUser}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-gray-900 dark:text-white font-medium">
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">
+
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5 font-medium text-foreground font-mono">
+                        <span className="size-6 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">
                           {log.toUser.charAt(0)}
-                        </div>
+                        </span>
                         <span>{log.toUser}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+
+                    <td className="px-4 py-3 text-muted-foreground leading-relaxed max-w-md">
                       {log.description}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                      {format(new Date(log.createdAt), "PPP p", { locale: ar })}
+
+                    <td className="px-4 py-3 font-mono text-muted-foreground whitespace-nowrap">
+                      {format(new Date(log.createdAt), "yyyy/MM/dd - HH:mm", { locale: ar })}
                     </td>
                   </tr>
                 ))
@@ -157,26 +244,33 @@ const EscalationHistory = () => {
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* Pagination Bar */}
         {totalPages > 1 && (
-          <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-center gap-2">
-            <button
-              disabled={page === 1}
-              onClick={() => setPage((p) => p - 1)}
-              className="px-3 py-1 rounded border disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              السابق
-            </button>
-            <span className="px-3 py-1 text-gray-600 dark:text-gray-400">
-              صفحة {page} من {totalPages}
+          <div className="p-3 border-t border-border/60 bg-muted/10 flex items-center justify-between text-xs">
+            <span className="text-muted-foreground font-mono">
+              صفحة {page} من {totalPages} ({totalCount} سجل)
             </span>
-            <button
-              disabled={page === totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              className="px-3 py-1 rounded border disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              التالي
-            </button>
+
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 1}
+                onClick={() => setPage((p) => p - 1)}
+                className="h-7 text-xs font-mono"
+              >
+                <ChevronRight className="size-3.5 ml-1" /> السابق
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                className="h-7 text-xs font-mono"
+              >
+                التالي <ChevronLeft className="size-3.5 mr-1" />
+              </Button>
+            </div>
           </div>
         )}
       </div>

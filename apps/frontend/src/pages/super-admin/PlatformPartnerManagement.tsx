@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-// [PT-UI] Partner custom commission-rate dialog is wired to PUT /admin/partners/:id/commission-rate
-import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
@@ -9,122 +7,662 @@ import { Textarea } from "../../components/ui/textarea";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "../../components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "../../components/ui/dialog";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "../../components/ui/table";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { Separator } from "../../components/ui/separator";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
-import { Edit, Info, TrendingUp, Users, Wallet, History, Landmark, Settings, Save, Percent } from "lucide-react";
+import {
+  Edit,
+  Info,
+  TrendingUp,
+  Users,
+  Wallet,
+  History,
+  Landmark,
+  Settings,
+  Save,
+  Percent,
+  RefreshCw,
+  CheckCircle2,
+  Clock,
+  Layers,
+} from "lucide-react";
 
 const PlatformPartnerManagement = () => {
   const { formatPrice } = useCurrency();
 
   const [activeTab, setActiveTab] = useState(0);
-  const [stats, setStats] = useState(null);
-  const [partners, setPartners] = useState([]);
-  const [payouts, setPayouts] = useState([]);
+  const [stats, setStats] = useState<any>(null);
+  const [partners, setPartners] = useState<any[]>([]);
+  const [payouts, setPayouts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
-  const [settings, setSettings] = useState(null);
-  const [settingsForm, setSettingsForm] = useState({ level1Rate: 20, level2Rate: 5, level3Rate: 3, level4Rate: 1, minimumPayoutAmount: 100, termsAndConditions: "" });
+  const [settings, setSettings] = useState<any>(null);
+  const [settingsForm, setSettingsForm] = useState({
+    level1Rate: 20,
+    level2Rate: 5,
+    level3Rate: 3,
+    level4Rate: 1,
+    minimumPayoutAmount: 100,
+    termsAndConditions: "",
+  });
   const [rankDialogOpen, setRankDialogOpen] = useState(false);
-  const [selectedPartner, setSelectedPartner] = useState(null);
+  const [selectedPartner, setSelectedPartner] = useState<any>(null);
   const [newTitle, setNewTitle] = useState("");
   const [rateDialogOpen, setRateDialogOpen] = useState(false);
   const [newRate, setNewRate] = useState("");
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
-  const [selectedPayout, setSelectedPayout] = useState(null);
+  const [selectedPayout, setSelectedPayout] = useState<any>(null);
   const [payoutStatus, setPayoutStatus] = useState("COMPLETED");
 
-  useEffect(() => { fetchData(); }, [activeTab]);
+  useEffect(() => {
+    fetchData(true);
+  }, [activeTab]);
 
-  const fetchData = async () => {
-    try { setLoading(true); const [statsRes, partnersRes, payoutsRes, settingsRes] = await Promise.all([apiClient.get("/platform-partners/admin/stats"), apiClient.get("/platform-partners/admin/partners"), apiClient.get("/platform-partners/admin/payouts"), apiClient.get("/platform-partners/admin/settings")]); if (statsRes.data.status === "success") setStats(statsRes.data.data.stats); if (partnersRes.data.status === "success") setPartners(partnersRes.data.data.partners); if (payoutsRes.data.status === "success") setPayouts(payoutsRes.data.data.payouts); if (settingsRes.data.status === "success") { const s = settingsRes.data.data.settings; setSettings(s); setSettingsForm({ level1Rate: s.level1Rate, level2Rate: s.level2Rate, level3Rate: s.level3Rate, level4Rate: s.level4Rate, minimumPayoutAmount: Number(s.minimumPayoutAmount), termsAndConditions: s.termsAndConditions || "" }); } } catch { tToast.error("PlatformPartnerManagement.error_load_1fe0"); } finally { setLoading(false); }
+  const fetchData = async (showLoading = true) => {
+    try {
+      if (showLoading) setLoading(true);
+      else setRefreshing(true);
+
+      const [statsRes, partnersRes, payoutsRes, settingsRes] = await Promise.all([
+        apiClient.get("/platform-partners/admin/stats"),
+        apiClient.get("/platform-partners/admin/partners"),
+        apiClient.get("/platform-partners/admin/payouts"),
+        apiClient.get("/platform-partners/admin/settings"),
+      ]);
+
+      if (statsRes.data.status === "success") setStats(statsRes.data.data.stats);
+      if (partnersRes.data.status === "success") setPartners(partnersRes.data.data.partners || []);
+      if (payoutsRes.data.status === "success") setPayouts(payoutsRes.data.data.payouts || []);
+      if (settingsRes.data.status === "success") {
+        const s = settingsRes.data.data.settings;
+        setSettings(s);
+        setSettingsForm({
+          level1Rate: s.level1Rate ?? 20,
+          level2Rate: s.level2Rate ?? 5,
+          level3Rate: s.level3Rate ?? 3,
+          level4Rate: s.level4Rate ?? 1,
+          minimumPayoutAmount: Number(s.minimumPayoutAmount ?? 100),
+          termsAndConditions: s.termsAndConditions || "",
+        });
+      }
+    } catch {
+      toast.error("فشل في تحميل بيانات برنامج الشركاء");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
-  const getStatusColor = (status: string) => { switch (status) { case "ACTIVE": return "success"; case "PENDING": return "warning"; case "COMPLETED": return "success"; case "REJECTED": return "destructive"; default: return "outline"; } };
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "ACTIVE":
+      case "COMPLETED":
+        return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30";
+      case "PENDING":
+        return "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30";
+      case "REJECTED":
+        return "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30";
+      default:
+        return "bg-muted text-muted-foreground border-border/60";
+    }
+  };
 
-  if (loading && !stats) return <div className="flex justify-center items-center min-h-[60vh]"><LoadingSpinner size="lg" /></div>;
+  if (loading && !stats) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+          <LoadingSpinner size="sm" />
+          <span>جاري تحميل بيانات برنامج الشركاء والعمولات...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-1"><h1 className="text-2xl font-black mb-4 text-foreground">إدارة برنامج الشركاء</h1>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        {[{ label: "إجمالي العمولات", value: formatPrice(stats?.totalCommissionsDistributed || 0), icon: <Wallet className="size-5" />, colorClass: "text-emerald-500 bg-emerald-500/20" }, { label: "إجمالي الشركاء", value: stats?.totalPartners || 0, icon: <Users className="size-5" />, colorClass: "text-blue-500 bg-blue-500/20" }, { label: "مدفوعات معلقة", value: formatPrice(stats?.totalPendingPayouts || 0), icon: <History className="size-5" />, colorClass: "text-amber-500 bg-amber-500/20" }, { label: "نمو الشبكة", value: stats?.activeCompaniesCount || 0, icon: <TrendingUp className="size-5" />, colorClass: "text-purple-500 bg-purple-500/20" }].map((stat, i) => <Card key={i} className="rounded-xl shadow-sm dark:shadow-lg bg-card"><CardContent className="p-3"><div className="flex justify-between items-center"><div><p className="text-xs mb-1 text-muted-foreground">{stat.label}</p><p className="text-lg font-black">{stat.value}</p></div><div className={`size-14 rounded-full flex items-center justify-center ${stat.colorClass}`}>{stat.icon}</div></div></CardContent></Card>)}
-      </div>
-
-      <div className="rounded-xl overflow-hidden mb-4 bg-card shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_25px_-5px_rgba(0,0,0,0.4)]">
-        <div className="flex border-b px-2 pt-2 gap-0">
-          {["الشركاء", "طلبات السحب", "الإعدادات"].map((tab, i) => <button key={tab} onClick={() => setActiveTab(i)} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === i ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>{tab}</button>)}
+    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto">
+      {/* Linear Control Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-card flex items-center justify-center text-foreground shadow-2xs">
+            <TrendingUp className="size-4.5 text-primary" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
+                إدارة برنامج الشركاء
+              </h1>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+                {stats?.totalPartners || partners.length} شريك
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              متابعة أداء الشركاء، مراجعة طلبات سحب الأرباح، وضبط نِسَب العمولات المنصية
+            </p>
+          </div>
         </div>
 
-        {activeTab === 0 && <Table><TableHeader className="bg-muted/50 dark:bg-white/[0.02]"><TableRow><TableHead className="font-bold">الشريك</TableHead><TableHead className="font-bold">اللقب (Rank)</TableHead><TableHead className="font-bold">إجمالي الأرباح</TableHead><TableHead className="font-bold">الرصيد المتاح</TableHead><TableHead className="font-bold">الحالة</TableHead><TableHead className="text-center font-bold">الإجراءات</TableHead></TableRow></TableHeader>
-          <TableBody>{partners.map(partner => <TableRow key={partner.id}><TableCell><div className="flex items-center gap-2"><Avatar className="bg-blue-500"><AvatarFallback>{partner.user?.firstName?.charAt(0)}</AvatarFallback></Avatar><div><p className="text-sm font-bold">{partner.user?.firstName} {partner.user?.lastName}</p><p className="text-xs text-muted-foreground">{partner.partnerCode}</p></div></div></TableCell><TableCell><Badge className="font-bold rounded">{partner.title}</Badge><div className="text-xs text-muted-foreground mt-1">{partner.customCommissionRate != null ? `نسبة مخصصة: ${partner.customCommissionRate}%` : "النسبة العامة"}</div></TableCell><TableCell>{formatPrice(partner.totalEarnings)}</TableCell><TableCell className="text-blue-500 font-bold">{formatPrice(partner.pendingEarnings)}</TableCell><TableCell><Badge variant={getStatusColor(partner.status)}>{partner.status}</Badge></TableCell><TableCell className="text-center"><div className="flex items-center justify-center gap-1"><Button variant="ghost" size="icon" title="تعديل اللقب" onClick={() => { setSelectedPartner(partner); setNewTitle(partner.title); setRankDialogOpen(true); }}><Edit className="size-4" /></Button><Button variant="ghost" size="icon" title="نسبة عمولة مخصصة" onClick={() => { setSelectedPartner(partner); setNewRate(partner.customCommissionRate != null ? String(partner.customCommissionRate) : ""); setRateDialogOpen(true); }}><Percent className="size-4" /></Button></div></TableCell></TableRow>)}</TableBody></Table>}
-
-        {activeTab === 1 && <Table><TableHeader className="bg-muted/50 dark:bg-white/[0.02]"><TableRow><TableHead className="font-bold">الشريك</TableHead><TableHead className="font-bold">المبلغ</TableHead><TableHead className="font-bold">الطريقة</TableHead><TableHead className="font-bold">التاريخ</TableHead><TableHead className="font-bold">الحالة</TableHead><TableHead className="text-center font-bold">الإجراءات</TableHead></TableRow></TableHeader>
-          <TableBody>{payouts.map(payout => <TableRow key={payout.id}><TableCell><p className="text-sm font-bold">{payout.partner?.user?.firstName} {payout.partner?.user?.lastName}</p><p className="text-xs text-muted-foreground">{payout.partner?.partnerCode}</p></TableCell><TableCell className="font-bold text-red-500">{formatPrice(payout.amount)}</TableCell><TableCell><div className="flex items-center gap-1"><Landmark className="size-4 text-muted-foreground" /><span className="text-sm">{payout.method}</span></div></TableCell><TableCell>{new Date(payout.createdAt).toLocaleDateString()}</TableCell><TableCell><Badge variant={getStatusColor(payout.status)}>{payout.status}</Badge></TableCell><TableCell className="text-center">{payout.status === "PENDING" && <Button variant="ghost" size="icon" onClick={() => { setSelectedPayout(payout); setPayoutDialogOpen(true); }}><Edit className="size-4" /></Button>}</TableCell></TableRow>)}</TableBody></Table>}
-
-        {activeTab === 2 && <div className="p-4">
-          <div className="flex items-center gap-2 mb-3"><Settings className="size-5 text-purple-500" /><h2 className="text-base font-bold">إعدادات برنامج الشركاء</h2></div>
-          <Alert className="mb-4 rounded-lg"><Info className="size-4" /><AlertDescription>تحديد نِسَب العمولات يؤثر على جميع المدفوعات الجديدة فور الحفظ. المدفوعات السابقة لن تتأثر.</AlertDescription></Alert>
-          <p className="text-sm font-bold mb-2 text-muted-foreground">نِسَب العمولات لكل مستوى إحالة</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            {[{ key: "level1Rate", label: "المستوى الأول", desc: "الشريك المباشر", borderClass: "border-blue-500/25 bg-blue-500/5", labelClass: "text-blue-500" }, { key: "level2Rate", label: "المستوى الثاني", desc: "يتطلب SENIOR_PARTNER", borderClass: "border-purple-500/25 bg-purple-500/5", labelClass: "text-purple-500" }, { key: "level3Rate", label: "المستوى الثالث", desc: "يتطلب MASTER_PARTNER", borderClass: "border-amber-500/25 bg-amber-500/5", labelClass: "text-amber-500" }, { key: "level4Rate", label: "المستوى الرابع", desc: "يتطلب EXECUTIVE_PARTNER", borderClass: "border-emerald-500/25 bg-emerald-500/5", labelClass: "text-emerald-500" }].map(level => <Card key={level.key} className={`rounded-xl border-2 ${level.borderClass}`}><CardContent className="p-2"><p className={`text-xs font-bold ${level.labelClass}`}>{level.label}</p><p className="text-xs text-muted-foreground mb-1">{level.desc}</p><div className="flex items-center gap-1"><Input type="number" value={settingsForm[level.key as keyof typeof settingsForm]} onChange={e => setSettingsForm(p => ({ ...p, [level.key]: Number(e.target.value) }))} min={0} max={100} step={0.5} /><span className="text-sm shrink-0">%</span></div></CardContent></Card>)}
-          </div>
-          <Separator className="my-3" />
-          <p className="text-sm font-bold mb-2 text-muted-foreground">إعدادات المدفوعات</p>
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div><Label>الحد الأدنى لطلب السحب</Label><div className="flex items-center gap-1"><Input type="number" value={settingsForm.minimumPayoutAmount} onChange={e => setSettingsForm(p => ({ ...p, minimumPayoutAmount: Number(e.target.value) }))} min={0} step={10} /><span className="text-sm shrink-0">ج.م</span></div></div>
-            <div><Label>الشروط والأحكام</Label><Textarea value={settingsForm.termsAndConditions} onChange={e => setSettingsForm(p => ({ ...p, termsAndConditions: e.target.value }))} rows={3} placeholder="أدخل شروط وأحكام برنامج الشركاء هنا..." /></div>
-          </div>
-          <Button className="bg-purple-600 hover:bg-purple-700 px-4" disabled={savingSettings} onClick={async () => { try { setSavingSettings(true); const r = await apiClient.put("/platform-partners/admin/settings", settingsForm); if (r.data.status === "success") { tToast.success("PlatformPartnerManagement.success_save_3c98"); fetchData(); } } catch (e: any) { toast.error(e.response?.data?.message || "فشل حفظ الإعدادات"); } finally { setSavingSettings(false); } }}>{savingSettings ? <LoadingSpinner size="sm" /> : <Save className="size-4" />} حفظ الإعدادات</Button>
-        </div>}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => fetchData(false)}
+          disabled={refreshing}
+          className="h-8 text-xs font-medium gap-1.5 shadow-2xs active:scale-[0.98] transition-transform self-end sm:self-auto"
+        >
+          <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
+          <span>تحديث</span>
+        </Button>
       </div>
 
+      {/* Linear Telemetry Strip */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">إجمالي العمولات الموزعة</span>
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {formatPrice(stats?.totalCommissionsDistributed || 0)}
+            </div>
+          </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">إجمالي الشركاء المسجلين</span>
+              <span className="size-1.5 rounded-full bg-primary" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {stats?.totalPartners || partners.length}
+            </div>
+          </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">مدفوعات معلقة بانتظار السحب</span>
+              <span className="size-1.5 rounded-full bg-amber-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums text-amber-600 dark:text-amber-400">
+              {formatPrice(stats?.totalPendingPayouts || 0)}
+            </div>
+          </div>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">الشركات المسجلة عبر الشركاء</span>
+              <span className="size-1.5 rounded-full bg-sky-500" />
+            </div>
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {stats?.activeCompaniesCount || 0}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Single-Surface Chassis */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+        {/* Chassis Tabs */}
+        <div className="p-2 border-b border-border/60 bg-muted/20 flex items-center gap-1">
+          {["قائمة الشركاء", "طلبات سحب الأرباح", "إعدادات العمولات والنسب"].map((tab, i) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(i)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeTab === i
+                  ? "bg-card text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab 0: Partners Table */}
+        {activeTab === 0 && (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted/10 text-[11px] font-mono">
+                <TableRow>
+                  <TableHead className="font-semibold">الشريك</TableHead>
+                  <TableHead className="font-semibold">اللقب والمستوى</TableHead>
+                  <TableHead className="font-semibold">إجمالي الأرباح</TableHead>
+                  <TableHead className="font-semibold">الرصيد المتاح</TableHead>
+                  <TableHead className="font-semibold">الحالة</TableHead>
+                  <TableHead className="text-center font-semibold">الإجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {partners.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="p-12 text-center text-muted-foreground">
+                      لا يوجد شركاء مسجلون حالياً
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  partners.map((partner) => (
+                    <TableRow key={partner.id} className="hover:bg-muted/20 transition-colors">
+                      <TableCell>
+                        <div className="flex items-center gap-2.5">
+                          <Avatar className="size-7.5 bg-primary/10 text-primary border border-primary/20 text-xs font-bold">
+                            <AvatarFallback>
+                              {partner.user?.firstName?.charAt(0) || "P"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-xs font-semibold text-foreground">
+                              {partner.user?.firstName} {partner.user?.lastName}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground font-mono">
+                              {partner.partnerCode || partner.id.slice(0, 8)}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted/60 text-foreground border border-border/40">
+                          {partner.title || "PARTNER"}
+                        </span>
+                        <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                          {partner.customCommissionRate != null
+                            ? `نسبة مخصصة: ${partner.customCommissionRate}%`
+                            : "النسبة العامة للمنصة"}
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="font-mono tabular-nums text-xs font-semibold">
+                        {formatPrice(partner.totalEarnings || 0)}
+                      </TableCell>
+
+                      <TableCell className="font-mono tabular-nums text-xs font-semibold text-primary">
+                        {formatPrice(partner.pendingEarnings || 0)}
+                      </TableCell>
+
+                      <TableCell>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${getStatusBadge(
+                            partner.status,
+                          )}`}
+                        >
+                          {partner.status || "ACTIVE"}
+                        </span>
+                      </TableCell>
+
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 rounded-md text-muted-foreground hover:text-foreground"
+                            title="تعديل الرتبة"
+                            onClick={() => {
+                              setSelectedPartner(partner);
+                              setNewTitle(partner.title || "PARTNER");
+                              setRankDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="size-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 rounded-md text-muted-foreground hover:text-foreground"
+                            title="نسبة عمولة مخصصة"
+                            onClick={() => {
+                              setSelectedPartner(partner);
+                              setNewRate(
+                                partner.customCommissionRate != null
+                                  ? String(partner.customCommissionRate)
+                                  : "",
+                              );
+                              setRateDialogOpen(true);
+                            }}
+                          >
+                            <Percent className="size-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        {/* Tab 1: Payout Requests Table */}
+        {activeTab === 1 && (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted/10 text-[11px] font-mono">
+                <TableRow>
+                  <TableHead className="font-semibold">الشريك</TableHead>
+                  <TableHead className="font-semibold">المبلغ المطلوب</TableHead>
+                  <TableHead className="font-semibold">طريقة التحويل والبيانات</TableHead>
+                  <TableHead className="font-semibold">تاريخ الطلب</TableHead>
+                  <TableHead className="font-semibold">الحالة</TableHead>
+                  <TableHead className="text-center font-semibold">الإجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {payouts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="p-12 text-center text-muted-foreground">
+                      لا توجد طلبات سحب حالياً
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  payouts.map((payout) => (
+                    <TableRow key={payout.id} className="hover:bg-muted/20 transition-colors">
+                      <TableCell>
+                        <p className="text-xs font-semibold text-foreground">
+                          {payout.partner?.user?.firstName} {payout.partner?.user?.lastName}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground font-mono">
+                          {payout.partner?.partnerCode}
+                        </p>
+                      </TableCell>
+
+                      <TableCell className="font-mono tabular-nums text-xs font-bold text-rose-600 dark:text-rose-400">
+                        {formatPrice(payout.amount || 0)}
+                      </TableCell>
+
+                      <TableCell>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Landmark className="size-3.5 text-muted-foreground" />
+                          <span>{payout.method}</span>
+                          {payout.accountNumber && (
+                            <span className="font-mono text-[11px] text-muted-foreground">
+                              ({payout.accountNumber})
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="font-mono text-[11px] text-muted-foreground">
+                        {new Date(payout.createdAt || Date.now()).toLocaleDateString("ar-EG")}
+                      </TableCell>
+
+                      <TableCell>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${getStatusBadge(
+                            payout.status,
+                          )}`}
+                        >
+                          {payout.status}
+                        </span>
+                      </TableCell>
+
+                      <TableCell className="text-center">
+                        {payout.status === "PENDING" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 rounded-md text-muted-foreground hover:text-foreground"
+                            onClick={() => {
+                              setSelectedPayout(payout);
+                              setPayoutDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="size-3.5" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        {/* Tab 2: Settings */}
+        {activeTab === 2 && (
+          <div className="p-4 sm:p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <Settings className="size-4 text-primary" />
+              <h2 className="text-sm font-bold text-foreground">إعدادات برنامج ونِسَب الشركاء</h2>
+            </div>
+
+            <div className="rounded-lg border border-border/60 bg-muted/20 p-3 flex items-start gap-2.5 text-xs text-muted-foreground">
+              <Info className="size-4 text-primary shrink-0 mt-0.5" />
+              <div>
+                تحديد نِسَب العمولات يؤثر مباشرة على جميع عمليات الاشتراك والتجديد الجديدة فور الحفظ.
+                المدفوعات والعمولات المحسوبة مسبقاً لن تتأثر.
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-foreground mb-2">نِسَب العمولات لمستويات الإحالة (Tier System)</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                {[
+                  { key: "level1Rate", label: "المستوى الأول (L1)", desc: "الشريك المباشر" },
+                  { key: "level2Rate", label: "المستوى الثاني (L2)", desc: "رتبة Senior Partner" },
+                  { key: "level3Rate", label: "المستوى الثالث (L3)", desc: "رتبة Master Partner" },
+                  { key: "level4Rate", label: "المستوى الرابع (L4)", desc: "رتبة Executive" },
+                ].map((level) => (
+                  <div key={level.key} className="rounded-lg border border-border/60 bg-muted/10 p-3">
+                    <p className="text-xs font-semibold text-foreground">{level.label}</p>
+                    <p className="text-[10px] text-muted-foreground mb-2">{level.desc}</p>
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        type="number"
+                        value={settingsForm[level.key as keyof typeof settingsForm]}
+                        onChange={(e) =>
+                          setSettingsForm((p) => ({ ...p, [level.key]: Number(e.target.value) }))
+                        }
+                        min={0}
+                        max={100}
+                        step={0.5}
+                        className="h-8 text-xs font-mono"
+                      />
+                      <span className="text-xs font-mono text-muted-foreground">%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <Label className="text-xs font-semibold text-foreground mb-1 block">الحد الأدنى لطلب السحب</Label>
+                <div className="flex items-center gap-1.5 max-w-xs">
+                  <Input
+                    type="number"
+                    value={settingsForm.minimumPayoutAmount}
+                    onChange={(e) =>
+                      setSettingsForm((p) => ({
+                        ...p,
+                        minimumPayoutAmount: Number(e.target.value),
+                      }))
+                    }
+                    min={0}
+                    step={10}
+                    className="h-8 text-xs font-mono"
+                  />
+                  <span className="text-xs text-muted-foreground font-mono">ج.م</span>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold text-foreground mb-1 block">الشروط والأحكام</Label>
+                <Textarea
+                  value={settingsForm.termsAndConditions}
+                  onChange={(e) =>
+                    setSettingsForm((p) => ({ ...p, termsAndConditions: e.target.value }))
+                  }
+                  rows={2}
+                  className="text-xs"
+                  placeholder="أدخل شروط وأحكام برنامج الشركاء هنا..."
+                />
+              </div>
+            </div>
+
+            <Button
+              className="h-8 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 active:scale-[0.98] transition-transform"
+              disabled={savingSettings}
+              onClick={async () => {
+                try {
+                  setSavingSettings(true);
+                  const r = await apiClient.put("/platform-partners/admin/settings", settingsForm);
+                  if (r.data.status === "success") {
+                    toast.success("تم حفظ إعدادات الشركاء بنجاح");
+                    fetchData(false);
+                  }
+                } catch (e: any) {
+                  toast.error(e.response?.data?.message || "فشل حفظ الإعدادات");
+                } finally {
+                  setSavingSettings(false);
+                }
+              }}
+            >
+              {savingSettings ? <LoadingSpinner size="sm" /> : <Save className="size-3.5" />}
+              <span>حفظ الإعدادات</span>
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Rank Dialog */}
       <Dialog open={rankDialogOpen} onOpenChange={setRankDialogOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>تعديل لقب الشريك</DialogTitle></DialogHeader>
-          <div className="space-y-3"><Select value={newTitle} onValueChange={setNewTitle}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="PARTNER">Partner</SelectItem><SelectItem value="SENIOR_PARTNER">Senior Partner</SelectItem><SelectItem value="EXECUTIVE_PARTNER">Executive Partner</SelectItem><SelectItem value="REGIONAL_DIRECTOR">Regional Director</SelectItem></SelectContent></Select><Alert><Info className="size-4" /><AlertDescription>اللقب يحدد عمق العمولات (مستوى 1 إلى 4).</AlertDescription></Alert></div>
-          <DialogFooter><Button variant="outline" onClick={() => setRankDialogOpen(false)}>إلغاء</Button><Button onClick={async () => { if (!selectedPartner || !newTitle) return; try { const r = await apiClient.put(`/platform-partners/admin/partners/${selectedPartner.id}/title`, { title: newTitle }); if (r.data.status === "success") { toast.success("Partner rank updated"); setRankDialogOpen(false); fetchData(); } } catch (e: any) { toast.error(e.response?.data?.message || "Failed to update rank"); } }}>حفظ التغييرات</Button></DialogFooter>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-bold">تعديل رتبة الشريك</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2 text-xs">
+            <Select value={newTitle} onValueChange={setNewTitle}>
+              <SelectTrigger className="h-8 text-xs font-mono">
+                <SelectValue placeholder="اختر الرتبة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PARTNER">Partner (شريك)</SelectItem>
+                <SelectItem value="SENIOR_PARTNER">Senior Partner (شريك متقدم)</SelectItem>
+                <SelectItem value="EXECUTIVE_PARTNER">Executive Partner (شريك تنفيذي)</SelectItem>
+                <SelectItem value="REGIONAL_DIRECTOR">Regional Director (مدير إقليمي)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              الرتبة تحدد تلقائياً عمق مستويات العمولات المستحقة في شجرة الإحالة.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setRankDialogOpen(false)} className="text-xs">
+              إلغاء
+            </Button>
+            <Button
+              size="sm"
+              className="text-xs"
+              onClick={async () => {
+                if (!selectedPartner || !newTitle) return;
+                try {
+                  const r = await apiClient.put(
+                    `/platform-partners/admin/partners/${selectedPartner.id}/title`,
+                    { title: newTitle },
+                  );
+                  if (r.data.status === "success") {
+                    toast.success("تم تحديث رتبة الشريك بنجاح");
+                    setRankDialogOpen(false);
+                    fetchData(false);
+                  }
+                } catch (e: any) {
+                  toast.error(e.response?.data?.message || "فشل تحديث الرتبة");
+                }
+              }}
+            >
+              حفظ الرتبة
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* Custom Commission Rate Dialog */}
       <Dialog open={rateDialogOpen} onOpenChange={setRateDialogOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>نسبة عمولة مخصصة — {selectedPartner?.user?.firstName} {selectedPartner?.user?.lastName}</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <Alert><Info className="size-4" /><AlertDescription>اترك الحقل فارغاً لاستخدام النسبة العامة للمستوى الأول. النسبة تطبّق على كل فاتورة اشتراك جديدة لهذا الشريك فقط.</AlertDescription></Alert>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-bold">
+              نسبة عمولة مخصصة — {selectedPartner?.user?.firstName} {selectedPartner?.user?.lastName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2 text-xs">
+            <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5 text-[11px] text-muted-foreground">
+              اترك الحقل فارغاً لاستخدام النسبة العامة للمستوى الأول. تطبق النسبة المخصصة على كل اشتراك جديد يجلبه هذا الشريك.
+            </div>
             <div>
-              <Label>نسبة المستوى الأول (L1) % — نسبة مخصصة لهذا الشريك</Label>
-              <div className="flex items-center gap-1 mt-1">
-                <Input type="number" value={newRate} onChange={e => setNewRate(e.target.value)} min={0} max={100} step={0.5} placeholder="مثال: 35" />
-                <span className="text-sm shrink-0">%</span>
+              <Label className="text-xs font-semibold mb-1 block">نسبة المستوى الأول (L1) %</Label>
+              <div className="flex items-center gap-1.5 max-w-xs">
+                <Input
+                  type="number"
+                  value={newRate}
+                  onChange={(e) => setNewRate(e.target.value)}
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  placeholder="مثال: 30"
+                  className="h-8 text-xs font-mono"
+                />
+                <span className="text-xs font-mono text-muted-foreground">%</span>
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRateDialogOpen(false)}>إلغاء</Button>
-            <Button onClick={async () => {
-              if (!selectedPartner) return;
-              const val = newRate === "" ? null : Number(newRate);
-              if (val !== null && (isNaN(val) || val < 0 || val > 100)) { toast.error("النسبة يجب أن تكون بين 0 و 100"); return; }
-              try {
-                const r = await apiClient.put(`/platform-partners/admin/partners/${selectedPartner.id}/commission-rate`, { rate: val });
-                if (r.data.status === "success") { toast.success("تم تحديث نسبة العمولة"); setRateDialogOpen(false); fetchData(); }
-              } catch (e: any) { toast.error(e.response?.data?.message || "فشل حفظ النسبة"); }
-            }}>حفظ النسبة</Button>
+            <Button variant="outline" size="sm" onClick={() => setRateDialogOpen(false)} className="text-xs">
+              إلغاء
+            </Button>
+            <Button
+              size="sm"
+              className="text-xs"
+              onClick={async () => {
+                if (!selectedPartner) return;
+                const val = newRate === "" ? null : Number(newRate);
+                if (val !== null && (isNaN(val) || val < 0 || val > 100)) {
+                  toast.error("النسبة يجب أن تكون بين 0 و 100");
+                  return;
+                }
+                try {
+                  const r = await apiClient.put(
+                    `/platform-partners/admin/partners/${selectedPartner.id}/commission-rate`,
+                    { rate: val },
+                  );
+                  if (r.data.status === "success") {
+                    toast.success("تم تحديث نسبة العمولة المخصصة بنجاح");
+                    setRateDialogOpen(false);
+                    fetchData(false);
+                  }
+                } catch (e: any) {
+                  toast.error(e.response?.data?.message || "فشل حفظ النسبة");
+                }
+              }}
+            >
+              حفظ النسبة
+            </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog></div>
+      </Dialog>
+    </div>
   );
 };
 

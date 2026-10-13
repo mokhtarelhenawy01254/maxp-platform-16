@@ -1,18 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { useTimer } from "../../contexts/TimerContext";
 import {
-  ClockIcon,
-  PlayIcon,
-  StopIcon,
-  PauseIcon,
-  UserIcon,
-  FolderIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+  Clock,
+  Play,
+  Square,
+  Pause,
+  User,
+  Folder,
+  RefreshCw,
+  Search,
+  Timer,
+  CheckCircle2,
+  ExternalLink,
+  Zap,
+} from "lucide-react";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 
 interface ActiveTimerTask {
   id: string;
@@ -35,10 +42,13 @@ const ActiveTimers: React.FC = () => {
   const { activeTimers, stopTimer, pauseTimer, resumeTimer } = useTimer();
   const [timers, setTimers] = useState<ActiveTimerTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [currentTime, setCurrentTime] = useState(Date.now());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "running" | "paused">("all");
 
   useEffect(() => {
-    fetchActiveTimers();
+    fetchActiveTimers(true);
     const interval = setInterval(() => {
       setCurrentTime(Date.now());
     }, 1000);
@@ -46,13 +56,15 @@ const ActiveTimers: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(fetchActiveTimers, 30000);
+    const interval = setInterval(() => fetchActiveTimers(false), 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const fetchActiveTimers = async () => {
+  const fetchActiveTimers = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
+      else setRefreshing(true);
+
       const response = await fetch(
         buildApiUrl("super-admin/dev/timer/all-active"),
         {
@@ -68,14 +80,15 @@ const ActiveTimers: React.FC = () => {
       console.error("Error fetching active timers:", err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   const formatElapsedTime = (startTime: string, isPaused: boolean) => {
-    if (isPaused) return "⏸️ متوقف مؤقتاً";
+    if (isPaused) return "متوقف مؤقتاً";
 
     const start = new Date(startTime).getTime();
-    const elapsed = Math.floor((currentTime - start) / 1000);
+    const elapsed = Math.max(0, Math.floor((currentTime - start) / 1000));
     const hours = Math.floor(elapsed / 3600);
     const minutes = Math.floor((elapsed % 3600) / 60);
     const seconds = elapsed % 60;
@@ -88,7 +101,7 @@ const ActiveTimers: React.FC = () => {
 
     try {
       await stopTimer(taskId, timerId);
-      fetchActiveTimers();
+      fetchActiveTimers(false);
     } catch (err) {
       console.error("Error stopping timer:", err);
     }
@@ -97,7 +110,7 @@ const ActiveTimers: React.FC = () => {
   const handlePauseTimer = async (taskId: string, timerId?: string) => {
     try {
       await pauseTimer(taskId, timerId);
-      fetchActiveTimers();
+      fetchActiveTimers(false);
     } catch (err) {
       console.error("Error pausing timer:", err);
     }
@@ -106,273 +119,350 @@ const ActiveTimers: React.FC = () => {
   const handleResumeTimer = async (taskId: string, timerId?: string) => {
     try {
       await resumeTimer(taskId, timerId);
-      fetchActiveTimers();
+      fetchActiveTimers(false);
     } catch (err) {
       console.error("Error resuming timer:", err);
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    const colors = {
-      CRITICAL:
-        "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700",
-      URGENT:
-        "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-700",
-      HIGH: "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-700",
-      MEDIUM:
-        "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-700",
-      LOW: "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-700",
-    };
-    return colors[priority as keyof typeof colors] || colors.MEDIUM;
+  const getPriorityBadge = (priority: string) => {
+    switch (priority) {
+      case "CRITICAL":
+      case "URGENT":
+        return "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30";
+      case "HIGH":
+        return "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30";
+      case "MEDIUM":
+        return "bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/30";
+      default:
+        return "bg-muted text-muted-foreground border-border/60";
+    }
   };
 
-  const getStatusColor = (status: string) => {
-    const colors = {
-      TODO: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-      IN_PROGRESS:
-        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-      IN_REVIEW:
-        "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
-      DONE: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-      BLOCKED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-    };
-    return colors[status as keyof typeof colors] || colors.TODO;
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "IN_PROGRESS":
+        return "bg-primary/10 text-primary border-primary/20";
+      case "IN_REVIEW":
+        return "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/30";
+      case "DONE":
+        return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30";
+      default:
+        return "bg-muted text-muted-foreground border-border/60";
+    }
   };
 
-  const getTotalActiveTime = () => {
+  const getTotalActiveMinutes = useMemo(() => {
     return timers.reduce((total, timer) => {
       if (!timer.isPaused) {
         const elapsed = Math.floor(
-          (currentTime - new Date(timer.startTime).getTime()) / 60000,
+          Math.max(0, currentTime - new Date(timer.startTime).getTime()) / 60000,
         );
         return total + elapsed;
       }
-      return total + timer.duration;
+      return total + (timer.duration || 0);
     }, 0);
-  };
+  }, [timers, currentTime]);
+
+  const filteredTimers = useMemo(() => {
+    return timers.filter((t) => {
+      if (statusFilter === "running" && t.isPaused) return false;
+      if (statusFilter === "paused" && !t.isPaused) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        return (
+          t.taskTitle.toLowerCase().includes(q) ||
+          t.memberName.toLowerCase().includes(q) ||
+          (t.projectName && t.projectName.toLowerCase().includes(q))
+        );
+      }
+      return true;
+    });
+  }, [timers, statusFilter, searchQuery]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+          <RefreshCw className="size-4 animate-spin text-primary" />
+          <span>جاري فحص جلسات المؤقتات النشطة...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6" dir={i18n.dir()}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <ClockIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
-            المؤقتات النشطة
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-            {timers.length} مؤقت نشط حالياً
-          </p>
+    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto" dir={i18n.dir()}>
+      {/* Linear Control Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-card flex items-center justify-center text-foreground shadow-2xs">
+            <Timer className="size-4.5 text-primary" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-foreground">المؤقتات النشطة</h1>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+                {timers.length} جلسة
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              مراقبة جلسات العمل المباشرة ومهام التطوير عبر المنصة لحظياً
+            </p>
+          </div>
         </div>
-        <button
-          onClick={fetchActiveTimers}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors"
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => fetchActiveTimers(false)}
+          disabled={refreshing}
+          className="h-8 text-xs font-medium gap-1.5 shadow-2xs active:scale-[0.98] transition-transform self-end sm:self-auto"
         >
-          <ArrowPathIcon className="h-5 w-5" />
-          تحديث
-        </button>
+          <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
+          <span>تحديث</span>
+        </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-blue-100 text-xs">مؤقتات نشطة</p>
-              <p className="text-2xl font-bold mt-1">
-                {timers.filter((t) => !t.isPaused).length}
-              </p>
+      {/* Linear Telemetry Strip */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">مؤقتات قيد التشغيل</span>
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
             </div>
-            <PlayIcon className="h-10 w-10 text-blue-200" />
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {timers.filter((t) => !t.isPaused).length}
+            </div>
           </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-4 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-yellow-100 text-xs">متوقفة مؤقتاً</p>
-              <p className="text-2xl font-bold mt-1">
-                {timers.filter((t) => t.isPaused).length}
-              </p>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">متوقفة مؤقتاً</span>
+              <span className="size-1.5 rounded-full bg-amber-500" />
             </div>
-            <PauseIcon className="h-10 w-10 text-yellow-200" />
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {timers.filter((t) => t.isPaused).length}
+            </div>
           </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-100 text-xs">إجمالي الوقت</p>
-              <p className="text-2xl font-bold mt-1">
-                {getTotalActiveTime()} د
-              </p>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">إجمالي الوقت المنقضي</span>
+              <span className="size-1.5 rounded-full bg-primary" />
             </div>
-            <ClockIcon className="h-10 w-10 text-purple-200" />
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {getTotalActiveMinutes}{" "}
+              <span className="text-xs font-sans text-muted-foreground font-normal">دقيقة</span>
+            </div>
           </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-green-100 text-xs">أعضاء نشطون</p>
-              <p className="text-2xl font-bold mt-1">
-                {new Set(timers.map((t) => t.memberId)).size}
-              </p>
+          <div className="p-3 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span className="font-medium text-[11px]">أعضاء الفريق النشطون</span>
+              <span className="size-1.5 rounded-full bg-sky-500" />
             </div>
-            <UserIcon className="h-10 w-10 text-green-200" />
+            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+              {new Set(timers.map((t) => t.memberId)).size}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Active Timers List */}
-      {timers.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 text-center">
-          <ClockIcon className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-          <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-1">
-            لا توجد مؤقتات نشطة
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            جميع المهام متوقفة حالياً
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {timers.map((timer) => {
-            const isMyTimer = activeTimers.some(
-              (activeTimer) =>
-                activeTimer.id === timer.id ||
-                activeTimer.taskId === timer.taskId,
-            );
+      {/* Single-Surface Chassis */}
+      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+        {/* Chassis Controls */}
+        <div className="p-2.5 sm:p-3 border-b border-border/60 bg-muted/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+          <div className="flex items-center p-0.5 rounded-lg bg-muted/60 border border-border/40 text-xs shrink-0 self-start">
+            <button
+              type="button"
+              onClick={() => setStatusFilter("all")}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                statusFilter === "all"
+                  ? "bg-card text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              الكل ({timers.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("running")}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                statusFilter === "running"
+                  ? "bg-card text-primary shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              قيد التشغيل ({timers.filter((t) => !t.isPaused).length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("paused")}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                statusFilter === "paused"
+                  ? "bg-card text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              متوقفة مؤقتاً ({timers.filter((t) => t.isPaused).length})
+            </button>
+          </div>
 
-            return (
-              <div
-                key={timer.id}
-                className={`bg-white dark:bg-gray-800 rounded-xl border-2 p-6 transition-all hover:shadow-lg ${
-                  isMyTimer
-                    ? "border-indigo-500 dark:border-indigo-400 shadow-md"
-                    : "border-gray-200 dark:border-gray-700"
-                }`}
-              >
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      {isMyTimer && (
-                        <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded">
-                          مؤقتك
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="بحث بالمهمة أو العضو أو المشروع..."
+              className="h-8 text-xs pr-8 rounded-lg bg-card border-border/60"
+            />
+          </div>
+        </div>
+
+        {/* Timers Container */}
+        {filteredTimers.length === 0 ? (
+          <div className="p-12 text-center">
+            <Clock className="size-8 text-muted-foreground/40 mx-auto mb-2" />
+            <h3 className="text-sm font-semibold text-foreground mb-1">
+              لا توجد مؤقتات تطابق البحث
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {timers.length === 0 ? "جميع المهام وجلسات العمل متوقفة حالياً." : "جرب تعديل كلمة البحث أو فلتر الحالة."}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x md:rtl:divide-x-reverse divide-border/60">
+            {filteredTimers.map((timer) => {
+              const isMyTimer = activeTimers.some(
+                (activeTimer) =>
+                  activeTimer.id === timer.id || activeTimer.taskId === timer.taskId,
+              );
+
+              return (
+                <div
+                  key={timer.id}
+                  className={`p-4 flex flex-col justify-between transition-colors hover:bg-muted/30 ${
+                    isMyTimer ? "bg-primary/[0.03]" : ""
+                  }`}
+                >
+                  <div>
+                    {/* Header: Badges & Task Title */}
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {isMyTimer && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/15 text-primary border border-primary/30">
+                            جلستك
+                          </span>
+                        )}
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${getPriorityBadge(timer.taskPriority)}`}
+                        >
+                          {timer.taskPriority}
                         </span>
-                      )}
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${getStatusBadge(timer.taskStatus)}`}
+                        >
+                          {timer.taskStatus}
+                        </span>
+                      </div>
+
                       <span
-                        className={`px-2 py-1 text-xs font-medium rounded border ${getPriorityColor(timer.taskPriority)}`}
+                        className={`inline-flex items-center gap-1 text-[11px] font-medium ${
+                          timer.isPaused ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"
+                        }`}
                       >
-                        {timer.taskPriority}
-                      </span>
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded ${getStatusColor(timer.taskStatus)}`}
-                      >
-                        {timer.taskStatus}
+                        <span
+                          className={`size-1.5 rounded-full ${
+                            timer.isPaused ? "bg-amber-500" : "bg-emerald-500 animate-pulse"
+                          }`}
+                        />
+                        {timer.isPaused ? "متوقف مؤقتاً" : "نشط"}
                       </span>
                     </div>
+
                     <h3
-                      className="text-lg font-semibold text-gray-900 dark:text-gray-100 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                      onClick={() =>
-                        navigate(`/super-admin/dev-tasks/${timer.taskId}`)
-                      }
+                      className="text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer line-clamp-2 leading-snug mb-3"
+                      onClick={() => navigate(`/super-admin/dev-tasks/${timer.taskId}`)}
                     >
                       {timer.taskTitle}
                     </h3>
-                  </div>
-                </div>
 
-                {/* Info */}
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <UserIcon className="h-4 w-4" />
-                    <span>{timer.memberName}</span>
-                  </div>
-                  {timer.projectName && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <FolderIcon className="h-4 w-4" />
-                      <span>{timer.projectName}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Timer Display */}
-                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 mb-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                        الوقت المنقضي
-                      </p>
-                      <p className="text-2xl font-mono font-bold text-gray-900 dark:text-gray-100">
-                        {formatElapsedTime(timer.startTime, timer.isPaused)}
-                      </p>
-                    </div>
-                    <div
-                      className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                        timer.isPaused
-                          ? "bg-yellow-100 dark:bg-yellow-900/30"
-                          : "bg-green-100 dark:bg-green-900/30 animate-pulse"
-                      }`}
-                    >
-                      {timer.isPaused ? (
-                        <PauseIcon className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-                      ) : (
-                        <PlayIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    {/* Metadata: Member & Project */}
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3 font-mono">
+                      <div className="flex items-center gap-1">
+                        <User className="size-3 text-muted-foreground/70" />
+                        <span className="font-sans">{timer.memberName}</span>
+                      </div>
+                      {timer.projectName && (
+                        <div className="flex items-center gap-1">
+                          <Folder className="size-3 text-muted-foreground/70" />
+                          <span className="font-sans">{timer.projectName}</span>
+                        </div>
                       )}
                     </div>
                   </div>
-                </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-2">
-                  {timer.isPaused ? (
-                    <button
-                      onClick={() => handleResumeTimer(timer.taskId, timer.id)}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors"
-                    >
-                      <PlayIcon className="h-4 w-4" />
-                      استئناف
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handlePauseTimer(timer.taskId, timer.id)}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 transition-colors"
-                    >
-                      <PauseIcon className="h-4 w-4" />
-                      إيقاف مؤقت
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleStopTimer(timer.taskId, timer.id)}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
-                  >
-                    <StopIcon className="h-4 w-4" />
-                    إيقاف
-                  </button>
-                  <button
-                    onClick={() =>
-                      navigate(`/super-admin/dev-tasks/${timer.taskId}`)
-                    }
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
-                  >
-                    عرض
-                  </button>
+                  {/* Timer Box & Action Bar */}
+                  <div className="pt-3 border-t border-border/60">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div>
+                        <span className="text-[10px] text-muted-foreground font-mono">الوقت المنقضي</span>
+                        <div className="text-xl font-mono font-bold tracking-tight text-foreground tabular-nums">
+                          {formatElapsedTime(timer.startTime, timer.isPaused)}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        {timer.isPaused ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleResumeTimer(timer.taskId, timer.id)}
+                            className="h-7.5 px-2.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 gap-1 active:scale-[0.98] transition-transform"
+                          >
+                            <Play className="size-3 fill-current" />
+                            <span>استئناف</span>
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePauseTimer(timer.taskId, timer.id)}
+                            className="h-7.5 px-2.5 text-xs font-medium text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10 gap-1 active:scale-[0.98] transition-transform"
+                          >
+                            <Pause className="size-3" />
+                            <span>إيقاف مؤقت</span>
+                          </Button>
+                        )}
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleStopTimer(timer.taskId, timer.id)}
+                          className="h-7.5 px-2 text-xs font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-500/10 border-rose-500/30 gap-1 active:scale-[0.98] transition-transform"
+                          title="إيقاف المؤقت"
+                        >
+                          <Square className="size-3 fill-current" />
+                          <span>إيقاف</span>
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => navigate(`/super-admin/dev-tasks/${timer.taskId}`)}
+                          className="size-7.5 rounded-lg text-muted-foreground hover:text-foreground"
+                          title="عرض المهمة"
+                        >
+                          <ExternalLink className="size-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
