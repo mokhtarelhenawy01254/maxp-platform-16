@@ -1759,11 +1759,21 @@ function registerIpcHandlers(): void {
       };
     } catch (err: any) {
       console.warn('[Updater] Manual check error:', err?.message || err);
+      const rawMsg = String(err?.message || err || '');
+      let cleanMsg = 'تعذر التحقق من التحديثات حالياً. يرجى التأكد من اتصال الإنترنت والمحاولة لاحقاً.';
+      if (rawMsg.includes('404') || rawMsg.includes('latest.yml') || rawMsg.includes('Cannot find channel')) {
+        cleanMsg = 'خادم التحديثات غير متاح حالياً أو لم يتم العثور على حزمة التحديث (404). يرجى المحاولة لاحقاً.';
+      } else if (rawMsg.includes('ERR_INTERNET_DISCONNECTED') || rawMsg.includes('ENOTFOUND') || rawMsg.includes('ECONNREFUSED')) {
+        cleanMsg = 'لا يوجد اتصال بالإنترنت. يرجى التحقق من الشبكة والمحاولة مجدداً.';
+      } else if (rawMsg.includes('timeout') || rawMsg.includes('ETIMEDOUT')) {
+        cleanMsg = 'انتهت مهلة الاتصال بخادم التحديثات. يرجى المحاولة لاحقاً.';
+      }
+
       return {
         success: false,
         status: 'error',
         currentVersion: app.getVersion(),
-        message: err?.message || 'تعذر التحقق من التحديثات حالياً. تأكد من اتصال الإنترنت.',
+        message: cleanMsg,
       };
     }
   });

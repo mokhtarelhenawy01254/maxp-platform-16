@@ -13,11 +13,14 @@ import {
   FileText,
   Download,
   AlertCircle,
-  CheckCircle,
+  CheckCircle2,
   Loader2,
   Phone,
   Package,
   Copy,
+  RotateCcw,
+  Store,
+  Layers,
 } from "lucide-react";
 
 const ORDER_STATUSES = [
@@ -195,7 +198,6 @@ const BulkSearchPage: React.FC = () => {
         return;
       }
 
-      // Phone validation for phone search type
       if (searchType === "phone") {
         const invalidPhones = values.filter(
           (v) => !bulkSearchService.validatePhone(v),
@@ -296,104 +298,141 @@ const BulkSearchPage: React.FC = () => {
       pending: {
         label: t("orders.status.pending"),
         color:
-          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+          "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800",
       },
       processing: {
         label: t("orders.status.processing"),
         color:
-          "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+          "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800",
       },
       shipped: {
         label: t("orders.status.shipped"),
         color:
-          "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+          "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200 dark:border-purple-800",
       },
       delivered: {
         label: t("orders.status.delivered"),
         color:
-          "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+          "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
       },
       cancelled: {
         label: t("orders.status.cancelled"),
-        color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+        color:
+          "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 border-red-200 dark:border-red-800",
       },
       completed: {
         label: t("orders.status.completed"),
         color:
-          "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+          "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
       },
     };
 
     const statusInfo = statusMap[status.toLowerCase()] || {
       label: status,
-      color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
+      color:
+        "bg-secondary text-secondary-foreground border-border",
     };
 
     return (
       <span
-        className={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}
+        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusInfo.color}`}
       >
         {statusInfo.label}
       </span>
     );
   };
 
+  const parsedCount = bulkSearchService.parseInput(inputText).length;
+
   return (
-    <div className="p-6 w-full" dir="rtl">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-          <Search className="text-blue-600 dark:text-blue-400" size={32} />
-          {t("bulkSearch.title")}
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          {t("bulkSearch.description")}
-        </p>
+    <div className="w-full space-y-4 p-4 md:p-6" dir="rtl">
+      {/* Control Bar Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <Search className="size-5" />
+            </div>
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
+              {t("bulkSearch.title")}
+            </h1>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-mono">
+              Batch Query
+            </span>
+          </div>
+          <p className="text-xs md:text-sm text-muted-foreground mt-1">
+            {t("bulkSearch.description")}
+          </p>
+        </div>
+
+        {hasSearched && results.length > 0 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopy}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-colors"
+            >
+              <Copy className="size-3.5 text-muted-foreground" />
+              {t("bulkSearch.copy")}
+            </button>
+            <button
+              onClick={handleExport}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-colors"
+            >
+              <Download className="size-3.5 text-muted-foreground" />
+              {t("bulkSearch.export")}
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Search Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t("bulkSearch.searchType")}
-          </label>
-          <div className="flex gap-4">
-            <button
-              onClick={() => setSearchType("orderNumber")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
-                searchType === "orderNumber"
-                  ? "border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-                  : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-500"
-              }`}
-            >
-              <Package size={20} />
-              <span className="font-medium">{t("bulkSearch.orderCodes")}</span>
-            </button>
-            <button
-              onClick={() => setSearchType("phone")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
-                searchType === "phone"
-                  ? "border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-                  : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-500"
-              }`}
-            >
-              <Phone size={20} />
-              <span className="font-medium">
+      {/* Search Input Single-Surface Chassis */}
+      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        {/* Switcher & Meta */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-border/60 bg-muted/30">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">نوع البحث:</span>
+            <div className="inline-flex p-0.5 rounded-lg border border-border bg-background">
+              <button
+                type="button"
+                onClick={() => setSearchType("orderNumber")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  searchType === "orderNumber"
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Package className="size-3.5" />
+                {t("bulkSearch.orderCodes")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSearchType("phone")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  searchType === "phone"
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Phone className="size-3.5" />
                 {t("bulkSearch.phoneNumbers")}
-              </span>
-            </button>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 text-xs">
+            <span className="text-muted-foreground">
+              {searchType === "orderNumber"
+                ? "أدخل أرقام الطلبات مفصولة بأسطر أو مسافات"
+                : "أدخل أرقام الهواتف (يدعم الصيغ المصرية والدولية)"}
+            </span>
+            <span className="font-mono text-muted-foreground font-semibold px-2 py-0.5 rounded bg-muted">
+              {parsedCount} عنصر
+            </span>
           </div>
         </div>
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {searchType === "orderNumber"
-              ? t("bulkSearch.orderCodes")
-              : t("bulkSearch.phoneNumbers")}
-            <span className="text-gray-500 dark:text-gray-400 text-xs mr-2">
-              ({t("bulkSearch.inputLabel")})
-            </span>
-          </label>
+        {/* Text Area */}
+        <div className="p-4">
           <textarea
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
@@ -402,149 +441,126 @@ const BulkSearchPage: React.FC = () => {
                 ? t("bulkSearch.orderCodesPlaceholder")
                 : t("bulkSearch.phonesPlaceholder")
             }
-            className="w-full h-48 p-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+            rows={5}
+            className="w-full p-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary font-mono text-xs md:text-sm resize-y leading-relaxed"
             disabled={loading}
           />
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {t("bulkSearch.valueCount", {
-              count: bulkSearchService.parseInput(inputText).length,
-            })}
-          </div>
         </div>
 
-        <div className="flex gap-3">
-          <button
-            onClick={handleSearch}
-            disabled={loading || !inputText.trim()}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors font-medium"
-          >
-            {loading ? (
-              <>
-                <Loader2 size={20} className="animate-spin" />
-                {t("bulkSearch.searching")}
-              </>
-            ) : (
-              <>
-                <Search size={20} />
-                {t("bulkSearch.search")}
-              </>
-            )}
-          </button>
-          <button
-            onClick={handleClear}
-            disabled={loading}
-            className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors font-medium"
-          >
-            {t("bulkSearch.clear")}
-          </button>
+        {/* Action Bar */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border/60 bg-muted/20">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSearch}
+              disabled={loading || !inputText.trim()}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xs"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  {t("bulkSearch.searching")}
+                </>
+              ) : (
+                <>
+                  <Search className="size-4" />
+                  {t("bulkSearch.search")}
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleClear}
+              disabled={loading || (!inputText && results.length === 0)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-background hover:bg-muted text-foreground text-xs md:text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              <RotateCcw className="size-3.5 text-muted-foreground" />
+              {t("bulkSearch.clear")}
+            </button>
+          </div>
+
+          <span className="text-[11px] text-muted-foreground hidden sm:inline">
+            الحد الأقصى المسموح به: 10,000 قيمة في كل استعلام
+          </span>
         </div>
       </div>
 
-      {/* Statistics */}
+      {/* Telemetry Strip */}
       {hasSearched && stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("bulkSearch.totalValues")}
-                </p>
-                <p className="text-2xl font-bold text-gray-800 dark:text-white">
-                  {stats.total}
-                </p>
-              </div>
-              <FileText
-                className="text-gray-400 dark:text-gray-500"
-                size={32}
-              />
+        <div className="grid grid-cols-2 md:grid-cols-4 rounded-xl border border-border bg-card overflow-hidden divide-y md:divide-y-0 divide-x md:divide-x-reverse divide-border shadow-xs">
+          <div className="p-4 space-y-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{t("bulkSearch.totalValues")}</span>
+              <FileText className="size-3.5" />
             </div>
+            <p className="text-xl md:text-2xl font-bold font-mono tabular-nums text-foreground">
+              {stats.total}
+            </p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("orders.found")}
-                </p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {stats.found}
-                </p>
-              </div>
-              <CheckCircle
-                className="text-green-400 dark:text-green-500"
-                size={32}
-              />
+
+          <div className="p-4 space-y-1">
+            <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+              <span>{t("orders.found")}</span>
+              <CheckCircle2 className="size-3.5" />
             </div>
+            <p className="text-xl md:text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+              {stats.found}
+            </p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("orders.notFound")}
-                </p>
-                <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                  {stats.notFound}
-                </p>
-              </div>
-              <AlertCircle
-                className="text-red-400 dark:text-red-500"
-                size={32}
-              />
+
+          <div className="p-4 space-y-1">
+            <div className="flex items-center justify-between text-xs text-destructive font-medium">
+              <span>{t("orders.notFound")}</span>
+              <AlertCircle className="size-3.5" />
             </div>
+            <p className="text-xl md:text-2xl font-bold font-mono tabular-nums text-destructive">
+              {stats.notFound}
+            </p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("orders.ordersCount")}
-                </p>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {stats.ordersCount}
-                </p>
-                {typeof stats.storefrontCount === "number" && stats.storefrontCount > 0 && (
-                  <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium block mt-1">
-                    ({stats.storefrontCount} من المتجر)
-                  </span>
-                )}
-              </div>
-              <Package className="text-blue-400 dark:text-blue-500" size={32} />
+
+          <div className="p-4 space-y-1">
+            <div className="flex items-center justify-between text-xs text-primary font-medium">
+              <span>{t("orders.ordersCount")}</span>
+              <Package className="size-3.5" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <p className="text-xl md:text-2xl font-bold font-mono tabular-nums text-foreground">
+                {stats.ordersCount}
+              </p>
+              {typeof stats.storefrontCount === "number" && stats.storefrontCount > 0 && (
+                <span className="text-[11px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium border border-emerald-500/20">
+                  {stats.storefrontCount} متجر
+                </span>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Not Found Values */}
+      {/* Not Found Values Pill Box */}
       {hasSearched && notFoundValues.length > 0 && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
-          <div className="flex items-start gap-2">
-            <AlertCircle
-              className="text-red-600 dark:text-red-400 mt-1"
-              size={20}
-            />
-            <div className="flex-1">
-              <h3 className="font-bold text-red-800 dark:text-red-300 mb-2">
-                {t("orders.notFoundValues", { count: notFoundValues.length })}
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {notFoundValues.map((value, index) => (
-                  <span
-                    key={index}
-                    className="bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 px-2 py-1 rounded text-sm font-mono"
-                  >
-                    {value}
-                  </span>
-                ))}
-              </div>
-            </div>
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-2">
+          <div className="flex items-center gap-2 text-destructive font-medium text-xs md:text-sm">
+            <AlertCircle className="size-4 shrink-0" />
+            <span>{t("orders.notFoundValues", { count: notFoundValues.length })}</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pt-1">
+            {notFoundValues.map((value, index) => (
+              <span
+                key={index}
+                className="px-2 py-0.5 rounded-md border border-destructive/20 bg-background text-destructive text-xs font-mono"
+              >
+                {value}
+              </span>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Results Table */}
+      {/* Results Table Single-Surface Chassis */}
       {hasSearched && results.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-          <div className="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 flex flex-wrap gap-3 justify-between items-center">
+        <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+          <div className="p-3 md:p-4 bg-muted/30 border-b border-border/60 flex flex-wrap gap-3 justify-between items-center">
             <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+              <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={
@@ -552,95 +568,79 @@ const BulkSearchPage: React.FC = () => {
                     selectedOrderIds.size === results.length
                   }
                   onChange={toggleSelectAll}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-border text-primary focus:ring-primary size-4"
                 />
                 {t("bulkSearch.selectAll")}
               </label>
-              <h2 className="text-lg font-bold text-gray-800 dark:text-white">
-                {t("bulkSearch.results")} ({results.length})
-                {selectedOrderIds.size > 0 && (
-                  <span className="text-sm font-normal text-blue-600 dark:text-blue-400 mr-2">
-                    ({selectedOrderIds.size} {" "}
-                    {t("bulkSearch.selected")})
-                  </span>
-                )}
-              </h2>
-            </div>
-            <div className="flex gap-2">
+
+              <div className="h-4 w-px bg-border" />
+
+              <span className="text-xs md:text-sm font-semibold text-foreground">
+                {t("bulkSearch.results")} (
+                <span className="font-mono tabular-nums">{results.length}</span>)
+              </span>
+
               {selectedOrderIds.size > 0 && (
-                <div className="flex items-center gap-2">
-                  <select
-                    value=""
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val) {
-                        handleBulkStatusUpdate(val);
-                        e.target.value = "";
-                      }
-                    }}
-                    disabled={updatingStatus}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="">
-                      {updatingStatus
-                        ? t("bulkSearch.updating")
-                        : t("bulkSearch.updateStatus")}
-                    </option>
-                    {ORDER_STATUSES.filter(
-                      (s) =>
-                        normalizeStatusCode(s.code) !== "TRASH" &&
-                        normalizeStatusCode(s.code) !== "DRAFT",
-                    ).map((status) => (
-                      <option key={status.code} value={status.code}>
-                        {status.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={handleCopy}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    disabled={results.length === 0}
-                  >
-                    <Copy size={18} />
-                    {t("bulkSearch.copy")}
-                  </button>
-                  <button
-                    onClick={handleExport}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    disabled={results.length === 0}
-                  >
-                    <Download size={18} />
-                    {t("bulkSearch.export")}
-                  </button>
-                </div>
-              )}
-              {selectedOrderIds.size === 0 && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleCopy}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    disabled={results.length === 0}
-                  >
-                    <Copy size={18} />
-                    {t("bulkSearch.copy")}
-                  </button>
-                  <button
-                    onClick={handleExport}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    disabled={results.length === 0}
-                  >
-                    <Download size={18} />
-                    {t("bulkSearch.export")}
-                  </button>
-                </div>
+                <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary font-medium border border-primary/20">
+                  {selectedOrderIds.size} محدد
+                </span>
               )}
             </div>
+
+            {selectedOrderIds.size > 0 && (
+              <div className="flex items-center gap-2">
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val) {
+                      handleBulkStatusUpdate(val);
+                      e.target.value = "";
+                    }
+                  }}
+                  disabled={updatingStatus}
+                  className="px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs font-medium focus:ring-1 focus:ring-primary"
+                >
+                  <option value="">
+                    {updatingStatus
+                      ? t("bulkSearch.updating")
+                      : t("bulkSearch.updateStatus")}
+                  </option>
+                  {ORDER_STATUSES.filter(
+                    (s) =>
+                      normalizeStatusCode(s.code) !== "TRASH" &&
+                      normalizeStatusCode(s.code) !== "DRAFT",
+                  ).map((status) => (
+                    <option key={status.code} value={status.code}>
+                      {status.name}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={handleCopy}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-border bg-background hover:bg-muted text-foreground transition-colors"
+                >
+                  <Copy className="size-3.5" />
+                  {t("bulkSearch.copy")}
+                </button>
+
+                <button
+                  onClick={handleExport}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-border bg-background hover:bg-muted text-foreground transition-colors"
+                >
+                  <Download className="size-3.5" />
+                  {t("bulkSearch.export")}
+                </button>
+              </div>
+            )}
           </div>
+
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700">
+            <table className="min-w-full divide-y divide-border text-xs md:text-sm">
+              <thead className="bg-muted/40">
                 <tr>
-                  <th className="px-4 py-3 text-right" style={{ width: 40 }}>
+                  <th className="px-3 py-2.5 text-right w-10">
                     <input
                       type="checkbox"
                       checked={
@@ -648,90 +648,94 @@ const BulkSearchPage: React.FC = () => {
                         selectedOrderIds.size === results.length
                       }
                       onChange={toggleSelectAll}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="rounded border-border text-primary focus:ring-primary size-4"
                     />
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">
                     {t("bulkSearch.orderNumber")}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">
                     {t("bulkSearch.customer")}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">
                     {t("bulkSearch.phone")}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">
                     {t("bulkSearch.status")}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">
                     {t("bulkSearch.total")}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">
                     {t("bulkSearch.date")}
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="divide-y divide-border/60 bg-card">
                 {results.map((order) => (
                   <tr
                     key={order.id}
-                    className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer ${
+                    className={`hover:bg-muted/40 transition-colors cursor-pointer ${
                       selectedOrderIds.has(order.orderNumber)
-                        ? "bg-blue-50 dark:bg-blue-900/20"
+                        ? "bg-primary/5"
                         : ""
                     }`}
                     onClick={() => navigate(`/orders/${order.id}`)}
                   >
                     <td
-                      className="px-4 py-4 whitespace-nowrap"
+                      className="px-3 py-3 whitespace-nowrap"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <input
                         type="checkbox"
                         checked={selectedOrderIds.has(order.orderNumber)}
                         onChange={() => toggleSelect(order.orderNumber)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-border text-primary focus:ring-primary size-4"
                       />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-xs font-semibold text-primary hover:underline">
                           {order.orderNumber}
                         </span>
-                        {(order.isStorefront || order.isGuestOrder || order.sourceType === "storefront" || order.orderSource === "STOREFRONT") && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        {(order.isStorefront ||
+                          order.isGuestOrder ||
+                          order.sourceType === "storefront" ||
+                          order.orderSource === "STOREFRONT") && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            <Store className="size-2.5" />
                             متجر
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="font-medium text-foreground">
                         {order.customer
                           ? `${order.customer.firstName || ""} ${order.customer.lastName || ""}`.trim() || order.customerName || "-"
                           : order.customerName || "-"}
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="text-[11px] text-muted-foreground">
                         {order.customer?.email || order.customerEmail || "-"}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <span
-                        className="text-sm text-gray-900 dark:text-gray-100 font-mono"
+                        className="font-mono text-xs text-foreground"
                         dir="ltr"
                       >
                         {order.customer?.phone || order.customerPhone || "-"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       {getStatusBadge(order.status)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className="font-mono tabular-nums font-semibold text-foreground">
                         {Number(order.total).toFixed(2)} {order.currency || "ج.م"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-4 py-3 whitespace-nowrap text-muted-foreground text-xs font-mono">
                       {new Date(order.createdAt).toLocaleDateString("ar-EG")}
                     </td>
                   </tr>
@@ -744,15 +748,12 @@ const BulkSearchPage: React.FC = () => {
 
       {/* Empty State */}
       {hasSearched && results.length === 0 && notFoundValues.length === 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
-          <Search
-            className="mx-auto text-gray-400 dark:text-gray-500 mb-4"
-            size={64}
-          />
-          <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
+        <div className="rounded-xl border border-dashed border-border p-12 text-center bg-card">
+          <Layers className="mx-auto text-muted-foreground/60 mb-3 size-10" />
+          <h3 className="text-base font-semibold text-foreground mb-1">
             {t("bulkSearch.noResults")}
           </h3>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
             {t("bulkSearch.searchFirst")}
           </p>
         </div>

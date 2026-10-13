@@ -152,9 +152,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         version: res.latestVersion || res.currentVersion,
       });
     } catch (err: any) {
+      const raw = String(err?.message || '');
+      let clean = 'تعذر الاتصال بخادم التحديثات حالياً';
+      if (raw.includes('404') || raw.includes('latest.yml')) {
+        clean = 'خادم التحديثات غير متاح حالياً أو لم يتم العثور على حزمة التحديث (404).';
+      } else if (raw.length > 120) {
+        clean = 'تعذر استكمال فحص التحديثات بسبب خطأ غير متوقع. يرجى المحاولة لاحقاً.';
+      } else if (raw) {
+        clean = raw;
+      }
       setUpdateResult({
         status: 'error',
-        message: err?.message || 'تعذر الاتصال بخادم التحديثات',
+        message: clean,
       });
     } finally {
       setIsCheckingUpdate(false);
@@ -556,9 +565,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   )}
 
                   {updateResult.status === 'error' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-red-dim)' }}>
-                      <AlertCircle size={13} />
-                      <span style={{ fontSize: 11, fontWeight: 500 }}>{updateResult.message}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-red-dim)', maxWidth: '100%' }}>
+                      <AlertCircle size={13} style={{ flexShrink: 0 }} />
+                      <span style={{ fontSize: 11, fontWeight: 500, wordBreak: 'break-word', lineHeight: 1.4 }}>{updateResult.message}</span>
                     </div>
                   )}
                 </div>

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import { CheckCircle2, LayoutList, Loader2, PanelsTopLeft, Sidebar as SidebarIcon, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import i18n from "../../i18n";
 import {
   platformDefaultSidebarService,
@@ -84,9 +85,10 @@ const SuperAdminDefaultSidebar: React.FC = () => {
       setSaving(true);
       await platformDefaultSidebarService.updateSettings({ layout: newLayout });
       setLayout(newLayout);
+      toast.success("تم تحديث نمط القائمة الجانبية الافتراضية بنجاح");
     } catch (error) {
       console.error("Error updating layout:", error);
-      alert(i18n.t("companySettings.error_error_d9e4"));
+      toast.error(i18n.t("companySettings.error_error_d9e4") || "حدث خطأ أثناء حفظ الإعدادات");
     } finally {
       setSaving(false);
     }
@@ -94,51 +96,103 @@ const SuperAdminDefaultSidebar: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-8">
-        <div className="flex items-center justify-center py-12">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
-          <span className="mr-3 text-sm text-gray-500">{i18n.t("superAdminDefaultSidebar.loading")}</span>
-        </div>
+      <div className="flex items-center justify-center py-20" dir="rtl">
+        <Loader2 className="size-6 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-8">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-        <span className="text-indigo-600 dark:text-indigo-400 mr-2">⚙</span>
-        نظام القائمة الجانبية
-      </h2>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-        القيمة الافتراضية للقائمة الجانبية التي تُطبَّق على الشركات الجديدة عند التسجيل
-      </p>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {SIDEBAR_LAYOUT_OPTIONS.map((option) => (
-          <button
-            key={option.id}
-            onClick={() => handleLayoutChange(option.id)}
-            disabled={saving}
-            className={`relative p-4 rounded-xl border-2 text-right transition-[background-color,border-color,color,box-shadow] duration-200 ${
-              layout === option.id
-                ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
-                : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-            }`}
-          >
-            <h3
-              className={`font-semibold ${layout === option.id ? "text-indigo-700 dark:text-indigo-300" : "text-gray-900 dark:text-white"}`}
-            >
-              {i18n.t(option.nameKey)}
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {i18n.t(option.descriptionKey)}
-            </p>
-            {layout === option.id && (
-              <div className="absolute top-4 left-4 h-5 w-5 bg-indigo-500 rounded-full flex items-center justify-center">
-                <CheckCircleIcon className="h-3 w-3 text-white" />
-              </div>
-            )}
-          </button>
-        ))}
+    <div className="w-full space-y-4 p-4 md:p-6 max-w-5xl mx-auto" dir="rtl">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <SidebarIcon className="size-5" />
+            </div>
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
+              نظام القائمة الجانبية الافتراضي
+            </h1>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-mono">
+              Platform Shell Defaults
+            </span>
+          </div>
+          <p className="text-xs md:text-sm text-muted-foreground mt-1">
+            القيمة الافتراضية لهيكل القائمة الجانبية التي تُطبَّق تلقائياً على حسابات التجار والشركات الجديدة
+          </p>
+        </div>
+
+        {saving && (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
+            <Loader2 className="size-3.5 animate-spin" />
+            جاري الحفظ...
+          </div>
+        )}
+      </div>
+
+      {/* Single-Surface Layout Grid */}
+      <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
+        <div className="p-3 md:p-4 bg-muted/30 border-b border-border/60 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <PanelsTopLeft className="size-4 text-primary" />
+            <h2 className="text-sm font-bold text-foreground">
+              الأنماط المتاحة
+            </h2>
+          </div>
+          <span className="text-xs text-muted-foreground font-mono">
+            {SIDEBAR_LAYOUT_OPTIONS.length} خيارات متاحة
+          </span>
+        </div>
+
+        <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {SIDEBAR_LAYOUT_OPTIONS.map((option) => {
+            const isSelected = layout === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => handleLayoutChange(option.id)}
+                disabled={saving}
+                className={`relative p-4 rounded-xl border text-right transition-all flex flex-col justify-between ${
+                  isSelected
+                    ? "border-primary bg-primary/5 ring-1 ring-primary/40 shadow-xs"
+                    : "border-border bg-card hover:bg-muted/40 hover:border-border/80"
+                }`}
+              >
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3
+                      className={`text-sm font-semibold ${
+                        isSelected ? "text-primary" : "text-foreground"
+                      }`}
+                    >
+                      {i18n.t(option.nameKey)}
+                    </h3>
+                    {isSelected && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary">
+                        <CheckCircle2 className="size-4" />
+                        المحدد
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {i18n.t(option.descriptionKey)}
+                  </p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground font-mono">
+                  <span>ID: {option.id}</span>
+                  {isSelected && (
+                    <span className="px-1.5 py-0.2 rounded bg-primary/10 text-primary font-semibold">
+                      ACTIVE DEFAULT
+                    </span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
