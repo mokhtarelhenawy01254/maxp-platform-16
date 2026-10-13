@@ -3,19 +3,42 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../../services/apiClient";
 import { Badge } from "../../components/ui/badge";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "../../components/ui/table";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from "../../components/ui/dialog";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import {
-  Search, RefreshCw, Image as ImageIcon, CheckCircle, XCircle, ChevronLeft, ChevronRight, Info, Eye, Layers, Clock, Zap
+  Search,
+  RefreshCw,
+  Image as ImageIcon,
+  CheckCircle2,
+  XCircle,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  Layers,
+  Zap,
+  Sparkles,
 } from "lucide-react";
 import { Input } from "../../components/ui/input";
 import { cn } from "../../lib/utils";
@@ -72,12 +95,25 @@ const SuperAdminVisualSearchLogs: React.FC = () => {
   const [selectedLog, setSelectedLog] = useState<VisualSearchLog | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["super-admin", "visual-search-logs", days, companyFilter, statusFilter, page],
+    queryKey: [
+      "super-admin",
+      "visual-search-logs",
+      days,
+      companyFilter,
+      statusFilter,
+      page,
+    ],
     queryFn: async () => {
-      const params: Record<string, string> = { days, page: String(page + 1), pageSize: "25" };
+      const params: Record<string, string> = {
+        days,
+        page: String(page + 1),
+        pageSize: "25",
+      };
       if (companyFilter) params.companyId = companyFilter;
       if (statusFilter) params.status = statusFilter;
-      const res = await apiClient.get("/super-admin/ai/visual-search-logs", { params });
+      const res = await apiClient.get("/super-admin/ai/visual-search-logs", {
+        params,
+      });
       return res.data;
     },
     staleTime: 15_000,
@@ -93,70 +129,83 @@ const SuperAdminVisualSearchLogs: React.FC = () => {
     return logs.filter(
       (l) =>
         (l.query || "").toLowerCase().includes(q) ||
-        (l.companyName || "").toLowerCase().includes(q)
+        (l.companyName || "").toLowerCase().includes(q),
     );
   }, [logs, searchQuery]);
 
   return (
-    <div dir="rtl" className="w-full min-h-screen bg-background text-foreground space-y-5 p-4 sm:p-6">
-      {/* Top Header Chassis */}
-      <header className="rounded-xl border border-border/70 bg-card p-5 sm:p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary">
-                <ImageIcon className="size-4" />
-              </span>
-              <p className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
-                Visual AI Telemetry
-              </p>
+    <div
+      dir="rtl"
+      className="w-full space-y-4 p-4 md:p-6 max-w-7xl mx-auto"
+    >
+      {/* Top Header Control Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <ImageIcon className="size-5" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
               سجل استعلامات البحث بالصورة
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              مراقبة عمليات البحث البصري وتضمينات CLIP ومعدلات دقة المطابقة وزمن الاستجابة عبر المتاجر.
-            </p>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-mono">
+              Visual AI Telemetry
+            </span>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <Select value={days} onValueChange={(v) => { setDays(v); setPage(0); }}>
-              <SelectTrigger className="w-[130px] h-9 text-xs bg-background">
-                <SelectValue placeholder="الفترة" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">آخر 24 ساعة</SelectItem>
-                <SelectItem value="7">آخر 7 أيام</SelectItem>
-                <SelectItem value="30">آخر 30 يوم</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0); }}>
-              <SelectTrigger className="w-[120px] h-9 text-xs bg-background">
-                <SelectValue placeholder="الحالة" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">كل الحالات</SelectItem>
-                <SelectItem value="success">عمليات ناجحة</SelectItem>
-                <SelectItem value="failed">عمليات فاشلة</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              className="h-9 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform"
-            >
-              <RefreshCw className={cn("size-3.5", isLoading && "animate-spin")} />
-              <span>تحديث</span>
-            </Button>
-          </div>
+          <p className="text-xs md:text-sm text-muted-foreground mt-1">
+            مراقبة عمليات البحث البصري وتضمينات CLIP ومعدلات دقة المطابقة وزمن الاستجابة عبر المتاجر
+          </p>
         </div>
-      </header>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            value={days}
+            onValueChange={(v) => {
+              setDays(v);
+              setPage(0);
+            }}
+          >
+            <SelectTrigger className="w-[120px] h-8 text-xs bg-background">
+              <SelectValue placeholder="الفترة" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">آخر 24 ساعة</SelectItem>
+              <SelectItem value="7">آخر 7 أيام</SelectItem>
+              <SelectItem value="30">آخر 30 يوم</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => {
+              setStatusFilter(v);
+              setPage(0);
+            }}
+          >
+            <SelectTrigger className="w-[110px] h-8 text-xs bg-background">
+              <SelectValue placeholder="الحالة" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">كل الحالات</SelectItem>
+              <SelectItem value="success">عمليات ناجحة</SelectItem>
+              <SelectItem value="failed">عمليات فاشلة</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform"
+          >
+            <RefreshCw className={cn("size-3.5", isLoading && "animate-spin")} />
+            <span>تحديث</span>
+          </Button>
+        </div>
+      </div>
 
       {error && (
-        <Alert variant="destructive" className="rounded-xl">
+        <Alert variant="destructive">
           <AlertDescription className="text-xs">
             فشل تحميل سجل البحث بالصورة. يرجى إعادة المحاولة.
           </AlertDescription>
@@ -165,65 +214,57 @@ const SuperAdminVisualSearchLogs: React.FC = () => {
 
       {/* Telemetry Summary Ribbon */}
       {summary && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground">إجمالي عمليات البحث</span>
-              <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-foreground tabular-nums">
-                {summary.total}
-              </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 rounded-xl border border-border bg-card overflow-hidden divide-y md:divide-y-0 divide-x md:divide-x-reverse divide-border shadow-xs">
+          <div className="p-4 space-y-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>إجمالي عمليات البحث</span>
+              <Layers className="size-3.5" />
             </div>
-            <span className="p-2.5 rounded-lg bg-muted text-muted-foreground">
-              <Layers className="size-5" />
-            </span>
+            <p className="text-xl md:text-2xl font-bold font-mono tabular-nums text-foreground">
+              {summary.total}
+            </p>
           </div>
 
-          <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground">عمليات ناجحة</span>
-              <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">
-                {summary.success}
-              </div>
+          <div className="p-4 space-y-1">
+            <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+              <span>عمليات ناجحة</span>
+              <CheckCircle2 className="size-3.5" />
             </div>
-            <span className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-              <CheckCircle className="size-5" />
-            </span>
+            <p className="text-xl md:text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+              {summary.success}
+            </p>
           </div>
 
-          <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground">عمليات فاشلة</span>
-              <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-rose-600 dark:text-rose-400 tabular-nums">
-                {summary.failed}
-              </div>
+          <div className="p-4 space-y-1">
+            <div className="flex items-center justify-between text-xs text-rose-600 dark:text-rose-400 font-medium">
+              <span>عمليات فاشلة</span>
+              <XCircle className="size-3.5" />
             </div>
-            <span className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400">
-              <XCircle className="size-5" />
-            </span>
+            <p className="text-xl md:text-2xl font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400">
+              {summary.failed}
+            </p>
           </div>
 
-          <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground">نسبة الدقة والنجاح</span>
-              <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-primary tabular-nums">
-                {summary.successRate}%
-              </div>
+          <div className="p-4 space-y-1">
+            <div className="flex items-center justify-between text-xs text-primary font-medium">
+              <span>نسبة الدقة والنجاح</span>
+              <Zap className="size-3.5" />
             </div>
-            <span className="p-2.5 rounded-lg bg-primary/10 text-primary">
-              <Zap className="size-5" />
-            </span>
+            <p className="text-xl md:text-2xl font-bold font-mono tabular-nums text-primary">
+              {summary.successRate}%
+            </p>
           </div>
         </div>
       )}
 
-      {/* Main Single-Surface Chassis */}
-      <section className="rounded-xl border border-border/70 bg-card shadow-sm overflow-hidden">
+      {/* Main Single-Surface Table Chassis */}
+      <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
         {/* Search Toolbar */}
-        <div className="p-4 border-b border-border/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/20">
+        <div className="p-3 md:p-4 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/20">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
-              className="pr-9 h-9 text-xs font-mono bg-background"
+              className="pr-8 h-8 text-xs font-mono bg-background"
               placeholder="البحث في الاستعلامات والشركات..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -286,7 +327,7 @@ const SuperAdminVisualSearchLogs: React.FC = () => {
                               "px-2 py-0.5 rounded text-[11px] font-semibold border",
                               l.wasSuccessful
                                 ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
-                                : "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800"
+                                : "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800",
                             )}
                           >
                             {l.wasSuccessful ? "ناجح" : "فاشل"}
@@ -336,7 +377,7 @@ const SuperAdminVisualSearchLogs: React.FC = () => {
 
         {/* Pagination Bar */}
         {pagination && pagination.totalPages > 1 && (
-          <div className="p-3.5 border-t border-border/70 flex items-center justify-between text-xs font-mono bg-muted/20">
+          <div className="p-3 border-t border-border/70 flex items-center justify-between text-xs font-mono bg-muted/20">
             <span className="text-muted-foreground">
               صفحة {page + 1} من {pagination.totalPages} ({pagination.total} سجل)
             </span>
@@ -362,7 +403,7 @@ const SuperAdminVisualSearchLogs: React.FC = () => {
             </div>
           </div>
         )}
-      </section>
+      </div>
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedLog} onOpenChange={() => setSelectedLog(null)}>
