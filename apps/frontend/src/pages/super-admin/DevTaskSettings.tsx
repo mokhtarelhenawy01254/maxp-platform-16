@@ -3,16 +3,16 @@ import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import {
-  Cog6ToothIcon,
-  SwatchIcon,
-  ShieldCheckIcon,
-  BoltIcon,
-  PlusIcon,
-  TrashIcon,
-  CheckCircleIcon,
-  TrophyIcon,
-  ClockIcon,
-} from "@heroicons/react/24/outline";
+  Settings as Cog6ToothIcon,
+  Palette as SwatchIcon,
+  ShieldCheck as ShieldCheckIcon,
+  Zap as BoltIcon,
+  Plus as PlusIcon,
+  Trash2 as TrashIcon,
+  CheckCircle2 as CheckCircleIcon,
+  Trophy as TrophyIcon,
+  Clock as ClockIcon,
+} from "lucide-react";
 
 interface StatusItem {
   value: string;
@@ -267,73 +267,87 @@ const DevTaskSettings = () => {
 
   return (
     <div className="space-y-6" dir={i18n.dir()}>
-      <div className="flex items-center justify-between">
+      {/* Linear Single-Surface Top Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border/40">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Cog6ToothIcon className="h-8 w-8 text-indigo-500" />
-            إعدادات نظام المهام
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            تخصيص الحالات، الصلاحيات، والتشغيل الآلي
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+              <Cog6ToothIcon className="h-4 w-4" />
+            </div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              إعدادات نظام المهام
+            </h1>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            إدارة دورة حياة المهام، الصلاحيات الدقيقة، سياسات الأتمتة وقواعد لوحة الأبطال
           </p>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
-        >
-          {saving ? (
-            "جاري الحفظ..."
-          ) : (
-            <>
-              <CheckCircleIcon className="h-5 w-5" />
-              حفظ التغييرات
-            </>
-          )}
-        </button>
+
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-md border border-border/40">
+            <ClockIcon className="h-3.5 w-3.5 text-primary" />
+            <span>المنطقة: <strong className="text-foreground font-mono">{settings.timezone || "UTC"}</strong></span>
+            <span className="text-border">|</span>
+            <span>الحالات: <strong className="text-foreground font-mono">{settings.taskStatuses.length}</strong></span>
+          </div>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-4 py-2 bg-primary text-primary-foreground font-medium text-xs rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-1.5 shadow-xs"
+          >
+            {saving ? (
+              "جاري الحفظ..."
+            ) : (
+              <>
+                <CheckCircleIcon className="h-4 w-4" />
+                حفظ التغييرات
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700">
+      {/* Modern Segmented Tab Bar */}
+      <div className="flex flex-wrap gap-1 p-1 bg-muted/50 rounded-lg border border-border/60 max-w-fit">
         <button
           onClick={() => setActiveTab("general")}
-          className={`px-6 py-3 font-medium text-sm flex items-center gap-2 ${activeTab === "general" ? "border-b-2 border-indigo-500 text-indigo-600" : "text-gray-500 hover:text-gray-700"}`}
+          className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2 ${activeTab === "general" ? "bg-background text-foreground shadow-xs border border-border/50" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <SwatchIcon className="h-4 w-4" />
+          <SwatchIcon className="h-3.5 w-3.5" />
           الحالات والأولويات
         </button>
         <button
           onClick={() => setActiveTab("permissions")}
-          className={`px-6 py-3 font-medium text-sm flex items-center gap-2 ${activeTab === "permissions" ? "border-b-2 border-indigo-500 text-indigo-600" : "text-gray-500 hover:text-gray-700"}`}
+          className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2 ${activeTab === "permissions" ? "bg-background text-foreground shadow-xs border border-border/50" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <ShieldCheckIcon className="h-4 w-4" />
+          <ShieldCheckIcon className="h-3.5 w-3.5" />
           الصلاحيات والأدوار
         </button>
         <button
           onClick={() => setActiveTab("automation")}
-          className={`px-6 py-3 font-medium text-sm flex items-center gap-2 ${activeTab === "automation" ? "border-b-2 border-indigo-500 text-indigo-600" : "text-gray-500 hover:text-gray-700"}`}
+          className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2 ${activeTab === "automation" ? "bg-background text-foreground shadow-xs border border-border/50" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <BoltIcon className="h-4 w-4" />
+          <BoltIcon className="h-3.5 w-3.5" />
           الأقسام والتعيين التلقائي
         </button>
         <button
           onClick={() => setActiveTab("leaderboard")}
-          className={`px-6 py-3 font-medium text-sm flex items-center gap-2 ${activeTab === "leaderboard" ? "border-b-2 border-indigo-500 text-indigo-600" : "text-gray-500 hover:text-gray-700"}`}
+          className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2 ${activeTab === "leaderboard" ? "bg-background text-foreground shadow-xs border border-border/50" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <TrophyIcon className="h-4 w-4" />
+          <TrophyIcon className="h-3.5 w-3.5" />
           لوحة الأبطال
         </button>
         <button
           onClick={() => setActiveTab("visibility")}
-          className={`px-6 py-3 font-medium text-sm flex items-center gap-2 ${activeTab === "visibility" ? "border-b-2 border-indigo-500 text-indigo-600" : "text-gray-500 hover:text-gray-700"}`}
+          className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2 ${activeTab === "visibility" ? "bg-background text-foreground shadow-xs border border-border/50" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <Cog6ToothIcon className="h-4 w-4" />
+          <Cog6ToothIcon className="h-3.5 w-3.5" />
           عرض تفاصيل المهمة
         </button>
       </div>
 
       {/* Content */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-card rounded-xl border border-border p-6 shadow-xs">
         {activeTab === "general" && (
           <div className="space-y-8">
             {/* Timezone Settings */}
@@ -1117,70 +1131,70 @@ const DevTaskSettings = () => {
 
             {/* Task Type Scores */}
             <div>
-              <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              <h4 className="text-sm font-semibold text-foreground mb-4">
                 نقاط حسب نوع المهمة
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[
                   {
                     key: "BUG",
-                    label: "🐛 إصلاح خطأ (Bug)",
+                    label: "إصلاح خطأ (Bug)",
                     description: "إصلاح مشكلة في الكود",
                   },
                   {
                     key: "FEATURE",
-                    label: "✨ ميزة جديدة (Feature)",
+                    label: "ميزة جديدة (Feature)",
                     description: "إضافة وظيفة جديدة",
                   },
                   {
                     key: "ENHANCEMENT",
-                    label: "⚡ تحسين (Enhancement)",
+                    label: "تحسين (Enhancement)",
                     description: "تحسين ميزة موجودة",
                   },
                   {
                     key: "HOTFIX",
-                    label: "🔥 إصلاح عاجل (Hotfix)",
+                    label: "إصلاح عاجل (Hotfix)",
                     description: "إصلاح مشكلة حرجة",
                   },
                   {
                     key: "REFACTOR",
-                    label: "🔧 إعادة هيكلة (Refactor)",
+                    label: "إعادة هيكلة (Refactor)",
                     description: "تحسين بنية الكود",
                   },
                   {
                     key: "SECURITY",
-                    label: "🔒 أمان (Security)",
+                    label: "أمان (Security)",
                     description: "تحسينات أمنية",
                   },
                   {
                     key: "DOCUMENTATION",
-                    label: "📝 توثيق (Documentation)",
+                    label: "توثيق (Documentation)",
                     description: "كتابة أو تحديث الوثائق",
                   },
                   {
                     key: "TESTING",
-                    label: "🧪 اختبار (Testing)",
+                    label: "اختبار (Testing)",
                     description: "كتابة أو تحديث الاختبارات",
                   },
                   {
                     key: "PERFORMANCE",
-                    label: "⚡ أداء (Performance)",
+                    label: "أداء (Performance)",
                     description: "تحسين الأداء",
                   },
                   {
                     key: "MAINTENANCE",
-                    label: "🛠️ صيانة (Maintenance)",
+                    label: "صيانة (Maintenance)",
                     description: "صيانة دورية",
                   },
                 ].map(({ key, label, description }) => (
                   <div
                     key={key}
-                    className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
+                    className="bg-card p-4 rounded-lg border border-border shadow-xs"
                   >
-                    <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                    <label className="block text-sm font-medium text-foreground mb-1">
                       {label}
                     </label>
-                    <p className="text-xs text-gray-400 mb-2">{description}</p>
+                    <p className="text-xs text-muted-foreground mb-2">{description}</p>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -1209,9 +1223,9 @@ const DevTaskSettings = () => {
                           };
                           setSettings(newSettings);
                         }}
-                        className="w-20 border rounded px-2 py-1 text-sm dark:bg-gray-700 dark:border-gray-600"
+                        className="w-20 border rounded px-2 py-1 text-sm bg-background border-input text-foreground focus:ring-1 focus:ring-primary"
                       />
-                      <span className="text-xs text-gray-500">نقطة</span>
+                      <span className="text-xs text-muted-foreground">نقطة</span>
                     </div>
                   </div>
                 ))}
@@ -1220,44 +1234,46 @@ const DevTaskSettings = () => {
 
             {/* Priority Scores */}
             <div>
-              <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              <h4 className="text-sm font-semibold text-foreground mb-4">
                 نقاط إضافية حسب الأولوية
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[
                   {
                     key: "CRITICAL",
-                    label: "🔴 حرجة (Critical)",
-                    color: "bg-red-100 dark:bg-red-900/30",
+                    label: "حرجة (Critical)",
+                    badgeColor: "bg-destructive/10 text-destructive border-destructive/20",
                   },
                   {
                     key: "URGENT",
-                    label: "🟠 عاجلة (Urgent)",
-                    color: "bg-orange-100 dark:bg-orange-900/30",
+                    label: "عاجلة (Urgent)",
+                    badgeColor: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
                   },
                   {
                     key: "HIGH",
-                    label: "🟡 عالية (High)",
-                    color: "bg-yellow-100 dark:bg-yellow-900/30",
+                    label: "عالية (High)",
+                    badgeColor: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20",
                   },
                   {
                     key: "MEDIUM",
-                    label: "🔵 متوسطة (Medium)",
-                    color: "bg-blue-100 dark:bg-blue-900/30",
+                    label: "متوسطة (Medium)",
+                    badgeColor: "bg-primary/10 text-primary border-primary/20",
                   },
                   {
                     key: "LOW",
-                    label: "⚪ منخفضة (Low)",
-                    color: "bg-gray-100 dark:bg-gray-700/30",
+                    label: "منخفضة (Low)",
+                    badgeColor: "bg-muted text-muted-foreground border-border",
                   },
-                ].map(({ key, label, color }) => (
+                ].map(({ key, label, badgeColor }) => (
                   <div
                     key={key}
-                    className={`${color} p-4 rounded-lg border border-gray-200 dark:border-gray-600`}
+                    className="p-4 rounded-lg border border-border bg-card shadow-xs"
                   >
-                    <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      {label}
-                    </label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium border ${badgeColor}`}>
+                        {label}
+                      </span>
+                    </div>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -1296,25 +1312,25 @@ const DevTaskSettings = () => {
             </div>
 
             {/* Example Calculation */}
-            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-200 dark:border-indigo-800">
-              <h4 className="text-sm font-semibold text-indigo-900 dark:text-indigo-100 mb-2">
-                💡 مثال على الحساب:
+            <div className="bg-primary/5 p-4 rounded-lg border border-primary/20">
+              <h4 className="text-sm font-semibold text-primary mb-2">
+                مثال توضيحي على الحساب:
               </h4>
-              <p className="text-sm text-indigo-700 dark:text-indigo-300">
-                مهمة من نوع <strong>FEATURE</strong> بأولوية{" "}
-                <strong>HIGH</strong> ={" "}
-                <strong>{settings.leaderboardSettings?.baseXP || 10}</strong>{" "}
+              <p className="text-sm text-foreground/80">
+                مهمة من نوع <strong className="font-mono">FEATURE</strong> بأولوية{" "}
+                <strong className="font-mono">HIGH</strong> ={" "}
+                <strong className="font-mono">{settings.leaderboardSettings?.baseXP || 10}</strong>{" "}
                 (أساسي) +{" "}
-                <strong>
+                <strong className="font-mono">
                   {settings.leaderboardSettings?.taskTypeScores?.["FEATURE"] ||
                     0}
                 </strong>{" "}
                 (نوع المهمة) +{" "}
-                <strong>
+                <strong className="font-mono">
                   {settings.leaderboardSettings?.priorityScores?.["HIGH"] || 0}
                 </strong>{" "}
                 (الأولوية) ={" "}
-                <strong className="text-lg">
+                <strong className="text-lg font-mono text-primary">
                   {(settings.leaderboardSettings?.baseXP || 10) +
                     (settings.leaderboardSettings?.taskTypeScores?.[
                       "FEATURE"
@@ -1327,14 +1343,14 @@ const DevTaskSettings = () => {
             </div>
 
             {/* Time-Based Scoring */}
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-8">
+            <div className="border-t border-border pt-8">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">
-                    ⏱️ حساب النقاط بناءً على الوقت
+                  <h4 className="text-sm font-semibold text-foreground">
+                    حساب النقاط بناءً على الوقت
                   </h4>
-                  <p className="text-sm text-gray-500 mt-1">
-                    مكافأة للإنجاز المبكر وخصم للتأخير
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    مكافأة للإنجاز المبكر وخصم للتأخير الزمني
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -1366,18 +1382,18 @@ const DevTaskSettings = () => {
                       setSettings(newSettings);
                     }}
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                  <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
               </div>
 
               {settings.leaderboardSettings?.timeBasedScoring?.enabled && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   {/* Early Completion Bonus */}
-                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-                    <label className="block text-sm font-medium text-green-900 dark:text-green-100 mb-2">
-                      🎉 مكافأة الإنجاز المبكر
+                  <div className="bg-emerald-500/5 p-4 rounded-lg border border-emerald-500/20">
+                    <label className="block text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-1">
+                      مكافأة الإنجاز المبكر
                     </label>
-                    <p className="text-xs text-green-700 dark:text-green-300 mb-3">
+                    <p className="text-xs text-muted-foreground mb-3">
                       عند إكمال المهمة في 90% أو أقل من الوقت المقدر
                     </p>
                     <div className="flex items-center gap-2">
@@ -1404,20 +1420,20 @@ const DevTaskSettings = () => {
                           };
                           setSettings(newSettings);
                         }}
-                        className="w-20 border rounded px-2 py-1 text-sm dark:bg-gray-700 dark:border-gray-600"
+                        className="w-20 border rounded px-2 py-1 text-sm bg-background border-input text-foreground focus:ring-1 focus:ring-primary"
                       />
-                      <span className="text-sm text-green-700 dark:text-green-300">
+                      <span className="text-xs text-muted-foreground">
                         % مكافأة
                       </span>
                     </div>
                   </div>
 
                   {/* On Time Bonus */}
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-                      ✅ مكافأة الالتزام بالموعد
+                  <div className="bg-primary/5 p-4 rounded-lg border border-primary/20">
+                    <label className="block text-sm font-medium text-primary mb-1">
+                      مكافأة الالتزام بالموعد
                     </label>
-                    <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
+                    <p className="text-xs text-muted-foreground mb-3">
                       عند إكمال المهمة في حدود ±10% من الوقت المقدر
                     </p>
                     <div className="flex items-center gap-2">
@@ -1443,20 +1459,20 @@ const DevTaskSettings = () => {
                           };
                           setSettings(newSettings);
                         }}
-                        className="w-20 border rounded px-2 py-1 text-sm dark:bg-gray-700 dark:border-gray-600"
+                        className="w-20 border rounded px-2 py-1 text-sm bg-background border-input text-foreground focus:ring-1 focus:ring-primary"
                       />
-                      <span className="text-sm text-blue-700 dark:text-blue-300">
+                      <span className="text-xs text-muted-foreground">
                         % مكافأة
                       </span>
                     </div>
                   </div>
 
                   {/* Late Completion Penalty */}
-                  <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
-                    <label className="block text-sm font-medium text-red-900 dark:text-red-100 mb-2">
-                      ⚠️ خصم التأخير
+                  <div className="bg-destructive/5 p-4 rounded-lg border border-destructive/20">
+                    <label className="block text-sm font-medium text-destructive mb-1">
+                      خصم التأخير
                     </label>
-                    <p className="text-xs text-red-700 dark:text-red-300 mb-3">
+                    <p className="text-xs text-muted-foreground mb-3">
                       عند إكمال المهمة بعد الوقت المقدر بأكثر من 10%
                     </p>
                     <div className="flex items-center gap-2">
@@ -1483,22 +1499,22 @@ const DevTaskSettings = () => {
                           };
                           setSettings(newSettings);
                         }}
-                        className="w-20 border rounded px-2 py-1 text-sm dark:bg-gray-700 dark:border-gray-600"
+                        className="w-20 border rounded px-2 py-1 text-sm bg-background border-input text-foreground focus:ring-1 focus:ring-primary"
                       />
-                      <span className="text-sm text-red-700 dark:text-red-300">
+                      <span className="text-xs text-muted-foreground">
                         % خصم
                       </span>
                     </div>
                   </div>
 
                   {/* Max Bonus */}
-                  <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
-                    <label className="block text-sm font-medium text-purple-900 dark:text-purple-100 mb-2">
-                      🎯 الحد الأقصى للمكافأة/الخصم
+                  <div className="bg-card p-4 rounded-lg border border-border">
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      الحد الأقصى للمكافأة والخصم
                     </label>
                     <div className="space-y-3">
                       <div>
-                        <p className="text-xs text-purple-700 dark:text-purple-300 mb-2">
+                        <p className="text-xs text-muted-foreground mb-2">
                           أقصى مكافأة:
                         </p>
                         <div className="flex items-center gap-2">
@@ -1525,15 +1541,15 @@ const DevTaskSettings = () => {
                               };
                               setSettings(newSettings);
                             }}
-                            className="w-20 border rounded px-2 py-1 text-sm dark:bg-gray-700 dark:border-gray-600"
+                            className="w-20 border rounded px-2 py-1 text-sm bg-background border-input text-foreground focus:ring-1 focus:ring-primary"
                           />
-                          <span className="text-sm text-purple-700 dark:text-purple-300">
+                          <span className="text-xs text-muted-foreground">
                             %
                           </span>
                         </div>
                       </div>
                       <div>
-                        <p className="text-xs text-purple-700 dark:text-purple-300 mb-2">
+                        <p className="text-xs text-muted-foreground mb-2">
                           أقصى خصم:
                         </p>
                         <div className="flex items-center gap-2">
@@ -1560,9 +1576,9 @@ const DevTaskSettings = () => {
                               };
                               setSettings(newSettings);
                             }}
-                            className="w-20 border rounded px-2 py-1 text-sm dark:bg-gray-700 dark:border-gray-600"
+                            className="w-20 border rounded px-2 py-1 text-sm bg-background border-input text-foreground focus:ring-1 focus:ring-primary"
                           />
-                          <span className="text-sm text-purple-700 dark:text-purple-300">
+                          <span className="text-xs text-muted-foreground">
                             %
                           </span>
                         </div>
@@ -1574,11 +1590,11 @@ const DevTaskSettings = () => {
             </div>
 
             {/* Info Box */}
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                ⚠️ <strong>ملاحظة:</strong> بعد تغيير هذه الإعدادات، يمكنك إعادة
+            <div className="bg-amber-500/10 p-4 rounded-lg border border-amber-500/20">
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                <strong>ملاحظة هامة:</strong> بعد تغيير هذه الإعدادات، يمكنك إعادة
                 حساب النقاط لجميع المهام المكتملة سابقاً باستخدام سكريبت{" "}
-                <code className="bg-yellow-100 dark:bg-yellow-900/50 px-1 py-0.5 rounded">
+                <code className="bg-amber-500/15 text-amber-800 dark:text-amber-200 px-1.5 py-0.5 rounded font-mono">
                   npm run fix:xp
                 </code>
               </p>

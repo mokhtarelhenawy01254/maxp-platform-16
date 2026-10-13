@@ -2117,12 +2117,16 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
           createdAt: true
         }
       }),
-      // سلات الفترة نفسها لحساب مصادر السلات غير المكتملة فقط بدون جلب كل طلبات المتجر الحقيقية
+      // سلات الفترة نفسها لحساب الحركة والأفواج اليومية ومصادر السلات غير المكتملة
       prisma.guestCart.findMany({
         where: cartWhereBase,
         select: {
           cartId: true,
           total: true,
+          createdAt: true,
+          updatedAt: true,
+          checkoutStartedAt: true,
+          checkoutUpdatedAt: true,
           checkoutData: true
         }
       })
@@ -2331,6 +2335,147 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       })
       .sort((a, b) => b.conversions - a.conversions || b.value - a.value);
 
+    // تجميع معرفات السلات المستبعدة (ألغاها الفريق بالتأكيد)
+    const dismissedSet = new Set();
+    contactWindow.forEach((ct) => {
+      const res = (ct.result || '').toString().toLowerCase();
+      const meth = (ct.method || '').toString().toLowerCase();
+      if (meth === 'dismissed' || res === 'cancelled') {
+        dismissedSet.add(ct.cartId);
+      }
+    });
+
+    const windowCartIds = windowCarts.map((c) => c.cartId).filter(Boolean);
+    if (windowCartIds.length > 0) {
+      try {
+        const extraDismissLogs = await prisma.cartContactLog.findMany({
+          where: {
+            companyId,
+            cartId: { in: windowCartIds },
+            OR: [{ method: 'dismissed' }, { result: 'cancelled' }]
+          },
+          select: { cartId: true }
+        });
+        extraDismissLogs.forEach((ed) => dismissedSet.add(ed.cartId));
+      } catch (_) {}
+    }
+
+    const convertedSet = new Set(convWindow.map((c) => c.cartId).filter(Boolean));
+
+    // 📊 حساب حركة وأفواج السلات اليومية (Daily Cohort Lifecycle)
+    // المعادلة الرياضية المغلقة: الداخل = المحول + المستبعد (ألغاه الفريق) + المفقود بالتقادم + النشط في الطابور
+    const cohortMap = new Map();
+    const getOrCreateCohort = (dayKey) => {
+      let c = cohortMap.get(dayKey);
+      if (!c) {
+        c = {
+          date: dayKey,
+          entered: 0,
+          enteredValue: 0,
+          converted: 0,
+          convertedValue: 0,
+          byTeamConverted: 0,
+          byTeamConvertedValue: 0,
+          naturalConverted: 0,
+          naturalConvertedValue: 0,
+          cancelled: 0,
+          cancelledValue: 0,
+          lost: 0,
+          lostValue: 0,
+          active: 0,
+          activeValue: 0,
+          conversionRate: 0,
+        };
+        cohortMap.set(dayKey, c);
+      }
+      return c;
+    };
+
+    // 1. حساب التحويلات اليومية المسجلة
+    convWindow.forEach((c) => {
+      const day = c.convertedAt ? localDayKey(c.convertedAt) : 'unknown';
+      const entry = getOrCreateCohort(day);
+      const val = resolvedValue(c);
+      const isTeam = Boolean(c.employeeId || c.channel !== 'natural');
+
+      entry.entered += 1;
+      entry.enteredValue += val;
+      entry.converted += 1;
+      entry.convertedValue += val;
+      if (isTeam) {
+        entry.byTeamConverted += 1;
+        entry.byTeamConvertedValue += val;
+      } else {
+        entry.naturalConverted += 1;
+        entry.naturalConvertedValue += val;
+      }
+    });
+
+    // 2. حساب باقي السلات الداخلة في الفترة (المستبعدة، المفقودة، النشطة)
+    windowCarts.forEach((c) => {
+      if (convertedSet.has(c.cartId)) {
+        // تم احتسابها بالفعل كطلب محول عبر convWindow لمنع أي ازدواجية
+        return;
+      }
+      const day = c.createdAt ? localDayKey(c.createdAt) : 'unknown';
+      const entry = getOrCreateCohort(day);
+      const val = typeof c.total === 'string' ? parseFloat(c.total) || 0 : Number(c.total || 0);
+
+      entry.entered += 1;
+      entry.enteredValue += val;
+
+      if (dismissedSet.has(c.cartId)) {
+        entry.cancelled += 1;
+        entry.cancelledValue += val;
+      } else {
+        const lastActivity = c.checkoutUpdatedAt || c.checkoutStartedAt || c.updatedAt || c.createdAt;
+        const isCurrentlyActive = lastActivity && new Date(lastActivity) >= lostThreshold;
+        if (isCurrentlyActive) {
+          entry.active += 1;
+          entry.activeValue += val;
+        } else {
+          entry.lost += 1;
+          entry.lostValue += val;
+        }
+      }
+    });
+
+    // 3. احتساب معدل التحويل لكل يوم
+    cohortMap.forEach((entry) => {
+      entry.conversionRate = entry.entered > 0 ? (entry.converted / entry.entered) * 100 : 0;
+    });
+
+    // ضمان وجود تاريخ اليوم إذا كان ضمن النطاق
+    const todayKey = localDayKey(now);
+    if (!toDate || toDate >= now) {
+      getOrCreateCohort(todayKey);
+    }
+
+    const cohorts = Array.from(cohortMap.values())
+      .filter((e) => e.date !== 'unknown')
+      .sort((a, b) => (a.date < b.date ? 1 : -1));
+
+    // 4. ملخص إجمالي شامل للفترة المحددة (كروت الحصاد الخمسة)
+    const summary = {
+      entered: cohorts.reduce((s, c) => s + c.entered, 0),
+      enteredValue: cohorts.reduce((s, c) => s + c.enteredValue, 0),
+      converted: cohorts.reduce((s, c) => s + c.converted, 0),
+      convertedValue: cohorts.reduce((s, c) => s + c.convertedValue, 0),
+      byTeam: cohorts.reduce((s, c) => s + c.byTeamConverted, 0),
+      byTeamValue: cohorts.reduce((s, c) => s + c.byTeamConvertedValue, 0),
+      natural: cohorts.reduce((s, c) => s + c.naturalConverted, 0),
+      naturalValue: cohorts.reduce((s, c) => s + c.naturalConvertedValue, 0),
+      cancelled: cohorts.reduce((s, c) => s + c.cancelled, 0),
+      cancelledValue: cohorts.reduce((s, c) => s + c.cancelledValue, 0),
+      lost: cohorts.reduce((s, c) => s + c.lost, 0),
+      lostValue: cohorts.reduce((s, c) => s + c.lostValue, 0),
+      active: cohorts.reduce((s, c) => s + c.active, 0),
+      activeValue: cohorts.reduce((s, c) => s + c.activeValue, 0),
+      conversionRate: 0,
+      lostAfterHours,
+    };
+    summary.conversionRate = summary.entered > 0 ? (summary.converted / summary.entered) * 100 : 0;
+
     // 🎯 مصير الطلبات المحولة بواسطة الفريق وجودتها (كم قيد الانتظار/الشحن، كم ملغي، كم تسلم)
     const duplicateSettings = await orderService.getDuplicateSettings(companyId);
     const treatDuplicateAsCancelled = duplicateSettings?.reportTreatment === 'cancelled';
@@ -2404,6 +2549,8 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
         periodDays: fromRaw ? null : (parseInt(req.query.days, 10) || 30),
         from: since ? since.toISOString() : null,
         to: toDate ? toDate.toISOString() : null,
+        summary,
+        cohorts,
         pipeline: {
           total,
           windowTotal: total,

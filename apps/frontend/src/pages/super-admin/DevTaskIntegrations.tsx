@@ -2,14 +2,15 @@ import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import {
-  ArrowPathIcon,
-  ClipboardDocumentIcon,
-  KeyIcon,
-  LinkIcon,
-  PlusIcon,
-  ShieldCheckIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+  RotateCcw as ArrowPathIcon,
+  Copy as ClipboardDocumentIcon,
+  Key as KeyIcon,
+  ExternalLink as LinkIcon,
+  Plus as PlusIcon,
+  ShieldCheck as ShieldCheckIcon,
+  Trash2 as TrashIcon,
+  Check as CheckIcon,
+} from "lucide-react";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { buildApiUrl } from "../../utils/urlHelper";
@@ -386,84 +387,82 @@ const DevTaskIntegrations: React.FC = () => {
 
   return (
     <div className="space-y-6" dir={i18n.dir()}>
-      <section className="rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-sky-950 p-6 text-white shadow-[0_28px_60px_-38px_rgba(15,23,42,0.95)]">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-sky-100">
-              <ShieldCheckIcon className="h-4 w-4" />
-              Super Admin Dev Tasks API
+      {/* Linear Single-Surface Top Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border/40">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+              <KeyIcon className="h-4 w-4" />
             </div>
-            <h1 className="mt-4 text-3xl font-black tracking-tight">
-              مفاتيح ربط مهام السوبر أدمن مع أي موقع خارجي
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              مفاتيح ربط مهام التطوير الخارجية
             </h1>
-            <p className="mt-3 text-sm leading-7 text-slate-200">
-              أنشئ مفتاحًا مخصصًا لمهام التطوير، وحدد الـ reporter الافتراضي
-              والمشروع المقيد والـ assignee، ثم استخدم نفس المفتاح من أي موقع
-              خارجي لإنشاء المهام داخل المشروع المحدد فقط داخل لوحة السوبر
-              أدمن.
-            </p>
           </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-4">
-              <div className="text-xs text-slate-300">عدد المفاتيح</div>
-              <div className="mt-2 text-2xl font-black">{credentials.length}</div>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-4">
-              <div className="text-xs text-slate-300">الرابط الخارجي</div>
-              <div className="mt-2 truncate text-sm font-semibold text-sky-100">
-                /api/v1/external/dev-tasks
-              </div>
-            </div>
-          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            إدارة مفاتيح API الآمنة لإنشاء وقراءة مهام التطوير من الأنظمة والمواقع الخارجية
+          </p>
         </div>
-      </section>
+
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-md border border-border/40 font-mono">
+            <span>المفاتيح: <strong className="text-foreground">{credentials.length}</strong></span>
+            <span className="text-border">|</span>
+            <span className="truncate max-w-[200px]">/api/v1/external/dev-tasks</span>
+          </div>
+          <button
+            type="button"
+            onClick={resetForm}
+            className="px-3.5 py-1.5 bg-primary text-primary-foreground font-medium text-xs rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-1.5 shadow-xs"
+          >
+            <PlusIcon className="h-3.5 w-3.5" />
+            مفتاح جديد
+          </button>
+        </div>
+      </div>
 
       {revealedApiKey && (
-        <section className="rounded-[24px] border border-emerald-200 bg-emerald-50 p-5 shadow-sm dark:border-emerald-900/40 dark:bg-emerald-950/20">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <section className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 shadow-xs">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                المفتاح السري ظهر مرة واحدة فقط
+              <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                المفتاح السري (يظهر مرة واحدة فقط)
               </div>
-              <p className="mt-1 text-xs leading-6 text-emerald-700 dark:text-emerald-300">
-                خزّنه في الموقع الخارجي الآن. لن يظهر كاملًا مرة أخرى بعد إغلاق
-                هذه الرسالة.
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                خزّنه في الموقع الخارجي الآن. لن يظهر كاملًا مرة أخرى بعد مغادرة الصفحة.
               </p>
             </div>
             <button
               type="button"
               onClick={() => void copyValue(revealedApiKey, "تم نسخ المفتاح")}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 transition-colors hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-100"
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors shadow-xs"
             >
-              <ClipboardDocumentIcon className="h-4 w-4" />
+              <ClipboardDocumentIcon className="h-3.5 w-3.5 text-primary" />
               نسخ المفتاح
             </button>
           </div>
-          <pre className="mt-4 overflow-x-auto rounded-2xl bg-slate-950 px-4 py-4 text-xs text-emerald-200">
+          <pre className="mt-3 overflow-x-auto rounded-lg bg-zinc-950 p-3 font-mono text-xs text-emerald-400 border border-zinc-800">
             {revealedApiKey}
           </pre>
         </section>
       )}
 
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-black text-slate-900 dark:text-slate-100">
+              <h2 className="text-base font-bold text-foreground">
                 {editingCredential ? "تعديل المفتاح" : "إنشاء مفتاح جديد"}
               </h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-xs text-muted-foreground">
                 مفاتيح الكتابة تحتاج reporter افتراضي حتى تكون كل مهمة لها مالك
-                واضح داخل النظام، وكل مفتاح يجب أن يكون مقيدًا بمشروع تطوير
-                واحد.
+                واضح داخل النظام، وكل مفتاح مقيد بمشروع تطوير محدد.
               </p>
             </div>
             {editingCredential && (
               <button
                 type="button"
                 onClick={resetForm}
-                className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
               >
                 إلغاء التعديل
               </button>
@@ -471,8 +470,8 @@ const DevTaskIntegrations: React.FC = () => {
           </div>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <label className="space-y-2 md:col-span-2">
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+            <label className="space-y-1.5 md:col-span-2">
+              <span className="text-xs font-semibold text-foreground">
                 اسم المفتاح
               </span>
               <input
@@ -484,12 +483,12 @@ const DevTaskIntegrations: React.FC = () => {
                   }))
                 }
                 placeholder="مثل: website-bridge"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs text-foreground outline-none transition focus:ring-1 focus:ring-primary"
               />
             </label>
 
-            <label className="space-y-2 md:col-span-2">
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+            <label className="space-y-1.5 md:col-span-2">
+              <span className="text-xs font-semibold text-foreground">
                 وصف مختصر
               </span>
               <textarea
@@ -500,17 +499,17 @@ const DevTaskIntegrations: React.FC = () => {
                     description: event.target.value,
                   }))
                 }
-                rows={3}
+                rows={2}
                 placeholder="هذا المفتاح سيُستخدم من landing page أو ERP خارجي..."
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs text-foreground outline-none transition focus:ring-1 focus:ring-primary"
               />
             </label>
 
-            <div className="space-y-2 md:col-span-2">
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+            <div className="space-y-1.5 md:col-span-2">
+              <span className="text-xs font-semibold text-foreground">
                 الصلاحيات
               </span>
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-2.5 md:grid-cols-2">
                 {SCOPE_OPTIONS.map((scopeOption) => {
                   const isChecked = formState.scopes.includes(scopeOption.value);
                   return (
@@ -518,14 +517,14 @@ const DevTaskIntegrations: React.FC = () => {
                       key={scopeOption.value}
                       type="button"
                       onClick={() => toggleScope(scopeOption.value)}
-                      className={`rounded-2xl border px-4 py-3 text-right transition ${
+                      className={`rounded-lg border px-3 py-2.5 text-right transition ${
                         isChecked
-                          ? "border-sky-500 bg-sky-50 text-sky-900 dark:border-sky-400 dark:bg-sky-950/30 dark:text-sky-100"
-                          : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-background text-muted-foreground hover:text-foreground hover:bg-muted/30"
                       }`}
                     >
-                      <div className="text-sm font-bold">{scopeOption.label}</div>
-                      <div className="mt-1 text-xs opacity-80">
+                      <div className="text-xs font-bold">{scopeOption.label}</div>
+                      <div className="mt-0.5 text-[11px] font-mono opacity-80">
                         {scopeOption.value}
                       </div>
                     </button>
@@ -534,8 +533,8 @@ const DevTaskIntegrations: React.FC = () => {
               </div>
             </div>
 
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+            <label className="space-y-1.5">
+              <span className="text-xs font-semibold text-foreground">
                 Reporter افتراضي
               </span>
               <select
@@ -546,7 +545,7 @@ const DevTaskIntegrations: React.FC = () => {
                     defaultReporterMemberId: event.target.value,
                   }))
                 }
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs text-foreground outline-none transition focus:ring-1 focus:ring-primary"
               >
                 <option value="">اختر عضو الفريق</option>
                 {teamMembers.map((member) => (
@@ -557,8 +556,8 @@ const DevTaskIntegrations: React.FC = () => {
               </select>
             </label>
 
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+            <label className="space-y-1.5">
+              <span className="text-xs font-semibold text-foreground">
                 Assignee افتراضي
               </span>
               <select
@@ -569,7 +568,7 @@ const DevTaskIntegrations: React.FC = () => {
                     defaultAssigneeMemberId: event.target.value,
                   }))
                 }
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs text-foreground outline-none transition focus:ring-1 focus:ring-primary"
               >
                 <option value="">بدون assignee افتراضي</option>
                 {teamMembers.map((member) => (
@@ -580,8 +579,8 @@ const DevTaskIntegrations: React.FC = () => {
               </select>
             </label>
 
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+            <label className="space-y-1.5">
+              <span className="text-xs font-semibold text-foreground">
                 المشروع المقيد والافتراضي
               </span>
               <select
@@ -592,7 +591,7 @@ const DevTaskIntegrations: React.FC = () => {
                     defaultProjectId: event.target.value,
                   }))
                 }
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs text-foreground outline-none transition focus:ring-1 focus:ring-primary"
               >
                 <option value="">اختر مشروع التطوير</option>
                 {projects.map((project) => (
@@ -603,8 +602,8 @@ const DevTaskIntegrations: React.FC = () => {
               </select>
             </label>
 
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+            <label className="space-y-1.5">
+              <span className="text-xs font-semibold text-foreground">
                 انتهاء الصلاحية
               </span>
               <input
@@ -616,11 +615,11 @@ const DevTaskIntegrations: React.FC = () => {
                     expiresAt: event.target.value,
                   }))
                 }
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs text-foreground outline-none transition focus:ring-1 focus:ring-primary font-mono"
               />
             </label>
 
-            <label className="inline-flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+            <label className="inline-flex items-center gap-2.5 rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs font-medium text-foreground">
               <input
                 type="checkbox"
                 checked={formState.isActive}
@@ -630,23 +629,23 @@ const DevTaskIntegrations: React.FC = () => {
                     isActive: event.target.checked,
                   }))
                 }
-                className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
               />
               المفتاح فعّال
             </label>
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-3">
+          <div className="mt-5 flex flex-wrap gap-2.5">
             <button
               type="button"
               onClick={() => void saveCredential()}
               disabled={submitting}
-              className="inline-flex items-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50 shadow-xs"
             >
               {editingCredential ? (
-                <KeyIcon className="h-5 w-5" />
+                <KeyIcon className="h-3.5 w-3.5" />
               ) : (
-                <PlusIcon className="h-5 w-5" />
+                <PlusIcon className="h-3.5 w-3.5" />
               )}
               {submitting
                 ? "جارٍ الحفظ..."
@@ -657,20 +656,20 @@ const DevTaskIntegrations: React.FC = () => {
             <button
               type="button"
               onClick={() => void loadData()}
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3.5 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors shadow-xs"
             >
-              <ArrowPathIcon className="h-5 w-5" />
+              <ArrowPathIcon className="h-3.5 w-3.5 text-muted-foreground" />
               تحديث البيانات
             </button>
           </div>
         </div>
 
-        <div className="space-y-6">
-          <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center gap-2">
-              <LinkIcon className="h-5 w-5 text-sky-600" />
-              <h2 className="text-lg font-black text-slate-900 dark:text-slate-100">
-                أمثلة الاستخدام
+        <div className="space-y-4">
+          <section className="rounded-xl border border-border bg-card p-5 shadow-xs">
+            <div className="flex items-center gap-2 pb-2 border-b border-border/40">
+              <LinkIcon className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-bold text-foreground">
+                أمثلة الاستخدام (CURL API)
               </h2>
             </div>
 
@@ -681,158 +680,156 @@ const DevTaskIntegrations: React.FC = () => {
             ].map((item) => (
               <div
                 key={item.title}
-                className="mt-4 rounded-[22px] border border-slate-200 bg-slate-950 p-4 text-slate-100 dark:border-slate-700"
+                className="mt-3 rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-zinc-100"
               >
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div className="text-sm font-bold text-white">{item.title}</div>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <div className="text-xs font-semibold text-zinc-200">{item.title}</div>
                   <button
                     type="button"
                     onClick={() => void copyValue(item.snippet, `تم نسخ ${item.title}`)}
-                    className="inline-flex items-center gap-1 rounded-xl border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:bg-white/20"
+                    className="inline-flex items-center gap-1 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-[11px] font-medium text-zinc-300 hover:bg-zinc-700 transition"
                   >
-                    <ClipboardDocumentIcon className="h-4 w-4" />
+                    <ClipboardDocumentIcon className="h-3 w-3" />
                     نسخ
                   </button>
                 </div>
-                <pre className="overflow-x-auto whitespace-pre-wrap text-xs leading-6 text-sky-100">
+                <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-[11px] leading-5 text-emerald-400">
                   {item.snippet}
                 </pre>
               </div>
             ))}
           </section>
 
-          <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-lg font-black text-slate-900 dark:text-slate-100">
-              ما الذي يفعله المفتاح؟
+          <section className="rounded-xl border border-border bg-card p-5 shadow-xs">
+            <h2 className="text-sm font-bold text-foreground pb-2 border-b border-border/40">
+              نطاق عمل المفتاح
             </h2>
-            <div className="mt-4 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+            <div className="mt-3 space-y-2 text-xs leading-5 text-muted-foreground">
               <p>
-                `dev-tasks:read` يسمح للموقع الخارجي بقراءة المشروع المقيد
-                وأعضاء فريقه ومهامه فقط.
+                <code className="text-foreground font-mono bg-muted px-1 py-0.5 rounded">dev-tasks:read</code> يسمح للموقع الخارجي بقراءة المشروع المقيد وأعضاء فريقه ومهامه فقط.
               </p>
               <p>
-                `dev-tasks:write` يسمح بإنشاء مهمة جديدة وتحديث حالتها عبر
-                المفتاح نفسه داخل المشروع المقيد فقط.
+                <code className="text-foreground font-mono bg-muted px-1 py-0.5 rounded">dev-tasks:write</code> يسمح بإنشاء مهمة جديدة وتحديث حالتها داخل المشروع المقيد فقط.
               </p>
               <p>
-                الـ reporter الافتراضي يُسجَّل كصاحب إنشاء داخلي لكل مهمة
-                واردة من هذا التكامل، حتى يبقى السجل واضحًا داخل السوبر أدمن.
+                الـ reporter الافتراضي يُسجَّل كصاحب إنشاء داخلي لكل مهمة واردة من هذا التكامل لضمان دقة السجلات.
               </p>
             </div>
           </section>
         </div>
       </section>
 
-      <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      {/* Current Credentials Section */}
+      <section className="rounded-xl border border-border bg-card p-5 shadow-xs">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pb-3 border-b border-border/40">
           <div>
-            <h2 className="text-lg font-black text-slate-900 dark:text-slate-100">
+            <h2 className="text-base font-bold text-foreground">
               المفاتيح الحالية
             </h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              تستطيع تدوير المفتاح أو إلغاؤه دون التأثير على باقي مفاتيح الربط.
+            <p className="text-xs text-muted-foreground mt-0.5">
+              تستطيع تدوير المفتاح أو إلغاؤه دون التأثير على باقي مفاتيح الربط
             </p>
           </div>
           <button
             type="button"
             onClick={resetForm}
-            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors shadow-xs"
           >
-            <PlusIcon className="h-4 w-4" />
+            <PlusIcon className="h-3.5 w-3.5 text-primary" />
             مفتاح جديد
           </button>
         </div>
 
         {loading ? (
-          <div className="mt-5 rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          <div className="mt-4 rounded-lg border border-dashed border-border px-4 py-8 text-center text-xs text-muted-foreground">
             جارٍ تحميل التكاملات...
           </div>
         ) : loadError ? (
-          <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-200">
+          <div className="mt-4 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-xs text-destructive">
             {loadError}
           </div>
         ) : credentials.length === 0 ? (
-          <div className="mt-5 rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          <div className="mt-4 rounded-lg border border-dashed border-border px-4 py-8 text-center text-xs text-muted-foreground">
             لا توجد مفاتيح بعد. أنشئ أول مفتاح من النموذج بالأعلى.
           </div>
         ) : (
-          <div className="mt-5 grid gap-4 xl:grid-cols-2">
+          <div className="mt-4 grid gap-3.5 xl:grid-cols-2">
             {credentials.map((credential) => (
               <article
                 key={credential.id}
-                className="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-700 dark:bg-slate-950/40"
+                className="rounded-lg border border-border bg-muted/20 p-4 hover:border-border/80 transition-colors"
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-2 pb-3 border-b border-border/40">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
+                      <h3 className="text-sm font-bold text-foreground">
                         {credential.name}
                       </h3>
                       <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                        className={`rounded-md px-2 py-0.5 text-[11px] font-medium border ${
                           credential.isActive && !credential.revokedAt
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200"
-                            : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                            : "bg-muted text-muted-foreground border-border"
                         }`}
                       >
                         {credential.isActive && !credential.revokedAt ? "نشط" : "متوقف"}
                       </span>
                     </div>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {credential.description || "بدون وصف"}
                     </p>
                   </div>
-                  <div className="text-left text-xs text-slate-500 dark:text-slate-400">
+                  <div className="text-left text-[11px] text-muted-foreground font-mono">
                     <div>Prefix: {credential.keyPrefixMasked || "—"}</div>
-                    <div className="mt-1">
+                    <div className="mt-0.5">
                       آخر استخدام: {formatDateTime(credential.lastUsedAt)}
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-4 grid gap-3 text-sm text-slate-600 dark:text-slate-300">
-                  <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
-                    <div className="text-xs text-slate-400">Reporter الافتراضي</div>
-                    <div className="mt-1 font-semibold">
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <div className="rounded-md border border-border/60 bg-background/60 p-2.5">
+                    <div className="text-[11px] text-muted-foreground">Reporter الافتراضي</div>
+                    <div className="mt-0.5 font-medium text-foreground truncate">
                       {credential.defaultReporterMemberName || "غير محدد"}
                     </div>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
-                    <div className="text-xs text-slate-400">Assignee الافتراضي</div>
-                    <div className="mt-1 font-semibold">
+                  <div className="rounded-md border border-border/60 bg-background/60 p-2.5">
+                    <div className="text-[11px] text-muted-foreground">Assignee الافتراضي</div>
+                    <div className="mt-0.5 font-medium text-foreground truncate">
                       {credential.defaultAssigneeMemberName || "غير محدد"}
                     </div>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
-                    <div className="text-xs text-slate-400">المشروع المقيد</div>
-                    <div className="mt-1 font-semibold">
+                  <div className="rounded-md border border-border/60 bg-background/60 p-2.5">
+                    <div className="text-[11px] text-muted-foreground">المشروع المقيد</div>
+                    <div className="mt-0.5 font-medium text-foreground truncate">
                       {credential.defaultProjectName || "غير محدد"}
                     </div>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
-                    <div className="text-xs text-slate-400">انتهاء الصلاحية</div>
-                    <div className="mt-1 font-semibold">
+                  <div className="rounded-md border border-border/60 bg-background/60 p-2.5">
+                    <div className="text-[11px] text-muted-foreground">انتهاء الصلاحية</div>
+                    <div className="mt-0.5 font-medium text-foreground font-mono truncate">
                       {formatDateTime(credential.expiresAt)}
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-1.5">
                   {credential.scopes.map((scope) => (
                     <span
                       key={scope}
-                      className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-200"
+                      className="rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 font-mono text-[11px] text-primary"
                     >
                       {scope}
                     </span>
                   ))}
                 </div>
 
-                <div className="mt-5 flex flex-wrap gap-2">
+                <div className="mt-3.5 flex flex-wrap gap-2 pt-3 border-t border-border/40">
                   <button
                     type="button"
                     onClick={() => startEditing(credential)}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                    className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition shadow-xs"
                   >
                     تعديل
                   </button>
@@ -840,9 +837,9 @@ const DevTaskIntegrations: React.FC = () => {
                     type="button"
                     onClick={() => void rotateCredential(credential)}
                     disabled={rotatingCredentialId === credential.id}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-200"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition disabled:opacity-50"
                   >
-                    <ArrowPathIcon className="h-4 w-4" />
+                    <ArrowPathIcon className="h-3 w-3" />
                     {rotatingCredentialId === credential.id
                       ? "جارٍ التدوير..."
                       : "تدوير المفتاح"}
@@ -851,9 +848,9 @@ const DevTaskIntegrations: React.FC = () => {
                     type="button"
                     onClick={() => void revokeCredential(credential)}
                     disabled={revokingCredentialId === credential.id}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-200"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 transition disabled:opacity-50"
                   >
-                    <TrashIcon className="h-4 w-4" />
+                    <TrashIcon className="h-3 w-3" />
                     {revokingCredentialId === credential.id
                       ? "جارٍ الإلغاء..."
                       : "إلغاء المفتاح"}
