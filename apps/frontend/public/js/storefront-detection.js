@@ -34,6 +34,11 @@
     }
   }
 
+  // Flag consumed by the inline shell-preload script injected into index.html
+  // (see maxp-preload-shell-chain plugin in vite.config.ts): storefront
+  // visitors must not prefetch the admin shell chunks.
+  window.__MAXP_IS_STOREFRONT__ = isStorefront;
+
   if (isStorefront) {
     var loadingEl = document.getElementById("initial-loading");
     if (loadingEl) {

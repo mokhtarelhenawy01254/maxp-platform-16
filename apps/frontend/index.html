@@ -210,6 +210,11 @@
       animation: spin 0.8s cubic-bezier(0.55, 0.055, 0.675, 0.19) infinite;
     }
   </style>
+  <!-- Must run BEFORE the maxp-preload-shell-chain inline script (injected into
+       the end of head at build time) so __MAXP_IS_STOREFRONT__ is already set
+       when the shell-preload decision is made. Runs at body-end originally,
+       which was too late for that check and swapped the loader style late. -->
+  <script src="/js/storefront-detection.js"></script>
 </head>
 
 <body>
@@ -229,8 +234,6 @@
       <p>يمكنك تصفح المحتوى الأساسي، ولكن بعض الميزات قد لا تعمل.</p>
     </div>
   </noscript>
-
-  <script src="/js/storefront-detection.js"></script>
 
   <!--
     Service worker management is handled by the React app (main.tsx).

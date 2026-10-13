@@ -451,6 +451,54 @@ export default defineConfig(({ mode }) => {
         brotliSize: true,
         template: 'treemap',
       }),
+      // 2026-10-13 boot waterfall fix: the always-loaded shell loads through a
+      // SERIAL dynamic-import chain (entry → AdminAppBootstrap → App → page).
+      // On high-RTT links each hop waits for the previous chunk to download
+      // AND execute before the next request even starts — measured ~20s from
+      // commit to first paint on maxp.online even after the chunk-graph fix.
+      // Inject hashed modulepreload hints for the shell chain into index.html
+      // so the browser fetches every hop in parallel with the entry. Skipped
+      // at runtime for storefront visitors via __MAXP_IS_STOREFRONT__
+      // (set by /js/storefront-detection.js, which parses before this script).
+      {
+        name: 'maxp-preload-shell-chain',
+        apply: 'build',
+        transformIndexHtml(html, ctx) {
+          const bundle = ctx.bundle;
+          if (!bundle) return html;
+          const baseName = (f: string) => f.split('/').pop() || '';
+          const shellFiles: string[] = [];
+          const seen = new Set<string>();
+          const addStaticClosure = (fileName: string) => {
+            if (seen.has(fileName)) return;
+            const chunk = bundle[fileName];
+            if (!chunk || chunk.type !== 'chunk') return;
+            seen.add(fileName);
+            shellFiles.push(fileName);
+            for (const dep of chunk.imports ?? []) addStaticClosure(dep);
+          };
+          for (const [fileName, b] of Object.entries(bundle)) {
+            if (b.type !== 'chunk') continue;
+            // bundle keys carry the 'assets/' prefix — match on basename.
+            if (!/^AdminAppBootstrap(?:-|\.)/.test(baseName(fileName))) continue;
+            addStaticClosure(fileName);
+            for (const dyn of b.dynamicImports ?? []) {
+              // The App chunk hosts the router and mounts on every page.
+              if (/^App(?:-|\.)/.test(baseName(dyn))) addStaticClosure(dyn);
+            }
+          }
+          // Defensive: never preload route/storefront chunks at boot.
+          const urls = shellFiles.filter(
+            (f) => !/^(?:route-|storefront-)[^/]*\.js$/.test(f.split('/').pop() || ''),
+          );
+          if (urls.length === 0) return html;
+          const preloadScript =
+            '<script>(function(){if(window.__MAXP_IS_STOREFRONT__)return;var h=document.head;[' +
+            urls.map((f) => `'/${f}'`).join(',') +
+            '].forEach(function(u){var l=document.createElement("link");l.rel="modulepreload";l.crossOrigin="";l.href=u;h.appendChild(l);});})();</script>';
+          return html.replace('</head>', `${preloadScript}</head>`);
+        },
+      },
     ].filter(Boolean),
 
     /* Fix for WebSocket HMR & Proxy issues */
