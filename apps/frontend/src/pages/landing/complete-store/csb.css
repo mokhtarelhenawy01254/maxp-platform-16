@@ -544,6 +544,108 @@
   transform: none;
 }
 
+/* قسم الفيديو */
+.csb-video-wrap {
+  display: grid;
+  grid-template-columns: 5fr 4fr;
+  gap: 40px;
+  align-items: center;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.csb-video-copy h2 {
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 800;
+  line-height: 1.4;
+  margin: 0 0 12px;
+}
+
+.csb-video-copy p {
+  color: var(--csb-ink-soft);
+  font-size: 14.5px;
+  line-height: 1.9;
+  margin: 0;
+}
+
+.csb-video-frame {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  aspect-ratio: 9 / 16;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid var(--csb-line);
+  box-shadow: 0 30px 60px -30px rgba(22, 19, 15, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  background: var(--csb-dark);
+}
+
+.csb-video-frame video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.csb-video-playbtn {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border: 0;
+  cursor: pointer;
+  background: linear-gradient(to top, rgba(13, 12, 10, 0.55), rgba(13, 12, 10, 0.12) 45%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: #FBFDFB;
+  font: inherit;
+}
+
+.csb-video-playbtn span {
+  background: rgba(13, 12, 10, 0.75);
+  border: 1px solid rgba(250, 247, 242, 0.2);
+  border-radius: 999px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.csb-video-playbtn svg {
+  background: var(--csb-green);
+  border-radius: 50%;
+  padding: 22px;
+  width: 74px;
+  height: 74px;
+  box-shadow: 0 16px 36px -12px rgba(14, 92, 63, 0.6);
+  transition: transform 160ms ease-out;
+}
+
+.csb-video-playbtn:hover svg {
+  transform: scale(1.06);
+}
+
+.csb-video-playbtn:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 3px var(--csb-green);
+}
+
+.csb-video-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(13, 12, 10, 0.78);
+  color: #8FD4B4;
+  border: 1px solid rgba(143, 212, 180, 0.3);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
 /* رحلة الأوردر — الشريط الداكن */
 .csb-journey {
   background: var(--csb-dark);
@@ -1270,6 +1372,16 @@
 
 /* ── موبايل ── */
 @media (max-width: 900px) {
+  .csb-video-wrap {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    text-align: center;
+  }
+
+  .csb-video-frame {
+    max-width: 300px;
+  }
+
   .csb-hero {
     grid-template-columns: 1fr;
     gap: 36px;

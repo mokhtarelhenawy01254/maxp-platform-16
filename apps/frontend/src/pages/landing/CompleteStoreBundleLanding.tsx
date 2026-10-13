@@ -6,6 +6,7 @@ import tokenManager from "../../utils/tokenManager";
 import { CsbNavbar } from "./complete-store/CsbNavbar";
 import { CsbHero } from "./complete-store/CsbHero";
 import { CsbStats } from "./complete-store/CsbStats";
+import { CsbVideo } from "./complete-store/CsbVideo";
 import { CsbJourney } from "./complete-store/CsbJourney";
 import { CsbFamilies } from "./complete-store/CsbFamilies";
 import { CsbCalculator } from "./complete-store/CsbCalculator";
@@ -158,6 +159,7 @@ export const CompleteStoreBundleLanding: React.FC = () => {
       <main>
         <CsbHero onSubscribe={handleSubscribe} isCheckingOut={isCheckingOut} />
         <CsbStats />
+        <CsbVideo />
         <CsbJourney />
         <CsbFamilies />
         <CsbCalculator spend={spend} onSpendChange={setSpend} />
