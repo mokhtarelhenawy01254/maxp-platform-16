@@ -1,14 +1,20 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import {
-  ChartBarIcon,
-  ArrowPathIcon,
-  UserIcon,
-  FunnelIcon,
-} from "@heroicons/react/24/outline";
+  BarChart3,
+  RefreshCw,
+  User,
+  Filter,
+  ArrowUpDown,
+  CheckCircle2,
+  Clock,
+  Target,
+  Award,
+  ChevronRight
+} from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -45,23 +51,22 @@ interface MemberEvaluation {
 }
 
 const periodOptions = [
-  { value: "WEEKLY", label: i18n.t("superAdmin.evaluation.periodOptions.WEEKLY") },
-  { value: "MONTHLY", label: i18n.t("superAdmin.evaluation.periodOptions.MONTHLY") },
-  { value: "QUARTERLY", label: i18n.t("superAdmin.evaluation.periodOptions.QUARTERLY") },
+  { value: "WEEKLY", label: "أسبوعي" },
+  { value: "MONTHLY", label: "شهري" },
+  { value: "QUARTERLY", label: "ربع سنوي" },
 ];
 
-const getScoreColor = (score: number | null | undefined) => {
-  if (score === null || score === undefined) return "text-gray-400";
-  if (score >= 80) return "text-green-600 dark:text-green-400";
-  if (score >= 60) return "text-yellow-600 dark:text-yellow-400";
-  return "text-red-600 dark:text-red-400";
-};
-
-const getScoreBg = (score: number | null | undefined) => {
-  if (score === null || score === undefined) return "bg-gray-100 dark:bg-gray-700";
-  if (score >= 80) return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400";
-  if (score >= 60) return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400";
-  return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400";
+const getScoreBadge = (score: number | null | undefined) => {
+  if (score === null || score === undefined) {
+    return "bg-muted text-muted-foreground border-border";
+  }
+  if (score >= 80) {
+    return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800";
+  }
+  if (score >= 60) {
+    return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800";
+  }
+  return "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800";
 };
 
 const DevEvaluation: React.FC = () => {
@@ -77,10 +82,12 @@ const DevEvaluation: React.FC = () => {
     try {
       const res = await fetch(
         buildApiUrl(`super-admin/dev/evaluations?periodType=${periodType}`),
-        { headers: tokenManager.createAuthHeaders() },
+        { headers: tokenManager.createAuthHeaders() }
       );
       const json = await res.json();
-      if (json.success) setData(json.data);
+      if (json.success && Array.isArray(json.data)) {
+        setData(json.data);
+      }
     } catch (err) {
       console.error("Failed to fetch evaluations:", err);
     } finally {
@@ -89,7 +96,7 @@ const DevEvaluation: React.FC = () => {
   }, [periodType]);
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, [fetchData]);
 
   const handleSort = (field: string) => {
@@ -101,174 +108,301 @@ const DevEvaluation: React.FC = () => {
     }
   };
 
-  const sorted = [...data].sort((a, b) => {
-    const aVal = a.evaluation?.[sortField as keyof typeof a.evaluation] ?? -1;
-    const bVal = b.evaluation?.[sortField as keyof typeof b.evaluation] ?? -1;
-    return sortDir === "desc" ? (bVal as number) - (aVal as number) : (aVal as number) - (bVal as number);
-  });
+  const sorted = useMemo(() => {
+    return [...data].sort((a, b) => {
+      const aVal = a.evaluation?.[sortField as keyof typeof a.evaluation] ?? -1;
+      const bVal = b.evaluation?.[sortField as keyof typeof b.evaluation] ?? -1;
+      return sortDir === "desc"
+        ? (bVal as number) - (aVal as number)
+        : (aVal as number) - (bVal as number);
+    });
+  }, [data, sortField, sortDir]);
 
-  const chartData = sorted.slice(0, 10).map((m) => ({
-    name: m.name.split(" ")[0],
-    score: m.evaluation?.overallScore ?? 0,
-  }));
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
+  const stats = useMemo(() => {
+    const total = data.length;
+    const evaluated = data.filter((d) => d.evaluation !== null);
+    const avgScore =
+      evaluated.length > 0
+        ? Math.round(
+            evaluated.reduce((acc, d) => acc + (d.evaluation?.overallScore ?? 0), 0) /
+              evaluated.length
+          )
+        : 0;
+    const avgOnTime =
+      evaluated.length > 0
+        ? Math.round(
+            evaluated.reduce((acc, d) => acc + (d.evaluation?.onTimeDelivery ?? 0), 0) /
+              evaluated.length
+          )
+        : 0;
+    const totalTasks = evaluated.reduce(
+      (acc, d) => acc + (d.evaluation?.completedTasks ?? 0),
+      0
     );
-  }
+    return { total, avgScore, avgOnTime, totalTasks };
+  }, [data]);
+
+  const chartData = useMemo(() => {
+    return sorted.slice(0, 10).map((m) => ({
+      name: m.name.split(" ")[0],
+      score: m.evaluation?.overallScore ?? 0,
+    }));
+  }, [sorted]);
 
   return (
-    <div className="w-full" dir={i18n.dir()}>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <ChartBarIcon className="h-7 w-7 text-indigo-500" />
-            {i18n.t("superAdmin.evaluation.title")}
-          </h1>
-          <p className="text-gray-500 mt-1 text-sm">
-            {i18n.t("superAdmin.evaluation.description")}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <FunnelIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <select
-              value={periodType}
-              onChange={(e) => setPeriodType(e.target.value)}
-              className="pr-10 pl-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
-            >
-              {periodOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+    <div dir={i18n.dir()} className="w-full min-h-screen bg-background text-foreground space-y-6 p-4 sm:p-6">
+      {/* Top Header Chassis */}
+      <header className="rounded-xl border border-border/70 bg-card p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary">
+                <BarChart3 className="size-4" />
+              </span>
+              <p className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
+                Performance Analytics
+              </p>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              تقييم الأداء البرمجي وكفاءة المهام
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              متابعة معدلات إنجاز المهام، دقة التقدير الزمني، وجودة المخرجات التقنية لأعضاء فريق التطوير.
+            </p>
           </div>
-          <button
-            onClick={fetchData}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
-          >
-            <ArrowPathIcon className="h-5 w-5" />
-          </button>
+
+          <div className="flex items-center gap-2.5 shrink-0">
+            <div className="relative">
+              <select
+                value={periodType}
+                onChange={(e) => setPeriodType(e.target.value)}
+                className="pr-8 pl-3 py-2 border border-border rounded-lg bg-background text-foreground text-xs focus:ring-1 focus:ring-primary appearance-none cursor-pointer"
+              >
+                {periodOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    الفترة: {opt.label}
+                  </option>
+                ))}
+              </select>
+              <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+            </div>
+
+            <button
+              type="button"
+              onClick={fetchData}
+              disabled={loading}
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-border bg-background hover:bg-muted text-foreground transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+              <span>تحديث التقييمات</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Telemetry Summary Ribbon */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">المطورين المقيمين</span>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-foreground tabular-nums">
+              {stats.total}
+            </div>
+          </div>
+          <span className="p-2.5 rounded-lg bg-muted text-muted-foreground">
+            <User className="size-5" />
+          </span>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">متوسط التقييم العام</span>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-primary tabular-nums">
+              {stats.avgScore}%
+            </div>
+          </div>
+          <span className="p-2.5 rounded-lg bg-primary/10 text-primary">
+            <Award className="size-5" />
+          </span>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">الالتزام بالموعد</span>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">
+              {stats.avgOnTime}%
+            </div>
+          </div>
+          <span className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+            <Clock className="size-5" />
+          </span>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">المهام المكتملة</span>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-amber-500 tabular-nums">
+              {stats.totalTasks}
+            </div>
+          </div>
+          <span className="p-2.5 rounded-lg bg-amber-500/10 text-amber-500">
+            <CheckCircle2 className="size-5" />
+          </span>
         </div>
       </div>
 
+      {/* Chart Surface */}
       {chartData.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
-          <h3 className="text-sm font-medium text-gray-500 mb-4">{i18n.t("superAdmin.evaluation.bestTitle")}</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={chartData}>
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Bar dataKey="score" radius={[4, 4, 0, 0]}>
-                {chartData.map((entry, idx) => (
-                  <Cell
-                    key={idx}
-                    fill={entry.score >= 80 ? "#22c55e" : entry.score >= 60 ? "#eab308" : "#ef4444"}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <section className="rounded-xl border border-border/70 bg-card p-5 sm:p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-border/70 pb-3">
+            <h3 className="text-xs sm:text-sm font-semibold text-foreground flex items-center gap-2">
+              <BarChart3 className="size-4 text-primary" />
+              أعلى 10 مطورين حسب التقييم العام
+            </h3>
+            <span className="text-xs text-muted-foreground font-mono">Performance Distribution</span>
+          </div>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} stroke="transparent" />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} stroke="transparent" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "var(--card)",
+                    borderColor: "var(--border)",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                    color: "var(--foreground)",
+                  }}
+                />
+                <Bar dataKey="score" radius={[4, 4, 0, 0]}>
+                  {chartData.map((entry, idx) => (
+                    <Cell
+                      key={idx}
+                      fill={entry.score >= 80 ? "#10B981" : entry.score >= 60 ? "#F59E0B" : "#EF4444"}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700/50">
-              <tr>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{i18n.t("superAdmin.evaluation.columns.developer")}</th>
-                {[
-                  { key: "overallScore", label: i18n.t("superAdmin.evaluation.columns.overallScore") },
-                  { key: "taskCompletion", label: i18n.t("superAdmin.evaluation.columns.taskCompletion") },
-                  { key: "onTimeDelivery", label: i18n.t("superAdmin.evaluation.columns.onTimeDelivery") },
-                  { key: "estimationAccuracy", label: i18n.t("superAdmin.evaluation.columns.estimationAccuracy") },
-                  { key: "qualityScore", label: i18n.t("superAdmin.evaluation.columns.qualityScore") },
-                ].map(({ key, label }) => (
-                  <th
-                    key={key}
-                    onClick={() => handleSort(key)}
-                    className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      {label}
-                      {sortField === key && (
-                        <span className="text-indigo-500">{sortDir === "desc" ? "\u25BC" : "\u25B2"}</span>
-                      )}
-                    </div>
-                  </th>
-                ))}
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">{i18n.t("superAdmin.evaluation.columns.tasks")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {sorted.map((member, idx) => (
-                <tr
-                  key={member.memberId}
-                  onClick={() => navigate(`/super-admin/dev-evaluations/member/${member.memberId}`)}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-gray-400 w-5">{idx + 1}</span>
-                      {member.avatar ? (
-                        <img src={member.avatar} alt="" className="w-8 h-8 rounded-full" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                          <UserIcon className="h-4 w-4 text-indigo-500" />
-                        </div>
-                      )}
-                      <div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{member.name}</div>
-                        <div className="text-xs text-gray-400">{member.role}</div>
-                      </div>
-                    </div>
-                  </td>
-                  {["overallScore", "taskCompletion", "onTimeDelivery", "estimationAccuracy", "qualityScore"].map(
-                    (key) => {
-                      const val = member.evaluation?.[key as keyof typeof member.evaluation] as number | null | undefined;
-                      return (
-                        <td key={key} className="px-4 py-3 text-center">
-                          {val !== null && val !== undefined ? (
-                            <span
-                              className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${getScoreBg(val)}`}
-                            >
-                              {Math.round(val)}%
-                            </span>
-                          ) : (
-                            <span className="text-gray-400 text-xs">--</span>
-                          )}
-                        </td>
-                      );
-                    },
-                  )}
-                  <td className="px-4 py-3 text-center text-sm text-gray-500">
-                    {member.evaluation ? (
-                      <span>
-                        {member.evaluation.completedTasks}/{member.evaluation.totalTasks}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-xs">--</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {sorted.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
-                    {i18n.t("superAdmin.evaluation.empty")}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {/* Main Table Chassis */}
+      <section className="rounded-xl border border-border/70 bg-card shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-border/70 flex items-center justify-between bg-muted/20">
+          <h2 className="text-xs sm:text-sm font-semibold text-foreground flex items-center gap-2">
+            <Target className="size-4 text-primary" />
+            جدول مقاييس الأداء التفصيلي
+          </h2>
+          <span className="text-xs text-muted-foreground font-mono tabular-nums">
+            انقر على أي عمود للترتيب
+          </span>
         </div>
-      </div>
+
+        {loading ? (
+          <div className="flex h-48 items-center justify-center gap-3 text-muted-foreground">
+            <RefreshCw className="size-5 animate-spin text-primary" />
+            <span className="text-xs font-medium">جاري فحص مؤشرات الأداء...</span>
+          </div>
+        ) : sorted.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground space-y-2">
+            <BarChart3 className="size-8 text-muted-foreground/50" />
+            <p className="text-xs font-medium">لا توجد تقييمات مسجلة لهذه الفترة</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-right text-xs">
+              <thead>
+                <tr className="border-b border-border/70 bg-muted/30 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  <th className="px-4 py-3.5">المطور</th>
+                  {[
+                    { key: "overallScore", label: "التقييم العام" },
+                    { key: "taskCompletion", label: "إنجاز المهام" },
+                    { key: "onTimeDelivery", label: "التسليم بالموعد" },
+                    { key: "estimationAccuracy", label: "دقة التقدير" },
+                    { key: "qualityScore", label: "جودة الكود" },
+                  ].map(({ key, label }) => (
+                    <th
+                      key={key}
+                      onClick={() => handleSort(key)}
+                      className="px-4 py-3.5 text-center cursor-pointer hover:text-foreground transition-colors"
+                    >
+                      <div className="inline-flex items-center gap-1">
+                        <span>{label}</span>
+                        <ArrowUpDown className={`size-3 ${sortField === key ? "text-primary" : "text-muted-foreground/50"}`} />
+                      </div>
+                    </th>
+                  ))}
+                  <th className="px-4 py-3.5 text-center">المهام المنجزة</th>
+                  <th className="px-4 py-3.5 text-center w-12"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {sorted.map((member, idx) => (
+                  <tr
+                    key={member.memberId}
+                    onClick={() => navigate(`/super-admin/dev-evaluations/member/${member.memberId}`)}
+                    className="hover:bg-muted/30 transition-colors cursor-pointer group"
+                  >
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-mono text-muted-foreground w-4 tabular-nums">
+                          {idx + 1}
+                        </span>
+                        <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                          {member.avatar ? (
+                            <img src={member.avatar} alt="" className="size-full rounded-full object-cover" />
+                          ) : (
+                            member.name.charAt(0)
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-medium text-foreground">{member.name}</div>
+                          <div className="text-[11px] text-muted-foreground">{member.role}</div>
+                        </div>
+                      </div>
+                    </td>
+                    {["overallScore", "taskCompletion", "onTimeDelivery", "estimationAccuracy", "qualityScore"].map(
+                      (key) => {
+                        const val = member.evaluation?.[key as keyof typeof member.evaluation] as number | null | undefined;
+                        return (
+                          <td key={key} className="px-4 py-3.5 text-center">
+                            {val !== null && val !== undefined ? (
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold border tabular-nums ${getScoreBadge(
+                                  val
+                                )}`}
+                              >
+                                {Math.round(val)}%
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                          </td>
+                        );
+                      }
+                    )}
+                    <td className="px-4 py-3.5 text-center font-mono text-xs tabular-nums text-foreground">
+                      {member.evaluation ? (
+                        <span>
+                          {member.evaluation.completedTasks} / {member.evaluation.totalTasks}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3.5 text-center text-muted-foreground group-hover:text-foreground transition-colors">
+                      <ChevronRight className="size-4 rtl:rotate-180" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 };

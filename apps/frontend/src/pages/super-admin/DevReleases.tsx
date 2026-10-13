@@ -1,25 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-import { useTheme } from "../../hooks/useTheme";
 import {
-  PlusIcon,
-  TagIcon,
-  CalendarDaysIcon,
-  FolderIcon,
-  ArrowTrendingUpIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  PencilIcon,
-  TrashIcon,
-  SparklesIcon,
-  BugAntIcon,
-  WrenchScrewdriverIcon,
-  XMarkIcon,
-  FunnelIcon,
-} from "@heroicons/react/24/outline";
+  Tag,
+  Plus,
+  RefreshCw,
+  Search,
+  Filter,
+  CheckCircle2,
+  Clock,
+  Calendar,
+  Sparkles,
+  Bug,
+  Wrench,
+  Trash2,
+  FolderGit2,
+  X,
+  Package
+} from "lucide-react";
 
 interface Release {
   id: string;
@@ -47,44 +47,42 @@ const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
 
 const statusConfig: Record<
   string,
-  { label: string; bg: string; text: string }
+  { label: string; badgeClass: string }
 > = {
   PLANNING: {
     label: "تخطيط",
-    bg: "bg-gray-100 dark:bg-gray-700",
-    text: "text-gray-700 dark:text-gray-300",
+    badgeClass: "bg-muted text-muted-foreground border-border",
   },
   IN_PROGRESS: {
     label: "قيد العمل",
-    bg: "bg-blue-100 dark:bg-blue-900/30",
-    text: "text-blue-700 dark:text-blue-400",
+    badgeClass: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
   },
   READY: {
-    label: "جاهز",
-    bg: "bg-green-100 dark:bg-green-900/30",
-    text: "text-green-700 dark:text-green-400",
+    label: "جاهز للإطلاق",
+    badgeClass: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800",
   },
   RELEASED: {
-    label: "صدر",
-    bg: "bg-purple-100 dark:bg-purple-900/30",
-    text: "text-purple-700 dark:text-purple-400",
+    label: "صدر رسمياً",
+    badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
+  },
+  COMPLETED: {
+    label: "مكتمل",
+    badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
   },
   CANCELLED: {
     label: "ملغي",
-    bg: "bg-red-100 dark:bg-red-900/30",
-    text: "text-red-700 dark:text-red-400",
+    badgeClass: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800",
   },
 };
 
 const DevReleases: React.FC = () => {
   const navigate = useNavigate();
   const [releases, setReleases] = useState<Release[]>([]);
-  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>(
-    [],
-  );
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterProject, setFilterProject] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
@@ -99,7 +97,7 @@ const DevReleases: React.FC = () => {
       });
 
       const data = await response.json();
-      if (data.success) {
+      if (data.success && Array.isArray(data.data)) {
         setProjects(data.data.map((p: any) => ({ id: p.id, name: p.name })));
       }
     } catch (err) {
@@ -118,11 +116,11 @@ const DevReleases: React.FC = () => {
         buildApiUrl(`super-admin/dev/releases?${params.toString()}`),
         {
           headers: getAuthHeaders({ "Content-Type": "application/json" }),
-        },
+        }
       );
 
       const data = await response.json();
-      if (data.success) {
+      if (data.success && Array.isArray(data.data)) {
         setReleases(data.data);
       }
     } catch (err) {
@@ -133,7 +131,7 @@ const DevReleases: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذا الإصدار؟")) return;
+    if (!confirm("هل أنت متأكد من حذف هذا الإصدار نهائياً؟")) return;
 
     try {
       const response = await fetch(
@@ -141,7 +139,7 @@ const DevReleases: React.FC = () => {
         {
           method: "DELETE",
           headers: getAuthHeaders(),
-        },
+        }
       );
 
       const data = await response.json();
@@ -153,70 +151,179 @@ const DevReleases: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
-      </div>
-    );
-  }
+  const filteredReleases = useMemo(() => {
+    return releases.filter((r) => {
+      const q = searchQuery.toLowerCase();
+      const matchesSearch =
+        r.version.toLowerCase().includes(q) ||
+        r.name.toLowerCase().includes(q) ||
+        (r.description && r.description.toLowerCase().includes(q)) ||
+        (r.projectName && r.projectName.toLowerCase().includes(q));
+      return matchesSearch;
+    });
+  }, [releases, searchQuery]);
+
+  const stats = useMemo(() => {
+    const total = releases.length;
+    const inProgress = releases.filter(
+      (r) => r.status === "IN_PROGRESS" || r.status === "PLANNING"
+    ).length;
+    const released = releases.filter(
+      (r) => r.status === "RELEASED" || r.status === "COMPLETED"
+    ).length;
+    const totalTasks = releases.reduce((acc, r) => acc + (r.tasksCount || 0), 0);
+    return { total, inProgress, released, totalTasks };
+  }, [releases]);
 
   return (
-    <div className="space-y-6" dir={i18n.dir()}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            🏷️ الإصدارات
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-            إدارة إصدارات المشاريع
-          </p>
+    <div dir={i18n.dir()} className="w-full min-h-screen bg-background text-foreground space-y-6 p-4 sm:p-6">
+      {/* Top Header Chassis */}
+      <header className="rounded-xl border border-border/70 bg-card p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary">
+                <Tag className="size-4" />
+              </span>
+              <p className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
+                Release Train & Changelog
+              </p>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              سجل وإدارة إصدارات النظام
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              تخطيط خارطة طريق الإصدارات، جداول المهام والميزات الجديدة، ومتابعة جاهزية النشر.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={fetchReleases}
+              disabled={loading}
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-border bg-background hover:bg-muted text-foreground transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+              <span>تحديث</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowForm(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground shadow-sm hover:opacity-95 transition-all active:scale-[0.98]"
+            >
+              <Plus className="size-3.5" />
+              <span>إصدار جديد</span>
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600"
-        >
-          <PlusIcon className="h-5 w-5" />
-          إصدار جديد
-        </button>
+      </header>
+
+      {/* Telemetry Summary Ribbon */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">إجمالي الإصدارات</span>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-foreground tabular-nums">
+              {stats.total}
+            </div>
+          </div>
+          <span className="p-2.5 rounded-lg bg-muted text-muted-foreground">
+            <Package className="size-5" />
+          </span>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">قيد التطوير والتجهيز</span>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-blue-600 dark:text-blue-400 tabular-nums">
+              {stats.inProgress}
+            </div>
+          </div>
+          <span className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+            <Clock className="size-5" />
+          </span>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">صدرت رسمياً</span>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">
+              {stats.released}
+            </div>
+          </div>
+          <span className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="size-5" />
+          </span>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">المهام المجدولة</span>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-primary tabular-nums">
+              {stats.totalTasks}
+            </div>
+          </div>
+          <span className="p-2.5 rounded-lg bg-primary/10 text-primary">
+            <Sparkles className="size-5" />
+          </span>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex items-center gap-4">
-          <FunnelIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-          >
-            <option value="">كل الحالات</option>
-            {Object.entries(statusConfig).map(([key, { label }]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filterProject}
-            onChange={(e) => setFilterProject(e.target.value)}
-            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-          >
-            <option value="">كل المشاريع</option>
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name}
-              </option>
-            ))}
-          </select>
+      {/* Filter Toolbar */}
+      <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="البحث برقم الإصدار، الاسم، أو المشروع..."
+            className="w-full pl-3 pr-9 py-2 text-xs rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="pr-8 pl-3 py-2 border border-border rounded-lg bg-background text-foreground text-xs focus:ring-1 focus:ring-primary appearance-none cursor-pointer"
+            >
+              <option value="">جميع الحالات</option>
+              {Object.entries(statusConfig).map(([key, { label }]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+          </div>
+
+          <div className="relative">
+            <select
+              value={filterProject}
+              onChange={(e) => setFilterProject(e.target.value)}
+              className="pr-8 pl-3 py-2 border border-border rounded-lg bg-background text-foreground text-xs focus:ring-1 focus:ring-primary appearance-none cursor-pointer"
+            >
+              <option value="">جميع المشاريع</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+            <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+          </div>
+
           {(filterStatus || filterProject) && (
             <button
+              type="button"
               onClick={() => {
                 setFilterStatus("");
                 setFilterProject("");
               }}
-              className="text-gray-500 hover:text-gray-700 text-sm"
+              className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded border border-border/50"
             >
               مسح الفلاتر
             </button>
@@ -224,152 +331,153 @@ const DevReleases: React.FC = () => {
         </div>
       </div>
 
-      {/* Releases List */}
-      <div className="space-y-4">
-        {releases.map((release) => {
-          const statusInfo =
-            statusConfig[release.status] || statusConfig.PLANNING;
+      {/* Releases Cards */}
+      {loading ? (
+        <div className="flex h-56 items-center justify-center gap-3 text-muted-foreground rounded-xl border border-border/70 bg-card">
+          <RefreshCw className="size-5 animate-spin text-primary" />
+          <span className="text-xs font-medium">جاري فحص وتحديث قائمة الإصدارات...</span>
+        </div>
+      ) : filteredReleases.length === 0 ? (
+        <div className="rounded-xl border border-border/70 bg-card p-12 text-center text-muted-foreground space-y-3">
+          <Tag className="size-10 mx-auto text-muted-foreground/40" />
+          <h3 className="text-sm font-semibold text-foreground">لا توجد إصدارات مسجلة</h3>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            قم بإنشاء إصدار جديد لربط المهام البرمجية وتتبع خارطة إطلاق الميزات.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground shadow-sm hover:opacity-95 transition-all active:scale-[0.98]"
+          >
+            <Plus className="size-3.5" />
+            <span>إصدار جديد</span>
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredReleases.map((release) => {
+            const statusInfo = statusConfig[release.status] || statusConfig.PLANNING;
 
-          return (
-            <div
-              key={release.id}
-              className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
-            >
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <TagIcon className="h-6 w-6 text-indigo-500" />
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900">
-                          v{release.version}
-                        </h3>
-                        <p className="text-gray-600">{release.name}</p>
-                      </div>
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${statusInfo.bg} ${statusInfo.text}`}
-                      >
+            return (
+              <div
+                key={release.id}
+                className="rounded-xl border border-border/70 bg-card p-5 sm:p-6 shadow-sm space-y-4 hover:border-primary/40 transition-colors"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <code className="text-sm font-bold font-mono px-2.5 py-1 rounded-md bg-primary/10 text-primary border border-primary/20">
+                        {release.version.startsWith("v") ? release.version : `v${release.version}`}
+                      </code>
+                      <h3 className="text-base font-bold text-foreground">
+                        {release.name}
+                      </h3>
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${statusInfo.badgeClass}`}>
                         {statusInfo.label}
                       </span>
                     </div>
+
                     {release.description && (
-                      <p className="text-gray-600 text-sm mt-2">
+                      <p className="text-xs text-muted-foreground leading-relaxed max-w-3xl">
                         {release.description}
                       </p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-start">
                     <button
+                      type="button"
                       onClick={() => handleDelete(release.id)}
-                      className="p-2 hover:bg-red-50 rounded-lg text-gray-500 hover:text-red-600"
+                      className="p-1.5 rounded-lg border border-border/60 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                      title="حذف الإصدار"
                     >
-                      <TrashIcon className="h-5 w-5" />
+                      <Trash2 className="size-4" />
                     </button>
                   </div>
                 </div>
 
-                {/* Project */}
+                {/* Project Tag */}
                 {release.projectName && (
-                  <div className="flex items-center gap-2 mb-4">
-                    <FolderIcon className="h-4 w-4 text-gray-400" />
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{
-                        backgroundColor: release.projectColor || "#6366f1",
-                      }}
-                    ></span>
-                    <span className="text-sm text-gray-600">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <FolderGit2 className="size-3.5 text-muted-foreground/70" />
+                    <span>المشروع:</span>
+                    <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
+                      <span
+                        className="size-2 rounded-full"
+                        style={{ backgroundColor: release.projectColor || "#6366f1" }}
+                      />
                       {release.projectName}
                     </span>
                   </div>
                 )}
 
-                {/* Progress */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="text-gray-600">التقدم</span>
-                    <span className="font-semibold text-gray-900">
-                      {release.progress}%
-                    </span>
+                {/* Progress Bar */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-muted-foreground text-[11px]">مؤشر الجاهزية</span>
+                    <span className="font-bold text-foreground tabular-nums">{release.progress}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
                     <div
-                      className="bg-indigo-600 h-2 rounded-full transition-all"
+                      className="bg-primary h-full rounded-full transition-all duration-300"
                       style={{ width: `${release.progress}%` }}
-                    ></div>
+                    />
                   </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-4 gap-4 pt-4 border-t border-gray-100">
-                  <div className="text-center">
-                    <p className="text-lg font-semibold text-gray-900">
+                {/* 4-Stat Breakdown Ribbon */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-border/60">
+                  <div className="rounded-lg bg-muted/20 border border-border/50 p-2.5 text-center">
+                    <p className="text-base font-bold font-mono text-foreground tabular-nums">
                       {release.tasksCount}
                     </p>
-                    <p className="text-xs text-gray-500">إجمالي المهام</p>
+                    <p className="text-[11px] text-muted-foreground">إجمالي المهام</p>
                   </div>
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <SparklesIcon className="h-4 w-4 text-green-500" />
-                      <p className="text-lg font-semibold text-green-600">
-                        {release.tasksByType.features}
+
+                  <div className="rounded-lg bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/50 p-2.5 text-center">
+                    <div className="flex items-center justify-center gap-1 text-emerald-600 dark:text-emerald-400">
+                      <Sparkles className="size-3.5" />
+                      <p className="text-base font-bold font-mono tabular-nums">
+                        {release.tasksByType?.features ?? 0}
                       </p>
                     </div>
-                    <p className="text-xs text-gray-500">ميزات</p>
+                    <p className="text-[11px] text-muted-foreground">ميزات جديدة</p>
                   </div>
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <BugAntIcon className="h-4 w-4 text-red-500" />
-                      <p className="text-lg font-semibold text-red-600">
-                        {release.tasksByType.bugs}
+
+                  <div className="rounded-lg bg-rose-50/40 dark:bg-rose-950/20 border border-rose-200/50 dark:border-rose-800/50 p-2.5 text-center">
+                    <div className="flex items-center justify-center gap-1 text-rose-600 dark:text-rose-400">
+                      <Bug className="size-3.5" />
+                      <p className="text-base font-bold font-mono tabular-nums">
+                        {release.tasksByType?.bugs ?? 0}
                       </p>
                     </div>
-                    <p className="text-xs text-gray-500">إصلاحات</p>
+                    <p className="text-[11px] text-muted-foreground">إصلاحات أخطاء</p>
                   </div>
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <WrenchScrewdriverIcon className="h-4 w-4 text-blue-500" />
-                      <p className="text-lg font-semibold text-blue-600">
-                        {release.tasksByType.enhancements}
+
+                  <div className="rounded-lg bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/50 p-2.5 text-center">
+                    <div className="flex items-center justify-center gap-1 text-blue-600 dark:text-blue-400">
+                      <Wrench className="size-3.5" />
+                      <p className="text-base font-bold font-mono tabular-nums">
+                        {release.tasksByType?.enhancements ?? 0}
                       </p>
                     </div>
-                    <p className="text-xs text-gray-500">تحسينات</p>
+                    <p className="text-[11px] text-muted-foreground">تحسينات عامة</p>
                   </div>
                 </div>
 
                 {/* Release Date */}
                 {release.releaseDate && (
-                  <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100">
-                    <CalendarDaysIcon className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">
-                      تاريخ الإصدار:{" "}
-                      {new Date(release.releaseDate).toLocaleDateString(
-                        "ar-EG",
-                      )}
+                  <div className="flex items-center gap-2 pt-2 border-t border-border/50 text-xs text-muted-foreground font-mono">
+                    <Calendar className="size-3.5 text-muted-foreground/70" />
+                    <span>تاريخ الإصدار المتوقع:</span>
+                    <span className="text-foreground font-semibold tabular-nums">
+                      {new Date(release.releaseDate).toLocaleDateString("ar-EG")}
                     </span>
                   </div>
                 )}
               </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Empty State */}
-      {releases.length === 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 text-center">
-          <TagIcon className="h-10 w-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">
-            لا توجد إصدارات
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">ابدأ بإنشاء إصدار جديد</p>
-          <button
-            onClick={() => setShowForm(true)}
-            className="px-5 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 text-sm font-medium"
-          >
-            <PlusIcon className="h-5 w-5 inline ml-2" />
-            إصدار جديد
-          </button>
+            );
+          })}
         </div>
       )}
 
@@ -407,7 +515,7 @@ const ReleaseFormModal: React.FC<{
     e.preventDefault();
 
     if (!formData.version.trim() || !formData.name.trim()) {
-      alert(i18n.t("DevReleases.msg_43a1"));
+      alert("يرجى إدخال رقم الإصدار والاسم");
       return;
     }
 
@@ -430,88 +538,81 @@ const ReleaseFormModal: React.FC<{
       if (data.success) {
         onSuccess();
       } else {
-        alert(data.error || i18n.t("DevReleases.failed_create_38bf"));
+        alert(data.error || "فشل إنشاء الإصدار");
       }
     } catch (err) {
-      alert(i18n.t("DevReleases.msg_f389"));
+      alert("حدث خطأ أثناء إنشاء الإصدار");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-2xl w-full">
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">إصدار جديد</h2>
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-card text-foreground rounded-xl border border-border/80 max-w-xl w-full shadow-xl">
+        <div className="p-5 border-b border-border/70 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Tag className="size-5 text-primary" />
+            <h2 className="text-base font-bold text-foreground">إنشاء إصدار جديد</h2>
+          </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg"
+            className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
           >
-            <XMarkIcon className="h-5 w-5" />
+            <X className="size-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              رقم الإصدار *
+            <label className="block font-medium text-foreground mb-1">
+              رقم الإصدار <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
               value={formData.version}
-              onChange={(e) =>
-                setFormData({ ...formData, version: e.target.value })
-              }
-              placeholder="1.0.0"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              onChange={(e) => setFormData({ ...formData, version: e.target.value })}
+              placeholder="مثال: 2.8.0 أو v1.2.0"
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-1 focus:ring-primary font-mono"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              الاسم *
+            <label className="block font-medium text-foreground mb-1">
+              اسم الإصدار <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              placeholder="اسم الإصدار..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="اسم رمزي أو عنوان رئيسي للتحديث..."
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-1 focus:ring-primary"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              الوصف
-            </label>
+            <label className="block font-medium text-foreground mb-1">الوصف والملاحظات</label>
             <textarea
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              placeholder="تفاصيل التحديث وسجل التغييرات المتوقعة..."
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-1 focus:ring-primary"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                المشروع
-              </label>
+              <label className="block font-medium text-foreground mb-1">المشروع التابع له</label>
               <select
                 value={formData.projectId}
-                onChange={(e) =>
-                  setFormData({ ...formData, projectId: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-1 focus:ring-primary"
               >
-                <option value="">بدون مشروع</option>
+                <option value="">بدون مشروع محدد</option>
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}
@@ -519,33 +620,30 @@ const ReleaseFormModal: React.FC<{
                 ))}
               </select>
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                تاريخ الإصدار
-              </label>
+              <label className="block font-medium text-foreground mb-1">تاريخ الإصدار المتوقع</label>
               <input
                 type="date"
                 value={formData.releaseDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, releaseDate: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                onChange={(e) => setFormData({ ...formData, releaseDate: e.target.value })}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border/70">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              className="px-4 py-2 border border-border rounded-lg text-foreground hover:bg-muted transition-colors"
             >
               إلغاء
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+              className="px-4 py-2 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-95 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {saving ? "جاري الإنشاء..." : "إنشاء الإصدار"}
             </button>

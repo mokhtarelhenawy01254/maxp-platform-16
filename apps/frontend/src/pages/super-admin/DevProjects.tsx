@@ -1,24 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
-import { useTheme } from "../../hooks/useTheme";
 import {
-  PlusIcon,
-  FolderIcon,
-  CalendarDaysIcon,
-  UserIcon,
-  TagIcon,
-  PencilIcon,
-  TrashIcon,
-  ArrowTrendingUpIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  EyeIcon,
-  FunnelIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+  FolderGit2,
+  Plus,
+  RefreshCw,
+  Search,
+  Filter,
+  CheckCircle2,
+  Clock,
+  Calendar,
+  User,
+  Trash2,
+  Eye,
+  X,
+  Layers,
+  ArrowUpRight,
+  FolderOpen
+} from "lucide-react";
 
 interface Project {
   id: string;
@@ -47,40 +48,35 @@ const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
 
 const statusConfig: Record<
   string,
-  { label: string; bg: string; text: string }
+  { label: string; badgeClass: string }
 > = {
   PLANNING: {
     label: "تخطيط",
-    bg: "bg-gray-100 dark:bg-gray-700",
-    text: "text-gray-700 dark:text-gray-300",
+    badgeClass: "bg-muted text-muted-foreground border-border",
   },
   ACTIVE: {
     label: "نشط",
-    bg: "bg-blue-100 dark:bg-blue-900/30",
-    text: "text-blue-700 dark:text-blue-400",
+    badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
   },
   ON_HOLD: {
     label: "معلق",
-    bg: "bg-yellow-100 dark:bg-yellow-900/30",
-    text: "text-yellow-700 dark:text-yellow-400",
+    badgeClass: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800",
   },
   COMPLETED: {
     label: "مكتمل",
-    bg: "bg-green-100 dark:bg-green-900/30",
-    text: "text-green-700 dark:text-green-400",
+    badgeClass: "bg-primary/10 text-primary border-primary/20",
   },
   CANCELLED: {
     label: "ملغي",
-    bg: "bg-red-100 dark:bg-red-900/30",
-    text: "text-red-700 dark:text-red-400",
+    badgeClass: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800",
   },
 };
 
-const priorityColors: Record<string, string> = {
-  CRITICAL: "bg-red-500",
-  HIGH: "bg-orange-500",
-  MEDIUM: "bg-yellow-500",
-  LOW: "bg-green-500",
+const priorityConfig: Record<string, { label: string; dotClass: string }> = {
+  CRITICAL: { label: "حرج", dotClass: "bg-rose-500" },
+  HIGH: { label: "مرتفع", dotClass: "bg-amber-500" },
+  MEDIUM: { label: "متوسط", dotClass: "bg-blue-500" },
+  LOW: { label: "منخفض", dotClass: "bg-slate-400" },
 };
 
 const DevProjects: React.FC = () => {
@@ -88,6 +84,7 @@ const DevProjects: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
@@ -104,11 +101,11 @@ const DevProjects: React.FC = () => {
         buildApiUrl(`super-admin/dev/projects?${params.toString()}`),
         {
           headers: getAuthHeaders({ "Content-Type": "application/json" }),
-        },
+        }
       );
 
       const data = await response.json();
-      if (data.success) {
+      if (data.success && Array.isArray(data.data)) {
         setProjects(data.data);
       }
     } catch (err) {
@@ -119,7 +116,7 @@ const DevProjects: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذا المشروع؟")) return;
+    if (!confirm("هل أنت متأكد من حذف هذا المشروع نهائياً؟")) return;
 
     try {
       const response = await fetch(
@@ -127,7 +124,7 @@ const DevProjects: React.FC = () => {
         {
           method: "DELETE",
           headers: getAuthHeaders(),
-        },
+        }
       );
 
       const data = await response.json();
@@ -139,57 +136,155 @@ const DevProjects: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
-      </div>
-    );
-  }
+  const filteredProjects = useMemo(() => {
+    return projects.filter((p) => {
+      const q = searchQuery.toLowerCase();
+      const matchesSearch =
+        p.name.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        (p.tags && p.tags.some((t) => t.toLowerCase().includes(q)));
+      return matchesSearch;
+    });
+  }, [projects, searchQuery]);
+
+  const stats = useMemo(() => {
+    const total = projects.length;
+    const active = projects.filter((p) => p.status === "ACTIVE").length;
+    const totalTasks = projects.reduce((acc, p) => acc + (p.tasksCount || 0), 0);
+    const completedTasks = projects.reduce((acc, p) => acc + (p.completedTasks || 0), 0);
+    return { total, active, totalTasks, completedTasks };
+  }, [projects]);
 
   return (
-    <div className="space-y-6" dir={i18n.dir()}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            📂 المشاريع
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-            إدارة مشاريع التطوير
-          </p>
+    <div dir={i18n.dir()} className="w-full min-h-screen bg-background text-foreground space-y-6 p-4 sm:p-6">
+      {/* Top Header Chassis */}
+      <header className="rounded-xl border border-border/70 bg-card p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary">
+                <FolderGit2 className="size-4" />
+              </span>
+              <p className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
+                Engineering Projects Directory
+              </p>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              سجل وإدارة مشاريع التطوير
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              تتبع محافظ المشاريع البرمجية، مؤشرات تقدم الإنجاز، ربط مديري المشاريع وإصدارات النظام.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={fetchProjects}
+              disabled={loading}
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-border bg-background hover:bg-muted text-foreground transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+              <span>تحديث</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowForm(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground shadow-sm hover:opacity-95 transition-all active:scale-[0.98]"
+            >
+              <Plus className="size-3.5" />
+              <span>مشروع جديد</span>
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600"
-          >
-            <PlusIcon className="h-5 w-5" />
-            مشروع جديد
-          </button>
+      </header>
+
+      {/* Telemetry Summary Ribbon */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">إجمالي المشاريع</span>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-foreground tabular-nums">
+              {stats.total}
+            </div>
+          </div>
+          <span className="p-2.5 rounded-lg bg-muted text-muted-foreground">
+            <Layers className="size-5" />
+          </span>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">المشاريع النشطة</span>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">
+              {stats.active}
+            </div>
+          </div>
+          <span className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="size-5" />
+          </span>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">إجمالي المهام</span>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-primary tabular-nums">
+              {stats.totalTasks}
+            </div>
+          </div>
+          <span className="p-2.5 rounded-lg bg-primary/10 text-primary">
+            <Clock className="size-5" />
+          </span>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">المهام المنجزة</span>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">
+              {stats.completedTasks}
+            </div>
+          </div>
+          <span className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="size-5" />
+          </span>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex items-center gap-4">
-          <FunnelIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-          >
-            <option value="">كل الحالات</option>
-            {Object.entries(statusConfig).map(([key, { label }]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
+      {/* Filter Toolbar */}
+      <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="البحث باسم المشروع، الوصف، أو التصنيف..."
+            className="w-full pl-3 pr-9 py-2 text-xs rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="pr-8 pl-3 py-2 border border-border rounded-lg bg-background text-foreground text-xs focus:ring-1 focus:ring-primary appearance-none cursor-pointer"
+            >
+              <option value="">جميع الحالات</option>
+              {Object.entries(statusConfig).map(([key, { label }]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+          </div>
+
           {filterStatus && (
             <button
+              type="button"
               onClick={() => setFilterStatus("")}
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-sm"
+              className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded border border-border/50"
             >
               مسح الفلتر
             </button>
@@ -198,213 +293,193 @@ const DevProjects: React.FC = () => {
       </div>
 
       {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((project) => {
-          const statusInfo =
-            statusConfig[project.status] || statusConfig.PLANNING;
-          const isOverdue =
-            project.endDate &&
-            new Date(project.endDate) < new Date() &&
-            project.status !== "COMPLETED";
+      {loading ? (
+        <div className="flex h-56 items-center justify-center gap-3 text-muted-foreground rounded-xl border border-border/70 bg-card">
+          <RefreshCw className="size-5 animate-spin text-primary" />
+          <span className="text-xs font-medium">جاري فحص وتحديث قائمة المشاريع...</span>
+        </div>
+      ) : filteredProjects.length === 0 ? (
+        <div className="rounded-xl border border-border/70 bg-card p-12 text-center text-muted-foreground space-y-3">
+          <FolderOpen className="size-10 mx-auto text-muted-foreground/40" />
+          <h3 className="text-sm font-semibold text-foreground">لا توجد مشاريع تطابق البحث</h3>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            يمكنك البدء بإنشاء مشروع تطوير جديد وربط المهام وأعضاء الفريق به.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground shadow-sm hover:opacity-95 transition-all active:scale-[0.98]"
+          >
+            <Plus className="size-3.5" />
+            <span>مشروع جديد</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          {filteredProjects.map((project) => {
+            const statusInfo = statusConfig[project.status] || statusConfig.PLANNING;
+            const priorityInfo = priorityConfig[project.priority] || priorityConfig.MEDIUM;
+            const isOverdue =
+              project.endDate &&
+              new Date(project.endDate) < new Date() &&
+              project.status !== "COMPLETED";
 
-          return (
-            <div
-              key={project.id}
-              className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg dark:hover:shadow-xl transition-shadow cursor-pointer"
-              onClick={() =>
-                navigate(`/super-admin/dev-tasks?projectId=${project.id}`)
-              }
-            >
-              {/* Header */}
+            return (
               <div
-                className="h-2"
-                style={{ backgroundColor: project.color || "#6366f1" }}
-              ></div>
+                key={project.id}
+                onClick={() => navigate(`/super-admin/dev-tasks?projectId=${project.id}`)}
+                className="rounded-xl border border-border/70 bg-card overflow-hidden hover:border-primary/50 transition-all cursor-pointer shadow-sm flex flex-col justify-between group"
+              >
+                {/* Accent Ribbon */}
+                <div
+                  className="h-1.5 w-full"
+                  style={{ backgroundColor: project.color || "#6366f1" }}
+                />
 
-              <div className="p-6">
-                {/* Title */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <FolderIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        {project.name}
-                      </h3>
+                <div className="p-5 space-y-4 flex-1">
+                  {/* Card Title & Actions */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2">
+                        <FolderGit2 className="size-4 text-primary shrink-0" />
+                        <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                          {project.name}
+                        </h3>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                        {project.description}
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                      {project.description}
-                    </p>
-                  </div>
-                  <div
-                    className="flex items-center gap-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(
-                          `/super-admin/dev-tasks?projectId=${project.id}`,
-                        );
-                      }}
-                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                      title="عرض"
-                    >
-                      <EyeIcon className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // navigate(`/super-admin/dev-projects/${project.id}/edit`);
-                      }}
-                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                      title="تعديل"
-                    >
-                      <PencilIcon className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(project.id);
-                      }}
-                      className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
-                      title="حذف"
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
 
-                {/* Status & Priority */}
-                <div className="flex items-center gap-2 mb-4">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.text}`}
-                  >
-                    {statusInfo.label}
-                  </span>
-                  <span
-                    className={`w-2 h-2 rounded-full ${priorityColors[project.priority] || "bg-gray-400"}`}
-                  ></span>
-                </div>
-
-                {/* Progress */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-gray-600 dark:text-gray-400">
-                      التقدم
-                    </span>
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">
-                      {project.progress}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div
-                      className="bg-indigo-600 dark:bg-indigo-500 h-2 rounded-full transition-all"
-                      style={{ width: `${project.progress}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-4 py-4 border-t border-gray-100 dark:border-gray-700">
-                  <div className="text-center">
-                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                      {project.tasksCount}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      مهمة
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-lg font-semibold text-green-600 dark:text-green-400">
-                      {project.completedTasks}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      مكتملة
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-lg font-semibold text-indigo-600 dark:text-indigo-400">
-                      {project.releasesCount}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      إصدار
-                    </p>
-                  </div>
-                </div>
-
-                {/* Manager & Dates */}
-                <div className="space-y-2 pt-4 border-t border-gray-100 dark:border-gray-700">
-                  {project.managerName && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <UserIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                      <span className="text-gray-600 dark:text-gray-400">
-                        المدير:
-                      </span>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">
-                        {project.managerName}
-                      </span>
-                    </div>
-                  )}
-                  {project.endDate && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <CalendarDaysIcon
-                        className={`h-4 w-4 ${isOverdue ? "text-red-500 dark:text-red-400" : "text-gray-400 dark:text-gray-500"}`}
-                      />
-                      <span
-                        className={
-                          isOverdue
-                            ? "text-red-600 dark:text-red-400 font-medium"
-                            : "text-gray-600 dark:text-gray-400"
-                        }
+                      className="flex items-center gap-1 shrink-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/super-admin/dev-tasks?projectId=${project.id}`);
+                        }}
+                        className="p-1.5 rounded-lg border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        title="عرض المهام"
                       >
-                        {new Date(project.endDate).toLocaleDateString("ar-EG")}
-                        {isOverdue && " (متأخر)"}
-                      </span>
+                        <Eye className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(project.id);
+                        }}
+                        className="p-1.5 rounded-lg border border-border/60 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                        title="حذف المشروع"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
                     </div>
-                  )}
+                  </div>
+
+                  {/* Status & Priority Chips */}
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${statusInfo.badgeClass}`}
+                    >
+                      {statusInfo.label}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border/50">
+                      <span className={`size-1.5 rounded-full ${priorityInfo.dotClass}`} />
+                      <span>{priorityInfo.label}</span>
+                    </span>
+                  </div>
+
+                  {/* Progress Indicator */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="text-muted-foreground text-[11px]">نسبة الإنجاز</span>
+                      <span className="font-bold text-foreground tabular-nums">{project.progress}%</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-primary h-full rounded-full transition-all duration-300"
+                        style={{ width: `${project.progress}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 3-Stat Hairline Grid */}
+                  <div className="grid grid-cols-3 gap-2 py-3 border-y border-border/60 text-center font-mono">
+                    <div>
+                      <div className="text-base font-bold text-foreground tabular-nums">
+                        {project.tasksCount}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">مهمة</div>
+                    </div>
+                    <div>
+                      <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                        {project.completedTasks}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">مكتملة</div>
+                    </div>
+                    <div>
+                      <div className="text-base font-bold text-primary tabular-nums">
+                        {project.releasesCount}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">إصدار</div>
+                    </div>
+                  </div>
+
+                  {/* Manager & Timeline */}
+                  <div className="space-y-1.5 text-xs text-muted-foreground">
+                    {project.managerName && (
+                      <div className="flex items-center gap-2">
+                        <User className="size-3.5 text-muted-foreground/70" />
+                        <span>المدير:</span>
+                        <span className="font-medium text-foreground">{project.managerName}</span>
+                      </div>
+                    )}
+                    {project.endDate && (
+                      <div className="flex items-center gap-2">
+                        <Calendar
+                          className={`size-3.5 ${
+                            isOverdue ? "text-rose-500" : "text-muted-foreground/70"
+                          }`}
+                        />
+                        <span>الموعد:</span>
+                        <span
+                          className={`font-mono tabular-nums ${
+                            isOverdue ? "text-rose-600 dark:text-rose-400 font-bold" : "text-foreground"
+                          }`}
+                        >
+                          {new Date(project.endDate).toLocaleDateString("ar-EG")}
+                          {isOverdue && " (متأخر)"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Tags */}
+                {/* Footer Tag Pills */}
                 {project.tags && project.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <div className="p-3 bg-muted/20 border-t border-border/60 flex flex-wrap gap-1 items-center">
                     {project.tags.slice(0, 3).map((tag, idx) => (
                       <span
                         key={idx}
-                        className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full text-xs"
+                        className="px-2 py-0.5 bg-background text-muted-foreground border border-border/60 rounded text-[10px] font-mono"
                       >
                         {tag}
                       </span>
                     ))}
                     {project.tags.length > 3 && (
-                      <span className="px-2 py-0.5 text-gray-500 dark:text-gray-500 text-xs">
+                      <span className="text-[10px] text-muted-foreground font-mono">
                         +{project.tags.length - 3}
                       </span>
                     )}
                   </div>
                 )}
               </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Empty State */}
-      {projects.length === 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 text-center">
-          <FolderIcon className="h-10 w-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">
-            لا توجد مشاريع
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            ابدأ بإنشاء مشروع جديد
-          </p>
-          <button
-            onClick={() => setShowForm(true)}
-            className="px-5 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 text-sm font-medium"
-          >
-            <PlusIcon className="h-5 w-5 inline ml-2" />
-            مشروع جديد
-          </button>
+            );
+          })}
         </div>
       )}
 
@@ -438,9 +513,7 @@ const ProjectFormModal: React.FC<{
     tags: "",
   });
   const [saving, setSaving] = useState(false);
-  const [teamMembers, setTeamMembers] = useState<
-    Array<{ id: string; name: string }>
-  >([]);
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
     fetchTeamMembers();
@@ -453,7 +526,7 @@ const ProjectFormModal: React.FC<{
       });
 
       const data = await response.json();
-      if (data.success) {
+      if (data.success && Array.isArray(data.data)) {
         setTeamMembers(data.data.map((m: any) => ({ id: m.id, name: m.name })));
       }
     } catch (err) {
@@ -465,7 +538,7 @@ const ProjectFormModal: React.FC<{
     e.preventDefault();
 
     if (!formData.name.trim() || !formData.description.trim()) {
-      alert(i18n.t("DevProjects.msg_f4a8"));
+      alert("يرجى ملء اسم المشروع والوصف");
       return;
     }
 
@@ -494,151 +567,132 @@ const ProjectFormModal: React.FC<{
       if (data.success) {
         onSuccess();
       } else {
-        alert(data.error || i18n.t("DevProjects.failed_create_b90e"));
+        alert(data.error || "فشل إنشاء المشروع");
       }
     } catch (err) {
-      alert(i18n.t("DevProjects.msg_58f7"));
+      alert("حدث خطأ أثناء إنشاء المشروع");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            مشروع جديد
-          </h2>
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-card text-foreground rounded-xl border border-border/80 max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+        <div className="p-5 border-b border-border/70 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FolderGit2 className="size-5 text-primary" />
+            <h2 className="text-base font-bold text-foreground">إنشاء مشروع تطوير جديد</h2>
+          </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400"
+            className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
           >
-            <XMarkIcon className="h-5 w-5" />
+            <X className="size-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              الاسم <span className="text-red-500 dark:text-red-400">*</span>
+            <label className="block font-medium text-foreground mb-1">
+              اسم المشروع <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-1 focus:ring-primary"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              الوصف <span className="text-red-500 dark:text-red-400">*</span>
+            <label className="block font-medium text-foreground mb-1">
+              وصف المشروع <span className="text-rose-500">*</span>
             </label>
             <textarea
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={3}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-1 focus:ring-primary"
               required
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                تاريخ البدء
-              </label>
+              <label className="block font-medium text-foreground mb-1">تاريخ البدء</label>
               <input
                 type="date"
                 value={formData.startDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, startDate: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-1 focus:ring-primary"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                تاريخ الانتهاء
-              </label>
+              <label className="block font-medium text-foreground mb-1">تاريخ الانتهاء</label>
               <input
                 type="date"
                 value={formData.endDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, endDate: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-medium text-foreground mb-1">مدير المشروع</label>
+              <select
+                value={formData.managerId}
+                onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-1 focus:ring-primary"
+              >
+                <option value="">غير محدد</option>
+                {teamMembers.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block font-medium text-foreground mb-1">لون التمييز</label>
+              <input
+                type="color"
+                value={formData.color}
+                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                className="h-9 w-full border border-border rounded-lg cursor-pointer bg-background"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              المدير
-            </label>
-            <select
-              value={formData.managerId}
-              onChange={(e) =>
-                setFormData({ ...formData, managerId: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            >
-              <option value="">غير محدد</option>
-              {teamMembers.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              اللون
-            </label>
-            <input
-              type="color"
-              value={formData.color}
-              onChange={(e) =>
-                setFormData({ ...formData, color: e.target.value })
-              }
-              className="h-10 w-full border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block font-medium text-foreground mb-1">
               التصنيفات (مفصولة بفاصلة)
             </label>
             <input
               type="text"
               value={formData.tags}
-              onChange={(e) =>
-                setFormData({ ...formData, tags: e.target.value })
-              }
-              placeholder="frontend, backend, mobile..."
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+              onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+              placeholder="frontend, backend, ai, mobile..."
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-1 focus:ring-primary"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border/70">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800"
+              className="px-4 py-2 border border-border rounded-lg text-foreground hover:bg-muted transition-colors"
             >
               إلغاء
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50"
+              className="px-4 py-2 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-95 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {saving ? "جاري الإنشاء..." : "إنشاء المشروع"}
             </button>
