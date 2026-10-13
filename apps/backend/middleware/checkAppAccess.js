@@ -161,7 +161,11 @@ const isCompanyAppInstallationValid = (ca, company = null) => {
   }
 
   const appSlug = String(ca.app?.slug || ca.slug || '').trim().toLowerCase();
-  if (!STRICT_EXPIRY_ENFORCED_SLUGS.has(appSlug)) {
+  const pricingModelUpper = String(ca.activePricingModel || ca.app?.pricingModel || '').trim().toUpperCase();
+  const monthlyPrice = Number(ca.app?.monthlyPrice ?? ca.monthlyPrice ?? 0);
+  const isPaidApp = monthlyPrice > 0 || pricingModelUpper === 'SUBSCRIPTION';
+
+  if (!STRICT_EXPIRY_ENFORCED_SLUGS.has(appSlug) && !isPaidApp) {
     return true;
   }
 
@@ -171,8 +175,7 @@ const isCompanyAppInstallationValid = (ca, company = null) => {
     company?.trialEndsAt &&
     now <= new Date(company.trialEndsAt)
   );
-
-  const pricingModelUpper = String(ca.activePricingModel || '').trim().toUpperCase();
+  const trialEnded = Boolean(company?.trialEndsAt && now > new Date(company.trialEndsAt));
 
   // Block ghost free auto-installs of deprecated whatsapp-integration alias
   if (
@@ -185,6 +188,10 @@ const isCompanyAppInstallationValid = (ca, company = null) => {
   }
 
   if (statusUpper === 'TRIAL' && ca.trialEndsAt && now > new Date(ca.trialEndsAt)) {
+    return isCompanyInActiveTrial;
+  }
+
+  if (statusUpper === 'TRIAL' && trialEnded) {
     return isCompanyInActiveTrial;
   }
 
@@ -201,7 +208,19 @@ const isCompanyAppInstallationValid = (ca, company = null) => {
     return isCompanyInActiveTrial;
   }
 
-  const monthlyPrice = Number(ca.app?.monthlyPrice ?? ca.monthlyPrice ?? 0);
+  if (isPaidApp) {
+    const hasOwnFutureValidity = Boolean(ca.validUntil && new Date(ca.validUntil) > now);
+    const hasOwnFutureBilling = Boolean(ca.nextBillingAt && new Date(ca.nextBillingAt) > now);
+
+    if (trialEnded && !hasOwnFutureValidity && !hasOwnFutureBilling) {
+      const pSub = company?.platformSubscription;
+      const isFeeActive = Number(pSub?.monthlyFee || 0) > 0 && pSub?.status === 'ACTIVE' && (!pSub?.nextBillingDate || new Date(pSub.nextBillingDate) > now);
+      if (!isFeeActive) {
+        return isCompanyInActiveTrial;
+      }
+    }
+  }
+
   if (
     !ca.validUntil &&
     !ca.nextBillingAt &&
@@ -224,9 +243,11 @@ const isCompanyAppInstallationValid = (ca, company = null) => {
     if (['SUSPENDED', 'CANCELLED', 'EXPIRED'].includes(pSubStatus)) {
       return isCompanyInActiveTrial;
     }
+    const isFeeActive = Number(pSub.monthlyFee || 0) > 0;
+    if (trialEnded && !isFeeActive) {
+      return isCompanyInActiveTrial;
+    }
     if (pSub.nextBillingDate && now > new Date(pSub.nextBillingDate)) {
-      const isFeeActive = Number(pSub.monthlyFee || 0) > 0;
-      const trialEnded = Boolean(company.trialEndsAt && now > new Date(company.trialEndsAt));
       if (isFeeActive || trialEnded) {
         return isCompanyInActiveTrial;
       }

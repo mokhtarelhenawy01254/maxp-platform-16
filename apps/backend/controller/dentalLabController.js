@@ -5764,7 +5764,8 @@ const getMyInfo = async (req, res) => {
       const pSub = company.platformSubscription;
       const dentalApp = company.installedApps?.[0];
 
-      const effectiveEndDate = dentalApp?.validUntil || dentalApp?.trialEndsAt || pSub?.nextBillingDate || company.trialEndsAt;
+      const hasPaidSub = Number(pSub?.monthlyFee || 0) > 0 && pSub?.status === 'ACTIVE';
+      const effectiveEndDate = dentalApp?.validUntil || dentalApp?.trialEndsAt || (hasPaidSub ? pSub?.nextBillingDate : null) || company.trialEndsAt || pSub?.nextBillingDate;
       let daysRemaining = null;
       let isExpiringSoon = false;
       let isExpired = false;
@@ -5777,6 +5778,11 @@ const getMyInfo = async (req, res) => {
         } else if (daysRemaining <= 7) {
           isExpiringSoon = true;
         }
+      }
+
+      const trialEnded = Boolean(company.trialEndsAt && now > new Date(company.trialEndsAt));
+      if (trialEnded && !hasPaidSub && !dentalApp?.validUntil) {
+        isExpired = true;
       }
 
       if (pSub?.status === 'SUSPENDED' || pSub?.status === 'CANCELLED' || dentalApp?.status === 'EXPIRED' || dentalApp?.status === 'SUSPENDED') {

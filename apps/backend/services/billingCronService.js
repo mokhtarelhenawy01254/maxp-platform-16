@@ -57,8 +57,7 @@ class BillingCronService {
         return await getSharedPrismaClient().platformSubscription.findMany({
           where: {
             nextBillingDate: {
-              gte: today,
-              lt: tomorrow
+              lte: tomorrow
             },
             status: 'ACTIVE'
           },
@@ -239,8 +238,7 @@ class BillingCronService {
           where: {
             status: 'ACTIVE',
             nextBillingAt: {
-              gte: today,
-              lt: tomorrow
+              lte: tomorrow
             }
           },
           include: {

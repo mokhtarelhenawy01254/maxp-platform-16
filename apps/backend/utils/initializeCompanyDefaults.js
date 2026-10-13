@@ -185,11 +185,19 @@ async function initializeDefaultApps(companyId, options = {}) {
           ? 'FREE'
           : (app.pricingModel || 'SUBSCRIPTION');
 
+        const trialDays = Number(options.trialDays || 0);
+        const isTrial = trialDays > 0;
+        const trialEndsAt = isTrial ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000) : null;
+        const isFreeApp = resolvedPricingModel === 'FREE' && Number(app.monthlyPrice || 0) === 0;
+        const appStatus = isFreeApp ? 'ACTIVE' : (isTrial ? 'TRIAL' : 'ACTIVE');
+
         await prisma.companyApp.upsert({
           where: { companyId_appId: { companyId, appId: app.id } },
           update: {
-            status: 'ACTIVE',
+            status: appStatus,
             activePricingModel: resolvedPricingModel,
+            trialEndsAt: isFreeApp ? null : trialEndsAt,
+            installedInTrial: isTrial && !isFreeApp,
             settings: {
               onboarding: {
                 source: options.source || 'signup-specialty',
@@ -200,8 +208,10 @@ async function initializeDefaultApps(companyId, options = {}) {
           create: {
             companyId,
             appId: app.id,
-            status: 'ACTIVE',
+            status: appStatus,
             activePricingModel: resolvedPricingModel,
+            trialEndsAt: isFreeApp ? null : trialEndsAt,
+            installedInTrial: isTrial && !isFreeApp,
             settings: {
               onboarding: {
                 source: options.source || 'signup-specialty',

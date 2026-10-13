@@ -299,6 +299,21 @@ const register = async (req, res) => {
       };
     }
 
+    if (totalTrialDays > 0) {
+      const trialStartDate = new Date();
+      const trialEndDate = new Date(Date.now() + totalTrialDays * 24 * 60 * 60 * 1000);
+      await prisma.company.update({
+        where: { id: company.id },
+        data: {
+          trialModeEnabled: true,
+          trialStartedAt: trialStartDate,
+          trialEndsAt: trialEndDate
+        }
+      }).catch(err => {
+        console.error('[REGISTER] Failed to update company trial dates:', err.message);
+      });
+    }
+
     const specialtyAppSlugs =
       selectedSpecialty && selectedSpecialty.autoInstallOnSignup !== false
         ? selectedSpecialty.appSlugs
