@@ -4,11 +4,16 @@ import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import {
-  ArrowRightIcon,
-  PlusIcon,
-  XMarkIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+  ArrowRight,
+  Plus,
+  X,
+  Trash2,
+  Flag,
+  Target,
+  Calendar,
+  Layers,
+  Sparkles,
+} from "lucide-react";
 
 const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);
@@ -120,10 +125,6 @@ const DevGoalForm: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (isEditing) fetchGoal();
-  }, [id]);
-
   const addKeyResult = () => {
     setKeyResults([
       ...keyResults,
@@ -200,61 +201,74 @@ const DevGoalForm: React.FC = () => {
   if (loadingData) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6" dir={i18n.dir()}>
+    <div className="max-w-4xl mx-auto space-y-6" dir={i18n.dir()}>
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500"
-        >
-          <ArrowRightIcon className="h-5 w-5" />
-        </button>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {isEditing ? "تعديل الهدف" : "هدف جديد"}
-        </h1>
+      <div className="flex items-center justify-between flex-wrap gap-4 border-b border-border/60 pb-5">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors border border-border"
+          >
+            <ArrowRight className="h-4 w-4" />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                <Flag className="h-5 w-5" />
+              </div>
+              <span>{isEditing ? "تعديل الهدف" : "هدف استراتيجي جديد (OKR)"}</span>
+            </h1>
+            <p className="text-muted-foreground text-xs mt-1">
+              تحديد الأهداف والنتائج الرئيسية القابلة للقياس
+            </p>
+          </div>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {/* Basic Info */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">المعلومات الأساسية</h2>
+        <div className="bg-card rounded-xl border border-border p-5 shadow-sm space-y-4">
+          <h2 className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border/60 pb-2.5">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span>المعلومات الأساسية</span>
+          </h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                عنوان الهدف <span className="text-red-500">*</span>
+              <label className="block text-xs font-medium text-foreground mb-1.5">
+                عنوان الهدف <span className="text-destructive">*</span>
               </label>
               <input
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                placeholder="مثال: زيادة رضا العملاء بنسبة 25%"
+                className="w-full px-3.5 py-2 border border-border rounded-lg bg-muted/20 focus:bg-background focus:ring-1 focus:ring-primary focus:outline-none text-foreground text-sm font-medium transition-colors"
+                placeholder="مثال: رفع معدل سرعة الاستجابة بنسبة 30%"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الوصف</label>
+              <label className="block text-xs font-medium text-foreground mb-1.5">الوصف</label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                placeholder="وصف تفصيلي للهدف..."
+                className="w-full px-3.5 py-2.5 border border-border rounded-lg bg-muted/20 focus:bg-background focus:ring-1 focus:ring-primary focus:outline-none text-foreground text-xs leading-relaxed resize-none transition-colors"
+                placeholder="وصف تفصيلي للهدف والدافع الاستراتيجي..."
               />
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نوع الهدف</label>
+                <label className="block text-xs font-medium text-foreground mb-1.5">نوع الهدف</label>
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
                 >
                   <option value="COMPANY">هدف شركة</option>
                   <option value="TEAM">هدف فريق</option>
@@ -262,11 +276,11 @@ const DevGoalForm: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الأولوية</label>
+                <label className="block text-xs font-medium text-foreground mb-1.5">الأولوية</label>
                 <select
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
                 >
                   <option value="LOW">منخفضة</option>
                   <option value="MEDIUM">متوسطة</option>
@@ -275,11 +289,11 @@ const DevGoalForm: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الترم</label>
+                <label className="block text-xs font-medium text-foreground mb-1.5">الفترة (Quarter)</label>
                 <select
                   value={formData.quarter}
                   onChange={(e) => setFormData({ ...formData, quarter: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
                 >
                   <option value="Q1-2026">Q1 2026</option>
                   <option value="Q2-2026">Q2 2026</option>
@@ -292,15 +306,18 @@ const DevGoalForm: React.FC = () => {
         </div>
 
         {/* Target */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">الهدف الكمي</h2>
-          <div className="grid grid-cols-3 gap-4">
+        <div className="bg-card rounded-xl border border-border p-5 shadow-sm space-y-4">
+          <h2 className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border/60 pb-2.5">
+            <Target className="h-4 w-4 text-primary" />
+            <span>الهدف الكمي الإجمالي</span>
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نوع القيمة</label>
+              <label className="block text-xs font-medium text-foreground mb-1.5">نوع القيمة</label>
               <select
                 value={formData.targetType}
                 onChange={(e) => setFormData({ ...formData, targetType: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
               >
                 <option value="NUMBER">رقم</option>
                 <option value="CURRENCY">عملة</option>
@@ -309,21 +326,21 @@ const DevGoalForm: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">القيمة المستهدفة</label>
+              <label className="block text-xs font-medium text-foreground mb-1.5">القيمة المستهدفة</label>
               <input
                 type="number"
                 value={formData.targetValue}
                 onChange={(e) => setFormData({ ...formData, targetValue: parseFloat(e.target.value) || 0 })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-muted/20 focus:bg-background text-foreground tabular-nums focus:ring-1 focus:ring-primary focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الوحدة</label>
+              <label className="block text-xs font-medium text-foreground mb-1.5">الوحدة</label>
               <input
                 type="text"
                 value={formData.unit}
                 onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-muted/20 focus:bg-background text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
                 placeholder="عميل، ساعة، جنيه..."
               />
             </div>
@@ -331,35 +348,42 @@ const DevGoalForm: React.FC = () => {
         </div>
 
         {/* Dates & Assignment */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">التواريخ والتعيين</h2>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="bg-card rounded-xl border border-border p-5 shadow-sm space-y-4">
+          <h2 className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-2 border-b border-border/60 pb-2.5">
+            <Calendar className="h-4 w-4 text-primary" />
+            <span>التواريخ والتعيين والمشروع</span>
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">تاريخ البدء *</label>
+              <label className="block text-xs font-medium text-foreground mb-1.5">
+                تاريخ البدء <span className="text-destructive">*</span>
+              </label>
               <input
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">تاريخ الانتهاء *</label>
+              <label className="block text-xs font-medium text-foreground mb-1.5">
+                تاريخ الانتهاء <span className="text-destructive">*</span>
+              </label>
               <input
                 type="date"
                 value={formData.endDate}
                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">المالك</label>
+              <label className="block text-xs font-medium text-foreground mb-1.5">المالك / المسؤول</label>
               <select
                 value={formData.ownerId}
                 onChange={(e) => setFormData({ ...formData, ownerId: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
               >
                 <option value="">غير محدد</option>
                 {teamMembers.map((m) => (
@@ -368,26 +392,26 @@ const DevGoalForm: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">المشروع</label>
+              <label className="block text-xs font-medium text-foreground mb-1.5">المشروع</label>
               <select
                 value={formData.projectId}
                 onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
               >
-                <option value="">غير محدد</option>
+                <option value="">بدون مشروع</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الهدف الأعلى</label>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-foreground mb-1.5">الهدف الأعلى (المحاذاة الشجرية)</label>
               <select
                 value={formData.parentGoalId}
                 onChange={(e) => setFormData({ ...formData, parentGoalId: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
               >
-                <option value="">هدف رئيسي</option>
+                <option value="">هدف رئيسي (أعلى الهرم)</option>
                 {parentGoals.filter((g) => g.id !== id).map((g) => (
                   <option key={g.id} value={g.id}>{g.title}</option>
                 ))}
@@ -397,66 +421,70 @@ const DevGoalForm: React.FC = () => {
         </div>
 
         {/* Key Results */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">النتائج الرئيسية</h2>
+        <div className="bg-card rounded-xl border border-border p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
+            <h2 className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
+              <Layers className="h-4 w-4 text-primary" />
+              <span>النتائج الرئيسية (Key Results)</span>
+            </h2>
             <button
               type="button"
               onClick={addKeyResult}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-lg hover:bg-indigo-200"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded-lg hover:bg-primary/20 transition-colors"
             >
-              <PlusIcon className="h-4 w-4" />
-              إضافة نتيجة
+              <Plus className="h-3.5 w-3.5" />
+              <span>إضافة نتيجة</span>
             </button>
           </div>
 
           {keyResults.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-6">
-              لم تتم إضافة نتائج رئيسية بعد. أضف نتائج لقياس التقدم.
+            <p className="text-xs text-muted-foreground text-center py-6">
+              لم تتم إضافة نتائج رئيسية بعد. أضف نتائج فرعية لقياس التقدم بدقة.
             </p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {keyResults.map((kr, index) => (
-                <div key={kr.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-start justify-between mb-3">
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">نتيجة {index + 1}</span>
+                <div key={kr.id} className="p-3.5 bg-muted/20 rounded-lg border border-border/60 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">نتيجة رئيسية #{index + 1}</span>
                     <button
                       type="button"
                       onClick={() => removeKeyResult(index)}
-                      className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-gray-400 hover:text-red-600"
+                      className="p-1 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded transition-colors"
+                      title="حذف"
                     >
-                      <TrashIcon className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     <input
                       type="text"
                       value={kr.title}
                       onChange={(e) => updateKeyResult(index, "title", e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
-                      placeholder="عنوان النتيجة الرئيسية"
+                      className="w-full px-3 py-1.5 border border-border rounded-lg bg-card text-foreground text-xs focus:ring-1 focus:ring-primary focus:outline-none"
+                      placeholder="عنوان النتيجة الرئيسية (مثال: تحقيق 100 اشتراك مدفوع)"
                     />
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-3 gap-2">
                       <input
                         type="number"
                         value={kr.targetValue}
                         onChange={(e) => updateKeyResult(index, "targetValue", parseFloat(e.target.value) || 0)}
-                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                        className="px-3 py-1.5 border border-border rounded-lg bg-card text-foreground text-xs tabular-nums focus:ring-1 focus:ring-primary focus:outline-none"
                         placeholder="القيمة المستهدفة"
                       />
                       <input
                         type="text"
                         value={kr.unit}
                         onChange={(e) => updateKeyResult(index, "unit", e.target.value)}
-                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                        className="px-3 py-1.5 border border-border rounded-lg bg-card text-foreground text-xs focus:ring-1 focus:ring-primary focus:outline-none"
                         placeholder="الوحدة"
                       />
                       <input
                         type="number"
                         value={kr.weight}
                         onChange={(e) => updateKeyResult(index, "weight", parseInt(e.target.value) || 1)}
-                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
-                        placeholder="الوزن"
+                        className="px-3 py-1.5 border border-border rounded-lg bg-card text-foreground text-xs tabular-nums focus:ring-1 focus:ring-primary focus:outline-none"
+                        placeholder="الوزن (1-10)"
                         min="1"
                         max="10"
                       />
@@ -469,18 +497,18 @@ const DevGoalForm: React.FC = () => {
         </div>
 
         {/* Submit */}
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end gap-3 pt-3 border-t border-border/60">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="px-4 py-2 border border-border rounded-lg text-xs font-medium text-foreground hover:bg-muted transition-colors shadow-sm"
           >
             إلغاء
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+            className="px-5 py-2 bg-primary text-primary-foreground text-xs font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm"
           >
             {saving ? "جاري الحفظ..." : isEditing ? "تحديث الهدف" : "إنشاء الهدف"}
           </button>

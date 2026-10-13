@@ -4,14 +4,16 @@ import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import {
-  ArrowLeftIcon,
-  UserIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  ChartBarIcon,
-  StarIcon,
-} from "@heroicons/react/24/outline";
+  ArrowLeft,
+  User,
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  BarChart3,
+  Star,
+  Award,
+  Layers,
+} from "lucide-react";
 import {
   RadarChart,
   PolarGrid,
@@ -64,15 +66,21 @@ const metricLabels: Record<string, string> = {
 };
 
 const getScoreColor = (score: number) => {
-  if (score >= 80) return "#22c55e";
-  if (score >= 60) return "#eab308";
-  return "#ef4444";
+  if (score >= 80) return "#10b981";
+  if (score >= 60) return "#f59e0b";
+  return "#f43f5e";
 };
 
-const getScoreBg = (score: number) => {
-  if (score >= 80) return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400";
-  if (score >= 60) return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400";
-  return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400";
+const getScoreTextClass = (score: number) => {
+  if (score >= 80) return "text-emerald-600 dark:text-emerald-400";
+  if (score >= 60) return "text-amber-600 dark:text-amber-400";
+  return "text-rose-600 dark:text-rose-400";
+};
+
+const getScoreBadgeClass = (score: number) => {
+  if (score >= 80) return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20";
+  if (score >= 60) return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20";
+  return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20";
 };
 
 const DevEvaluationMember: React.FC = () => {
@@ -122,88 +130,116 @@ const DevEvaluationMember: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="w-full" dir={i18n.dir()}>
-      <button
-        onClick={() => navigate("/super-admin/dev-evaluations")}
-        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-4"
-      >
-        <ArrowLeftIcon className="h-4 w-4" />
-        {i18n.t("superAdmin.evaluation.member.back")}
-      </button>
-
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <StarIcon className="h-7 w-7 text-yellow-500" />
-            {i18n.t("superAdmin.evaluation.member.title")}
-          </h1>
+    <div className="space-y-6" dir={i18n.dir()}>
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-4 border-b border-border/60 pb-5">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/super-admin/dev-evaluations")}
+            className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors border border-border"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                <Star className="h-5 w-5" />
+              </div>
+              <span>{i18n.t("superAdmin.evaluation.member.title")}</span>
+            </h1>
+            <p className="text-muted-foreground text-xs mt-1">
+              مؤشرات الأداء الفردي والتحليل الراداري والتاريخي للمطور
+            </p>
+          </div>
         </div>
-        <select
-          value={selectedPeriod}
-          onChange={(e) => setSelectedPeriod(e.target.value)}
-          className="pr-4 pl-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
-        >
-          {Object.entries(periodLabels).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+
+        <div className="flex items-center gap-3">
+          <select
+            value={selectedPeriod}
+            onChange={(e) => setSelectedPeriod(e.target.value)}
+            className="border border-border rounded-lg px-3 py-1.5 bg-card text-foreground text-xs focus:ring-1 focus:ring-primary focus:outline-none shadow-sm cursor-pointer"
+          >
+            {Object.entries(periodLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {current ? (
         <>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-sm font-medium text-gray-500 mb-4">{i18n.t("superAdmin.evaluation.member.radarTitle")}</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Radar Analysis */}
+            <div className="lg:col-span-2 bg-card rounded-xl border border-border p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                  {i18n.t("superAdmin.evaluation.member.radarTitle")}
+                </h3>
+                <span className="text-xs text-muted-foreground">أبعاد التقييم الستة</span>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <RadarChart data={radarData}>
-                  <PolarGrid stroke="#374151" />
-                  <PolarAngleAxis dataKey="metric" tick={{ fontSize: 12, fill: "#9ca3af" }} />
-                  <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "#9ca3af" }} />
-                  <Radar dataKey="score" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
+                  <PolarGrid stroke="currentColor" className="text-border/60" />
+                  <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11, fill: "currentColor" }} className="text-muted-foreground" />
+                  <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "currentColor" }} className="text-muted-foreground" />
+                  <Radar dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.25} />
                 </RadarChart>
               </ResponsiveContainer>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <div className="text-center mb-4">
-                <div className="text-sm text-gray-500 mb-1">{i18n.t("superAdmin.evaluation.member.overallScoreLabel")}</div>
-                <div className={`text-3xl sm:text-4xl font-bold tabular-nums ${getScoreColor(current.overallScore)}`}>
-                  {Math.round(current.overallScore)}
+            {/* Overall Score Card */}
+            <div className="bg-card rounded-xl border border-border p-5 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="text-center pb-4 mb-4 border-b border-border/60">
+                  <div className="text-xs text-muted-foreground font-medium mb-1">
+                    {i18n.t("superAdmin.evaluation.member.overallScoreLabel")}
+                  </div>
+                  <div className={`text-4xl font-extrabold tracking-tight tabular-nums ${getScoreTextClass(current.overallScore)}`}>
+                    {Math.round(current.overallScore)}%
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-1">
+                    {i18n.t("superAdmin.evaluation.member.outOf")}
+                  </div>
                 </div>
-                <div className="text-xs text-gray-400 mt-1">{i18n.t("superAdmin.evaluation.member.outOf")}</div>
-              </div>
-              <div className="space-y-3">
-                {Object.entries(metricLabels).map(([key, label]) => {
-                  const val = current[key as keyof Evaluation] as number;
-                  return (
-                    <div key={key} className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
-                      <span className={`text-sm font-semibold ${getScoreColor(val)}`}>
-                        {Math.round(val)}%
-                      </span>
-                    </div>
-                  );
-                })}
+
+                <div className="space-y-2.5">
+                  {Object.entries(metricLabels).map(([key, label]) => {
+                    const val = current[key as keyof Evaluation] as number;
+                    return (
+                      <div key={key} className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{label}</span>
+                        <span className={`font-semibold tabular-nums ${getScoreTextClass(val)}`}>
+                          {Math.round(val)}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
 
+          {/* Historical Trend Chart */}
           {historyData.length > 1 && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
-              <h3 className="text-sm font-medium text-gray-500 mb-4">{i18n.t("superAdmin.evaluation.member.trendTitle")}</h3>
-              <ResponsiveContainer width="100%" height={200}>
+            <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
+              <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider mb-4">
+                {i18n.t("superAdmin.evaluation.member.trendTitle")}
+              </h3>
+              <ResponsiveContainer width="100%" height={190}>
                 <BarChart data={historyData}>
-                  <XAxis dataKey="period" tick={{ fontSize: 11 }} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                  <Tooltip />
+                  <XAxis dataKey="period" tick={{ fontSize: 11, fill: "currentColor" }} className="text-muted-foreground" />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "currentColor" }} className="text-muted-foreground" />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "8px" }}
+                  />
                   <Bar dataKey="score" radius={[4, 4, 0, 0]}>
                     {historyData.map((entry, idx) => (
                       <Cell key={idx} fill={getScoreColor(entry.score)} />
@@ -214,57 +250,66 @@ const DevEvaluationMember: React.FC = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+          {/* Telemetry Metrics Ribbon */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-card rounded-xl border border-border p-4 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                  <CheckCircleIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
+                  <CheckCircle2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500">{i18n.t("superAdmin.evaluation.member.metrics.completedTasks")}</div>
-                  <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                    {current.completedTasks}/{current.totalTasks}
+                  <div className="text-xs text-muted-foreground font-medium">
+                    {i18n.t("superAdmin.evaluation.member.metrics.completedTasks")}
+                  </div>
+                  <div className="text-lg font-bold text-foreground mt-0.5 tabular-nums">
+                    {current.completedTasks} <span className="text-xs text-muted-foreground font-normal">/ {current.totalTasks}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <div className="bg-card rounded-xl border border-border p-4 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                  <ClockIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
+                  <Clock className="h-5 w-5" />
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500">{i18n.t("superAdmin.evaluation.member.metrics.workHours")}</div>
-                  <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                  <div className="text-xs text-muted-foreground font-medium">
+                    {i18n.t("superAdmin.evaluation.member.metrics.workHours")}
+                  </div>
+                  <div className="text-lg font-bold text-foreground mt-0.5 tabular-nums">
                     {current.totalHours.toFixed(1)} {i18n.t("superAdmin.evaluation.member.metrics.hoursSuffix")}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <div className="bg-card rounded-xl border border-border p-4 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
-                  <ChartBarIcon className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
+                  <BarChart3 className="h-5 w-5" />
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500">{i18n.t("superAdmin.evaluation.member.metrics.goalsAchieved")}</div>
-                  <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                    {current.goalsAchieved}/{current.goalsAssigned}
+                  <div className="text-xs text-muted-foreground font-medium">
+                    {i18n.t("superAdmin.evaluation.member.metrics.goalsAchieved")}
+                  </div>
+                  <div className="text-lg font-bold text-foreground mt-0.5 tabular-nums">
+                    {current.goalsAchieved} <span className="text-xs text-muted-foreground font-normal">/ {current.goalsAssigned}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <div className="bg-card rounded-xl border border-border p-4 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-                  <ExclamationTriangleIcon className="h-5 w-5 text-red-600 dark:text-red-400" />
+                <div className="p-2 rounded-lg bg-rose-500/10 text-rose-500">
+                  <AlertTriangle className="h-5 w-5" />
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500">{i18n.t("superAdmin.evaluation.member.metrics.reopenedTasks")}</div>
-                  <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                  <div className="text-xs text-muted-foreground font-medium">
+                    {i18n.t("superAdmin.evaluation.member.metrics.reopenedTasks")}
+                  </div>
+                  <div className="text-lg font-bold text-rose-600 dark:text-rose-400 mt-0.5 tabular-nums">
                     {current.reopenedTasks}
                   </div>
                 </div>
@@ -272,47 +317,50 @@ const DevEvaluationMember: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="font-medium text-gray-900 dark:text-gray-100">{i18n.t("superAdmin.evaluation.member.historyTitle")}</h3>
+          {/* Historical Logs Table */}
+          <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-border/60">
+              <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                {i18n.t("superAdmin.evaluation.member.historyTitle")}
+              </h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-700/50">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40 border-b border-border">
                   <tr>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">{i18n.t("superAdmin.evaluation.member.historyColumns.period")}</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">{i18n.t("superAdmin.evaluation.member.historyColumns.overallScore")}</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">{i18n.t("superAdmin.evaluation.member.historyColumns.taskCompletion")}</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">{i18n.t("superAdmin.evaluation.member.historyColumns.timeliness")}</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">{i18n.t("superAdmin.evaluation.member.historyColumns.quality")}</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">{i18n.t("superAdmin.evaluation.member.historyColumns.tasks")}</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">{i18n.t("superAdmin.evaluation.member.historyColumns.period")}</th>
+                    <th className="px-4 py-2.5 text-center font-medium text-muted-foreground">{i18n.t("superAdmin.evaluation.member.historyColumns.overallScore")}</th>
+                    <th className="px-4 py-2.5 text-center font-medium text-muted-foreground">{i18n.t("superAdmin.evaluation.member.historyColumns.taskCompletion")}</th>
+                    <th className="px-4 py-2.5 text-center font-medium text-muted-foreground">{i18n.t("superAdmin.evaluation.member.historyColumns.timeliness")}</th>
+                    <th className="px-4 py-2.5 text-center font-medium text-muted-foreground">{i18n.t("superAdmin.evaluation.member.historyColumns.quality")}</th>
+                    <th className="px-4 py-2.5 text-center font-medium text-muted-foreground">{i18n.t("superAdmin.evaluation.member.historyColumns.tasks")}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="divide-y divide-border/60">
                   {evaluations.map((ev) => (
-                    <tr key={ev.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                    <tr key={ev.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-2.5 font-medium text-foreground">
                         {periodLabels[ev.periodType] || ev.periodType}
-                        <span className="text-xs text-gray-400 mr-2">
+                        <span className="text-[11px] text-muted-foreground mr-2 tabular-nums">
                           {new Date(ev.periodStart).toLocaleDateString("ar-EG")}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${getScoreBg(ev.overallScore)}`}>
+                      <td className="px-4 py-2.5 text-center">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold tabular-nums ${getScoreBadgeClass(ev.overallScore)}`}>
                           {Math.round(ev.overallScore)}%
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center text-sm text-gray-600 dark:text-gray-400">
+                      <td className="px-4 py-2.5 text-center tabular-nums text-foreground">
                         {Math.round(ev.taskCompletion)}%
                       </td>
-                      <td className="px-4 py-3 text-center text-sm text-gray-600 dark:text-gray-400">
+                      <td className="px-4 py-2.5 text-center tabular-nums text-foreground">
                         {Math.round(ev.onTimeDelivery)}%
                       </td>
-                      <td className="px-4 py-3 text-center text-sm text-gray-600 dark:text-gray-400">
+                      <td className="px-4 py-2.5 text-center tabular-nums text-foreground">
                         {Math.round(ev.qualityScore)}%
                       </td>
-                      <td className="px-4 py-3 text-center text-sm text-gray-500">
-                        {ev.completedTasks}/{ev.totalTasks}
+                      <td className="px-4 py-2.5 text-center tabular-nums text-muted-foreground">
+                        {ev.completedTasks} / {ev.totalTasks}
                       </td>
                     </tr>
                   ))}
@@ -322,10 +370,12 @@ const DevEvaluationMember: React.FC = () => {
           </div>
         </>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 sm:p-8 text-center">
-          <ChartBarIcon className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-          <p className="text-gray-500">{i18n.t("superAdmin.evaluation.member.emptyDetail")}</p>
-          <p className="text-gray-400 text-sm mt-1">{i18n.t("superAdmin.evaluation.member.emptyDetailHint")}</p>
+        <div className="bg-card rounded-xl border border-border p-10 text-center shadow-sm">
+          <div className="w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center mx-auto mb-3">
+            <BarChart3 className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <p className="text-sm font-semibold text-foreground">{i18n.t("superAdmin.evaluation.member.emptyDetail")}</p>
+          <p className="text-xs text-muted-foreground mt-1">{i18n.t("superAdmin.evaluation.member.emptyDetailHint")}</p>
         </div>
       )}
     </div>

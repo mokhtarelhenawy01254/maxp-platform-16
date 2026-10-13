@@ -5,24 +5,25 @@ import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
 import {
-  PlusIcon,
-  FlagIcon,
-  FunnelIcon,
-  MagnifyingGlassIcon,
-  ChartBarIcon,
-  CalendarDaysIcon,
-  UserIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  ExclamationTriangleIcon,
-  ArrowTrendingUpIcon,
-  EyeIcon,
-  TrashIcon,
-  XMarkIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  LinkIcon,
-} from "@heroicons/react/24/outline";
+  Plus,
+  Flag,
+  Filter,
+  Search,
+  BarChart3,
+  Calendar,
+  User,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  TrendingUp,
+  Eye,
+  Trash2,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Link,
+  Edit,
+} from "lucide-react";
 
 const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);
@@ -34,31 +35,31 @@ const goalTypeLabels: Record<string, string> = {
 };
 
 const goalTypeColors: Record<string, string> = {
-  COMPANY: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400",
-  TEAM: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
-  INDIVIDUAL: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
+  COMPANY: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20",
+  TEAM: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
+  INDIVIDUAL: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
 };
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   ACTIVE: {
     label: "نشط",
-    color: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
-    icon: <CheckCircleIcon className="h-4 w-4" />,
+    color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
+    icon: <CheckCircle2 className="h-3.5 w-3.5" />,
   },
   COMPLETED: {
     label: "مكتمل",
-    color: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
-    icon: <FlagIcon className="h-4 w-4" />,
+    color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
+    icon: <Flag className="h-3.5 w-3.5" />,
   },
   ON_HOLD: {
     label: "معلق",
-    color: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400",
-    icon: <ClockIcon className="h-4 w-4" />,
+    color: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
+    icon: <Clock className="h-3.5 w-3.5" />,
   },
   CANCELLED: {
     label: "ملغي",
-    color: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
-    icon: <ExclamationTriangleIcon className="h-4 w-4" />,
+    color: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20",
+    icon: <AlertTriangle className="h-3.5 w-3.5" />,
   },
 };
 
@@ -203,7 +204,7 @@ const DevGoalsList: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
       </div>
     );
   }
@@ -211,105 +212,119 @@ const DevGoalsList: React.FC = () => {
   return (
     <div className="space-y-6" dir={i18n.dir()}>
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex items-center justify-between flex-wrap gap-4 border-b border-border/60 pb-5">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <FlagIcon className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
-            الأهداف والنتائج الرئيسية (OKRs)
+          <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <Flag className="h-5 w-5" />
+            </div>
+            <span>الأهداف والنتائج الرئيسية (OKRs)</span>
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-            تتبع أهداف الفريق والمشاريع والاستراتيجية
+          <p className="text-muted-foreground text-xs mt-1">
+            تتبع أهداف الفريق والمشاريع والاستراتيجية الفصلية والسنوية
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => navigate("/super-admin/dev-goals/alignment")}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+            className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium border border-border rounded-lg hover:bg-muted/60 bg-card text-foreground transition-colors shadow-sm"
           >
-            <ChartBarIcon className="h-5 w-5" />
-            شجرة المحاذاة
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <span>شجرة المحاذاة</span>
           </button>
           <button
             onClick={() => navigate("/super-admin/dev-goals/new")}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
           >
-            <PlusIcon className="h-5 w-5" />
-            هدف جديد
+            <Plus className="h-4 w-4" />
+            <span>هدف جديد</span>
           </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Telemetry Stats Ribbon */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-card rounded-xl border border-border p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">إجمالي الأهداف</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalGoals}</p>
+                <p className="text-xs text-muted-foreground font-medium">إجمالي الأهداف</p>
+                <p className="text-2xl font-bold tracking-tight text-foreground mt-1 tabular-nums">{stats.totalGoals}</p>
               </div>
-              <FlagIcon className="h-8 w-8 text-indigo-500" />
+              <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                <Flag className="h-5 w-5" />
+              </div>
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div className="bg-card rounded-xl border border-border p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">متوسط التقدم</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.avgProgress}%</p>
+                <p className="text-xs text-muted-foreground font-medium">متوسط التقدم</p>
+                <p className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">
+                  {stats.avgProgress}%
+                </p>
               </div>
-              <ArrowTrendingUpIcon className="h-8 w-8 text-green-500" />
+              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
+                <TrendingUp className="h-5 w-5" />
+              </div>
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div className="bg-card rounded-xl border border-border p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">النتائج الرئيسية</p>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.completedKeyResults}/{stats.totalKeyResults}</p>
+                <p className="text-xs text-muted-foreground font-medium">النتائج الرئيسية المكتملة</p>
+                <p className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400 mt-1 tabular-nums">
+                  {stats.completedKeyResults} <span className="text-xs text-muted-foreground font-normal">/ {stats.totalKeyResults}</span>
+                </p>
               </div>
-              <CheckCircleIcon className="h-8 w-8 text-blue-500" />
+              <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div className="bg-card rounded-xl border border-border p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">في خطر</p>
-                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.atRiskCount}</p>
+                <p className="text-xs text-muted-foreground font-medium">في دائرة الخطر</p>
+                <p className="text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400 mt-1 tabular-nums">{stats.atRiskCount}</p>
               </div>
-              <ExclamationTriangleIcon className="h-8 w-8 text-red-500" />
+              <div className="p-2 rounded-lg bg-rose-500/10 text-rose-500">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Search & Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="relative flex-1 min-w-[200px]">
-            <MagnifyingGlassIcon className="h-5 w-5 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      {/* Control Toolbar & Filters */}
+      <div className="bg-card rounded-xl border border-border p-3 shadow-sm">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="بحث في الأهداف..."
+              placeholder="بحث في الأهداف والمسؤولين..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-4 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400"
+              className="w-full pl-3 pr-9 py-1.5 text-xs border border-border rounded-lg bg-muted/30 focus:bg-background focus:ring-1 focus:ring-primary focus:outline-none text-foreground placeholder:text-muted-foreground"
             />
           </div>
 
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            className="border border-border rounded-lg px-2.5 py-1.5 text-xs bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="">كل الأنواع</option>
-            <option value="COMPANY">شركة</option>
-            <option value="TEAM">فريق</option>
-            <option value="INDIVIDUAL">فردي</option>
+            <option value="COMPANY">هدف شركة</option>
+            <option value="TEAM">هدف فريق</option>
+            <option value="INDIVIDUAL">هدف فردي</option>
           </select>
 
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            className="border border-border rounded-lg px-2.5 py-1.5 text-xs bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="">كل الحالات</option>
             <option value="ACTIVE">نشط</option>
@@ -321,7 +336,7 @@ const DevGoalsList: React.FC = () => {
           <select
             value={filterPriority}
             onChange={(e) => setFilterPriority(e.target.value)}
-            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            className="border border-border rounded-lg px-2.5 py-1.5 text-xs bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="">كل الأولويات</option>
             <option value="LOW">منخفضة</option>
@@ -333,9 +348,9 @@ const DevGoalsList: React.FC = () => {
           <select
             value={filterQuarter}
             onChange={(e) => setFilterQuarter(e.target.value)}
-            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            className="border border-border rounded-lg px-2.5 py-1.5 text-xs bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           >
-            <option value="">كل الأQuarters</option>
+            <option value="">كل الفترات (Quarters)</option>
             <option value="Q1-2026">Q1 2026</option>
             <option value="Q2-2026">Q2 2026</option>
             <option value="Q3-2026">Q3 2026</option>
@@ -351,31 +366,34 @@ const DevGoalsList: React.FC = () => {
                 setFilterQuarter("");
                 setSearch("");
               }}
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-sm"
+              className="text-muted-foreground hover:text-foreground text-xs flex items-center gap-1 px-2 py-1.5 rounded hover:bg-muted/50 transition-colors"
             >
-              مسح الفلاتر
+              <X className="h-3.5 w-3.5" />
+              <span>إعادة ضبط</span>
             </button>
           )}
         </div>
       </div>
 
       {/* Goals List */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {filteredGoals.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 text-center">
-            <FlagIcon className="h-10 w-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">
-              لا توجد أهداف
+          <div className="bg-card rounded-xl border border-border p-10 text-center shadow-sm">
+            <div className="w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center mx-auto mb-3">
+              <Flag className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h3 className="text-sm font-semibold text-foreground mb-1">
+              لا توجد أهداف مطابقة
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              ابدأ بإنشاء هدف جديد لتتبع أداء فريقك
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-4">
+              لم يتم العثور على أهداف بالمعايير المحددة. يمكنك إنشاء هدف جديد أو تعديل خيارات التصفية.
             </p>
             <button
               onClick={() => navigate("/super-admin/dev-goals/new")}
-              className="px-5 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-xs font-medium shadow-sm transition-colors"
             >
-              <PlusIcon className="h-5 w-5 inline ml-2" />
-              هدف جديد
+              <Plus className="h-4 w-4" />
+              <span>هدف جديد</span>
             </button>
           </div>
         ) : (
@@ -383,117 +401,117 @@ const DevGoalsList: React.FC = () => {
             const statusInfo = statusConfig[goal.status] || statusConfig.ACTIVE;
             const confidenceInfo = goal.confidence ? confidenceConfig[goal.confidence] : null;
             const isOverdue = new Date(goal.endDate) < new Date() && goal.status === "ACTIVE";
-            const isExpanded = expandedGoalId === goal.id;
 
             return (
               <div
                 key={goal.id}
-                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow"
+                className="bg-card rounded-xl border border-border overflow-hidden hover:border-primary/40 transition-colors shadow-sm"
               >
-                {/* Progress Bar */}
-                <div className="h-1.5 bg-gray-200 dark:bg-gray-700">
+                {/* Slim Linear Progress Bar Header */}
+                <div className="h-1 bg-muted">
                   <div
-                    className={`h-full rounded-r-xl transition-all ${getProgressColor(goal.progress)}`}
+                    className={`h-full transition-all duration-300 ${getProgressColor(goal.progress)}`}
                     style={{ width: `${goal.progress}%` }}
                   />
                 </div>
 
-                <div className="p-5">
+                <div className="p-4 sm:p-5">
                   {/* Header Row */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${goalTypeColors[goal.type] || ""}`}>
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-medium ${goalTypeColors[goal.type] || ""}`}>
                           {goalTypeLabels[goal.type] || goal.type}
                         </span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${statusInfo.color}`}>
+                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-medium flex items-center gap-1 ${statusInfo.color}`}>
                           {statusInfo.icon}
                           {statusInfo.label}
                         </span>
                         {confidenceInfo && (
-                          <span className="flex items-center gap-1 text-xs">
-                            <span className={`w-2 h-2 rounded-full ${confidenceInfo.color}`} />
+                          <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-muted/60 text-muted-foreground border border-border">
+                            <span className={`w-1.5 h-1.5 rounded-full ${confidenceInfo.color}`} />
                             {confidenceInfo.label}
                           </span>
                         )}
                         {isOverdue && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+                          <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                             متأخر
                           </span>
                         )}
                       </div>
                       <h3
-                        className="text-lg font-semibold text-gray-900 dark:text-gray-100 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400"
+                        className="text-base font-semibold text-foreground cursor-pointer hover:text-primary transition-colors tracking-tight"
                         onClick={() => navigate(`/super-admin/dev-goals/${goal.id}`)}
                       >
                         {goal.title}
                       </h3>
                       {goal.description && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
                           {goal.description}
                         </p>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2 mr-4">
-                      <div className="text-left">
-                        <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                          {goal.progress}%
-                        </span>
-                      </div>
+                    <div className="flex items-baseline gap-1 text-left shrink-0">
+                      <span className="text-2xl font-bold tracking-tight text-foreground tabular-nums">
+                        {goal.progress}
+                      </span>
+                      <span className="text-xs text-muted-foreground font-medium">%</span>
                     </div>
                   </div>
 
-                  {/* Progress Details */}
-                  <div className="grid grid-cols-4 gap-4 mb-3 text-center">
-                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-2">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">النتائج الرئيسية</p>
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">
+                  {/* Metrics Telemetry Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3 text-center">
+                    <div className="bg-muted/30 border border-border/50 rounded-lg p-2">
+                      <p className="text-[11px] text-muted-foreground font-medium">النتائج الرئيسية</p>
+                      <p className="text-xs font-semibold text-foreground mt-0.5 tabular-nums">
                         {goal._count.keyResults}
                       </p>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-2">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">المهام المرتبطة</p>
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">
+                    <div className="bg-muted/30 border border-border/50 rounded-lg p-2">
+                      <p className="text-[11px] text-muted-foreground font-medium">المهام المرتبطة</p>
+                      <p className="text-xs font-semibold text-foreground mt-0.5 tabular-nums">
                         {goal._count.linkedTasks}
                       </p>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-2">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">أهداف فرعية</p>
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">
+                    <div className="bg-muted/30 border border-border/50 rounded-lg p-2">
+                      <p className="text-[11px] text-muted-foreground font-medium">أهداف فرعية</p>
+                      <p className="text-xs font-semibold text-foreground mt-0.5 tabular-nums">
                         {goal._count.childGoals}
                       </p>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-2">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">القيمة</p>
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">
-                        {goal.currentValue}/{goal.targetValue}
+                    <div className="bg-muted/30 border border-border/50 rounded-lg p-2">
+                      <p className="text-[11px] text-muted-foreground font-medium">القيمة المستهدفة</p>
+                      <p className="text-xs font-semibold text-foreground mt-0.5 tabular-nums">
+                        {goal.currentValue} / {goal.targetValue}
                         {goal.unit ? ` ${goal.unit}` : ""}
                       </p>
                     </div>
                   </div>
 
-                  {/* Footer */}
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                  {/* Footer Info & Actions */}
+                  <div className="flex items-center justify-between pt-3 border-t border-border/60 flex-wrap gap-2">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                       {goal.owner && (
                         <span className="flex items-center gap-1">
-                          <UserIcon className="h-4 w-4" />
-                          {goal.owner.name}
+                          <User className="h-3.5 w-3.5" />
+                          <span>{goal.owner.name}</span>
                         </span>
                       )}
                       {goal.project && (
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: goal.project.color }} />
-                          {goal.project.name}
+                          <span>{goal.project.name}</span>
                         </span>
                       )}
                       <span className="flex items-center gap-1">
-                        <CalendarDaysIcon className="h-4 w-4" />
-                        {new Date(goal.startDate).toLocaleDateString("ar-EG")} - {new Date(goal.endDate).toLocaleDateString("ar-EG")}
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span className="tabular-nums">
+                          {new Date(goal.startDate).toLocaleDateString("ar-EG")} - {new Date(goal.endDate).toLocaleDateString("ar-EG")}
+                        </span>
                       </span>
                       {goal.quarter && (
-                        <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">
+                        <span className="px-2 py-0.5 bg-muted rounded text-[11px] font-medium border border-border/60">
                           {goal.quarter}
                         </span>
                       )}
@@ -502,31 +520,29 @@ const DevGoalsList: React.FC = () => {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => navigate(`/super-admin/dev-goals/${goal.id}`)}
-                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400"
+                        className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                         title="عرض"
                       >
-                        <EyeIcon className="h-4 w-4" />
+                        <Eye className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => navigate(`/super-admin/dev-goals/${goal.id}/edit`)}
-                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400"
+                        className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                         title="تعديل"
                       >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
+                        <Edit className="h-4 w-4" />
                       </button>
                       {deleteConfirm === goal.id ? (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 bg-destructive/10 p-0.5 rounded-lg border border-destructive/20">
                           <button
                             onClick={() => handleDelete(goal.id)}
-                            className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                            className="px-2 py-0.5 bg-destructive text-destructive-foreground text-[11px] font-medium rounded hover:bg-destructive/90 transition-colors"
                           >
                             تأكيد
                           </button>
                           <button
                             onClick={() => setDeleteConfirm(null)}
-                            className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded"
+                            className="px-2 py-0.5 bg-muted text-foreground text-[11px] font-medium rounded hover:bg-muted/80 transition-colors"
                           >
                             إلغاء
                           </button>
@@ -534,10 +550,10 @@ const DevGoalsList: React.FC = () => {
                       ) : (
                         <button
                           onClick={() => setDeleteConfirm(goal.id)}
-                          className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg text-gray-500 dark:text-gray-400 hover:text-red-600"
+                          className="p-1.5 hover:bg-rose-500/10 rounded-lg text-muted-foreground hover:text-rose-500 transition-colors"
                           title="حذف"
                         >
-                          <TrashIcon className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       )}
                     </div>

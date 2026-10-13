@@ -4,15 +4,21 @@ import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import {
-  ArrowRightIcon,
-  LightBulbIcon,
-  CheckBadgeIcon,
-  SparklesIcon,
-  XMarkIcon,
-  PencilIcon,
-  PhotoIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+  ArrowRight,
+  Lightbulb,
+  BadgeCheck,
+  Sparkles,
+  X,
+  Pencil,
+  Image as ImageIcon,
+  CheckCircle2,
+  Paperclip,
+  Calendar,
+  Clock,
+  Layers,
+  Link as LinkIcon,
+  UploadCloud,
+} from "lucide-react";
 import { Attachment } from "../../types/tasks";
 
 interface Project {
@@ -498,109 +504,115 @@ const DevTaskForm: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
       </div>
     );
   }
 
   const renderMainForm = () => (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-xl flex items-center gap-2">
-          <XMarkIcon className="h-5 w-5 text-red-500" />
-          <p className="text-red-700 dark:text-red-400 font-medium">{error}</p>
+        <div className="bg-destructive/10 border border-destructive/20 p-3.5 rounded-xl flex items-center gap-2">
+          <X className="h-4 w-4 text-destructive shrink-0" />
+          <p className="text-destructive text-xs font-medium">{error}</p>
         </div>
       )}
+
       {/* Basic Info Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
-          <SparklesIcon className="h-5 w-5 text-indigo-500" />
-          تفاصيل المهمة
+      <div className="bg-card rounded-xl border border-border p-5 sm:p-6 shadow-sm">
+        <h3 className="text-sm font-semibold text-foreground mb-5 flex items-center gap-2 border-b border-border/60 pb-3">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <span>تفاصيل المهمة الأساسية</span>
         </h3>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              العنوان <span className="text-red-500 dark:text-red-400">*</span>
+            <label className="block text-xs font-medium text-foreground mb-1.5">
+              العنوان <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => handleChange("title", e.target.value)}
-              placeholder="مثال: إضافة خاصية الدفع الإلكتروني..."
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-lg font-medium transition-all"
+              placeholder="مثال: ترقية بوابة الدفع الإلكتروني..."
+              className="w-full px-3.5 py-2 border border-border rounded-lg bg-muted/20 focus:bg-background focus:ring-1 focus:ring-primary focus:outline-none text-foreground placeholder:text-muted-foreground text-sm font-medium transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              الوصف <span className="text-red-500 dark:text-red-400">*</span>
+            <label className="block text-xs font-medium text-foreground mb-1.5">
+              الوصف <span className="text-destructive">*</span>
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => handleChange("description", e.target.value)}
-              placeholder="وصف تفصيلي للمهمة..."
-              rows={8}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none transition-all"
+              placeholder="وصف تفصيلي للمهمة والمتطلبات التقنية..."
+              rows={6}
+              className="w-full px-3.5 py-2.5 border border-border rounded-lg bg-muted/20 focus:bg-background focus:ring-1 focus:ring-primary focus:outline-none text-foreground placeholder:text-muted-foreground text-xs leading-relaxed resize-none transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              <PhotoIcon className="h-5 w-5 inline-block ml-2" />
-              إضافة صور ({existingImages.length + selectedImages.length}/10)
+            <label className="block text-xs font-medium text-foreground mb-2 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                <span>المرفقات والصور</span>
+              </span>
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                ({existingImages.length + selectedImages.length} / 10)
+              </span>
             </label>
+
             <div className="space-y-3">
               {/* Image Previews Grid */}
               {(existingImages.length > 0 || imagePreviews.length > 0) && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-2">
                   {/* Existing images */}
                   {existingImages.map((img) => (
-                    <div key={img.id} className="relative group">
+                    <div key={img.id} className="relative group rounded-lg overflow-hidden border border-border">
                       {imageBlobUrls[img.id] ? (
                         <img
                           src={imageBlobUrls[img.id]}
                           alt={img.originalName || "Task image"}
-                          className="w-full h-32 object-cover rounded-lg border-2 border-indigo-300 dark:border-indigo-600"
+                          className="w-full h-28 object-cover"
                         />
                       ) : (
-                        <div className="w-full h-32 bg-gray-100 dark:bg-gray-700 flex items-center justify-center rounded-lg border-2 border-indigo-300 dark:border-indigo-600">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+                        <div className="w-full h-28 bg-muted flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent"></div>
                         </div>
                       )}
                       <button
                         type="button"
                         onClick={() => removeExistingImage(img.id)}
-                        className="absolute top-1 left-1 p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                        className="absolute top-1.5 left-1.5 p-1 bg-destructive/90 text-destructive-foreground rounded-md hover:bg-destructive transition-colors opacity-0 group-hover:opacity-100 shadow-sm"
                       >
-                        <XMarkIcon className="h-4 w-4" />
+                        <X className="h-3.5 w-3.5" />
                       </button>
-                      <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-2 py-0.5 rounded">
+                      <div className="absolute bottom-1.5 right-1.5 bg-background/80 backdrop-blur-sm text-foreground text-[10px] px-1.5 py-0.5 rounded border border-border/40 font-mono tabular-nums">
                         {(img.fileSize / 1024 / 1024).toFixed(1)} MB
                       </div>
                     </div>
                   ))}
+
                   {/* New image previews */}
                   {imagePreviews.map((preview, index) => (
-                    <div key={`new-${index}`} className="relative group">
+                    <div key={`new-${index}`} className="relative group rounded-lg overflow-hidden border border-border">
                       <img
                         src={preview}
                         alt={`Preview ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600"
+                        className="w-full h-28 object-cover"
                       />
                       <button
                         type="button"
                         onClick={() => removeImage(index)}
-                        className="absolute top-1 left-1 p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                        className="absolute top-1.5 left-1.5 p-1 bg-destructive/90 text-destructive-foreground rounded-md hover:bg-destructive transition-colors opacity-0 group-hover:opacity-100 shadow-sm"
                       >
-                        <XMarkIcon className="h-4 w-4" />
+                        <X className="h-3.5 w-3.5" />
                       </button>
-                      <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-2 py-0.5 rounded">
+                      <div className="absolute bottom-1.5 right-1.5 bg-background/80 backdrop-blur-sm text-foreground text-[10px] px-1.5 py-0.5 rounded border border-border/40 font-mono tabular-nums">
                         {selectedImages[index]
-                          ? (selectedImages[index].size / 1024 / 1024).toFixed(
-                              1,
-                            )
-                          : "0"}
+                          ? (selectedImages[index].size / 1024 / 1024).toFixed(1)
+                          : "0"}{" "}
                         MB
                       </div>
                     </div>
@@ -608,16 +620,16 @@ const DevTaskForm: React.FC = () => {
                 </div>
               )}
 
-              {/* Upload Area */}
+              {/* Upload Drop Area */}
               {existingImages.length + selectedImages.length < 10 && (
-                <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-indigo-300 dark:border-indigo-600 rounded-xl cursor-pointer bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 transition-all">
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <PhotoIcon className="h-10 w-10 text-indigo-600 dark:text-indigo-400 mb-2" />
-                    <p className="mb-1 text-sm text-gray-700 dark:text-gray-300">
-                      <span className="font-bold">📎 اضغط لرفع صور متعددة</span>
+                <label className="flex flex-col items-center justify-center w-full h-28 border border-dashed border-border hover:border-primary/50 rounded-xl cursor-pointer bg-muted/20 hover:bg-muted/30 transition-colors">
+                  <div className="flex flex-col items-center justify-center p-4 text-center">
+                    <UploadCloud className="h-6 w-6 text-muted-foreground mb-1.5" />
+                    <p className="text-xs font-medium text-foreground">
+                      رفع صور توضيحية أو لقطات شاشة
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      يمكنك اختيار حتى 10 صور (20MB لكل صورة)
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      حتى 10 صور (بحد أقصى 20MB لكل صورة)
                     </p>
                   </div>
                   <input
@@ -634,55 +646,54 @@ const DevTaskForm: React.FC = () => {
         </div>
       </div>
 
-      {/* Business & Acceptance */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/20 p-6">
-          <label className="block text-base font-bold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-            <LightBulbIcon className="h-5 w-5 text-yellow-500" />
-            القيمة التجارية (Business Value)
+      {/* Business & Acceptance Criteria */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
+          <label className="block text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
+            <Lightbulb className="h-4 w-4 text-amber-500" />
+            <span>القيمة التجارية (Business Value)</span>
           </label>
           <textarea
             value={formData.businessValue}
             onChange={(e) => handleChange("businessValue", e.target.value)}
-            placeholder="لماذا نقوم بهذا العمل؟ ما الفائدة المتوقعة؟"
+            placeholder="لماذا نقوم بهذا العمل؟ ما الأثر والعائد المتوقع على الأعمال والعملاء؟"
             rows={5}
-            className="w-full px-4 py-3 border border-blue-200 dark:border-blue-800/50 rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+            className="w-full px-3.5 py-2.5 border border-border rounded-lg bg-muted/20 focus:bg-background focus:ring-1 focus:ring-primary focus:outline-none text-foreground placeholder:text-muted-foreground text-xs leading-relaxed resize-none transition-colors"
           />
         </div>
 
-        <div className="bg-green-50/50 dark:bg-green-900/10 rounded-xl border border-green-100 dark:border-green-900/20 p-6">
-          <label className="block text-base font-bold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-            <CheckBadgeIcon className="h-5 w-5 text-green-500" />
-            معايير القبول (Acceptance Criteria)
+        <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
+          <label className="block text-xs font-semibold text-foreground mb-2 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <BadgeCheck className="h-4 w-4 text-emerald-500" />
+              <span>معايير القبول (Acceptance Criteria)</span>
+            </span>
           </label>
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/50 rounded-lg p-3 mb-3">
-            <p className="text-xs text-yellow-800 dark:text-yellow-300">
-              💡 <strong>نصيحة:</strong> اكتب كل معيار في سطر منفصل، سيتم عرضها
-              كقائمة تحقق تلقائياً
-            </p>
-          </div>
+          <p className="text-[11px] text-muted-foreground mb-2">
+            اكتب كل معيار في سطر منفصل؛ سيتم تنظيمها تلقائياً كقائمة تحقق
+          </p>
           <textarea
             value={formData.acceptanceCriteria}
             onChange={(e) => handleChange("acceptanceCriteria", e.target.value)}
-            placeholder="- يجب أن يعمل X عند الضغط على Y&#10;- يجب أن تظهر رسالة نجاح&#10;- يجب حفظ البيانات في قاعدة البيانات"
-            rows={5}
-            className="w-full px-4 py-3 border border-green-200 dark:border-green-800/50 rounded-xl focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all"
+            placeholder="- يجب تنفيذ الطلب خلال 200ms&#10;- يجب إظهار إشعار تأكيد للعميل&#10;- حفظ السجل في قاعدة البيانات"
+            rows={4}
+            className="w-full px-3.5 py-2.5 border border-border rounded-lg bg-muted/20 focus:bg-background focus:ring-1 focus:ring-primary focus:outline-none text-foreground placeholder:text-muted-foreground text-xs leading-relaxed resize-none transition-colors"
           />
         </div>
       </div>
 
       {/* Checklists */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-          <CheckBadgeIcon className="h-5 w-5 text-indigo-500" />
-          قوائم التحقق المبدئية
+      <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
+        <h3 className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
+          <BadgeCheck className="h-4 w-4 text-primary" />
+          <span>قوائم التحقق المبدئية (Checklists)</span>
         </h3>
         <div className="space-y-3">
           <div className="flex gap-2">
             <input
               ref={checklistInputRef}
               type="text"
-              placeholder="أضف عنصر للقائمة..."
+              placeholder="أضف بنداً جديداً للقائمة..."
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -693,7 +704,7 @@ const DevTaskForm: React.FC = () => {
                   }
                 }
               }}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+              className="flex-1 px-3 py-1.5 text-xs border border-border rounded-lg bg-muted/20 focus:bg-background focus:ring-1 focus:ring-primary focus:outline-none text-foreground placeholder:text-muted-foreground"
             />
             <button
               type="button"
@@ -706,62 +717,63 @@ const DevTaskForm: React.FC = () => {
                   }
                 }
               }}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-lg text-white font-medium transition-colors"
+              className="px-3 py-1.5 bg-primary text-primary-foreground text-xs font-medium rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
             >
               إضافة
             </button>
           </div>
-          <ul className="space-y-2">
-            {checklistItems.map((item, idx) => (
-              <li
-                key={idx}
-                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg group"
-              >
-                <div className="flex items-center gap-3 flex-1">
-                  <CheckCircleIcon className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    {item}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setChecklistItems(
-                      checklistItems.filter((_, i) => i !== idx),
-                    )
-                  }
-                  className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+
+          {checklistItems.length > 0 && (
+            <ul className="space-y-1.5">
+              {checklistItems.map((item, idx) => (
+                <li
+                  key={idx}
+                  className="flex items-center justify-between p-2.5 bg-muted/30 border border-border/50 rounded-lg group text-xs"
                 >
-                  <XMarkIcon className="h-4 w-4" />
-                </button>
-              </li>
-            ))}
-          </ul>
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <span className="text-foreground truncate">{item}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setChecklistItems(
+                        checklistItems.filter((_, i) => i !== idx),
+                      )
+                    }
+                    className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-1"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 
       {/* Related Links */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm mt-6">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-          <ArrowRightIcon className="h-5 w-5 text-indigo-500 rotate-45" />
-          الروابط المرتبطة (Related Links)
+      <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
+        <h3 className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
+          <LinkIcon className="h-4 w-4 text-primary" />
+          <span>الروابط والمراجع (Related Links)</span>
         </h3>
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <input
               type="text"
-              placeholder="عنوان الرابط (مثال: صفحة المشكلة)"
+              placeholder="عنوان الرابط (مثال: توثيق API)"
               value={newLinkTitle}
               onChange={(e) => setNewLinkTitle(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+              className="px-3 py-1.5 text-xs border border-border rounded-lg bg-muted/20 focus:bg-background focus:ring-1 focus:ring-primary focus:outline-none text-foreground placeholder:text-muted-foreground"
             />
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="الرابط (URL)"
+                placeholder="https://..."
                 value={newLinkUrl}
                 onChange={(e) => setNewLinkUrl(e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                className="flex-1 px-3 py-1.5 text-xs border border-border rounded-lg bg-muted/20 focus:bg-background focus:ring-1 focus:ring-primary focus:outline-none text-foreground placeholder:text-muted-foreground font-mono"
               />
               <button
                 type="button"
@@ -778,64 +790,64 @@ const DevTaskForm: React.FC = () => {
                     setNewLinkUrl("");
                   }
                 }}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-lg text-white font-medium transition-colors"
+                className="px-3 py-1.5 bg-primary text-primary-foreground text-xs font-medium rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
               >
                 إضافة
               </button>
             </div>
           </div>
 
-          <ul className="space-y-2">
-            {formData.relatedLinks.map((link, idx) => (
-              <li
-                key={idx}
-                className="flex items-center justify-between p-3 bg-indigo-50/30 dark:bg-indigo-900/10 rounded-lg border border-indigo-100 dark:border-indigo-900/20 group"
-              >
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <ArrowRightIcon className="h-4 w-4 text-indigo-500 flex-shrink-0 rotate-45" />
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-bold text-gray-900 dark:text-gray-100 text-sm truncate">
+          {formData.relatedLinks.length > 0 && (
+            <ul className="space-y-1.5">
+              {formData.relatedLinks.map((link, idx) => (
+                <li
+                  key={idx}
+                  className="flex items-center justify-between p-2.5 bg-muted/30 border border-border/50 rounded-lg group text-xs"
+                >
+                  <div className="flex items-center gap-2 overflow-hidden flex-1">
+                    <LinkIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="font-medium text-foreground truncate">
                       {link.title}
                     </span>
-                    <span className="text-gray-500 dark:text-gray-400 text-xs truncate dir-ltr text-right">
+                    <span className="text-[11px] text-muted-foreground font-mono truncate dir-ltr">
                       {link.url}
                     </span>
                   </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      relatedLinks: prev.relatedLinks.filter(
-                        (_, i) => i !== idx,
-                      ),
-                    }))
-                  }
-                  className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                >
-                  <XMarkIcon className="h-4 w-4" />
-                </button>
-              </li>
-            ))}
-          </ul>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        relatedLinks: prev.relatedLinks.filter(
+                          (_, i) => i !== idx,
+                        ),
+                      }))
+                    }
+                    className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-1"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>
   );
 
   const renderSidebarForm = () => (
-    <div className="space-y-6">
-      {/* Primary Actions Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-        <div className="mb-5">
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+    <div className="space-y-4">
+      {/* Primary Status & Priority Card */}
+      <div className="bg-card rounded-xl border border-border p-4 shadow-sm space-y-4">
+        <div>
+          <label className="block text-xs font-medium text-foreground mb-1.5">
             الحالة
           </label>
           <select
             value={formData.status}
             onChange={(e) => handleChange("status", e.target.value)}
-            className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:border-indigo-500 dark:text-white font-medium"
+            className="w-full px-3 py-1.5 text-xs bg-muted/20 border border-border rounded-lg text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
           >
             {(settings?.taskStatuses || STATUS_OPTIONS).map((option: any) => (
               <option key={option.value} value={option.value}>
@@ -845,21 +857,21 @@ const DevTaskForm: React.FC = () => {
           </select>
         </div>
 
-        <div className="mb-5">
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <div>
+          <label className="block text-xs font-medium text-foreground mb-1.5">
             الأولوية
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             {(settings?.taskPriorities || PRIORITY_OPTIONS).map(
               (option: any) => (
                 <button
                   key={option.value}
                   type="button"
                   onClick={() => handleChange("priority", option.value)}
-                  className={`px-2 py-2 text-xs font-bold rounded-lg border transition-all ${
+                  className={`px-2 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                     formData.priority === option.value
-                      ? "border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
-                      : "border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700"
+                      ? "border-primary bg-primary/10 text-primary font-semibold"
+                      : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
                 >
                   {option.label}
@@ -870,13 +882,13 @@ const DevTaskForm: React.FC = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-xs font-medium text-foreground mb-1.5">
             النوع
           </label>
           <select
             value={formData.type}
             onChange={(e) => handleChange("type", e.target.value)}
-            className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:border-indigo-500 dark:text-white"
+            className="w-full px-3 py-1.5 text-xs bg-muted/20 border border-border rounded-lg text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
           >
             {TYPE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -888,227 +900,225 @@ const DevTaskForm: React.FC = () => {
       </div>
 
       {/* Assignment Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-        <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 border-b border-gray-100 dark:border-gray-700 pb-2">
-          التعيين
+      <div className="bg-card rounded-xl border border-border p-4 shadow-sm space-y-3">
+        <h4 className="text-xs font-semibold text-foreground border-b border-border/60 pb-2">
+          التعيين والمسؤولية
         </h4>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              المسؤول
-            </label>
-            <select
-              value={formData.assigneeId}
-              onChange={(e) => handleChange("assigneeId", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-            >
-              <option value="">اختر المسؤول...</option>
-              {teamMembers.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              المراقبون
-            </label>
-            <select
-              multiple
-              value={watchers}
-              onChange={(e) =>
-                setWatchers(
-                  Array.from(e.target.selectedOptions, (o) => o.value),
-                )
-              }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white h-24 text-sm"
-            >
-              {teamMembers.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1">
+            المسؤول الأساسي <span className="text-destructive">*</span>
+          </label>
+          <select
+            value={formData.assigneeId}
+            onChange={(e) => handleChange("assigneeId", e.target.value)}
+            className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
+          >
+            <option value="">اختر المسؤول...</option>
+            {teamMembers.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1">
+            المراقبون
+          </label>
+          <select
+            multiple
+            value={watchers}
+            onChange={(e) =>
+              setWatchers(
+                Array.from(e.target.selectedOptions, (o) => o.value),
+              )
+            }
+            className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground h-20 focus:ring-1 focus:ring-primary focus:outline-none"
+          >
+            {teamMembers.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Context Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-        <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 border-b border-gray-100 dark:border-gray-700 pb-2">
-          السياق
+      {/* Context & Component Card */}
+      <div className="bg-card rounded-xl border border-border p-4 shadow-sm space-y-3">
+        <h4 className="text-xs font-semibold text-foreground border-b border-border/60 pb-2">
+          المشروع والمكون
         </h4>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              المشروع
-            </label>
-            <select
-              value={formData.projectId}
-              onChange={(e) => handleChange("projectId", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-            >
-              <option value="">بدون ملف مشروع</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              الإصدار (Release)
-            </label>
-            <select
-              value={formData.releaseId}
-              onChange={(e) => handleChange("releaseId", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-            >
-              <option value="">بدون إصدار</option>
-              {releases.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name} (v{r.version})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              Component
-            </label>
-            <select
-              value={formData.component}
-              onChange={(e) => handleChange("component", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-            >
-              <option value="">General</option>
-              {derivedComponentOptions.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
+
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1">
+            المشروع
+          </label>
+          <select
+            value={formData.projectId}
+            onChange={(e) => handleChange("projectId", e.target.value)}
+            className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
+          >
+            <option value="">بدون ملف مشروع</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1">
+            الإصدار (Release)
+          </label>
+          <select
+            value={formData.releaseId}
+            onChange={(e) => handleChange("releaseId", e.target.value)}
+            className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
+          >
+            <option value="">بدون إصدار</option>
+            {releases.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name} (v{r.version})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1">
+            المكون (Component)
+          </label>
+          <select
+            value={formData.component}
+            onChange={(e) => handleChange("component", e.target.value)}
+            className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
+          >
+            <option value="">General</option>
+            {derivedComponentOptions.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Dates & Time Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-        <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 border-b border-gray-100 dark:border-gray-700 pb-2">
-          التوقيت
+      {/* Dates & Estimation Card */}
+      <div className="bg-card rounded-xl border border-border p-4 shadow-sm space-y-3">
+        <h4 className="text-xs font-semibold text-foreground border-b border-border/60 pb-2">
+          التوقيت والتقدير
         </h4>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              تاريخ البدء
-            </label>
-            <input
-              type="date"
-              value={formData.startDate}
-              onChange={(e) => handleChange("startDate", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              تاريخ الاستحقاق{" "}
-              <span className="text-red-500 dark:text-red-400">*</span>
-            </label>
-            <input
-              type="date"
-              value={formData.dueDate}
-              onChange={(e) => handleChange("dueDate", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              ساعات تقديرية
-            </label>
-            <input
-              type="number"
-              placeholder="0.0"
-              step="0.5"
-              value={formData.estimatedHours}
-              onChange={(e) => handleChange("estimatedHours", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-            />
-          </div>
+
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1">
+            تاريخ البدء
+          </label>
+          <input
+            type="date"
+            value={formData.startDate}
+            onChange={(e) => handleChange("startDate", e.target.value)}
+            className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1">
+            تاريخ الاستحقاق <span className="text-destructive">*</span>
+          </label>
+          <input
+            type="date"
+            value={formData.dueDate}
+            onChange={(e) => handleChange("dueDate", e.target.value)}
+            className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1">
+            الساعات التقديرية
+          </label>
+          <input
+            type="number"
+            placeholder="0.0"
+            step="0.5"
+            value={formData.estimatedHours}
+            onChange={(e) => handleChange("estimatedHours", e.target.value)}
+            className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-card text-foreground tabular-nums focus:ring-1 focus:ring-primary focus:outline-none"
+          />
         </div>
       </div>
 
       {/* Tags Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-        <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-          الوسوم (مفصول بفاصلة)
+      <div className="bg-card rounded-xl border border-border p-4 shadow-sm">
+        <label className="block text-xs font-medium text-foreground mb-1.5">
+          الوسوم (مفصولة بفواصل)
         </label>
         <input
           type="text"
           value={formData.tags}
           onChange={(e) => handleChange("tags", e.target.value)}
           placeholder="react, api, ui..."
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+          className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-muted/20 focus:bg-background text-foreground focus:ring-1 focus:ring-primary focus:outline-none placeholder:text-muted-foreground"
         />
       </div>
     </div>
   );
 
   return (
-    <div className="max-w-[1600px] mx-auto p-6" dir={i18n.dir()}>
+    <div className="space-y-6" dir={i18n.dir()}>
       {/* Page Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between flex-wrap gap-4 border-b border-border/60 pb-5">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+            className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors border border-border"
           >
-            <ArrowRightIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+            <ArrowRight className="h-4 w-4" />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-              {isEdit ? (
-                <PencilIcon className="h-8 w-8 text-indigo-500" />
-              ) : (
-                <SparklesIcon className="h-8 w-8 text-indigo-500" />
-              )}
-              {isEdit ? "تعديل المهمة" : "إنشاء مهمة جديدة"}
+            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                {isEdit ? <Pencil className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
+              </div>
+              <span>{isEdit ? "تعديل المهمة" : "إنشاء مهمة جديدة"}</span>
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-muted-foreground text-xs mt-1">
               {isEdit
                 ? `تحديث بيانات المهمة #${id?.slice(0, 8)}`
-                : "أضف مهمة جديدة إلى خطة التطوير"}
+                : "أضف مهمة جديدة إلى خطة التطوير والمشاريع"}
             </p>
           </div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-8">
-        <div className="grid grid-cols-12 gap-8">
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-12 gap-6">
           {/* Main Content (8 cols) */}
-          <div className="col-span-12 lg:col-span-8">
+          <div className="col-span-12 lg:col-span-8 space-y-6">
             {renderMainForm()}
 
             {/* Form Actions */}
-            <div className="mt-8 flex items-center justify-end gap-4">
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-border/60">
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 font-medium transition-colors"
+                className="px-4 py-2 border border-border rounded-lg text-xs font-medium text-foreground hover:bg-muted transition-colors shadow-sm"
               >
                 إلغاء
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-bold shadow-lg shadow-indigo-500/20"
+                className="px-5 py-2 bg-primary text-primary-foreground text-xs font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm transition-colors"
               >
                 {saving ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white"></div>
-                    جاري الحفظ...
+                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-primary-foreground border-t-transparent"></div>
+                    <span>جاري الحفظ...</span>
                   </>
                 ) : isEdit ? (
                   "حفظ التعديلات"
