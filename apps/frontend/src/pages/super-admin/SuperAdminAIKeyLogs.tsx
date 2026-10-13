@@ -237,60 +237,56 @@ function KeyLogsContent() {
       </div>
 
       {/* Telemetry Ribbon */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-        <div className="rounded-xl border border-border/70 bg-card p-3 flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-mono text-muted-foreground uppercase">إجمالي السجلات</span>
-            <div className="text-xl font-bold font-mono tabular-nums text-foreground mt-0.5">
-              {total.toLocaleString()}
-            </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px] font-mono uppercase">إجمالي السجلات</span>
+            <span className="size-1.5 rounded-full bg-primary" />
           </div>
-          <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-            <Activity className="h-4 w-4" />
+          <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+            {total.toLocaleString()}
           </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">عملية مسجلة</p>
         </div>
 
-        <div className="rounded-xl border border-border/70 bg-card p-3 flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-mono text-muted-foreground uppercase">الطلبات الناجحة</span>
-            <div className="text-xl font-bold font-mono tabular-nums text-emerald-500 mt-0.5">
-              {stats.success.toLocaleString()}{" "}
-              <span className="text-xs font-normal text-muted-foreground">
-                ({total > 0 ? ((stats.success / total) * 100).toFixed(1) : 0}%)
-              </span>
-            </div>
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px] font-mono uppercase">الطلبات الناجحة</span>
+            <span className="size-1.5 rounded-full bg-emerald-500" />
           </div>
-          <div className="h-8 w-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
-            <CheckCircle2 className="h-4 w-4" />
+          <div className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+            {stats.success.toLocaleString()}{" "}
+            <span className="text-xs font-normal text-muted-foreground">
+              ({total > 0 ? ((stats.success / total) * 100).toFixed(1) : 0}%)
+            </span>
           </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">استجابة بنجاح 200</p>
         </div>
 
-        <div className="rounded-xl border border-border/70 bg-card p-3 flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-mono text-muted-foreground uppercase">الطلبات الفاشلة</span>
-            <div className="text-xl font-bold font-mono tabular-nums text-rose-500 mt-0.5">
-              {stats.failed.toLocaleString()}{" "}
-              <span className="text-xs font-normal text-muted-foreground">
-                ({total > 0 ? ((stats.failed / total) * 100).toFixed(1) : 0}%)
-              </span>
-            </div>
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px] font-mono uppercase">الطلبات الفاشلة</span>
+            <span className="size-1.5 rounded-full bg-rose-500" />
           </div>
-          <div className="h-8 w-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500">
-            <XCircle className="h-4 w-4" />
+          <div className="text-xl font-bold tracking-tight text-rose-600 dark:text-rose-400 font-mono tabular-nums">
+            {stats.failed.toLocaleString()}{" "}
+            <span className="text-xs font-normal text-muted-foreground">
+              ({total > 0 ? ((stats.failed / total) * 100).toFixed(1) : 0}%)
+            </span>
           </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">أخطاء استدعاء أو سعة</p>
         </div>
 
-        <div className="rounded-xl border border-border/70 bg-card p-3 flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-mono text-muted-foreground uppercase">متوسط الاستجابة</span>
-            <div className="text-xl font-bold font-mono tabular-nums text-amber-500 mt-0.5">
-              {stats.avgLatency.toLocaleString()}{" "}
-              <span className="text-xs font-normal text-muted-foreground">ms</span>
-            </div>
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px] font-mono uppercase">متوسط الاستجابة</span>
+            <span className="size-1.5 rounded-full bg-amber-500" />
           </div>
-          <div className="h-8 w-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
-            <Zap className="h-4 w-4" />
+          <div className="text-xl font-bold tracking-tight text-amber-600 dark:text-amber-400 font-mono tabular-nums">
+            {stats.avgLatency.toLocaleString()}{" "}
+            <span className="text-xs font-normal text-muted-foreground">ms</span>
           </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">زمن معالجة الطلبات</p>
         </div>
       </div>
 

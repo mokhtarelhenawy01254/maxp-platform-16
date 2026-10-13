@@ -186,53 +186,49 @@ const SuperAdminLandingPages: React.FC = () => {
       </div>
 
       {/* Telemetry Summary Ribbon */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">إجمالي الصفحات</span>
-            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-foreground tabular-nums">
-              {stats.total}
-            </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">إجمالي الصفحات</span>
+            <span className="size-1.5 rounded-full bg-slate-400" />
           </div>
-          <span className="p-2.5 rounded-lg bg-muted text-muted-foreground">
-            <Layers className="size-5" />
-          </span>
+          <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+            {stats.total}
+          </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">صفحة هبوط مسجلة</p>
         </div>
 
-        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">الصفحات النشطة</span>
-            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">
-              {stats.active}
-            </div>
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">الصفحات النشطة</span>
+            <span className="size-1.5 rounded-full bg-emerald-500" />
           </div>
-          <span className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="size-5" />
-          </span>
+          <div className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+            {stats.active}
+          </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">متاحة وموجهة للزوار</p>
         </div>
 
-        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">الصفحات المعطلة</span>
-            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-amber-600 dark:text-amber-400 tabular-nums">
-              {stats.hidden}
-            </div>
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">الصفحات المعطلة</span>
+            <span className="size-1.5 rounded-full bg-amber-500" />
           </div>
-          <span className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
-            <XCircle className="size-5" />
-          </span>
+          <div className="text-xl font-bold tracking-tight text-amber-600 dark:text-amber-400 font-mono tabular-nums">
+            {stats.hidden}
+          </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">مخفية أو تحت التعديل</p>
         </div>
 
-        <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">مرتبطة بباقة</span>
-            <div className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-primary tabular-nums">
-              {stats.linkedBundles}
-            </div>
+        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">مرتبطة بباقة</span>
+            <span className="size-1.5 rounded-full bg-primary" />
           </div>
-          <span className="p-2.5 rounded-lg bg-primary/10 text-primary">
-            <Package className="size-5" />
-          </span>
+          <div className="text-xl font-bold tracking-tight text-primary font-mono tabular-nums">
+            {stats.linkedBundles}
+          </div>
+          <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">تحويل مباشر للاشتراك</p>
         </div>
       </div>
 
