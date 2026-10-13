@@ -1,6 +1,19 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
+import {
+  Tag,
+  Plus,
+  Trash2,
+  ArrowRight,
+  Save,
+  X,
+  Layers,
+  DollarSign,
+  Package,
+  AlertTriangle,
+  CheckCircle2,
+} from "lucide-react";
 
 interface PriceListItem {
   productId: string;
@@ -95,7 +108,7 @@ export default function WholesalePriceListDetail() {
       }
       navigate("/wholesale/price-lists");
     } catch (err: any) {
-      setError(err?.response?.data?.message || "فشل الحفظ");
+      setError(err?.response?.data?.message || "فشل حفظ قائمة الأسعار");
     } finally {
       setSaving(false);
     }
@@ -103,143 +116,210 @@ export default function WholesalePriceListDetail() {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      <div className="flex flex-col items-center justify-center min-h-[350px] gap-3 text-muted-foreground">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs font-mono">جاري تحميل تفاصيل قائمة الأسعار...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {isNew ? "إضافة قائمة أسعار" : "تعديل قائمة الأسعار"}
-        </h1>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6 rtl font-sans" dir="rtl">
+      {/* Top Header */}
+      <div>
+        <Link
+          to="/wholesale/price-lists"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-3"
+        >
+          <ArrowRight className="w-3.5 h-3.5" />
+          العودة إلى قوائم الأسعار
+        </Link>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                <Tag className="w-3.5 h-3.5" />
+                هيكل التسعير
+              </span>
+              <span className="text-xs text-muted-foreground font-mono tabular-nums">
+                {isNew ? "قائمة جديدة" : `ID: ${id}`}
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              {isNew ? "إنشاء قائمة أسعار جملة جديدة" : `تعديل قائمة الأسعار: ${form.name || "—"}`}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              تحديد أسعار حصرية ومخصصة لكل منتج لتطبيقها تلقائياً على طلبات التجار المسجلين
+            </p>
+          </div>
+        </div>
       </div>
+
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-xs text-red-600 dark:text-red-400 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
           {error}
         </div>
       )}
+
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">اسم القائمة</label>
+        {/* General Info Card */}
+        <div className="bg-card border border-border/80 rounded-xl p-5 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 border-b border-border/60 pb-3">
+            <Layers className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-semibold text-foreground">معلومات القائمة الأساسية</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div className="space-y-1.5">
+              <label className="font-medium text-foreground">اسم القائمة (بالعربية) *</label>
               <input
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+                placeholder="مثال: أسعار كبار الموزعين - قطاع الصعيد"
+                className="w-full bg-background border border-input rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 required
               />
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">الاسم بالإنجليزية</label>
+
+            <div className="space-y-1.5">
+              <label className="font-medium text-foreground">الاسم بالإنجليزية (اختياري)</label>
               <input
                 type="text"
                 value={form.nameEn || ""}
                 onChange={(e) => setForm({ ...form, nameEn: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+                placeholder="Tier 1 VIP Wholesale"
+                className="w-full bg-background border border-input rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">العملة</label>
+
+            <div className="space-y-1.5">
+              <label className="font-medium text-foreground">العملة المعتمدة</label>
               <select
                 value={form.currency}
                 onChange={(e) => setForm({ ...form, currency: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                className="w-full bg-background border border-input rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               >
-                <option value="EGP">EGP</option>
-                <option value="USD">USD</option>
-                <option value="SAR">SAR</option>
+                <option value="EGP">جنيه مصري (EGP)</option>
+                <option value="SAR">ريال سعودي (SAR)</option>
+                <option value="USD">دولار أمريكي (USD)</option>
               </select>
             </div>
-            <div className="flex items-center gap-2 pt-6">
+          </div>
+
+          <div className="pt-2">
+            <label className="inline-flex items-center gap-2 cursor-pointer text-xs">
               <input
                 type="checkbox"
                 id="isActive"
                 checked={form.isActive}
                 onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary dark:border-gray-600 dark:bg-gray-800"
+                className="rounded border-input text-primary focus:ring-primary"
               />
-              <label htmlFor="isActive" className="text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer">
-                نشط
-              </label>
-            </div>
+              <span className="font-medium text-foreground">القائمة نشطة ومتاحة للتطبيق على حسابات التجار</span>
+            </label>
           </div>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">المنتجات</h2>
+
+        {/* Products Table Card */}
+        <div className="bg-card border border-border/80 rounded-xl p-5 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-border/60 pb-3">
+            <div className="flex items-center gap-2">
+              <Package className="w-4 h-4 text-primary" />
+              <h2 className="text-sm font-semibold text-foreground">الأصناف والأسعار المخصصة</h2>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-muted text-muted-foreground font-mono">
+                {form.items.length} منتج
+              </span>
+            </div>
+
             <button
               type="button"
               onClick={addItem}
-              className="rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold transition-colors shadow-xs"
             >
-              + إضافة منتج
+              <Plus className="w-3.5 h-3.5" />
+              إضافة منتج
             </button>
           </div>
+
           {form.items.length === 0 ? (
-            <p className="py-8 text-center text-gray-500 dark:text-gray-400">
-              لم يتم إضافة منتجات بعد. اضغط "إضافة منتج" للبدء.
-            </p>
+            <div className="py-12 text-center space-y-2">
+              <Package className="w-8 h-8 text-muted-foreground mx-auto" />
+              <p className="text-xs text-muted-foreground">
+                لم يتم إدراج أي منتجات في هذه القائمة بعد. اضغط "إضافة منتج" لإدراج المنتجات وتحديد أسعارها.
+              </p>
+            </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {form.items.map((item, i) => (
-                <div key={i} className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-100 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-800/60">
-                  <div className="flex-1 min-w-[140px]">
-                    <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">معرف المنتج</label>
+                <div
+                  key={i}
+                  className="flex flex-wrap items-end gap-3 rounded-xl border border-border/60 bg-muted/20 p-3 text-xs hover:border-primary/40 transition-colors"
+                >
+                  <div className="flex-1 min-w-[140px] space-y-1">
+                    <label className="text-[11px] font-medium text-muted-foreground">معرف المنتج / SKU</label>
                     <input
                       type="text"
                       value={item.productId}
                       onChange={(e) => updateItem(i, "productId", e.target.value)}
-                      className="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500"
+                      placeholder="PRD-102"
+                      className="w-full bg-background border border-input rounded-lg px-2.5 py-1.5 text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
-                  <div className="flex-[2] min-w-[200px]">
-                    <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">اسم المنتج</label>
+
+                  <div className="flex-[2] min-w-[200px] space-y-1">
+                    <label className="text-[11px] font-medium text-muted-foreground">اسم الصنف / المنتج *</label>
                     <input
                       type="text"
                       value={item.productName}
                       onChange={(e) => updateItem(i, "productName", e.target.value)}
-                      className="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500"
+                      placeholder="قميص أكسفورد أبيض كلاسيك"
+                      className="w-full bg-background border border-input rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                   </div>
-                  <div className="w-24">
-                    <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-300">السعر</label>
+
+                  <div className="w-32 space-y-1">
+                    <label className="text-[11px] font-medium text-muted-foreground">
+                      سعر الجملة ({form.currency}) *
+                    </label>
                     <input
                       type="number"
                       value={item.price}
                       onChange={(e) => updateItem(i, "price", parseFloat(e.target.value) || 0)}
-                      className="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500"
+                      className="w-full bg-background border border-input rounded-lg px-2.5 py-1.5 text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary"
                       step="0.01"
                     />
                   </div>
+
                   <button
                     type="button"
                     onClick={() => removeItem(i)}
-                    className="rounded bg-red-100 px-2.5 py-1.5 text-sm text-red-600 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60 transition-colors"
+                    className="p-2 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                    title="حذف هذا الصنف"
                   >
-                    حذف
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               ))}
             </div>
           )}
         </div>
-        <div className="flex gap-3">
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3">
           <button
             type="submit"
             disabled={saving}
-            className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white disabled:opacity-50 hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-all shadow-sm"
           >
-            {saving ? "جاري الحفظ..." : "حفظ"}
+            <Save className="w-4 h-4" />
+            {saving ? "جاري الحفظ..." : "حفظ قائمة الأسعار"}
           </button>
           <button
             type="button"
             onClick={() => navigate("/wholesale/price-lists")}
-            className="rounded-lg border border-gray-300 bg-white px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors"
+            className="px-4 py-2 text-xs font-medium rounded-lg bg-muted text-foreground hover:bg-muted/80 transition-colors"
           >
             إلغاء
           </button>

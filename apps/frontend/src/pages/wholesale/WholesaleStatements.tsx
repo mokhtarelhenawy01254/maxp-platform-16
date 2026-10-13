@@ -1,5 +1,18 @@
 import { useState } from "react";
 import { apiClient } from "../../services/apiClient";
+import {
+  FileSpreadsheet,
+  Search,
+  Calendar,
+  User,
+  Wallet,
+  ArrowDownLeft,
+  ArrowUpRight,
+  AlertTriangle,
+  Building2,
+  Printer,
+  Sparkles,
+} from "lucide-react";
 
 interface StatementLine {
   date: string;
@@ -26,7 +39,8 @@ export default function WholesaleStatements() {
   const [customers, setCustomers] = useState<{ id: string; name: string }[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [fromDate, setFromDate] = useState(() => {
-    const d = new Date(); d.setMonth(d.getMonth() - 1);
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
     return d.toISOString().split("T")[0];
   });
   const [toDate, setToDate] = useState(() => new Date().toISOString().split("T")[0]);
@@ -36,11 +50,16 @@ export default function WholesaleStatements() {
 
   const searchCustomers = async (q: string) => {
     setCustomerSearch(q);
-    if (q.length < 2) { setCustomers([]); return; }
+    if (q.length < 2) {
+      setCustomers([]);
+      return;
+    }
     try {
       const res = await apiClient.get(`/wholesale/customers?search=${encodeURIComponent(q)}&limit=10`);
-      setCustomers((res?.data?.data || []).map((c: any) => ({ id: c.id, name: c.customerName })));
-    } catch { /* ignore */ }
+      setCustomers((res?.data?.data || []).map((c: any) => ({ id: c.id, name: c.customerName || (c.customer ? `${c.customer.firstName} ${c.customer.lastName}` : "عميل") })));
+    } catch {
+      /* ignore */
+    }
   };
 
   const loadStatement = async () => {
@@ -59,130 +78,211 @@ export default function WholesaleStatements() {
     }
   };
 
-  const typeLabels: Record<string, string> = {
-    INVOICE: "فاتورة",
-    PAYMENT: "دفعة",
-    CREDIT_NOTE: "اشعار دائن",
-    DEBIT_NOTE: "اشعار مدين",
+  const typeLabels: Record<string, { label: string; color: string }> = {
+    INVOICE: { label: "فاتورة مبيعات", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" },
+    PAYMENT: { label: "سداد دفعة", color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" },
+    CREDIT_NOTE: { label: "إشعار دائن", color: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20" },
+    DEBIT_NOTE: { label: "إشعار مدين", color: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" },
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">كشوف الحساب</h1>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 rtl font-sans" dir="rtl">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              دفتر الحسابات والتدقيق
+            </span>
+            <span className="text-xs text-muted-foreground font-mono tabular-nums">
+              Account Ledger
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            كشوف حسابات عملاء وتجار الجملة
+          </h1>
+          <p className="text-xs text-muted-foreground">
+            استخراج كشوف الحسابات التفصيلية وحركات الفواتير والمدفوعات خلال فترات محددة
+          </p>
+        </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">بحث عن عميل</label>
+        {statement && (
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg bg-muted text-foreground hover:bg-muted/80 border border-border/80 transition-colors"
+          >
+            <Printer className="w-4 h-4" />
+            طباعة كشف الحساب
+          </button>
+        )}
+      </div>
+
+      {/* Query Filter Box */}
+      <div className="bg-card border border-border/80 rounded-xl p-4 shadow-xs space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+          <div className="space-y-1.5 relative">
+            <label className="text-xs font-medium text-foreground">بحث واختيار التاجر *</label>
             <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute right-3 top-2.5 text-muted-foreground" />
               <input
                 type="text"
                 value={customerSearch}
                 onChange={(e) => searchCustomers(e.target.value)}
-                placeholder="اسم العميل..."
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+                placeholder="اكتب اسم التاجر للبحث..."
+                className="w-full bg-background border border-input rounded-lg pr-9 pl-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
-              {customers.length > 0 && (
-                <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                  {customers.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedCustomerId(c.id);
-                        setCustomerSearch(c.name);
-                        setCustomers([]);
-                      }}
-                      className="block w-full px-3 py-2 text-right text-sm text-gray-800 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
-                    >
-                      {c.name}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
+            {customers.length > 0 && (
+              <div className="absolute z-20 top-full mt-1 w-full rounded-lg border border-border bg-card shadow-xl overflow-hidden divide-y divide-border/60">
+                {customers.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCustomerId(c.id);
+                      setCustomerSearch(c.name);
+                      setCustomers([]);
+                    }}
+                    className="block w-full px-3 py-2 text-right text-xs text-foreground hover:bg-muted/40 transition-colors"
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">من تاريخ</label>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">من تاريخ</label>
             <input
               type="date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+              className="w-full bg-background border border-input rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">إلى تاريخ</label>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">إلى تاريخ</label>
             <input
               type="date"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+              className="w-full bg-background border border-input rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
-          <div className="flex items-end">
-            <button
-              onClick={loadStatement}
-              disabled={loading || !selectedCustomerId}
-              className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50 hover:bg-primary/90 transition-colors"
-            >
-              {loading ? "...جاري" : "عرض كشف الحساب"}
-            </button>
-          </div>
+
+          <button
+            onClick={loadStatement}
+            disabled={loading || !selectedCustomerId}
+            className="w-full py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-all shadow-sm"
+          >
+            {loading ? "جاري تحميل الحركات..." : "عرض كشف الحساب"}
+          </button>
         </div>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">{error}</div>
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-xs text-red-600 dark:text-red-400 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          {error}
+        </div>
       )}
 
+      {/* Statement Results View */}
       {statement && (
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          <div className="border-b border-gray-200 p-4 dark:border-gray-800">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{statement.customerName}</h2>
-            {statement.customerPhone && (
-              <p className="text-sm text-gray-500 dark:text-gray-400">{statement.customerPhone}</p>
-            )}
-            <div className="mt-2 flex gap-6 text-sm text-gray-700 dark:text-gray-300">
-              <span>الرصيد الافتتاحي: <strong className="text-gray-900 dark:text-white">{Number(statement.openingBalance).toFixed(2)} EGP</strong></span>
-              <span>الرصيد الختامي: <strong className="text-gray-900 dark:text-white">{Number(statement.closingBalance).toFixed(2)} EGP</strong></span>
+        <div className="bg-card border border-border/80 rounded-xl overflow-hidden shadow-xs space-y-4">
+          {/* Header Summary */}
+          <div className="p-5 border-b border-border/80 bg-muted/20 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h2 className="text-base font-bold text-foreground">{statement.customerName}</h2>
+                {statement.customerPhone && (
+                  <p className="text-xs text-muted-foreground font-mono">{statement.customerPhone}</p>
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground font-mono">
+                الفترة من: {new Date(fromDate).toLocaleDateString("ar-EG")} إلى: {new Date(toDate).toLocaleDateString("ar-EG")}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+              <div className="bg-background border border-border/60 rounded-lg p-3">
+                <span className="text-[11px] text-muted-foreground block">الرصيد الافتتاحي</span>
+                <span className="text-sm font-bold font-mono tabular-nums text-foreground">
+                  {Number(statement.openingBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م
+                </span>
+              </div>
+              <div className="bg-background border border-border/60 rounded-lg p-3">
+                <span className="text-[11px] text-muted-foreground block">إجمالي المسحوبات (مدين)</span>
+                <span className="text-sm font-bold font-mono tabular-nums text-red-600 dark:text-red-400">
+                  {statement.lines.reduce((a, l) => a + (Number(l.debit) || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م
+                </span>
+              </div>
+              <div className="bg-background border border-border/60 rounded-lg p-3">
+                <span className="text-[11px] text-muted-foreground block">إجمالي السدادات (دائن)</span>
+                <span className="text-sm font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {statement.lines.reduce((a, l) => a + (Number(l.credit) || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م
+                </span>
+              </div>
+              <div className="bg-background border border-border/60 rounded-lg p-3">
+                <span className="text-[11px] text-muted-foreground block">الرصيد الختامي المستحق</span>
+                <span className="text-sm font-bold font-mono tabular-nums text-foreground">
+                  {Number(statement.closingBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م
+                </span>
+              </div>
             </div>
           </div>
+
+          {/* Ledger Table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-right text-sm">
-              <thead className="border-b border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800 dark:bg-gray-800/60 dark:text-gray-300">
-                <tr>
-                  <th className="px-4 py-3 font-medium">التاريخ</th>
-                  <th className="px-4 py-3 font-medium">النوع</th>
-                  <th className="px-4 py-3 font-medium">المرجع</th>
-                  <th className="px-4 py-3 font-medium">البيان</th>
-                  <th className="px-4 py-3 font-medium">مدين</th>
-                  <th className="px-4 py-3 font-medium">دائن</th>
-                  <th className="px-4 py-3 font-medium">الرصيد</th>
+            <table className="w-full text-right text-xs">
+              <thead>
+                <tr className="border-b border-border/80 bg-muted/40 text-muted-foreground">
+                  <th className="px-4 py-3 font-semibold">التاريخ</th>
+                  <th className="px-4 py-3 font-semibold">نوع الحركة</th>
+                  <th className="px-4 py-3 font-semibold">المرجع</th>
+                  <th className="px-4 py-3 font-semibold">البيان والشرح</th>
+                  <th className="px-4 py-3 font-semibold">مدين (+)</th>
+                  <th className="px-4 py-3 font-semibold">دائن (-)</th>
+                  <th className="px-4 py-3 font-semibold">الرصيد التراكمي</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 text-gray-900 dark:divide-gray-800 dark:text-gray-100">
-                {statement.lines.map((line, i) => (
-                  <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                      {new Date(line.date).toLocaleDateString("ar-EG")}
+              <tbody className="divide-y divide-border/60">
+                {statement.lines.map((line, i) => {
+                  const typeInfo = typeLabels[line.type] || { label: line.type, color: "bg-muted text-foreground border-border" };
+                  return (
+                    <tr key={i} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3 text-muted-foreground font-mono">
+                        {new Date(line.date).toLocaleDateString("ar-EG")}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${typeInfo.color}`}>
+                          {typeInfo.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-muted-foreground">{line.reference || "—"}</td>
+                      <td className="px-4 py-3 text-foreground">{line.description || "—"}</td>
+                      <td className="px-4 py-3 font-mono tabular-nums font-semibold text-red-600 dark:text-red-400">
+                        {Number(line.debit) > 0 ? Number(line.debit).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}
+                      </td>
+                      <td className="px-4 py-3 font-mono tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
+                        {Number(line.credit) > 0 ? Number(line.credit).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}
+                      </td>
+                      <td className="px-4 py-3 font-mono tabular-nums font-bold text-foreground">
+                        {Number(line.balance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {statement.lines.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="text-center py-12 text-xs text-muted-foreground">
+                      لا توجد حركات مالية مسجلة خلال هذه الفترة
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                        {typeLabels[line.type] || line.type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{line.reference}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{line.description}</td>
-                    <td className="px-4 py-3 font-medium text-red-600 dark:text-red-400">
-                      {Number(line.debit) > 0 ? `${Number(line.debit).toFixed(2)}` : "—"}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-green-600 dark:text-green-400">
-                      {Number(line.credit) > 0 ? `${Number(line.credit).toFixed(2)}` : "—"}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{Number(line.balance).toFixed(2)}</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
