@@ -250,10 +250,14 @@ describe('POST /api/v1/payment/kashier/checkout', () => {
         data: expect.objectContaining({ subtotal: 500, discount: 50, total: 500 }),
       })
     );
-    expect(mockPrisma.$transaction).toHaveBeenCalledWith([
-      expect.objectContaining({ data: expect.objectContaining({ couponId: 'coupon-1', discountAmount: 50 }) }),
-      expect.objectContaining({ data: { usageCount: { increment: 1 } } }),
-    ]);
+    expect(mockPrisma.couponUsage.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ couponId: 'coupon-1', discountAmount: 50, orderId: 'o2' }),
+    });
+    expect(mockPrisma.coupon.update).toHaveBeenCalledWith({
+      where: { id: 'coupon-1' },
+      data: { usageCount: { increment: 1 } },
+    });
+    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
   });
 
   test('FREE_SHIPPING coupon zeroes the shipping cost', async () => {
@@ -341,6 +345,8 @@ describe('POST /api/v1/payment/kashier/checkout', () => {
       id: 'cust-1',
       phone: '01012345678',
     });
+    mockPrisma.product.findFirst.mockResolvedValue({ id: 'prod-1', name: 'Item', price: 100 });
+    resolvePublicShippingQuote.mockResolvedValue({ price: 0, zone: null });
 
     KashierService.createPaymentSession.mockResolvedValue({
       success: false,
