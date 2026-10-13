@@ -113,6 +113,20 @@ const {
 // Apply order-core access check to all routes in this router
 router.use(verifyToken.authenticateToken);
 router.use(verifyToken.requireCompanyAccess);
+
+const isSystemBulkStatusNote = (note) => {
+  if (!note || typeof note !== 'string') return false;
+  const trimmed = note.trim();
+  return (
+    trimmed === 'Bulk status update' ||
+    trimmed === 'Bulk preparation queue update' ||
+    trimmed === 'Preparation queue update' ||
+    trimmed === 'Bulk restore' ||
+    trimmed === 'Bulk move to trash' ||
+    trimmed === 'Bulk trash' ||
+    /^bulk\s+/i.test(trimmed)
+  );
+};
 const requireOrderCoreAccess = checkAppAccess('order-core');
 const MERCHANT_ALLOWED_ORDER_ROUTES = [
   { method: 'GET', pattern: /^\/simple\/?$/ },
@@ -1227,17 +1241,6 @@ const updateAnyOrderStatus = async ({
   const { skipTransitionValidation = false } = options;
   const normalizedStatus = String(status || '').trim().toUpperCase();
 
-  const isSystemBulkStatusNote = (note) => {
-    if (!note || typeof note !== 'string') return false;
-    const trimmed = note.trim();
-    return (
-      trimmed === 'Bulk status update' ||
-      trimmed === 'Bulk preparation queue update' ||
-      trimmed === 'Bulk restore' ||
-      trimmed === 'Bulk move to trash' ||
-      /^bulk\s+/i.test(trimmed)
-    );
-  };
   const shouldPersistOrderNote = notes && typeof notes === 'string' && notes.trim().length > 0 && !isSystemBulkStatusNote(notes);
   const auditReason = options?.statusReason || notes || 'Bulk preparation queue update';
 
@@ -5138,7 +5141,7 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
             // 🛡️ PRODUCTION-FIX (custom-status-persist): حالات التجهيز حالات نظامية —
             // أمسح أي كود مخصص قديم عشان "الحالة الفعلية" تبقى مرحلة التجهيز.
             customStatusCode: null,
-            notes: statusNotes || undefined,
+            notes: (statusNotes && !isSystemBulkStatusNote(statusNotes)) ? statusNotes : undefined,
             metadata: JSON.stringify(nextMetadata),
             statusHistory: {
               create: {

@@ -325,23 +325,29 @@ const PrintMultipleInvoices: React.FC = () => {
           }
         } catch (e) {
           console.error("Failed reading guest print payload:", e);
-        } finally {
-          // نظّف المفتاح عشان ميتleraّكش
-          try { sessionStorage.removeItem(guestKey); } catch { /* ignore */ }
         }
         setGuestSlots(guests);
       }
 
-      // الفواتير العادية من DB
+      // الفواتير العادية من DB (تحميل موازي عبر دفعات لتجنب البطء والشلال المتسلسل)
       const fetched: Invoice[] = [];
       if (ids) {
-        const invoiceIds = ids.split(",");
-        for (const id of invoiceIds) {
-          try {
-            const response = await apiClient.get(`/order-invoices/${id}`);
-            if (response.data.success) fetched.push(response.data.data);
-          } catch (err) {
-            console.error(`Error fetching invoice ${id}:`, err);
+        const invoiceIds = ids.split(",").map((s) => s.trim()).filter(Boolean);
+        const chunkSize = 8;
+        for (let i = 0; i < invoiceIds.length; i += chunkSize) {
+          const chunk = invoiceIds.slice(i, i + chunkSize);
+          const chunkResponses = await Promise.all(
+            chunk.map((id) =>
+              apiClient.get(`/order-invoices/${id}`).catch((err) => {
+                console.error(`Error fetching invoice ${id}:`, err);
+                return null;
+              })
+            )
+          );
+          for (const res of chunkResponses) {
+            if (res?.data?.success && res.data.data) {
+              fetched.push(res.data.data);
+            }
           }
         }
       }
