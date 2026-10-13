@@ -1322,12 +1322,15 @@ const WalletManagement: React.FC = () => {
     });
   }, [companySearch, companyWallets]);
 
-  const metrics = useMemo(() => {
-    const activeWalletsCount = walletNumbers.filter((wallet) => wallet.isActive).length;
-    const companyBalanceTotal = companyWallets.reduce(
+  const companyBalanceTotal = useMemo(() => {
+    return companyWallets.reduce(
       (sum, wallet) => sum + toNumber(wallet.balance),
       0,
     );
+  }, [companyWallets]);
+
+  const metrics = useMemo(() => {
+    const activeWalletsCount = walletNumbers.filter((wallet) => wallet.isActive).length;
 
     return [
       {
