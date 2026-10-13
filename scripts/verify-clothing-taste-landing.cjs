@@ -4,7 +4,7 @@ const path = require("path");
 const ARTIFACT_DIR = "C:/Users/mokhtar/.gemini/antigravity/brain/a1008c72-8752-43b0-a449-0d550429ed5f";
 
 async function runVerification() {
-  console.log("=== Phase 3: Taste-Skill Clothing Landing Live Browser Verification Starting ===");
+  console.log("=== Phase 3: Luxury Fashion Editorial Landing Live Browser Verification Starting ===");
   const browser = await chromium.launch({
     channel: "msedge",
     headless: true,
@@ -47,13 +47,29 @@ async function runVerification() {
   // Check Title
   const title = await page.title();
   console.log(`Page Title: "${title}"`);
-  if (!title.includes("MaxP Apparel OS")) {
+  if (!title.includes("MaxP للأزياء والملابس")) {
     throw new Error(`Unexpected page title: ${title}`);
   }
+  console.log("PASS: Page title matches luxury apparel positioning");
 
   // Check Headline
   const h1Text = await page.$eval("h1", (el) => el.textContent.trim());
   console.log(`Headline: "${h1Text}"`);
+
+  // Verify Palette: Body background should be luxury warm cream (#FAF8F5)
+  const rootBg = await page.$eval(".cst-root", (el) => window.getComputedStyle(el).backgroundColor);
+  console.log(`Root Background Color: ${rootBg}`);
+  if (!rootBg.includes("250, 248, 245")) {
+    throw new Error(`Expected luxury cream background rgb(250, 248, 245), got ${rootBg}`);
+  }
+  console.log("PASS: Verified luxury cream (#FAF8F5) editorial palette");
+
+  // Verify Absolute Ban on Meta-Audit Clutter
+  const hasAuditButton = (await page.locator("button:has-text('فحص الفرق الهندسي')").count()) > 0;
+  if (hasAuditButton) {
+    throw new Error("VIOLATION: Found banned 'فحص الفرق الهندسي' meta-audit button in production UI!");
+  }
+  console.log("PASS: Zero meta-audit drawer or comparison clutter present in production UI");
 
   // Test Interactive Hero Tab Switcher
   console.log("\n[2] Testing Hero Interactive Tab Switcher...");
@@ -78,8 +94,15 @@ async function runVerification() {
   await page.waitForTimeout(300);
   console.log("PASS: Incremented height in Size Advisor");
 
+  // Test Lookbook Interactive Sale Simulation
+  console.log("\n[3] Testing Lookbook & Branch POS Sale Simulation...");
+  const simulateSaleBtn = page.locator("button:has-text('محاكاة مسح باركود وبيعه في فرع المعادي')");
+  await simulateSaleBtn.click();
+  await page.waitForTimeout(400);
+  console.log("PASS: Decremented stock in branch POS simulation");
+
   // Test Tools Matrix Category Filter
-  console.log("\n[3] Testing Category Filters in 17 Tools Grid...");
+  console.log("\n[4] Testing Category Filters in 17 Tools Grid...");
   const shippingCategoryBtn = page.locator("button:has-text('بوسطة والشحن')");
   await shippingCategoryBtn.click();
   await page.waitForTimeout(400);
@@ -90,22 +113,15 @@ async function runVerification() {
   await page.waitForTimeout(400);
   console.log("PASS: Reset to 'جميع الأدوات (17)'");
 
-  // Test Lookbook Interactive Sale Simulation
-  console.log("\n[3.5] Testing Lookbook & Branch POS Sale Simulation...");
-  const simulateSaleBtn = page.locator("button:has-text('محاكاة مسح باركود وبيعه في فرع المعادي')");
-  await simulateSaleBtn.click();
-  await page.waitForTimeout(400);
-  console.log("PASS: Decremented stock in branch POS simulation");
-
   // Test Unit Economics Margin Inputs
-  console.log("\n[4] Testing Margin Calculator...");
+  console.log("\n[5] Testing Margin Calculator...");
   const fabricInput = page.locator("input[type='number']").first();
   await fabricInput.fill("150");
   await page.waitForTimeout(300);
   console.log("PASS: Adjusted fabric cost input");
 
   // Test Egyptian Logistics & Payments Trust Strip
-  console.log("\n[4.2] Testing Egyptian Logistics & Payment Trust Strip...");
+  console.log("\n[6] Testing Egyptian Logistics & Payment Trust Strip...");
   const bostaPartner = page.locator("text=Bosta API");
   await bostaPartner.waitFor({ state: "visible", timeout: 5000 });
   console.log("PASS: Bosta API trust badge verified");
@@ -114,7 +130,7 @@ async function runVerification() {
   console.log("PASS: Kashier trust badge verified");
 
   // Test Lead Capture Form Input
-  console.log("\n[4.5] Testing Lead Capture Form Inputs...");
+  console.log("\n[7] Testing Lead Capture Form Inputs...");
   const nameInput = page.locator("input[placeholder='مثال: كريم الشناوي']");
   await nameInput.fill("مختار مجدي");
   const phoneInput = page.locator("input[placeholder='010XXXXXXXX']");
@@ -123,7 +139,7 @@ async function runVerification() {
   console.log("PASS: Filled Lead Form inputs");
 
   // Test Fast Inline Activation Modal
-  console.log("\n[4.8] Testing 60-Second Fast Activation Modal...");
+  console.log("\n[8] Testing 60-Second Fast Activation Modal...");
   const heroFreeCta = page.locator("button:has-text('ابدأ متجرك مجاناً')").first();
   await heroFreeCta.click();
   await page.waitForTimeout(400);
@@ -145,41 +161,12 @@ async function runVerification() {
   console.log("PASS: Closed Fast Activation Modal cleanly");
 
   // Test FAQ Accordion
-  console.log("\n[5] Testing FAQ Accordion...");
+  console.log("\n[9] Testing FAQ Accordion...");
   const faqButtons = page.locator("section:has-text('الأسئلة الشائعة') button");
   const secondFaq = faqButtons.nth(1);
   await secondFaq.click();
   await page.waitForTimeout(400);
   console.log("PASS: Toggled second FAQ item");
-
-  // Test Audit Drawer Trigger
-  console.log("\n[6] Testing Audit Matrix Drawer...");
-  const auditBtn = page.locator("button:has-text('فحص الفرق الهندسي')");
-  await auditBtn.scrollIntoViewIfNeeded();
-  await auditBtn.click();
-  await page.waitForTimeout(500);
-
-  // Take Audit Drawer Screenshot
-  const auditScreenshotPath = path.join(ARTIFACT_DIR, "clothing_taste_audit_drawer.png");
-  await page.screenshot({ path: auditScreenshotPath, fullPage: false });
-  console.log(`Saved screenshot: ${auditScreenshotPath}`);
-
-  // Test Mode Toggle inside Drawer (Taste -> Slop -> Taste)
-  const slopModeBtn = page.locator("button:has-text('🤖 القالب النمطي')").first();
-  await slopModeBtn.click();
-  await page.waitForTimeout(500);
-  console.log("PASS: Toggled into '🤖 القالب النمطي' Slop Simulation mode");
-
-  const tasteModeBtn = page.locator("button:has-text('✨ وضع المهارة')").first();
-  await tasteModeBtn.click();
-  await page.waitForTimeout(500);
-  console.log("PASS: Toggled back to '✨ وضع المهارة' Taste-Skill mode");
-
-  // Close Audit Drawer
-  const closeBtn = page.locator("button[aria-label='إغلاق نافذة المقارنة']");
-  await closeBtn.click();
-  await page.waitForTimeout(400);
-  console.log("PASS: Closed Audit Drawer");
 
   // Take Full Desktop Page Screenshot
   const desktopScreenshotPath = path.join(ARTIFACT_DIR, "clothing_taste_desktop.png");
@@ -187,7 +174,7 @@ async function runVerification() {
   console.log(`Saved screenshot: ${desktopScreenshotPath}`);
 
   // ── Mobile Verification (390x844 iPhone 14) ──
-  console.log("\n[7] Testing Mobile Viewport (390x844 - iPhone 14)...");
+  console.log("\n[10] Testing Mobile Viewport (390x844 - iPhone 14)...");
   const mobileContext = await browser.newContext({
     viewport: { width: 390, height: 844 },
     isMobile: true,

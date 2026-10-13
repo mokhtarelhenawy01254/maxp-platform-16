@@ -73,57 +73,57 @@ export const ClothingTasteLeadForm: React.FC<ClothingTasteLeadFormProps> = ({
   };
 
   return (
-    <section id="consultation" className="py-20 border-b border-white/[0.08] bg-[#0c0e14]">
+    <section id="consultation" className="py-20 border-b border-black/[0.06] bg-white">
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
-        <div className="cst-panel rounded-2xl p-6 sm:p-10 bg-[#111318] border border-white/10">
+        <div className="cst-panel rounded-2xl p-6 sm:p-10 bg-[#FAF8F5] border border-black/[0.08] shadow-md">
           
           <div className="text-right mb-8">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-white/5 border border-white/10 text-xs font-mono text-zinc-300 mb-3">
-              <Phone className="w-3.5 h-3.5 text-blue-400" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-zinc-100 border border-zinc-200 text-xs font-mono text-zinc-700 mb-3">
+              <Phone className="w-3.5 h-3.5 text-blue-700" />
               <span>استشارة مجانية مع خبير المنظومة</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">
+            <h2 className="text-2xl sm:text-3xl font-black text-[#141416] tracking-tight mb-2">
               دعنا نساعدك في تهيئة متجرك وربط بوسطة وفروعك
             </h2>
-            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
+            <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed">
               اترك بياناتك وسيتواصل معك مستشار تجارة الأزياء لمساعدتك في إعداد مصفوفة المقاسات ورفع منتجاتك — دون أي رسوم.
             </p>
           </div>
 
           {isSuccess ? (
-            <div className="p-6 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-3">
-              <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
-              <h3 className="text-base font-bold text-white">
+            <div className="p-6 rounded-xl bg-emerald-50 border border-emerald-200 text-center space-y-3">
+              <CheckCircle2 className="w-10 h-10 text-emerald-700 mx-auto" />
+              <h3 className="text-base font-bold text-emerald-900">
                 تم استلام طلبك بنجاح!
               </h3>
-              <p className="text-xs text-zinc-300 max-w-md mx-auto leading-relaxed">
+              <p className="text-xs sm:text-sm text-zinc-600 max-w-md mx-auto leading-relaxed">
                 سيتواصل معك أحد خبراء MaxP عبر واتساب خلال دقائق للمساعدة في تفعيل متجرك وربط البوالص.
               </p>
               <button
                 type="button"
                 onClick={onFreeRegister}
-                className="cst-btn-primary text-xs py-2.5 px-6 font-bold mt-2"
+                className="cst-btn-primary text-xs py-2.5 px-6 font-bold mt-2 cursor-pointer"
               >
                 <span>أو ابدأ متجرك الآن بنفسك (0 ج.م)</span>
-                <ArrowLeft className="w-3.5 h-3.5" />
+                <ArrowLeft className="w-3.5 h-3.5 mr-1" />
               </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4 text-right">
               {errorMsg && (
-                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-300 flex items-center gap-2">
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-800 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{errorMsg}</span>
                 </div>
               )}
 
               {saveFailed && (
-                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 space-y-2">
+                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-2">
                   <div>تعذر الحفظ عبر الخادم، يمكنك التواصل الفوري مع الفريق عبر واتساب بنقرة واحدة:</div>
                   <button
                     type="button"
                     onClick={openWhatsAppContinuation}
-                    className="py-1.5 px-3 rounded bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-500 flex items-center gap-1.5"
+                    className="py-1.5 px-3 rounded bg-emerald-700 text-white font-bold text-xs hover:bg-emerald-800 flex items-center gap-1.5 cursor-pointer"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
                     <span>إرسال البيانات عبر واتساب مباشرة</span>
@@ -133,8 +133,8 @@ export const ClothingTasteLeadForm: React.FC<ClothingTasteLeadFormProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-zinc-300 block mb-1.5 font-medium">
-                    اسم المسؤول أو صاحب البراند <span className="text-red-400">*</span>
+                  <label className="text-xs text-zinc-800 block mb-1.5 font-semibold">
+                    اسم المسؤول أو صاحب البراند <span className="text-red-600">*</span>
                   </label>
                   <input
                     type="text"
@@ -142,13 +142,13 @@ export const ClothingTasteLeadForm: React.FC<ClothingTasteLeadFormProps> = ({
                     value={ownerName}
                     onChange={(e) => setOwnerName(e.target.value)}
                     placeholder="مثال: كريم الشناوي"
-                    className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-lg px-3 py-2.5 text-xs text-white placeholder-zinc-500 outline-none transition-colors"
+                    className="w-full bg-white border border-black/10 focus:border-[#141416] rounded-lg px-3 py-2.5 text-xs text-[#141416] placeholder-zinc-400 outline-none transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs text-zinc-300 block mb-1.5 font-medium">
-                    رقم الموبايل / واتساب <span className="text-red-400">*</span>
+                  <label className="text-xs text-zinc-800 block mb-1.5 font-semibold">
+                    رقم الموبايل / واتساب <span className="text-red-600">*</span>
                   </label>
                   <input
                     type="tel"
@@ -156,14 +156,14 @@ export const ClothingTasteLeadForm: React.FC<ClothingTasteLeadFormProps> = ({
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="010XXXXXXXX"
-                    className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-lg px-3 py-2.5 text-xs text-white placeholder-zinc-500 outline-none font-mono transition-colors text-right"
+                    className="w-full bg-white border border-black/10 focus:border-[#141416] rounded-lg px-3 py-2.5 text-xs text-[#141416] placeholder-zinc-400 outline-none font-mono transition-colors text-right"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-zinc-300 block mb-1.5 font-medium">
+                  <label className="text-xs text-zinc-800 block mb-1.5 font-semibold">
                     اسم البراند أو المحل (اختياري)
                   </label>
                   <input
@@ -171,18 +171,18 @@ export const ClothingTasteLeadForm: React.FC<ClothingTasteLeadFormProps> = ({
                     value={storeName}
                     onChange={(e) => setStoreName(e.target.value)}
                     placeholder="مثال: Atelier Cairo"
-                    className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-lg px-3 py-2.5 text-xs text-white placeholder-zinc-500 outline-none transition-colors"
+                    className="w-full bg-white border border-black/10 focus:border-[#141416] rounded-lg px-3 py-2.5 text-xs text-[#141416] placeholder-zinc-400 outline-none transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs text-zinc-300 block mb-1.5 font-medium">
+                  <label className="text-xs text-zinc-800 block mb-1.5 font-semibold">
                     طبيعة نشاطك الحالي
                   </label>
                   <select
                     value={storeType}
                     onChange={(e) => setStoreType(e.target.value)}
-                    className="w-full bg-[#111318] border border-white/10 focus:border-blue-500 rounded-lg px-3 py-2.5 text-xs text-white outline-none transition-colors"
+                    className="w-full bg-white border border-black/10 focus:border-[#141416] rounded-lg px-3 py-2.5 text-xs text-[#141416] outline-none transition-colors cursor-pointer"
                   >
                     <option value="both">عندي محل فعلي وأبيع أونلاين أيضاً</option>
                     <option value="online">أبيع أونلاين فقط (إنستجرام/متجر)</option>
@@ -195,9 +195,9 @@ export const ClothingTasteLeadForm: React.FC<ClothingTasteLeadFormProps> = ({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full sm:w-auto cst-btn-primary text-xs py-3 px-8 font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto cst-btn-primary text-xs sm:text-sm py-3 px-8 font-bold disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <Send className="w-3.5 h-3.5" />
+                  <Send className="w-3.5 h-3.5 ml-1" />
                   <span>{isSubmitting ? "جاري الإرسال..." : "طلب استشارة مجانية وتفعيل المتجر"}</span>
                 </button>
               </div>
