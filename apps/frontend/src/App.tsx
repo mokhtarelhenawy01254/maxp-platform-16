@@ -918,7 +918,7 @@ const ClothingStoreTasteLanding = React.lazy(
   () => import("./pages/landing/ClothingStoreTasteLanding"),
 );
 const StoreCompleteBundleLanding = React.lazy(
-  () => import("./pages/landing/StoreCompleteBundleLanding"),
+  () => import("./pages/landing/CompleteStoreBundleLanding"),
 );
 const PlatformLandingPreviewPage = React.lazy(
   () => import("./pages/landing/PlatformLandingPreviewPage"),
