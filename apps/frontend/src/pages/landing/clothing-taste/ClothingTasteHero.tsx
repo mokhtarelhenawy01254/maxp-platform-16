@@ -36,30 +36,30 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
             {/* 1. Eyebrow: Trust & Platform Definition */}
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/5 border border-black/10 text-xs text-zinc-700 mb-4 font-sans">
               <span className="w-2 h-2 rounded-full bg-emerald-600" />
-              <span className="font-bold text-zinc-900">منظومة تجار الأزياء في مصر</span>
+              <span className="font-bold text-zinc-900">نظام إدارة الفروع والمتجر لبراندات الملابس في مصر</span>
               <span className="text-zinc-400">•</span>
               <span>متجر، كاشير، وشحن بوسطة</span>
             </div>
 
-            {/* 2. Headline (Max 2 lines desktop) */}
+            {/* 2. Headline (Outcome-Focused, Clear, Specific) */}
             <h1 className="text-3xl sm:text-5xl font-black text-[#141416] tracking-tight leading-[1.18] mb-4 cst-text-balance">
-              متجر يوقف نزيف المرتجعات، وكاشير فروع يضبط مخزونك لحظياً
+              اخفض مرتجعات المقاسات إلى 8%، واضبط مخزون محلاتك مع متجر الأونلاين بالمللي
             </h1>
 
-            {/* 3. Subtext (Strictly under 20 words) */}
+            {/* 3. Subtext (Benefits over features, customer language) */}
             <p className="text-base sm:text-lg text-zinc-600 font-normal leading-relaxed mb-6 max-w-xl cst-text-pretty">
-              منظومة متكاملة لبراندات ومحلات الملابس: متجر أونلاين سريع، كاشير فروع بالباركود، وربط رسمي مع بوسطة لخفض المرتجعات 60%.
+              منظومة متكاملة لبراندات ومحلات الأزياء: متجر ويب سريع بمستشار مقاسات ذكي، كاشير بالباركود يدعم شاشات اللمس ويعمل دون إنترنت، وطباعة بوالص بوسطة بضغطة زر واحدة.
             </p>
 
             {/* 4. Single Dominant Primary CTA + Direct WhatsApp Link */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto mb-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto mb-3">
               <button
                 onClick={onFreeRegister}
                 type="button"
-                className="cst-btn-primary text-sm py-3.5 px-7 font-bold shadow-md"
+                className="cst-btn-primary text-sm py-3.5 px-7 font-bold shadow-md cursor-pointer"
               >
-                <span>ابدأ متجرك مجاناً (0 ج.م)</span>
-                <ArrowLeft className="w-4 h-4" />
+                <span>ابدأ متجرك مجاناً في 60 ثانية</span>
+                <ArrowLeft className="w-4 h-4 mr-1" />
               </button>
 
               <a
@@ -75,16 +75,16 @@ export const ClothingTasteHero: React.FC<ClothingTasteHeroProps> = ({
 
             {/* Explicit Risk Reversals (Zero Risk Assurance) */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-zinc-600 font-medium mb-2">
-              <span className="flex items-center gap-1 text-emerald-700 font-bold">
-                <Check className="w-3.5 h-3.5" />
+              <span className="flex items-center gap-1 text-emerald-800 font-bold">
+                <Check className="w-3.5 h-3.5 text-emerald-700" />
                 0% عمولة مبيعات
               </span>
               <span>• بدون فيزا دولارية وبدون شوبيفاي</span>
-              <span>• ربط رسمي بضغطة زر مع بوسطة</span>
+              <span>• ربط رسمي مباشر مع بوسطة</span>
             </div>
 
-            <div className="text-[11px] text-zinc-500">
-              تفعيل المتجر متاح فوراً خلال دقيقة واحدة • مساعدة مجانية في رفع تشكيلة الملابس
+            <div className="text-[11px] text-zinc-500 font-medium">
+              تفعيل فوري في 60 ثانية • إعداد أول 50 منتج ومصفوفة المقاسات مجاناً بمعرفة فريقنا
             </div>
 
           </div>
