@@ -1,15 +1,19 @@
 import React, { useState } from "react";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 
+import type { StudioDeviceMode } from "../StudioTypes";
+
 interface StudioInspectorDesignTabProps {
   sectionType: string;
   settings: Record<string, any>;
+  deviceMode?: StudioDeviceMode;
   onUpdateField: (field: string, value: any) => void;
 }
 
 export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> = ({
   sectionType,
   settings,
+  deviceMode = "desktop",
   onUpdateField,
 }) => {
   const [openAcc, setOpenAcc] = useState<{ [key: string]: boolean }>({
@@ -50,7 +54,10 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
           </div>
           <div className="rounded-lg border border-[#ececee] bg-[#f6f7f8] p-2">
             <span className="block text-[9.5px] text-[#8a8f96]">W</span>
-            <b className="text-[11.5px] text-[#17181c] font-semibold">1003<i className="text-[9px] text-[#7c5cff] not-italic ms-0.5">px*</i></b>
+            <b className="text-[11.5px] text-[#17181c] font-semibold">
+              {deviceMode === "mobile" ? "375" : deviceMode === "tablet" ? "768" : "1200"}
+              <i className="text-[9px] text-[#7c5cff] not-italic ms-0.5">px*</i>
+            </b>
           </div>
           <div className="rounded-lg border border-[#ececee] bg-[#f6f7f8] p-2">
             <span className="block text-[9.5px] text-[#8a8f96]">H</span>

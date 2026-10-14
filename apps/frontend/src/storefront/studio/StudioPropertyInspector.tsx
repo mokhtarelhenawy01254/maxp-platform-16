@@ -17,6 +17,7 @@ import { StudioInspectorAiTab } from "./inspector/StudioInspectorAiTab";
 interface StudioPropertyInspectorProps {
   selectedSectionKey: string;
   sectionConfig: any;
+  deviceMode?: StudioDeviceMode;
   onClose: () => void;
   onUpdateField: (field: string, value: any) => void;
   onOpenImagePicker?: () => void;
@@ -26,6 +27,7 @@ interface StudioPropertyInspectorProps {
 export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = ({
   selectedSectionKey,
   sectionConfig,
+  deviceMode = "desktop",
   onClose,
   onUpdateField,
   onOpenImagePicker,
@@ -127,6 +129,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
           <StudioInspectorDesignTab
             sectionType={sectionType}
             settings={settings}
+            deviceMode={deviceMode}
             onUpdateField={onUpdateField}
           />
         )}

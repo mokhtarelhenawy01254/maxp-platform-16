@@ -25,7 +25,7 @@ export const StudioCanvasStage: React.FC<StudioCanvasStageProps> = ({
       <StudioCanvasRuler deviceMode={deviceMode} />
 
       {/* 2. Scrollable Canvas Desk Workspace */}
-      <main className="relative flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-8 transition-all min-w-0 [scrollbar-width:thin]">
+      <main className="relative flex-1 overflow-y-auto overflow-x-auto p-2 sm:p-8 transition-all min-w-0 [scrollbar-width:thin]">
         <div
           style={{
             transform: `scale(${zoomLevel})`,
@@ -36,7 +36,7 @@ export const StudioCanvasStage: React.FC<StudioCanvasStageProps> = ({
         >
           {deviceMode === "mobile" ? (
             /* Smartphone Viewport */
-            <div className="relative mx-auto overflow-hidden rounded-[2.5rem] border-[8px] border-[#101114] bg-white shadow-[0_30px_70px_rgba(0,0,0,0.65)] ring-1 ring-white/10">
+            <div className="relative mx-auto overflow-hidden rounded-2xl sm:rounded-[2.5rem] border-2 sm:border-[8px] border-[#101114] bg-white shadow-[0_30px_70px_rgba(0,0,0,0.65)] ring-1 ring-white/10">
               {/* Dynamic Island Pill */}
               <div className="absolute top-2 inset-x-0 z-40 flex items-center justify-center pointer-events-none">
                 <div className="flex h-3.5 w-24 items-center justify-between rounded-full bg-black px-2">
@@ -46,7 +46,7 @@ export const StudioCanvasStage: React.FC<StudioCanvasStageProps> = ({
               </div>
 
               {/* Mobile Viewport Container */}
-              <div className="w-full overflow-y-auto overflow-x-hidden bg-background pt-6 [scrollbar-width:none]">
+              <div className="w-full overflow-y-auto overflow-x-hidden bg-background pt-6 pb-6 [scrollbar-width:none] @container">
                 {children}
               </div>
 

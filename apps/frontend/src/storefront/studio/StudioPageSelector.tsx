@@ -77,7 +77,7 @@ export const StudioPageSelector: React.FC<StudioPageSelectorProps> = ({
         aria-expanded={isOpen}
         aria-label={`تعديل الصفحة: ${activePageDef.label}. انقر لفتح قائمة صفحات المتجر`}
         title="انقر لتبديل الصفحة وتعديل أقسامها"
-        className={`group flex h-9 items-center gap-2 rounded-xl border bg-card px-3 text-xs font-bold transition-all shadow-xs active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+        className={`group flex h-7 sm:h-9 items-center gap-1.5 sm:gap-2 rounded-lg sm:rounded-xl border bg-card px-2 sm:px-3 text-[11px] sm:text-xs font-bold transition-all shadow-xs active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
           isOpen
             ? "border-primary bg-primary/5 text-primary ring-1 ring-primary/30"
             : "border-border text-foreground hover:border-primary/40 hover:bg-muted/50"

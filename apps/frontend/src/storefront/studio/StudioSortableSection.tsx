@@ -8,6 +8,7 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { GripDotsIcon } from "./StudioLayersDrawer";
+import type { StudioDeviceMode } from "./StudioTypes";
 
 interface StudioSortableSectionProps {
   id: string;
@@ -17,6 +18,7 @@ interface StudioSortableSectionProps {
   sectionType: string;
   selected: boolean;
   totalSections: number;
+  deviceMode?: StudioDeviceMode;
   showSpacingOverlay?: boolean;
   onSelect: () => void;
   onMoveUp: () => void;
@@ -33,6 +35,7 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
   sectionType,
   selected,
   totalSections,
+  deviceMode = "desktop",
   showSpacingOverlay = true,
   onSelect,
   onMoveUp,
@@ -82,18 +85,18 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
           <span className="pointer-events-none absolute -bottom-1 -start-1 z-40 h-2.5 w-2.5 rounded-[2px] border-2 border-[#2b6cf6] bg-white shadow-sm" />
 
           {/* Pixel Size Badge */}
-          <div className="absolute -top-7 end-0 z-40 flex items-center rounded-md bg-[#2b6cf6] px-2 py-0.5 text-[10.5px] font-semibold text-white shadow-md select-none font-mono">
-            <span>1,180 × 420 px*</span>
+          <div className="absolute -top-7 end-0 z-40 flex items-center rounded-md bg-[#2b6cf6] px-2 py-0.5 text-[10px] sm:text-[10.5px] font-semibold text-white shadow-md select-none font-mono">
+            <span>{deviceMode === "mobile" ? "375 × 420 px*" : deviceMode === "tablet" ? "768 × 420 px*" : "1,180 × 420 px*"}</span>
           </div>
 
           {/* Floating Action Bar (fbtool) */}
           <div
             onClick={(e) => e.stopPropagation()}
-            className="absolute -top-7 start-0 sm:start-auto sm:end-28 z-40 flex items-center overflow-hidden rounded-lg border border-[#33363c] bg-[#17181c] text-[#d6dae0] shadow-xl text-[11px] select-none"
+            className="absolute -top-7 start-0 sm:start-auto sm:end-28 z-40 flex items-center overflow-hidden rounded-lg border border-[#33363c] bg-[#17181c] text-[#d6dae0] shadow-xl text-[10px] sm:text-[11px] select-none max-w-[calc(100%-80px)] sm:max-w-none"
           >
-            <span className="flex items-center gap-1 px-2.5 py-1 font-bold text-white bg-[#202226]">
-              <span>{sectionLabel}</span>
-              <span className="text-[9px] text-[#9ba0a8]">({sectionType})</span>
+            <span className="flex items-center gap-1 px-2 sm:px-2.5 py-1 font-bold text-white bg-[#202226] truncate max-w-[120px] sm:max-w-none">
+              <span className="truncate">{sectionLabel}</span>
+              <span className="hidden sm:inline text-[9px] text-[#9ba0a8]">({sectionType})</span>
             </span>
 
             {/* Drag handle */}

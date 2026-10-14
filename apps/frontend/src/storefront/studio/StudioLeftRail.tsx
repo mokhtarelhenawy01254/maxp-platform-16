@@ -50,7 +50,7 @@ export const StudioLeftRail: React.FC<StudioLeftRailProps> = ({
     <aside
       role="toolbar"
       aria-label="شريط أدوات الاستوديو"
-      className="flex h-full w-[54px] shrink-0 flex-col items-center border-e border-[#0c0d0f] bg-[#17181c] py-2.5 gap-1.5 select-none z-20"
+      className="hidden md:flex h-full w-[54px] shrink-0 flex-col items-center border-e border-[#0c0d0f] bg-[#17181c] py-2.5 gap-1.5 select-none z-20"
     >
       {items.map((item) => {
         const Icon = item.icon;
