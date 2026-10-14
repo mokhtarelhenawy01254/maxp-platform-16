@@ -1,11 +1,22 @@
-const { getDetailedOrderReport, getSalesReport } = require('../../controller/reportsController');
-const { getSharedPrismaClient } = require('../../services/sharedDatabase');
+jest.mock('date-fns-tz', () => ({
+  formatInTimeZone: jest.fn((d) => new Date(d).toISOString().slice(0, 10)),
+  fromZonedTime: jest.fn((d) => new Date(d)),
+}), { virtual: true });
+
+jest.mock('date-fns', () => ({
+  startOfDay: jest.fn((d) => new Date(d)),
+  endOfDay: jest.fn((d) => new Date(d)),
+  subDays: jest.fn((d, n) => new Date(new Date(d).getTime() - n * 86400000)),
+}), { virtual: true });
 
 jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
   initializeSharedDatabase: jest.fn(),
   executeWithRetry: jest.fn((fn) => fn()),
 }));
+
+const { getDetailedOrderReport, getSalesReport, getOrderStatusAnalytics } = require('../../controller/reportsController');
+const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 
 describe('reportsController - getDetailedOrderReport & getSalesReport', () => {
   let mockPrisma;
@@ -17,7 +28,13 @@ describe('reportsController - getDetailedOrderReport & getSalesReport', () => {
         findUnique: jest.fn().mockResolvedValue({ timezone: 'Africa/Cairo' }),
       },
       order: {
+        count: jest.fn().mockResolvedValue(10),
+        aggregate: jest.fn().mockResolvedValue({ _sum: { total: 1000 } }),
+        groupBy: jest.fn().mockResolvedValue([]),
         findMany: jest.fn().mockResolvedValue([]),
+      },
+      customOrderStatus: {
+        findFirst: jest.fn().mockResolvedValue(null),
       },
       guestOrder: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -27,6 +44,7 @@ describe('reportsController - getDetailedOrderReport & getSalesReport', () => {
         findMany: jest.fn().mockResolvedValue([]),
       },
       $queryRaw: jest.fn().mockResolvedValue([]),
+      $queryRawUnsafe: jest.fn().mockResolvedValue([]),
     };
     getSharedPrismaClient.mockReturnValue(mockPrisma);
   });
@@ -283,6 +301,50 @@ describe('reportsController - getDetailedOrderReport & getSalesReport', () => {
       expect(responseData.success).toBe(true);
       expect(responseData.data.data[0].orders).toBe(2);
       expect(responseData.data.data[0].sales).toBe(350);
+    });
+  });
+
+  describe('getOrderStatusAnalytics', () => {
+    test('accepts active custom status code without returning 400', async () => {
+      mockPrisma.customOrderStatus.findFirst.mockResolvedValue({ id: 'c-1', code: 'DELAYED_WITH_CAPTAIN' });
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([]);
+
+      const req = {
+        user: { companyId: 'comp-1' },
+        query: { status: 'DELAYED_WITH_CAPTAIN' },
+      };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+      };
+
+      await getOrderStatusAnalytics(req, res);
+
+      expect(res.status).not.toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalled();
+      const body = res.json.mock.calls[0][0];
+      expect(body.success).toBe(true);
+    });
+
+    test('rejects unrecognized status filter with 400', async () => {
+      mockPrisma.customOrderStatus.findFirst.mockResolvedValue(null);
+
+      const req = {
+        user: { companyId: 'comp-1' },
+        query: { status: 'UNKNOWN_RANDOM_STATUS' },
+      };
+      const res = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+      };
+
+      await getOrderStatusAnalytics(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: false,
+        error: expect.stringContaining('Invalid status filter'),
+      }));
     });
   });
 });

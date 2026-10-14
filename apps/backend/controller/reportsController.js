@@ -1,6 +1,10 @@
 const { getSharedPrismaClient, initializeSharedDatabase, executeWithRetry } = require('../services/sharedDatabase');
 const { formatInTimeZone, fromZonedTime } = require('date-fns-tz');
 const { startOfDay, endOfDay, subDays } = require('date-fns');
+const {
+    effectiveOrderStatusSql,
+    computeEffectiveOrderStatus,
+} = require('../utils/orderEffectiveStatus');
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
 // تقرير المبيعات الشهري
@@ -1217,18 +1221,18 @@ const getDetailedOrderReport = async (req, res) => {
             }
         });
 
-        // جلب توزيع القطع لكل حالة عبر استعلام خفيف وآمن
+        // جلب توزيع القطع لكل حالة عبر استعلام خفيف وآمن مع احتساب الحالة الفعلية
         try {
-            const statusPiecesRows = await prisma.$queryRaw`
-                SELECT o."status", COALESCE(SUM(oi."quantity"), 0)::int as pieces
+            const statusPiecesRows = await prisma.$queryRawUnsafe(`
+                SELECT (${effectiveOrderStatusSql('o')}) AS status, COALESCE(SUM(oi."quantity"), 0)::int as pieces
                 FROM "orders" o
                 JOIN "order_items" oi ON o."id" = oi."orderId"
-                WHERE o."companyId" = ${companyId}
-                  AND o."createdAt" >= ${start}
-                  AND o."createdAt" <= ${end}
+                WHERE o."companyId" = $1
+                  AND o."createdAt" >= $2
+                  AND o."createdAt" <= $3
                   AND o."status" NOT IN ('TRASH')
-                GROUP BY o."status"
-            `;
+                GROUP BY (${effectiveOrderStatusSql('o')})
+            `, companyId, start, end);
             if (Array.isArray(statusPiecesRows)) {
                 statusPiecesRows.forEach(r => {
                     if (r.status) {
@@ -1249,11 +1253,11 @@ const getDetailedOrderReport = async (req, res) => {
                     },
                     select: {
                         quantity: true,
-                        order: { select: { status: true } }
+                        order: { select: { status: true, customStatusCode: true, metadata: true } }
                     }
                 });
                 orderItems.forEach(item => {
-                    const st = item.order?.status;
+                    const st = computeEffectiveOrderStatus(item.order);
                     if (st) {
                         statusPiecesDistribution[st] = (statusPiecesDistribution[st] || 0) + (Number(item.quantity) || 0);
                     }
@@ -1548,18 +1552,9 @@ const getOrderStatusAnalytics = async (req, res) => {
         const start = startDate ? startOfDay(fromZonedTime(startDate, timeZone)) : subDays(new Date(), 90);
         const end = endDate ? endOfDay(fromZonedTime(endDate, timeZone)) : new Date();
 
-        const where = {
-            companyId,
-            createdAt: { gte: start, lte: end }
-        };
-
-        if (status) {
-            where.status = status.toUpperCase();
-        }
-
         const prisma = getSharedPrismaClient();
 
-        // تحقق من قيمة الحالة قبل الاستعلام لتجنب خطأ Prisma (400 بدلاً من 500)
+        // تحقق من قيمة الحالة قبل الاستعلام: إما حالة نظامية أو كود حالة مخصصة صالحة
         const VALID_ORDER_STATUSES = new Set([
             'PENDING', 'CONFIRMED', 'SCHEDULED', 'READY_FOR_PROCESSING', 'PROCESSING',
             'SHIPPED', 'DELIVERED', 'CANCELLED', 'DUPLICATE_ORDER', 'REFUNDED',
@@ -1570,16 +1565,58 @@ const getOrderStatusAnalytics = async (req, res) => {
             'STOCK_SHORTAGE', 'SHORTAGE_FAILED', 'PENDING_CANCELLATION'
         ]);
 
-        if (status && !VALID_ORDER_STATUSES.has(String(status).toUpperCase())) {
-            return res.status(400).json({ success: false, error: `Invalid status filter: ${status}` });
+        let isCustomStatus = false;
+        let normalizedStatus = null;
+        if (status) {
+            normalizedStatus = String(status).trim().toUpperCase();
+            if (!VALID_ORDER_STATUSES.has(normalizedStatus)) {
+                // فحص ما إذا كانت حالة مخصصة مسجلة للشركة
+                let customExists = null;
+                try {
+                    customExists = await prisma.customOrderStatus.findFirst({
+                        where: { companyId, code: normalizedStatus, isActive: true },
+                        select: { id: true }
+                    });
+                } catch (_) {}
+                if (!customExists) {
+                    return res.status(400).json({ success: false, error: `Invalid status filter: ${status}` });
+                }
+                isCustomStatus = true;
+            }
         }
+
+        const where = {
+            companyId,
+            createdAt: { gte: start, lte: end }
+        };
+
+        if (normalizedStatus) {
+            if (isCustomStatus) {
+                where.customStatusCode = normalizedStatus;
+            } else {
+                where.status = normalizedStatus;
+            }
+        }
+
+        const statusGroupsPromise = prisma.$queryRawUnsafe(`
+            SELECT (${effectiveOrderStatusSql()}) AS status, COUNT(*)::int AS count
+            FROM "orders"
+            WHERE "companyId" = $1 AND "createdAt" >= $2 AND "createdAt" <= $3
+            ${isCustomStatus ? ' AND UPPER("customStatusCode") = $4' : (normalizedStatus ? ' AND UPPER("status"::text) = $4' : '')}
+            GROUP BY (${effectiveOrderStatusSql()})
+        `, companyId, start, end, ...(normalizedStatus ? [normalizedStatus] : [])).then(rows => {
+            return rows.map(r => ({ status: r.status, _count: { _all: Number(r.count || 0) } }));
+        }).catch(err => {
+            console.warn('⚠️ [REPORTS] Raw status group failed, fallback to prisma groupBy:', err.message);
+            return prisma.order.groupBy({ by: ['status'], where, _count: { _all: true } });
+        });
 
         // تجميع كامل على مستوى قاعدة البيانات (بدون حد 5000 الذي كان يبتُر النتائج)
         const [totalOrders, revenueAgg, shortageAgg, statusGroups, govGroups, payGroups, srcGroups, recentShortage, trendRows, hourRows] = await Promise.all([
             prisma.order.count({ where }),
             prisma.order.aggregate({ where, _sum: { total: true } }),
             prisma.order.aggregate({ where: { ...where, status: 'SHORTAGE_FAILED' }, _sum: { total: true } }),
-            prisma.order.groupBy({ by: ['status'], where, _count: { _all: true } }),
+            statusGroupsPromise,
             prisma.order.groupBy({ by: ['governorate'], where, _count: { _all: true }, orderBy: { _count: { governorate: 'desc' } }, take: 10 }),
             prisma.order.groupBy({ by: ['paymentMethod'], where, _count: { _all: true } }),
             prisma.order.groupBy({ by: ['sourceType'], where, _count: { _all: true } }),
@@ -1598,18 +1635,18 @@ const getOrderStatusAnalytics = async (req, res) => {
                 take: 50
             }),
             prisma.$queryRawUnsafe(
-                `SELECT to_char("createdAt" AT TIME ZONE $4, 'YYYY-MM-DD') AS day, status, COUNT(*)::int AS cnt
+                `SELECT to_char("createdAt" AT TIME ZONE $4, 'YYYY-MM-DD') AS day, (${effectiveOrderStatusSql()}) AS status, COUNT(*)::int AS cnt
                  FROM "orders"
-                 WHERE "companyId" = $1 AND "createdAt" >= $2 AND "createdAt" <= $3${status ? ' AND "status" = $5' : ''}
-                 GROUP BY day, status ORDER BY day`,
-                companyId, start, end, timeZone, ...(status ? [String(status).toUpperCase()] : [])
+                 WHERE "companyId" = $1 AND "createdAt" >= $2 AND "createdAt" <= $3${isCustomStatus ? ' AND UPPER("customStatusCode") = $5' : (normalizedStatus ? ' AND UPPER("status"::text) = $5' : '')}
+                 GROUP BY day, (${effectiveOrderStatusSql()}) ORDER BY day`,
+                companyId, start, end, timeZone, ...(normalizedStatus ? [normalizedStatus] : [])
             ),
             prisma.$queryRawUnsafe(
                 `SELECT EXTRACT(HOUR FROM ("createdAt" AT TIME ZONE $4))::int AS hour, COUNT(*)::int AS cnt
                  FROM "orders"
-                 WHERE "companyId" = $1 AND "createdAt" >= $2 AND "createdAt" <= $3${status ? ' AND "status" = $5' : ''}
+                 WHERE "companyId" = $1 AND "createdAt" >= $2 AND "createdAt" <= $3${isCustomStatus ? ' AND UPPER("customStatusCode") = $5' : (normalizedStatus ? ' AND UPPER("status"::text) = $5' : '')}
                  GROUP BY hour ORDER BY hour`,
-                companyId, start, end, timeZone, ...(status ? [String(status).toUpperCase()] : [])
+                companyId, start, end, timeZone, ...(normalizedStatus ? [normalizedStatus] : [])
             )
         ]);
 
