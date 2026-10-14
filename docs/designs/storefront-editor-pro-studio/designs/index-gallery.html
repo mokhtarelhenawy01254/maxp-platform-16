@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>معرض التصاميم — محرر واجهة المتجر (MaxP)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Cairo:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #f2f1ef; font-family: 'IBM Plex Sans Arabic','Segoe UI',Tahoma,sans-serif; }
+  .ghead { max-width: 1400px; margin: 0 auto; padding: 26px 20px 8px; }
+  .ghead h1 { margin: 0 0 6px; font-family: Cairo; font-size: 24px; color: #14161a; }
+  .ghead p { margin: 0; color: #5e6268; font-size: 13px; }
+  .gtabs { position: sticky; top: 0; z-index: 500; background: rgba(242,241,239,.92); backdrop-filter: blur(8px);
+           display: flex; gap: 8px; padding: 12px 20px; max-width: 1400px; margin: 0 auto; flex-wrap: wrap; }
+  .gtabs button { border: 1px solid #ddd; background: #fff; color: #3f434a; font-size: 12.5px; font-family: inherit;
+                  padding: 8px 16px; border-radius: 999px; cursor: pointer; }
+  .gtabs button.on { background: #14161a; color: #fff; border-color: #14161a; }
+  .gtabs .all { background: #eef4ff; border-color: #d6e4ff; color: #1d4ed8; }
+  .gtabs .all.on { background: #2563eb; color: #fff; border-color: #2563eb; }
+  .gslot { display: none; }
+  .gslot.vis { display: block; }
+  .gsep { max-width: 1400px; margin: 8px auto 30px; border: 0; border-top: 1px dashed #cfcfcf; }
+</style>
+</head>
+<body>
+<div class="ghead">
+  <h1>معرض تصاميم محرر واجهة المتجر — MaxP</h1>
+  <p>4 اتجاهات تصميم جاهزة لصفحة <code>/settings/storefront/editor</code> مستوحاة من شوبيفاي وووردبريس وWix Studio + اتجاه AI الحديث (2026). كل تصميم ملف HTML مستقل قابل للفتح والتعديل.</p>
+</div>
+<div class="gtabs">
+  <button class="on" data-g="1">1 — Canvas First (شوبيفاي)</button>
+  <button data-g="2">2 — Blocks &amp; Styles (ووردبريس)</button>
+  <button data-g="3">3 — Pro Studio (Wix Studio)</button>
+  <button data-g="4">4 — AI Copilot (2026)</button>
+  <button class="all" data-g="all">عرض الكل للمقارنة</button>
+</div>
+
+<div class="gslot vis" id="g1">
+<style>
+  /* BODYRESET */
+  body { margin: 0; padding: 0; }
+  /* ============ تصميم 1 — "Canvas First" بروح شوبيفاي 2026 ============ */
+  .d1, .d1 * { box-sizing: border-box; margin: 0; padding: 0; }
+  .d1 {
+    font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+    background: #dcdad6; width: 100%; padding: 18px 0 10px;
+    --blue: #2563eb; --ink: #17181c; --muted: #83878f; --hair: #e7e6e3;
+    --chrome: #131417; --panel: #ffffff; --backdrop: #e9e7e3; --ai: #7c5cff;
+  }
+  .d1 .stagewrap { width: 100%; overflow: hidden; }
+  .d1 .stage {
+    width: 1360px; height: 852px; transform-origin: top right;
+    background: var(--backdrop); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 30px 70px rgba(20,20,25,.28); margin: 0 auto;
+    display: flex; flex-direction: column; direction: rtl;
+  }
+  /* ---------- شريط علوي (التنقل انتقل له بنفس أسلوب شوبيفاي 2026) ---------- */
+  .d1 .topbar { height: 54px; background: var(--chrome); color: #fff; display: flex; align-items: center; gap: 10px; padding: 0 12px; flex: 0 0 auto; }
+  .d1 .brandmark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg,#3b82f6,#1d4ed8); display: flex; align-items: center; justify-content: center; font-family: Cairo; font-weight: 800; font-size: 15px; color: #fff; }
+  .d1 .storechip { display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 6px; border-radius: 10px; background: #1e2025; }
+  .d1 .storechip .av { width: 22px; height: 22px; border-radius: 7px; background: linear-gradient(135deg,#c98a5b,#8a5a34); color: #fff; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+  .d1 .storechip .nm { font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+  .d1 .storechip .tag { font-size: 10px; color: #9aa0a8; border: 1px solid #34373d; padding: 1px 6px; border-radius: 999px; }
+  .d1 .tbtn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; min-width: 32px; padding: 0 8px; border-radius: 9px; color: #c9ccd2; font-size: 12px; border: 0; background: transparent; cursor: default; }
+  .d1 .tbtn.on { background: #23262b; color: #fff; }
+  .d1 .tbtn .ic { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .d1 .sep { width: 1px; height: 22px; background: #2b2e34; margin: 0 4px; }
+  .d1 .tpl { display: flex; align-items: center; gap: 7px; background: #1e2025; height: 32px; padding: 0 12px; border-radius: 9px; font-size: 12.5px; color: #e8eaed; }
+  .d1 .tpl .mini { font-size: 10.5px; color: #8b9099; }
+  .d1 .flex1 { flex: 1; }
+  .d1 .devseg { display: flex; background: #1e2025; border-radius: 10px; padding: 3px; gap: 2px; }
+  .d1 .devseg .dv { height: 28px; padding: 0 10px; display: flex; align-items: center; gap: 6px; border-radius: 8px; color: #9ba0a8; font-size: 12px; }
+  .d1 .devseg .dv.on { background: #2e3238; color: #fff; }
+  .d1 .pct { font-size: 12px; color: #9ba0a8; padding: 0 4px; }
+  .d1 .btn-primary { height: 34px; padding: 0 18px; border-radius: 10px; background: var(--blue); color: #fff; font-size: 13px; font-weight: 600; border: 0; display: inline-flex; align-items: center; gap: 7px; }
+  .d1 .btn-ghost { height: 34px; padding: 0 12px; border-radius: 10px; color: #e8eaed; font-size: 12.5px; border: 1px solid #33363c; background: transparent; display: inline-flex; align-items: center; gap: 6px; }
+  .d1 .saved { font-size: 11.5px; color: #7f8791; display: flex; align-items: center; gap: 5px; }
+  /* ---------- المنطقة الرئيسية ---------- */
+  .d1 .main { flex: 1; display: flex; min-height: 0; }
+  /* لوحة الإعدادات (مرآة RTL لشريط شوبيفاي الجانبي) */
+  .d1 .panel { width: 322px; background: var(--panel); border-left: 1px solid var(--hair); display: flex; flex-direction: column; flex: 0 0 auto; }
+  .d1 .panel .ph { padding: 14px 16px 10px; border-bottom: 1px solid var(--hair); display: flex; align-items: center; gap: 10px; }
+  .d1 .panel .ph .collapse { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--hair); color: #6b6f76; display: flex; align-items: center; justify-content: center; }
+  .d1 .panel .ph .ttl { flex: 1; }
+  .d1 .panel .ph .ttl b { font-size: 14px; color: var(--ink); display: block; }
+  .d1 .panel .ph .ttl span { font-size: 11px; color: var(--muted); }
+  .d1 .pbody { flex: 1; overflow: hidden; padding: 4px 16px 14px; }
+  .d1 .grp { padding: 12px 0 10px; border-bottom: 1px solid var(--hair); }
+  .d1 .grp:last-child { border-bottom: 0; }
+  .d1 .grp .gt { font-size: 10.5px; letter-spacing: .08em; color: #9aa0a8; font-weight: 600; margin-bottom: 9px; }
+  .d1 .fld { margin-bottom: 9px; }
+  .d1 .fld label { display: block; font-size: 11.5px; color: #5c6068; margin-bottom: 5px; }
+  .d1 .inp { height: 34px; border: 1px solid #e2e2e4; background: #f8f8f9; border-radius: 9px; display: flex; align-items: center; padding: 0 11px; font-size: 12.5px; color: var(--ink); }
+  .d1 .inp.ta { height: 52px; align-items: flex-start; padding-top: 8px; color: #4a4e55; }
+  .d1 .media { display: flex; align-items: center; gap: 10px; }
+  .d1 .media .thumb { width: 52px; height: 44px; border-radius: 9px; background: radial-gradient(42% 55% at 60% 62%, rgba(96,64,32,.36), rgba(96,64,32,0) 72%), radial-gradient(120% 100% at 72% 16%, #ecdcc0, #cfb086 60%, #a8825a); border: 1px solid #e4e4e6; }
+  .d1 .media .mmeta { flex: 1; }
+  .d1 .media .mmeta b { font-size: 12px; color: var(--ink); display: block; }
+  .d1 .media .mmeta span { font-size: 10.5px; color: var(--muted); }
+  .d1 .linkbtn { font-size: 12px; color: var(--blue); font-weight: 600; }
+  .d1 .seg { display: flex; background: #f1f1f3; border-radius: 9px; padding: 3px; gap: 2px; }
+  .d1 .seg .s { flex: 1; text-align: center; font-size: 11.5px; color: #6b6f76; padding: 6px 0; border-radius: 7px; }
+  .d1 .seg .s.on { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.09); }
+  .d1 .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+  .d1 .row span { font-size: 12px; color: #4a4e55; }
+  .d1 .tgl { width: 34px; height: 20px; border-radius: 999px; background: var(--blue); position: relative; }
+  .d1 .tgl::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; }
+  .d1 .tgl.off { background: #d9dbdf; }
+  .d1 .tgl.off::after { left: auto; right: 2px; }
+  .d1 .swatches { display: flex; gap: 8px; align-items: center; }
+  .d1 .sw { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #dedee0; }
+  .d1 .sw.on { box-shadow: 0 0 0 2px var(--blue); }
+  .d1 .sw.add { border: 1px dashed #c6c8cc; display: flex; align-items: center; justify-content: center; color: #8a8e95; font-size: 14px; box-shadow: none; }
+  .d1 .panel .pfoot { border-top: 1px solid var(--hair); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
+  .d1 .panel .pfoot .hide { font-size: 12px; color: #5c6068; display: flex; align-items: center; gap: 8px; }
+  .d1 .panel .pfoot .reset { font-size: 12px; color: var(--blue); font-weight: 600; }
+  /* الكانفس */
+  .d1 .canvas { flex: 1; position: relative; overflow: hidden;
+    background:
+      linear-gradient(#e2e0dc 1px, transparent 1px), linear-gradient(90deg, #e2e0dc 1px, transparent 1px),
+      var(--backdrop);
+    background-size: 72px 72px, 72px 72px, auto; }
+  .d1 .page { width: 764px; margin: 22px auto 0; background: #fff; border-radius: 12px 12px 0 0; box-shadow: 0 22px 50px rgba(25,25,30,.16); overflow: hidden; }
+  /* هيدر المتجر */
+  .d1 .sh { display: flex; align-items: center; justify-content: space-between; padding: 14px 22px; border-bottom: 1px solid #f0eeea; background: #fffdfa; }
+  .d1 .sh .logo { font-family: Cairo; font-weight: 800; font-size: 16px; color: #2b241d; }
+  .d1 .sh .logo i { font-style: normal; color: #b4552d; }
+  .d1 .sh nav { display: flex; gap: 16px; font-size: 11.5px; color: #6b6257; }
+  .d1 .sh .cm { display: flex; align-items: center; gap: 10px; color: #4a4237; }
+  .d1 .sh .cart { position: relative; width: 26px; height: 26px; }
+  .d1 .sh .cart .b { position: absolute; top: -4px; left: -4px; background: #b4552d; color: #fff; font-size: 9px; min-width: 14px; height: 14px; border-radius: 999px; display: flex; align-items: center; justify-content: center; padding: 0 3px; }
+  /* أقسام المتجر داخل المعاينة */
+  .d1 .sec { position: relative; }
+  .d1 .sec.sel { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .d1 .sec .lbl { position: absolute; top: 8px; right: 10px; background: var(--blue); color: #fff; font-size: 10.5px; font-weight: 600; padding: 3px 9px; border-radius: 7px; display: flex; align-items: center; gap: 6px; z-index: 4; box-shadow: 0 6px 14px rgba(37,99,235,.35); }
+  .d1 .sec .drag { letter-spacing: 1px; opacity: .85; font-size: 11px; }
+  .d1 .sec .corner { position: absolute; width: 9px; height: 9px; background: #fff; border: 2px solid var(--blue); border-radius: 2px; z-index: 4; }
+  .d1 .hero { padding: 40px 34px 34px; background: linear-gradient(180deg,#faf7f2,#f4efe7); text-align: right; }
+  .d1 .hero .kick { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; color: #8a6b4f; background: #f1e6d6; border-radius: 999px; padding: 4px 10px; margin-bottom: 12px; }
+  .d1 .hero h1 { font-family: Cairo; font-size: 30px; line-height: 1.35; color: #241d15; font-weight: 800; }
+  .d1 .hero h1 em { font-style: normal; color: #b4552d; }
+  .d1 .hero p { margin-top: 9px; font-size: 12.5px; color: #6f6659; line-height: 1.8; width: 420px; }
+  .d1 .hero .cta { display: inline-flex; margin-top: 16px; gap: 10px; }
+  .d1 .hero .b1 { background: #241d15; color: #fff; font-size: 12.5px; font-weight: 600; padding: 10px 22px; border-radius: 10px; }
+  .d1 .hero .b2 { border: 1px solid #d8cfc0; color: #4a4237; font-size: 12.5px; padding: 10px 18px; border-radius: 10px; background: #fff; }
+  .d1 .hero .art { position: absolute; left: 30px; top: 34px; width: 220px; height: 168px; border-radius: 14px; background: radial-gradient(45% 62% at 64% 60%, rgba(128,90,50,.35), rgba(128,90,50,0) 72%), radial-gradient(120% 100% at 74% 16%, #f7ecd9, #e4cfa9 55%, #c9ab7f); box-shadow: inset 0 0 0 1px #e2d4c0; }
+  .d1 .addsec { position: relative; height: 0; z-index: 6; }
+  .d1 .addsec .pill { position: absolute; top: -15px; right: 50%; transform: translateX(50%); background: #fff; border: 1px solid #d9dade; color: var(--blue); font-size: 11px; font-weight: 600; border-radius: 999px; padding: 5px 13px; display: flex; align-items: center; gap: 5px; box-shadow: 0 8px 18px rgba(0,0,0,.12); }
+  .d1 .cats { display: flex; gap: 10px; padding: 18px 22px 6px; background: #fff; }
+  .d1 .cats .c { flex: 1; height: 58px; border-radius: 10px; background: linear-gradient(135deg,#f6efe4,#eaddc7); display: flex; align-items: center; justify-content: center; font-size: 11.5px; color: #5d5344; font-weight: 600; border: 1px solid #efe7d8; }
+  .d1 .prods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 14px 22px 20px; background: #fff; }
+  .d1 .pc { border: 1px solid #f0eeea; border-radius: 12px; overflow: hidden; }
+  .d1 .pc .im { height: 104px; background: radial-gradient(46% 60% at 60% 62%, rgba(124,92,55,.30), rgba(124,92,55,0) 72%), radial-gradient(120% 100% at 70% 18%, #f5ecdd, #dfcba8 58%, #c3a67d); position: relative; }
+  .d1 .pc .im .bdg { position: absolute; top: 8px; right: 8px; background: #b4552d; color: #fff; font-size: 9.5px; padding: 2px 8px; border-radius: 999px; }
+  .d1 .pc .im .bdg.g { background: #3f7d54; }
+  .d1 .pc .inf { padding: 9px 10px 11px; }
+  .d1 .pc .inf b { font-size: 12px; color: #2b241d; display: block; }
+  .d1 .pc .inf .pr { margin-top: 4px; font-size: 12px; font-weight: 700; color: #241d15; }
+  .d1 .pc .inf .pr s { color: #b3aca1; font-weight: 400; font-size: 10.5px; margin-right: 6px; }
+  .d1 .pgfooter { height: 54px; background: #241d15; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; }
+  .d1 .pgfooter span { font-size: 10.5px; color: #b9b0a2; }
+  .d1 .pgfooter b { font-family: Cairo; color: #f4efe7; font-size: 12.5px; }
+  /* كبسولة المساعد العائمة (Sidekick-style) */
+  .d1 .sidekick { position: absolute; bottom: 18px; right: 50%; transform: translateX(50%); background: #fff; border-radius: 999px; box-shadow: 0 14px 34px rgba(20,20,30,.22), 0 0 0 1px rgba(0,0,0,.03); display: flex; align-items: center; gap: 10px; padding: 7px 8px 7px 16px; z-index: 9; }
+  .d1 .sidekick .sp { width: 28px; height: 28px; border-radius: 50%; background: var(--ai); display: flex; align-items: center; justify-content: center; }
+  .d1 .sidekick .sp svg { width: 15px; height: 15px; stroke: #fff; }
+  .d1 .sidekick .txt { font-size: 12.5px; color: #5c6068; }
+  .d1 .sidekick kbd { font-family: inherit; font-size: 10.5px; color: #8a8e95; background: #f1f1f3; border: 1px solid #e3e3e5; border-radius: 6px; padding: 2px 6px; }
+  .d1 .sidekick .dv2 { width: 1px; height: 20px; background: #ececee; }
+  .d1 .sidekick .ico { width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: #6b6f76; }
+  /* تعليق أسفل النموذج */
+  .d1 .cap { width: auto; max-width: 1360px; margin: 14px auto 0; display: flex; align-items: center; gap: 12px; padding: 0 20px; flex-wrap: wrap; row-gap: 8px; }
+  .d1 .cap .num { font-family: Cairo; font-weight: 800; font-size: 22px; color: #fff; background: #131417; border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+  .d1 .cap .tx b { color: #17181c; font-size: 15px; display: block; }
+  .d1 .cap .tx span { color: #5e6268; font-size: 12px; }
+  .d1 .cap .tags { margin-right: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .d1 .cap .tags i { font-style: normal; font-size: 10.5px; color: #3f434a; background: #fff; border: 1px solid #d8d8d8; padding: 4px 10px; border-radius: 999px; }
+  .d1 .pc .inf .pr { white-space: nowrap; }
+  .d1 .pc .inf b { white-space: nowrap; }
+</style>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M8 7 4 11l4 4"/><path d="M4 11h9a6 6 0 0 1 0 12h-1"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="m16 7 4 4-4 4"/><path d="M20 11h-9a6 6 0 0 0 0 12h1"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/></symbol>
+  <symbol id="i-tablet" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 19h2"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-collapse" viewBox="0 0 24 24"><path d="m14 7-5 5 5 5"/><path d="M19 5v14"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><path d="M4 5h2l2.2 10.5a1.5 1.5 0 0 0 1.5 1.2h7.6a1.5 1.5 0 0 0 1.5-1.2L20.5 8H7"/><circle cx="10.5" cy="19.5" r="1"/><circle cx="17.5" cy="19.5" r="1"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M4 12v1M8 9v6M12 6v12M16 9v6M20 12v1"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="9" cy="18" r="1.3"/><circle cx="15" cy="6" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="15" cy="18" r="1.3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.8-3.8"/></symbol>
+</svg>
+
+<div class="d1" id="d1root">
+  <div class="stagewrap"><div class="stage" id="d1stage">
+
+    <!-- ═══ شريط علوي موحّد (كما نقلت شوبيفاي التنقل للسكة العلوية في 2026) ═══ -->
+    <div class="topbar">
+      <div class="brandmark">م</div>
+      <div class="storechip">
+        <span class="av">د</span><span class="nm">دار الديكور</span>
+        <span class="tag">تجريبي</span>
+        <svg class="ic" style="width:14px;height:14px;stroke:#9aa0a8;fill:none;stroke-width:1.8"><use href="#i-chev"/></svg>
+      </div>
+      <div class="sep"></div>
+      <div class="tpl">
+        <span class="mini">القالب:</span> الرئيسية
+        <svg class="ic" style="width:14px;height:14px;stroke:#9ba0a8;fill:none;stroke-width:1.8"><use href="#i-chev"/></svg>
+      </div>
+
+      <div class="flex1"></div>
+
+      <div class="devseg">
+        <div class="dv on"><svg class="ic" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7"><use href="#i-monitor"/></svg>سطح المكتب</div>
+        <div class="dv"><svg class="ic" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7"><use href="#i-tablet"/></svg></div>
+        <div class="dv"><svg class="ic" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7"><use href="#i-phone"/></svg></div>
+      </div>
+      <div class="pct">100%</div>
+
+      <div class="flex1"></div>
+
+      <div class="saved">تم الحفظ تلقائيًا 14:32</div>
+      <div class="sep"></div>
+      <button class="tbtn"><svg class="ic"><use href="#i-undo"/></svg></button>
+      <button class="tbtn"><svg class="ic"><use href="#i-redo"/></svg></button>
+      <button class="tbtn"><svg class="ic"><use href="#i-eye"/></svg> معاينة</button>
+      <button class="btn-ghost">حفظ</button>
+      <button class="btn-primary">نشر</button>
+    </div>
+
+    <!-- ═══ الجسم: كانفس في المنتصف + لوحة إعدادات قابلة للطي ═══ -->
+    <div class="main">
+
+      <!-- لوحة الإعدادات السياقية -->
+      <aside class="panel">
+        <div class="ph">
+          <div class="collapse"><svg class="ic" style="width:15px;height:15px;stroke:#6b6f76;fill:none;stroke-width:1.8"><use href="#i-collapse"/></svg></div>
+          <div class="ttl"><b>قسم البطل</b><span>الرئيسية ← قسم البطل</span></div>
+        </div>
+        <div class="pbody">
+          <div class="grp">
+            <div class="gt">المحتوى</div>
+            <div class="fld"><label>العنوان الرئيسي</label><div class="inp">أناقة تُناسب بيتك</div></div>
+            <div class="fld"><label>العنوان الفرعي</label><div class="inp ta">مجموعة جديدة من الأثاث والديكور بلمسة هادئة…</div></div>
+            <div class="fld"><label>نص الزر</label><div class="inp">تسوق المجموعة</div></div>
+          </div>
+          <div class="grp">
+            <div class="gt">الوسائط</div>
+            <div class="media">
+              <div class="thumb"></div>
+              <div class="mmeta"><b>hero-living-room.jpg</b><span>1600 × 900 • 240KB</span></div>
+              <span class="linkbtn">تغيير</span>
+            </div>
+          </div>
+          <div class="grp">
+            <div class="gt">التخطيط</div>
+            <div class="seg" style="margin-bottom:10px"><div class="s">ضيق</div><div class="s on">متوسط</div><div class="s">واسع</div></div>
+            <div class="seg"><div class="s on">نص بجانب صورة</div><div class="s">عرض كامل</div></div>
+          </div>
+          <div class="grp">
+            <div class="gt">الألوان</div>
+            <div class="swatches">
+              <span class="sw on" style="background:#241d15"></span>
+              <span class="sw" style="background:#b4552d"></span>
+              <span class="sw" style="background:#f1e6d6"></span>
+              <span class="sw" style="background:#3f7d54"></span>
+              <span class="sw add">+</span>
+            </div>
+          </div>
+          <div class="grp">
+            <div class="gt">الحركات</div>
+            <div class="row"><span>ظهور تدريجي عند التمرير</span><span class="tgl"></span></div>
+            <div class="row" style="margin-bottom:0"><span>تأثير الصورة (تكبير بطيء)</span><span class="tgl off"></span></div>
+          </div>
+        </div>
+        <div class="pfoot">
+          <span class="hide">إخفاء القسم <span class="tgl off"></span></span>
+          <span class="reset">إعادة تعيين</span>
+        </div>
+      </aside>
+
+      <!-- الكانفس -->
+      <div class="canvas">
+        <div class="page">
+
+          <!-- هيدر المتجر -->
+          <div class="sh">
+            <div class="logo">دار <i>الديكور</i></div>
+            <nav><span>الرئيسية</span><span>المتجر</span><span>العروض</span><span>تواصل معنا</span></nav>
+            <div class="cm">
+              <svg class="ic" style="width:19px;height:19px;stroke:#4a4237;fill:none;stroke-width:1.6"><use href="#i-search"/></svg>
+              <span class="cart"><svg class="ic" style="width:20px;height:20px;stroke:#4a4237;fill:none;stroke-width:1.6"><use href="#i-cart"/></svg><span class="b">3</span></span>
+            </div>
+          </div>
+
+          <!-- قسم البطل — محدد -->
+          <div class="sec sel" style="background:linear-gradient(180deg,#faf7f2,#f4efe7)">
+            <div class="lbl"><span class="drag">⠿</span> قسم البطل</div>
+            <span class="corner" style="top:6px;right:6px"></span>
+            <span class="corner" style="top:6px;left:6px"></span>
+            <span class="corner" style="bottom:6px;right:6px"></span>
+            <span class="corner" style="bottom:6px;left:6px"></span>
+            <div class="hero" style="position:relative">
+              <span class="kick">✦ تشكيلة 2026 وصلت</span>
+              <h1>أناقة تُناسب بيتك<br>بلمسة <em>هادئة ودافئة</em></h1>
+              <p>مجموعة جديدة من الأثاث والديكور المصنوع بعناية ليضيف دفئًا وأناقة لمساحتك الخاصة.</p>
+              <div class="cta"><span class="b1">تسوق المجموعة</span><span class="b2">تصفح الفئات</span></div>
+              <div class="art"></div>
+            </div>
+          </div>
+
+          <div class="addsec"><span class="pill"><svg class="ic" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.8"><use href="#i-plus"/></svg> إضافة قسم</span></div>
+
+          <!-- الفئات -->
+          <div class="cats">
+            <div class="c">غرف المعيشة</div><div class="c">غرف النوم</div><div class="c">إضاءة</div><div class="c">ديكور الجدران</div>
+          </div>
+
+          <!-- المنتجات -->
+          <div class="prods">
+            <div class="pc"><div class="im"><span class="bdg">جديد</span></div><div class="inf"><b>كنبة «سحابة»</b><div class="pr">4,850 ج.م</div></div></div>
+            <div class="pc"><div class="im" style="background:radial-gradient(48% 58% at 38% 60%, rgba(110,74,40,.34), rgba(110,74,40,0) 72%), radial-gradient(120% 100% at 32% 18%, #efe2cb, #d9c19c 58%, #b6976e)"><span class="bdg g">خصم 20%</span></div><div class="inf"><b>طاولة قهوة</b><div class="pr">2,300 ج.م <s>2,875</s></div></div></div>
+            <div class="pc"><div class="im" style="background:radial-gradient(44% 58% at 58% 60%, rgba(105,95,80,.28), rgba(105,95,80,0) 72%), radial-gradient(120% 100% at 68% 16%, #f4efe7, #ddd2bf 58%, #bfb09a)"></div><div class="inf"><b>مرآة «ذهب»</b><div class="pr">1,150 ج.م</div></div></div>
+            <div class="pc"><div class="im" style="background:radial-gradient(48% 58% at 42% 62%, rgba(130,80,45,.30), rgba(130,80,45,0) 72%), radial-gradient(120% 100% at 34% 16%, #f1e6d4, #dcc3a2 56%, #b99872)"></div><div class="inf"><b>سجادة «واحة»</b><div class="pr">3,400 ج.م</div></div></div>
+          </div>
+
+          <div class="pgfooter"><b>دار الديكور</b><span>الدفع عند الاستلام • شحن لكل المحافظات • استبدال خلال 14 يوم</span></div>
+        </div>
+
+        <!-- المساعد العائم -->
+        <div class="sidekick">
+          <span class="sp"><svg class="ic" style="fill:none;stroke-width:1.7"><use href="#i-spark"/></svg></span>
+          <span class="txt">اسأل مساعد ماكس…</span>
+          <kbd>Ctrl K</kbd>
+          <span class="dv2"></span>
+          <span class="ico"><svg class="ic" style="width:16px;height:16px;stroke:#6b6f76;fill:none;stroke-width:1.7"><use href="#i-wave"/></svg></span>
+          <span class="ico"><svg class="ic" style="width:15px;height:15px;stroke:#6b6f76;fill:none;stroke-width:1.7"><use href="#i-expand"/></svg></span>
+        </div>
+      </div>
+    </div>
+  </div></div>
+
+  <div class="cap">
+    <div class="num">1</div>
+    <div class="tx">
+      <b>Canvas First — المعاينة أولًا</b>
+      <span>مستوحى من محرر ثيمات شوبيفاي (تحديث مارس 2026): التنقل في شريط علوي، المعاينة في المنتصف، لوحة إعدادات قابلة للطي، ومساعد AI عائم في كل صفحة.</span>
+    </div>
+    <div class="tags">
+      <i>شريط علوي موحّد</i><i>لوحة سياقية قابلة للطي</i><i>مساعد AI عائم</i><i>إضافة أقسام داخل المعاينة</i>
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+<hr class="gsep">
+<div class="gslot" id="g2">
+<style>
+  /* BODYRESET */
+  body { margin: 0; padding: 0; }
+  /* ============ تصميم 2 — "Blocks & Styles" بروح ووردبريس (Gutenberg / Site Editor 2026) ============ */
+  .d2, .d2 * { box-sizing: border-box; margin: 0; padding: 0; }
+  .d2 {
+    font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+    background: #dcdad6; width: 100%; padding: 18px 0 10px;
+    --wp: #3858e9; --chrome: #1e1e1e; --chrome2: #262626; --text: #e0e0e0; --mut: #a3a3a3;
+  }
+  .d2 .stagewrap { width: 100%; overflow: hidden; }
+  .d2 .stage {
+    width: 1360px; height: 852px; transform-origin: top right; margin: 0 auto;
+    background: #0f1012; border-radius: 12px; overflow: hidden;
+    box-shadow: 0 30px 70px rgba(20,20,25,.30); display: flex; flex-direction: column; direction: rtl;
+  }
+  /* ---------- الشريط العلوي (داكن، بأسلوب محرر المواقع) ---------- */
+  .d2 .topbar { height: 48px; background: var(--chrome); color: var(--text); display: flex; align-items: center; gap: 4px; padding: 0 10px; flex: 0 0 auto; border-bottom: 1px solid #101010; }
+  .d2 .mark { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg,#4f6cf0,#2c46c9); display: flex; align-items: center; justify-content: center; font-family: Cairo; font-weight: 800; font-size: 14px; color: #fff; margin-left: 4px; }
+  .d2 .tbt { height: 34px; min-width: 34px; padding: 0 9px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; color: #cfcfcf; font-size: 12px; background: transparent; border: 0; }
+  .d2 .tbt:hover, .d2 .tbt.on { background: #313131; color: #fff; }
+  .d2 .tbt .ic { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .d2 .plusbig { background: #313131; color: #fff; border-radius: 6px; }
+  .d2 .docttl { display: flex; flex-direction: column; align-items: center; line-height: 1.25; margin: 0 auto; }
+  .d2 .docttl b { font-size: 12.5px; color: #f0f0f0; font-weight: 600; }
+  .d2 .docttl span { font-size: 10.5px; color: var(--mut); }
+  .d2 .zoom { font-size: 12px; color: #cfcfcf; padding: 0 8px; }
+  .d2 .savebtn { background: var(--wp); color: #fff; font-size: 12.5px; font-weight: 600; padding: 8px 16px; border-radius: 6px; border: 0; margin-right: 4px; }
+  .d2 .prevbtn { color: #cfcfcf; font-size: 12.5px; padding: 8px 10px; }
+  .d2 .flex1 { flex: 1; }
+  /* ---------- المنطقة الرئيسية [كانفس | اللوحة الجانبية يميناً — مرآة ووردبريس] ---------- */
+  .d2 .main { flex: 1; display: flex; min-height: 0; position: relative; }
+  /* لوحة الأقسام/الأنماط */
+  .d2 .sidebar { width: 300px; background: var(--chrome); border-left: 1px solid #101010; display: flex; flex-direction: column; flex: 0 0 auto; }
+  .d2 .tabs { display: flex; border-bottom: 1px solid #313131; }
+  .d2 .tabs .tb { flex: 1; text-align: center; padding: 12px 0 10px; font-size: 12.5px; color: var(--mut); position: relative; }
+  .d2 .tabs .tb.on { color: #fff; font-weight: 600; }
+  .d2 .tabs .tb.on::after { content: ''; position: absolute; right: 24%; left: 24%; bottom: -1px; height: 2px; background: var(--wp); border-radius: 2px; }
+  .d2 .tree { flex: 1; overflow: hidden; padding: 8px 8px; }
+  .d2 .tlbl { font-size: 10px; color: #8a8a8a; letter-spacing: .1em; padding: 8px 8px 4px; }
+  .d2 .row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 7px; color: #d6d6d6; font-size: 12.5px; }
+  .d2 .row .ic { width: 15px; height: 15px; stroke: #9c9c9c; fill: none; stroke-width: 1.7; }
+  .d2 .row .eye { width: 15px; height: 15px; stroke: #7e7e7e; fill: none; stroke-width: 1.6; margin-right: auto; }
+  .d2 .row .kind { font-size: 10px; color: #8a8a8a; }
+  .d2 .row.on { background: #313131; color: #fff; box-shadow: inset 2px 0 0 var(--wp); }
+  .d2 .child { display: flex; align-items: center; gap: 8px; padding: 7px 12px 7px 10px; margin: 2px 18px 2px 6px; border-radius: 6px; color: #c9c9c9; font-size: 12px; border-right: 1px solid #343434; }
+  .d2 .child .t { width: 20px; height: 20px; border-radius: 5px; background: #333; color: #cfcfcf; font-size: 10.5px; display: flex; align-items: center; justify-content: center; }
+  .d2 .child.on { background: #2c2c2c; color: #fff; }
+  .d2 .child .dots { color: #6f6f6f; font-size: 11px; letter-spacing: 1px; margin-right: auto; }
+  .d2 .addrow { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 10px 8px 4px; padding: 9px; border: 1px dashed #444; border-radius: 8px; color: #b9b9b9; font-size: 12px; }
+  .d2 .sfoot { border-top: 1px solid #313131; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; }
+  .d2 .sfoot span { font-size: 11px; color: #9c9c9c; }
+  .d2 .sfoot b { color: #d6d6d6; font-weight: 600; }
+  /* بطاقة الأنماط العائمة (نمط "Styles book") */
+  .d2 .styles { position: absolute; top: 56px; right: 312px; width: 254px; background: var(--chrome2); border: 1px solid #383838; border-radius: 10px; box-shadow: 0 24px 60px rgba(0,0,0,.5); z-index: 30; overflow: hidden; }
+  .d2 .styles .h { padding: 12px 14px 10px; border-bottom: 1px solid #363636; display: flex; align-items: center; justify-content: space-between; }
+  .d2 .styles .h b { color: #f0f0f0; font-size: 12.5px; }
+  .d2 .styles .h span { color: #8a8a8a; font-size: 11px; }
+  .d2 .styles .b { padding: 12px 14px; }
+  .d2 .styles .lbl { font-size: 10.5px; color: #9b9b9b; margin-bottom: 8px; letter-spacing: .06em; }
+  .d2 .pal { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 14px; }
+  .d2 .pal .sw { border-radius: 8px; border: 1px solid #3a3a3a; overflow: hidden; }
+  .d2 .pal .sw .c { height: 34px; }
+  .d2 .pal .sw .n { font-size: 9.5px; color: #b5b5b5; padding: 4px 6px; background: #2b2b2b; }
+  .d2 .pal .sw.on { outline: 2px solid var(--wp); }
+  .d2 .fontrow { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: #2b2b2b; border-radius: 8px; margin-bottom: 7px; }
+  .d2 .fontrow b { color: #eee; font-size: 12px; }
+  .d2 .fontrow span { color: #8f8f8f; font-size: 10.5px; }
+  .d2 .fontrow .a { color: #7b93ff; font-size: 11px; }
+  .d2 .variations { display: flex; gap: 8px; }
+  .d2 .var { flex: 1; border-radius: 8px; overflow: hidden; border: 1px solid #3a3a3a; }
+  .d2 .var .v { height: 30px; }
+  .d2 .var .t { font-size: 9.5px; color: #bdbdbd; text-align: center; padding: 4px 0 5px; background: #2b2b2b; }
+  .d2 .var.on { outline: 2px solid var(--wp); }
+  .d2 .a11y { margin-top: 12px; display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: #86c98f; }
+  /* الكانفس */
+  .d2 .canvas { flex: 1; overflow: hidden; background: #0f1012; position: relative; padding: 26px 268px 0 0; }
+  .d2 .page { width: 720px; margin: 0 auto; background: #fffdf9; border-radius: 6px; box-shadow: 0 26px 60px rgba(0,0,0,.55); overflow: hidden; }
+  .d2 .blk { position: relative; }
+  .d2 .blk.hover { outline: 1.5px dashed rgba(56,88,233,.65); outline-offset: -1.5px; }
+  .d2 .blk.sel { outline: 2px solid var(--wp); outline-offset: -2px; }
+  .d2 .blk .btag { position: absolute; top: 6px; right: 8px; background: var(--wp); color: #fff; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 5px; z-index: 5; }
+  .d2 .blk .htag { position: absolute; top: 6px; right: 8px; color: #6d80ea; background: rgba(56,88,233,.08); border: 1px dashed rgba(56,88,233,.5); font-size: 10px; padding: 2px 8px; border-radius: 5px; z-index: 5; }
+  /* شريط أدوات البلوك العائم */
+  .d2 .btool { position: absolute; top: -40px; right: 0; display: flex; align-items: center; background: #1e1e1e; border: 1px solid #3a3a3a; border-radius: 8px; box-shadow: 0 12px 30px rgba(0,0,0,.45); z-index: 10; overflow: hidden; }
+  .d2 .btool span { display: flex; align-items: center; justify-content: center; min-width: 34px; height: 34px; color: #d6d6d6; font-size: 12px; border-left: 1px solid #333; }
+  .d2 .btool span:first-child { border-left: 0; }
+  .d2 .btool span .ic { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+  .d2 .btool span.grip { color: #8a8a8a; letter-spacing: 1px; }
+  /* صفحة المتجر */
+  .d2 .sh { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-bottom: 1px solid #f0ebe2; }
+  .d2 .sh .lg { font-family: Cairo; font-weight: 800; font-size: 16px; color: #23201b; }
+  .d2 .sh .lg i { font-style: normal; color: #b4552d; }
+  .d2 .sh nav { display: flex; gap: 15px; font-size: 11.5px; color: #6f675c; }
+  .d2 .hero { padding: 38px 32px 30px; background: linear-gradient(180deg,#faf6ef,#f3ecdf); position: relative; }
+  .d2 .hero h1 { font-family: Cairo; font-size: 28px; font-weight: 800; color: #241d15; line-height: 1.4; }
+  .d2 .hero h1 em { font-style: normal; color: #b4552d; }
+  .d2 .hero p { margin-top: 8px; font-size: 12.5px; color: #6f6659; width: 400px; line-height: 1.8; }
+  .d2 .hero .b1 { display: inline-block; margin-top: 14px; background: #241d15; color: #fff; font-size: 12px; font-weight: 600; padding: 9px 20px; border-radius: 8px; }
+  .d2 .hero .art { position: absolute; left: 26px; top: 30px; width: 200px; height: 150px; border-radius: 12px; background: radial-gradient(45% 62% at 64% 60%, rgba(128,90,50,.35), rgba(128,90,50,0) 72%), radial-gradient(120% 100% at 74% 16%, #f7ecd9, #e4cfa9 55%, #c9ab7f); }
+  .d2 .band { display: flex; gap: 10px; padding: 16px 24px 4px; }
+  .d2 .band .c { flex: 1; height: 52px; border-radius: 8px; background: #f6efe4; border: 1px solid #efe6d6; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #5d5344; font-weight: 600; }
+  .d2 .grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; padding: 14px 24px 18px; }
+  .d2 .cd { border: 1px solid #f0ebe2; border-radius: 10px; overflow: hidden; }
+  .d2 .cd .im { height: 92px; background: radial-gradient(46% 60% at 60% 62%, rgba(124,92,55,.30), rgba(124,92,55,0) 72%), radial-gradient(120% 100% at 70% 18%, #f5ecdd, #dfcba8 58%, #c3a67d); position: relative; }
+  .d2 .cd .im .bdg { position: absolute; top: 7px; right: 7px; background: #b4552d; color: #fff; font-size: 9px; padding: 2px 7px; border-radius: 999px; }
+  .d2 .cd .tx { padding: 8px 9px 10px; }
+  .d2 .cd .tx b { font-size: 11.5px; color: #2b241d; display: block; }
+  .d2 .cd .tx span { font-size: 11px; color: #241d15; font-weight: 700; }
+  .d2 .ft { height: 48px; background: #241d15; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+  .d2 .ft span { font-size: 10.5px; color: #b9b0a2; }
+  .d2 .ft b { font-family: Cairo; color: #f4efe7; font-size: 12px; }
+  /* شريط الحالة السفلي */
+  .d2 .statusbar { height: 30px; background: var(--chrome); border-top: 1px solid #101010; display: flex; align-items: center; gap: 14px; padding: 0 14px; flex: 0 0 auto; }
+  .d2 .statusbar span { font-size: 11px; color: #9c9c9c; }
+  .d2 .statusbar b { color: #cfcfcf; font-weight: 600; }
+  .d2 .statusbar .ay { display: flex; align-items: center; gap: 5px; color: #86c98f; }
+  /* تعليق أسفل النموذج */
+  .d2 .cap { width: auto; max-width: 1360px; margin: 14px auto 0; display: flex; align-items: center; gap: 12px; padding: 0 20px; flex-wrap: wrap; row-gap: 8px; }
+  .d2 .cap .num { font-family: Cairo; font-weight: 800; font-size: 22px; color: #fff; background: #3858e9; border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+  .d2 .cap .tx b { color: #17181c; font-size: 15px; display: block; }
+  .d2 .cap .tx span { color: #5e6268; font-size: 12px; }
+  .d2 .cap .tags { margin-right: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .d2 .cap .tags i { font-style: normal; font-size: 10.5px; color: #3f434a; background: #fff; border: 1px solid #d8d8d8; padding: 4px 10px; border-radius: 999px; }
+  .d2 .cd .tx b, .d2 .cd .tx span, .d2 .band .c { white-space: nowrap; }
+</style>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i2-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i2-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i2-undo" viewBox="0 0 24 24"><path d="M8 7 4 11l4 4"/><path d="M4 11h9a6 6 0 0 1 0 12h-1"/></symbol>
+  <symbol id="i2-redo" viewBox="0 0 24 24"><path d="m16 7 4 4-4 4"/><path d="M20 11h-9a6 6 0 0 0 0 12h1"/></symbol>
+  <symbol id="i2-pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.4 2.4 0 0 0-3.4-3.4L4.5 16.6 4 20z"/></symbol>
+  <symbol id="i2-up" viewBox="0 0 24 24"><path d="m6 14 6-6 6 6"/></symbol>
+  <symbol id="i2-down" viewBox="0 0 24 24"><path d="m6 10 6 6 6-6"/></symbol>
+  <symbol id="i2-more" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></symbol>
+  <symbol id="i2-cols" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="18" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="8" rx="1.5"/><rect x="13.5" y="14" width="7.5" height="7" rx="1.5"/></symbol>
+  <symbol id="i2-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+  <symbol id="i2-para" viewBox="0 0 24 24"><path d="M13 4H8.5a3.5 3.5 0 0 0 0 7H13v9M16 4v16M13 4v16"/></symbol>
+  <symbol id="i2-img" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m4 18 5-5 4 4 3-3 4 4"/></symbol>
+  <symbol id="i2-btn" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="4"/><path d="M8 12h8"/></symbol>
+  <symbol id="i2-spark2" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></symbol>
+</svg>
+
+<div class="d2" id="d2root">
+  <div class="stagewrap"><div class="stage" id="d2stage">
+
+    <!-- ═══ الشريط العلوي ═══ -->
+    <div class="topbar">
+      <div class="mark">م</div>
+      <button class="tbt plusbig"><svg class="ic"><use href="#i2-plus"/></svg></button>
+      <button class="tbt"><svg class="ic"><use href="#i2-pen"/></svg> تحرير</button>
+      <button class="tbt"><svg class="ic" style="width:15px;height:15px"><use href="#i2-cols"/></svg></button>
+      <button class="tbt"><svg class="ic"><use href="#i2-list"/></svg> المخطط</button>
+
+      <div class="docttl"><b>الرئيسية — متجر دار الديكور</b><span>قالب «دار الديكور» — الإصدار 1.2</span></div>
+
+      <button class="tbt"><svg class="ic"><use href="#i2-undo"/></svg></button>
+      <button class="tbt"><svg class="ic"><use href="#i2-redo"/></svg></button>
+      <span class="zoom">100% ▾</span>
+      <button class="tbt on">الأنماط ✦</button>
+      <button class="prevbtn">معاينة</button>
+      <button class="savebtn">حفظ</button>
+    </div>
+
+    <!-- ═══ الجسم ═══ -->
+    <div class="main">
+
+      <!-- اللوحة الجانبية (تبويب الأقسام) -->
+      <aside class="sidebar">
+        <div class="tabs">
+          <div class="tb on">الأقسام</div>
+          <div class="tb">الأنماط</div>
+        </div>
+        <div class="tree">
+          <div class="tlbl">البنية</div>
+
+          <div class="row"><svg class="ic"><use href="#i2-cols"/></svg> الترويسة <span class="kind">4 عناصر</span><svg class="eye"><use href="#i2-eye"/></svg></div>
+
+          <div class="row on"><svg class="ic" style="stroke:#8fa6ff"><use href="#i2-btn"/></svg> قسم البطل <span class="kind">4 كتل</span><svg class="eye" style="stroke:#c9c9c9"><use href="#i2-eye"/></svg></div>
+          <div class="child on"><span class="t">H</span> العنوان الرئيسي <span class="dots">⠿</span></div>
+          <div class="child"><span class="t">¶</span> فقرة الوصف <span class="dots">⠿</span></div>
+          <div class="child"><span class="t">▭</span> زر «تسوق المجموعة» <span class="dots">⠿</span></div>
+          <div class="child"><span class="t">▣</span> صورة الخلفية <span class="dots">⠿</span></div>
+
+          <div class="row"><svg class="ic"><use href="#i2-list"/></svg> شريط الفئات <span class="kind">4 كتل</span><svg class="eye"><use href="#i2-eye"/></svg></div>
+          <div class="row"><svg class="ic"><use href="#i2-btn"/></svg> شبكة المنتجات <span class="kind">8 كتل</span><svg class="eye"><use href="#i2-eye"/></svg></div>
+          <div class="row"><svg class="ic"><use href="#i2-para"/></svg> آراء العملاء <span class="kind">3 كتل</span><svg class="eye"><use href="#i2-eye"/></svg></div>
+          <div class="row"><svg class="ic"><use href="#i2-img"/></svg> التذييل <span class="kind">5 عناصر</span><svg class="eye"><use href="#i2-eye"/></svg></div>
+
+          <div class="addrow"><svg class="ic" style="width:14px;height:14px;stroke:#b9b9b9;fill:none;stroke-width:1.8"><use href="#i2-plus"/></svg> إضافة كتلة أو نمط جاهز</div>
+        </div>
+        <div class="sfoot">
+          <span>النمط الحالي: <b>فاتح دافئ</b></span>
+          <span>6 أقسام</span>
+        </div>
+      </aside>
+
+      <!-- بطاقة الأنماط (فلاي أوت) -->
+      <div class="styles">
+        <div class="h"><b>الأنماط ✦</b><span>القالب: دار الديكور</span></div>
+        <div class="b">
+          <div class="lbl">لوحة الألوان</div>
+          <div class="pal">
+            <div class="sw on"><div class="c" style="background:#b4552d"></div><div class="n">أساسي</div></div>
+            <div class="sw"><div class="c" style="background:#241d15"></div><div class="n">داكن</div></div>
+            <div class="sw"><div class="c" style="background:#f4efe6"></div><div class="n">خلفية</div></div>
+            <div class="sw"><div class="c" style="background:#3f7d54"></div><div class="n">نجاح</div></div>
+            <div class="sw"><div class="c" style="background:#8a6b4f"></div><div class="n">ثانوي</div></div>
+            <div class="sw"><div class="c" style="background:#c8102e"></div><div class="n">تنبيه</div></div>
+          </div>
+
+          <div class="lbl">الخطوط</div>
+          <div class="fontrow"><div><b>Cairo</b><br><span>العناوين — 800 ثقيل</span></div><span class="a">تعديل</span></div>
+          <div class="fontrow"><div><b>IBM Plex Sans Arabic</b><br><span>النصوص — 400 عادي</span></div><span class="a">تعديل</span></div>
+
+          <div class="lbl" style="margin-top:12px">تنويعات النمط</div>
+          <div class="variations">
+            <div class="var on"><div class="v" style="background:linear-gradient(135deg,#f4efe6,#e8dcc8)"></div><div class="t">فاتح دافئ</div></div>
+            <div class="var"><div class="v" style="background:linear-gradient(135deg,#2a241d,#443a2c)"></div><div class="t">داكن أنيق</div></div>
+            <div class="var"><div class="v" style="background:linear-gradient(135deg,#eef4ff,#cfe0ff)"></div><div class="t">متجر حيوي</div></div>
+          </div>
+
+          <div class="a11y">✓ نسبة التباين مطابقة لمعايير AA</div>
+        </div>
+      </div>
+
+      <!-- الكانفس -->
+      <div class="canvas">
+        <div class="page">
+
+          <div class="sh">
+            <div class="lg">دار <i>الديكور</i></div>
+            <nav><span>الرئيسية</span><span>المتجر</span><span>العروض</span><span>تواصل معنا</span></nav>
+            <div style="font-size:11px;color:#8a8277">عربة • 3</div>
+          </div>
+
+          <!-- البلوك المحدد -->
+          <div class="blk sel">
+            <span class="btag">قسم البطل</span>
+            <div class="btool">
+              <span class="grip">⠿</span>
+              <span><svg class="ic"><use href="#i2-up"/></svg></span>
+              <span><svg class="ic"><use href="#i2-down"/></svg></span>
+              <span style="font-family:Cairo;font-weight:700">H</span>
+              <span><svg class="ic" style="width:14px;height:14px"><use href="#i2-more"/></svg></span>
+            </div>
+            <div class="hero">
+              <h1>أناقة تُناسب بيتك<br>بلمسة <em>هادئة ودافئة</em></h1>
+              <p>مجموعة جديدة من الأثاث والديكور المصنوع بعناية ليضيف دفئًا وأناقة لمساحتك الخاصة.</p>
+              <span class="b1">تسوق المجموعة</span>
+              <div class="art"></div>
+            </div>
+          </div>
+
+          <!-- بلوك بحدود المرور (hover) -->
+          <div class="blk hover" style="background:#f3ecdf">
+            <span class="htag">+ إضافة كتلة</span>
+            <div class="band" style="padding:14px 24px 18px">
+              <div class="c">غرف المعيشة</div><div class="c">غرف النوم</div><div class="c">إضاءة</div><div class="c">ديكور الجدران</div>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="cd"><div class="im"><span class="bdg">جديد</span></div><div class="tx"><b>كنبة «سحابة»</b><span>4,850 ج.م</span></div></div>
+            <div class="cd"><div class="im" style="background:radial-gradient(48% 58% at 38% 60%, rgba(110,74,40,.34), rgba(110,74,40,0) 72%), radial-gradient(120% 100% at 32% 18%, #efe2cb, #d9c19c 58%, #b6976e)"></div><div class="tx"><b>طاولة قهوة</b><span>2,300 ج.م</span></div></div>
+            <div class="cd"><div class="im" style="background:radial-gradient(44% 58% at 58% 60%, rgba(105,95,80,.28), rgba(105,95,80,0) 72%), radial-gradient(120% 100% at 68% 16%, #f4efe7, #ddd2bf 58%, #bfb09a)"></div><div class="tx"><b>مرآة «ذهب»</b><span>1,150 ج.م</span></div></div>
+            <div class="cd"><div class="im" style="background:radial-gradient(48% 58% at 42% 62%, rgba(130,80,45,.30), rgba(130,80,45,0) 72%), radial-gradient(120% 100% at 34% 16%, #f1e6d4, #dcc3a2 56%, #b99872)"></div><div class="tx"><b>سجادة «واحة»</b><span>3,400 ج.م</span></div></div>
+          </div>
+
+          <div class="ft"><b>دار الديكور</b><span>الدفع عند الاستلام • شحن لكل المحافظات</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- شريط الحالة -->
+    <div class="statusbar">
+      <span>الرئيسية ← <b>قسم البطل</b> ← العنوان الرئيسي</span>
+      <span>6 أقسام • 26 كتلة</span>
+      <span class="ay">✓ حفظ تلقائي</span>
+      <span style="margin-right:auto">الأقسام/الأنماط — نمط كامل للمتجر بضغطة واحدة</span>
+    </div>
+  </div></div>
+
+  <div class="cap">
+    <div class="num">2</div>
+    <div class="tx">
+      <b>Blocks &amp; Styles — الكتل والأنماط</b>
+      <span>مستوحى من محرر مواقع ووردبريس (Gutenberg / Site Editor 2026): كل شيء «كتلة»، شجرة كتل هرمية، وكتاب «الأنماط» لتوحيد الألوان والخطوط وتنويعات التصميم.</span>
+    </div>
+    <div class="tags">
+      <i>شجرة كتل هرمية</i><i>كتاب الأنماط (Styles)</i><i>تنويعات تصميم جاهزة</i><i>شريط أدوات عائم للكتلة</i>
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+<hr class="gsep">
+<div class="gslot" id="g3">
+<style>
+  /* BODYRESET */
+  body { margin: 0; padding: 0; }
+  /* ============ تصميم 3 — "Pro Studio" بروح Wix Studio 2026 ============ */
+  .d3, .d3 * { box-sizing: border-box; margin: 0; padding: 0; }
+  .d3 {
+    font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+    background: #d9d8d6; width: 100%; padding: 18px 0 10px;
+    --blue: #2b6cf6; --ai: #7c5cff; --rail: #17181c; --panel: #202226; --line: #32353b;
+  }
+  .d3 .stagewrap { width: 100%; overflow: hidden; }
+  .d3 .stage {
+    width: 1360px; height: 852px; transform-origin: top right; margin: 0 auto;
+    background: #101114; border-radius: 12px; overflow: hidden;
+    box-shadow: 0 30px 70px rgba(20,20,25,.30); display: flex; flex-direction: column; direction: rtl;
+  }
+  /* ---------- الشريط العلوي ---------- */
+  .d3 .topbar { height: 52px; background: var(--rail); color: #e8eaee; display: flex; align-items: center; gap: 8px; padding: 0 12px; flex: 0 0 auto; border-bottom: 1px solid #0c0d0f; }
+  .d3 .mark { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg,#3b82f6,#1d4ed8); display: flex; align-items: center; justify-content: center; font-family: Cairo; font-weight: 800; font-size: 14px; color: #fff; }
+  .d3 .site { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; padding: 0 6px; }
+  .d3 .site .ic { width: 14px; height: 14px; stroke: #9ba0a8; fill: none; stroke-width: 1.8; }
+  .d3 .autosave { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8fa4c8; background: #1e2430; padding: 5px 10px; border-radius: 8px; }
+  .d3 .bp { display: flex; background: #1d1f24; border-radius: 10px; padding: 3px; gap: 2px; margin: 0 auto; }
+  .d3 .bp .b { height: 30px; padding: 0 12px; display: flex; align-items: center; gap: 7px; border-radius: 8px; color: #9ba0a8; font-size: 12px; }
+  .d3 .bp .b .ic { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+  .d3 .bp .b .px { font-size: 10px; background: #2a2d33; border-radius: 5px; padding: 2px 5px; color: #808791; }
+  .d3 .bp .b.on { background: #34383f; color: #fff; }
+  .d3 .bp .b.on .px { background: #464b54; color: #d5d9df; }
+  .d3 .zoom { font-size: 12px; color: #9ba0a8; padding: 0 6px; }
+  .d3 .tbt { height: 32px; min-width: 32px; padding: 0 8px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: #c3c7cd; font-size: 12px; background: transparent; border: 0; }
+  .d3 .tbt .ic { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+  .d3 .publish { height: 34px; padding: 0 20px; border-radius: 9px; background: var(--blue); color: #fff; font-size: 13px; font-weight: 600; border: 0; }
+  .d3 .flex1 { flex: 1; }
+  /* ---------- الجسم: [شريط أدوات + لوحة عناصر] يمين ← كانفس ← فاحص يسار ---------- */
+  .d3 .main { flex: 1; display: flex; min-height: 0; }
+  /* شريط الأدوات الأيقوني */
+  .d3 .rail { width: 54px; background: var(--rail); border-left: 1px solid #0c0d0f; display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 4px; flex: 0 0 auto; }
+  .d3 .rail .rb { width: 40px; height: 40px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #9ba0a8; }
+  .d3 .rail .rb .ic { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+  .d3 .rail .rb span { font-size: 8.5px; }
+  .d3 .rail .rb.on { background: #2b6cf6; color: #fff; }
+  .d3 .rail .rb.ai { color: #b7a5ff; }
+  .d3 .rail .sp { flex: 1; }
+  /* لوحة إضافة العناصر */
+  .d3 .elems { width: 252px; background: var(--panel); border-left: 1px solid #0c0d0f; display: flex; flex-direction: column; flex: 0 0 auto; }
+  .d3 .elems .h { padding: 13px 14px 10px; }
+  .d3 .elems .h b { font-size: 13px; color: #f0f2f5; }
+  .d3 .search { margin: 0 14px 12px; height: 34px; background: #17181c; border: 1px solid var(--line); border-radius: 9px; display: flex; align-items: center; gap: 8px; padding: 0 11px; color: #7e848d; font-size: 12px; }
+  .d3 .search .ic { width: 15px; height: 15px; stroke: #7e848d; fill: none; stroke-width: 1.7; }
+  .d3 .eg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 14px; }
+  .d3 .el { background: #26292f; border: 1px solid #33363c; border-radius: 10px; height: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; color: #c3c7cd; font-size: 10.5px; }
+  .d3 .el .ic { width: 18px; height: 18px; stroke: #d6dae0; fill: none; stroke-width: 1.6; }
+  .d3 .el.t { font-family: Cairo; font-weight: 800; font-size: 15px; }
+  .d3 .slbl { font-size: 10.5px; color: #8b9199; padding: 14px 14px 8px; letter-spacing: .06em; }
+  .d3 .preset { margin: 0 14px 8px; border: 1px solid #33363c; border-radius: 10px; overflow: hidden; }
+  .d3 .preset .pv { height: 44px; background: linear-gradient(135deg,#2d3037,#3a3e46); display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .d3 .preset .pv i { width: 26px; height: 16px; border-radius: 4px; background: #4b505a; }
+  .d3 .preset .pv i:first-child { background: #b4552d; }
+  .d3 .preset .pt { padding: 7px 10px 8px; display: flex; align-items: center; justify-content: space-between; }
+  .d3 .preset .pt b { font-size: 11px; color: #e6e8ec; }
+  .d3 .preset .pt span { font-size: 9.5px; color: #98a0ab; }
+  .d3 .ehint { margin: auto 14px 12px; font-size: 10.5px; color: #7e848d; text-align: center; border-top: 1px dashed #33363c; padding-top: 10px; }
+  /* الكانفس مع المساطر */
+  .d3 .workspace { flex: 1; display: flex; flex-direction: column; min-width: 0; background: #26282d; position: relative; }
+  .d3 .ruler { height: 22px; background-color: #1d1f24; border-bottom: 1px solid #101114; position: relative; flex: 0 0 auto; overflow: hidden;
+    background-image: repeating-linear-gradient(90deg, #2c2f35 0 1px, transparent 1px 11px); }
+  .d3 .ruler .rn { position: absolute; bottom: 3px; font-size: 9px; color: #8b939e; font-weight: 500; }
+  .d3 .ruler .selrange { position: absolute; right: 200px; top: 0; bottom: 0; width: 470px; background: rgba(43,108,246,.22); border-right: 2px solid var(--blue); border-left: 2px solid var(--blue); }
+  .d3 .cwrap { flex: 1; overflow: hidden; padding: 26px 60px 0; position: relative; }
+  .d3 .page { width: 700px; margin: 0 auto; background: #fffdf9; box-shadow: 0 26px 60px rgba(0,0,0,.5); position: relative; }
+  .d3 .blk { position: relative; }
+  .d3 .blk.sel { outline: 2px solid var(--blue); }
+  .d3 .blk.sel .h { position: absolute; width: 8px; height: 8px; background: #fff; border: 2px solid var(--blue); border-radius: 2px; z-index: 6; }
+
+  /* مشهد السحب والإفلات */
+  .d3 .dragghost { position: absolute; top: 268px; right: 43%; z-index: 20; transform: rotate(-3deg); pointer-events: none; }
+  .d3 .dragghost .dgcard { background: #202226; border: 1px solid #3a3e46; border-radius: 10px; padding: 10px 15px; display: flex; align-items: center; gap: 9px; color: #e6e8ec; font-size: 12px; box-shadow: 0 18px 40px rgba(0,0,0,.45); position: relative; }
+  .d3 .dragghost .dgcard .ic { width: 16px; height: 16px; stroke: #d6dae0; fill: none; stroke-width: 1.6; }
+  .d3 .dragghost .dgcard .cur { position: absolute; left: -7px; bottom: -9px; width: 17px; height: 17px; }
+  .d3 .dragghost .dglab { margin-top: 8px; margin-right: 30px; display: inline-block; background: var(--blue); color: #fff; font-size: 10.5px; font-weight: 600; padding: 4px 11px; border-radius: 7px; box-shadow: 0 8px 20px rgba(43,108,246,.4); }
+  .d3 .dropline { position: relative; height: 3px; background: var(--blue); margin: 5px 0; border-radius: 3px; z-index: 6; }
+  .d3 .dropline::before, .d3 .dropline::after { content: ''; position: absolute; top: -3.5px; width: 10px; height: 10px; border-radius: 50%; background: #fff; border: 3px solid var(--blue); }
+  .d3 .dropline::before { right: -5px; }
+  .d3 .dropline::after { left: -5px; }
+  .d3 .szbadge { position: absolute; top: -26px; right: 0; background: var(--blue); color: #fff; font-size: 10.5px; font-weight: 600; padding: 3px 9px; border-radius: 6px; z-index: 6; }
+  .d3 .fbtool { position: absolute; top: -26px; right: 130px; display: flex; background: #17181c; border: 1px solid #33363c; border-radius: 8px; overflow: hidden; z-index: 6; }
+  .d3 .fbtool span { height: 26px; padding: 0 10px; display: flex; align-items: center; gap: 5px; color: #d6dae0; font-size: 11px; border-left: 1px solid #2c2f35; }
+  .d3 .fbtool span:first-child { border-left: 0; }
+  .d3 .fbtool .ic { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+  /* محدد المسافات (padding أخضر / margin برتقالي) */
+  .d3 .padover { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+  .d3 .padover .pad { position: absolute; inset: 18px 20px; background: rgba(63,170,111,.16); border: 1px dashed rgba(63,170,111,.55); }
+  .d3 .padover .pad .lab { position: absolute; top: 4px; right: 6px; font-size: 9px; color: #3faa6f; background: #eaf7ef; border-radius: 4px; padding: 1px 5px; }
+  .d3 .padover .mar { position: absolute; inset: 0; border: 1px dashed rgba(226,145,66,.55); }
+  .d3 .gridover { position: absolute; inset: 0; background-image: linear-gradient(rgba(43,108,246,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(43,108,246,.08) 1px, transparent 1px); background-size: 35px 35px; z-index: 3; pointer-events: none; }
+  /* صفحة المتجر */
+  .d3 .sh { display: flex; align-items: center; justify-content: space-between; padding: 13px 22px; border-bottom: 1px solid #f0ebe2; }
+  .d3 .sh .lg { font-family: Cairo; font-weight: 800; font-size: 15px; color: #23201b; }
+  .d3 .sh .lg i { font-style: normal; color: #b4552d; }
+  .d3 .sh nav { display: flex; gap: 14px; font-size: 11px; color: #6f675c; }
+  .d3 .hero { padding: 34px 28px 28px; background: linear-gradient(180deg,#faf6ef,#f3ecdf); position: relative; }
+  .d3 .hero h1 { font-family: Cairo; font-size: 26px; font-weight: 800; color: #241d15; line-height: 1.4; }
+  .d3 .hero h1 em { font-style: normal; color: #b4552d; }
+  .d3 .hero p { margin-top: 8px; font-size: 12px; color: #6f6659; width: 380px; line-height: 1.75; }
+  .d3 .hero .b1 { display: inline-block; margin-top: 13px; background: #241d15; color: #fff; font-size: 11.5px; font-weight: 600; padding: 9px 18px; border-radius: 8px; }
+  .d3 .hero .art { position: absolute; left: 24px; top: 28px; width: 190px; height: 142px; border-radius: 12px; background: radial-gradient(45% 62% at 64% 60%, rgba(128,90,50,.35), rgba(128,90,50,0) 72%), radial-gradient(120% 100% at 74% 16%, #f7ecd9, #e4cfa9 55%, #c9ab7f); }
+  .d3 .band { display: flex; gap: 9px; padding: 14px 22px 4px; }
+  .d3 .band .c { flex: 1; height: 48px; border-radius: 8px; background: #f6efe4; border: 1px solid #efe6d6; display: flex; align-items: center; justify-content: center; font-size: 10.5px; color: #5d5344; font-weight: 600; }
+  .d3 .grid2 { display: grid; grid-template-columns: repeat(4,1fr); gap: 9px; padding: 12px 22px 16px; }
+  .d3 .cd { border: 1px solid #f0ebe2; border-radius: 9px; overflow: hidden; }
+  .d3 .cd .im { height: 84px; background: radial-gradient(46% 60% at 60% 62%, rgba(124,92,55,.30), rgba(124,92,55,0) 72%), radial-gradient(120% 100% at 70% 18%, #f5ecdd, #dfcba8 58%, #c3a67d); }
+  .d3 .cd .tx { padding: 7px 8px 9px; }
+  .d3 .cd .tx b { font-size: 11px; color: #2b241d; display: block; }
+  .d3 .cd .tx span { font-size: 10.5px; color: #241d15; font-weight: 700; }
+  .d3 .ft { height: 44px; background: #241d15; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; }
+  .d3 .ft span { font-size: 10px; color: #b9b0a2; }
+  .d3 .ft b { font-family: Cairo; color: #f4efe7; font-size: 11.5px; }
+  /* الفاحص (يسار) */
+  .d3 .inspector { width: 296px; background: #ffffff; display: flex; flex-direction: column; flex: 0 0 auto; border-right: 1px solid #0c0d0f; }
+  .d3 .itabs { display: flex; border-bottom: 1px solid #eeeef0; }
+  .d3 .itabs .it { flex: 1; text-align: center; padding: 12px 0 10px; font-size: 12px; color: #7a7f87; position: relative; }
+  .d3 .itabs .it .ic { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.7; display: block; margin: 0 auto 4px; }
+  .d3 .itabs .it.on { color: #17181c; font-weight: 600; }
+  .d3 .itabs .it.on::after { content: ''; position: absolute; right: 26%; left: 26%; bottom: -1px; height: 2px; background: var(--blue); border-radius: 2px; }
+  .d3 .ibody { flex: 1; overflow: hidden; padding: 12px 16px; }
+  .d3 .isel { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .d3 .isel b { font-size: 12.5px; color: #17181c; }
+  .d3 .isel span { font-size: 10.5px; color: #8a8f96; background: #f4f5f7; border-radius: 6px; padding: 3px 8px; }
+  .d3 .dim { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-bottom: 11px; }
+  .d3 .dim .d { background: #f6f7f8; border: 1px solid #ececee; border-radius: 8px; padding: 6px 8px; }
+  .d3 .dim .d span { font-size: 9.5px; color: #8a8f96; display: block; }
+  .d3 .dim .d b { font-size: 12px; color: #17181c; font-weight: 600; }
+  .d3 .dim .d b i { font-style: normal; color: var(--ai); font-size: 10px; }
+  .d3 .resp { display: flex; align-items: center; justify-content: space-between; background: #f6f7f8; border: 1px solid #ececee; border-radius: 9px; padding: 9px 11px; margin-bottom: 12px; }
+  .d3 .resp span { font-size: 11px; color: #6f747b; }
+  .d3 .resp b { font-size: 11.5px; color: #17181c; }
+  .d3 .acc { border: 1px solid #ececee; border-radius: 9px; margin-bottom: 8px; }
+  .d3 .acc .ah { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; }
+  .d3 .acc .ah span { font-size: 12px; color: #3f434a; font-weight: 500; }
+  .d3 .acc .ah .ic { width: 14px; height: 14px; stroke: #9aa0a8; fill: none; stroke-width: 1.8; }
+  .d3 .acc .ab { padding: 0 12px 12px; }
+  .d3 .fldline { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .d3 .padgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .d3 .padgrid .pc { background: #f6f7f8; border: 1px solid #ececee; border-radius: 8px; padding: 6px 9px; display: flex; align-items: center; justify-content: space-between; }
+  .d3 .padgrid .pc span { font-size: 10.5px; color: #8a8f96; }
+  .d3 .padgrid .pc i { font-style: normal; font-size: 12px; color: #17181c; font-weight: 600; }
+  .d3 .fldline .nm { font-size: 10.5px; color: #8a8f96; width: 44px; }
+  .d3 .fldline .val { flex: 1; height: 30px; background: #f6f7f8; border: 1px solid #ececee; border-radius: 7px; display: flex; align-items: center; padding: 0 10px; font-size: 11.5px; color: #17181c; }
+  .d3 .swrow { display: flex; align-items: center; gap: 8px; }
+  .d3 .swrow .sw { width: 24px; height: 24px; border-radius: 7px; border: 1px solid #e3e3e6; }
+  .d3 .swrow .sw.on { box-shadow: 0 0 0 2px var(--blue); }
+  .d3 .swrow .op { font-size: 10.5px; color: #8a8f96; margin-right: auto; }
+  .d3 .radrow { display: flex; flex-direction: column; gap: 7px; }
+  .d3 .radrow .rl { display: flex; align-items: center; gap: 9px; font-size: 11.5px; color: #3f434a; }
+  .d3 .radrow .rad { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #c9ccd2; }
+  .d3 .radrow .rl.on .rad { border-color: var(--blue); box-shadow: inset 0 0 0 2.5px #fff, inset 0 0 0 8px var(--blue); }
+  .d3 .csslink { font-size: 11.5px; color: var(--blue); font-weight: 600; margin: 2px 0 12px; }
+  .d3 .aicard { border: 1px solid #e4ddff; background: linear-gradient(135deg,#f7f4ff,#f0ebff); border-radius: 11px; padding: 11px 12px; }
+  .d3 .aicard .ahh { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .d3 .aicard .sp { width: 24px; height: 24px; border-radius: 50%; background: var(--ai); display: flex; align-items: center; justify-content: center; }
+  .d3 .aicard .sp .ic { width: 13px; height: 13px; stroke: #fff; fill: none; stroke-width: 1.7; }
+  .d3 .aicard b { font-size: 12px; color: #38249c; }
+  .d3 .aicard p { font-size: 10.5px; color: #6f5fd6; line-height: 1.6; margin-bottom: 9px; }
+  .d3 .aicard .btns { display: flex; gap: 7px; }
+  .d3 .aicard .b1 { flex: 1; text-align: center; background: var(--ai); color: #fff; font-size: 11px; font-weight: 600; padding: 7px 0; border-radius: 8px; }
+  .d3 .aicard .b2 { flex: 1; text-align: center; border: 1px solid #d8ceff; color: #5b48c8; font-size: 11px; padding: 7px 0; border-radius: 8px; background: #fff; }
+  /* شريط سفلي */
+  .d3 .status { height: 32px; background: var(--rail); border-top: 1px solid #0c0d0f; display: flex; align-items: center; gap: 16px; padding: 0 14px; flex: 0 0 auto; }
+  .d3 .status span { font-size: 11px; color: #9ba0a8; }
+  .d3 .status b { color: #e6e8ec; font-weight: 600; }
+  /* تعليق */
+  .d3 .cap { width: auto; max-width: 1360px; margin: 14px auto 0; display: flex; align-items: center; gap: 12px; padding: 0 20px; flex-wrap: wrap; row-gap: 8px; }
+  .d3 .cap .num { font-family: Cairo; font-weight: 800; font-size: 22px; color: #fff; background: #7c5cff; border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+  .d3 .cap .tx b { color: #17181c; font-size: 15px; display: block; }
+  .d3 .cap .tx span { color: #5e6268; font-size: 12px; }
+  .d3 .cap .tags { margin-right: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .d3 .cap .tags i { font-style: normal; font-size: 10.5px; color: #3f434a; background: #fff; border: 1px solid #d8d8d8; padding: 4px 10px; border-radius: 999px; }
+  .d3 .cd .tx b, .d3 .cd .tx span, .d3 .band .c { white-space: nowrap; }
+</style>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i3-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i3-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i3-undo" viewBox="0 0 24 24"><path d="M8 7 4 11l4 4"/><path d="M4 11h9a6 6 0 0 1 0 12h-1"/></symbol>
+  <symbol id="i3-redo" viewBox="0 0 24 24"><path d="m16 7 4 4-4 4"/><path d="M20 11h-9a6 6 0 0 0 0 12h1"/></symbol>
+  <symbol id="i3-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/></symbol>
+  <symbol id="i3-page" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></symbol>
+  <symbol id="i3-img" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m4 18 5-5 4 4 3-3 4 4"/></symbol>
+  <symbol id="i3-brush" viewBox="0 0 24 24"><path d="M9.5 14.5 4 20c2.5 1 5.5.5 7-1 .9-.9 1.4-2.2 1.3-3.4"/><path d="M20 4c-2.5 1-8 2.5-11.5 6.5a7 7 0 0 0-2 4c1.5 0 3.3-.2 4.8-1.7C15 9 18 6.5 20 4z"/></symbol>
+  <symbol id="i3-code" viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4"/></symbol>
+  <symbol id="i3-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></symbol>
+  <symbol id="i3-text" viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></symbol>
+  <symbol id="i3-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></symbol>
+  <symbol id="i3-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.8-3.8"/></symbol>
+  <symbol id="i3-mon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/></symbol>
+  <symbol id="i3-tab" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/></symbol>
+  <symbol id="i3-ph" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 19h2"/></symbol>
+  <symbol id="i3-stack" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16"/></symbol>
+  <symbol id="i3-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i3-arr" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i3-set" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12"/></symbol>
+</svg>
+
+<div class="d3" id="d3root">
+  <div class="stagewrap"><div class="stage" id="d3stage">
+
+    <!-- ═══ الشريط العلوي ═══ -->
+    <div class="topbar">
+      <div class="mark">م</div>
+      <div class="site">دار الديكور <svg class="ic"><use href="#i3-chev"/></svg></div>
+      <div class="autosave">☁ تم الحفظ التلقائي</div>
+
+      <div class="bp">
+        <div class="b on"><svg class="ic"><use href="#i3-mon"/></svg> سطح المكتب <span class="px">1280</span></div>
+        <div class="b"><svg class="ic"><use href="#i3-tab"/></svg> <span class="px">768</span></div>
+        <div class="b"><svg class="ic"><use href="#i3-ph"/></svg> <span class="px">375</span></div>
+      </div>
+
+      <div class="zoom">75% ▾</div>
+      <button class="tbt"><svg class="ic"><use href="#i3-undo"/></svg></button>
+      <button class="tbt"><svg class="ic"><use href="#i3-redo"/></svg></button>
+      <button class="tbt"><svg class="ic"><use href="#i3-eye"/></svg> معاينة</button>
+      <button class="publish">نشر</button>
+    </div>
+
+    <!-- ═══ الجسم ═══ -->
+    <div class="main">
+
+      <!-- شريط الأدوات -->
+      <div class="rail">
+        <div class="rb on"><svg class="ic"><use href="#i3-plus"/></svg><span>إضافة</span></div>
+        <div class="rb"><svg class="ic"><use href="#i3-layers"/></svg><span>طبقات</span></div>
+        <div class="rb"><svg class="ic"><use href="#i3-page"/></svg><span>صفحات</span></div>
+        <div class="rb"><svg class="ic"><use href="#i3-img"/></svg><span>وسائط</span></div>
+        <div class="rb"><svg class="ic"><use href="#i3-brush"/></svg><span>أنماط</span></div>
+        <div class="rb"><svg class="ic"><use href="#i3-code"/></svg><span>كود</span></div>
+        <div class="sp"></div>
+        <div class="rb ai"><svg class="ic"><use href="#i3-spark"/></svg><span>AI</span></div>
+        <div class="rb"><svg class="ic"><use href="#i3-set"/></svg><span>إعدادات</span></div>
+      </div>
+
+      <!-- لوحة العناصر -->
+      <div class="elems">
+        <div class="h"><b>إضافة عناصر</b></div>
+        <div class="search"><svg class="ic"><use href="#i3-search"/></svg> ابحث عن عنصر أو سيكشن…</div>
+        <div class="eg">
+          <div class="el"><svg class="ic"><use href="#i3-text"/></svg>عنوان</div>
+          <div class="el"><svg class="ic"><use href="#i3-stack"/></svg>ستاك</div>
+          <div class="el"><svg class="ic"><use href="#i3-img"/></svg>صورة</div>
+          <div class="el"><svg class="ic" style="width:16px;height:16px"><use href="#i3-grid"/></svg>شبكة</div>
+          <div class="el"><svg class="ic"><use href="#i3-arr"/></svg>زر</div>
+          <div class="el"><svg class="ic"><use href="#i3-page"/></svg>نموذج</div>
+        </div>
+        <div class="slbl">أقسام جاهزة ✦</div>
+        <div class="preset"><div class="pv"><i></i><i></i><i></i></div><div class="pt"><b>شبكة منتجات</b><span>4 أعمدة</span></div></div>
+        <div class="preset"><div class="pv"><i></i><i></i><i></i></div><div class="pt"><b>شريط عروض</b><span>عرض كامل</span></div></div>
+        <div class="ehint">اسحب العنصر إلى الكانفس أو اضغط عليه لإدراجه داخل السيكشن المحدد</div>
+      </div>
+
+      <!-- الكانفس + المسطرة -->
+      <div class="workspace">
+        <div class="ruler">
+          <span class="rn" style="right:8px">0</span><span class="rn" style="right:118px">100</span><span class="rn" style="right:228px">200</span>
+          <span class="rn" style="right:338px">300</span><span class="rn" style="right:448px">400</span><span class="rn" style="right:558px">500</span>
+          <span class="rn" style="right:668px">600</span><span class="rn" style="right:778px">700</span>
+          <span class="selrange"></span>
+        </div>
+
+        <div class="cwrap">
+          <div class="page">
+            <div class="sh">
+              <div class="lg">دار <i>الديكور</i></div>
+              <nav><span>الرئيسية</span><span>المتجر</span><span>العروض</span><span>تواصل معنا</span></nav>
+              <div style="font-size:10.5px;color:#8a8277">عربة • 3</div>
+            </div>
+
+            <!-- السيكشن المحدد -->
+            <div class="blk sel">
+              <span class="szbadge">1,180 × 420 px*</span>
+              <div class="fbtool">
+                <span>ستاك ▾</span><span>فك</span><span>⇤ محاذاة</span><span>⋯</span>
+              </div>
+              <span class="h" style="top:-5px;right:-5px"></span>
+              <span class="h" style="top:-5px;left:-5px"></span>
+              <span class="h" style="bottom:-5px;right:-5px"></span>
+              <span class="h" style="bottom:-5px;left:-5px"></span>
+
+              <div class="padover" style="position:absolute;inset:0;z-index:4">
+                <div class="mar"></div>
+                <div class="pad"><span class="lab">padding 24</span></div>
+              </div>
+
+              <div class="hero" style="position:relative">
+                <div class="gridover" style="inset:14px 20px"></div>
+                <h1>أناقة تُناسب بيتك<br>بلمسة <em>هادئة ودافئة</em></h1>
+                <p>مجموعة جديدة من الأثاث والديكور المصنوع بعناية ليضيف دفئًا وأناقة لمساحتك الخاصة.</p>
+                <span class="b1">تسوق المجموعة</span>
+                <div class="art"></div>
+              </div>
+            </div>
+
+            <div class="dropline"></div>
+
+            <div class="band">
+              <div class="c">غرف المعيشة</div><div class="c">غرف النوم</div><div class="c">إضاءة</div><div class="c">ديكور الجدران</div>
+            </div>
+
+            <div class="grid2">
+              <div class="cd"><div class="im"></div><div class="tx"><b>كنبة «سحابة»</b><span>4,850 ج.م</span></div></div>
+              <div class="cd"><div class="im" style="background:radial-gradient(48% 58% at 38% 60%, rgba(110,74,40,.34), rgba(110,74,40,0) 72%), radial-gradient(120% 100% at 32% 18%, #efe2cb, #d9c19c 58%, #b6976e)"></div><div class="tx"><b>طاولة قهوة</b><span>2,300 ج.م</span></div></div>
+              <div class="cd"><div class="im" style="background:radial-gradient(44% 58% at 58% 60%, rgba(105,95,80,.28), rgba(105,95,80,0) 72%), radial-gradient(120% 100% at 68% 16%, #f4efe7, #ddd2bf 58%, #bfb09a)"></div><div class="tx"><b>مرآة «ذهب»</b><span>1,150 ج.م</span></div></div>
+              <div class="cd"><div class="im" style="background:radial-gradient(48% 58% at 42% 62%, rgba(130,80,45,.30), rgba(130,80,45,0) 72%), radial-gradient(120% 100% at 34% 16%, #f1e6d4, #dcc3a2 56%, #b99872)"></div><div class="tx"><b>سجادة «واحة»</b><span>3,400 ج.م</span></div></div>
+            </div>
+
+            <div class="ft"><b>دار الديكور</b><span>الدفع عند الاستلام • شحن لكل المحافظات</span></div>
+          </div>
+
+          <div class="dragghost">
+            <div class="dgcard">
+              <svg class="ic"><use href="#i3-grid"/></svg> شبكة منتجات
+              <svg class="cur" viewBox="0 0 24 24"><path d="m5 3 7 17 2.5-6.5L21 11 5 3z" fill="#fff" stroke="#17181c" stroke-width="1.3"/></svg>
+            </div>
+            <span class="dglab">إفلات لإضافة القسم هنا</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- الفاحص -->
+      <aside class="inspector">
+        <div class="itabs">
+          <div class="it on"><svg class="ic"><use href="#i3-brush"/></svg>تصميم</div>
+          <div class="it"><svg class="ic"><use href="#i3-grid"/></svg>تخطيط</div>
+          <div class="it"><svg class="ic" style="stroke-width:1.6"><use href="#i3-spark"/></svg>تفاعلات</div>
+        </div>
+        <div class="ibody">
+          <div class="isel"><b>السيكشن المحدد: قسم البطل</b><span>ستاك</span></div>
+
+          <div class="dim">
+            <div class="d"><span>X</span><b>0</b></div>
+            <div class="d"><span>Y</span><b>83</b></div>
+            <div class="d"><span>W</span><b>1003 <i>px*</i></b></div>
+            <div class="d"><span>H</span><b>274 <i>px*</i></b></div>
+          </div>
+
+          <div class="resp"><span>السلوك المتجاوب</span><b>خلفية ممتدة ▾</b></div>
+
+          <div class="acc">
+            <div class="ah"><span>التعبئة والحدود</span><svg class="ic"><use href="#i3-chev"/></svg></div>
+            <div class="ab">
+              <div class="swrow">
+                <span class="sw" style="background:#b4552d"></span>
+                <span class="sw on" style="background:#f3ecdf"></span>
+                <span class="sw" style="background:#241d15"></span>
+                <span class="op">شفافية 0%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="acc">
+            <div class="ah"><span>الحشوة (Padding)</span><svg class="ic"><use href="#i3-chev"/></svg></div>
+            <div class="ab">
+              <div class="padgrid">
+                <div class="pc"><span>أعلى</span><i>24</i></div>
+                <div class="pc"><span>أسفل</span><i>24</i></div>
+                <div class="pc"><span>يمين</span><i>32</i></div>
+                <div class="pc"><span>يسار</span><i>32</i></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="acc">
+            <div class="ah"><span>الزوايا والظل</span><svg class="ic"><use href="#i3-chev"/></svg></div>
+            <div class="ab">
+              <div class="radrow">
+                <div class="rl on"><span class="rad"></span> ظل ناعم (Soft) — المحدد</div>
+                <div class="rl"><span class="rad"></span> بلا ظل</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="csslink">+ إضافة CSS مخصص</div>
+
+          <div class="aicard">
+            <div class="ahh"><span class="sp"><svg class="ic"><use href="#i3-spark"/></svg></span><b>Responsive AI جاهز</b></div>
+            <p>ولّد نسخة التابلت والجوال لهذا القسم تلقائيًا — مبنيّة على قواعد الستاك والمسافات.</p>
+            <div class="btns"><span class="b1">توليد النسخ ✦</span><span class="b2">مراجعة</span></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- شريط سفلي -->
+    <div class="status">
+      <span>الهيكل ← الرئيسية ← سيكشن (ترحيب) ← <b>ستاك</b></span>
+      <span>قواعد المتجاوب: 3 نقاط توقف</span>
+      <span style="margin-right:auto">؟ مساعدة • اختصارات ⌨</span>
+    </div>
+  </div></div>
+
+  <div class="cap">
+    <div class="num">3</div>
+    <div class="tx">
+      <b>Pro Studio — استوديو احترافي</b>
+      <span>مستوحى من Wix Studio / Editor X (نسخة 2026): أربع لوحات، نقاط توقف أعلى الشاشة، مقاسات نسبية px*، محدد مسافات، وResponsive AI يولّد نسخ الجوال والتابلت.</span>
+    </div>
+    <div class="tags">
+      <i>سحب وإفلات كامل</i><i>أربع لوحات احترافية</i><i>نقاط توقف + px*</i><i>محدد Padding/Margin</i><i>Responsive AI</i>
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+<hr class="gsep">
+<div class="gslot" id="g4">
+<style>
+  /* BODYRESET */
+  body { margin: 0; padding: 0; }
+  /* ============ تصميم 4 — "AI Copilot" — الاتجاه الأول في 2026: المساعد داخل سير العمل ============ */
+  .d4, .d4 * { box-sizing: border-box; margin: 0; padding: 0; }
+  .d4 {
+    font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+    background: #e6e4e0; width: 100%; padding: 18px 0 10px;
+    --blue: #2563eb; --ink: #14161a; --mut: #6f7681; --hair: #ececec; --ai: #6d4aff; --soft: #f7f8fa;
+  }
+  .d4 .stagewrap { width: 100%; overflow: hidden; }
+  .d4 .stage {
+    width: 1360px; height: 852px; transform-origin: top right; margin: 0 auto;
+    background: #fbfbfc; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 30px 70px rgba(20,20,25,.24); display: flex; flex-direction: column; direction: rtl;
+    border: 1px solid #e9e9ec;
+  }
+  /* ---------- شريط علوي هادئ ---------- */
+  .d4 .topbar { height: 58px; background: #fff; border-bottom: 1px solid var(--hair); display: flex; align-items: center; gap: 10px; padding: 0 16px; flex: 0 0 auto; }
+  .d4 .mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg,#3b82f6,#1d4ed8); display: flex; align-items: center; justify-content: center; font-family: Cairo; font-weight: 800; font-size: 15px; color: #fff; }
+  .d4 .ttl b { font-size: 13.5px; color: var(--ink); display: block; line-height: 1.3; }
+  .d4 .ttl span { font-size: 11px; color: var(--mut); }
+  .d4 .storechip { display: flex; align-items: center; gap: 7px; background: var(--soft); border: 1px solid var(--hair); border-radius: 999px; padding: 5px 12px 5px 8px; font-size: 11.5px; color: #3f434a; }
+  .d4 .storechip .av { width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg,#c98a5b,#8a5a34); color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+  .d4 .cmd { margin: 0 auto; display: flex; align-items: center; gap: 9px; background: var(--soft); border: 1px solid var(--hair); border-radius: 11px; height: 36px; padding: 0 13px; width: 330px; color: #8a8f96; font-size: 12.5px; }
+  .d4 .cmd .ic { width: 15px; height: 15px; stroke: #8a8f96; fill: none; stroke-width: 1.7; }
+  .d4 .cmd kbd { margin-right: auto; font-family: inherit; font-size: 10.5px; color: #6f7681; background: #fff; border: 1px solid #e3e3e6; border-radius: 6px; padding: 3px 7px; }
+  .d4 .ghostbtn { height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--hair); background: #fff; color: #3f434a; font-size: 12.5px; display: inline-flex; align-items: center; gap: 7px; }
+  .d4 .ghostbtn .ic { width: 15px; height: 15px; stroke: #6f7681; fill: none; stroke-width: 1.7; }
+  .d4 .pubbtn { height: 36px; padding: 0 20px; border-radius: 10px; background: var(--ink); color: #fff; font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+  .d4 .pubbtn i { font-style: normal; width: 7px; height: 7px; border-radius: 50%; background: #5ad07f; }
+  /* ---------- الجسم ---------- */
+  .d4 .main { flex: 1; display: flex; min-height: 0; }
+  /* عمود الأقسام (يمين) */
+  .d4 .secs { width: 274px; background: #fff; border-left: 1px solid var(--hair); display: flex; flex-direction: column; flex: 0 0 auto; }
+  .d4 .secs .h { padding: 16px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
+  .d4 .secs .h b { font-size: 12.5px; color: var(--ink); }
+  .d4 .secs .h span { font-size: 11px; color: var(--mut); }
+  .d4 .sl { padding: 3px 10px; }
+  .d4 .srow { display: flex; align-items: center; gap: 10px; padding: 10px 11px; border-radius: 10px; font-size: 12.5px; color: #3f434a; margin-bottom: 2px; }
+  .d4 .srow .grip { color: #c6c8cc; font-size: 11px; letter-spacing: 1px; }
+  .d4 .srow .ic { width: 16px; height: 16px; stroke: #9aa0a8; fill: none; stroke-width: 1.6; }
+  .d4 .srow .eye { margin-right: auto; width: 15px; height: 15px; stroke: #c0c3c8; fill: none; stroke-width: 1.6; }
+  .d4 .srow.on { background: #eef4ff; color: #1d4ed8; font-weight: 600; position: relative; }
+  .d4 .srow.on::before { content: ''; position: absolute; right: -10px; top: 8px; bottom: 8px; width: 3px; border-radius: 3px; background: var(--blue); }
+  .d4 .srow.on .ic { stroke: var(--blue); }
+  .d4 .sfoot { margin: auto 12px 14px; border-top: 1px solid var(--hair); padding-top: 12px; }
+  .d4 .sfoot .lbl { font-size: 10.5px; color: var(--mut); margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+  .d4 .lbl .ic { width: 12px; height: 12px; stroke: var(--ai); fill: none; stroke-width: 1.8; }
+  .d4 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .d4 .chips i { font-style: normal; font-size: 10.5px; color: #4a4f57; background: var(--soft); border: 1px solid var(--hair); border-radius: 999px; padding: 5px 10px; display: inline-flex; align-items: center; gap: 5px; }
+  .d4 .chips i b { color: var(--ai); font-weight: 700; }
+  /* الكانفس */
+  .d4 .canvas { flex: 1; position: relative; overflow: hidden; background: #f3f4f6;
+    background-image: radial-gradient(#e0e1e5 1px, transparent 1px); background-size: 26px 26px; }
+  .d4 .banner { position: absolute; top: 14px; right: 22px; background: #fff; border: 1px solid #e9e9ec; box-shadow: 0 10px 26px rgba(20,20,30,.08); border-radius: 999px; padding: 7px 14px; display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: #3f434a; z-index: 8; }
+  .d4 .banner .pp { width: 8px; height: 8px; border-radius: 50%; background: var(--ai); box-shadow: 0 0 0 4px rgba(109,74,255,.14); }
+  .d4 .page { width: 730px; margin: 34px auto 0; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 24px 60px rgba(20,20,35,.13), 0 0 0 1px #ececec; }
+  .d4 .sh { display: flex; align-items: center; justify-content: space-between; padding: 15px 24px; border-bottom: 1px solid #f2f0ec; }
+  .d4 .sh .lg { font-family: Cairo; font-weight: 800; font-size: 16px; color: #23201b; }
+  .d4 .sh .lg i { font-style: normal; color: #b4552d; }
+  .d4 .sh nav { display: flex; gap: 15px; font-size: 11.5px; color: #6f675c; }
+  .d4 .hero { padding: 40px 34px 34px; background: linear-gradient(180deg,#fbf8f3,#f4eee4); position: relative; }
+  .d4 .hero h1 { font-family: Cairo; font-size: 30px; font-weight: 800; color: #241d15; line-height: 1.4; }
+  .d4 .hero h1 em { font-style: normal; color: #b4552d; }
+  /* Ghost text: اقتراح AI مضمّن داخل النص */
+  .d4 .ghost { color: #b9aef2; border-bottom: 2px dotted #cabfff; }
+  .d4 .caret { display: inline-block; width: 2px; height: 20px; background: var(--ai); vertical-align: -4px; margin: 0 2px; animation: d4blink 1.1s steps(1) infinite; }
+  @keyframes d4blink { 50% { opacity: 0 } }
+  .d4 .ghostbar { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+  .d4 .ghostbar .sp { width: 20px; height: 20px; border-radius: 50%; background: var(--ai); display: flex; align-items: center; justify-content: center; }
+  .d4 .ghostbar .sp .ic { width: 11px; height: 11px; stroke: #fff; fill: none; stroke-width: 1.8; }
+  .d4 .ghostbar span { font-size: 10.5px; color: #7d6fe0; }
+  .d4 .hero p { margin-top: 12px; font-size: 12.5px; color: #6f6659; width: 400px; line-height: 1.8; }
+  .d4 .hero .b1 { display: inline-block; margin-top: 15px; background: #241d15; color: #fff; font-size: 12.5px; font-weight: 600; padding: 10px 21px; border-radius: 10px; }
+  .d4 .hero .art { position: absolute; left: 30px; top: 36px; width: 200px; height: 152px; border-radius: 14px; background: radial-gradient(45% 62% at 64% 60%, rgba(128,90,50,.35), rgba(128,90,50,0) 72%), radial-gradient(120% 100% at 74% 16%, #f7ecd9, #e4cfa9 55%, #c9ab7f); }
+  /* شرائح الاقتراحات تحت السيكشن المحدد */
+  .d4 .suggest { display: flex; gap: 7px; padding: 10px 20px; background: #fbfaf8; border-top: 1px solid #f2f0ec; border-bottom: 1px solid #f2f0ec; }
+  .d4 .suggest i { font-style: normal; font-size: 10.5px; color: #5147a8; background: #f2efff; border: 1px solid #e4ddff; border-radius: 999px; padding: 5px 11px; }
+  .d4 .band { display: flex; gap: 10px; padding: 16px 24px 4px; }
+  .d4 .band .c { flex: 1; height: 50px; border-radius: 10px; background: #f6efe4; border: 1px solid #efe6d6; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #5d5344; font-weight: 600; }
+  .d4 .grid2 { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; padding: 13px 24px 18px; }
+  .d4 .cd { border: 1px solid #f2f0ec; border-radius: 11px; overflow: hidden; }
+  .d4 .cd .im { height: 88px; background: radial-gradient(46% 60% at 60% 62%, rgba(124,92,55,.30), rgba(124,92,55,0) 72%), radial-gradient(120% 100% at 70% 18%, #f5ecdd, #dfcba8 58%, #c3a67d); }
+  .d4 .cd .tx { padding: 8px 9px 10px; }
+  .d4 .cd .tx b { font-size: 11.5px; color: #2b241d; display: block; }
+  .d4 .cd .tx span { font-size: 11px; color: #241d15; font-weight: 700; }
+  /* لوحة المساعد (يسار) */
+  .d4 .ai { width: 336px; background: #fff; border-right: 1px solid var(--hair); display: flex; flex-direction: column; flex: 0 0 auto; }
+  .d4 .ai .h { padding: 16px 16px 12px; display: flex; align-items: center; gap: 9px; border-bottom: 1px solid var(--hair); }
+  .d4 .ai .h .sp { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg,#8a6cff,#5f3dfa); display: flex; align-items: center; justify-content: center; }
+  .d4 .ai .h .sp .ic { width: 15px; height: 15px; stroke: #fff; fill: none; stroke-width: 1.7; }
+  .d4 .ai .h b { font-size: 13.5px; color: var(--ink); display: block; }
+  .d4 .ai .h span { font-size: 10.5px; color: var(--mut); }
+  .d4 .ai .h .st { margin-right: auto; font-size: 10px; color: #1f9d55; background: #ecf9f0; border-radius: 999px; padding: 4px 9px; display: flex; align-items: center; gap: 5px; }
+  .d4 .ai .h .st::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #2fbf6b; }
+  .d4 .aibody { flex: 1; overflow: hidden; padding: 14px 16px; }
+  /* بطاقة مراجعة التغييرات */
+  .d4 .review { border: 1px solid #e6e0ff; background: linear-gradient(180deg,#faf8ff,#f5f1ff); border-radius: 14px; padding: 13px 13px 12px; margin-bottom: 16px; }
+  .d4 .review .rh { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .d4 .review .rh .ic { width: 15px; height: 15px; stroke: var(--ai); fill: none; stroke-width: 1.7; }
+  .d4 .review .rh b { font-size: 12px; color: #3b2ba0; }
+  .d4 .review .rh span { margin-right: auto; font-size: 10px; color: #8d80d8; }
+  .d4 .rv { display: flex; align-items: center; gap: 9px; background: #fff; border: 1px solid #ece7ff; border-radius: 10px; padding: 9px 10px; margin-bottom: 7px; }
+  .d4 .rv .ic { width: 15px; height: 15px; stroke: #7a6ad0; fill: none; stroke-width: 1.6; }
+  .d4 .rv .tx { flex: 1; }
+  .d4 .rv .tx b { font-size: 11.5px; color: #2f2a4a; display: block; font-weight: 600; }
+  .d4 .rv .tx span { font-size: 10.5px; color: #8a86a0; }
+  .d4 .rv .tx s { color: #b9b3d0; }
+  .d4 .rv .check { width: 17px; height: 17px; border-radius: 6px; border: 1.6px solid #cfc6f2; display: flex; align-items: center; justify-content: center; color: #fff; }
+  .d4 .rv .check.on { background: var(--ai); border-color: var(--ai); }
+  .d4 .rbtns { display: flex; gap: 7px; margin-top: 11px; }
+  .d4 .rbtns .b1 { flex: 1; text-align: center; background: var(--ai); color: #fff; font-size: 11.5px; font-weight: 600; padding: 9px 0; border-radius: 9px; }
+  .d4 .rbtns .b2 { flex: 1; text-align: center; border: 1px solid #ddd4ff; background: #fff; color: #5b48c8; font-size: 11.5px; padding: 9px 0; border-radius: 9px; }
+  .d4 .rbtns .b3 { text-align: center; color: #8a86a0; font-size: 11.5px; padding: 9px 10px; }
+  /* هويات جاهزة (بنتو) */
+  .d4 .slbl { font-size: 10.5px; color: var(--mut); margin-bottom: 9px; display: flex; align-items: center; justify-content: space-between; }
+  .d4 .slbl a { color: var(--ai); text-decoration: none; font-weight: 600; }
+  .d4 .kits { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .d4 .kit { border: 1px solid var(--hair); border-radius: 12px; padding: 9px 10px; background: var(--soft); }
+  .d4 .kit .dots { display: flex; gap: 4px; margin-bottom: 7px; }
+  .d4 .kit .dots i { width: 15px; height: 15px; border-radius: 50%; }
+  .d4 .kit b { font-size: 11px; color: #3f434a; display: block; }
+  .d4 .kit span { font-size: 9.5px; color: var(--mut); }
+  .d4 .kit.on { outline: 2px solid var(--blue); background: #eef4ff; }
+  .d4 .genkit { display: flex; align-items: center; justify-content: center; gap: 7px; border: 1px dashed #d5cef5; color: #5b48c8; border-radius: 12px; padding: 10px; font-size: 11.5px; font-weight: 600; background: #fbfaff; margin-bottom: 16px; }
+  .d4 .genkit .ic { width: 14px; height: 14px; stroke: #6d4aff; fill: none; stroke-width: 1.7; }
+  /* إجراءات سريعة */
+  .d4 .qa { border-top: 1px solid var(--hair); padding-top: 12px; }
+  .d4 .qa .q { display: flex; align-items: center; gap: 9px; padding: 8px 2px; font-size: 12px; color: #3f434a; }
+  .d4 .qa .q .ic { width: 15px; height: 15px; stroke: #9aa0a8; fill: none; stroke-width: 1.7; }
+  .d4 .qa .q .ch { margin-right: auto; color: #c6c8cc; }
+  /* تعليق */
+  .d4 .cap { width: auto; max-width: 1360px; margin: 14px auto 0; display: flex; align-items: center; gap: 12px; padding: 0 20px; flex-wrap: wrap; row-gap: 8px; }
+  .d4 .cap .num { font-family: Cairo; font-weight: 800; font-size: 22px; color: #fff; background: #14161a; border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+  .d4 .cap .tx b { color: #17181c; font-size: 15px; display: block; }
+  .d4 .cap .tx span { color: #5e6268; font-size: 12px; }
+  .d4 .cap .tags { margin-right: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .d4 .cap .tags i { font-style: normal; font-size: 10.5px; color: #3f434a; background: #fff; border: 1px solid #d8d8d8; padding: 4px 10px; border-radius: 999px; }
+  .d4 .cd .tx b, .d4 .cd .tx span, .d4 .band .c { white-space: nowrap; }
+</style>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i4-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></symbol>
+  <symbol id="i4-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i4-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.8-3.8"/></symbol>
+  <symbol id="i4-layout" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M10 10v10"/></symbol>
+  <symbol id="i4-para" viewBox="0 0 24 24"><path d="M13 4H8.5a3.5 3.5 0 0 0 0 7H13v9M16 4v16M13 4v16"/></symbol>
+  <symbol id="i4-img" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m4 18 5-5 4 4 3-3 4 4"/></symbol>
+  <symbol id="i4-btn" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="4"/><path d="M8 12h8"/></symbol>
+  <symbol id="i4-text" viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></symbol>
+  <symbol id="i4-pal" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.8 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.2 0-1 .8-1.8 1.8-1.8H16a5 5 0 0 0 5-5c0-3.9-4-6.7-9-6.7z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16.5" cy="10.5" r="1"/></symbol>
+  <symbol id="i4-pointer" viewBox="0 0 24 24"><path d="m5 3 7 17 2.5-6.5L21 11 5 3z"/></symbol>
+  <symbol id="i4-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i4-check" viewBox="0 0 24 24"><path d="m5 13 4.5 4.5L19 7"/></symbol>
+  <symbol id="i4-arr" viewBox="0 0 24 24"><path d="m14 6-6 6 6 6"/></symbol>
+  <symbol id="i4-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6l-7-3z"/><path d="m9.5 12 2 2 3.5-4"/></symbol>
+  <symbol id="i4-bolt" viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12L13 2z"/></symbol>
+  <symbol id="i4-dots6" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="9" cy="18" r="1.3"/><circle cx="15" cy="6" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="15" cy="18" r="1.3"/></symbol>
+</svg>
+
+<div class="d4" id="d4root">
+  <div class="stagewrap"><div class="stage" id="d4stage">
+
+    <!-- ═══ شريط علوي هادئ ═══ -->
+    <div class="topbar">
+      <div class="mark">م</div>
+      <div class="ttl"><b>محرر الواجهة</b><span>متجر دار الديكور</span></div>
+      <div class="storechip"><span class="av">د</span> الرئيسية ▾</div>
+      <div class="cmd"><svg class="ic"><use href="#i4-search"/></svg> اسأل، جرّب، أو اكتب أمرًا… <kbd>Ctrl K</kbd></div>
+      <button class="ghostbtn"><svg class="ic"><use href="#i4-eye"/></svg> معاينة</button>
+      <button class="pubbtn"><i></i> نشر التغييرات</button>
+    </div>
+
+    <!-- ═══ الجسم ═══ -->
+    <div class="main">
+
+      <!-- عمود الأقسام -->
+      <aside class="secs">
+        <div class="h"><b>أقسام الصفحة</b><span>6 أقسام</span></div>
+        <div class="sl">
+          <div class="srow"><span class="grip">⠿</span><svg class="ic"><use href="#i4-layout"/></svg> الترويسة <svg class="eye"><use href="#i4-eye"/></svg></div>
+          <div class="srow on"><span class="grip">⠿</span><svg class="ic"><use href="#i4-btn"/></svg> قسم البطل <svg class="eye" style="stroke:#9bb4f5"><use href="#i4-eye"/></svg></div>
+          <div class="srow"><span class="grip">⠿</span><svg class="ic"><use href="#i4-para"/></svg> شريط الفئات <svg class="eye"><use href="#i4-eye"/></svg></div>
+          <div class="srow"><span class="grip">⠿</span><svg class="ic"><use href="#i4-img"/></svg> شبكة المنتجات <svg class="eye"><use href="#i4-eye"/></svg></div>
+          <div class="srow"><span class="grip">⠿</span><svg class="ic"><use href="#i4-text"/></svg> آراء العملاء <svg class="eye"><use href="#i4-eye"/></svg></div>
+          <div class="srow"><span class="grip">⠿</span><svg class="ic"><use href="#i4-layout"/></svg> التذييل <svg class="eye"><use href="#i4-eye"/></svg></div>
+        </div>
+        <div class="sfoot">
+          <div class="lbl"><svg class="ic"><use href="#i4-spark"/></svg> أقسام مقترحة لمتجرك</div>
+          <div class="chips">
+            <i><b>+</b> شريط عروض</i>
+            <i><b>+</b> عدّاد تنازلي</i>
+            <i><b>+</b> أسئلة شائعة</i>
+          </div>
+        </div>
+      </aside>
+
+      <!-- الكانفس -->
+      <div class="canvas">
+        <div class="banner"><span class="pp"></span> مساعد ماكس يراجع المتجر — 3 اقتراحات جديدة</div>
+
+        <div class="page">
+          <div class="sh">
+            <div class="lg">دار <i>الديكور</i></div>
+            <nav><span>الرئيسية</span><span>المتجر</span><span>العروض</span><span>تواصل معنا</span></nav>
+            <div style="font-size:11px;color:#8a8277">عربة • 3</div>
+          </div>
+
+          <div class="hero" style="position:relative">
+            <h1>أناقة تُناسب بيتك<br>بلمسة <em>هادئة ودافئة</em><span class="caret"></span><span class="ghost">مع خصم 15% لأول طلب</span></h1>
+            <div class="ghostbar">
+              <span class="sp"><svg class="ic"><use href="#i4-spark"/></svg></span>
+              <span>اقتراح مضمّن — اضغط Tab للقبول أو عدّل بحرية</span>
+            </div>
+            <p>مجموعة جديدة من الأثاث والديكور المصنوع بعناية ليضيف دفئًا وأناقة لمساحتك الخاصة.</p>
+            <span class="b1">تسوق المجموعة</span>
+            <div class="art"></div>
+          </div>
+
+          <div class="suggest">
+            <i>✦ اجعله أقصر</i><i>✦ نبرة أكثر دفئًا</i><i>✦ أضف خصمًا</i><i>↺ اقتراح آخر</i>
+          </div>
+
+          <div class="band">
+            <div class="c">غرف المعيشة</div><div class="c">غرف النوم</div><div class="c">إضاءة</div><div class="c">ديكور الجدران</div>
+          </div>
+
+          <div class="grid2">
+            <div class="cd"><div class="im"></div><div class="tx"><b>كنبة «سحابة»</b><span>4,850 ج.م</span></div></div>
+            <div class="cd"><div class="im" style="background:radial-gradient(48% 58% at 38% 60%, rgba(110,74,40,.34), rgba(110,74,40,0) 72%), radial-gradient(120% 100% at 32% 18%, #efe2cb, #d9c19c 58%, #b6976e)"></div><div class="tx"><b>طاولة قهوة</b><span>2,300 ج.م</span></div></div>
+            <div class="cd"><div class="im" style="background:radial-gradient(44% 58% at 58% 60%, rgba(105,95,80,.28), rgba(105,95,80,0) 72%), radial-gradient(120% 100% at 68% 16%, #f4efe7, #ddd2bf 58%, #bfb09a)"></div><div class="tx"><b>مرآة «ذهب»</b><span>1,150 ج.م</span></div></div>
+            <div class="cd"><div class="im" style="background:radial-gradient(48% 58% at 42% 62%, rgba(130,80,45,.30), rgba(130,80,45,0) 72%), radial-gradient(120% 100% at 34% 16%, #f1e6d4, #dcc3a2 56%, #b99872)"></div><div class="tx"><b>سجادة «واحة»</b><span>3,400 ج.م</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- لوحة المساعد -->
+      <aside class="ai">
+        <div class="h">
+          <span class="sp"><svg class="ic"><use href="#i4-spark"/></svg></span>
+          <div><b>مساعد ماكس</b><span>يفهم متجرك ويعدّل مباشرة</span></div>
+          <span class="st">يراقب الآن</span>
+        </div>
+        <div class="aibody">
+
+          <div class="review">
+            <div class="rh">
+              <svg class="ic"><use href="#i4-spark"/></svg>
+              <b>جاهز للمراجعة</b>
+              <span>3 تغييرات</span>
+            </div>
+
+            <div class="rv">
+              <svg class="ic"><use href="#i4-text"/></svg>
+              <div class="tx"><b>العنوان الرئيسي</b><span><s>أناقة تُناسب بيتك</s> ← «أناقة تُلهم بيتك»</span></div>
+              <span class="check on"><svg class="ic" style="width:11px;height:11px;stroke:#fff;fill:none;stroke-width:2.4"><use href="#i4-check"/></svg></span>
+            </div>
+            <div class="rv">
+              <svg class="ic"><use href="#i4-btn"/></svg>
+              <div class="tx"><b>لون الزر «تسوق المجموعة»</b><span>داكن ← أزرق ماكس (تباين أعلى)</span></div>
+              <span class="check on"><svg class="ic" style="width:11px;height:11px;stroke:#fff;fill:none;stroke-width:2.4"><use href="#i4-check"/></svg></span>
+            </div>
+            <div class="rv" style="margin-bottom:0">
+              <svg class="ic"><use href="#i4-plus"/></svg>
+              <div class="tx"><b>قسم جديد: عروض الأسبوع</b><span>يُضاف بعد قسم البطل</span></div>
+              <span class="check"></span>
+            </div>
+
+            <div class="rbtns">
+              <span class="b1">قبول الكل</span>
+              <span class="b2">واحدًا واحدًا</span>
+              <span class="b3">رفض</span>
+            </div>
+          </div>
+
+          <div class="slbl">هويات جاهزة لمتجرك <a>توليد بالـAI ✦</a></div>
+          <div class="kits">
+            <div class="kit on"><div class="dots"><i style="background:#b4552d"></i><i style="background:#241d15"></i><i style="background:#f1e6d6"></i><i style="background:#3f7d54"></i></div><b>دافئ خشبي</b><span>الحالي</span></div>
+            <div class="kit"><div class="dots"><i style="background:#2563eb"></i><i style="background:#0f172a"></i><i style="background:#e0ecff"></i><i style="background:#22c55e"></i></div><b>أزرق عصري</b><span>لمتجرك</span></div>
+            <div class="kit"><div class="dots"><i style="background:#a67c52"></i><i style="background:#efe9e1"></i><i style="background:#e7cfa4"></i><i style="background:#5b5148"></i></div><b>بيج فاخر</b><span>لمتجرك</span></div>
+            <div class="kit"><div class="dots"><i style="background:#111827"></i><i style="background:#6b7280"></i><i style="background:#f3f4f6"></i><i style="background:#ef4444"></i></div><b>حيادي هادئ</b><span>لمتجرك</span></div>
+          </div>
+
+          <div class="genkit"><svg class="ic"><use href="#i4-spark"/></svg> صف متجرك بكلمة واحدة… «دافئ»، «فخم»، «تقني»</div>
+
+          <div class="qa">
+            <div class="q"><svg class="ic"><use href="#i4-bolt"/></svg> حسّن نصوص الصفحة كلها <span class="ch">‹</span></div>
+            <div class="q"><svg class="ic"><use href="#i4-shield"/></svg> فحص التباين والوضوح <span class="ch">‹</span></div>
+            <div class="q"><svg class="ic"><use href="#i4-pointer"/></svg> ترتيب الأقسام تلقائيًا <span class="ch">‹</span></div>
+          </div>
+
+        </div>
+      </aside>
+    </div>
+  </div></div>
+
+  <div class="cap">
+    <div class="num">4</div>
+    <div class="tx">
+      <b>AI Copilot — المساعد أولًا</b>
+      <span>الاتجاه الأقوى في 2026: مساعد داخل سير العمل نفسه — اقتراحات مضمّنة (Inline)، بطاقة مراجعة وقبول/رفض للتغييرات، توصيل أوامر Ctrl+K، وهويات متجر جاهزة.</span>
+    </div>
+    <div class="tags">
+      <i>AI مضمّن في المحرر</i><i>بطاقة مراجعة تغييرات</i><i>لوحة أوامر Ctrl+K</i><i>هويات جاهزة</i>
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+<hr class="gsep">
+
+<script>
+(function(){
+  var btns = document.querySelectorAll('.gtabs button');
+  var slots = document.querySelectorAll('.gslot');
+  function fitAll(){
+    slots.forEach(function(slot){
+      var wrap = slot.querySelector('.stagewrap');
+      var stage = slot.querySelector('[id$="stage"]');
+      if(!wrap || !stage) return;
+      var w = wrap.clientWidth; if(!w) return;
+      var s = Math.min(1, w / 1360);
+      if('zoom' in stage.style){ stage.style.zoom = s; } else { stage.style.transform = 'scale(' + s + ')'; stage.style.transformOrigin = 'top right'; }
+      wrap.style.height = (852 * s) + 'px';
+    });
+  }
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      var g = b.getAttribute('data-g');
+      btns.forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      slots.forEach(function(slot){
+        var show = (g === 'all') ? true : (slot.id === 'g' + g);
+        slot.classList.toggle('vis', show);
+      });
+      fitAll();
+    });
+  });
+  window.addEventListener('resize', fitAll);
+  fitAll();
+})();
+</script>
+</body>
+</html>

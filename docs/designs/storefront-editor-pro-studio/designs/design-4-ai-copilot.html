@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MaxP — تصميم 4: AI Copilot (اتجاه 2026)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Cairo:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* BODYRESET */
+  body { margin: 0; padding: 0; }
+  /* ============ تصميم 4 — "AI Copilot" — الاتجاه الأول في 2026: المساعد داخل سير العمل ============ */
+  .d4, .d4 * { box-sizing: border-box; margin: 0; padding: 0; }
+  .d4 {
+    font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+    background: #e6e4e0; width: 100%; padding: 18px 0 10px;
+    --blue: #2563eb; --ink: #14161a; --mut: #6f7681; --hair: #ececec; --ai: #6d4aff; --soft: #f7f8fa;
+  }
+  .d4 .stagewrap { width: 100%; overflow: hidden; }
+  .d4 .stage {
+    width: 1360px; height: 852px; transform-origin: top right; margin: 0 auto;
+    background: #fbfbfc; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 30px 70px rgba(20,20,25,.24); display: flex; flex-direction: column; direction: rtl;
+    border: 1px solid #e9e9ec;
+  }
+  /* ---------- شريط علوي هادئ ---------- */
+  .d4 .topbar { height: 58px; background: #fff; border-bottom: 1px solid var(--hair); display: flex; align-items: center; gap: 10px; padding: 0 16px; flex: 0 0 auto; }
+  .d4 .mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg,#3b82f6,#1d4ed8); display: flex; align-items: center; justify-content: center; font-family: Cairo; font-weight: 800; font-size: 15px; color: #fff; }
+  .d4 .ttl b { font-size: 13.5px; color: var(--ink); display: block; line-height: 1.3; }
+  .d4 .ttl span { font-size: 11px; color: var(--mut); }
+  .d4 .storechip { display: flex; align-items: center; gap: 7px; background: var(--soft); border: 1px solid var(--hair); border-radius: 999px; padding: 5px 12px 5px 8px; font-size: 11.5px; color: #3f434a; }
+  .d4 .storechip .av { width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg,#c98a5b,#8a5a34); color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+  .d4 .cmd { margin: 0 auto; display: flex; align-items: center; gap: 9px; background: var(--soft); border: 1px solid var(--hair); border-radius: 11px; height: 36px; padding: 0 13px; width: 330px; color: #8a8f96; font-size: 12.5px; }
+  .d4 .cmd .ic { width: 15px; height: 15px; stroke: #8a8f96; fill: none; stroke-width: 1.7; }
+  .d4 .cmd kbd { margin-right: auto; font-family: inherit; font-size: 10.5px; color: #6f7681; background: #fff; border: 1px solid #e3e3e6; border-radius: 6px; padding: 3px 7px; }
+  .d4 .ghostbtn { height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--hair); background: #fff; color: #3f434a; font-size: 12.5px; display: inline-flex; align-items: center; gap: 7px; }
+  .d4 .ghostbtn .ic { width: 15px; height: 15px; stroke: #6f7681; fill: none; stroke-width: 1.7; }
+  .d4 .pubbtn { height: 36px; padding: 0 20px; border-radius: 10px; background: var(--ink); color: #fff; font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+  .d4 .pubbtn i { font-style: normal; width: 7px; height: 7px; border-radius: 50%; background: #5ad07f; }
+  /* ---------- الجسم ---------- */
+  .d4 .main { flex: 1; display: flex; min-height: 0; }
+  /* عمود الأقسام (يمين) */
+  .d4 .secs { width: 274px; background: #fff; border-left: 1px solid var(--hair); display: flex; flex-direction: column; flex: 0 0 auto; }
+  .d4 .secs .h { padding: 16px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
+  .d4 .secs .h b { font-size: 12.5px; color: var(--ink); }
+  .d4 .secs .h span { font-size: 11px; color: var(--mut); }
+  .d4 .sl { padding: 3px 10px; }
+  .d4 .srow { display: flex; align-items: center; gap: 10px; padding: 10px 11px; border-radius: 10px; font-size: 12.5px; color: #3f434a; margin-bottom: 2px; }
+  .d4 .srow .grip { color: #c6c8cc; font-size: 11px; letter-spacing: 1px; }
+  .d4 .srow .ic { width: 16px; height: 16px; stroke: #9aa0a8; fill: none; stroke-width: 1.6; }
+  .d4 .srow .eye { margin-right: auto; width: 15px; height: 15px; stroke: #c0c3c8; fill: none; stroke-width: 1.6; }
+  .d4 .srow.on { background: #eef4ff; color: #1d4ed8; font-weight: 600; position: relative; }
+  .d4 .srow.on::before { content: ''; position: absolute; right: -10px; top: 8px; bottom: 8px; width: 3px; border-radius: 3px; background: var(--blue); }
+  .d4 .srow.on .ic { stroke: var(--blue); }
+  .d4 .sfoot { margin: auto 12px 14px; border-top: 1px solid var(--hair); padding-top: 12px; }
+  .d4 .sfoot .lbl { font-size: 10.5px; color: var(--mut); margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+  .d4 .lbl .ic { width: 12px; height: 12px; stroke: var(--ai); fill: none; stroke-width: 1.8; }
+  .d4 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .d4 .chips i { font-style: normal; font-size: 10.5px; color: #4a4f57; background: var(--soft); border: 1px solid var(--hair); border-radius: 999px; padding: 5px 10px; display: inline-flex; align-items: center; gap: 5px; }
+  .d4 .chips i b { color: var(--ai); font-weight: 700; }
+  /* الكانفس */
+  .d4 .canvas { flex: 1; position: relative; overflow: hidden; background: #f3f4f6;
+    background-image: radial-gradient(#e0e1e5 1px, transparent 1px); background-size: 26px 26px; }
+  .d4 .banner { position: absolute; top: 14px; right: 22px; background: #fff; border: 1px solid #e9e9ec; box-shadow: 0 10px 26px rgba(20,20,30,.08); border-radius: 999px; padding: 7px 14px; display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: #3f434a; z-index: 8; }
+  .d4 .banner .pp { width: 8px; height: 8px; border-radius: 50%; background: var(--ai); box-shadow: 0 0 0 4px rgba(109,74,255,.14); }
+  .d4 .page { width: 730px; margin: 34px auto 0; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 24px 60px rgba(20,20,35,.13), 0 0 0 1px #ececec; }
+  .d4 .sh { display: flex; align-items: center; justify-content: space-between; padding: 15px 24px; border-bottom: 1px solid #f2f0ec; }
+  .d4 .sh .lg { font-family: Cairo; font-weight: 800; font-size: 16px; color: #23201b; }
+  .d4 .sh .lg i { font-style: normal; color: #b4552d; }
+  .d4 .sh nav { display: flex; gap: 15px; font-size: 11.5px; color: #6f675c; }
+  .d4 .hero { padding: 40px 34px 34px; background: linear-gradient(180deg,#fbf8f3,#f4eee4); position: relative; }
+  .d4 .hero h1 { font-family: Cairo; font-size: 30px; font-weight: 800; color: #241d15; line-height: 1.4; }
+  .d4 .hero h1 em { font-style: normal; color: #b4552d; }
+  /* Ghost text: اقتراح AI مضمّن داخل النص */
+  .d4 .ghost { color: #b9aef2; border-bottom: 2px dotted #cabfff; }
+  .d4 .caret { display: inline-block; width: 2px; height: 20px; background: var(--ai); vertical-align: -4px; margin: 0 2px; animation: d4blink 1.1s steps(1) infinite; }
+  @keyframes d4blink { 50% { opacity: 0 } }
+  .d4 .ghostbar { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+  .d4 .ghostbar .sp { width: 20px; height: 20px; border-radius: 50%; background: var(--ai); display: flex; align-items: center; justify-content: center; }
+  .d4 .ghostbar .sp .ic { width: 11px; height: 11px; stroke: #fff; fill: none; stroke-width: 1.8; }
+  .d4 .ghostbar span { font-size: 10.5px; color: #7d6fe0; }
+  .d4 .hero p { margin-top: 12px; font-size: 12.5px; color: #6f6659; width: 400px; line-height: 1.8; }
+  .d4 .hero .b1 { display: inline-block; margin-top: 15px; background: #241d15; color: #fff; font-size: 12.5px; font-weight: 600; padding: 10px 21px; border-radius: 10px; }
+  .d4 .hero .art { position: absolute; left: 30px; top: 36px; width: 200px; height: 152px; border-radius: 14px; background: radial-gradient(45% 62% at 64% 60%, rgba(128,90,50,.35), rgba(128,90,50,0) 72%), radial-gradient(120% 100% at 74% 16%, #f7ecd9, #e4cfa9 55%, #c9ab7f); }
+  /* شرائح الاقتراحات تحت السيكشن المحدد */
+  .d4 .suggest { display: flex; gap: 7px; padding: 10px 20px; background: #fbfaf8; border-top: 1px solid #f2f0ec; border-bottom: 1px solid #f2f0ec; }
+  .d4 .suggest i { font-style: normal; font-size: 10.5px; color: #5147a8; background: #f2efff; border: 1px solid #e4ddff; border-radius: 999px; padding: 5px 11px; }
+  .d4 .band { display: flex; gap: 10px; padding: 16px 24px 4px; }
+  .d4 .band .c { flex: 1; height: 50px; border-radius: 10px; background: #f6efe4; border: 1px solid #efe6d6; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #5d5344; font-weight: 600; }
+  .d4 .grid2 { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; padding: 13px 24px 18px; }
+  .d4 .cd { border: 1px solid #f2f0ec; border-radius: 11px; overflow: hidden; }
+  .d4 .cd .im { height: 88px; background: radial-gradient(46% 60% at 60% 62%, rgba(124,92,55,.30), rgba(124,92,55,0) 72%), radial-gradient(120% 100% at 70% 18%, #f5ecdd, #dfcba8 58%, #c3a67d); }
+  .d4 .cd .tx { padding: 8px 9px 10px; }
+  .d4 .cd .tx b { font-size: 11.5px; color: #2b241d; display: block; }
+  .d4 .cd .tx span { font-size: 11px; color: #241d15; font-weight: 700; }
+  /* لوحة المساعد (يسار) */
+  .d4 .ai { width: 336px; background: #fff; border-right: 1px solid var(--hair); display: flex; flex-direction: column; flex: 0 0 auto; }
+  .d4 .ai .h { padding: 16px 16px 12px; display: flex; align-items: center; gap: 9px; border-bottom: 1px solid var(--hair); }
+  .d4 .ai .h .sp { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg,#8a6cff,#5f3dfa); display: flex; align-items: center; justify-content: center; }
+  .d4 .ai .h .sp .ic { width: 15px; height: 15px; stroke: #fff; fill: none; stroke-width: 1.7; }
+  .d4 .ai .h b { font-size: 13.5px; color: var(--ink); display: block; }
+  .d4 .ai .h span { font-size: 10.5px; color: var(--mut); }
+  .d4 .ai .h .st { margin-right: auto; font-size: 10px; color: #1f9d55; background: #ecf9f0; border-radius: 999px; padding: 4px 9px; display: flex; align-items: center; gap: 5px; }
+  .d4 .ai .h .st::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #2fbf6b; }
+  .d4 .aibody { flex: 1; overflow: hidden; padding: 14px 16px; }
+  /* بطاقة مراجعة التغييرات */
+  .d4 .review { border: 1px solid #e6e0ff; background: linear-gradient(180deg,#faf8ff,#f5f1ff); border-radius: 14px; padding: 13px 13px 12px; margin-bottom: 16px; }
+  .d4 .review .rh { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .d4 .review .rh .ic { width: 15px; height: 15px; stroke: var(--ai); fill: none; stroke-width: 1.7; }
+  .d4 .review .rh b { font-size: 12px; color: #3b2ba0; }
+  .d4 .review .rh span { margin-right: auto; font-size: 10px; color: #8d80d8; }
+  .d4 .rv { display: flex; align-items: center; gap: 9px; background: #fff; border: 1px solid #ece7ff; border-radius: 10px; padding: 9px 10px; margin-bottom: 7px; }
+  .d4 .rv .ic { width: 15px; height: 15px; stroke: #7a6ad0; fill: none; stroke-width: 1.6; }
+  .d4 .rv .tx { flex: 1; }
+  .d4 .rv .tx b { font-size: 11.5px; color: #2f2a4a; display: block; font-weight: 600; }
+  .d4 .rv .tx span { font-size: 10.5px; color: #8a86a0; }
+  .d4 .rv .tx s { color: #b9b3d0; }
+  .d4 .rv .check { width: 17px; height: 17px; border-radius: 6px; border: 1.6px solid #cfc6f2; display: flex; align-items: center; justify-content: center; color: #fff; }
+  .d4 .rv .check.on { background: var(--ai); border-color: var(--ai); }
+  .d4 .rbtns { display: flex; gap: 7px; margin-top: 11px; }
+  .d4 .rbtns .b1 { flex: 1; text-align: center; background: var(--ai); color: #fff; font-size: 11.5px; font-weight: 600; padding: 9px 0; border-radius: 9px; }
+  .d4 .rbtns .b2 { flex: 1; text-align: center; border: 1px solid #ddd4ff; background: #fff; color: #5b48c8; font-size: 11.5px; padding: 9px 0; border-radius: 9px; }
+  .d4 .rbtns .b3 { text-align: center; color: #8a86a0; font-size: 11.5px; padding: 9px 10px; }
+  /* هويات جاهزة (بنتو) */
+  .d4 .slbl { font-size: 10.5px; color: var(--mut); margin-bottom: 9px; display: flex; align-items: center; justify-content: space-between; }
+  .d4 .slbl a { color: var(--ai); text-decoration: none; font-weight: 600; }
+  .d4 .kits { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .d4 .kit { border: 1px solid var(--hair); border-radius: 12px; padding: 9px 10px; background: var(--soft); }
+  .d4 .kit .dots { display: flex; gap: 4px; margin-bottom: 7px; }
+  .d4 .kit .dots i { width: 15px; height: 15px; border-radius: 50%; }
+  .d4 .kit b { font-size: 11px; color: #3f434a; display: block; }
+  .d4 .kit span { font-size: 9.5px; color: var(--mut); }
+  .d4 .kit.on { outline: 2px solid var(--blue); background: #eef4ff; }
+  .d4 .genkit { display: flex; align-items: center; justify-content: center; gap: 7px; border: 1px dashed #d5cef5; color: #5b48c8; border-radius: 12px; padding: 10px; font-size: 11.5px; font-weight: 600; background: #fbfaff; margin-bottom: 16px; }
+  .d4 .genkit .ic { width: 14px; height: 14px; stroke: #6d4aff; fill: none; stroke-width: 1.7; }
+  /* إجراءات سريعة */
+  .d4 .qa { border-top: 1px solid var(--hair); padding-top: 12px; }
+  .d4 .qa .q { display: flex; align-items: center; gap: 9px; padding: 8px 2px; font-size: 12px; color: #3f434a; }
+  .d4 .qa .q .ic { width: 15px; height: 15px; stroke: #9aa0a8; fill: none; stroke-width: 1.7; }
+  .d4 .qa .q .ch { margin-right: auto; color: #c6c8cc; }
+  /* تعليق */
+  .d4 .cap { width: auto; max-width: 1360px; margin: 14px auto 0; display: flex; align-items: center; gap: 12px; padding: 0 20px; flex-wrap: wrap; row-gap: 8px; }
+  .d4 .cap .num { font-family: Cairo; font-weight: 800; font-size: 22px; color: #fff; background: #14161a; border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+  .d4 .cap .tx b { color: #17181c; font-size: 15px; display: block; }
+  .d4 .cap .tx span { color: #5e6268; font-size: 12px; }
+  .d4 .cap .tags { margin-right: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .d4 .cap .tags i { font-style: normal; font-size: 10.5px; color: #3f434a; background: #fff; border: 1px solid #d8d8d8; padding: 4px 10px; border-radius: 999px; }
+  .d4 .cd .tx b, .d4 .cd .tx span, .d4 .band .c { white-space: nowrap; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i4-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></symbol>
+  <symbol id="i4-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i4-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.8-3.8"/></symbol>
+  <symbol id="i4-layout" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M10 10v10"/></symbol>
+  <symbol id="i4-para" viewBox="0 0 24 24"><path d="M13 4H8.5a3.5 3.5 0 0 0 0 7H13v9M16 4v16M13 4v16"/></symbol>
+  <symbol id="i4-img" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m4 18 5-5 4 4 3-3 4 4"/></symbol>
+  <symbol id="i4-btn" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="4"/><path d="M8 12h8"/></symbol>
+  <symbol id="i4-text" viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></symbol>
+  <symbol id="i4-pal" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.8 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.2 0-1 .8-1.8 1.8-1.8H16a5 5 0 0 0 5-5c0-3.9-4-6.7-9-6.7z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16.5" cy="10.5" r="1"/></symbol>
+  <symbol id="i4-pointer" viewBox="0 0 24 24"><path d="m5 3 7 17 2.5-6.5L21 11 5 3z"/></symbol>
+  <symbol id="i4-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i4-check" viewBox="0 0 24 24"><path d="m5 13 4.5 4.5L19 7"/></symbol>
+  <symbol id="i4-arr" viewBox="0 0 24 24"><path d="m14 6-6 6 6 6"/></symbol>
+  <symbol id="i4-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6l-7-3z"/><path d="m9.5 12 2 2 3.5-4"/></symbol>
+  <symbol id="i4-bolt" viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12L13 2z"/></symbol>
+  <symbol id="i4-dots6" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="9" cy="18" r="1.3"/><circle cx="15" cy="6" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="15" cy="18" r="1.3"/></symbol>
+</svg>
+
+<div class="d4" id="d4root">
+  <div class="stagewrap"><div class="stage" id="d4stage">
+
+    <!-- ═══ شريط علوي هادئ ═══ -->
+    <div class="topbar">
+      <div class="mark">م</div>
+      <div class="ttl"><b>محرر الواجهة</b><span>متجر دار الديكور</span></div>
+      <div class="storechip"><span class="av">د</span> الرئيسية ▾</div>
+      <div class="cmd"><svg class="ic"><use href="#i4-search"/></svg> اسأل، جرّب، أو اكتب أمرًا… <kbd>Ctrl K</kbd></div>
+      <button class="ghostbtn"><svg class="ic"><use href="#i4-eye"/></svg> معاينة</button>
+      <button class="pubbtn"><i></i> نشر التغييرات</button>
+    </div>
+
+    <!-- ═══ الجسم ═══ -->
+    <div class="main">
+
+      <!-- عمود الأقسام -->
+      <aside class="secs">
+        <div class="h"><b>أقسام الصفحة</b><span>6 أقسام</span></div>
+        <div class="sl">
+          <div class="srow"><span class="grip">⠿</span><svg class="ic"><use href="#i4-layout"/></svg> الترويسة <svg class="eye"><use href="#i4-eye"/></svg></div>
+          <div class="srow on"><span class="grip">⠿</span><svg class="ic"><use href="#i4-btn"/></svg> قسم البطل <svg class="eye" style="stroke:#9bb4f5"><use href="#i4-eye"/></svg></div>
+          <div class="srow"><span class="grip">⠿</span><svg class="ic"><use href="#i4-para"/></svg> شريط الفئات <svg class="eye"><use href="#i4-eye"/></svg></div>
+          <div class="srow"><span class="grip">⠿</span><svg class="ic"><use href="#i4-img"/></svg> شبكة المنتجات <svg class="eye"><use href="#i4-eye"/></svg></div>
+          <div class="srow"><span class="grip">⠿</span><svg class="ic"><use href="#i4-text"/></svg> آراء العملاء <svg class="eye"><use href="#i4-eye"/></svg></div>
+          <div class="srow"><span class="grip">⠿</span><svg class="ic"><use href="#i4-layout"/></svg> التذييل <svg class="eye"><use href="#i4-eye"/></svg></div>
+        </div>
+        <div class="sfoot">
+          <div class="lbl"><svg class="ic"><use href="#i4-spark"/></svg> أقسام مقترحة لمتجرك</div>
+          <div class="chips">
+            <i><b>+</b> شريط عروض</i>
+            <i><b>+</b> عدّاد تنازلي</i>
+            <i><b>+</b> أسئلة شائعة</i>
+          </div>
+        </div>
+      </aside>
+
+      <!-- الكانفس -->
+      <div class="canvas">
+        <div class="banner"><span class="pp"></span> مساعد ماكس يراجع المتجر — 3 اقتراحات جديدة</div>
+
+        <div class="page">
+          <div class="sh">
+            <div class="lg">دار <i>الديكور</i></div>
+            <nav><span>الرئيسية</span><span>المتجر</span><span>العروض</span><span>تواصل معنا</span></nav>
+            <div style="font-size:11px;color:#8a8277">عربة • 3</div>
+          </div>
+
+          <div class="hero" style="position:relative">
+            <h1>أناقة تُناسب بيتك<br>بلمسة <em>هادئة ودافئة</em><span class="caret"></span><span class="ghost">مع خصم 15% لأول طلب</span></h1>
+            <div class="ghostbar">
+              <span class="sp"><svg class="ic"><use href="#i4-spark"/></svg></span>
+              <span>اقتراح مضمّن — اضغط Tab للقبول أو عدّل بحرية</span>
+            </div>
+            <p>مجموعة جديدة من الأثاث والديكور المصنوع بعناية ليضيف دفئًا وأناقة لمساحتك الخاصة.</p>
+            <span class="b1">تسوق المجموعة</span>
+            <div class="art"></div>
+          </div>
+
+          <div class="suggest">
+            <i>✦ اجعله أقصر</i><i>✦ نبرة أكثر دفئًا</i><i>✦ أضف خصمًا</i><i>↺ اقتراح آخر</i>
+          </div>
+
+          <div class="band">
+            <div class="c">غرف المعيشة</div><div class="c">غرف النوم</div><div class="c">إضاءة</div><div class="c">ديكور الجدران</div>
+          </div>
+
+          <div class="grid2">
+            <div class="cd"><div class="im"></div><div class="tx"><b>كنبة «سحابة»</b><span>4,850 ج.م</span></div></div>
+            <div class="cd"><div class="im" style="background:radial-gradient(48% 58% at 38% 60%, rgba(110,74,40,.34), rgba(110,74,40,0) 72%), radial-gradient(120% 100% at 32% 18%, #efe2cb, #d9c19c 58%, #b6976e)"></div><div class="tx"><b>طاولة قهوة</b><span>2,300 ج.م</span></div></div>
+            <div class="cd"><div class="im" style="background:radial-gradient(44% 58% at 58% 60%, rgba(105,95,80,.28), rgba(105,95,80,0) 72%), radial-gradient(120% 100% at 68% 16%, #f4efe7, #ddd2bf 58%, #bfb09a)"></div><div class="tx"><b>مرآة «ذهب»</b><span>1,150 ج.م</span></div></div>
+            <div class="cd"><div class="im" style="background:radial-gradient(48% 58% at 42% 62%, rgba(130,80,45,.30), rgba(130,80,45,0) 72%), radial-gradient(120% 100% at 34% 16%, #f1e6d4, #dcc3a2 56%, #b99872)"></div><div class="tx"><b>سجادة «واحة»</b><span>3,400 ج.م</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- لوحة المساعد -->
+      <aside class="ai">
+        <div class="h">
+          <span class="sp"><svg class="ic"><use href="#i4-spark"/></svg></span>
+          <div><b>مساعد ماكس</b><span>يفهم متجرك ويعدّل مباشرة</span></div>
+          <span class="st">يراقب الآن</span>
+        </div>
+        <div class="aibody">
+
+          <div class="review">
+            <div class="rh">
+              <svg class="ic"><use href="#i4-spark"/></svg>
+              <b>جاهز للمراجعة</b>
+              <span>3 تغييرات</span>
+            </div>
+
+            <div class="rv">
+              <svg class="ic"><use href="#i4-text"/></svg>
+              <div class="tx"><b>العنوان الرئيسي</b><span><s>أناقة تُناسب بيتك</s> ← «أناقة تُلهم بيتك»</span></div>
+              <span class="check on"><svg class="ic" style="width:11px;height:11px;stroke:#fff;fill:none;stroke-width:2.4"><use href="#i4-check"/></svg></span>
+            </div>
+            <div class="rv">
+              <svg class="ic"><use href="#i4-btn"/></svg>
+              <div class="tx"><b>لون الزر «تسوق المجموعة»</b><span>داكن ← أزرق ماكس (تباين أعلى)</span></div>
+              <span class="check on"><svg class="ic" style="width:11px;height:11px;stroke:#fff;fill:none;stroke-width:2.4"><use href="#i4-check"/></svg></span>
+            </div>
+            <div class="rv" style="margin-bottom:0">
+              <svg class="ic"><use href="#i4-plus"/></svg>
+              <div class="tx"><b>قسم جديد: عروض الأسبوع</b><span>يُضاف بعد قسم البطل</span></div>
+              <span class="check"></span>
+            </div>
+
+            <div class="rbtns">
+              <span class="b1">قبول الكل</span>
+              <span class="b2">واحدًا واحدًا</span>
+              <span class="b3">رفض</span>
+            </div>
+          </div>
+
+          <div class="slbl">هويات جاهزة لمتجرك <a>توليد بالـAI ✦</a></div>
+          <div class="kits">
+            <div class="kit on"><div class="dots"><i style="background:#b4552d"></i><i style="background:#241d15"></i><i style="background:#f1e6d6"></i><i style="background:#3f7d54"></i></div><b>دافئ خشبي</b><span>الحالي</span></div>
+            <div class="kit"><div class="dots"><i style="background:#2563eb"></i><i style="background:#0f172a"></i><i style="background:#e0ecff"></i><i style="background:#22c55e"></i></div><b>أزرق عصري</b><span>لمتجرك</span></div>
+            <div class="kit"><div class="dots"><i style="background:#a67c52"></i><i style="background:#efe9e1"></i><i style="background:#e7cfa4"></i><i style="background:#5b5148"></i></div><b>بيج فاخر</b><span>لمتجرك</span></div>
+            <div class="kit"><div class="dots"><i style="background:#111827"></i><i style="background:#6b7280"></i><i style="background:#f3f4f6"></i><i style="background:#ef4444"></i></div><b>حيادي هادئ</b><span>لمتجرك</span></div>
+          </div>
+
+          <div class="genkit"><svg class="ic"><use href="#i4-spark"/></svg> صف متجرك بكلمة واحدة… «دافئ»، «فخم»، «تقني»</div>
+
+          <div class="qa">
+            <div class="q"><svg class="ic"><use href="#i4-bolt"/></svg> حسّن نصوص الصفحة كلها <span class="ch">‹</span></div>
+            <div class="q"><svg class="ic"><use href="#i4-shield"/></svg> فحص التباين والوضوح <span class="ch">‹</span></div>
+            <div class="q"><svg class="ic"><use href="#i4-pointer"/></svg> ترتيب الأقسام تلقائيًا <span class="ch">‹</span></div>
+          </div>
+
+        </div>
+      </aside>
+    </div>
+  </div></div>
+
+  <div class="cap">
+    <div class="num">4</div>
+    <div class="tx">
+      <b>AI Copilot — المساعد أولًا</b>
+      <span>الاتجاه الأقوى في 2026: مساعد داخل سير العمل نفسه — اقتراحات مضمّنة (Inline)، بطاقة مراجعة وقبول/رفض للتغييرات، توصيل أوامر Ctrl+K، وهويات متجر جاهزة.</span>
+    </div>
+    <div class="tags">
+      <i>AI مضمّن في المحرر</i><i>بطاقة مراجعة تغييرات</i><i>لوحة أوامر Ctrl+K</i><i>هويات جاهزة</i>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var wrap = document.querySelector('#d4root .stagewrap');
+  var stage = document.getElementById('d4stage');
+  function fit(){
+    var w = wrap.clientWidth; if(!w) return;
+    var s = Math.min(1, w / 1360);
+    if('zoom' in stage.style){ stage.style.zoom = s; wrap.style.height = (852*s) + 'px'; }
+    else { stage.style.transform = 'scale(' + s + ')'; wrap.style.height = (852*s) + 'px'; }
+  }
+  if(window.ResizeObserver) new ResizeObserver(fit).observe(wrap); else window.addEventListener('resize', fit);
+  fit();
+})();
+</script>
+</body>
+</html>

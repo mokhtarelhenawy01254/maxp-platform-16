@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>كتالوج أدوات Elementor الكامل — نسخة 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Cairo:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'IBM Plex Sans Arabic','Segoe UI',Tahoma,sans-serif; background:#f6f5f3; color:#1c1d21; line-height:1.7; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  /* الهيدر */
+  .hero { background: linear-gradient(135deg,#92003b,#c2185b 55%,#e91e63); color:#fff; border-radius: 20px; padding: 34px 32px; margin-bottom: 22px; position: relative; overflow: hidden; }
+  .hero::after { content:''; position:absolute; left:-60px; bottom:-80px; width:260px; height:260px; border-radius:50%; background:rgba(255,255,255,.08); }
+  .hero h1 { font-family: Cairo; font-size: 30px; margin-bottom: 8px; }
+  .hero p { font-size: 14px; opacity:.92; max-width: 760px; }
+  .hero .meta { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .hero .meta span { font-size: 11px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.25); padding: 4px 12px; border-radius: 999px; }
+
+  /* المفتاح */
+  .legend { display:flex; gap: 14px; flex-wrap: wrap; background:#fff; border:1px solid #e8e8ea; border-radius: 14px; padding: 12px 18px; margin-bottom: 22px; font-size: 12.5px; align-items:center; }
+  .legend b { font-size: 12px; color:#6b6f76; font-weight:600; }
+  .badge { display:inline-block; font-size: 10.5px; font-weight: 600; border-radius: 999px; padding: 2px 10px; vertical-align: middle; }
+  .b-free { background:#e8f7ee; color:#177245; }
+  .b-pro { background:#efe9ff; color:#5b3fd6; }
+  .b-new { background:#ffe9f2; color:#b8075a; }
+  .b-soon { background:#eef0f3; color:#5f6673; }
+
+  /* الأقسام */
+  h2 { font-family: Cairo; font-size: 21px; margin: 34px 0 6px; color:#111; display:flex; align-items:center; gap: 10px; }
+  h2 .n { width: 34px; height: 34px; border-radius: 10px; background:#92003b; color:#fff; font-size: 15px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  h2 small { font-family: inherit; font-size: 12px; color:#8a8e95; font-weight:400; }
+  .sub { color:#5e6268; font-size: 13.5px; margin: 2px 0 14px; }
+  .card { background:#fff; border:1px solid #e8e8ea; border-radius: 16px; padding: 18px 20px; margin-bottom: 12px; }
+  .card h3 { font-size: 14.5px; margin-bottom: 8px; color:#14161a; }
+  .card p, .card li { font-size: 13px; color:#3f434a; }
+  .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 840px) { .grid2 { grid-template-columns: 1fr; } }
+
+  table { width:100%; border-collapse: collapse; background:#fff; border:1px solid #e8e8ea; border-radius: 16px; overflow: hidden; font-size: 12.8px; }
+  th { background:#faf7f8; text-align: right; padding: 10px 14px; font-size: 12px; color:#6b3b50; border-bottom:1px solid #eee4e9; }
+  td { padding: 9px 14px; border-bottom: 1px solid #f1f1f3; vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td.ename { font-family: 'Segoe UI', Tahoma, sans-serif; direction: ltr; text-align: right; color:#6b3b50; font-weight: 600; white-space: nowrap; font-size: 12px; }
+
+  .pills { display:flex; flex-wrap:wrap; gap:7px; }
+  .pills span { font-size: 12px; background:#f4f4f6; border:1px solid #e6e6e9; padding: 5px 12px; border-radius: 999px; color:#3f434a; }
+  .pills span .en { direction:ltr; display:inline-block; font-size:10.5px; color:#8a8e95; margin-right:4px; }
+
+  .note { background:#fff8ec; border:1px solid #f4e2c2; border-radius: 12px; padding: 12px 16px; font-size: 12.8px; color:#7a5a1e; margin-top: 10px; }
+  .src { font-size: 10.5px; color:#9aa0a8; margin-top: 10px; }
+  a { color:#b8075a; }
+
+  .toc { background:#fff; border:1px solid #e8e8ea; border-radius: 16px; padding: 16px 20px; margin-bottom: 6px; }
+  .toc b { font-size: 13px; display:block; margin-bottom: 8px; }
+  .toc a { display:inline-block; font-size: 12.5px; margin: 3px 10px 3px 0; color:#3f434a; text-decoration:none; border-bottom:1px dashed #d8d8dc; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <h1>🧩 كتالوج أدوات Elementor الكامل</h1>
+    <p>جرد شامل لكل أدوات إلمنتور — المحرر الجديد V4 والودجات الكلاسيكية وأدوات البرو والذكاء الاصطناعي وووكومرس — مجمّع من المواقع الرسمية: elementor.com (Widgets · Features · Pro · AI · eCommerce · Roadmap · Help) و developers.elementor.com وسجل الإصدارات، مع مراجع خارجية متخصصة.</p>
+    <div class="meta">
+      <span>📅 محدّث: أكتوبر 2026 — الإصدار 4.3.5</span>
+      <span>🧮 100+ ودجة مجانية + 85 ودجة برو</span>
+      <span>⚛️ 16 عنصر Atomic في V4</span>
+      <span>🤖 Angie AI + MCP</span>
+    </div>
+  </div>
+
+  <div class="legend">
+    <b>المفتاح:</b>
+    <span class="badge b-free">مجاني</span>
+    <span class="badge b-pro">برو</span>
+    <span class="badge b-new">جديد 2026</span>
+    <span class="badge b-soon">في الطريق</span>
+  </div>
+
+  <div class="toc">
+    <b>محتويات الكتالوج</b>
+    <a href="#s1">1. محرر V4 الجديد</a><a href="#s2">2. ودجات مجانية</a><a href="#s3">3. ودجات البرو (85)</a>
+    <a href="#s4">4. بناء القوالب (Theme Builder)</a><a href="#s5">5. التسويق والفورمز</a><a href="#s6">6. ووكومرس</a>
+    <a href="#s7">7. الذكاء الاصطناعي</a><a href="#s8">8. Elementor One</a><a href="#s9">9. القوالب والمصادر</a><a href="#s10">10. الرودماب</a>
+  </div>
+
+  <!-- ═══════════ 1 ═══════════ -->
+  <h2 id="s1"><span class="n">1</span> محرر V4 — الجيل الجديد <small>(Atomic Editor — أبريل 2026، مستقر منذ 4.3)</small></h2>
+  <p class="sub">أكبر تحوّل في تاريخ إلمنتور: نظام «ذَرّي» (Atomic) مبني على CSS — كل عنصر = غلاف div واحد فقط، والأسلوب يُكتب مرة ويُعاد استخدامه في كل مكان.</p>
+
+  <div class="card">
+    <h3>⚛️ عناصر Atomic الأساسية <span class="badge b-new">V4</span></h3>
+    <table>
+      <tr><th>المجموعة</th><th>العناصر</th><th>الترخيص</th></tr>
+      <tr><td>التخطيط</td><td><b>Div Block · Flexbox · Grid</b> — حاويات مرنة وشبكات CSS</td><td><span class="badge b-free">مجاني</span></td></tr>
+      <tr><td>النصوص</td><td><b>Heading · Paragraph</b> مع تحرير مباشر على الكانفس (Inline Editing)</td><td><span class="badge b-free">مجاني</span></td></tr>
+      <tr><td>الوسائط</td><td><b>Image · SVG · YouTube · Video</b> (رفع ذاتي) <b>· Background Video</b> (جديد 4.3)</td><td><span class="badge b-free">مجاني</span></td></tr>
+      <tr><td>الواجهة</td><td><b>Button · Divider · Tabs · Accordion</b> (جديد 4.3)</td><td><span class="badge b-free">مجاني</span></td></tr>
+      <tr><td>البرو</td><td><b>Form</b> (حقول قابلة للسحب — Label/Input/Textarea/Checkbox/Submit) <b>· Loop</b></td><td><span class="badge b-pro">برو</span></td></tr>
+    </table>
+    <div class="src">المصدر: مدونة الإصدار 4.0 + ملاحظات إصدار 4.2/4.3 + مركز المساعدة.</div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>🎨 المتغيرات Variables <span class="badge b-new">V4</span></h3>
+      <p>تعريف الألوان والخطوط والأحجام مرة واحدة (primary-color, button-font…) وتطبيقها في كل الموقع — تعديل واحد يتسلسل للكل. مع <b>Variables Manager</b> لإدارة مركزية.</p>
+    </div>
+    <div class="card">
+      <h3>🏷️ الكلاسات Classes <span class="badge b-new">V4</span></h3>
+      <p>مكتبة أنماط قابلة لإعادة الاستخدام + <b>Class Manager</b> (إعادة تسمية/حذف/ترتيب أولويات بالسحب) + <b>States</b>: هوفر / فوكس / أكتيف بدون كود + Draft Classes.</p>
+    </div>
+    <div class="card">
+      <h3>🧱 المكوّنات Components <span class="badge b-pro">برو</span> <span class="badge b-new">V4</span></h3>
+      <p>حوّل أي حاوية لمكوّن متزامن في كل الموقع، مع تحديد أجزاء يُسمح بتعديلها لكل نسخة — وميزة <b>Detach</b> لفصل نسخة عن الأصل.</p>
+    </div>
+    <div class="card">
+      <h3>🖌️ تبويب الأنماط الموحّد <span class="badge b-new">V4</span></h3>
+      <p><b>General + Style</b> لكل العناصر الذرّية بنفس الشكل، و<b>كل خاصية</b> (بدون استثناء) قابلة للتعديل <b>لكل جهاز</b> من الشريط العلوي، مع Reset و Logical Properties وخلفيات متعددة الطبقات.</p>
+    </div>
+    <div class="card">
+      <h3>🎬 التفاعلات Interactions <span class="badge b-pro">برو</span> <span class="badge b-new">V4</span></h3>
+      <p>مشغّلات حقيقية: عند التحميل / الظهور بالتمرير / هوفر / نقر — مع <b>Custom Effect</b> لتحديد التحوّل بنفسك، وإعداد مختلف <b>لكل نقطة توقف</b>.</p>
+    </div>
+    <div class="card">
+      <h3>🧭 أدوات المحرر المساعدة</h3>
+      <p>شريط علوي Top Bar · النافيغيتور (شجرة العناصر) · Finder للوصول السريع · تراجع/إعادة · <b>تاريخ المراجعات</b> (استرجاع إصدارات) · ملاحظات تعاونية · تحرير مباشر على الكانفس + شريط تنسيق سياقي · Default Styles للوسوم.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ 2 ═══════════ -->
+  <h2 id="s2"><span class="n">2</span> الودجات الكلاسيكية المجانية <small>(v3 — لسه شغالة جنب V4 في نفس الصفحة)</small></h2>
+  <div class="card">
+    <div class="pills">
+      <span><span class="en">Heading</span>عنوان</span><span><span class="en">Image</span>صورة</span><span><span class="en">Text Editor</span>نص حر</span>
+      <span><span class="en">Video</span>فيديو</span><span><span class="en">Button</span>زر</span><span><span class="en">Divider</span>فاصل</span>
+      <span><span class="en">Spacer</span>مسافة</span><span><span class="en">Icon</span>أيقونة</span><span><span class="en">Image Box</span>صندوق صورة</span>
+      <span><span class="en">Icon Box</span>صندوق أيقونة</span><span><span class="en">Star Rating</span>تقييم نجوم</span><span><span class="en">Image Carousel</span>كاروسيل صور</span>
+      <span><span class="en">Basic Gallery</span>معرض</span><span><span class="en">Icon List</span>قائمة أيقونات</span><span><span class="en">Counter</span>عدّاد</span>
+      <span><span class="en">Progress Bar</span>شريط تقدم</span><span><span class="en">Testimonial</span>رأي عميل</span><span><span class="en">Tabs</span>تبويبات</span>
+      <span><span class="en">Accordion</span>أكورديون</span><span><span class="en">Toggle</span>تبديل</span><span><span class="en">Alert</span>تنبيه</span>
+      <span><span class="en">Social Icons</span>أيقونات تواصل</span><span><span class="en">HTML</span>كود</span><span><span class="en">Shortcode</span>شورت كود</span>
+      <span><span class="en">Menu Anchor</span>مرساة قائمة</span><span><span class="en">Sidebar</span>شريط جانبي</span><span><span class="en">Text Path</span>نص متعرّج</span>
+      <span><span class="en">Google Maps</span>خرائط</span><span><span class="en">Rating</span>تقييم</span>
+    </div>
+    <h3 style="margin-top:14px">🧩 ودجات ووردبريس (قالب المحتوى الديناميكي)</h3>
+    <div class="pills">
+      <span><span class="en">Site Logo</span>شعار الموقع</span><span><span class="en">Site Title</span>اسم الموقع</span><span><span class="en">Page Title</span>عنوان الصفحة</span>
+      <span><span class="en">Post Title</span>عنوان المقال</span><span><span class="en">Featured Image</span>صورة المقال</span><span><span class="en">Post Content</span>محتوى المقال</span>
+      <span><span class="en">Post Excerpt</span>مقتطف</span><span><span class="en">Author Box</span>صندوق الكاتب</span><span><span class="en">Comments</span>تعليقات</span>
+      <span><span class="en">Breadcrumbs</span>مسار التنقل</span><span><span class="en">Search Form</span>بحث</span><span><span class="en">WP Menu</span>قائمة ووردبريس</span>
+    </div>
+  </div>
+
+  <!-- ═══════════ 3 ═══════════ -->
+  <h2 id="s3"><span class="n">3</span> ودجات وميزات البرو <small>(85 ودجة + قدرات متقدمة)</small></h2>
+  <div class="card">
+    <h3>📰 المحتوى والمدونات والقوائم</h3>
+    <div class="pills">
+      <span><span class="en">Posts</span>مقالات</span><span><span class="en">Portfolio</span>أعمال</span><span><span class="en">Loop Grid</span>شبكة تكرار</span>
+      <span><span class="en">Loop Carousel</span>كاروسيل تكرار</span><span><span class="en">Taxonomy Filter</span>فلترة تصنيفات</span><span><span class="en">Media Carousel</span>كاروسيل وسائط</span>
+      <span><span class="en">Slides</span>سلايدر</span><span><span class="en">Nested Carousel</span>كاروسيل متداخل</span><span><span class="en">Gallery</span>معرض متقدم</span>
+      <span><span class="en">Table of Contents</span>فهرس المحتوى</span><span><span class="en">Blockquote</span>اقتباس</span><span><span class="en">Code Highlight</span>إبراز كود</span>
+    </div>
+    <h3 style="margin-top:14px">🧭 التنقل والواجهة</h3>
+    <div class="pills">
+      <span><span class="en">Nav Menu</span>قائمة تنقل</span><span><span class="en">Mega Menu</span>قائمة ضخمة (صور/منتجات/بنرات)</span><span><span class="en">Off-Canvas</span>لوحة جانبية منسدلة</span>
+      <span><span class="en">Menu</span>قائمة مرنة</span><span><span class="en">Login</span>تسجيل دخول</span><span><span class="en">Animated Headline</span>عنوان متحرك</span>
+      <span><span class="en">Search</span>بحث متقدم</span><span><span class="en">Share Buttons</span>مشاركة</span>
+    </div>
+    <h3 style="margin-top:14px">🎯 التحويل والتسويق</h3>
+    <div class="pills">
+      <span><span class="en">Form</span>فورم</span><span><span class="en">Call to Action</span>دعوة لاتخاذ إجراء</span><span><span class="en">Countdown</span>عدّاد تنازلي</span>
+      <span><span class="en">Price List</span>قائمة أسعار</span><span><span class="en">Price Table</span>جدول أسعار</span><span><span class="en">Flip Box</span>صندوق قلب</span>
+      <span><span class="en">Reviews</span>مراجعات</span><span><span class="en">Testimonial Carousel</span>آراء العملاء</span><span><span class="en">Progress Tracker</span>مسار مراحل</span>
+      <span><span class="en">Link in Bio</span>روابط البايو</span><span><span class="en">Template</span>قالب محفوظ</span><span><span class="en">Hotspot</span>نقاط تفاعلية</span>
+    </div>
+    <h3 style="margin-top:14px">✨ تأثيرات ومحتوى إضافي</h3>
+    <div class="pills">
+      <span><span class="en">Lottie</span>رسوم متحركة</span><span><span class="en">Video Playlist</span>قائمة فيديوهات</span><span><span class="en">Facebook Page</span>صفحة فيسبوك</span>
+      <span><span class="en">Facebook Embed/Comments/Button</span></span><span><span class="en">Global Widget</span>ودجة عامة</span>
+      <span><span class="en">Sticky</span>عنصر لاصق</span><span><span class="en">Motion Effects</span>تأثيرات حركة</span><span><span class="en">Scrolling Effects</span>تأثيرات تمرير</span>
+      <span><span class="en">Mouse Effects</span>تأثيرات ماوس</span><span><span class="en">Entrance/Hover Animations</span>أنيميشن دخول/هوفر</span>
+      <span><span class="en">Page Transitions</span>انتقالات الصفحات</span><span><span class="en">Absolute Positioning</span>تموضع مطلق حر</span>
+      <span><span class="en">Custom CSS</span>CSS مخصص</span><span><span class="en">Custom Code</span>كود لكل صفحة</span><span><span class="en">Custom Attributes</span>سمات ARIA/HTML</span>
+    </div>
+  </div>
+
+  <!-- ═══════════ 4 ═══════════ -->
+  <h2 id="s4"><span class="n">4</span> بناء القوالب Theme Builder <span class="badge b-pro">برو</span></h2>
+  <div class="card">
+    <div class="pills">
+      <span>هيدر Header</span><span>فوتر Footer</span><span>صفحة فردية Single Page/Post</span><span>أرشيف Archive (مدونة/متجر)</span>
+      <span>صفحة 404</span><span>نتائج البحث</span><span>قوالب Loop</span><span>شروط العرض Display Conditions</span>
+      <span>قوالب المنتجات WooCommerce</span><span>Dynamic Tags (حقول ACF ومخصصة)</span><span>طلب ديناميكي Dynamic Request Parameter</span>
+    </div>
+    <p style="margin-top:10px">تصميم «كل الموقع» من مكان واحد: صمّم الهيدر والفوتر وصفحات المنتجات والمقالات مرة واحدة، وتُطبَّق تلقائيًا في كل الصفحات حسب شروط العرض.</p>
+  </div>
+
+  <!-- ═══════════ 5 ═══════════ -->
+  <h2 id="s5"><span class="n">5</span> التسويق والفورمز <span class="badge b-pro">برو</span></h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>🪟 Popup Builder</h3>
+      <p>بوب-أب بكسل بيرفكت بالتصميم السحب والإفلات + <b>مشغّلات</b> (خروج، تمرير، تأخير، نقر…) + <b>استهداف</b> متقدم (صفحة/دولة/جهاز…) + قواعد (عدد مرات العرض، زائر جديد…) + مكتبة قوالب بوب-أب جاهزة.</p>
+    </div>
+    <div class="card">
+      <h3>📝 Form Builder</h3>
+      <p>حقول متعددة (نص/إيميل/هاتف/ملف/تاريخ/موافقة…) + حماية سبام + reCAPTCHA + <b>سجل الإرسالات</b> داخل الموقع + تكاملات: Mailchimp، HubSpot، Slack، Zapier، Webhooks، وCRM — و<b>Atomic Forms</b> الجديدة في V4 (حقول كعناصر مستقلة).</p>
+    </div>
+    <div class="card">
+      <h3>📊 Dynamic Content</h3>
+      <p>ربط التصميم بمحتوى ووردبريس: حقول مخصصة، ACF، حقول المنتجات — صفحة واحدةلكل عنصر تلقائيًا (Blog/متجر كبير بدون تكرار).</p>
+    </div>
+    <div class="card">
+      <h3>🗒️ أدوات مساعدة</h3>
+      <p>ملاحظات تعاونية <b>Collaborative Notes</b> (إضافة تعليق لأي عنصر للمراجعة) + Element Manager (تعطيل ودجات مش مستخدمة + صلاحيات لكل دور) + المفضلة Favorites لتثبيت ودجاتك الأكثر استخدامًا.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ 6 ═══════════ -->
+  <h2 id="s6"><span class="n">6</span> ووكومرس — بناء متجر كامل <span class="badge b-pro">برو</span></h2>
+  <div class="card">
+    <h3>🛍️ ودجات المنتجات</h3>
+    <div class="pills">
+      <span>عنوان المنتج</span><span>الصور</span><span>السعر</span><span>التقييم</span><span>الوصف المختصر</span><span>المحتوى</span><span>بيانات إضافية</span>
+      <span>تبويبات البيانات</span><span>أضف للسلة</span><span>أضف للسلة مُخصّص</span><span>حالة المخزون</span><span>منتجات مرتبطة</span>
+      <span>عروض Upsell</span><span>مسار التنقل Breadcrumbs</span>
+    </div>
+    <h3 style="margin-top:14px">📦 الأرشف والسلة والدفع</h3>
+    <div class="pills">
+      <span>شبكة المنتجات</span><span>فئات المنتجات</span><span>منتجات مميزة</span><span>منتجات التخفيضات</span>
+      <span>Cart</span><span>Checkout</span><span>حساب العميل My Account</span><span>Menu Cart (سلة مصغرة)</span>
+      <span>ملخص الشراء Purchase Summary</span><span>تنبيهات ووكومرس Notices</span><span>Mega Menu للمتجر</span><span>فلترة بالتصنيف/السعر/السمة</span>
+    </div>
+    <h3 style="margin-top:14px">⚡ أداء المتجر + Angie للمتاجر</h3>
+    <p>تخزين عناصر (Element Caching) + Lazy Load للكتالوجات الضخمة. و Angie يسرّع تشغيل المتجر: توليد المتغيرات (مقاس/لون) دفعة واحدة، تحديثات جماعية للأسعار والمخزون، كتابة أوصاف المنتجات بالـAI، وقريبًا: <b>«اكتب لي ودجة مخصصة»</b> بالبرومبت.</p>
+  </div>
+
+  <!-- ═══════════ 7 ═══════════ -->
+  <h2 id="s7"><span class="n">7</span> الذكاء الاصطناعي <span class="badge b-new">2026</span></h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>🤖 Angie — وكيل AI داخل ووردبريس</h3>
+      <p>مساعد إلمنتور الرسمي: يبني <b>صفحات كاملة بالبرومبت</b>، أنظمة تصميم (Classes وVariables)، فورمز، وحلقات Loop — ويعدّل ويحدّث محتوى موجود. أُضيف للمحرر في 4.2/4.3 وهو قلب «Build with prompts» في 2026.</p>
+    </div>
+    <div class="card">
+      <h3>✨ Elementor AI</h3>
+      <p>توليد نصوص (وترجمتها وإعادة صياغتها وتصحيحها) + توليد وتحرير الصور + <b>مساعد الكود</b> (CSS/JavaScript/HTML) + <b>AI Site Planner</b> (بريف وخريطة موقع ووايرفريمز من فكرة) + <b>AI Context</b> يتعلم هوية نشاطك عشان المحتوى يطلع متسق.</p>
+    </div>
+    <div class="card">
+      <h3>🔌 Elementor MCP <span class="badge b-new">سبتمبر 2026</span></h3>
+      <p>ربط موقعك بـ Claude وCodex وCursor وأدوات AI خارجية: يبنوا صفحات ويعدّلوا عناصر ويشتغلوا مع نظام التصميم — من خارج ووردبريس. (دعم V3 والمهارات المتخصصة MCP Skills: في الطريق Q4 2026).</p>
+    </div>
+    <div class="card">
+      <h3>♿ Ally (الوصولية بالAI)</h3>
+      <p>فحص الموقع + إصلاحات بالذكاء الاصطناعي + <b>ودجة وصولية</b> للزوار فيها 15+ أداة: تكبير الخط، تباين، تدرج رمادي، تمييز الروابط، قناع قراءة، قارئ شاشة…</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ 8 ═══════════ -->
+  <h2 id="s8"><span class="n">8</span> Elementor One — الخدمات المتصلة <span class="badge b-new">2026</span></h2>
+  <div class="card">
+    <p>اشتراك واحد بنظام <b>Credits مشتركة</b> يغطّي: توليد AI · تحسين الصور (WebP/AVIF — توفير حتى 60%) · إصلاحات الوصولية · توصيل الإيميلات (Site Mailer) · إدارة المواقع (تحديثات، أمان، قواعد بيانات) · موافقة الكوكيز · استضافة سريعة مبنية لإلمنتور. وبدائل مدفوعة داخل الإعدادات لكل خدمة.</p>
+    <div class="nav" style="margin-top:10px">
+      <div class="pills">
+        <span>Image Optimizer</span><span>Site Mailer</span><span>Cookie Consent</span><span>Site Management</span><span>Full Backups</span><span>Elementor Hosting</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ 9 ═══════════ -->
+  <h2 id="s9"><span class="n">9</span> القوالب والمصادر</h2>
+  <div class="card">
+    <div class="pills">
+      <span>300+ قالب جاهز (Library)</span><span>30+ Container Kit</span><span>100+ Section Kit</span><span>Cloud Templates Store</span>
+      <span>Link in Bio Sites</span><span>Elementor Academy (كورسات فيديو)</span><span>Developer Hub (بناء ودجات مخصصة)</span><span>Feature Requests على GitHub</span>
+    </div>
+  </div>
+
+  <!-- ═══════════ 10 ═══════════ -->
+  <h2 id="s10"><span class="n">10</span> في الطريق (Roadmap)</h2>
+  <div class="card">
+    <div class="pills">
+      <span class="badge b-soon">في الطريق</span>
+      <span>Atomic List — عنصر قوائم ذرّي (4.4)</span><span>MCP Skills — مهارات جاهزة لوكلاء AI (Q4 2026)</span>
+      <span>MCP للـV3 — تعديل قوالب قديمة من أدوات AI (Q4 2026)</span><span>Carousel ذرّي</span><span>مكتبة أيقونات ذرّية</span>
+      <span>بودجات مخصصة بالبرومبت في ووكومرس</span><span>مزيد من العناصر الذرّية تباعًا</span>
+    </div>
+  </div>
+
+  <div class="note">
+    💡 <b>للربط بمشروعك (مكس بي):</b> الهيكل المطلوب لمحرر واجهة المتجر عندنا يماثل نموذج إلمنتور: عناصر + أنماط متغيرات (Variables) + أسلوب موحّد + إعدادات لكل جهاز + مكوّنات قابلة للنسخ — ونفس الشيء لـ«Angie» ممكن يكون مساعد ماكس الذكي جوه المحرر (قبول/رفض التغييرات). أولويات التنفيذ عندك لسه زي ما اتفقنا في الرسالة السابقة.
+  </div>
+
+  <div class="src">المصادر الرسمية: elementor.com/widgets · elementor.com/features · elementor.com/pro · elementor.com/ai · elementor.com/features/ecommerce · elementor.com/roadmap · elementor.com/help (Editor V4) · elementor.com/blog (الإصدار 4.0) · developers.elementor.com · changelog 4.3.x — مع مقارنات خارجية (Animation Addons، Elementor Template Pack). الأرقام والإصدارات حتى أكتوبر 2026.</div>
+
+</div>
+</body>
+</html>
