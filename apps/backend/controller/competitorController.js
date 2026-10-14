@@ -265,7 +265,8 @@ exports.getAllReports = async (req, res) => {
 exports.priceCompare = async (req, res) => {
   try {
     const { companyId } = req.user;
-    const { competitorId } = req.params;
+    const competitorId = req.params.id || req.params.competitorId;
+    if (!competitorId) return res.status(404).json({ success: false, error: t('competitor.not_found') });
     const competitor = await CompetitorService.getById(companyId, competitorId);
     if (!competitor) return res.status(404).json({ success: false, error: t('competitor.not_found') });
 
@@ -301,7 +302,8 @@ exports.priceCompare = async (req, res) => {
 exports.getBattlecard = async (req, res) => {
   try {
     const { companyId } = req.user;
-    const { competitorId } = req.params;
+    const competitorId = req.params.id || req.params.competitorId;
+    if (!competitorId) return res.status(404).json({ success: false, error: t('competitor.not_found') });
     const format = req.query.format || 'structured';
     const prisma = getPrisma();
 

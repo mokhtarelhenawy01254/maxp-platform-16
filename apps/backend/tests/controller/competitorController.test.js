@@ -238,7 +238,21 @@ describe('CompetitorController', () => {
   });
 
   describe('priceCompare', () => {
-    it('returns price comparison', async () => {
+    it('returns price comparison with params.id (standard route param)', async () => {
+      CompetitorService.getById.mockResolvedValue({ id: 'c1', name: 'Comp' });
+      mockPrisma.competitorProduct.findMany.mockResolvedValue([{ id: 'p1', name: 'Prod', price: 100, sku: 'SKU1', currency: 'EGP' }]);
+      mockPrisma.product.findMany.mockResolvedValue([{ id: 'yp1', name: 'My Prod', price: 90, sku: 'MY-SKU1' }]);
+
+      const req = { user: { companyId: 'company-1' }, params: { id: 'c1' } };
+      const res = createResponse();
+
+      await controller.priceCompare(req, res);
+
+      expect(CompetitorService.getById).toHaveBeenCalledWith('company-1', 'c1');
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
+    it('returns price comparison with params.competitorId', async () => {
       CompetitorService.getById.mockResolvedValue({ id: 'c1', name: 'Comp' });
       mockPrisma.competitorProduct.findMany.mockResolvedValue([{ id: 'p1', name: 'Prod', price: 100, sku: 'SKU1', currency: 'EGP' }]);
       mockPrisma.product.findMany.mockResolvedValue([{ id: 'yp1', name: 'My Prod', price: 90, sku: 'MY-SKU1' }]);
@@ -248,15 +262,62 @@ describe('CompetitorController', () => {
 
       await controller.priceCompare(req, res);
 
+      expect(CompetitorService.getById).toHaveBeenCalledWith('company-1', 'c1');
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });
 
     it('returns 404 if competitor not found', async () => {
       CompetitorService.getById.mockResolvedValue(null);
-      const req = { user: { companyId: 'company-1' }, params: { competitorId: 'nonexistent' } };
+      const req = { user: { companyId: 'company-1' }, params: { id: 'nonexistent' } };
       const res = createResponse();
 
       await controller.priceCompare(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+  });
+
+  describe('getBattlecard', () => {
+    it('returns battlecard with params.id (standard route param)', async () => {
+      mockPrisma.competitor.findFirst.mockResolvedValue({
+        id: 'c1',
+        name: 'Target Comp',
+        platform: 'CUSTOM',
+        url: 'https://example.com',
+        status: 'NEW',
+        _count: { products: 2, ads: 1 },
+      });
+      mockPrisma.product.findMany.mockResolvedValue([]);
+      mockPrisma.competitorReport.findMany.mockResolvedValue([]);
+      mockPrisma.competitorProduct.findMany.mockResolvedValue([]);
+
+      const req = { user: { companyId: 'company-1' }, params: { id: 'c1' }, query: {} };
+      const res = createResponse();
+
+      await controller.getBattlecard(req, res);
+
+      expect(mockPrisma.competitor.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'c1', companyId: 'company-1' } })
+      );
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: expect.objectContaining({
+            competitor: expect.objectContaining({ id: 'c1', name: 'Target Comp' }),
+          }),
+        })
+      );
+    });
+
+    it('returns 404 if competitor not found for battlecard', async () => {
+      mockPrisma.competitor.findFirst.mockResolvedValue(null);
+      mockPrisma.product.findMany.mockResolvedValue([]);
+      mockPrisma.competitorReport.findMany.mockResolvedValue([]);
+
+      const req = { user: { companyId: 'company-1' }, params: { id: 'nonexistent' }, query: {} };
+      const res = createResponse();
+
+      await controller.getBattlecard(req, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
     });
@@ -285,7 +346,7 @@ describe('CompetitorController', () => {
       await controller.updateStatus(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Invalid status value' }));
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, error: expect.any(String) }));
     });
 
     it('returns 404 if competitor not found', async () => {

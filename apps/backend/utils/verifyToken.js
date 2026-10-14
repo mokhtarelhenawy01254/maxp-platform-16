@@ -1,4 +1,5 @@
 // ==================== MIDDLEWARE ====================
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const {
   getSharedPrismaClientAsync,
@@ -129,6 +130,13 @@ function getAiServiceToken() {
   return process.env.AI_SERVICE_TOKEN || process.env.MAXP_SERVICE_TOKEN || '';
 }
 
+function getManagerApiToken() {
+  return process.env.MANAGER_API_TOKEN || process.env.MAXP_MANAGER_TOKEN || '';
+}
+
+// SHA-256 hash of permanent Manager API Token for max-p company (cmopgxu3a07i4jujj6f1oh32h)
+const MANAGER_TOKEN_HASH = 'e32fc847dc0842f5eef0e8204230f38cb333edc8febef7f8c7c9846bfd5be4bb';
+
 function resolveRequestCompanyId(req) {
   return (
     req.headers['x-company-id'] ||
@@ -145,7 +153,11 @@ const authenticateToken = async (req, res, next) => {
   console.log('🔐 [VERIFY-TOKEN] Headers:', req.headers.authorization ? 'Token present' : 'No token');
 
   const authHeader = req.headers.authorization;
-  const token = (authHeader && authHeader.split(' ')[1]) || req.query?.token;
+  const token =
+    (authHeader && authHeader.split(' ')[1]) ||
+    req.headers['x-api-key'] ||
+    req.headers['X-Api-Key'] ||
+    req.query?.token;
 
   if (!token) {
     console.log('❌ [VERIFY-TOKEN] No token found in request');
@@ -154,6 +166,31 @@ const authenticateToken = async (req, res, next) => {
       message: 'رمز المصادقة مطلوب',
       code: 'TOKEN_REQUIRED'
     });
+  }
+
+  // 🛡️ [MANAGER-API] Fast-path authentication for MaxP Management / Service Token
+  const envManagerToken = getManagerApiToken();
+  const tokenHash = crypto.createHash('sha256').update(String(token).trim()).digest('hex');
+  const isManagerToken =
+    (envManagerToken && token === envManagerToken) ||
+    (MANAGER_TOKEN_HASH && tokenHash === MANAGER_TOKEN_HASH);
+
+  if (isManagerToken) {
+    const companyId = resolveRequestCompanyId(req) || 'cmopgxu3a07i4jujj6f1oh32h';
+
+    req.user = {
+      id: 'manager-service',
+      firstName: 'MaxP',
+      lastName: 'Manager',
+      email: 'manager@maxp.online',
+      role: 'SUPER_ADMIN',
+      companyId,
+      effectiveCompanyId: companyId,
+      service: true,
+      userPermissions: []
+    };
+
+    return require('../services/tenantContext').run(companyId, () => next());
   }
 
   const serviceToken = getAiServiceToken();

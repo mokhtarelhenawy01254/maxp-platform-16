@@ -511,6 +511,5 @@ scripts/convert-to-word.ps1
 scripts/video-script-*.md
 apps/backend/check_task_cols.js
 scripts/check_remote.sh
-
-
-
+# Manager API (local token storage)
+.manager-api/

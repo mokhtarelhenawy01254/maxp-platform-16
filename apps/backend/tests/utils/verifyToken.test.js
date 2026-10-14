@@ -76,6 +76,67 @@ describe("verifyToken middleware", () => {
     expect(next).toHaveBeenCalled();
   });
 
+  it("authenticates manager service token via Authorization header without database lookup, defaulting to max-p company", async () => {
+    process.env.MANAGER_API_TOKEN = "test-manager-token";
+    const req = {
+      method: "GET",
+      path: "/api/v1/competitors",
+      headers: {
+        authorization: "Bearer test-manager-token",
+      },
+      query: {},
+      body: {},
+    };
+    const res = createResponse();
+    const next = jest.fn();
+
+    await authenticateToken(req, res, next);
+
+    expect(jwt.verify).not.toHaveBeenCalled();
+    expect(sharedDatabase.getSharedPrismaClientAsync).not.toHaveBeenCalled();
+    expect(tenantContext.run).toHaveBeenCalledWith("cmopgxu3a07i4jujj6f1oh32h", expect.any(Function));
+    expect(req.user).toEqual(
+      expect.objectContaining({
+        id: "manager-service",
+        role: "SUPER_ADMIN",
+        companyId: "cmopgxu3a07i4jujj6f1oh32h",
+        service: true,
+      }),
+    );
+    expect(next).toHaveBeenCalled();
+    delete process.env.MANAGER_API_TOKEN;
+  });
+
+  it("authenticates manager service token via x-api-key header and allows company override", async () => {
+    process.env.MANAGER_API_TOKEN = "test-manager-token";
+    const req = {
+      method: "GET",
+      path: "/api/v1/competitors",
+      headers: {
+        "x-api-key": "test-manager-token",
+        "x-company-id": "custom-company-id",
+      },
+      query: {},
+      body: {},
+    };
+    const res = createResponse();
+    const next = jest.fn();
+
+    await authenticateToken(req, res, next);
+
+    expect(jwt.verify).not.toHaveBeenCalled();
+    expect(tenantContext.run).toHaveBeenCalledWith("custom-company-id", expect.any(Function));
+    expect(req.user).toEqual(
+      expect.objectContaining({
+        id: "manager-service",
+        companyId: "custom-company-id",
+        service: true,
+      }),
+    );
+    expect(next).toHaveBeenCalled();
+    delete process.env.MANAGER_API_TOKEN;
+  });
+
   it("authenticates with the guaranteed async Prisma client", async () => {
     const req = {
       method: "GET",
