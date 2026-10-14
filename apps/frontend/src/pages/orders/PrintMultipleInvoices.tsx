@@ -284,7 +284,30 @@ function guestOrderToInvoiceData(guest: GuestOrderPrint, company: GuestPrintComp
         customAttributes: item.customAttributes || null,
         customFields: item.customFields || null,
         metadata: item.metadata || null,
-        carModel: item.carModel || item.car_model || null,
+        carModel:
+          item.carModel ||
+          item.car_model ||
+          (() => {
+            let m = item.metadata;
+            if (typeof m === "string") {
+              try { m = JSON.parse(m); } catch { m = null; }
+            }
+            if (m && typeof m === "object") {
+              return (
+                m.carModel ||
+                m.car_model ||
+                m.attributeValues?.car_model ||
+                m.attributeValues?.carModel ||
+                m.attributeValues?.["نوع وموديل وسنة صنع السيارة"] ||
+                m.attributeValues?.["موديل السيارة"] ||
+                m.attributeValues?.["السيارة"] ||
+                (m.details && typeof m.details === "string" && m.details.trim().length > 1 ? m.details.trim() : null) ||
+                null
+              );
+            }
+            return null;
+          })() ||
+          null,
       })),
     },
   };
