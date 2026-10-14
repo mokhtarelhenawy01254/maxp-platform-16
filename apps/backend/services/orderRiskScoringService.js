@@ -1,4 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
+const { effectiveOrderStatusSql } = require('../utils/orderEffectiveStatus');
 
 // ─── طبقة «سكور الطلبات الوهمية» (MVP) ───
 // تُحسب عند إنشاء الأوردر فوق محرك حظر العملاء القائم — إعلامية بالكامل:
@@ -147,11 +148,11 @@ async function collectHistorySignals(prisma, settings, companyId, phone, address
   if (!phoneNorm) return { reasons, signals };
 
   const historyRows = await prisma.$queryRawUnsafe(
-    `SELECT status, COUNT(*)::int AS cnt FROM "orders"
+    `SELECT (${effectiveOrderStatusSql()}) AS status, COUNT(*)::int AS cnt FROM "orders"
      WHERE "companyId" = $1
        AND "customerPhone" IN (${[phoneNorm, '2' + phoneNorm, '20' + phoneNorm].map((p) => `'${p}'`).join(',')})
        AND "createdAt" >= $2
-     GROUP BY status`,
+     GROUP BY (${effectiveOrderStatusSql()})`,
     companyId, windowStart
   ).catch(() => []);
 

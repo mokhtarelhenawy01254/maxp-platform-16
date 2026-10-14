@@ -7,6 +7,7 @@ try {
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const redisCacheService = require('./redisCacheService');
 const orderWorkflowService = require('./orderWorkflowService');
+const { effectiveOrderStatusSql } = require('../utils/orderEffectiveStatus');
 // circular dependency - require inside methods
 // const orderService = require('./orderService');
 
@@ -983,15 +984,33 @@ class OrderConfirmationService {
     if (!Array.isArray(grouped)) grouped = null;
 
     if (!grouped && userIds.length) {
-      grouped = await this.prisma.order.groupBy({
-        by: ['assignedTo'],
-        where: {
-          companyId,
-          assignedTo: { in: userIds },
-          status: { in: statuses }
-        },
-        _count: { assignedTo: true }
-      });
+      try {
+        const rows = await this.prisma.$queryRawUnsafe(`
+          SELECT "assignedTo", COUNT(*)::int AS count
+          FROM "orders"
+          WHERE "companyId" = $1
+            AND "assignedTo" = ANY($2::text[])
+            AND (${effectiveOrderStatusSql()}) = ANY($3::text[])
+          GROUP BY "assignedTo"
+        `, companyId, userIds, statuses);
+        grouped = (Array.isArray(rows) ? rows : []).map((r) => ({
+          assignedTo: r.assignedTo,
+          _count: { assignedTo: Number(r.count || 0) },
+        }));
+      } catch (rawErr) {
+        console.warn('⚠️ [ORDER-CONFIRMATION] Raw workload query failed, fallback to prisma groupBy:', rawErr.message);
+        const VALID_ENUMS = new Set(['PENDING', 'PROCESSING', 'CONFIRMED', 'SCHEDULED', 'READY_FOR_PROCESSING', 'ON_HOLD']);
+        const validStatuses = statuses.filter((s) => VALID_ENUMS.has(s));
+        grouped = await this.prisma.order.groupBy({
+          by: ['assignedTo'],
+          where: {
+            companyId,
+            assignedTo: { in: userIds },
+            status: { in: validStatuses.length ? validStatuses : ['PENDING', 'PROCESSING'] },
+          },
+          _count: { assignedTo: true },
+        });
+      }
       await redisCacheService.set(cacheKey, grouped, 30);
     }
     if (!grouped) grouped = [];

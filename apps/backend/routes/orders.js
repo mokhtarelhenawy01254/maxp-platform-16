@@ -11,7 +11,7 @@ const {
   TURBO_STATUS_ALIASES,
   parseStatusFilter
 } = require('../utils/orderStatusFilter');
-const { EFFECTIVE_ORDER_STATUS_SQL } = require('../utils/orderEffectiveStatus');
+const { EFFECTIVE_ORDER_STATUS_SQL, effectiveOrderStatusSql } = require('../utils/orderEffectiveStatus');
 
 const simpleOrderService = require('../services/simpleOrderService');
 const orderService = require('../services/orderService');
@@ -4179,12 +4179,31 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           })
         );
 
-        promises.push(
-          prismaClient.order.groupBy({
+        const queryPhones = (typeof prismaClient.$queryRawUnsafe === 'function'
+          ? prismaClient.$queryRawUnsafe(`
+              SELECT "customerPhone", (${effectiveOrderStatusSql()}) AS status, COUNT(*)::int AS count
+              FROM "orders"
+              WHERE "companyId" = $1 AND "customerPhone" = ANY($2::text[])
+              GROUP BY "customerPhone", (${effectiveOrderStatusSql()})
+            `, companyId, allPhones).then(rows => {
+              return (Array.isArray(rows) ? rows : []).map(r => ({
+                customerPhone: r.customerPhone,
+                status: r.status,
+                _count: { id: Number(r.count || 0) }
+              }));
+            })
+          : Promise.resolve([])
+        ).catch(err => {
+          console.warn('⚠️ [ORDERS] Raw phone group failed, fallback to prisma groupBy:', err.message);
+          return prismaClient.order.groupBy({
             by: ['customerPhone', 'status'],
             where: { companyId, customerPhone: { in: allPhones } },
             _count: { id: true }
-          }).then(groups => {
+          });
+        });
+
+        promises.push(
+          queryPhones.then(groups => {
             groups.forEach(g => {
               if (!g.customerPhone) return;
               if (!statsByPhone.has(g.customerPhone)) {
@@ -4201,19 +4220,36 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
               else if (st === 'CANCELLED') rec.cancelled += count;
               else rec.inFlight += count;
             });
-          }).catch(err => {
-            console.warn('⚠️ [ORDERS] Failed to group orders by phone:', err.message);
           })
         );
       }
 
       if (allCustomerIds.length > 0) {
-        promises.push(
-          prismaClient.order.groupBy({
+        const queryCustomerIds = (typeof prismaClient.$queryRawUnsafe === 'function'
+          ? prismaClient.$queryRawUnsafe(`
+              SELECT "customerId", (${effectiveOrderStatusSql()}) AS status, COUNT(*)::int AS count
+              FROM "orders"
+              WHERE "companyId" = $1 AND "customerId" = ANY($2::text[])
+              GROUP BY "customerId", (${effectiveOrderStatusSql()})
+            `, companyId, allCustomerIds).then(rows => {
+              return (Array.isArray(rows) ? rows : []).map(r => ({
+                customerId: r.customerId,
+                status: r.status,
+                _count: { id: Number(r.count || 0) }
+              }));
+            })
+          : Promise.resolve([])
+        ).catch(err => {
+          console.warn('⚠️ [ORDERS] Raw customerId group failed, fallback to prisma groupBy:', err.message);
+          return prismaClient.order.groupBy({
             by: ['customerId', 'status'],
             where: { companyId, customerId: { in: allCustomerIds } },
             _count: { id: true }
-          }).then(groups => {
+          });
+        });
+
+        promises.push(
+          queryCustomerIds.then(groups => {
             groups.forEach(g => {
               if (!g.customerId) return;
               if (!statsByCustomerId.has(g.customerId)) {
@@ -4230,8 +4266,6 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
               else if (st === 'CANCELLED') rec.cancelled += count;
               else rec.inFlight += count;
             });
-          }).catch(err => {
-            console.warn('⚠️ [ORDERS] Failed to group orders by customerId:', err.message);
           })
         );
       }

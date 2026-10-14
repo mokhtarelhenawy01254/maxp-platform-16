@@ -1,5 +1,6 @@
 const moment = require("moment-timezone");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
+const { effectiveOrderStatusSql } = require("../utils/orderEffectiveStatus");
 
 const getPrisma = () => getSharedPrismaClient();
 
@@ -185,12 +186,29 @@ const getDailyOrdersSummary = async (req, res) => {
           createdAt: { gte: currentStart, lte: currentEnd },
         },
       }),
-      prisma.order.groupBy({
-        by: ["companyId", "status"],
-        _count: { id: true },
-        where: {
-          createdAt: { gte: currentStart, lte: currentEnd },
-        },
+      (typeof prisma.$queryRawUnsafe === "function"
+        ? prisma.$queryRawUnsafe(`
+            SELECT "companyId", (${effectiveOrderStatusSql()}) AS status, COUNT(*)::int AS count
+            FROM "orders"
+            WHERE "createdAt" >= $1 AND "createdAt" <= $2
+            GROUP BY "companyId", (${effectiveOrderStatusSql()})
+          `, currentStart, currentEnd).then((rows) => {
+            return (Array.isArray(rows) ? rows : []).map((r) => ({
+              companyId: r.companyId,
+              status: r.status,
+              _count: { id: Number(r.count || 0) },
+            }));
+          })
+        : Promise.resolve([])
+      ).catch((err) => {
+        console.warn("⚠️ [SUPERADMIN] Raw status aggregate failed, fallback to prisma groupBy:", err.message);
+        return prisma.order.groupBy({
+          by: ["companyId", "status"],
+          _count: { id: true },
+          where: {
+            createdAt: { gte: currentStart, lte: currentEnd },
+          },
+        });
       }),
       prisma.order.aggregate({
         _count: { id: true },
