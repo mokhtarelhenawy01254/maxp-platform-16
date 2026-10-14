@@ -1,29 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { useAuth } from "../../hooks/useAuthSimple";
+import React, { useState, useEffect, useMemo } from "react";
 import api from "../../services/api";
-import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../../components/ui/dialog";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
-import { Textarea } from "../../components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
+import { Button } from "../../components/ui/button";
 import {
   Table,
   TableBody,
@@ -32,38 +11,44 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table";
-import { Loader2, PlusIcon } from "lucide-react";
-import { BanknotesIcon } from "@heroicons/react/24/outline";
+import {
+  Loader2,
+  Coins,
+  CheckCircle2,
+  Clock,
+  RotateCcw,
+  Sparkles,
+  CreditCard,
+} from "lucide-react";
 import { useDateFormat } from "../../hooks/useDateFormat";
+import { AdvanceRequestDialog } from "./AdvanceRequestDialog";
+
+interface AdvanceItem {
+  id: string;
+  amount: number;
+  reason: string;
+  status: "APPROVED" | "REJECTED" | "PENDING" | string;
+  repaymentType: string;
+  installmentsCount?: number;
+  createdAt: string;
+}
 
 const MyAdvances: React.FC = () => {
-  const { user } = useAuth();
   const { formatDate } = useDateFormat();
-  const [advances, setAdvances] = useState<any[]>([]);
+  const [advances, setAdvances] = useState<AdvanceItem[]>([]);
   const [loadingAdvances, setLoadingAdvances] = useState(false);
-  const [isAdvanceDialogOpen, setIsAdvanceDialogOpen] = useState(false);
-  const [advanceForm, setAdvanceForm] = useState({
-    amount: "",
-    reason: "",
-    repaymentType: "ONE_TIME", // ✅ FIX: Backend expects ONE_TIME not FULL
-    installmentsCount: "1",
-  });
-  const [submittingAdvance, setSubmittingAdvance] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [employeeId, setEmployeeId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchEmployeeId = async () => {
       try {
-        // ✅ FIX: Use the user's own ID (userId) not the Employee table record ID
-        // The backend advanceService stores advances by userId, not employeeRelId
         const response = await api.get("/hr/employees/me");
         if (response.data && response.data.employee) {
-          // Use userId (user.id) for advance requests, not employee record id
           setEmployeeId(response.data.employee.userId || response.data.employee.id);
         }
       } catch (error) {
         console.error("Failed to fetch employee ID", error);
-        // Fallback: the backend will use req.user.id from the token anyway
       }
     };
     fetchEmployeeId();
@@ -75,7 +60,7 @@ const MyAdvances: React.FC = () => {
       setLoadingAdvances(true);
       const response = await api.get("/hr/advances/my");
       if (response.data && response.data.success) {
-        setAdvances(response.data.data);
+        setAdvances(response.data.data || []);
       }
     } catch (error) {
       console.error("Error fetching advances:", error);
@@ -85,233 +70,208 @@ const MyAdvances: React.FC = () => {
     }
   };
 
-  const handleAdvanceSubmit = async () => {
-    if (!advanceForm.amount || !advanceForm.reason) {
-      tToast.error("MyAdvances.msg_aa97");
-      return;
-    }
+  const filteredAdvances = useMemo(() => {
+    if (selectedStatus === "ALL") return advances;
+    return advances.filter((a) => a.status === selectedStatus);
+  }, [advances, selectedStatus]);
 
-    try {
-      setSubmittingAdvance(true);
-      const payload = {
-        employeeId: employeeId, // Use fetched employee ID
-        amount: parseFloat(advanceForm.amount),
-        reason: advanceForm.reason,
-        repaymentType: advanceForm.repaymentType,
-        installmentsCount: parseInt(advanceForm.installmentsCount),
-      };
-
-      const response = await api.post("/hr/advances", payload);
-
-      if (response.data && response.data.success) {
-        tToast.success("MyAdvances.success_send_a21b");
-        setIsAdvanceDialogOpen(false);
-        setAdvanceForm({
-          amount: "",
-          reason: "",
-          repaymentType: "ONE_TIME",
-          installmentsCount: "1",
-        });
-        fetchAdvances();
-      }
-    } catch (error: any) {
-      console.error("Error creating advance request:", error);
-      toast.error(error.response?.data?.error || "فشل في إنشاء طلب السلفة");
-    } finally {
-      setSubmittingAdvance(false);
-    }
-  };
+  const stats = useMemo(() => {
+    const total = advances.length;
+    const approved = advances.filter((a) => a.status === "APPROVED").length;
+    const pending = advances.filter((a) => a.status === "PENDING").length;
+    const totalAmount = advances.reduce((acc, a) => acc + (a.amount || 0), 0);
+    return { total, approved, pending, totalAmount };
+  }, [advances]);
 
   return (
-    <div className="container mx-auto p-6" dir="rtl">
-      <div className="flex justify-between items-center mb-6">
+    <div className="space-y-4 p-4 md:p-6" dir="rtl">
+      {/* Top Chassis Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/70">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <BanknotesIcon className="w-8 h-8 text-blue-600" />
-            السلف المالية
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            إدارة وطلب السلف المالية الخاصة بك
+          <div className="flex items-center gap-2">
+            <Coins className="h-5 w-5 text-primary" />
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              السلف المالية
+            </h1>
+            <Badge
+              variant="outline"
+              className="text-xs px-2 py-0.5 font-mono tabular-nums bg-muted/40 border-border/70 text-muted-foreground"
+            >
+              {filteredAdvances.length} طلب
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            متابعة سجل السلف المالية الشخصية وتقديم طلبات الصرف وفق سياسة الشركة
           </p>
         </div>
-        <Dialog
-          open={isAdvanceDialogOpen}
-          onOpenChange={setIsAdvanceDialogOpen}
-        >
-          <DialogTrigger asChild>
-            <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm">
-              <PlusIcon className="w-5 h-5 ml-2" />
-              طلب سلفة جديدة
-            </button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]" dir="rtl">
-            <DialogHeader>
-              <DialogTitle className="text-right">طلب سلفة جديدة</DialogTitle>
-              <DialogDescription className="text-right">
-                قم بملء النموذج أدناه لطلب سلفة مالية. سيتم مراجعة الطلب من قبل
-                الإدارة.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="amount" className="text-right">
-                  المبلغ المطلوب
-                </Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  placeholder="0.00"
-                  className="text-right"
-                  value={advanceForm.amount}
-                  onChange={(e) =>
-                    setAdvanceForm({ ...advanceForm, amount: e.target.value })
-                  }
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="reason" className="text-right">
-                  سبب السلفة
-                </Label>
-                <Textarea
-                  id="reason"
-                  placeholder="مثال: ظروف طارئة..."
-                  className="text-right"
-                  value={advanceForm.reason}
-                  onChange={(e) =>
-                    setAdvanceForm({ ...advanceForm, reason: e.target.value })
-                  }
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="repaymentType" className="text-right">
-                  طريقة السداد
-                </Label>
-                <Select
-                  value={advanceForm.repaymentType}
-                  onValueChange={(value) =>
-                    setAdvanceForm({ ...advanceForm, repaymentType: value })
-                  }
-                >
-                  <SelectTrigger className="w-full dir-rtl">
-                    <SelectValue placeholder="اختر طريقة السداد" />
-                  </SelectTrigger>
-                  <SelectContent dir="rtl">
-                    <SelectItem value="ONE_TIME">دفعة واحدة (الشهر القادم)</SelectItem>
-                    <SelectItem value="INSTALLMENTS">
-                      تقسيط على دفعات
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {advanceForm.repaymentType === "INSTALLMENTS" && (
-                <div className="grid gap-2">
-                  <Label htmlFor="installments" className="text-right">
-                    عدد الأقساط (أشهر)
-                  </Label>
-                  <Input
-                    id="installments"
-                    type="number"
-                    min="1"
-                    max="12"
-                    className="text-right"
-                    value={advanceForm.installmentsCount}
-                    onChange={(e) =>
-                      setAdvanceForm({
-                        ...advanceForm,
-                        installmentsCount: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              )}
-            </div>
-            <DialogFooter>
-              <button
-                onClick={handleAdvanceSubmit}
-                disabled={submittingAdvance}
-                className={`flex items-center justify-center w-full px-4 py-2 rounded-lg text-white transition shadow-sm bg-green-600 hover:bg-green-700 disabled:opacity-50`}
-              >
-                {submittingAdvance ? (
-                  <Loader2 className="w-4 h-4 animate-spin ml-2" />
-                ) : null}
-                إرسال الطلب
-              </button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchAdvances}
+            className="h-8 gap-1.5 text-xs border-border/70"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            تحديث
+          </Button>
+
+          <AdvanceRequestDialog
+            employeeId={employeeId}
+            onSuccess={fetchAdvances}
+          />
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>سجل طلبات السلف</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loadingAdvances ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-            </div>
-          ) : advances.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 dark:bg-black/20 rounded-lg dashed border-2 border-gray-200 dark:border-gray-800">
-              <BanknotesIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-500 dark:text-gray-400">
-                لا توجد طلبات سلف سابقة
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table dir="rtl">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">التاريخ</TableHead>
-                    <TableHead className="text-right">المبلغ</TableHead>
-                    <TableHead className="text-right">السبب</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
-                    <TableHead className="text-right">السداد</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {advances.map((advance) => (
-                    <TableRow key={advance.id}>
-                      <TableCell>{formatDate(advance.createdAt)}</TableCell>
-                      <TableCell className="font-bold">
-                        {advance.amount.toLocaleString()} ج.م
-                      </TableCell>
-                      <TableCell
-                        className="max-w-[200px] truncate"
-                        title={advance.reason}
-                      >
-                        {advance.reason}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            advance.status === "APPROVED"
-                              ? "default"
-                              : advance.status === "REJECTED"
-                                ? "destructive"
-                                : "secondary"
-                          }
-                        >
-                          {advance.status === "APPROVED"
-                            ? "تمت الموافقة"
+      {/* Telemetry Ribbon */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+        <div className="p-3 rounded-lg border border-border/70 bg-card">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>إجمالي الطلبات</span>
+            <Coins className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-foreground">
+            {stats.total}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">طلب سلفة مسجل</div>
+        </div>
+
+        <div className="p-3 rounded-lg border border-border/70 bg-card">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>تمت الموافقة</span>
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-emerald-500">
+            {stats.approved}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">سلفة معتمدة ومصروفة</div>
+        </div>
+
+        <div className="p-3 rounded-lg border border-border/70 bg-card">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>قيد المراجعة</span>
+            <Clock className="h-3.5 w-3.5 text-amber-500" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-amber-500">
+            {stats.pending}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">بانتظار قرار الإدارة</div>
+        </div>
+
+        <div className="p-3 rounded-lg border border-border/70 bg-card">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>إجمالي المبالغ</span>
+            <CreditCard className="h-3.5 w-3.5 text-primary" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-foreground">
+            {stats.totalAmount.toLocaleString()}
+            <span className="text-xs font-normal text-muted-foreground mr-1">ج.م</span>
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">إجمالي قيمة السلف</div>
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-lg border border-border/60 bg-muted/20 w-fit">
+        {[
+          { key: "ALL", label: "الكل" },
+          { key: "APPROVED", label: "معتمدة" },
+          { key: "PENDING", label: "قيد الانتظار" },
+          { key: "REJECTED", label: "مرفوضة" },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setSelectedStatus(tab.key)}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+              selectedStatus === tab.key
+                ? "bg-card text-foreground shadow-sm border border-border/60"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Advances Table Single Surface */}
+      <div className="rounded-lg border border-border/70 bg-card overflow-hidden">
+        <div className="p-3 px-4 bg-muted/20 border-b border-border/70 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="text-xs font-semibold text-foreground">
+              سجل طلبات السلف المالية
+            </span>
+          </div>
+          <span className="text-xs text-muted-foreground font-mono tabular-nums">
+            {filteredAdvances.length} طلب
+          </span>
+        </div>
+
+        {loadingAdvances ? (
+          <div className="p-12 text-center text-xs text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" />
+            جاري تحميل سجل السلف...
+          </div>
+        ) : filteredAdvances.length === 0 ? (
+          <div className="p-12 text-center text-xs text-muted-foreground space-y-2">
+            <Coins className="h-8 w-8 mx-auto text-muted-foreground/30" />
+            <p className="font-medium text-foreground">لا توجد طلبات سلف مسجلة</p>
+            <p className="text-muted-foreground">يمكنك تقديم طلب سلفة جديد في أي وقت بالضغط على الزر أعلاه</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table dir="rtl">
+              <TableHeader>
+                <TableRow className="border-border/60 hover:bg-transparent">
+                  <TableHead className="text-right text-xs">تاريخ الطلب</TableHead>
+                  <TableHead className="text-right text-xs">المبلغ المطلوب</TableHead>
+                  <TableHead className="text-right text-xs">السبب والتبرير</TableHead>
+                  <TableHead className="text-right text-xs">طريقة السداد</TableHead>
+                  <TableHead className="text-right text-xs">حالة الاعتماد</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAdvances.map((advance) => (
+                  <TableRow key={advance.id} className="border-border/60 hover:bg-muted/30">
+                    <TableCell className="text-xs font-mono text-muted-foreground">
+                      {formatDate(advance.createdAt)}
+                    </TableCell>
+                    <TableCell className="text-xs font-bold font-mono tabular-nums text-foreground">
+                      {advance.amount.toLocaleString()} ج.م
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[240px] truncate" title={advance.reason}>
+                      {advance.reason}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground font-mono">
+                      {advance.repaymentType === "INSTALLMENTS"
+                        ? `تقسيط على ${advance.installmentsCount || 1} أشهر`
+                        : "خصم دفعة واحدة"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] px-2 py-0.5 font-medium ${
+                          advance.status === "APPROVED"
+                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                             : advance.status === "REJECTED"
-                              ? "مرفوض"
-                              : "قيد الانتظار"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {advance.repaymentType === "INSTALLMENTS"
-                          ? `${advance.installmentsCount} أقساط`
-                          : "دفعة واحدة"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                              ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                              : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                        }`}
+                      >
+                        {advance.status === "APPROVED"
+                          ? "تمت الموافقة"
+                          : advance.status === "REJECTED"
+                            ? "مرفوض"
+                            : "قيد المراجعة"}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

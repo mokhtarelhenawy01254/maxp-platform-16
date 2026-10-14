@@ -1,40 +1,57 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   GraduationCap,
   Plus,
   Calendar,
-  DollarSign,
-  Award,
   Clock,
   User,
   Edit2,
+  RotateCcw,
+  Search,
+  DollarSign,
+  Award,
+  BookOpen,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
+import { Input } from "../../components/ui/input";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../services/api";
-import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 
-interface Training {
+interface TrainingItem {
   id: string;
   trainingName: string;
   provider?: string;
-  type: string;
+  type?: string;
   startDate: string;
   endDate?: string;
   status: string;
   cost?: number;
   duration?: number;
   score?: number;
+  employee?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    employeeNumber?: string;
+  } | null;
 }
+
+const statusMap: Record<string, { label: string; class: string }> = {
+  ONGOING: { label: "قيد التنفيذ", class: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
+  COMPLETED: { label: "مكتمل", class: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" },
+  PLANNED: { label: "مخطط", class: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+  CANCELLED: { label: "ملغي", class: "bg-rose-500/10 text-rose-500 border-rose-500/20" },
+};
 
 const Training: React.FC = () => {
   const { employeeId } = useParams<{ employeeId?: string }>();
   const navigate = useNavigate();
-  const [trainings, setTrainings] = useState<any[]>([]);
+  const [trainings, setTrainings] = useState<TrainingItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchTrainings();
@@ -43,9 +60,7 @@ const Training: React.FC = () => {
   const fetchTrainings = async () => {
     try {
       setLoading(true);
-      const url = employeeId
-        ? `/hr/trainings/employee/${employeeId}`
-        : "/hr/trainings";
+      const url = employeeId ? `/hr/trainings/employee/${employeeId}` : "/hr/trainings";
       const response = await api.get(url);
       setTrainings(response.data.trainings || []);
     } catch (error) {
@@ -56,191 +71,238 @@ const Training: React.FC = () => {
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    const map: any = {
-      PLANNED: {
-        label: "مخطط",
-        class: "bg-blue-100 text-blue-700 border-blue-200",
-      },
-      ONGOING: {
-        label: "قيد التنفيذ",
-        class: "bg-amber-100 text-amber-700 border-amber-200",
-      },
-      COMPLETED: {
-        label: "مكتمل",
-        class: "bg-emerald-100 text-emerald-700 border-emerald-200",
-      },
-      CANCELLED: {
-        label: "ملغي",
-        class: "bg-rose-100 text-rose-700 border-rose-200",
-      },
-    };
-    return map[status] || { label: status, class: "bg-gray-100 text-gray-700" };
-  };
+  const filteredTrainings = useMemo(() => {
+    return trainings.filter((t) => {
+      const matchStatus = selectedStatus === "ALL" || t.status === selectedStatus;
+      const q = searchQuery.trim().toLowerCase();
+      const matchSearch =
+        !q ||
+        t.trainingName.toLowerCase().includes(q) ||
+        (t.provider && t.provider.toLowerCase().includes(q)) ||
+        (t.employee?.firstName && t.employee.firstName.toLowerCase().includes(q)) ||
+        (t.employee?.lastName && t.employee.lastName.toLowerCase().includes(q));
+      return matchStatus && matchSearch;
+    });
+  }, [trainings, selectedStatus, searchQuery]);
+
+  const stats = useMemo(() => {
+    const total = trainings.length;
+    const ongoing = trainings.filter((t) => t.status === "ONGOING").length;
+    const completed = trainings.filter((t) => t.status === "COMPLETED").length;
+    const totalCost = trainings.reduce((acc, t) => acc + (t.cost || 0), 0);
+    const scoredList = trainings.filter((t) => t.score !== undefined && t.score !== null);
+    const avgScore = scoredList.length
+      ? Math.round(scoredList.reduce((acc, t) => acc + (t.score || 0), 0) / scoredList.length)
+      : 0;
+    return { total, ongoing, completed, totalCost, avgScore };
+  }, [trainings]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-purple-600"></div>
-          <p className="text-purple-600 font-bold animate-pulse">
-            جاري تحميل السجلات...
-          </p>
+      <div className="flex items-center justify-center h-96" dir="rtl">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-xs text-muted-foreground font-mono">جاري تحميل سجلات البرامج التدريبية...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="hr-theme min-h-screen p-6 md:p-8 space-y-8" dir="rtl">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-          <h1 className="text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-600">
-            التدريب والتطوير
-          </h1>
-          <p className="text-gray-500 font-medium flex items-center gap-2 mt-1">
-            <Award className="h-4 w-4 text-purple-400" />
-            إدارة وقياس أثر البرامج التدريبية للموظفين
+    <div className="space-y-4 p-4 md:p-6" dir="rtl">
+      {/* Top Chassis Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/70">
+        <div>
+          <div className="flex items-center gap-2">
+            <GraduationCap className="h-5 w-5 text-primary" />
+            <h1 className="text-xl font-bold tracking-tight text-foreground">التدريب والتطوير</h1>
+            <Badge variant="outline" className="text-xs px-2 py-0.5 font-mono tabular-nums bg-muted/40 border-border/70 text-muted-foreground">
+              {filteredTrainings.length} برنامج
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            إدارة البرامج التدريبية، قياس الأثر المهني، وتوثيق استثمار المهارات
           </p>
         </div>
-        <Button
-          onClick={() => navigate("/hr/training/new")}
-          className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold px-6 py-6 rounded-2xl shadow-xl shadow-purple-200 transition-all hover:scale-105 active:scale-95 animate-in fade-in slide-in-from-left-4 duration-500"
-        >
-          <Plus className="h-5 w-5 ml-2" />
-          إضافة برنامج تدريب
-        </Button>
+
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={fetchTrainings} className="h-8 gap-1.5 text-xs border-border/70">
+            <RotateCcw className="h-3.5 w-3.5" />
+            تحديث
+          </Button>
+          <Button size="sm" onClick={() => navigate("/hr/training/new")} className="h-8 gap-1.5 text-xs font-medium">
+            <Plus className="h-3.5 w-3.5" />
+            إضافة برنامج تدريب
+          </Button>
+        </div>
       </div>
 
-      {trainings.length === 0 ? (
-        <Card className="border-none shadow-2xl bg-white/50 backdrop-blur-md p-16 animate-in zoom-in-95 duration-500">
-          <CardContent className="flex flex-col items-center text-center space-y-6">
-            <div className="w-24 h-24 bg-purple-50 rounded-full flex items-center justify-center text-purple-200">
-              <GraduationCap className="h-12 w-12" />
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-2xl font-black text-gray-800">
-                لا يوجد سجلات حالياً
-              </h3>
-              <p className="text-gray-500 max-w-sm mx-auto">
-                لم يتم توثيق أي برامج تدريبية بعد. ابدأ بإضافة أول برنامج
-                لموظفيك الآن.
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/hr/training/new")}
-              className="rounded-xl border-purple-200 text-purple-700 hover:bg-purple-50 px-8"
+      {/* Telemetry Ribbon */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5">
+        <div className="p-3 rounded-lg border border-border/70 bg-card">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>إجمالي البرامج</span>
+            <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-foreground">{stats.total}</div>
+        </div>
+        <div className="p-3 rounded-lg border border-border/70 bg-card">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>قيد التنفيذ</span>
+            <Clock className="h-3.5 w-3.5 text-blue-500" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-blue-500">{stats.ongoing}</div>
+        </div>
+        <div className="p-3 rounded-lg border border-border/70 bg-card">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>مكتمل</span>
+            <GraduationCap className="h-3.5 w-3.5 text-emerald-500" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-emerald-500">{stats.completed}</div>
+        </div>
+        <div className="p-3 rounded-lg border border-border/70 bg-card">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>إجمالي الاستثمار</span>
+            <DollarSign className="h-3.5 w-3.5 text-primary" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-foreground">
+            {stats.totalCost.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">ج.م</span>
+          </div>
+        </div>
+        <div className="p-3 rounded-lg border border-border/70 bg-card">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>متوسط التقييم</span>
+            <Award className="h-3.5 w-3.5 text-amber-500" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-amber-500">
+            {stats.avgScore > 0 ? `${stats.avgScore}%` : "—"}
+          </div>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-lg border border-border/60 bg-muted/20 w-fit">
+          {[
+            { key: "ALL", label: "الكل" },
+            { key: "ONGOING", label: "قيد التنفيذ" },
+            { key: "PLANNED", label: "مخطط" },
+            { key: "COMPLETED", label: "مكتمل" },
+            { key: "CANCELLED", label: "ملغي" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setSelectedStatus(tab.key)}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                selectedStatus === tab.key
+                  ? "bg-card text-foreground shadow-sm border border-border/60"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
-              إضافة برنامجك الأول
-            </Button>
-          </CardContent>
-        </Card>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="بحث عن برنامج أو موظف..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8 pr-8 text-xs border-border/70 bg-card"
+          />
+        </div>
+      </div>
+
+      {/* Trainings Cards Grid */}
+      {filteredTrainings.length === 0 ? (
+        <div className="rounded-lg border border-border/70 bg-card p-12 text-center text-xs text-muted-foreground space-y-2">
+          <GraduationCap className="h-10 w-10 mx-auto text-muted-foreground/30" />
+          <p className="text-sm font-semibold text-foreground">لا توجد برامج تدريبية مطابقة</p>
+          <p className="text-muted-foreground">لم يتم العثور على أي برامج تدريبية تتطابق مع معايير البحث والفلترة</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
-          {trainings.map((training, index) => {
-            const status = getStatusLabel(training.status);
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filteredTrainings.map((item) => {
+            const status = statusMap[item.status] || { label: item.status, class: "bg-muted text-muted-foreground border-border/60" };
             return (
-              <Card
-                key={training.id}
-                className="group border-none shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 overflow-hidden bg-white/70 backdrop-blur-sm cursor-pointer ring-1 ring-purple-100/50"
-                onClick={() => navigate(`/hr/training/${training.id}`)}
+              <div
+                key={item.id}
+                onClick={() => navigate(`/hr/training/${item.id}`)}
+                className="rounded-lg border border-border/70 bg-card p-3.5 hover:border-primary/40 transition-all cursor-pointer flex flex-col justify-between space-y-3"
               >
-                <div className="h-1.5 w-full bg-gradient-to-r from-purple-500 via-indigo-500 to-pink-500 opacity-60 group-hover:opacity-100 transition-opacity" />
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="p-3 bg-purple-50 rounded-2xl text-purple-600 group-hover:scale-110 transition-transform">
-                      <GraduationCap className="h-6 w-6" />
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="p-1.5 rounded-md bg-muted/30 border border-border/60 text-primary">
+                      <GraduationCap className="h-4 w-4" />
                     </div>
-                    <span
-                      className={`px-2 py-1 rounded-lg text-[10px] font-black border ${status.class}`}
-                    >
+                    <Badge variant="outline" className={`text-[10px] px-2 py-0.5 font-medium ${status.class}`}>
                       {status.label}
-                    </span>
+                    </Badge>
                   </div>
-                  <CardTitle className="text-xl font-black mt-4 leading-tight group-hover:text-purple-700 transition-colors">
-                    {training.trainingName}
-                  </CardTitle>
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center">
-                      <User className="w-3.5 h-3.5 text-indigo-600" />
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground leading-snug line-clamp-1">{item.trainingName}</h3>
+                    {item.provider && <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">الجهة: {item.provider}</p>}
+                  </div>
+                  {item.employee && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/20 p-1.5 px-2 rounded border border-border/50">
+                      <User className="h-3 w-3 text-muted-foreground" />
+                      <span className="font-medium text-foreground">{item.employee.firstName} {item.employee.lastName}</span>
                     </div>
-                    <span className="text-sm font-bold text-gray-700">
-                      {training.employee?.firstName}{" "}
-                      {training.employee?.lastName}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4 pt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                  )}
+                </div>
+
+                <div className="pt-2 border-t border-border/60 space-y-2">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                         <Calendar className="h-3 w-3" /> تاريخ البدء
-                      </p>
-                      <p className="text-xs font-bold text-gray-700">
-                        {new Date(training.startDate).toLocaleDateString(
-                          "ar-EG",
-                          { day: "numeric", month: "long", year: "numeric" },
-                        )}
-                      </p>
+                      </div>
+                      <div className="font-mono text-[11px] text-foreground mt-0.5">
+                        {new Date(item.startDate).toLocaleDateString("ar-EG")}
+                      </div>
                     </div>
-                    {training.duration && (
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                    {item.duration ? (
+                      <div>
+                        <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                           <Clock className="h-3 w-3" /> المدة
-                        </p>
-                        <p className="text-xs font-bold text-gray-700">
-                          {training.duration} ساعة
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
-                    {training.cost ? (
-                      <div className="flex flex-col">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-1">
-                          <DollarSign className="h-3 w-3" /> الاستثمار
-                        </p>
-                        <p className="text-sm font-black text-purple-600">
-                          {training.cost.toLocaleString()}{" "}
-                          <span className="text-[10px] font-bold opacity-60">
-                            EGP
-                          </span>
-                        </p>
-                      </div>
-                    ) : (
-                      <div />
-                    )}
-
-                    {training.score ? (
-                      <div className="flex flex-col items-end">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-1">
-                          <Award className="h-3 w-3" /> التقييم
-                        </p>
-                        <p className="text-sm font-black text-amber-500">
-                          %{training.score}
-                        </p>
+                        </div>
+                        <div className="font-mono text-[11px] text-foreground mt-0.5">{item.duration} ساعة</div>
                       </div>
                     ) : null}
                   </div>
 
-                  {/* Edit Button */}
-                  <div className="pt-2">
-                    <Button
-                      variant="secondary"
-                      className="w-full rounded-xl font-bold bg-purple-50 text-purple-700 hover:bg-purple-100 border-none shadow-sm transition-all flex items-center justify-center gap-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/hr/training/${training.id}`);
-                      }}
-                    >
-                      <Edit2 className="h-3.5 w-3.5" />
-                      تعديل بيانات التدريب
-                    </Button>
+                  <div className="flex items-center justify-between pt-1">
+                    {item.cost ? (
+                      <div className="text-right">
+                        <span className="text-[10px] text-muted-foreground">الاستثمار: </span>
+                        <span className="text-xs font-bold font-mono tabular-nums text-foreground">
+                          {item.cost.toLocaleString()} ج.م
+                        </span>
+                      </div>
+                    ) : <div />}
+                    {item.score !== undefined && item.score !== null ? (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono tabular-nums bg-amber-500/10 text-amber-500 border-amber-500/20">
+                        التقييم: {item.score}%
+                      </Badge>
+                    ) : null}
                   </div>
-                </CardContent>
-              </Card>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full h-7 text-xs border-border/70 hover:bg-muted/40 gap-1.5 mt-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/hr/training/${item.id}`);
+                    }}
+                  >
+                    <Edit2 className="h-3 w-3" />
+                    عرض وتعديل التفاصيل
+                  </Button>
+                </div>
+              </div>
             );
           })}
         </div>
