@@ -7,12 +7,12 @@ import {
   CheckCircle2,
   CalendarCheck,
   BookOpen,
-  User,
-  Filter,
   CheckCircle,
   XCircle,
-  AlertCircle
 } from "lucide-react";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 
 interface Session {
   id: string;
@@ -34,7 +34,7 @@ const mockScheduleSessions: Session[] = [
     status: "SCHEDULED",
     student: { firstName: "أحمد", lastName: "طارق سليم", phone: "01098765432" },
     subject: { name: "الرياضيات المتقدمة - تفاضل وتكامل" },
-    enrollment: { remainingHours: 14 }
+    enrollment: { remainingHours: 14 },
   },
   {
     id: "sch-2",
@@ -44,7 +44,7 @@ const mockScheduleSessions: Session[] = [
     status: "CONFIRMED",
     student: { firstName: "مريم", lastName: "عبد العزيز الهاشمي", phone: "01123456789" },
     subject: { name: "الهندسة التحليلية والفراغية" },
-    enrollment: { remainingHours: 8 }
+    enrollment: { remainingHours: 8 },
   },
   {
     id: "sch-3",
@@ -54,7 +54,7 @@ const mockScheduleSessions: Session[] = [
     status: "SCHEDULED",
     student: { firstName: "عمر", lastName: "خالد الشربيني", phone: "01234567890" },
     subject: { name: "الجبر والمصفوفات" },
-    enrollment: { remainingHours: 20 }
+    enrollment: { remainingHours: 20 },
   },
   {
     id: "sch-4",
@@ -64,21 +64,11 @@ const mockScheduleSessions: Session[] = [
     status: "COMPLETED",
     student: { firstName: "نور", lastName: "سامح فهمي", phone: "01011223344" },
     subject: { name: "حساب المثلثات والميكانيكا" },
-    enrollment: { remainingHours: 6 }
+    enrollment: { remainingHours: 6 },
   },
-  {
-    id: "sch-5",
-    scheduledAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-    plannedDuration: 45,
-    actualDuration: 45,
-    status: "COMPLETED",
-    student: { firstName: "ياسين", lastName: "عمرو زهران", phone: "01555667788" },
-    subject: { name: "الرياضيات العامة" },
-    enrollment: { remainingHours: 18 }
-  }
 ];
 
-const TeacherSchedulePage: React.FC = () => {
+export default function TeacherSchedulePage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -88,9 +78,9 @@ const TeacherSchedulePage: React.FC = () => {
   const fetchSessions = async () => {
     try {
       setRefreshing(true);
-      const token = localStorage.getItem("teacherToken");
+      const token = localStorage.getItem("teacherToken") || localStorage.getItem("token");
       const res = await fetch("/api/v1/education/teacher-portal/sessions", {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();
       if (json.success && Array.isArray(json.data) && json.data.length > 0) {
@@ -107,18 +97,20 @@ const TeacherSchedulePage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchSessions();
+    void fetchSessions();
   }, []);
 
-  const now = new Date();
+  const now = useMemo(() => new Date(), []);
 
   const filteredSessions = useMemo(() => {
     return sessions.filter((s) => {
       const sDate = new Date(s.scheduledAt);
+      const q = searchQuery.toLowerCase();
       const matchesSearch =
-        s.student.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.student.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.subject.name.toLowerCase().includes(searchQuery.toLowerCase());
+        !q ||
+        s.student.firstName.toLowerCase().includes(q) ||
+        s.student.lastName.toLowerCase().includes(q) ||
+        s.subject.name.toLowerCase().includes(q);
 
       if (!matchesSearch) return false;
 
@@ -135,15 +127,24 @@ const TeacherSchedulePage: React.FC = () => {
     });
   }, [sessions, filterTab, searchQuery, now]);
 
-  const upcomingCount = sessions.filter((s) => new Date(s.scheduledAt) >= now && s.status !== "CANCELLED").length;
-  const completedCount = sessions.filter((s) => s.status === "COMPLETED" || new Date(s.scheduledAt) < now).length;
-  const confirmedCount = sessions.filter((s) => s.status === "CONFIRMED").length;
+  const upcomingCount = useMemo(
+    () => sessions.filter((s) => new Date(s.scheduledAt) >= now && s.status !== "CANCELLED").length,
+    [sessions, now]
+  );
+  const completedCount = useMemo(
+    () => sessions.filter((s) => s.status === "COMPLETED" || new Date(s.scheduledAt) < now).length,
+    [sessions, now]
+  );
+  const confirmedCount = useMemo(
+    () => sessions.filter((s) => s.status === "CONFIRMED").length,
+    [sessions]
+  );
 
-  if (loading) {
+  if (loading && sessions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[360px] space-y-3">
-        <RefreshCw className="w-8 h-8 text-primary animate-spin" />
-        <p className="text-xs font-mono text-muted-foreground uppercase">جاري تحميل جدول الحصص...</p>
+      <div className="flex flex-col items-center justify-center min-h-[350px] gap-2.5 text-muted-foreground">
+        <RefreshCw className="size-5 animate-spin text-primary" />
+        <span className="text-xs font-mono">جاري تحميل جدول الحصص والمواعيد...</span>
       </div>
     );
   }
@@ -152,29 +153,29 @@ const TeacherSchedulePage: React.FC = () => {
     switch (status) {
       case "CONFIRMED":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-            <CheckCircle className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+            <CheckCircle className="size-3" />
             مؤكدة
           </span>
         );
       case "SCHEDULED":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-600 border border-blue-500/20">
-            <Clock className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border bg-blue-500/10 text-blue-500 border-blue-500/20">
+            <Clock className="size-3" />
             مجدولة
           </span>
         );
       case "COMPLETED":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-            <CheckCircle2 className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border bg-primary/10 text-primary border-primary/20">
+            <CheckCircle2 className="size-3" />
             مكتملة
           </span>
         );
       case "CANCELLED":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-destructive/10 text-destructive border border-destructive/20">
-            <XCircle className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border bg-destructive/10 text-destructive border-destructive/20">
+            <XCircle className="size-3" />
             ملغية
           </span>
         );
@@ -184,104 +185,88 @@ const TeacherSchedulePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-10" dir="rtl">
-      {/* Telemetry Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-xl border border-border/70 bg-card text-card-foreground shadow-sm">
-        <div className="space-y-1">
+    <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-4" dir="rtl">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/70 pb-3.5">
+        <div>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
-              ACADEMIC TIMETABLE
+            <span className="inline-flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <CalendarCheck className="size-4" />
             </span>
-            <span className="text-xs text-muted-foreground font-mono">
-              إجمالي {sessions.length} حصة مسجلة
-            </span>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              جدول الحصص والمواعيد
+            </h1>
+            <Badge variant="outline" className="text-[11px] font-mono border-border/80 bg-muted/30">
+              {sessions.length} حصة مسجلة
+            </Badge>
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">جدول الحصص التعليمية</h1>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mt-1">
             إدارة مواعيد الحصص المباشرة، سجل الحضور، وساعات الطلاب المتبقية
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={fetchSessions}
+        <div className="flex items-center gap-2 self-end sm:self-auto font-mono text-xs">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void fetchSessions()}
             disabled={refreshing}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border/80 bg-background hover:bg-muted text-foreground transition-all focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="h-8 px-2.5 text-xs font-mono gap-1 border-border/70 active:scale-[0.98]"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
-            <span>تحديث الجدول</span>
-          </button>
+            <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            <span>تحديث</span>
+          </Button>
         </div>
       </div>
 
       {/* Filter Ribbon & Search Bar */}
-      <div className="p-4 rounded-xl border border-border/70 bg-card text-card-foreground shadow-sm space-y-3.5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          {/* Tabs */}
-          <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg border border-border/50 text-xs">
+      <div className="p-2.5 sm:p-3 rounded-lg border border-border/70 bg-card shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        {/* Tabs */}
+        <div className="flex items-center gap-1 font-mono text-xs">
+          {[
+            { id: "UPCOMING", label: `القادمة (${upcomingCount})` },
+            { id: "CONFIRMED", label: `المؤكدة (${confirmedCount})` },
+            { id: "PAST", label: `المكتملة (${completedCount})` },
+            { id: "ALL", label: `الكل (${sessions.length})` },
+          ].map((tab) => (
             <button
-              onClick={() => setFilterTab("UPCOMING")}
-              className={`px-3 py-1.5 rounded-md font-medium transition-all ${
-                filterTab === "UPCOMING"
-                  ? "bg-background text-foreground shadow-xs border border-border/60"
+              key={tab.id}
+              onClick={() => setFilterTab(tab.id as any)}
+              className={`px-2.5 py-1 rounded text-xs transition-colors ${
+                filterTab === tab.id
+                  ? "bg-card text-foreground font-semibold shadow-xs border border-border/70"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              القادمة ({upcomingCount})
+              {tab.label}
             </button>
-            <button
-              onClick={() => setFilterTab("CONFIRMED")}
-              className={`px-3 py-1.5 rounded-md font-medium transition-all ${
-                filterTab === "CONFIRMED"
-                  ? "bg-background text-foreground shadow-xs border border-border/60"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              المؤكدة ({confirmedCount})
-            </button>
-            <button
-              onClick={() => setFilterTab("PAST")}
-              className={`px-3 py-1.5 rounded-md font-medium transition-all ${
-                filterTab === "PAST"
-                  ? "bg-background text-foreground shadow-xs border border-border/60"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              السابقة والمكتملة ({completedCount})
-            </button>
-            <button
-              onClick={() => setFilterTab("ALL")}
-              className={`px-3 py-1.5 rounded-md font-medium transition-all ${
-                filterTab === "ALL"
-                  ? "bg-background text-foreground shadow-xs border border-border/60"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              الكل ({sessions.length})
-            </button>
-          </div>
+          ))}
+        </div>
 
-          {/* Search Box */}
-          <div className="relative w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="بحث باسم الطالب أو المادة..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-3 pr-8 py-1.5 text-xs rounded-lg border border-border/70 bg-background text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-1 focus:ring-ring"
-            />
-          </div>
+        {/* Search Box */}
+        <div className="relative w-full sm:w-64">
+          <Search className="size-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Input
+            type="text"
+            placeholder="بحث بالطالب أو المادة..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8 pr-8 text-xs font-mono bg-background border-border/70"
+          />
         </div>
       </div>
 
       {/* Sessions Single-Surface Container */}
-      <div className="rounded-xl border border-border/70 bg-card text-card-foreground shadow-sm overflow-hidden">
+      <div className="rounded-lg border border-border/70 bg-card shadow-xs overflow-hidden">
         {filteredSessions.length === 0 ? (
           <div className="text-center py-12 px-4 space-y-2">
-            <CalendarDays className="w-10 h-10 text-muted-foreground mx-auto stroke-1" />
-            <p className="text-sm font-medium text-foreground">لا توجد حصص مطابقة للمعايير المحددة</p>
-            <p className="text-xs text-muted-foreground">جرب تغيير التبويب أو تصفية البحث لرؤية الحصص الأخرى</p>
+            <CalendarDays className="size-9 text-muted-foreground/40 mx-auto" />
+            <p className="text-xs font-semibold text-foreground font-mono">
+              لا توجد حصص مطابقة للمعايير المحددة
+            </p>
+            <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
+              جرب تغيير التبويب أو تصفية البحث لرؤية الحصص الأخرى
+            </p>
           </div>
         ) : (
           <div className="divide-y divide-border/60">
@@ -291,47 +276,49 @@ const TeacherSchedulePage: React.FC = () => {
               return (
                 <div
                   key={session.id}
-                  className="p-4 sm:p-5 hover:bg-muted/30 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
+                  className="p-3.5 sm:p-4 hover:bg-muted/30 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3"
                 >
-                  <div className="flex items-start gap-3.5">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
-                      <BookOpen className="w-5 h-5" />
+                  <div className="flex items-start gap-3">
+                    <div className="size-8 rounded-md bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
+                      <BookOpen className="size-4" />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-semibold text-foreground">
+                        <h3 className="text-xs font-semibold text-foreground">
                           {session.student.firstName} {session.student.lastName}
                         </h3>
                         {renderStatusBadge(session.status)}
                       </div>
 
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-[11px] text-muted-foreground font-mono">
                         {session.subject.name}
                       </p>
 
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground pt-1">
-                        <span className="inline-flex items-center gap-1 font-mono tabular-nums">
-                          <Clock className="w-3 h-3 text-primary" />
+                      <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-muted-foreground pt-0.5 font-mono">
+                        <span className="inline-flex items-center gap-1 tabular-nums">
+                          <Clock className="size-3 text-primary" />
                           {session.plannedDuration} دقيقة
                         </span>
                         <span>•</span>
-                        <span className="font-mono tabular-nums text-foreground/80">
+                        <span className="tabular-nums">
                           {sessionDate.toLocaleDateString("ar-EG", {
-                            weekday: "long",
-                            year: "numeric",
+                            weekday: "short",
                             month: "short",
-                            day: "numeric"
+                            day: "numeric",
                           })}
                         </span>
                         <span>•</span>
-                        <span className="font-mono tabular-nums text-foreground/80">
-                          {sessionDate.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}
+                        <span className="tabular-nums">
+                          {sessionDate.toLocaleTimeString("ar-EG", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </span>
                         {session.enrollment && (
                           <>
                             <span>•</span>
-                            <span className="text-[11px] font-mono text-muted-foreground">
+                            <span className="text-[10px] text-muted-foreground/70">
                               المتبقي للطالب: {session.enrollment.remainingHours} ساعة
                             </span>
                           </>
@@ -340,9 +327,9 @@ const TeacherSchedulePage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2.5 self-end md:self-center">
-                    <span className="text-xs font-mono px-2.5 py-1 rounded bg-muted text-muted-foreground border border-border/50">
-                      {isPast ? "حصة منتهية" : "مجدولة"}
+                  <div className="flex items-center gap-2 self-end md:self-center font-mono">
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/50">
+                      {isPast ? "منتهية" : "مجدولة"}
                     </span>
                   </div>
                 </div>
@@ -353,6 +340,4 @@ const TeacherSchedulePage: React.FC = () => {
       </div>
     </div>
   );
-};
-
-export default TeacherSchedulePage;
+}
