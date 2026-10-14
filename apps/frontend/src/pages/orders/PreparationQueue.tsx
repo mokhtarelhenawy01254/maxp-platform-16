@@ -235,7 +235,15 @@ const PreparationQueue: React.FC = () => {
     search: deferredSearch,
     sortBy: uiState.sortBy,
     sortOrder: uiState.sortOrder,
+    companyId: user?.companyId || undefined,
   });
+
+  // إلغاء تحديد طلبات الشركة السابقة عند تبديل الشركة
+  const currentCompanyId = user?.companyId;
+  useEffect(() => {
+    uiActions.clearBulkControls();
+  }, [currentCompanyId, uiActions]);
+
   const [rowUpdatingId, setRowUpdatingId] = useState<string | null>(null);
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [qcChecklistState, setQcChecklistState] = useState<

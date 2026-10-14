@@ -108,7 +108,12 @@ const preparationQueueUiReducer = (
 ): PreparationQueueUiState => {
   switch (action.type) {
     case "set_active_stage":
-      return withPageReset(state, { activeStage: action.value });
+      return withPageReset(state, {
+        activeStage: action.value,
+        selectedOrders: [],
+        statusSelections: {},
+        bulkStatus: "",
+      });
     case "apply_default_warehouse":
       if (state.selectedWarehouseId || !action.value) {
         return state;

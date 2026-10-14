@@ -76,6 +76,7 @@ interface UsePreparationQueueDataParams {
   search: string;
   sortBy: SortBy;
   sortOrder: SortOrder;
+  companyId?: string;
 }
 
 interface ApiProductVariant {
@@ -162,11 +163,11 @@ const EMPTY_SUMMARY: PreparationQueueSummary = {
 };
 
 const PREPARATION_QUERY_KEYS = {
-  inventory: ["preparation-queue", "inventory"] as const,
-  warehouses: ["preparation-queue", "warehouses"] as const,
-  statuses: ["preparation-queue", "statuses"] as const,
-  settings: ["preparation-queue", "settings"] as const,
-  products: ["preparation-queue", "products"] as const,
+  inventory: (cid = "default") => ["preparation-queue", cid, "inventory"] as const,
+  warehouses: (cid = "default") => ["preparation-queue", cid, "warehouses"] as const,
+  statuses: (cid = "default") => ["preparation-queue", cid, "statuses"] as const,
+  settings: (cid = "default") => ["preparation-queue", cid, "settings"] as const,
+  products: (cid = "default") => ["preparation-queue", cid, "products"] as const,
 };
 
 const buildOrdersQueryKey = (
@@ -175,6 +176,7 @@ const buildOrdersQueryKey = (
 ) =>
   [
     "preparation-queue",
+    params.companyId || "default",
     "orders",
     params.page,
     params.pageSize,
@@ -375,20 +377,31 @@ export const usePreparationQueueData = ({
   search,
   sortBy,
   sortOrder,
+  companyId = "",
 }: UsePreparationQueueDataParams): UsePreparationQueueDataResult => {
   const queryClient = useQueryClient();
   const [orders, setOrders] = useState<SimpleOrder[]>([]);
   const [manualRefreshing, setManualRefreshing] = useState(false);
 
+  // Clear orders and fetched refs on company switch event
+  useEffect(() => {
+    const handleCompanySwitched = () => {
+      setOrders([]);
+      fetchedProductIdsRef.current = "";
+    };
+    window.addEventListener("company:switched", handleCompanySwitched);
+    return () => window.removeEventListener("company:switched", handleCompanySwitched);
+  }, []);
+
   const preparationSettingsQuery = useQuery({
-    queryKey: PREPARATION_QUERY_KEYS.settings,
+    queryKey: PREPARATION_QUERY_KEYS.settings(companyId),
     queryFn: fetchPreparationSettingsData,
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
 
   const productsQuery = useQuery({
-    queryKey: PREPARATION_QUERY_KEYS.products,
+    queryKey: PREPARATION_QUERY_KEYS.products(companyId),
     queryFn: fetchProductsData,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
@@ -401,6 +414,7 @@ export const usePreparationQueueData = ({
 
   const ordersParams = useMemo<UsePreparationQueueDataParams>(
     () => ({
+      companyId,
       page,
       pageSize,
       activeStage,
@@ -422,6 +436,7 @@ export const usePreparationQueueData = ({
       sortOrder,
     }),
     [
+      companyId,
       activeStage,
       page,
       pageSize,
@@ -496,7 +511,7 @@ export const usePreparationQueueData = ({
   });
 
   const warehousesQuery = useQuery({
-    queryKey: PREPARATION_QUERY_KEYS.warehouses,
+    queryKey: PREPARATION_QUERY_KEYS.warehouses(companyId),
     queryFn: fetchWarehousesData,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -504,7 +519,7 @@ export const usePreparationQueueData = ({
   });
 
   const statusConfigsQuery = useQuery({
-    queryKey: PREPARATION_QUERY_KEYS.statuses,
+    queryKey: PREPARATION_QUERY_KEYS.statuses(companyId),
     queryFn: fetchStatusConfigsData,
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
@@ -544,12 +559,12 @@ export const usePreparationQueueData = ({
 
   const fetchInventory = useCallback(async () => {
     const data = await queryClient.fetchQuery({
-      queryKey: [...PREPARATION_QUERY_KEYS.inventory, ...productIds],
+      queryKey: [...PREPARATION_QUERY_KEYS.inventory(companyId), ...productIds],
       queryFn: () => fetchInventoryData(productIds),
       staleTime: 2 * 60 * 1000,
     });
     return data;
-  }, [productIds, queryClient]);
+  }, [companyId, productIds, queryClient]);
 
   const [inventory, setInventory] = useState<InventoryRecord[]>([]);
   const [inventoryLoading, setInventoryLoading] = useState(false);
@@ -589,17 +604,17 @@ export const usePreparationQueueData = ({
               staleTime: 0,
             }),
             queryClient.fetchQuery({
-              queryKey: PREPARATION_QUERY_KEYS.warehouses,
+              queryKey: PREPARATION_QUERY_KEYS.warehouses(companyId),
               queryFn: fetchWarehousesData,
               staleTime: 0,
             }),
             queryClient.fetchQuery({
-              queryKey: PREPARATION_QUERY_KEYS.statuses,
+              queryKey: PREPARATION_QUERY_KEYS.statuses(companyId),
               queryFn: fetchStatusConfigsData,
               staleTime: 0,
             }),
             queryClient.fetchQuery({
-              queryKey: PREPARATION_QUERY_KEYS.settings,
+              queryKey: PREPARATION_QUERY_KEYS.settings(companyId),
               queryFn: fetchPreparationSettingsData,
               staleTime: 0,
             }),
@@ -619,7 +634,7 @@ export const usePreparationQueueData = ({
         });
 
         const freshInv = await queryClient.fetchQuery({
-          queryKey: [...PREPARATION_QUERY_KEYS.inventory, ...freshProductIds],
+          queryKey: [...PREPARATION_QUERY_KEYS.inventory(companyId), ...freshProductIds],
           queryFn: () => fetchInventoryData(freshProductIds),
           staleTime: 0,
         });

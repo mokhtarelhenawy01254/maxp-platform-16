@@ -1899,12 +1899,165 @@ router.post('/', async (req, res) => {
     // Generate order number using centralized service
     const orderNumber = await orderService.generateOrderNumber(company.id);
 
+    // 👤 Resolve / Create customer record before transaction
+    let customer = await findCustomerByPhone(prisma, guestPhone, company.id);
+
+    if (customerAuth && customerAuth.companyId === company.id) {
+      const tokenCustomer = await prisma.customer.findUnique({
+        where: { id: customerAuth.customerId }
+      });
+      if (tokenCustomer && tokenCustomer.companyId === company.id) {
+        customer = tokenCustomer;
+      }
+    }
+
+    if (!customer) {
+      const nameParts = splitCustomerName(guestName);
+      customer = await safeCreateCustomer(
+        prisma,
+        {
+          data: {
+            firstName: nameParts.firstName || 'عميل',
+            lastName: nameParts.lastName || '',
+            phone: guestPhone,
+            phoneNormalized: toCanonicalE164(guestPhone),
+            email: guestEmail || null,
+            company: { connect: { id: company.id } },
+            status: 'ACTIVE',
+            metadata: JSON.stringify({ source: 'storefront_checkout' })
+          }
+        },
+        buildPhoneWhere(guestPhone, company.id)
+      );
+    } else {
+      const updateData = {};
+      if (customer.status === 'LEAD') updateData.status = 'ACTIVE';
+      if (!customer.phoneNormalized && customer.phone) {
+        updateData.phoneNormalized = toCanonicalE164(customer.phone);
+      }
+      if (Object.keys(updateData).length > 0) {
+        try {
+          updateData.updatedAt = new Date();
+          customer = await prisma.customer.update({
+            where: { id: customer.id },
+            data: updateData
+          });
+        } catch (statusErr) {
+          console.error('⚠️ [ORDER-CREATE] Failed to update customer:', statusErr.message);
+        }
+      }
+    }
+
+    // 📦 Prepare order items with accurate merchant and base pricing
+    const orderItems = await Promise.all(cartItems.map(async (item) => {
+      const product = await prisma.product.findFirst({
+        where: {
+          id: item.productId,
+          companyId: company.id,
+        },
+        include: { merchantProducts: true, productVariants: true }
+      });
+      const merchantProduct = product?.merchantProducts?.[0];
+      let productColor =
+        item.productColor ||
+        item.color ||
+        getAttributeValue(item.attributes, ['color', 'colour', 'اللون', 'Color', 'لون', 'ألوان', 'الوان']) ||
+        null;
+      let productSize =
+        item.productSize ||
+        item.size ||
+        getAttributeValue(item.attributes, ['size', 'المقاس', 'Size', 'مقاس', 'مقاسات', 'حجم', 'الحجم']) ||
+        null;
+
+      if ((!productColor || !productSize) && item.variantId) {
+        const matchedVariant = product?.productVariants?.find(v => v.id === item.variantId);
+        if (matchedVariant) {
+          const vAttrs = resolveVariantAttributes(matchedVariant);
+          if (!productColor) productColor = vAttrs.Color || vAttrs.color || vAttrs.اللون || matchedVariant.color || null;
+          if (!productSize) productSize = vAttrs.Size || vAttrs.size || vAttrs.المقاس || matchedVariant.size || null;
+          if (!productColor && !productSize && matchedVariant.name) {
+            if (matchedVariant.type === 'color') productColor = matchedVariant.name;
+            else if (matchedVariant.type === 'size') productSize = matchedVariant.name;
+            else {
+              const parts = matchedVariant.name.split(/\s*[-–|\/]\s*/);
+              if (parts.length >= 2) {
+                productColor = parts[0];
+                productSize = parts[1];
+              }
+            }
+          }
+        }
+      }
+      const productImage = item.productImage || item.image || null;
+
+      return {
+        productName: item.name || item.productName || 'منتج',
+        quantity: item.quantity || 1,
+        price: parseFloat(item.price || 0),
+        total: parseFloat((item.price || 0) * (item.quantity || 1)),
+        productSku: item.productSku || item.sku || null,
+        productColor: productColor == null ? null : String(productColor),
+        productSize: productSize == null ? null : String(productSize),
+        productId: item.productId || null,
+        variantId: item.variantId || null,
+        productImage,
+        merchantPrice: merchantProduct ? Number(merchantProduct.merchantPrice) : null,
+        basePrice: product ? Number(product.basePrice || product.price) : null,
+        metadata: buildOrderItemMetadata(item, productImage),
+      };
+    }));
+
+    // Defensive check: ensure variantId exists in DB before attaching to avoid foreign key errors
+    for (const item of orderItems) {
+      if (item.variantId) {
+        try {
+          const vExists = await prisma.productVariant.findUnique({
+            where: { id: item.variantId },
+            select: { id: true }
+          });
+          if (!vExists) {
+            console.warn(`⚠️ [ORDER-CREATE] variantId ${item.variantId} does not exist in DB, clearing to prevent foreign key violation.`);
+            item.variantId = null;
+          }
+        } catch (_) {
+          item.variantId = null;
+        }
+      }
+    }
+
+    // Check if affiliateReferralId is already bound to another Order
+    if (affiliateReferralId) {
+      try {
+        const existingOrderWithReferral = await prisma.order.findUnique({
+          where: { affiliateReferralId },
+          select: { id: true, orderNumber: true }
+        });
+        if (existingOrderWithReferral) {
+          console.warn(`⚠️ [ORDER-CREATE] affiliateReferralId ${affiliateReferralId} already bound to order ${existingOrderWithReferral.orderNumber} (${existingOrderWithReferral.id}). Detaching to prevent unique collision.`);
+          affiliateReferralId = null;
+        }
+      } catch (chkErr) {
+        console.warn('⚠️ [ORDER-CREATE] Failed to check affiliateReferralId collision:', chkErr.message);
+      }
+    }
+
+    const normalizedGovernorate = (() => {
+      const rawGovernorate = shippingAddress?.governorate || shippingAddress?.state || shippingAddress?.region || '';
+      try {
+        const { getTurboGovernorateName } = require('../utils/turbo/governorateMapper');
+        const normalized = getTurboGovernorateName(rawGovernorate);
+        return normalized || rawGovernorate || '';
+      } catch (e) {
+        return rawGovernorate || '';
+      }
+    })();
+
     // Create order and update stock in a transaction to ensure data consistency
     // ✅ FIX: Increased timeout to 30 seconds to prevent "Transaction already closed" errors
     let pointsApplied = 0;
     let pointsUsed = 0;
     let pointsProgramId = null;
-    const order = await prisma.$transaction(async (tx) => {
+    const transactionResult = await prisma.$transaction(async (tx) => {
       let walletApplied = 0;
       let walletBalanceBefore = null;
       let walletBalanceAfter = null;
@@ -2152,6 +2305,50 @@ router.post('/', async (req, res) => {
         };
       }
 
+      // 1. 🌟 CREATE PRIMARY ORDER (Single Source of Truth)
+      const primaryOrderRecord = await tx.order.create({
+        data: {
+          orderNumber,
+          customerId: customer.id,
+          companyId: company.id,
+          customerName: guestName,
+          customerPhone: guestPhone,
+          customerEmail: guestEmail || null,
+          customerAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : (shippingAddress || ''),
+          shippingAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : (shippingAddress || ''),
+          governorate: normalizedGovernorate,
+          city: shippingAddress?.city || '',
+          subtotal: parseFloat(cartTotal),
+          shipping: parseFloat(shippingCost || 0),
+          discount: parseFloat(discountAmount || 0),
+          total: parseFloat(finalTotalAfterPoints),
+          status: isDuplicateOrder ? 'DUPLICATE_ORDER' : 'PENDING',
+          paymentStatus: 'PENDING',
+          paymentMethod: mapPaymentMethodToEnum(paymentMethod || 'cash'),
+          notes: notes || `طلب من الموقع - ${orderNumber}`,
+          sourceType: 'storefront',
+          extractionMethod: 'storefront',
+          isViewed: false,
+          affiliateReferralId,
+          affiliateId,
+          orderSource: orderSource || 'REGULAR',
+          metadata: Object.keys(orderMetadata).length > 0 ? JSON.stringify(orderMetadata) : undefined,
+          orderItems: {
+            create: orderItems
+          }
+        },
+        include: {
+          orderItems: {
+            include: {
+              product: true
+            }
+          },
+          customer: true
+        }
+      });
+
+      // 2. 🪞 CREATE SHADOW MIRROR GUEST ORDER (Backwards-Compatible)
+      const guestOrderMeta = { ...orderMetadata, primaryOrderId: primaryOrderRecord.id };
       const newOrder = await tx.guestOrder.create({
         data: {
           orderNumber,
@@ -2168,7 +2365,7 @@ router.post('/', async (req, res) => {
           status: isDuplicateOrder ? 'DUPLICATE_ORDER' : 'PENDING',
           notes,
           companyId: company.id,
-          metadata: Object.keys(orderMetadata).length > 0 ? JSON.stringify(orderMetadata) : null
+          metadata: Object.keys(guestOrderMeta).length > 0 ? JSON.stringify(guestOrderMeta) : null
         }
       });
 
@@ -2181,7 +2378,7 @@ router.post('/', async (req, res) => {
             balanceBefore: walletBalanceBefore,
             balanceAfter: walletBalanceAfter,
             description: `Used for storefront order ${orderNumber}`,
-            metadata: JSON.stringify({ guestOrderId: newOrder.id, orderNumber })
+            metadata: JSON.stringify({ guestOrderId: newOrder.id, orderId: primaryOrderRecord.id, orderNumber })
           }
         });
       }
@@ -2229,11 +2426,14 @@ router.post('/', async (req, res) => {
         }
       }
 
-      return newOrder;
+      return { primaryOrder: primaryOrderRecord, guestOrder: newOrder };
     }, {
       maxWait: 30000, // Maximum time to wait to acquire a transaction slot
       timeout: 30000  // Maximum time the transaction can run
     });
+
+    const order = transactionResult.guestOrder;
+    const createdOrder = transactionResult.primaryOrder;
 
     // حفظ عنوان العميل تلقائياً من الشيك آوت (يظهر في "بياناتي" من غير ما يكتبه بنفسه)
     try {
@@ -2484,489 +2684,13 @@ router.post('/', async (req, res) => {
       console.error('❌ [WEB-PUSH] Failed to bootstrap order push:', pushBootstrapError.message || pushBootstrapError);
     }
 
-    // 🛒 تصدير تلقائي لـ WooCommerce (في الخلفية)
-    let createdOrder = null;
+    // 🛒 تصدير تلقائي لـ WooCommerce والأنظمة التابعة (في الخلفية)
     let dropshippingRoutingError = null;
-    // ملاحظة: guestOrder مختلف عن Order، لكن يمكننا إنشاء Order من guestOrder للتصدير
     try {
-      console.log('🔍 [ORDER-CREATE] Starting Order creation from GuestOrder:', order.orderNumber);
+      console.log('✅ [ORDER-CREATE] Primary Order created atomically in transaction (SSOT):', createdOrder.orderNumber, createdOrder.id);
 
       const { getWooCommerceAutoExportService } = require('../services/wooCommerceAutoExportService');
       const wooExportService = getWooCommerceAutoExportService();
-
-      // إنشاء Order من guestOrder للتصدير
-      // نحتاج لإنشاء customer أولاً إذا لم يكن موجوداً
-      const prisma = await getPrisma();
-
-      // البحث عن أو إنشاء customer
-      let customer = await findCustomerByPhone(prisma, order.guestPhone, company.id);
-
-      // If order was placed by an authenticated customer, prefer linking to that customer record
-      if (customerAuth && customerAuth.companyId === company.id) {
-        const tokenCustomer = await prisma.customer.findUnique({
-          where: { id: customerAuth.customerId }
-        });
-        if (tokenCustomer && tokenCustomer.companyId === company.id) {
-          customer = tokenCustomer;
-        }
-      }
-
-      if (!customer) {
-        // إنشاء customer جديد
-        console.log('🔍 [ORDER-CREATE] Creating new customer:', order.guestName, order.guestPhone);
-
-        // Split name into first and last
-        const nameParts = splitCustomerName(order.guestName);
-        const firstName = nameParts.firstName;
-        const lastName = nameParts.lastName;
-
-        customer = await safeCreateCustomer(
-          prisma,
-          {
-            data: {
-              firstName: firstName || 'عميل',
-              lastName: lastName || '',
-              phone: order.guestPhone,
-              phoneNormalized: toCanonicalE164(order.guestPhone),
-              email: order.guestEmail || null,
-              company: { connect: { id: company.id } },
-              status: 'ACTIVE',
-              metadata: JSON.stringify({ source: 'guest_order', guestOrderId: order.id })
-            }
-          },
-          buildPhoneWhere(order.guestPhone, company.id)
-        );
-        console.log('✅ [ORDER-CREATE] Customer created:', customer.id);
-      } else {
-        const updateData = {};
-        if (customer.status === 'LEAD') updateData.status = 'ACTIVE';
-        if (!customer.phoneNormalized && customer.phone) {
-          updateData.phoneNormalized = toCanonicalE164(customer.phone);
-        }
-        if (Object.keys(updateData).length > 0) {
-          try {
-            updateData.updatedAt = new Date();
-            customer = await prisma.customer.update({
-              where: { id: customer.id },
-              data: updateData
-            });
-          } catch (statusErr) {
-            console.error('⚠️ [ORDER-CREATE] Failed to update customer:', statusErr.message);
-          }
-        }
-        console.log('✅ [ORDER-CREATE] Found existing customer:', customer.id);
-      }
-
-      console.log('🔍 [ORDER-CREATE] Preparing order items...');
-
-      // إنشاء Order من guestOrder مع جلب الأسعار التاريخية (تاجر ومنصة)
-      const parsedItems = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-      const orderItems = await Promise.all(parsedItems.map(async (item) => {
-        // جلب تفاصيل المنتج للتأكد من الأسعار وقت الطلب
-        const product = await prisma.product.findFirst({
-          where: {
-            id: item.productId,
-            companyId: company.id,
-          },
-          include: { merchantProducts: true, productVariants: true }
-        });
-        const merchantProduct = product?.merchantProducts?.[0];
-        let productColor =
-          item.productColor ||
-          item.color ||
-          getAttributeValue(item.attributes, ['color', 'colour', 'اللون', 'Color', 'لون', 'ألوان', 'الوان']) ||
-          null;
-        let productSize =
-          item.productSize ||
-          item.size ||
-          getAttributeValue(item.attributes, ['size', 'المقاس', 'Size', 'مقاس', 'مقاسات', 'حجم', 'الحجم']) ||
-          null;
-
-        if ((!productColor || !productSize) && item.variantId) {
-          const matchedVariant = product?.productVariants?.find(v => v.id === item.variantId);
-          if (matchedVariant) {
-            const vAttrs = resolveVariantAttributes(matchedVariant);
-            if (!productColor) productColor = vAttrs.Color || vAttrs.color || vAttrs.اللون || matchedVariant.color || null;
-            if (!productSize) productSize = vAttrs.Size || vAttrs.size || vAttrs.المقاس || matchedVariant.size || null;
-            if (!productColor && !productSize && matchedVariant.name) {
-              if (matchedVariant.type === 'color') productColor = matchedVariant.name;
-              else if (matchedVariant.type === 'size') productSize = matchedVariant.name;
-              else {
-                const parts = matchedVariant.name.split(/\s*[-–|\/]\s*/);
-                if (parts.length >= 2) {
-                  productColor = parts[0];
-                  productSize = parts[1];
-                }
-              }
-            }
-          }
-        }
-        const productImage = item.productImage || item.image || null;
-
-        return {
-          productName: item.name || item.productName || 'منتج',
-          quantity: item.quantity || 1,
-          price: parseFloat(item.price || 0),
-          total: parseFloat((item.price || 0) * (item.quantity || 1)),
-          productSku: item.productSku || item.sku || null,
-          // productColor/productSize مقبولان في OrderItem كـ String فقط؛
-          // خصائص الفاريانت (سايز) قد تكون Int (37) فيخفق إنشاء الـ primary order.
-          productColor: productColor == null ? null : String(productColor),
-          productSize: productSize == null ? null : String(productSize),
-          productId: item.productId || null,
-          variantId: item.variantId || null,
-          productImage,
-          merchantPrice: merchantProduct ? Number(merchantProduct.merchantPrice) : null,
-          basePrice: product ? Number(product.basePrice || product.price) : null,
-          metadata: buildOrderItemMetadata(item, productImage),
-        };
-      }));
-
-      // Check for affiliate referral from guestOrder metadata
-      const regularOrderMetadata = {};
-      let affiliateReferralId = null;
-      let affiliateId = null;
-      let orderSource = 'REGULAR';
-      let duplicateMetadata = null;
-      let attributionMetadata = null;
-      let freeShippingMetadata = null;
-      // Wallet payment metadata carried over from the guest order
-      let walletPaymentProofMetadata = null;
-      let walletDiscountMetadata = null;
-      let walletAppliedMetadata = null;
-      let walletCustomerIdMetadata = null;
-      let walletBalanceBeforeMetadata = null;
-      let walletBalanceAfterMetadata = null;
-      let discountReasonMetadata = null;
-      let couponMetadata = null;
-      let couponCodeMetadata = null;
-      let sessionDetailsMetadata = null;
-      let guestOrderMeta = null;
-
-      if (order.metadata) {
-        try {
-          guestOrderMeta = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : order.metadata;
-          const metadata = guestOrderMeta;
-          if (metadata.affiliateReferralId) {
-            affiliateReferralId = metadata.affiliateReferralId;
-            affiliateId = metadata.affiliateId;
-            orderSource = metadata.orderSource || 'AFFILIATE_REFERRAL';
-          }
-          if (metadata.duplicate) {
-            duplicateMetadata = metadata.duplicate;
-
-          }
-          if (metadata.attribution) {
-            attributionMetadata = sanitizeOrderAttribution(metadata.attribution);
-          }
-          if (metadata.sessionDetails) {
-            sessionDetailsMetadata = metadata.sessionDetails;
-          }
-          if (metadata.freeShipping) {
-            freeShippingMetadata = metadata.freeShipping;
-          }
-          if (metadata.walletPaymentProof) {
-            walletPaymentProofMetadata = metadata.walletPaymentProof;
-          }
-          if (metadata.walletDiscount) {
-            walletDiscountMetadata = metadata.walletDiscount;
-          }
-          if (metadata.walletApplied !== undefined && metadata.walletApplied !== null) {
-            walletAppliedMetadata = metadata.walletApplied;
-          }
-          if (metadata.walletCustomerId) {
-            walletCustomerIdMetadata = metadata.walletCustomerId;
-          }
-          if (metadata.walletBalanceBefore !== undefined && metadata.walletBalanceBefore !== null) {
-            walletBalanceBeforeMetadata = metadata.walletBalanceBefore;
-          }
-          if (metadata.walletBalanceAfter !== undefined && metadata.walletBalanceAfter !== null) {
-            walletBalanceAfterMetadata = metadata.walletBalanceAfter;
-          }
-          if (metadata.discountReason) {
-            discountReasonMetadata = metadata.discountReason;
-          }
-          if (metadata.coupon) {
-            couponMetadata = metadata.coupon;
-          }
-          if (metadata.couponCode) {
-            couponCodeMetadata = metadata.couponCode;
-          }
-          if (metadata.needsDiscountApproval !== undefined) {
-            regularOrderMetadata.needsDiscountApproval = metadata.needsDiscountApproval;
-          }
-          if (metadata.discountApprovalStatus) {
-            regularOrderMetadata.discountApprovalStatus = metadata.discountApprovalStatus;
-          }
-          if (metadata.discountApprovalRequestedAt) {
-            regularOrderMetadata.discountApprovalRequestedAt = metadata.discountApprovalRequestedAt;
-          }
-          if (metadata.discountApprovedBy) {
-            regularOrderMetadata.discountApprovedBy = metadata.discountApprovedBy;
-          }
-          if (metadata.discountApprovedAt) {
-            regularOrderMetadata.discountApprovedAt = metadata.discountApprovedAt;
-          }
-          if (metadata.discountRejectedBy) {
-            regularOrderMetadata.discountRejectedBy = metadata.discountRejectedBy;
-          }
-          if (metadata.discountRejectedAt) {
-            regularOrderMetadata.discountRejectedAt = metadata.discountRejectedAt;
-          }
-          if (metadata.discountRejectionReason) {
-            regularOrderMetadata.discountRejectionReason = metadata.discountRejectionReason;
-          }
-        } catch (e) {
-          // Ignore metadata parsing errors
-        }
-      }
- 
-      if (discountReasonMetadata) {
-        regularOrderMetadata.discountReason = discountReasonMetadata;
-      }
-      if (couponMetadata) {
-        regularOrderMetadata.coupon = couponMetadata;
-      }
-      if (couponCodeMetadata) {
-        regularOrderMetadata.couponCode = couponCodeMetadata;
-      }
-      if (duplicateMetadata) {
-        regularOrderMetadata.duplicate = duplicateMetadata;
-      }
-      if (attributionMetadata) {
-        regularOrderMetadata.attribution = attributionMetadata;
-      }
-      if (sessionDetailsMetadata) {
-        regularOrderMetadata.sessionDetails = sessionDetailsMetadata;
-      }
-      if (freeShippingMetadata) {
-        regularOrderMetadata.freeShipping = freeShippingMetadata;
-      }
-      if (pointsApplied > 0) {
-        regularOrderMetadata.pointsRedemption = {
-          programId: pointsProgramId,
-          pointsUsed,
-          value: pointsApplied,
-          appliedAt: new Date().toISOString()
-        };
-      }
-      if (promoDiscount > 0) {
-        regularOrderMetadata.storePromotion = { discount: promoDiscount, label: promoLabel };
-      }
-      if (guestOrderMeta?.appliedDiscount) {
-        regularOrderMetadata.appliedDiscount = guestOrderMeta.appliedDiscount;
-      }
-      if (guestOrderMeta?.bundleItems) {
-        regularOrderMetadata.bundleItems = guestOrderMeta.bundleItems;
-      }
-      // Wallet payment metadata (proof screenshot + transfer details + discounts)
-      if (walletPaymentProofMetadata) {
-        regularOrderMetadata.walletPaymentProof = walletPaymentProofMetadata;
-      }
-      if (walletDiscountMetadata) {
-        regularOrderMetadata.walletDiscount = walletDiscountMetadata;
-      }
-      if (walletAppliedMetadata !== null) {
-        regularOrderMetadata.walletApplied = walletAppliedMetadata;
-      }
-      if (walletCustomerIdMetadata) {
-        regularOrderMetadata.walletCustomerId = walletCustomerIdMetadata;
-      }
-      if (walletBalanceBeforeMetadata !== null) {
-        regularOrderMetadata.walletBalanceBefore = walletBalanceBeforeMetadata;
-      }
-      if (walletBalanceAfterMetadata !== null) {
-        regularOrderMetadata.walletBalanceAfter = walletBalanceAfterMetadata;
-      }
-      if (order.id && Object.keys(regularOrderMetadata).length > 0) {
-        regularOrderMetadata.guestOrderId = order.id;
-      }
-
-      // Check if affiliateReferralId is already bound to another Order (prevent P2002 @unique collision)
-      if (affiliateReferralId) {
-        try {
-          const existingOrderWithReferral = await prisma.order.findUnique({
-            where: { affiliateReferralId },
-            select: { id: true, orderNumber: true }
-          });
-          if (existingOrderWithReferral) {
-            console.warn(`⚠️ [ORDER-CREATE] affiliateReferralId ${affiliateReferralId} already bound to order ${existingOrderWithReferral.orderNumber} (${existingOrderWithReferral.id}). Detaching from new Order to prevent unique constraint crash.`);
-            affiliateReferralId = null;
-          }
-        } catch (chkErr) {
-          console.warn('⚠️ [ORDER-CREATE] Failed to check affiliateReferralId collision:', chkErr.message);
-        }
-      }
-
-      // Defensive check: ensure variantId exists in DB before attaching to avoid foreign key errors
-      for (const item of orderItems) {
-        if (item.variantId) {
-          try {
-            const vExists = await prisma.productVariant.findUnique({
-              where: { id: item.variantId },
-              select: { id: true }
-            });
-            if (!vExists) {
-              console.warn(`⚠️ [ORDER-CREATE] variantId ${item.variantId} does not exist in DB, clearing to prevent foreign key violation.`);
-              item.variantId = null;
-            }
-          } catch (_) {
-            item.variantId = null;
-          }
-        }
-      }
-
-      console.log('🔍 [ORDER-CREATE] About to create Order with data:', {
-        orderNumber: order.orderNumber,
-        customerId: customer.id,
-        customerName: order.guestName,
-        customerPhone: order.guestPhone
-      });
-
-      try {
-        createdOrder = await prisma.order.create({
-          data: {
-            orderNumber: order.orderNumber,
-            customerId: customer.id,
-            companyId: company.id,
-            customerName: order.guestName,
-            customerPhone: order.guestPhone,
-            customerEmail: order.guestEmail || null,
-            customerAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress,
-            shippingAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress,
-            governorate: (() => {
-              const rawGovernorate = shippingAddress?.governorate || shippingAddress?.state || shippingAddress?.region || '';
-              try {
-                const { getTurboGovernorateName } = require('../utils/turbo/governorateMapper');
-                const normalized = getTurboGovernorateName(rawGovernorate);
-                return normalized || rawGovernorate || '';
-              } catch (e) {
-                return rawGovernorate || '';
-              }
-            })(),
-            city: shippingAddress?.city || '',
-            subtotal: parseFloat(order.total),
-            shipping: parseFloat(order.shippingCost || 0),
-            discount: parseFloat(order.discountAmount || 0),
-            total: parseFloat(order.finalTotal),
-            status: isDuplicateOrder ? 'DUPLICATE_ORDER' : 'PENDING',
-            paymentStatus: 'PENDING',
-            paymentMethod: mapPaymentMethodToEnum(paymentMethod || 'cash'),
-            notes: order.notes || `طلب من الموقع - ${order.orderNumber}`,
-            sourceType: 'storefront',
-            extractionMethod: 'storefront',
-            isViewed: false,
-            affiliateReferralId,
-            affiliateId,
-            orderSource: orderSource || 'REGULAR',
-            metadata:
-              Object.keys(regularOrderMetadata).length > 0
-                ? JSON.stringify(regularOrderMetadata)
-                : undefined,
-            orderItems: {
-              create: orderItems
-            }
-          },
-          include: {
-            orderItems: {
-              include: {
-                product: true
-              }
-            },
-            customer: true
-          }
-        });
-      } catch (firstErr) {
-        console.warn('⚠️ [ORDER-CREATE] First attempt to create Order failed, checking existing or self-healing fallback:', firstErr.message);
-
-        // 1. If order already exists with orderNumber, reuse it
-        const existingOrder = await prisma.order.findFirst({
-          where: {
-            companyId: company.id,
-            orderNumber: order.orderNumber
-          },
-          include: {
-            orderItems: {
-              include: {
-                product: true
-              }
-            },
-            customer: true
-          }
-        });
-
-        if (existingOrder) {
-          createdOrder = existingOrder;
-          console.log('✅ [ORDER-CREATE] Reusing existing Order matching orderNumber:', existingOrder.orderNumber);
-        } else {
-          // 2. Retry with fully sanitized order items (detaching variantId and productId to guarantee zero foreign key error)
-          const sanitizedItems = orderItems.map((item) => ({
-            productName: item.productName || 'منتج',
-            quantity: Number(item.quantity) || 1,
-            price: Number(item.price) || 0,
-            total: Number(item.total) || 0,
-            productSku: item.productSku || null,
-            productColor: item.productColor ? String(item.productColor) : null,
-            productSize: item.productSize ? String(item.productSize) : null,
-            productId: null,
-            variantId: null,
-            productImage: item.productImage || null,
-            metadata: item.metadata || null
-          }));
-
-          createdOrder = await prisma.order.create({
-            data: {
-              orderNumber: order.orderNumber,
-              customerId: customer.id,
-              companyId: company.id,
-              customerName: order.guestName,
-              customerPhone: order.guestPhone,
-              customerEmail: order.guestEmail || null,
-              customerAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : (shippingAddress || ''),
-              shippingAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : (shippingAddress || ''),
-              governorate: (() => {
-                const rawGovernorate = shippingAddress?.governorate || shippingAddress?.state || shippingAddress?.region || '';
-                try {
-                  const { getTurboGovernorateName } = require('../utils/turbo/governorateMapper');
-                  const normalized = getTurboGovernorateName(rawGovernorate);
-                  return normalized || rawGovernorate || '';
-                } catch (e) {
-                  return rawGovernorate || '';
-                }
-              })(),
-              city: shippingAddress?.city || '',
-              subtotal: parseFloat(order.total || 0),
-              shipping: parseFloat(order.shippingCost || 0),
-              discount: parseFloat(order.discountAmount || 0),
-              total: parseFloat(order.finalTotal || 0),
-              status: isDuplicateOrder ? 'DUPLICATE_ORDER' : 'PENDING',
-              paymentStatus: 'PENDING',
-              paymentMethod: mapPaymentMethodToEnum(paymentMethod || 'cash'),
-              notes: order.notes || `طلب من الموقع - ${order.orderNumber}`,
-              sourceType: 'storefront',
-              extractionMethod: 'storefront',
-              isViewed: false,
-              orderSource: orderSource || 'REGULAR',
-              metadata:
-                Object.keys(regularOrderMetadata).length > 0
-                  ? JSON.stringify(regularOrderMetadata)
-                  : undefined,
-              orderItems: {
-                create: sanitizedItems
-              }
-            },
-            include: {
-              orderItems: {
-                include: {
-                  product: true
-                }
-              },
-              customer: true
-            }
-          });
-          console.log('✅ [ORDER-CREATE] Self-healing fallback succeeded for order:', createdOrder.orderNumber);
-        }
-      }
 
       if (!isDuplicateOrder) {
         // Update referral to mark as converted
@@ -3749,7 +3473,24 @@ router.get('/:orderNumber/track', async (req, res) => {
               { orderNumber }
             ]
           },
-          select: { metadata: true, status: true, total: true, subtotal: true, shipping: true, discount: true }
+          select: {
+            metadata: true,
+            status: true,
+            total: true,
+            subtotal: true,
+            shipping: true,
+            discount: true,
+            turboTrackingNumber: true,
+            turboShipmentStatus: true,
+            turboShipmentId: true,
+            turboLabelUrl: true,
+            turboCaptainName: true,
+            turboCaptainPhone: true,
+            turboBranchName: true,
+            turboBranchPhone: true,
+            turboDelayReason: true,
+            turboReturnReason: true
+          }
         });
         if (primaryOrder) {
           const guestMeta = (() => { try { return typeof order.metadata === 'string' ? JSON.parse(order.metadata) : (order.metadata || {}); } catch (e) { return {}; } })();
@@ -3763,6 +3504,38 @@ router.get('/:orderNumber/track', async (req, res) => {
           if (primaryOrder.discount !== null && primaryOrder.discount !== undefined) order.discountAmount = primaryOrder.discount;
           if (primaryOrder.shipping !== null && primaryOrder.shipping !== undefined) order.shippingCost = primaryOrder.shipping;
           if (primaryOrder.subtotal !== null && primaryOrder.subtotal !== undefined) order.subtotal = primaryOrder.subtotal;
+
+          // Merge Turbo tracking fields if present on primaryOrder
+          if (primaryOrder.turboTrackingNumber && !order.turboTrackingNumber) {
+            order.turboTrackingNumber = primaryOrder.turboTrackingNumber;
+          }
+          if (primaryOrder.turboShipmentStatus && !order.turboShipmentStatus) {
+            order.turboShipmentStatus = primaryOrder.turboShipmentStatus;
+          }
+          if (primaryOrder.turboShipmentId && !order.turboShipmentId) {
+            order.turboShipmentId = primaryOrder.turboShipmentId;
+          }
+          if (primaryOrder.turboLabelUrl && !order.turboLabelUrl) {
+            order.turboLabelUrl = primaryOrder.turboLabelUrl;
+          }
+          if (primaryOrder.turboCaptainName && !order.turboCaptainName) {
+            order.turboCaptainName = primaryOrder.turboCaptainName;
+          }
+          if (primaryOrder.turboCaptainPhone && !order.turboCaptainPhone) {
+            order.turboCaptainPhone = primaryOrder.turboCaptainPhone;
+          }
+          if (primaryOrder.turboBranchName && !order.turboBranchName) {
+            order.turboBranchName = primaryOrder.turboBranchName;
+          }
+          if (primaryOrder.turboBranchPhone && !order.turboBranchPhone) {
+            order.turboBranchPhone = primaryOrder.turboBranchPhone;
+          }
+          if (primaryOrder.turboDelayReason && !order.turboDelayReason) {
+            order.turboDelayReason = primaryOrder.turboDelayReason;
+          }
+          if (primaryOrder.turboReturnReason && !order.turboReturnReason) {
+            order.turboReturnReason = primaryOrder.turboReturnReason;
+          }
         }
       } catch (mergeError) {
         console.error('⚠️ [TRACK-ORDER-LEGACY] Failed to merge primary order data:', mergeError.message);

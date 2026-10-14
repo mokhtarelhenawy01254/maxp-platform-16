@@ -9,6 +9,7 @@ import { repairMojibakeText } from '../utils/textEncoding';
 import socketService from '../services/socketService';
 import { clearAllSWCaches } from '../utils/swCacheFlush';
 import { queryClient } from '../config/queryClient';
+import { clearInvoiceSettingsCache } from './useInvoiceSettings';
 
 interface Company {
   id: string;
@@ -689,6 +690,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         tokenManager.setAccessToken(data.data.token);
         if (data.data.refreshToken) {
           tokenManager.setRefreshToken(data.data.refreshToken);
+        }
+
+        // Clear React Query cache and invoice settings so no previous company's data leaks into active components
+        try {
+          queryClient.clear();
+          clearInvoiceSettingsCache();
+        } catch (qcError) {
+          warnLog('⚠️ [AuthProvider] Failed to clear queryClient/invoice cache on company switch:', qcError);
         }
 
         let switchedUser: User | null = null;

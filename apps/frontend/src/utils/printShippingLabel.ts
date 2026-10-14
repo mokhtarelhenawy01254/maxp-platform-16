@@ -118,9 +118,17 @@ export function toOrderDetailsType(order: SimpleOrderForLabel): OrderDetailsType
         total: Number(item.total || 0),
         metadata: meta,
         attributes: (item as any).attributes || (item as any).customAttributes || (item as any).customFields || null,
-        customAttributes: (item as any).customAttributes || null,
-        customFields: (item as any).customFields || null,
-        carModel: (item as any).carModel || (item as any).car_model || null,
+        carModel:
+          (item as any).carModel ||
+          (item as any).car_model ||
+          metaAttrs?.["car_model"] ||
+          metaAttrs?.["carModel"] ||
+          metaAttrs?.["نوع وموديل وسنة صنع السيارة"] ||
+          metaAttrs?.["موديل السيارة"] ||
+          meta?.carModel ||
+          meta?.car_model ||
+          (meta?.details && typeof meta.details === "string" && meta.details.trim().length > 1 ? meta.details.trim() : null) ||
+          null,
       };
     }),
     subtotal: Number(order.subtotal || 0),

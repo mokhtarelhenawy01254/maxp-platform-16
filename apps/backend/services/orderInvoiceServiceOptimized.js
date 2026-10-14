@@ -181,6 +181,91 @@ async function fetchOrdersBatch(orderIds) {
   // إثراء عناصر الطلبات بالأكواد الناقصة
   await enrichOrdersWithSku(orders, prisma);
 
+  // استرجاع الملاحظات والسمات الأصلية من guest_order للطلبات التي تم الكتابة فوق ملاحظاتها
+  try {
+    const guestOrderIds = [];
+    const orderNumbers = [];
+    orders.forEach(o => {
+      if (o.orderNumber) orderNumbers.push(o.orderNumber);
+      let meta = o.metadata;
+      if (typeof meta === 'string') {
+        try { meta = JSON.parse(meta); } catch (e) { meta = null; }
+      }
+      const gId = meta?.backfilledFromGuestOrder?.guestOrderId || meta?.guestOrderId;
+      if (gId) guestOrderIds.push(gId);
+    });
+
+    if (guestOrderIds.length > 0 || orderNumbers.length > 0) {
+      const guestOrders = await prisma.guestOrder.findMany({
+        where: {
+          OR: [
+            ...(guestOrderIds.length > 0 ? [{ id: { in: guestOrderIds } }] : []),
+            ...(orderNumbers.length > 0 ? [{ orderNumber: { in: orderNumbers } }] : [])
+          ]
+        }
+      });
+
+      const guestMap = new Map();
+      guestOrders.forEach(go => {
+        if (go.id) guestMap.set(go.id, go);
+        if (go.orderNumber) guestMap.set(go.orderNumber, go);
+      });
+
+      orders.forEach(order => {
+        let meta = order.metadata;
+        if (typeof meta === 'string') {
+          try { meta = JSON.parse(meta); } catch (e) { meta = null; }
+        }
+        const gId = meta?.backfilledFromGuestOrder?.guestOrderId || meta?.guestOrderId;
+        const matchedGuest = (gId && guestMap.get(gId)) || guestMap.get(order.orderNumber);
+
+        if (matchedGuest) {
+          // استعادة الملاحظات الحقيقية إذا كانت فارغة أو استبدلت بنص نظام
+          if (!order.notes || isSystemBulkStatusNote(order.notes)) {
+            if (matchedGuest.notes && !isSystemBulkStatusNote(matchedGuest.notes)) {
+              order.notes = matchedGuest.notes;
+            }
+          }
+
+          // استعادة بيانات العناصر الأصلية
+          let gItems = [];
+          try {
+            gItems = typeof matchedGuest.items === 'string' ? JSON.parse(matchedGuest.items) : (matchedGuest.items || []);
+          } catch (e) { gItems = []; }
+
+          (order.orderItems || []).forEach((item, idx) => {
+            const gItem = gItems[idx] || gItems.find(gi => gi.productId === item.productId);
+            if (gItem) {
+              if (!item.metadata && gItem.metadata) item.metadata = gItem.metadata;
+              if (!item.attributes && gItem.attributes) item.attributes = gItem.attributes;
+              if (!item.customAttributes && gItem.customAttributes) item.customAttributes = gItem.customAttributes;
+              if (!item.carModel && (gItem.carModel || gItem.car_model)) {
+                item.carModel = gItem.carModel || gItem.car_model;
+              }
+            }
+          });
+        }
+
+        // استخراج موديل السيارة من نص الملاحظات إذا كان مفقوداً في العناصر
+        const activeNotes = (order.notes && !isSystemBulkStatusNote(order.notes)) ? order.notes : (matchedGuest?.notes && !isSystemBulkStatusNote(matchedGuest.notes) ? matchedGuest.notes : null);
+        if (activeNotes) {
+          const carMatch = activeNotes.match(/(?:نوع وموديل وسنة صنع السيارة|موديل السيارة|نوع السيارة|الموديل)[\s:]*([^\n\r-]+)/i)
+            || activeNotes.match(/تفاصيل الطلب[\s:]*([^\n\r-]+)/i);
+          if (carMatch && carMatch[1] && carMatch[1].trim()) {
+            const extractedModel = carMatch[1].trim();
+            (order.orderItems || []).forEach(item => {
+              if (!item.carModel) {
+                item.carModel = extractedModel;
+              }
+            });
+          }
+        }
+      });
+    }
+  } catch (enrichErr) {
+    console.warn('⚠️ [INVOICE-BATCH] GuestOrder recovery error:', enrichErr.message);
+  }
+
   return orders;
 }
 

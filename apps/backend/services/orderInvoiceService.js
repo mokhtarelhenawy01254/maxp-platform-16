@@ -5,9 +5,24 @@ const {
   generateInvoiceNumber
 } = require('./orderInvoiceDocumentUtils');
 
+function isSystemBulkStatusNote(note) {
+  if (!note || typeof note !== 'string') return false;
+  const trimmed = note.trim();
+  return (
+    trimmed === 'Bulk status update' ||
+    trimmed === 'Bulk preparation queue update' ||
+    trimmed === 'Bulk restore' ||
+    trimmed === 'Bulk move to trash' ||
+    /^bulk\s+/i.test(trimmed)
+  );
+}
+
 function resolveItemSku(item) {
   if (!item) return item;
   let metaSku = null;
+  let carModel = item.carModel || item.car_model || null;
+  let customAttrs = item.customAttributes || item.attributes || null;
+
   if (item.metadata) {
     let m = item.metadata;
     if (typeof m === 'string' && m.trim()) {
@@ -15,6 +30,21 @@ function resolveItemSku(item) {
     }
     if (m && typeof m === 'object') {
       metaSku = m.sku || m.variantSku || m.productSku || m.code || m.barcode || null;
+      if (!carModel) {
+        carModel =
+          m.carModel ||
+          m.car_model ||
+          m.attributeValues?.car_model ||
+          m.attributeValues?.carModel ||
+          m.attributeValues?.['نوع وموديل وسنة صنع السيارة'] ||
+          m.attributeValues?.['موديل السيارة'] ||
+          m.attributeValues?.['السيارة'] ||
+          (m.details && typeof m.details === 'string' && m.details.trim().length > 1 ? m.details.trim() : null) ||
+          null;
+      }
+      if (!customAttrs && m.attributeValues) {
+        customAttrs = m.attributeValues;
+      }
     }
   }
 
@@ -31,16 +61,66 @@ function resolveItemSku(item) {
   return {
     ...item,
     productSku,
-    attributes: item.attributes || item.customAttributes || item.customFields || null,
-    customAttributes: item.customAttributes || null,
+    attributes: customAttrs,
+    customAttributes: customAttrs,
     customFields: item.customFields || null,
-    carModel: item.carModel || item.car_model || null
+    carModel
   };
 }
 
 async function syncInvoiceWithOrder(invoice, prisma) {
   if (!invoice || !invoice.order) return invoice;
   const order = invoice.order;
+
+  // Recover customer notes if current order.notes or invoice.notes is a system bulk update note or empty
+  let activeNotes = order.notes;
+  if (isSystemBulkStatusNote(activeNotes)) {
+    if (invoice.notes && !isSystemBulkStatusNote(invoice.notes)) {
+      activeNotes = invoice.notes;
+    } else {
+      activeNotes = null;
+    }
+  }
+
+  if (!activeNotes) {
+    try {
+      let orderMeta = order.metadata;
+      if (typeof orderMeta === 'string') {
+        try { orderMeta = JSON.parse(orderMeta); } catch (e) { orderMeta = {}; }
+      }
+      const guestId = orderMeta?.backfilledFromGuestOrder?.guestOrderId;
+      const guestOrder = await prisma.guestOrder.findFirst({
+        where: {
+          companyId: order.companyId,
+          OR: [
+            { orderNumber: order.orderNumber },
+            ...(guestId ? [{ id: guestId }] : [])
+          ]
+        },
+        select: { notes: true, items: true }
+      });
+      if (guestOrder?.notes && !isSystemBulkStatusNote(guestOrder.notes)) {
+        activeNotes = guestOrder.notes;
+      }
+    } catch (_e) {}
+  }
+
+  if (activeNotes && !isSystemBulkStatusNote(activeNotes)) {
+    invoice.notes = activeNotes;
+    order.notes = activeNotes;
+  }
+
+  // Regex fallback: If notes contain a car specification, attach to orderItems that miss carModel
+  const carMatch = (activeNotes || '').match(/(?:سيارة|عربية|نوع وموديل|موديل وسنة)[^:\n]*:?\s*([^\n\r]+)/i);
+  if (carMatch) {
+    const extractedCar = carMatch[1].trim();
+    if (invoice?.order?.orderItems) {
+      for (const it of invoice.order.orderItems) {
+        if (!it.carModel) it.carModel = extractedCar;
+      }
+    }
+  }
+
   const orderTotal = Number(order.total || 0);
   const invTotal = Number(invoice.totalAmount || 0);
   const orderSubtotal = Number(order.subtotal || 0);
@@ -63,7 +143,7 @@ async function syncInvoiceWithOrder(invoice, prisma) {
     (order.customerAddress && order.customerAddress !== invoice.customerAddress) ||
     (order.city && order.city !== invoice.city) ||
     (order.governorate && order.governorate !== invoice.governorate) ||
-    (order.notes && order.notes !== invoice.notes);
+    (activeNotes && activeNotes !== invoice.notes);
 
   if (isDiff) {
     invoice.subtotal = order.subtotal;
@@ -76,7 +156,7 @@ async function syncInvoiceWithOrder(invoice, prisma) {
     if (order.customerAddress) invoice.customerAddress = order.customerAddress;
     if (order.city) invoice.city = order.city;
     if (order.governorate) invoice.governorate = order.governorate;
-    if (order.notes) invoice.notes = order.notes;
+    if (activeNotes) invoice.notes = activeNotes;
 
     try {
       await executeWithRetry(async () => {
