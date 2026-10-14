@@ -1,10 +1,35 @@
-﻿export type StudioDeviceMode = "desktop" | "tablet" | "mobile";
+export type StudioDeviceMode = "desktop" | "tablet" | "mobile";
 
-export type StudioLeftPanelTab = "layers" | "theme" | "pages";
+export type StudioLeftRailTab =
+  | "elements"
+  | "layers"
+  | "pages"
+  | "media"
+  | "styles"
+  | "code"
+  | "ai"
+  | "settings";
 
-export type StudioInspectorTab = "content" | "style" | "visibility";
+export type StudioLeftPanelTab = "layers" | "theme" | "pages" | "elements";
+
+export type StudioInspectorTab = "design" | "layout" | "content" | "interactions" | "style" | "visibility";
 
 export type StudioZoomLevel = 0.5 | 0.75 | 1 | 1.25;
+
+export interface StudioDimensions {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface StudioQuickElement {
+  id: string;
+  label: string;
+  type: string;
+  iconName: string;
+  defaultSettings?: Record<string, unknown>;
+}
 
 export interface StudioPageDefinition {
   id: string;

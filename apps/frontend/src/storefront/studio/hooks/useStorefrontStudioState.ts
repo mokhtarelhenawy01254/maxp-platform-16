@@ -1,0 +1,314 @@
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { arrayMove } from "@dnd-kit/sortable";
+import type { DragEndEvent } from "@dnd-kit/core";
+import { useStudioHistory } from "./useStudioHistory";
+import { STOREFRONT_THEME_PRESETS } from "../../themes";
+import { resolveStorefrontTheme } from "../../engine/themeResolver";
+import { useCartStore } from "../../store/useCartStore";
+import { getMarketplacePreviewCartItems } from "../../preview/marketplacePreviewCart";
+
+interface UseStorefrontStudioStateProps {
+  themeId: string;
+  externalDesignTokens: Record<string, unknown>;
+  onChange: (nextTokens: Record<string, unknown>) => void;
+  onSave: () => void;
+}
+
+export const getSectionKey = (section: any, index: number): string => {
+  if (typeof section === "string") return `${section}-${index}`;
+  return section?.key || `${section?.type || "section"}-${index}`;
+};
+
+export function useStorefrontStudioState({
+  themeId,
+  externalDesignTokens,
+  onChange,
+  onSave,
+}: UseStorefrontStudioStateProps) {
+  const [activePageKey, setActivePageKey] = useState<string>("home");
+  const [selectedSectionKey, setSelectedSectionKey] = useState<string>("");
+
+  // Seed cart items for preview
+  useEffect(() => {
+    const currentItems = useCartStore.getState().items;
+    if (currentItems.length > 0) return;
+    const previewItems = getMarketplacePreviewCartItems(themeId);
+    if (previewItems && previewItems.length > 0) {
+      useCartStore.setState({ items: previewItems, isOpen: false });
+    }
+  }, [themeId]);
+
+  // History State
+  const {
+    state: currentDesignTokens,
+    set: setDesignTokensWithHistory,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useStudioHistory<Record<string, unknown>>(externalDesignTokens, { maxHistory: 30 });
+
+  const handleDesignTokensChange = useCallback(
+    (next: Record<string, unknown>) => {
+      setDesignTokensWithHistory(next);
+      onChange(next);
+    },
+    [setDesignTokensWithHistory, onChange]
+  );
+
+  // Keyboard Shortcuts (Ctrl+S, Ctrl+Z, Ctrl+Y)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === "s" || e.key === "S") {
+          e.preventDefault();
+          onSave();
+        } else if (e.key === "z" || e.key === "Z") {
+          e.preventDefault();
+          if (e.shiftKey) {
+            if (canRedo) redo();
+          } else {
+            if (canUndo) undo();
+          }
+        } else if (e.key === "y" || e.key === "Y") {
+          e.preventDefault();
+          if (canRedo) redo();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onSave, undo, redo, canUndo, canRedo]);
+
+  const previewTheme = useMemo(() => {
+    const baseTheme = STOREFRONT_THEME_PRESETS[themeId] || STOREFRONT_THEME_PRESETS["modern-minimal"];
+    return resolveStorefrontTheme({
+      themeId,
+      theme: baseTheme,
+      designTokens: currentDesignTokens,
+    });
+  }, [themeId, currentDesignTokens]);
+
+  const activePageConfig = useMemo(() => {
+    const page = previewTheme.pages[activePageKey] || previewTheme.pages["home"] || { sections: [] };
+    return {
+      ...page,
+      sections: page.sections || [],
+    };
+  }, [previewTheme, activePageKey]);
+
+  const activeSections = useMemo(() => {
+    return activePageConfig.sections || [];
+  }, [activePageConfig]);
+
+  const sectionKeys = useMemo(() => {
+    return activeSections.map((s: any, idx: number) => getSectionKey(s, idx));
+  }, [activeSections]);
+
+  // Auto-select first section
+  useEffect(() => {
+    if (activeSections.length > 0 && !selectedSectionKey) {
+      setSelectedSectionKey(getSectionKey(activeSections[0], 0));
+    }
+  }, [activeSections, selectedSectionKey]);
+
+  const selectedSectionConfig = useMemo(() => {
+    if (!selectedSectionKey) return null;
+    return (
+      activeSections.find((s: any, idx: number) => getSectionKey(s, idx) === selectedSectionKey) ||
+      null
+    );
+  }, [activeSections, selectedSectionKey]);
+
+  // Handle Drag End with @dnd-kit arrayMove
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = sectionKeys.indexOf(String(active.id));
+    const newIndex = sectionKeys.indexOf(String(over.id));
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const nextSections = arrayMove(activeSections, oldIndex, newIndex);
+      const nextPages = {
+        ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
+        ...((currentDesignTokens?.pageOverrides as Record<string, unknown>) || {}),
+        [activePageKey]: {
+          ...activePageConfig,
+          sections: nextSections,
+        },
+      };
+
+      handleDesignTokensChange({
+        ...currentDesignTokens,
+        pages: nextPages,
+        pageOverrides: nextPages,
+      });
+    }
+  };
+
+  const handleMoveSection = useCallback(
+    (index: number, direction: "up" | "down") => {
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= activeSections.length) return;
+
+      const nextSections = arrayMove(activeSections, index, targetIndex);
+      const nextPages = {
+        ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
+        ...((currentDesignTokens?.pageOverrides as Record<string, unknown>) || {}),
+        [activePageKey]: {
+          ...activePageConfig,
+          sections: nextSections,
+        },
+      };
+
+      handleDesignTokensChange({
+        ...currentDesignTokens,
+        pages: nextPages,
+        pageOverrides: nextPages,
+      });
+    },
+    [activeSections, currentDesignTokens, activePageKey, activePageConfig, handleDesignTokensChange]
+  );
+
+  const handleDuplicateSection = (index: number) => {
+    const sectionToDup = activeSections[index];
+    if (!sectionToDup) return;
+
+    const nextSections = [...activeSections];
+    const cloned = JSON.parse(JSON.stringify(sectionToDup));
+    if (typeof cloned === "object" && cloned !== null) {
+      cloned.key = `${cloned.type || "section"}-${Date.now()}`;
+    }
+    nextSections.splice(index + 1, 0, cloned);
+
+    const nextPages = {
+      ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
+      ...((currentDesignTokens?.pageOverrides as Record<string, unknown>) || {}),
+      [activePageKey]: {
+        ...activePageConfig,
+        sections: nextSections,
+      },
+    };
+
+    handleDesignTokensChange({
+      ...currentDesignTokens,
+      pages: nextPages,
+      pageOverrides: nextPages,
+    });
+  };
+
+  const handleDeleteSection = (keyToDelete: string) => {
+    const nextSections = activeSections.filter(
+      (s: any, idx: number) => getSectionKey(s, idx) !== keyToDelete
+    );
+
+    if (selectedSectionKey === keyToDelete) {
+      setSelectedSectionKey(nextSections[0] ? getSectionKey(nextSections[0], 0) : "");
+    }
+
+    const nextPages = {
+      ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
+      ...((currentDesignTokens?.pageOverrides as Record<string, unknown>) || {}),
+      [activePageKey]: {
+        ...activePageConfig,
+        sections: nextSections,
+      },
+    };
+
+    handleDesignTokensChange({
+      ...currentDesignTokens,
+      pages: nextPages,
+      pageOverrides: nextPages,
+    });
+  };
+
+  const handleAddSection = (sectionType: string) => {
+    const newKey = `${sectionType}-${Date.now()}`;
+    const nextSections = [
+      ...activeSections,
+      {
+        type: sectionType,
+        key: newKey,
+        settings: {},
+      },
+    ];
+
+    const nextPages = {
+      ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
+      ...((currentDesignTokens?.pageOverrides as Record<string, unknown>) || {}),
+      [activePageKey]: {
+        ...activePageConfig,
+        sections: nextSections,
+      },
+    };
+
+    setSelectedSectionKey(newKey);
+
+    handleDesignTokensChange({
+      ...currentDesignTokens,
+      pages: nextPages,
+      pageOverrides: nextPages,
+    });
+  };
+
+  const handleUpdateSectionField = (field: string, value: any) => {
+    if (!selectedSectionKey) return;
+
+    const nextSections = activeSections.map((s: any, idx: number) => {
+      const key = getSectionKey(s, idx);
+      if (key !== selectedSectionKey) return s;
+
+      const base = typeof s === "string" ? { type: s } : { ...s };
+      const baseSettings =
+        typeof base.settings === "object" && base.settings !== null ? { ...base.settings } : {};
+
+      baseSettings[field] = value;
+
+      return {
+        ...base,
+        [field]: value,
+        settings: baseSettings,
+      };
+    });
+
+    const nextPages = {
+      ...((currentDesignTokens?.pages as Record<string, unknown>) || {}),
+      ...((currentDesignTokens?.pageOverrides as Record<string, unknown>) || {}),
+      [activePageKey]: {
+        ...activePageConfig,
+        sections: nextSections,
+      },
+    };
+
+    handleDesignTokensChange({
+      ...currentDesignTokens,
+      pages: nextPages,
+      pageOverrides: nextPages,
+    });
+  };
+
+  return {
+    activePageKey,
+    setActivePageKey,
+    selectedSectionKey,
+    setSelectedSectionKey,
+    currentDesignTokens,
+    previewTheme,
+    activePageConfig,
+    activeSections,
+    sectionKeys,
+    selectedSectionConfig,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+    handleDesignTokensChange,
+    handleDragEnd,
+    handleMoveSection,
+    handleDuplicateSection,
+    handleDeleteSection,
+    handleAddSection,
+    handleUpdateSectionField,
+  };
+}

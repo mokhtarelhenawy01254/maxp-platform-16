@@ -1,20 +1,18 @@
 import React from "react";
 import {
   ArrowLeftIcon,
-  ArrowPathIcon,
-  ArrowTopRightOnSquareIcon,
   ArrowUturnLeftIcon,
   ArrowUturnRightIcon,
-  CheckCircleIcon,
   ComputerDesktopIcon,
   DevicePhoneMobileIcon,
   DeviceTabletIcon,
-  PaintBrushIcon,
-  SparklesIcon,
-  Squares2X2Icon,
+  EyeIcon,
+  CheckCircleIcon,
+  ArrowPathIcon,
   AdjustmentsHorizontalIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
-import { type StudioDeviceMode } from "./StudioTypes";
+import type { StudioDeviceMode, StudioZoomLevel } from "./StudioTypes";
 import { StudioPageSelector } from "./StudioPageSelector";
 
 interface StudioTopBarProps {
@@ -27,9 +25,11 @@ interface StudioTopBarProps {
   canRedo: boolean;
   saving: boolean;
   previewUrl?: string;
-  isLayersOpen?: boolean;
+  zoomLevel?: StudioZoomLevel;
+  onZoomChange?: (zoom: StudioZoomLevel) => void;
+  showSpacingOverlay?: boolean;
+  onToggleSpacingOverlay?: () => void;
   isInspectorOpen?: boolean;
-  onToggleLayers?: () => void;
   onToggleInspector?: () => void;
   onBack: () => void;
   onPageChange: (pageKey: string) => void;
@@ -51,9 +51,11 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
   canRedo,
   saving,
   previewUrl,
-  isLayersOpen = true,
-  isInspectorOpen = false,
-  onToggleLayers,
+  zoomLevel = 1,
+  onZoomChange,
+  showSpacingOverlay = true,
+  onToggleSpacingOverlay,
+  isInspectorOpen = true,
   onToggleInspector,
   onBack,
   onPageChange,
@@ -65,179 +67,208 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
   onOpenPreview,
 }) => {
   return (
-    <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-border/80 bg-background/95 px-3 backdrop-blur-md transition-all sm:px-6">
-      {/* Left: Breadcrumbs & Store Info */}
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-50 flex h-[52px] w-full items-center justify-between border-b border-[#0c0d0f] bg-[#17181c] px-3 text-[#e8eaee] select-none">
+      {/* 1. Left Section (RTL Start): Back, Mark, Site, Autosave */}
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={onBack}
-          className="rounded-xl border border-border p-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+          className="rounded-lg p-1.5 text-[#9ba0a8] hover:bg-[#202226] hover:text-white transition-colors"
           title="العودة لإعدادات المتجر"
         >
           <ArrowLeftIcon className="h-4 w-4 rtl:rotate-180" />
         </button>
 
-        <div className="hidden sm:block">
-          <div className="flex items-center gap-2">
-            <span className="font-black text-foreground text-xs sm:text-sm">{storeName}</span>
-            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-black uppercase text-primary tracking-wider">
-              {themeName}
-            </span>
+        {/* Brand Mark */}
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#3b82f6] to-[#1d4ed8] text-[13px] font-black text-white shadow-sm font-sans">
+          م
+        </div>
+
+        {/* Site / Page Selector */}
+        <div className="flex items-center gap-1.5">
+          <StudioPageSelector
+            activePageKey={activePageKey}
+            onPageChange={onPageChange}
+          />
+        </div>
+
+        {/* Autosave badge */}
+        <div className="hidden lg:flex items-center gap-1.5 rounded-lg bg-[#1e2430] px-2.5 py-1 text-[11px] font-medium text-[#8fa4c8]">
+          {saving ? (
+            <>
+              <ArrowPathIcon className="h-3.5 w-3.5 animate-spin text-[#3b82f6]" />
+              <span>جاري الحفظ…</span>
+            </>
+          ) : hasPendingChanges ? (
+            <>
+              <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+              <span>تعديلات غير محفوظة</span>
+            </>
+          ) : (
+            <>
+              <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-400" />
+              <span>☁ تم الحفظ التلقائي</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* 2. Center: Responsive Breakpoints with Pixel Badges */}
+      <div className="flex items-center rounded-xl bg-[#1d1f24] p-1 gap-1 border border-[#2a2d33]">
+        {/* Desktop 1280 */}
+        <button
+          type="button"
+          onClick={() => onDeviceChange("desktop")}
+          className={`flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-all ${
+            deviceMode === "desktop"
+              ? "bg-[#34383f] text-white shadow-xs"
+              : "text-[#9ba0a8] hover:text-[#e8eaee]"
+          }`}
+          title="سطح المكتب (1280px)"
+        >
+          <ComputerDesktopIcon className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">سطح المكتب</span>
+          <span className={`rounded px-1.5 py-0.5 text-[9.5px] font-mono ${
+            deviceMode === "desktop" ? "bg-[#464b54] text-[#d5d9df]" : "bg-[#2a2d33] text-[#808791]"
+          }`}>
+            1280
+          </span>
+        </button>
+
+        {/* Tablet 768 */}
+        <button
+          type="button"
+          onClick={() => onDeviceChange("tablet")}
+          className={`flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold transition-all ${
+            deviceMode === "tablet"
+              ? "bg-[#34383f] text-white shadow-xs"
+              : "text-[#9ba0a8] hover:text-[#e8eaee]"
+          }`}
+          title="شاشة تابلت (768px)"
+        >
+          <DeviceTabletIcon className="h-3.5 w-3.5" />
+          <span className={`rounded px-1.5 py-0.5 text-[9.5px] font-mono ${
+            deviceMode === "tablet" ? "bg-[#464b54] text-[#d5d9df]" : "bg-[#2a2d33] text-[#808791]"
+          }`}>
+            768
+          </span>
+        </button>
+
+        {/* Mobile 375 */}
+        <button
+          type="button"
+          onClick={() => onDeviceChange("mobile")}
+          className={`flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold transition-all ${
+            deviceMode === "mobile"
+              ? "bg-[#34383f] text-white shadow-xs"
+              : "text-[#9ba0a8] hover:text-[#e8eaee]"
+          }`}
+          title="هاتف جوال (375px)"
+        >
+          <DevicePhoneMobileIcon className="h-3.5 w-3.5" />
+          <span className={`rounded px-1.5 py-0.5 text-[9.5px] font-mono ${
+            deviceMode === "mobile" ? "bg-[#464b54] text-[#d5d9df]" : "bg-[#2a2d33] text-[#808791]"
+          }`}>
+            375
+          </span>
+        </button>
+      </div>
+
+      {/* 3. Right: Zoom, Spacing Guides, Undo/Redo, Preview, Save */}
+      <div className="flex items-center gap-1.5">
+        {/* Zoom Selector */}
+        {onZoomChange && (
+          <div className="hidden xl:flex items-center gap-1 text-[11px] text-[#9ba0a8] px-1">
+            <button
+              type="button"
+              onClick={() => onZoomChange(zoomLevel === 1 ? 0.75 : zoomLevel === 0.75 ? 0.5 : 1)}
+              className="rounded-md bg-[#202226] px-2 py-1 text-[10.5px] hover:text-white"
+            >
+              {Math.round(zoomLevel * 100)}% ▾
+            </button>
           </div>
-          <p className="text-[10px] text-muted-foreground">استوديو التصميم البصري 2026</p>
-        </div>
-      </div>
+        )}
 
-      {/* Center: Page Switcher & Responsive Device Selector */}
-      <div className="flex items-center gap-2">
-        {/* Page Switcher Dropdown */}
-        <StudioPageSelector
-          activePageKey={activePageKey}
-          onPageChange={onPageChange}
-        />
-
-        {/* Device Switcher (Desktop / Tablet / Mobile) */}
-        <div className="flex items-center rounded-xl border border-border bg-muted/40 p-0.5">
+        {/* Spacing Overlay Toggle */}
+        {onToggleSpacingOverlay && (
           <button
             type="button"
-            onClick={() => onDeviceChange("desktop")}
-            className={`rounded-lg p-1.5 transition-all ${
-              deviceMode === "desktop"
-                ? "bg-card text-primary shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+            onClick={onToggleSpacingOverlay}
+            className={`hidden sm:flex h-8 items-center gap-1 rounded-lg px-2 text-[11px] font-medium transition-colors ${
+              showSpacingOverlay
+                ? "bg-[#26312a] text-[#3faa6f] border border-[#3faa6f]/30"
+                : "text-[#9ba0a8] hover:bg-[#202226] hover:text-white"
             }`}
-            title="معاينة شاشة الكمبيوتر (100%)"
+            title={showSpacingOverlay ? "إخفاء محدد المسافات الملوّن" : "إظهار محدد المسافات الملوّن"}
           >
-            <ComputerDesktopIcon className="h-4 w-4" />
+            <span className="h-2 w-2 rounded-full bg-[#3faa6f]" />
+            <span className="hidden md:inline">المسافات</span>
           </button>
-          <button
-            type="button"
-            onClick={() => onDeviceChange("tablet")}
-            className={`rounded-lg p-1.5 transition-all ${
-              deviceMode === "tablet"
-                ? "bg-card text-primary shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            title="معاينة شاشة التابلت (768px)"
-          >
-            <DeviceTabletIcon className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onDeviceChange("mobile")}
-            className={`rounded-lg p-1.5 transition-all ${
-              deviceMode === "mobile"
-                ? "bg-card text-primary shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            title="معاينة الهاتف المحمول (390px)"
-          >
-            <DevicePhoneMobileIcon className="h-4 w-4" />
-          </button>
-        </div>
+        )}
 
-        {/* Panel Toggles (Desktop only) */}
-        <div className="hidden md:flex items-center gap-1 border-s border-border ps-2 ms-0.5">
-          {onToggleLayers && (
-            <button
-              type="button"
-              onClick={onToggleLayers}
-              className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all ${
-                isLayersOpen
-                  ? "bg-primary/10 text-primary border border-primary/20"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
-              }`}
-              title={isLayersOpen ? "إخفاء شجرة الهيكل" : "إظهار شجرة الهيكل"}
-            >
-              <Squares2X2Icon className="h-4 w-4" />
-              <span className="hidden xl:inline">الهيكل</span>
-            </button>
-          )}
-
-          {onToggleInspector && (
-            <button
-              type="button"
-              onClick={onToggleInspector}
-              className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all ${
-                isInspectorOpen
-                  ? "bg-primary/10 text-primary border border-primary/20"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
-              }`}
-              title={isInspectorOpen ? "إخفاء لوحة الخصائص" : "إظهار لوحة الخصائص"}
-            >
-              <AdjustmentsHorizontalIcon className="h-4 w-4" />
-              <span className="hidden xl:inline">الخصائص</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Right: History, Discard, Preview, and Save Button */}
-      <div className="flex items-center gap-2">
         {/* Undo / Redo */}
-        <div className="hidden items-center gap-1 sm:flex">
-          <button
-            type="button"
-            onClick={onUndo}
-            disabled={!canUndo}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-all hover:bg-accent hover:text-foreground disabled:opacity-40"
-            title="تراجع (Ctrl+Z)"
-          >
-            <ArrowUturnLeftIcon className="h-3.5 w-3.5 rtl:rotate-180" />
-          </button>
-          <button
-            type="button"
-            onClick={onRedo}
-            disabled={!canRedo}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-all hover:bg-accent hover:text-foreground disabled:opacity-40"
-            title="إعادة (Ctrl+Y)"
-          >
-            <ArrowUturnRightIcon className="h-3.5 w-3.5 rtl:rotate-180" />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onUndo}
+          disabled={!canUndo}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-[#c3c7cd] hover:bg-[#202226] disabled:opacity-30"
+          title="تراجع (Ctrl+Z)"
+        >
+          <ArrowUturnLeftIcon className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={onRedo}
+          disabled={!canRedo}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-[#c3c7cd] hover:bg-[#202226] disabled:opacity-30"
+          title="إعادة (Ctrl+Y)"
+        >
+          <ArrowUturnRightIcon className="h-3.5 w-3.5" />
+        </button>
 
-        {/* Discard Changes Button (Visible only when changes are pending) */}
-        {hasPendingChanges && onDiscard && (
+        {/* Inspector Toggle */}
+        {onToggleInspector && (
           <button
             type="button"
-            onClick={onDiscard}
-            className="hidden sm:inline-flex h-9 items-center rounded-xl border border-destructive/30 bg-destructive/5 px-3 text-xs font-bold text-destructive transition-all hover:bg-destructive/15 active:scale-95"
-            title="تجاهل كافة التعديلات غير المحفوظة"
+            onClick={onToggleInspector}
+            className={`hidden lg:flex h-8 items-center gap-1 rounded-lg px-2 text-[11px] font-medium transition-colors ${
+              isInspectorOpen
+                ? "bg-[#2b6cf6]/20 text-[#60a5fa] border border-[#2b6cf6]/40"
+                : "text-[#9ba0a8] hover:bg-[#202226] hover:text-white"
+            }`}
+            title={isInspectorOpen ? "إخفاء لوحة الفاحص" : "إظهار لوحة الفاحص"}
           >
-            تجاهل التعديلات
+            <AdjustmentsHorizontalIcon className="h-3.5 w-3.5" />
+            <span>الفاحص</span>
           </button>
         )}
 
         {/* Live Preview Button */}
-        {previewUrl ? (
-          <button
-            type="button"
-            onClick={onOpenPreview}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs font-bold text-muted-foreground transition-all hover:bg-accent hover:text-foreground active:scale-95"
-            title="معاينة المتجر في تبويب جديد"
-          >
-            <ArrowTopRightOnSquareIcon className="h-4 w-4" />
-            <span className="hidden lg:inline">معاينة المتجر</span>
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={onOpenPreview}
+          className="flex h-8 items-center gap-1.5 rounded-lg border border-[#32353b] bg-[#202226] px-3 text-xs font-semibold text-[#e8eaee] hover:bg-[#282b30] hover:text-white transition-colors"
+          title="معاينة المتجر في تبويب مستقل"
+        >
+          <EyeIcon className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">معاينة</span>
+        </button>
 
-        {/* Save Button */}
+        {/* Publish / Save Button */}
         <button
           type="button"
           onClick={onSave}
-          disabled={saving || !hasPendingChanges}
-          className={`inline-flex h-9 items-center gap-2 rounded-xl px-4 text-xs font-black transition-all active:scale-95 ${
-            hasPendingChanges
-              ? "bg-primary text-primary-foreground shadow-md hover:bg-primary/90"
-              : "bg-muted text-muted-foreground opacity-70 hover:opacity-100"
-          }`}
+          disabled={saving}
+          className="flex h-8 items-center gap-1.5 rounded-lg bg-[#2b6cf6] px-4 text-xs font-bold text-white shadow-md hover:bg-[#1d5ce6] active:scale-95 transition-all disabled:opacity-50"
         >
           {saving ? (
-            <ArrowPathIcon className="h-4 w-4 animate-spin" />
+            <>
+              <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
+              <span>جاري النشر…</span>
+            </>
           ) : (
-            <CheckCircleIcon className="h-4 w-4" />
+            <span>نشر</span>
           )}
-          <span>{saving ? "جاري الحفظ..." : hasPendingChanges ? "حفظ التعديلات" : "محفوظ"}</span>
         </button>
       </div>
     </header>
