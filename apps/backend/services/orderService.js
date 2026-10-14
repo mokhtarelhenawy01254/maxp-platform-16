@@ -2076,6 +2076,9 @@ class OrderService {
           where: { id: order.id },
           data: {
             status: status,
+            // 🛡️ PRODUCTION-FIX (custom-status-persist): الكود المخصص بيتخزن جنب الـ enum،
+            // وبيتمسح لما التاجر يرجّع لحالة نظامية مباشرة (مش مخصصة).
+            customStatusCode: isRequestedCustom ? originalRequestedStatus : null,
             notes: finalOrderNotes,
             ...((status === 'RETURNED' || status === 'PARTIALLY_RETURNED' || String(originalRequestedStatus || '').toUpperCase().includes('RETURN')) && notes ? { turboReturnReason: notes } : {}),
             ...(nextMetadata ? { metadata: nextMetadata } : {}),
