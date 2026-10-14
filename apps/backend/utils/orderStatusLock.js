@@ -6,18 +6,35 @@
 //
 // - allowStatusEdit = true  (مسموح): الأوردرات في هذه الحالة قابلة للتعديل.
 // - allowStatusEdit = false (غير مسموح): أي طلب موجود حالياً في هذه الحالة
-//   لا يستطيع أي مستخدم أو نظام تغيير حالته (يُرفض بكود 403) حتى يتم فك
+//   لا يستطيع أي مستخدم أو نظام تعديل بياناته (يُرفض بكود 403) حتى يتم فك
 //   القفل من صفحة الإعدادات.
 //
-// ملاحظة: order.status يخزّن القيمة الصالحة من الـ enum (أو mapsToSystem للحالات
-// المخصصة)، لذلك نبحث في orderStatusConfig بالكود أو بـ mapsToSystem.
+// ملاحظة: يتم التحقق بالكود الفعلي للطلب (customStatusCode أولاً، ثم status النظامي).
+// البحث يتم بمطابقة صريحة لـ code لتجنب قفل الحالات النظامية عن طريق الخطأ
+// عبر الحالات المخصصة التي تشير إليها بـ mapsToSystem.
 // ═══════════════════════════════════════════════════════════════
 
-const { getSharedPrismaClient } = require('../services/sharedDatabase');
+let _getSharedPrismaClient = null;
+const resolvePrisma = (prisma) => {
+  if (prisma) return prisma;
+  if (!_getSharedPrismaClient) {
+    _getSharedPrismaClient = require('../services/sharedDatabase').getSharedPrismaClient;
+  }
+  return _getSharedPrismaClient();
+};
 
-const createLockError = (currentStatusCode = '') => {
+const resolveStatusCode = (statusOrOrder) => {
+  if (!statusOrOrder) return '';
+  if (typeof statusOrOrder === 'object') {
+    return String(statusOrOrder.customStatusCode || statusOrOrder.status || '').trim().toUpperCase();
+  }
+  return String(statusOrOrder).trim().toUpperCase();
+};
+
+const createLockError = (currentStatusOrOrder = '') => {
+  const code = resolveStatusCode(currentStatusOrOrder);
   const error = new Error(
-    `حالة هذا الطلب (${currentStatusCode}) مضبوطة حالياً على "غير مسموح بالتعديل". لتمكين تعديل بيانات الطلب، يُرجى تفعيل خيار "مسموح بالتعديل" لهذه الحالة من صفحة (إعدادات الطلبات ← حالات الطلب).`
+    `حالة هذا الطلب (${code}) مضبوطة حالياً على "غير مسموح بالتعديل". لتمكين تعديل بيانات الطلب، يُرجى تفعيل خيار "مسموح بالتعديل" لهذه الحالة من صفحة (إعدادات الطلبات ← حالات الطلب).`
   );
   error.statusCode = 403;
   return error;
@@ -27,20 +44,17 @@ const createLockError = (currentStatusCode = '') => {
  * هل الحالة الحالية للطلب مقفلة (غير مسموح تعديل بيانات الأوردر) لهذه الشركة؟
  * @param {object} prisma (اختياري) - بريزما موجود لتجنب إنشاء اتصال جديد
  * @param {string} companyId
- * @param {string} currentStatusCode - الحالة الحالية للطلب (order.status)
+ * @param {string|object} currentStatusOrOrder - كود الحالة أو كائن الطلب (يحوي customStatusCode أو status)
  */
-const isOrderStatusEditingLocked = async (prisma = null, companyId, currentStatusCode) => {
-  if (!companyId || !currentStatusCode) return false;
-  const client = prisma || getSharedPrismaClient();
-  const code = String(currentStatusCode || '').trim().toUpperCase();
+const isOrderStatusEditingLocked = async (prisma = null, companyId, currentStatusOrOrder) => {
+  const code = resolveStatusCode(currentStatusOrOrder);
+  if (!companyId || !code) return false;
+  const client = resolvePrisma(prisma);
   try {
     const config = await client.orderStatusConfig.findFirst({
       where: {
         companyId,
-        OR: [
-          { code: { equals: code, mode: 'insensitive' } },
-          { mapsToSystem: code },
-        ],
+        code: { equals: code, mode: 'insensitive' },
       },
       select: { allowStatusEdit: true },
     });
@@ -55,15 +69,17 @@ const isOrderStatusEditingLocked = async (prisma = null, companyId, currentStatu
  * يرفض محاولة تعديل بيانات الطلب إذا كانت الحالة الحالية للطلب مقفلة.
  * @param {object} prisma
  * @param {string} companyId
- * @param {string} currentStatusCode - الحالة الحالية للطلب
+ * @param {string|object} currentStatusOrOrder - كود الحالة أو كائن الطلب
  */
-const assertOrderStatusEditable = async (prisma, companyId, currentStatusCode) => {
-  if (await isOrderStatusEditingLocked(prisma, companyId, currentStatusCode)) {
-    throw createLockError(currentStatusCode);
+const assertOrderStatusEditable = async (prisma, companyId, currentStatusOrOrder) => {
+  if (await isOrderStatusEditingLocked(prisma, companyId, currentStatusOrOrder)) {
+    throw createLockError(currentStatusOrOrder);
   }
 };
 
 module.exports = {
   isOrderStatusEditingLocked,
   assertOrderStatusEditable,
+  resolveStatusCode,
+  createLockError,
 };

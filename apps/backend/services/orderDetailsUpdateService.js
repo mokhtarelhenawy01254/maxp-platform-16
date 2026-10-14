@@ -446,7 +446,7 @@ class OrderDetailsUpdateService {
       // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): لو الحالة الحالية غير مسموح
       // تعديل بياناتها، نرفض أي تعديل (اسم/تليفون/عنوان/ملاحظات/ميتا).
       const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
-      await assertOrderStatusEditable(prisma, companyId, regularOrder.status);
+      await assertOrderStatusEditable(prisma, companyId, regularOrder.customStatusCode || regularOrder.status);
 
       const diffDetails = computeCustomerDetailsDiff(regularOrder, input);
       const { metadata, shippingAddress, updateData } = this.buildRegularUpdateData(regularOrder, input);
@@ -478,7 +478,7 @@ class OrderDetailsUpdateService {
     if (guestOrder) {
       // 🔒 قفل تعديل بيانات الأوردر (لكل حالة) — طلبات الضيوف.
       const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
-      await assertOrderStatusEditable(prisma, companyId, guestOrder.status);
+      await assertOrderStatusEditable(prisma, companyId, guestOrder.customStatusCode || guestOrder.status);
 
       const diffDetails = computeCustomerDetailsDiff(guestOrder, input);
       const { metadata, shippingAddress, updateData } = this.buildGuestUpdateData(guestOrder, input);

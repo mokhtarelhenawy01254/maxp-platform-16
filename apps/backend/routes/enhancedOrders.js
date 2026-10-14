@@ -1074,7 +1074,7 @@ router.patch('/:id/validation', async (req, res) => {
 
     // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): تحديث التحقق/الملاحظات يعدّل بيانات الطلب.
     const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
-    await assertOrderStatusEditable(enhancedOrderService.getPrisma(), companyId, order.status);
+    await assertOrderStatusEditable(enhancedOrderService.getPrisma(), companyId, order.customStatusCode || order.status);
 
     const updatedOrder = await enhancedOrderService.getPrisma().order.update({
       where: { id },

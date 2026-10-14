@@ -349,7 +349,7 @@ async function updateExistingOrder(prisma, existingOrder, orderData, companyId, 
     // (المنتجات/الأسعار/العميل...). لو الحالة الحالية غير مسموح تعديل بياناتها،
     // نتخطى تحديث هذا الطلب.
     const { isOrderStatusEditingLocked } = require('../utils/orderStatusLock');
-    if (await isOrderStatusEditingLocked(prisma, companyId, existingOrder.status)) {
+    if (await isOrderStatusEditingLocked(prisma, companyId, existingOrder.customStatusCode || existingOrder.status)) {
         console.warn(`🔒 [WOO-IMPORT] Order ${existingOrder.orderNumber} is in a locked status — skipping content update.`);
         return { status: 'skipped', order: existingOrder };
     }

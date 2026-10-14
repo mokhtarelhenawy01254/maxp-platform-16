@@ -146,7 +146,7 @@ async function importEasyOrdersBatch(prisma, companyId, orders, options = {}) {
                 // (المنتجات/الأسعار/العميل...). لو الحالة الحالية غير مسموح تعديل
                 // بياناتها، نتخطى تحديث هذا الطلب.
                 const { isOrderStatusEditingLocked } = require('../utils/orderStatusLock');
-                if (await isOrderStatusEditingLocked(prisma, companyId, existingOrder.status)) {
+                if (await isOrderStatusEditingLocked(prisma, companyId, existingOrder.customStatusCode || existingOrder.status)) {
                     stats.failed++;
                     console.warn(`🔒 [EASY-ORDER] Order ${existingOrder.orderNumber} is in a locked status — skipping content update.`);
                     continue;

@@ -6024,7 +6024,7 @@ router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, async (
     if (regularOrder) {
       // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): إضافة ملاحظة تعدّل بيانات الطلب.
       const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
-      await assertOrderStatusEditable(getSharedPrismaClient(), companyId, regularOrder.status);
+      await assertOrderStatusEditable(getSharedPrismaClient(), companyId, regularOrder.customStatusCode || regularOrder.status);
 
       const note = await getSharedPrismaClient().orderNote.create({
         data: {
@@ -6058,7 +6058,7 @@ router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, async (
     if (guestOrder) {
       // 🔒 قفل تعديل بيانات الأوردر (لكل حالة) — طلبات الضيوف.
       const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
-      await assertOrderStatusEditable(getSharedPrismaClient(), companyId, guestOrder.status);
+      await assertOrderStatusEditable(getSharedPrismaClient(), companyId, guestOrder.customStatusCode || guestOrder.status);
 
       const note = await getSharedPrismaClient().orderNote.create({
         data: {
@@ -6111,8 +6111,8 @@ router.patch('/simple/notes/:noteId', verifyToken.authenticateToken, async (req,
     const existingNote = await getSharedPrismaClient().orderNote.findUnique({
       where: { id: noteId },
       include: {
-        order: { select: { companyId: true, status: true } },
-        guestOrder: { select: { companyId: true, status: true } },
+        order: { select: { companyId: true, status: true, customStatusCode: true } },
+        guestOrder: { select: { companyId: true, status: true, customStatusCode: true } },
       }
     });
 
@@ -6133,7 +6133,8 @@ router.patch('/simple/notes/:noteId', verifyToken.authenticateToken, async (req,
 
     // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): تعديل الملاحظة يعدّل بيانات الطلب.
     const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
-    const lockStatus = existingNote.order?.status || existingNote.guestOrder?.status;
+    const lockOrder = existingNote.order || existingNote.guestOrder;
+    const lockStatus = lockOrder?.customStatusCode || lockOrder?.status;
     await assertOrderStatusEditable(getSharedPrismaClient(), companyId, lockStatus);
 
     const updatedNote = await getSharedPrismaClient().orderNote.update({
@@ -6173,8 +6174,8 @@ router.delete('/simple/notes/:noteId', verifyToken.authenticateToken, async (req
     const existingNote = await getSharedPrismaClient().orderNote.findUnique({
       where: { id: noteId },
       include: {
-        order: { select: { companyId: true, status: true } },
-        guestOrder: { select: { companyId: true, status: true } },
+        order: { select: { companyId: true, status: true, customStatusCode: true } },
+        guestOrder: { select: { companyId: true, status: true, customStatusCode: true } },
       }
     });
 
@@ -6195,8 +6196,9 @@ router.delete('/simple/notes/:noteId', verifyToken.authenticateToken, async (req
 
     // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): حذف الملاحظة يعدّل بيانات الطلب.
     const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
-    const lockStatus = existingNote.order?.status || existingNote.guestOrder?.status;
-    await assertOrderStatusEditable(getSharedPrismaClient(), companyId, lockStatus);
+    const lockOrderDelete = existingNote.order || existingNote.guestOrder;
+    const lockStatusDelete = lockOrderDelete?.customStatusCode || lockOrderDelete?.status;
+    await assertOrderStatusEditable(getSharedPrismaClient(), companyId, lockStatusDelete);
 
     await getSharedPrismaClient().orderNote.delete({ where: { id: noteId } });
 
@@ -6243,6 +6245,10 @@ router.post('/simple/:orderNumber/discount-approval', verifyToken.authenticateTo
     });
 
     if (regularOrder) {
+      // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): اعتماد أو رفض الخصم يعدّل بيانات الطلب وإجماليه.
+      const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
+      await assertOrderStatusEditable(prisma, companyId, regularOrder.customStatusCode || regularOrder.status);
+
       const metadata = parseOrderMetadata(regularOrder.metadata) || {};
       const currentDiscount = Number(regularOrder.discount || 0);
 
@@ -6355,6 +6361,10 @@ router.post('/simple/:orderNumber/discount-approval', verifyToken.authenticateTo
     });
 
     if (guestOrder) {
+      // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): اعتماد أو رفض الخصم لطلبات الضيوف.
+      const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
+      await assertOrderStatusEditable(prisma, companyId, guestOrder.customStatusCode || guestOrder.status);
+
       const metadata = parseOrderMetadata(guestOrder.metadata) || {};
       const currentDiscount = Number(guestOrder.discountAmount || 0);
 
@@ -6446,9 +6456,11 @@ router.post('/simple/:orderNumber/discount-approval', verifyToken.authenticateTo
     });
   } catch (error) {
     console.error('❌ Error in discount approval endpoint:', error);
-    return res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    const message = statusCode === 403 ? error.message : 'فشل في معالجة اعتماد/رفض الخصم';
+    return res.status(statusCode).json({
       success: false,
-      message: 'فشل في معالجة اعتماد/رفض الخصم',
+      message,
       error: error.message
     });
   }
@@ -9330,7 +9342,7 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
       // 🔒 قفل تعديل بيانات الأوردر (لكل حالة): تعديل المنتجات/الأسعار — لو
       // الحالة الحالية غير مسموح تعديل بياناتها، نرفض.
       const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
-      await assertOrderStatusEditable(getSharedPrismaClient(), companyId, regularOrder.status);
+      await assertOrderStatusEditable(getSharedPrismaClient(), companyId, regularOrder.customStatusCode || regularOrder.status);
 
       const oldDiscount = Number(regularOrder.discount) || 0;
       const nextDiscount = discount !== undefined ? Math.max(0, parseFloat(discount) || 0) : oldDiscount;
@@ -9538,7 +9550,7 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
     if (guestOrder) {
       // 🔒 قفل تعديل بيانات الأوردر (لكل حالة) — طلبات الضيوف (منتجات/أسعار).
       const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
-      await assertOrderStatusEditable(getSharedPrismaClient(), companyId, guestOrder.status);
+      await assertOrderStatusEditable(getSharedPrismaClient(), companyId, guestOrder.customStatusCode || guestOrder.status);
 
       const oldGuestDiscount = Number(guestOrder.discountAmount) || 0;
       const nextGuestDiscount = discount !== undefined ? Math.max(0, parseFloat(discount) || 0) : oldGuestDiscount;
@@ -9660,7 +9672,7 @@ router.post('/simple/:orderNumber/schedule', verifyToken.authenticateToken, asyn
           { orderNumber, companyId }
         ]
       },
-      select: { id: true, orderNumber: true, status: true, isScheduled: true }
+      select: { id: true, orderNumber: true, status: true, customStatusCode: true, isScheduled: true }
     });
 
     if (!order) {
@@ -9671,7 +9683,7 @@ router.post('/simple/:orderNumber/schedule', verifyToken.authenticateToken, asyn
     // (تاريخ التسليم/ملاحظات الجدولة) — لو الحالة الحالية غير مسموح تعديل
     // بياناتها، نرفض.
     const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
-    await assertOrderStatusEditable(prisma, companyId, order.status);
+    await assertOrderStatusEditable(prisma, companyId, order.customStatusCode || order.status);
 
     if (!scheduledDeliveryDate) {
       return res.status(400).json({ success: false, message: 'تاريخ التسليم مطلوب' });
