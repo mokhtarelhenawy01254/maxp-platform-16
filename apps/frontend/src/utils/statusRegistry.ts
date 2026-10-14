@@ -67,10 +67,12 @@ const TURBO_STATUS_DEFS: Record<string, { label: string; labelKey: string; color
   archived:              { label: 'شحنة محذوفة',            labelKey: 'orders.turboArchived',       colorClass: 'bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300' },
   returned_resent:       { label: 'معاد إرسالها',           labelKey: 'orders.turboReturnedResent', colorClass: 'bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-900/30 dark:text-sky-300' },
   returned_missing:      { label: 'مرتجع مفقود',            labelKey: 'orders.turboReturnedMissing',colorClass: 'bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-300' },
-   returned_destroyed:    { label: 'مرتجع معدوم',            labelKey: 'orders.turboReturnedDestroyed',colorClass: 'bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-900/40 dark:text-rose-200' },
-   returned_received:     { label: 'مرتجعات وصلتني',          labelKey: 'orders.turboReturnedReceived', colorClass: 'bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300' },
-   returned_to_customer:  { label: 'مرتجعة للعميل',            labelKey: 'orders.turboReturnedToCustomer', colorClass: 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 dark:bg-fuchsia-900/30 dark:text-fuchsia-300' },
-   delayed:               { label: 'مؤجلة مع المندوب',       labelKey: 'orders.turboDelayed',        colorClass: 'bg-yellow-50 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-300' },
+  returned_destroyed:    { label: 'مرتجع معدوم',            labelKey: 'orders.turboReturnedDestroyed',colorClass: 'bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-900/40 dark:text-rose-200' },
+  returned_received:     { label: 'مرتجعات وصلتني',          labelKey: 'orders.turboReturnedReceived', colorClass: 'bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300' },
+  returned_to_customer:  { label: 'مرتجعة للعميل',            labelKey: 'orders.turboReturnedToCustomer', colorClass: 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 dark:bg-fuchsia-900/30 dark:text-fuchsia-300' },
+  delayed:               { label: 'مؤجلة مع المندوب',       labelKey: 'orders.turboDelayed',        colorClass: 'bg-yellow-50 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-300' },
+  incomplete:            { label: 'غير مكتملة',            labelKey: 'orders.turboIncomplete',     colorClass: 'bg-zinc-100 text-zinc-700 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300' },
+  turbo_syncing:         { label: 'شحنة مرتبطة — قيد المزامنة', labelKey: 'orders.turboSyncing', colorClass: 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300' },
 };
 
 /** Map any raw turbo alias → canonical code */
@@ -89,10 +91,16 @@ const TURBO_ALIASES: Record<string, string> = {
   '11': 'returned_missing', 'returned_missing': 'returned_missing', 'lost': 'returned_missing', 'status_11': 'returned_missing',
   '12': 'returned_destroyed', 'returned_destroyed': 'returned_destroyed', 'status_12': 'returned_destroyed',
   '13': 'delayed', 'delayed': 'delayed', 'on hold': 'delayed', 'failed delivery': 'delayed', 'rescheduled': 'delayed', 'status_13': 'delayed',
+  '14': 'returned_to_company', 'status_14': 'returned_to_company',
+  '15': 'returned_resent', 'status_15': 'returned_resent',
+  '16': 'returned_missing', 'status_16': 'returned_missing',
+  '17': 'returned_destroyed', 'status_17': 'returned_destroyed',
+  '18': 'incomplete', 'status_18': 'incomplete', 'incomplete': 'incomplete', 'غير مكتملة': 'incomplete',
+  '19': 'remitted', 'status_19': 'remitted',
   'مؤجلة': 'delayed', 'مؤجله': 'delayed', 'مؤجل': 'delayed', 'تأجيل': 'delayed', 'مؤجلة مع المندوب': 'delayed', 'قيد الانتظار مع المندوب': 'delayed',
-   'تم التسليم': 'delivered', 'مرتجع مع الشركة': 'returned_to_company', 'مرتجعات بالشركة': 'returned_to_company',
-   '20': 'returned_received', 'returned_received': 'returned_received', 'status_20': 'returned_received', 'مرتجعات وصلتني': 'returned_received',
-   'returned_to_customer': 'returned_to_customer', 'مرتجعة': 'returned_to_customer',
+  'تم التسليم': 'delivered', 'مرتجع مع الشركة': 'returned_to_company', 'مرتجعات بالشركة': 'returned_to_company',
+  '20': 'returned_received', 'returned_received': 'returned_received', 'status_20': 'returned_received', 'مرتجعات وصلتني': 'returned_received',
+  'returned_to_customer': 'returned_to_customer', 'مرتجعة': 'returned_to_customer',
 };
 
 export interface OrderLike {
@@ -172,16 +180,18 @@ export function getOrderStatusDisplay(order: OrderLike): OrderStatusDisplay {
   }
 
   if (!secondary && (order.turboTrackingNumber || order.turboShipmentId)) {
-    const fallbackDef = getTurboDef('turbo_saved');
-    if (fallbackDef) {
-      secondary = {
-        code: 'turbo_saved',
-        label: `🚚 ${fallbackDef.label}`,
-        labelKey: fallbackDef.labelKey,
-        colorClass: fallbackDef.colorClass,
-        source: 'turbo',
-      };
-    }
+    const neutralDef = getTurboDef('turbo_syncing') || {
+      label: 'شحنة مرتبطة — قيد المزامنة',
+      labelKey: 'orders.turboSyncing',
+      colorClass: 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300',
+    };
+    secondary = {
+      code: 'turbo_syncing',
+      label: `🚚 ${neutralDef.label}`,
+      labelKey: neutralDef.labelKey,
+      colorClass: neutralDef.colorClass,
+      source: 'turbo',
+    };
   }
 
   return { primary, secondary };
