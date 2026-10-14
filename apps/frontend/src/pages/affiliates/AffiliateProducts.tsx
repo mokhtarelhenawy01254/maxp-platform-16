@@ -1,9 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
-import { useTheme } from "../../hooks/useTheme";
-import { useNavigate } from "react-router-dom";
-import { LinkIcon, ShoppingBagIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  Package,
+  Search,
+  Link as LinkIcon,
+  Trash2,
+  ExternalLink,
+  RefreshCw,
+  DollarSign,
+  TrendingUp,
+  Tag,
+} from "lucide-react";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import {
@@ -22,7 +33,7 @@ interface AffiliateProduct {
   product: {
     id: string;
     name: string;
-    images: string;
+    images?: string;
   };
 }
 
@@ -32,14 +43,12 @@ interface ApiSuccess<T> {
   message?: string;
 }
 
-const AffiliateProducts: React.FC = () => {
+export default function AffiliateProducts() {
   const { formatPrice } = useCurrency();
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
-  const navigate = useNavigate();
   const [products, setProducts] = useState<AffiliateProduct[]>([]);
   const [affiliate, setAffiliate] = useState<AffiliateStoreProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   const parseProductImages = (images?: string) => {
     if (!images) return [];
@@ -51,10 +60,6 @@ const AffiliateProducts: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    loadProducts();
-  }, []);
-
   const loadProducts = async () => {
     try {
       setLoading(true);
@@ -62,18 +67,23 @@ const AffiliateProducts: React.FC = () => {
         apiClient.get<ApiSuccess<AffiliateProduct[]>>("/affiliates/products"),
         apiClient.get<ApiSuccess<AffiliateStoreProfile>>("/affiliates/me"),
       ]);
-      if (productsRes.data.success) {
-        setProducts(productsRes.data.data);
-      }
-      if (affiliateRes.data.success) {
+      const rawProducts = productsRes.data?.data ?? productsRes.data;
+      const list = Array.isArray(rawProducts) ? rawProducts : [];
+      setProducts(list);
+
+      if (affiliateRes.data?.success) {
         setAffiliate(affiliateRes.data.data);
       }
-    } catch (error: any) {
+    } catch {
       tToast.error("AffiliateProducts.error_error_ad12");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    void loadProducts();
+  }, []);
 
   const handleUpdateMarkup = async (productId: string, markup: number) => {
     try {
@@ -85,220 +95,293 @@ const AffiliateProducts: React.FC = () => {
       const product = products.find((p) => p.productId === productId);
       if (!product) return;
 
-      const response = await apiClient.put<
-        ApiSuccess<unknown>,
-        { markup: number }
-      >(`/affiliates/products/${product.id}`, { markup });
+      const response = await apiClient.put<ApiSuccess<unknown>, { markup: number }>(
+        `/affiliates/products/${product.id}`,
+        { markup }
+      );
       if (response.data.success) {
         tToast.success("AffiliateProducts.success_update_c846");
-        loadProducts();
+        void loadProducts();
       }
-    } catch (error: any) {
+    } catch {
       tToast.error("AffiliateProducts.error_error_59e1");
     }
   };
 
   const handleRemoveProduct = async (affiliateProductId: string) => {
+    if (!confirm("هل أنت متأكد من إزالة هذا المنتج من كتالوجك؟")) return;
     try {
       const response = await apiClient.delete<ApiSuccess<unknown>>(
-        `/affiliates/products/${affiliateProductId}`,
+        `/affiliates/products/${affiliateProductId}`
       );
       if (response.data.success) {
         tToast.success("AffiliateProducts.msg_46fb");
-        loadProducts();
+        void loadProducts();
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || "حدث خطأ أثناء إزالة المنتج");
     }
   };
 
-  const generateAffiliateLink = async (productId: string) => {
-    return buildAffiliateProductUrl(affiliate, productId);
-  };
+  const safeProducts = useMemo(() => (Array.isArray(products) ? products : []), [products]);
 
-  if (loading) {
+  const filteredProducts = useMemo(() => {
+    if (!search.trim()) return safeProducts;
+    const q = search.toLowerCase();
+    return safeProducts.filter((p) => p.product?.name?.toLowerCase().includes(q));
+  }, [safeProducts, search]);
+
+  const avgMarkup = useMemo(() => {
+    if (safeProducts.length === 0) return 0;
+    const sum = safeProducts.reduce((acc, p) => acc + (Number(p.markup) || 0), 0);
+    return Math.round(sum / safeProducts.length);
+  }, [safeProducts]);
+
+  const avgFinalPrice = useMemo(() => {
+    if (safeProducts.length === 0) return 0;
+    const sum = safeProducts.reduce((acc, p) => acc + (Number(p.finalPrice) || 0), 0);
+    return Math.round(sum / safeProducts.length);
+  }, [safeProducts]);
+
+  if (loading && safeProducts.length === 0) {
     return (
-      <div
-        className={`flex items-center justify-center min-h-screen ${isDark ? "bg-gray-900" : "bg-gray-50"}`}
-      >
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex flex-col items-center justify-center min-h-[350px] gap-2.5 text-muted-foreground">
+        <RefreshCw className="size-5 animate-spin text-primary" />
+        <span className="text-xs font-mono">جاري تحميل كتالوج منتجات المسوق...</span>
       </div>
     );
   }
 
   return (
-    <div
-      className={`min-h-screen ${isDark ? "bg-gray-900" : "bg-gray-50"} p-6`}
-    >
-      <div className="w-full">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1
-              className={`text-3xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}
-            >
-              منتجاتي
+    <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-4" dir="rtl">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/70 pb-3.5">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <Package className="size-4" />
+            </span>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              كتالوج منتجات المسوق
             </h1>
-            <p className={`${isDark ? "text-gray-300" : "text-gray-600"} mt-2`}>
-              إدارة منتجاتك مع هامش الربح
-            </p>
+            <Badge variant="outline" className="text-[11px] font-mono border-border/80 bg-muted/30">
+              {safeProducts.length} منتج مسوق
+            </Badge>
           </div>
-          
+          <p className="text-xs text-muted-foreground mt-1">
+            إدارة منتجاتك المختارة وتحديد هوامش الربح ونسخ روابط البيع بالعمولة
+          </p>
         </div>
 
-        {/* Product Grid / Empty State */}
-        {products.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map((affiliateProduct) => {
-              const images = parseProductImages(affiliateProduct.product.images);
-              const mainImage = images[0] || "/placeholder-product.png";
-              const storefrontUrl = buildAffiliateProductUrl(
-                affiliate,
-                affiliateProduct.productId,
-              );
+        <div className="flex items-center gap-2 self-end sm:self-auto font-mono text-xs">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void loadProducts()}
+            className="h-8 px-2.5 text-xs font-mono gap-1 border-border/70 active:scale-[0.98]"
+          >
+            <RefreshCw className="size-3.5" />
+            <span>تحديث</span>
+          </Button>
+        </div>
+      </div>
 
-              return (
-                <div
-                  key={affiliateProduct.id}
-                  className={`${isDark ? "bg-gray-800" : "bg-white"} rounded-xl shadow-sm border ${isDark ? "border-gray-700" : "border-gray-100"} overflow-hidden hover:shadow-md transition-all group`}
-                >
-                  <div className="relative h-48 overflow-hidden">
+      {/* Telemetry Strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 font-mono">
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-muted-foreground">المنتجات المختارة</p>
+            <p className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums mt-0.5">
+              {safeProducts.length}
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">في كتالوجك الخاص</p>
+          </div>
+          <div className="size-7 rounded-md bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
+            <Package className="size-3.5" />
+          </div>
+        </div>
+
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-emerald-500">متوسط هامش الربح</p>
+            <p className="text-xl font-bold tracking-tight text-emerald-500 font-mono tabular-nums mt-0.5">
+              +{avgMarkup.toLocaleString("en-US")} ج.م
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">ربح القطعة الواحدة</p>
+          </div>
+          <div className="size-7 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+            <TrendingUp className="size-3.5" />
+          </div>
+        </div>
+
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-purple-500">متوسط سعر البيع</p>
+            <p className="text-lg font-bold tracking-tight text-purple-500 font-mono tabular-nums mt-0.5">
+              {avgFinalPrice.toLocaleString("en-US")} ج.م
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">السعر المعروض للعميل</p>
+          </div>
+          <div className="size-7 rounded-md bg-purple-500/10 flex items-center justify-center text-purple-500 border border-purple-500/20">
+            <DollarSign className="size-3.5" />
+          </div>
+        </div>
+
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-amber-500">حالة التتبع</p>
+            <p className="text-sm font-bold tracking-tight text-emerald-500 mt-0.5 font-mono inline-flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              روابط نشطة
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">ربط فوري للعمولات</p>
+          </div>
+          <div className="size-7 rounded-md bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
+            <Tag className="size-3.5" />
+          </div>
+        </div>
+      </div>
+
+      {/* Controls Bar */}
+      <div className="p-2.5 sm:p-3 rounded-lg border border-border/70 bg-card shadow-xs flex items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="size-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Input
+            type="text"
+            className="h-8 pr-8 text-xs font-mono bg-background border-border/70"
+            placeholder="بحث في كتالوج المنتجات..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <span className="text-xs text-muted-foreground font-mono tabular-nums">
+          {filteredProducts.length} منتج
+        </span>
+      </div>
+
+      {/* Product Cards Grid */}
+      {filteredProducts.length === 0 ? (
+        <div className="p-12 text-center rounded-lg border border-border/70 bg-card space-y-2 shadow-xs">
+          <Package className="size-8 mx-auto text-muted-foreground/40" />
+          <h3 className="text-xs font-semibold text-foreground font-mono">كتالوج منتجاتك فارغ</h3>
+          <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
+            قم بتصفح المنتجات المتاحة في المتجر وإضافتها لكتالوجك لتحديد أرباحك ومشاركتها
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filteredProducts.map((p) => {
+            const images = parseProductImages(p.product?.images);
+            const mainImage = images[0] || "/placeholder-product.png";
+            const storefrontUrl = buildAffiliateProductUrl(affiliate, p.productId);
+
+            return (
+              <div
+                key={p.id}
+                className="bg-card border border-border/70 rounded-lg overflow-hidden shadow-xs hover:border-border/90 transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="relative h-40 bg-muted/30 overflow-hidden border-b border-border/60">
                     <img
                       src={mainImage}
-                      alt={affiliateProduct.product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      alt={p.product?.name || "منتج"}
+                      className="w-full h-full object-cover"
                     />
-                    <div className="absolute top-2 left-2">
-                      <span className="px-2 py-1 bg-blue-600 text-white text-[10px] font-bold rounded-lg shadow-lg">
-                        منتجي
-                      </span>
-                    </div>
+                    <Badge className="absolute top-2 left-2 text-[10px] font-mono bg-primary/90 text-primary-foreground">
+                      كتالوجي
+                    </Badge>
                   </div>
-                  <div className="p-4">
-                    <h3
-                      className={`font-bold mb-2 truncate ${isDark ? "text-white" : "text-gray-900"}`}
-                    >
-                      {affiliateProduct.product.name}
+
+                  <div className="p-3.5 space-y-3">
+                    <h3 className="text-xs font-semibold text-foreground truncate">
+                      {p.product?.name || "منتج أفليت"}
                     </h3>
 
-                    <div className="space-y-2 mb-4">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-500">سعر المنصة:</span>
-                        <span
-                          className={`font-medium ${isDark ? "text-gray-300" : "text-gray-700"}`}
-                        >
-                          {formatPrice(affiliateProduct.basePrice)}
+                    <div className="grid grid-cols-3 gap-1.5 p-2 bg-muted/20 border border-border/50 rounded-md font-mono text-center">
+                      <div>
+                        <span className="text-[9px] text-muted-foreground block">سعر التكلفة</span>
+                        <span className="text-[11px] font-semibold text-foreground tabular-nums block mt-0.5">
+                          {formatPrice(p.basePrice)}
                         </span>
                       </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-500">هامش ربحك:</span>
-                        <span className="font-bold text-green-500">
-                          +{formatPrice(affiliateProduct.markup)}
+                      <div>
+                        <span className="text-[9px] text-emerald-500 block">هامش ربحك</span>
+                        <span className="text-[11px] font-bold text-emerald-500 tabular-nums block mt-0.5">
+                          +{formatPrice(p.markup)}
                         </span>
                       </div>
-                      <div
-                        className={`flex justify-between text-sm font-bold border-t pt-2 ${isDark ? "border-gray-700" : "border-gray-100"}`}
-                      >
-                        <span
-                          className={isDark ? "text-white" : "text-gray-900"}
-                        >
-                          السعر للعميل:
-                        </span>
-                        <span className="text-blue-500">
-                          {formatPrice(affiliateProduct.finalPrice)}
+                      <div>
+                        <span className="text-[9px] text-primary block">سعر البيع</span>
+                        <span className="text-[11px] font-bold text-primary tabular-nums block mt-0.5">
+                          {formatPrice(p.finalPrice)}
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex gap-2 mb-4">
-                      <input
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-muted-foreground shrink-0 font-mono">
+                        تعديل الربح:
+                      </span>
+                      <Input
                         type="number"
-                        step="0.01"
+                        step="1"
                         min="0"
-                        defaultValue={affiliateProduct.markup}
+                        defaultValue={p.markup}
                         onBlur={(e) => {
                           const newMarkup = parseFloat(e.target.value);
-                          if (newMarkup !== affiliateProduct.markup) {
-                            handleUpdateMarkup(
-                              affiliateProduct.productId,
-                              newMarkup,
-                            );
+                          if (newMarkup !== p.markup) {
+                            void handleUpdateMarkup(p.productId, newMarkup);
                           }
                         }}
-                        className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
-                          isDark
-                            ? "bg-gray-900 border-gray-700 text-white"
-                            : "bg-gray-50 border-gray-200 text-gray-900"
-                        } outline-none focus:ring-2 focus:ring-blue-500`}
-                        placeholder="تعديل الربح"
+                        className="h-7 text-xs font-mono tabular-nums bg-background border-border/70"
+                        placeholder="هامش الربح"
                       />
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={async () => {
-                          const link = await generateAffiliateLink(
-                            affiliateProduct.productId,
-                          );
-                          const copied = await copyAffiliateText(link);
-                          if (copied) {
-                            tToast.success("AffiliateProducts.msg_0153");
-                            return;
-                          }
-                          tToast.error("AffiliateProducts.msg_ccdb");
-                        }}
-                        className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 text-xs font-bold transition shadow-sm shadow-blue-500/20"
-                      >
-                        <LinkIcon className="h-4 w-4" />
-                        نسخ الرابط
-                      </button>
-                      <a
-                        href={storefrontUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`px-3 py-2 border rounded-lg text-xs font-bold transition ${
-                          isDark
-                            ? "border-gray-700 text-gray-400 hover:bg-gray-700"
-                            : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                        }`}
-                      >
-                        عرض على المتجر
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveProduct(affiliateProduct.id)}
-                        className={`px-3 py-2 border rounded-lg text-xs font-bold transition ${
-                          isDark
-                            ? "border-red-900/60 text-red-300 hover:bg-red-900/20"
-                            : "border-red-100 text-red-600 hover:bg-red-50"
-                        }`}
-                        title="إزالة المنتج من كتالوجي"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
                     </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div
-            className={`text-center py-20 rounded-2xl border ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"} shadow-sm`}
-          >
-            <ShoppingBagIcon
-              className={`h-16 w-16 mx-auto mb-4 opacity-20 ${isDark ? "text-gray-400" : "text-gray-500"}`}
-            />
-            <p
-              className={`mb-6 text-lg font-medium ${isDark ? "text-gray-400" : "text-gray-500"}`}
-            >
-              كتالوجك الشخصي فارغ تماماً
-            </p>
-            
-          </div>
-        )}
-      </div>
+
+                <div className="p-3 pt-0 border-t border-border/50 mt-2 flex items-center gap-1.5 pt-2.5">
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      const link = buildAffiliateProductUrl(affiliate, p.productId);
+                      const copied = await copyAffiliateText(link);
+                      if (copied) {
+                        tToast.success("AffiliateProducts.msg_0153");
+                      } else {
+                        tToast.error("AffiliateProducts.msg_ccdb");
+                      }
+                    }}
+                    className="flex-1 h-7 text-xs font-mono gap-1 active:scale-[0.98]"
+                  >
+                    <LinkIcon className="size-3" />
+                    <span>نسخ الرابط</span>
+                  </Button>
+
+                  <a
+                    href={storefrontUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex size-7 items-center justify-center rounded-md border border-border/70 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                    title="عرض في المتجر"
+                  >
+                    <ExternalLink className="size-3.5" />
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => void handleRemoveProduct(p.id)}
+                    className="inline-flex size-7 items-center justify-center rounded-md border border-border/70 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    title="إزالة المنتج"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
-};
-
-export default AffiliateProducts;
+}

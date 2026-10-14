@@ -1,7 +1,18 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
-import { useTheme } from "../../hooks/useTheme";
+import {
+  UserPlus,
+  Wallet,
+  ShieldCheck,
+  Building2,
+  RefreshCw,
+  ArrowRight,
+  Info,
+} from "lucide-react";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 
@@ -11,10 +22,8 @@ interface ApiSuccess<T> {
   message?: string;
 }
 
-const AffiliateRegister: React.FC = () => {
+export default function AffiliateRegister() {
   const navigate = useNavigate();
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     paymentMethod: "",
@@ -27,215 +36,197 @@ const AffiliateRegister: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.paymentMethod) {
+      toast.error("يرجى اختيار طريقة الدفع لاستلام الأرباح");
+      return;
+    }
     try {
       setLoading(true);
-      const response = await apiClient.post<
-        ApiSuccess<unknown>,
-        typeof formData
-      >("/affiliates/register", formData);
+      const response = await apiClient.post<ApiSuccess<unknown>, typeof formData>(
+        "/affiliates/register",
+        formData
+      );
 
       if (response.data.success) {
         tToast.success("AffiliateRegister.msg_564e");
         navigate("/affiliates/dashboard");
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء التسجيل");
+      toast.error(error.response?.data?.message || "حدث خطأ أثناء تسجيل حساب المسوق");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div
-      className={`min-h-screen ${isDark ? "bg-gray-900" : "bg-gray-50"} p-6`}
-    >
-      <div
-        className={`max-w-2xl mx-auto ${isDark ? "bg-gray-800" : "bg-white"} rounded-lg shadow-lg p-8`}
-      >
-        <h1
-          className={`text-3xl font-bold ${isDark ? "text-white" : "text-gray-900"} mb-2`}
-        >
-          تسجيل كمسوق
-        </h1>
-        <p className={`${isDark ? "text-gray-300" : "text-gray-600"} mb-6`}>
-          انضم إلى برنامج المسوقين وابدأ في كسب العمولات من كل عملية بيع
-        </p>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div
-            className={`${isDark ? "bg-blue-900/30 border-blue-700 text-blue-100" : "bg-blue-50 border-blue-200 text-blue-900"} border rounded-lg p-4 text-sm`}
-          >
-            تحدد الشركة نوع وقيمة العمولة والحد الأدنى للسحب من إعدادات برنامج
-            المسوقين. هنا يتم حفظ بيانات الدفع فقط لحماية شروط البرنامج.
+    <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 space-y-4" dir="rtl">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/70 pb-3.5">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <UserPlus className="size-4" />
+            </span>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              تسجيل حساب مسوق جديد
+            </h1>
+            <Badge variant="outline" className="text-[11px] font-mono border-border/80 bg-muted/30">
+              Affiliate Onboarding
+            </Badge>
           </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            انضم إلى شبكة المسوقين وابدأ في تحصيل العمولات من كل عملية بيع ناجحة
+          </p>
+        </div>
 
-          {/* Payment Method */}
-          <div>
-            <label
-              className={`block text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-2`}
-            >
-              طريقة الدفع المفضلة
-            </label>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(-1)}
+          className="h-8 px-2.5 text-xs font-mono gap-1 border-border/70 active:scale-[0.98] self-end sm:self-auto"
+        >
+          <ArrowRight className="size-3.5" />
+          <span>العودة</span>
+        </Button>
+      </div>
+
+      {/* Main Single-Surface Form Chassis */}
+      <div className="rounded-lg border border-border/70 bg-card p-4 sm:p-6 shadow-xs space-y-6">
+        {/* Info Banner */}
+        <div className="rounded-md border border-border/70 bg-muted/30 p-3.5 text-xs text-muted-foreground flex items-start gap-2.5 font-mono">
+          <Info className="size-4 text-primary shrink-0 mt-0.5" />
+          <p className="leading-relaxed">
+            تحدد الشركة نسبة العمولة وسياسة الاستحقاق والحد الأدنى للسحب من إعدادات برنامج المسوقين.
+            يتم هنا تسجيل وتأمين بيانات وسيلة تحويل الأرباح الخاصة بك.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Payment Method Selector */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">طريقة الدفع واستلام الأرباح *</label>
             <select
               value={formData.paymentMethod}
-              onChange={(e) =>
-                setFormData({ ...formData, paymentMethod: e.target.value })
-              }
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                isDark
-                  ? "bg-gray-700 border-gray-600 text-white"
-                  : "bg-white border-gray-300 text-gray-900"
-              }`}
+              onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+              className="w-full bg-background border border-border/80 rounded-md px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono"
             >
-              <option value="">اختر طريقة الدفع</option>
-              <option value="BANK_TRANSFER">تحويل بنكي</option>
-              <option value="VODAFONE_CASH">فودافون كاش</option>
-              <option value="ORANGE_CASH">أورنج كاش</option>
-              <option value="INSTAPAY">إنستاباي</option>
+              <option value="">اختر وسيلة التحويل المفضلة...</option>
+              <option value="INSTAPAY">إنستاباي (InstaPay)</option>
+              <option value="VODAFONE_CASH">فودافون كاش (Vodafone Cash)</option>
+              <option value="ORANGE_CASH">أورنج كاش (Orange Cash)</option>
+              <option value="BANK_TRANSFER">تحويل بنكي مباشر (Bank Account)</option>
             </select>
           </div>
 
-          {/* Payment Details */}
+          {/* Conditional Payment Details */}
           {formData.paymentMethod && (
-            <div
-              className={`space-y-4 p-4 rounded-lg ${isDark ? "bg-gray-700" : "bg-gray-50"}`}
-            >
-              <h3
-                className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}
-              >
-                تفاصيل الدفع
-              </h3>
+            <div className="space-y-3 p-3.5 rounded-md border border-border/70 bg-muted/20">
+              <div className="flex items-center gap-2">
+                <Wallet className="size-3.5 text-primary" />
+                <h3 className="text-xs font-semibold text-foreground font-mono">
+                  بيانات الحساب للتحويل
+                </h3>
+              </div>
 
               {formData.paymentMethod === "BANK_TRANSFER" && (
-                <>
-                  <div>
-                    <label
-                      className={`block text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-2`}
-                    >
-                      اسم البنك
-                    </label>
-                    <input
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] text-muted-foreground">اسم البنك</label>
+                    <Input
                       type="text"
                       value={formData.paymentDetails.bankName}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          paymentDetails: {
-                            ...formData.paymentDetails,
-                            bankName: e.target.value,
-                          },
+                          paymentDetails: { ...formData.paymentDetails, bankName: e.target.value },
                         })
                       }
-                      className={`w-full px-4 py-2 border rounded-lg ${
-                        isDark
-                          ? "bg-gray-600 border-gray-500 text-white placeholder-gray-400"
-                          : "bg-white border-gray-300 text-gray-900"
-                      }`}
+                      placeholder="مثال: البنك الأهلي المصري"
+                      className="h-8 text-xs font-mono bg-background border-border/70"
                     />
                   </div>
-                  <div>
-                    <label
-                      className={`block text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-2`}
-                    >
-                      رقم الحساب
-                    </label>
-                    <input
+                  <div className="space-y-1">
+                    <label className="text-[11px] text-muted-foreground">رقم الحساب / الآيبان (IBAN)</label>
+                    <Input
                       type="text"
                       value={formData.paymentDetails.bankAccount}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          paymentDetails: {
-                            ...formData.paymentDetails,
-                            bankAccount: e.target.value,
-                          },
+                          paymentDetails: { ...formData.paymentDetails, bankAccount: e.target.value },
                         })
                       }
-                      className={`w-full px-4 py-2 border rounded-lg ${
-                        isDark
-                          ? "bg-gray-600 border-gray-500 text-white placeholder-gray-400"
-                          : "bg-white border-gray-300 text-gray-900"
-                      }`}
+                      placeholder="EG..."
+                      className="h-8 text-xs font-mono bg-background border-border/70"
+                      dir="ltr"
                     />
                   </div>
-                </>
+                </div>
               )}
 
               {(formData.paymentMethod === "VODAFONE_CASH" ||
-                formData.paymentMethod === "ORANGE_CASH") && (
-                <div>
-                  <label
-                    className={`block text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"} mb-2`}
-                  >
-                    رقم المحفظة
+                formData.paymentMethod === "ORANGE_CASH" ||
+                formData.paymentMethod === "INSTAPAY") && (
+                <div className="space-y-1 max-w-sm">
+                  <label className="text-[11px] text-muted-foreground">
+                    {formData.paymentMethod === "INSTAPAY"
+                      ? "عنوان الدفع اللحظي (IPA) أو رقم الهاتف"
+                      : "رقم المحفظة الإلكترونية"}
                   </label>
-                  <input
+                  <Input
                     type="text"
                     value={formData.paymentDetails.phoneNumber}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        paymentDetails: {
-                          ...formData.paymentDetails,
-                          phoneNumber: e.target.value,
-                        },
+                        paymentDetails: { ...formData.paymentDetails, phoneNumber: e.target.value },
                       })
                     }
-                    className={`w-full px-4 py-2 border rounded-lg ${
-                      isDark
-                        ? "bg-gray-600 border-gray-500 text-white placeholder-gray-400"
-                        : "bg-white border-gray-300 text-gray-900"
-                    }`}
+                    placeholder="01XXXXXXXXX"
+                    className="h-8 text-xs font-mono bg-background border-border/70"
+                    dir="ltr"
                   />
                 </div>
               )}
             </div>
           )}
 
-          {/* Terms */}
-          <div
-            className={`${isDark ? "bg-blue-900/30 border-blue-700" : "bg-blue-50 border-blue-200"} border rounded-lg p-4`}
-          >
-            <h3
-              className={`font-semibold ${isDark ? "text-blue-300" : "text-blue-900"} mb-2`}
-            >
-              شروط وأحكام البرنامج
-            </h3>
-            <ul
-              className={`text-sm space-y-1 list-disc list-inside ${isDark ? "text-blue-200" : "text-blue-800"}`}
-            >
-              <li>العمولات تصبح قابلة للسحب بعد تأكيد الطلب واستحقاقها</li>
-              <li>يمكنك سحب الأرباح عند الوصول للحد الأدنى المحدد من الشركة</li>
-              <li>الدفع يتم خارج المنصة ويتم تسجيله بعد الدفع الفعلي</li>
-              <li>صلاحيات الطلبات المباشرة وبيانات العملاء تحددها الشركة</li>
+          {/* Program Terms Chassis */}
+          <div className="rounded-md border border-border/70 bg-card p-3.5 space-y-2">
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="size-4 text-emerald-500" />
+              <h3 className="text-xs font-semibold text-foreground font-mono">
+                شروط وضوابط برنامج العمولات
+              </h3>
+            </div>
+            <ul className="text-[11px] text-muted-foreground space-y-1 list-disc list-inside font-mono leading-relaxed">
+              <li>تصبح العمولات مستحقة للسحب فور استلام العميل للطلب وتأكيد التسليم.</li>
+              <li>يمكن تقديم طلب سحب الأرباح عند بلوغ الحد الأدنى المحدد من إدارة المتجر.</li>
+              <li>تتم مراجعة التحويلات المالية وتسجيل السداد بصورة فورية وموثقة في سجل المسوق.</li>
             </ul>
           </div>
 
-          {/* Submit Button */}
-          <div className="flex gap-4">
-            <button
+          {/* Submit Actions */}
+          <div className="flex items-center gap-2 pt-2 border-t border-border/60">
+            <Button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-8 px-4 text-xs font-mono gap-1 active:scale-[0.98]"
             >
-              {loading ? "جاري التسجيل..." : "تسجيل كمسوق"}
-            </button>
-            <button
+              {loading ? <RefreshCw className="size-3.5 animate-spin" /> : <UserPlus className="size-3.5" />}
+              <span>تأكيد تسجيل حساب المسوق</span>
+            </Button>
+            <Button
               type="button"
+              variant="outline"
               onClick={() => navigate(-1)}
-              className={`px-6 py-3 border rounded-lg transition ${
-                isDark
-                  ? "border-gray-600 text-gray-300 hover:bg-gray-700"
-                  : "border-gray-300 text-gray-700 hover:bg-gray-50"
-              }`}
+              className="h-8 px-3 text-xs font-mono border-border/70"
             >
               إلغاء
-            </button>
+            </Button>
           </div>
         </form>
       </div>
     </div>
   );
-};
-
-export default AffiliateRegister;
+}

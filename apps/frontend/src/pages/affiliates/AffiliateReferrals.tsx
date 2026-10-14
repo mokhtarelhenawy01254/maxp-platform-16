@@ -1,14 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
-import { useTheme } from "../../hooks/useTheme";
 import {
-  ArrowTrendingUpIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  LinkIcon,
-  UserGroupIcon,
-} from "@heroicons/react/24/outline";
+  TrendingUp,
+  CheckCircle2,
+  Clock,
+  Link as LinkIcon,
+  Users,
+  RefreshCw,
+  Search,
+  ShoppingBag,
+} from "lucide-react";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 
 interface ReferralCustomer {
   id: string;
@@ -34,359 +39,296 @@ interface Referral {
   order?: ReferralOrder | null;
 }
 
-const AffiliateReferrals: React.FC = () => {
+export default function AffiliateReferrals() {
   const { formatPrice } = useCurrency();
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [referrals, setReferrals] = useState<Referral[]>([]);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   const loadReferrals = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await apiClient.get("/affiliates/referrals");
-      if (response.data.success) {
-        setReferrals(response.data.data || []);
-      }
-    } catch (error: unknown) {
-      const message =
-        error &&
-        typeof error === "object" &&
-        "response" in error &&
-        error.response &&
-        typeof error.response === "object" &&
-        "data" in error.response &&
-        error.response.data &&
-        typeof error.response.data === "object" &&
-        "message" in error.response.data &&
-        typeof error.response.data.message === "string"
-          ? error.response.data.message
-          : "حدث خطأ أثناء تحميل الإحالات";
-      setError(message);
+      const raw = response.data?.data ?? response.data;
+      const list = Array.isArray(raw) ? raw : [];
+      setReferrals(list);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "حدث خطأ أثناء تحميل سجل الإحالات");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadReferrals();
+    void loadReferrals();
   }, [loadReferrals]);
 
-  const totalReferrals = referrals.length;
+  const safeReferrals = useMemo(() => (Array.isArray(referrals) ? referrals : []), [referrals]);
+
+  const filteredReferrals = useMemo(() => {
+    return safeReferrals.filter((r) => {
+      const q = search.toLowerCase();
+      const customerName = r.customer
+        ? `${r.customer.firstName} ${r.customer.lastName}`.toLowerCase()
+        : "";
+      const matchesSearch =
+        !q ||
+        r.referralCode.toLowerCase().includes(q) ||
+        customerName.includes(q) ||
+        (r.source && r.source.toLowerCase().includes(q)) ||
+        (r.order?.orderNumber && r.order.orderNumber.toLowerCase().includes(q));
+
+      const matchesStatus =
+        filterStatus === "all" ||
+        (filterStatus === "converted" && r.converted) ||
+        (filterStatus === "pending" && !r.converted);
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [safeReferrals, search, filterStatus]);
+
+  const totalReferrals = safeReferrals.length;
   const convertedReferrals = useMemo(
-    () => referrals.filter((referral) => referral.converted).length,
-    [referrals],
+    () => safeReferrals.filter((r) => r.converted).length,
+    [safeReferrals]
   );
   const pendingReferrals = totalReferrals - convertedReferrals;
-  const totalRevenue = useMemo(
-    () =>
-      referrals.reduce(
-        (sum, referral) => sum + Number(referral.order?.total || 0),
-        0,
-      ),
-    [referrals],
-  );
-  const conversionRate =
-    totalReferrals > 0
-      ? Number(((convertedReferrals / totalReferrals) * 100).toFixed(1))
-      : 0;
 
-  if (loading) {
+  const totalRevenue = useMemo(
+    () => safeReferrals.reduce((sum, r) => sum + Number(r.order?.total || 0), 0),
+    [safeReferrals]
+  );
+
+  const conversionRate =
+    totalReferrals > 0 ? Number(((convertedReferrals / totalReferrals) * 100).toFixed(1)) : 0;
+
+  if (loading && safeReferrals.length === 0) {
     return (
-      <div
-        className={`flex items-center justify-center min-h-screen ${isDark ? "bg-gray-900" : "bg-gray-50"}`}
-      >
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex flex-col items-center justify-center min-h-[350px] gap-2.5 text-muted-foreground">
+        <RefreshCw className="size-5 animate-spin text-primary" />
+        <span className="text-xs font-mono">جاري تحميل سجل الإحالات والتحويلات...</span>
       </div>
     );
   }
 
   return (
-    <div
-      className={`min-h-screen ${isDark ? "bg-gray-900" : "bg-gray-50"} px-3 pb-24 pt-4 sm:p-6`}
-    >
-      <div className="w-full space-y-4 sm:space-y-6">
+    <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-4" dir="rtl">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/70 pb-3.5">
         <div>
-          <h1
-            className={`text-2xl font-bold sm:text-3xl ${isDark ? "text-white" : "text-gray-900"}`}
-          >
-            الإحالات والتحويلات
-          </h1>
-          <p className={`${isDark ? "text-gray-300" : "text-gray-600"} mt-1 text-sm sm:mt-2 sm:text-base`}>
-            راقب أداء روابطك من أول إحالة حتى الطلب الناتج منها.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-6 xl:grid-cols-4">
-          <div
-            className={`${isDark ? "bg-gray-800" : "bg-white"} rounded-2xl shadow-sm border ${isDark ? "border-gray-700" : "border-gray-100"} p-4 sm:p-6`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p
-                  className={`text-xs sm:text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                >
-                  إجمالي الإحالات
-                </p>
-                <p
-                  className={`mt-2 text-2xl font-bold sm:text-3xl ${isDark ? "text-white" : "text-gray-900"}`}
-                >
-                  {totalReferrals}
-                </p>
-              </div>
-              <LinkIcon className="hidden h-8 w-8 text-blue-600 sm:block" />
-            </div>
-          </div>
-
-          <div
-            className={`${isDark ? "bg-gray-800" : "bg-white"} rounded-2xl shadow-sm border ${isDark ? "border-gray-700" : "border-gray-100"} p-4 sm:p-6`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p
-                  className={`text-xs sm:text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                >
-                  الإحالات المحولة
-                </p>
-                <p
-                  className={`mt-2 text-2xl font-bold sm:text-3xl ${isDark ? "text-white" : "text-gray-900"}`}
-                >
-                  {convertedReferrals}
-                </p>
-              </div>
-              <CheckCircleIcon className="hidden h-8 w-8 text-green-600 sm:block" />
-            </div>
-          </div>
-
-          <div
-            className={`${isDark ? "bg-gray-800" : "bg-white"} rounded-2xl shadow-sm border ${isDark ? "border-gray-700" : "border-gray-100"} p-4 sm:p-6`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p
-                  className={`text-xs sm:text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                >
-                  قيد المتابعة
-                </p>
-                <p
-                  className={`mt-2 text-2xl font-bold sm:text-3xl ${isDark ? "text-white" : "text-gray-900"}`}
-                >
-                  {pendingReferrals}
-                </p>
-              </div>
-              <ClockIcon className="hidden h-8 w-8 text-orange-600 sm:block" />
-            </div>
-          </div>
-
-          <div
-            className={`${isDark ? "bg-gray-800" : "bg-white"} rounded-2xl shadow-sm border ${isDark ? "border-gray-700" : "border-gray-100"} p-4 sm:p-6`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p
-                  className={`text-xs sm:text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                >
-                  معدل التحويل
-                </p>
-                <p
-                  className={`mt-2 text-2xl font-bold sm:text-3xl ${isDark ? "text-white" : "text-gray-900"}`}
-                >
-                  {conversionRate}%
-                </p>
-              </div>
-              <ArrowTrendingUpIcon className="hidden h-8 w-8 text-purple-600 sm:block" />
-            </div>
-          </div>
-        </div>
-
-        <div
-          className={`${isDark ? "bg-gray-800" : "bg-white"} rounded-xl shadow-sm border ${isDark ? "border-gray-700" : "border-gray-100"} p-4`}
-        >
-          <p className={`${isDark ? "text-gray-300" : "text-gray-700"} text-sm`}>
-            إجمالي قيمة الطلبات المحولة:{" "}
-            <span className="font-bold text-green-600">
-              {formatPrice(totalRevenue)}
+          <div className="flex items-center gap-2">
+            <span className="inline-flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <TrendingUp className="size-4" />
             </span>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              سجل الإحالات والتحويلات
+            </h1>
+            <Badge variant="outline" className="text-[11px] font-mono border-border/80 bg-muted/30">
+              {totalReferrals} إحالة مسجلة
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            متابعة مسار الروابط الإعلانية ومعدلات التحويل إلى طلبات بيع فعلية
           </p>
         </div>
 
-        {error ? (
-          <div
-            className={`${isDark ? "bg-gray-800 border-gray-700 text-gray-300" : "bg-white border-gray-200 text-gray-700"} rounded-xl border p-8 text-center`}
+        <div className="flex items-center gap-2 self-end sm:self-auto font-mono text-xs">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void loadReferrals()}
+            className="h-8 px-2.5 text-xs font-mono gap-1 border-border/70 active:scale-[0.98]"
           >
-            {error}
-          </div>
-        ) : referrals.length > 0 ? (
-          <div
-            className={`${isDark ? "bg-gray-800" : "bg-white"} overflow-hidden rounded-2xl border shadow-sm ${isDark ? "border-gray-700" : "border-gray-100"}`}
-          >
-            <div className="p-3 md:p-0">
-              <table className="block min-w-full md:table md:divide-y md:divide-gray-200 dark:md:divide-gray-700">
-                <thead className={`hidden md:table-header-group ${isDark ? "bg-gray-900/50" : "bg-gray-50"}`}>
-                  <tr>
-                    <th
-                      className={`px-6 py-3 text-right text-xs font-medium uppercase ${isDark ? "text-gray-300" : "text-gray-500"}`}
-                    >
-                      الإحالة
-                    </th>
-                    <th
-                      className={`px-6 py-3 text-right text-xs font-medium uppercase ${isDark ? "text-gray-300" : "text-gray-500"}`}
-                    >
-                      العميل
-                    </th>
-                    <th
-                      className={`px-6 py-3 text-right text-xs font-medium uppercase ${isDark ? "text-gray-300" : "text-gray-500"}`}
-                    >
-                      المصدر
-                    </th>
-                    <th
-                      className={`px-6 py-3 text-right text-xs font-medium uppercase ${isDark ? "text-gray-300" : "text-gray-500"}`}
-                    >
-                      الطلب
-                    </th>
-                    <th
-                      className={`px-6 py-3 text-right text-xs font-medium uppercase ${isDark ? "text-gray-300" : "text-gray-500"}`}
-                    >
-                      الحالة
-                    </th>
-                    <th
-                      className={`px-6 py-3 text-right text-xs font-medium uppercase ${isDark ? "text-gray-300" : "text-gray-500"}`}
-                    >
-                      التاريخ
-                    </th>
-                  </tr>
-                </thead>
-                <tbody
-                  className={`block space-y-3 md:table-row-group md:space-y-0 ${isDark ? "md:bg-gray-800 md:divide-gray-700" : "md:bg-white md:divide-gray-200"} md:divide-y`}
-                >
-                  {referrals.map((referral) => {
-                    const customerName = referral.customer
-                      ? `${referral.customer.firstName} ${referral.customer.lastName}`.trim()
-                      : "مخفية حسب الصلاحيات";
+            <RefreshCw className="size-3.5" />
+            <span>تحديث</span>
+          </Button>
+        </div>
+      </div>
 
-                    return (
-                      <tr
-                        key={referral.id}
-                        className={`block rounded-2xl border p-4 transition md:table-row md:rounded-none md:border-0 md:p-0 ${
-                          isDark
-                            ? "border-gray-700 bg-gray-900/35 hover:bg-gray-700"
-                            : "border-gray-100 bg-white hover:bg-gray-50"
-                        }`}
-                      >
-                        <td
-                          className={`flex items-start justify-between gap-4 pb-3 text-sm md:table-cell md:px-6 md:py-4 md:whitespace-nowrap ${isDark ? "text-gray-300" : "text-gray-900"}`}
-                        >
-                          <span className="text-xs font-medium text-gray-500 md:hidden">
-                            الإحالة
-                          </span>
-                          <div className="flex flex-col">
-                            <span className="font-semibold">
-                              {referral.referralCode}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {referral.id.slice(0, 8)}
-                            </span>
-                          </div>
-                        </td>
-                        <td
-                          className={`flex items-start justify-between gap-4 border-t py-3 text-sm md:table-cell md:border-0 md:px-6 md:py-4 md:whitespace-nowrap ${isDark ? "border-gray-700 text-gray-300" : "border-gray-100 text-gray-900"}`}
-                        >
-                          <span className="text-xs font-medium text-gray-500 md:hidden">
-                            العميل
-                          </span>
-                          <div className="flex flex-col">
-                            <span>{customerName}</span>
-                            <span className="text-xs text-gray-500">
-                              {referral.customer?.phone || "-"}
-                            </span>
-                          </div>
-                        </td>
-                        <td
-                          className={`flex items-center justify-between gap-4 border-t py-3 text-sm md:table-cell md:border-0 md:px-6 md:py-4 md:whitespace-nowrap ${isDark ? "border-gray-700 text-gray-300" : "border-gray-100 text-gray-900"}`}
-                        >
-                          <span className="text-xs font-medium text-gray-500 md:hidden">
-                            المصدر
-                          </span>
-                          <span>{referral.source || "direct"}</span>
-                        </td>
-                        <td
-                          className={`flex items-start justify-between gap-4 border-t py-3 text-sm md:table-cell md:border-0 md:px-6 md:py-4 md:whitespace-nowrap ${isDark ? "border-gray-700 text-gray-300" : "border-gray-100 text-gray-900"}`}
-                        >
-                          <span className="text-xs font-medium text-gray-500 md:hidden">
-                            الطلب
-                          </span>
-                          {referral.order ? (
-                            <div className="flex flex-col">
-                              <span className="font-medium text-blue-600">
-                                {referral.order.orderNumber}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {formatPrice(referral.order.total)}
-                              </span>
-                            </div>
-                          ) : (
-                            "-"
-                          )}
-                        </td>
-                        <td className="flex items-center justify-between gap-4 border-t py-3 text-sm md:table-cell md:border-0 md:px-6 md:py-4 md:whitespace-nowrap">
-                          <span className="text-xs font-medium text-gray-500 md:hidden">
-                            الحالة
-                          </span>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs ${
-                              referral.converted
-                                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-                                : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
-                            }`}
-                          >
-                            {referral.converted ? "تم التحويل" : "قيد المتابعة"}
-                          </span>
-                        </td>
-                        <td
-                          className={`flex items-start justify-between gap-4 border-t py-3 text-sm md:table-cell md:border-0 md:px-6 md:py-4 md:whitespace-nowrap ${isDark ? "border-gray-700 text-gray-400" : "border-gray-100 text-gray-500"}`}
-                        >
-                          <span className="text-xs font-medium text-gray-500 md:hidden">
-                            التاريخ
-                          </span>
-                          <div className="flex flex-col">
-                            <span>
-                              {new Date(referral.createdAt).toLocaleDateString(
-                                "ar-EG",
-                              )}
-                            </span>
-                            <span className="text-xs">
-                              {referral.convertedAt
-                                ? new Date(
-                                    referral.convertedAt,
-                                  ).toLocaleDateString("ar-EG")
-                                : "لم تتحول بعد"}
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+      {/* Telemetry Strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 font-mono">
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-muted-foreground">إجمالي الإحالات</p>
+            <p className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums mt-0.5">
+              {totalReferrals}
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">نقرات وزيارات مسجلة</p>
+          </div>
+          <div className="size-7 rounded-md bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
+            <LinkIcon className="size-3.5" />
+          </div>
+        </div>
+
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-emerald-500">الإحالات المحولة</p>
+            <p className="text-xl font-bold tracking-tight text-emerald-500 font-mono tabular-nums mt-0.5">
+              {convertedReferrals}
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">أنتجت طلبات بيع</p>
+          </div>
+          <div className="size-7 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+            <CheckCircle2 className="size-3.5" />
+          </div>
+        </div>
+
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-amber-500">قيد المتابعة</p>
+            <p className="text-xl font-bold tracking-tight text-amber-500 font-mono tabular-nums mt-0.5">
+              {pendingReferrals}
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">زيارات لم تكمل الشراء</p>
+          </div>
+          <div className="size-7 rounded-md bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
+            <Clock className="size-3.5" />
+          </div>
+        </div>
+
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-purple-500">معدل التحويل (CR)</p>
+            <p className="text-xl font-bold tracking-tight text-purple-500 font-mono tabular-nums mt-0.5">
+              {conversionRate}%
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">
+              مبيعات: {formatPrice(totalRevenue)}
+            </p>
+          </div>
+          <div className="size-7 rounded-md bg-purple-500/10 flex items-center justify-center text-purple-500 border border-purple-500/20">
+            <TrendingUp className="size-3.5" />
+          </div>
+        </div>
+      </div>
+
+      {/* Main Single-Surface Chassis */}
+      <div className="rounded-lg border border-border/70 bg-card shadow-xs overflow-hidden">
+        {/* Controls Bar */}
+        <div className="p-2.5 sm:p-3 border-b border-border/60 bg-muted/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="size-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <Input
+              type="text"
+              className="h-8 pr-8 text-xs font-mono bg-background border-border/70"
+              placeholder="بحث بالرمز أو العميل أو المصدر..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center gap-1 font-mono text-xs">
+            {[
+              { id: "all", label: `الكل (${safeReferrals.length})` },
+              { id: "converted", label: `تم التحويل (${convertedReferrals})` },
+              { id: "pending", label: `قيد المتابعة (${pendingReferrals})` },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setFilterStatus(tab.id)}
+                className={`px-2.5 py-1 rounded text-xs transition-colors ${
+                  filterStatus === tab.id
+                    ? "bg-card text-foreground font-semibold shadow-xs border border-border/70"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Table */}
+        {filteredReferrals.length === 0 ? (
+          <div className="p-10 text-center space-y-2">
+            <div className="size-9 rounded-full bg-muted/60 text-muted-foreground mx-auto flex items-center justify-center">
+              <Users className="size-4" />
             </div>
+            <h3 className="text-xs font-semibold text-foreground font-mono">لا توجد إحالات تطابق البحث</h3>
+            <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
+              شارك روابط الإحالة في حملاتك التسويقية لتسجيل حركات الزيارة والطلبات
+            </p>
           </div>
         ) : (
-          <div
-            className={`${isDark ? "bg-gray-800" : "bg-white"} rounded-xl shadow-sm border ${isDark ? "border-gray-700" : "border-gray-100"} py-16 text-center`}
-          >
-            <UserGroupIcon
-              className={`h-12 w-12 mx-auto mb-4 ${isDark ? "text-gray-600" : "text-gray-400"}`}
-            />
-            <p className={isDark ? "text-gray-300" : "text-gray-700"}>
-              لا توجد إحالات مسجلة حتى الآن
-            </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-right text-xs">
+              <thead className="bg-muted/30 border-b border-border/70 text-muted-foreground font-mono text-[11px]">
+                <tr>
+                  <th className="px-4 py-2.5 font-medium">رمز الإحالة</th>
+                  <th className="px-4 py-2.5 font-medium">العميل المنسوب</th>
+                  <th className="px-4 py-2.5 font-medium">المصدر التسويقي</th>
+                  <th className="px-4 py-2.5 font-medium">الطلب الناتج</th>
+                  <th className="px-4 py-2.5 font-medium text-center">الحالة</th>
+                  <th className="px-4 py-2.5 font-medium">تاريخ الإنشاء</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {filteredReferrals.map((referral) => {
+                  const customerName = referral.customer
+                    ? `${referral.customer.firstName} ${referral.customer.lastName}`.trim()
+                    : "—";
+
+                  return (
+                    <tr key={referral.id} className="hover:bg-muted/20 transition-colors">
+                      <td className="px-4 py-2.5 font-mono text-foreground font-semibold">
+                        <div className="flex items-center gap-1.5">
+                          <LinkIcon className="size-3 text-primary shrink-0" />
+                          <span>{referral.referralCode}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-2.5 text-foreground">
+                        <div>
+                          <p className="font-medium">{customerName}</p>
+                          {referral.customer?.phone && (
+                            <p className="text-[10px] text-muted-foreground font-mono" dir="ltr">
+                              {referral.customer.phone}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2.5 font-mono text-muted-foreground text-[11px]">
+                        {referral.source || "مباشر"}
+                      </td>
+                      <td className="px-4 py-2.5 font-mono">
+                        {referral.order ? (
+                          <div className="flex items-center gap-1.5">
+                            <ShoppingBag className="size-3 text-emerald-500 shrink-0" />
+                            <span className="font-semibold text-foreground">
+                              {referral.order.orderNumber}
+                            </span>
+                            <span className="text-muted-foreground text-[11px]">
+                              ({formatPrice(referral.order.total)})
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-[11px]">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono border ${
+                            referral.converted
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                          }`}
+                        >
+                          {referral.converted ? "تم التحويل" : "قيد المتابعة"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 font-mono text-muted-foreground text-[11px]">
+                        {new Date(referral.createdAt).toLocaleDateString("ar-EG")}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
     </div>
   );
-};
-
-export default AffiliateReferrals;
+}
