@@ -2275,4 +2275,6 @@ module.exports = {
   getEffectivePreparationStatus,
   normalizePreparationStage,
   getMappedRegularOrderStatus,
+  mapRegularOrderToSimple,
+  stripPreparationTransientFields,
 };
