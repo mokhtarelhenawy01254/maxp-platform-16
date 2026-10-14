@@ -2858,7 +2858,7 @@ router.post('/', async (req, res) => {
             isViewed: false,
             affiliateReferralId,
             affiliateId,
-            orderSource: orderSource || 'STOREFRONT',
+            orderSource: orderSource || 'REGULAR',
             metadata:
               Object.keys(regularOrderMetadata).length > 0
                 ? JSON.stringify(regularOrderMetadata)
@@ -2946,7 +2946,7 @@ router.post('/', async (req, res) => {
               sourceType: 'storefront',
               extractionMethod: 'storefront',
               isViewed: false,
-              orderSource: orderSource || 'STOREFRONT',
+              orderSource: orderSource || 'REGULAR',
               metadata:
                 Object.keys(regularOrderMetadata).length > 0
                   ? JSON.stringify(regularOrderMetadata)

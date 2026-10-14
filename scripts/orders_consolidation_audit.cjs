@@ -53,10 +53,26 @@ const toSafeAmount = (val, fallback = 0) => {
 
 const mapPaymentMethodToEnum = (method) => {
   const clean = String(method || '').trim().toLowerCase();
-  if (['cash', 'cod', 'cash_on_delivery', 'الدفع عند الاستلام'].includes(clean)) return 'CASH';
-  if (['wallet', 'محفظة', 'vodafone_cash', 'instapay', 'انستاباي'].includes(clean)) return 'WALLET';
-  if (['credit_card', 'visa', 'mastercard', 'card', 'فوري', 'kashier', 'paymob'].includes(clean)) return 'ONLINE';
-  return 'CASH';
+  const methodMap = {
+    cash: 'CASH',
+    cod: 'CASH',
+    cash_on_delivery: 'CASH',
+    'الدفع عند الاستلام': 'CASH',
+    card: 'CREDIT_CARD',
+    credit_card: 'CREDIT_CARD',
+    visa: 'VISA',
+    mastercard: 'MASTERCARD',
+    bank_transfer: 'BANK_TRANSFER',
+    online: 'CREDIT_CARD',
+    paypal: 'PAYPAL',
+    stripe: 'STRIPE',
+    wallet: 'WALLET',
+    'محفظة': 'WALLET',
+    instapay: 'INSTAPAY',
+    'انستاباي': 'INSTAPAY',
+    vodafone_cash: 'VODAFONE_CASH'
+  };
+  return methodMap[clean] || 'CASH';
 };
 
 const mapStatusToEnum = (status) => {
@@ -176,11 +192,29 @@ async function main() {
     for (const g of orphanGuestOrders) {
       try {
         await prisma.$transaction(async (tx) => {
-          // 1. Resolve or create customer
+          // Check if order already exists (idempotency)
+          const existingOrder = await tx.order.findFirst({
+            where: { companyId: g.companyId, orderNumber: g.orderNumber },
+            select: { id: true }
+          });
+          if (existingOrder) {
+            return;
+          }
+
+          // 1. Resolve or create customer with phone normalization
+          const rawPhone = String(g.guestPhone || '').trim();
+          const normalizedPhone = rawPhone.replace(/\D/g, '');
           let customer = null;
-          if (g.guestPhone) {
+
+          if (rawPhone) {
             customer = await tx.customer.findFirst({
-              where: { companyId: g.companyId, phone: g.guestPhone }
+              where: {
+                companyId: g.companyId,
+                OR: [
+                  { phone: rawPhone },
+                  ...(normalizedPhone ? [{ phoneNormalized: normalizedPhone }, { phone: normalizedPhone }] : [])
+                ]
+              }
             });
           }
 
@@ -189,18 +223,32 @@ async function main() {
             const firstName = nameParts[0] || 'عميل';
             const lastName = nameParts.slice(1).join(' ') || '';
 
-            customer = await tx.customer.create({
-              data: {
-                firstName,
-                lastName,
-                phone: g.guestPhone || '',
-                phoneNormalized: g.guestPhone ? String(g.guestPhone).replace(/\D/g, '') : null,
-                email: g.guestEmail || null,
-                company: { connect: { id: g.companyId } },
-                status: 'LEAD',
-                metadata: JSON.stringify({ source: 'guest_order_backfill', legacyGuestOrderId: g.id })
-              }
-            });
+            try {
+              customer = await tx.customer.create({
+                data: {
+                  firstName,
+                  lastName,
+                  phone: rawPhone,
+                  phoneNormalized: normalizedPhone || null,
+                  email: g.guestEmail || null,
+                  company: { connect: { id: g.companyId } },
+                  status: 'LEAD',
+                  metadata: JSON.stringify({ source: 'guest_order_backfill', legacyGuestOrderId: g.id })
+                }
+              });
+            } catch (custErr) {
+              // In case of race condition / unique constraint, retrieve existing customer
+              customer = await tx.customer.findFirst({
+                where: {
+                  companyId: g.companyId,
+                  OR: [
+                    { phone: rawPhone },
+                    ...(normalizedPhone ? [{ phoneNormalized: normalizedPhone }, { phone: normalizedPhone }] : [])
+                  ]
+                }
+              });
+              if (!customer) throw custErr;
+            }
           }
 
           // 2. Parse Items
@@ -219,8 +267,8 @@ async function main() {
               variantId: item.variantId || null,
               productName: item.name || item.productName || `منتج #${idx + 1}`,
               productSku: item.sku || item.productSku || null,
-              productColor: item.color || item.productColor || null,
-              productSize: item.size || item.productSize || null,
+              productColor: item.color || item.productColor ? String(item.color || item.productColor) : null,
+              productSize: item.size || item.productSize ? String(item.size || item.productSize) : null,
               productImage: item.image || item.productImage || null,
               price,
               quantity,
@@ -246,44 +294,54 @@ async function main() {
             }
           } catch (_) {}
 
-          // 4. Create Order
+          // 4. Create Order with resilient fallback
           const subtotal = toSafeAmount(g.total);
           const shipping = toSafeAmount(g.shippingCost);
           const discount = toSafeAmount(g.discountAmount);
           const total = toSafeAmount(g.finalTotal, subtotal + shipping - discount);
 
+          const orderPayload = {
+            orderNumber: g.orderNumber,
+            customerId: customer.id,
+            companyId: g.companyId,
+            customerName: g.guestName || customer.firstName,
+            customerPhone: g.guestPhone || customer.phone || '',
+            customerEmail: g.guestEmail || customer.email || null,
+            customerAddress: addressText,
+            shippingAddress: addressText,
+            city,
+            governorate,
+            subtotal,
+            shipping,
+            discount,
+            total,
+            status: mapStatusToEnum(g.status),
+            paymentStatus: 'PENDING',
+            paymentMethod: mapPaymentMethodToEnum(g.paymentMethod),
+            notes: g.notes || 'طلب من المتجر (تم ترحيله)',
+            sourceType: 'storefront',
+            extractionMethod: 'storefront',
+            orderSource: 'REGULAR',
+            createdAt: g.createdAt || new Date(),
+            updatedAt: g.updatedAt || new Date(),
+            metadata: JSON.stringify({
+              source: 'storefront',
+              legacyGuestOrderId: g.id,
+              originalMetadata: g.metadata ? JSON.parse(g.metadata) : null
+            })
+          };
+
+          const detachedItems = orderItemsData.map((it) => ({
+            ...it,
+            productId: null,
+            variantId: null
+          }));
+
           await tx.order.create({
             data: {
-              orderNumber: g.orderNumber,
-              customerId: customer.id,
-              companyId: g.companyId,
-              customerName: g.guestName || customer.firstName,
-              customerPhone: g.guestPhone || customer.phone || '',
-              customerEmail: g.guestEmail || customer.email || null,
-              customerAddress: addressText,
-              shippingAddress: addressText,
-              city,
-              governorate,
-              subtotal,
-              shipping,
-              discount,
-              total,
-              status: mapStatusToEnum(g.status),
-              paymentStatus: 'PENDING',
-              paymentMethod: mapPaymentMethodToEnum(g.paymentMethod),
-              notes: g.notes || 'طلب من المتجر (تم ترحيله)',
-              sourceType: 'storefront',
-              extractionMethod: 'storefront',
-              orderSource: 'STOREFRONT',
-              createdAt: g.createdAt || new Date(),
-              updatedAt: g.updatedAt || new Date(),
-              metadata: JSON.stringify({
-                source: 'storefront',
-                legacyGuestOrderId: g.id,
-                originalMetadata: g.metadata ? JSON.parse(g.metadata) : null
-              }),
+              ...orderPayload,
               orderItems: {
-                create: orderItemsData
+                create: detachedItems
               }
             }
           });
