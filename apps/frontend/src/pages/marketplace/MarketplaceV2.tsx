@@ -12,7 +12,7 @@ import {
   DollarSign, Heart, CheckCircle2,
   ShoppingBag, Brain,
   LayoutGrid, List,
-  Truck,
+  Truck, Sparkles,
   CreditCard, Gamepad2, Palette, ClipboardList, Percent,
   ChevronDown, Check,
 } from "lucide-react";
@@ -162,7 +162,7 @@ function getCategoryDisplayCategories(categories: Category[], categoryCounts: Re
 
 export default function MarketplaceV2() {
   const { t } = useTranslation();
-  const { refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [apps, setApps] = useState<MarketplaceApp[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
