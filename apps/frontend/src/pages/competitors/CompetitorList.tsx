@@ -1,7 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Search, RefreshCw, Plus, Pencil, Trash2, AlertTriangle, ExternalLink, Eye, Calendar } from 'lucide-react';
+import {
+  Search,
+  RefreshCw,
+  Plus,
+  Pencil,
+  Trash2,
+  AlertTriangle,
+  ExternalLink,
+  Eye,
+  Calendar,
+  Compass,
+  Radar,
+  Radio,
+  Layers,
+  MapPin,
+  Share2,
+} from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import CompetitorStatusBar from './CompetitorStatusBar';
 import GlobalCompetitorStatusBar, { type StatusFilter } from './GlobalCompetitorStatusBar';
@@ -42,19 +58,7 @@ interface StatusCounts {
   COMPLETED: number;
 }
 
-const SOCIAL_PLATFORMS = [
-  { key: 'instagram', labelKey: 'social.instagram', icon: '📸' },
-  { key: 'facebook', labelKey: 'social.facebook', icon: '📘' },
-  { key: 'twitter', labelKey: 'social.twitter', icon: '🐦' },
-  { key: 'tiktok', labelKey: 'social.tiktok', icon: '🎵' },
-  { key: 'linkedin', labelKey: 'social.linkedin', icon: '💼' },
-  { key: 'youtube', labelKey: 'social.youtube', icon: '▶️' },
-  { key: 'snapchat', labelKey: 'social.snapchat', icon: '👻' },
-  { key: 'telegram', labelKey: 'social.telegram', icon: '✈️' },
-  { key: 'whatsapp', labelKey: 'social.whatsapp', icon: '💬' },
-];
-
-const CompetitorList: React.FC = () => {
+export const CompetitorList: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
@@ -92,12 +96,12 @@ const CompetitorList: React.FC = () => {
     }
   }, [search, statusFilter]);
 
-  useEffect(() => { fetchCompetitors(); }, [fetchCompetitors]);
-  useEffect(() => { fetchStatusCounts(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { void fetchCompetitors(); }, [fetchCompetitors]);
+  useEffect(() => { void fetchStatusCounts(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useCompetitorStatusSync((competitorId, status) => {
     setCompetitors(prev => prev.map(c => c.id === competitorId ? { ...c, status } : c));
-    fetchStatusCounts();
+    void fetchStatusCounts();
   });
 
   const handleStatusChange = async (id: string, newStatus: CompetitorStatus) => {
@@ -119,7 +123,7 @@ const CompetitorList: React.FC = () => {
         return next;
       });
     }
-    fetchStatusCounts();
+    void fetchStatusCounts();
   };
 
   const handleStatusFilterChange = (filter: StatusFilter) => {
@@ -130,40 +134,117 @@ const CompetitorList: React.FC = () => {
     try {
       await apiClient.delete(`/competitors/${id}`);
       setDeleteConfirm(null);
-      fetchCompetitors();
-      fetchStatusCounts();
+      void fetchCompetitors();
+      void fetchStatusCounts();
     } catch {
       console.error('Failed to delete');
     }
   };
 
   return (
-    <div className="p-6" dir={i18n.dir()}>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{t('competitors.title')}</h1>
-        <div className="flex gap-2">
-          <button onClick={() => { fetchCompetitors(); fetchStatusCounts(); }} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-            <RefreshCw size={20} className={isLoading ? 'animate-spin' : ''} />
+    <div className="space-y-4" dir={i18n.dir()}>
+      {/* Header bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-sm">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border/60">
+              ذكاء الأعمال
+            </span>
+            <span className="text-xs text-muted-foreground">/</span>
+            <span className="text-xs font-semibold text-foreground">مراقبة المنافسين</span>
+          </div>
+          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+            <Radar className="w-4 h-4 text-primary" />
+            رادار ذكاء وتحليل المنافسين (Competitor Intelligence)
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            تتبع أسعار المتاجر المنافسة، حملاتهم الإعلانية، ومنتجاتهم الحصرية في السوق لحظياً
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          <button
+            type="button"
+            onClick={() => { void fetchCompetitors(); void fetchStatusCounts(); }}
+            className="p-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            title="تحديث"
+          >
+            <RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} />
           </button>
-          <button onClick={() => navigate('/competitors/add')} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            <Plus size={18} />
-            {t('competitors.addCompetitor')}
+          <button
+            type="button"
+            onClick={() => navigate('/competitors/auto-discover')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-medium transition-colors"
+          >
+            <Compass className="w-3.5 h-3.5 text-primary" />
+            <span>استكشاف تلقائي</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/competitors/add')}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium shadow-xs transition-colors active:scale-[0.98]"
+          >
+            <Plus size={15} />
+            <span>إضافة منافس</span>
           </button>
         </div>
       </div>
 
-      <div className="relative mb-4">
-        <Search size={18} className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder={t('competitors.searchCompetitors')}
-          className="w-full ltr:pl-10 ltr:pr-4 rtl:pr-10 rtl:pl-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
-        />
+      {/* Telemetry ribbon */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="bg-card border border-border/70 rounded-lg p-3">
+          <div className="flex items-center justify-between text-muted-foreground text-xs">
+            <span>إجمالي المنافسين المرصودين</span>
+            <Layers className="w-3.5 h-3.5" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-base font-bold font-mono text-foreground tabular-nums">
+              {statusCounts.total}
+            </span>
+            <span className="text-[11px] text-muted-foreground">متاجر مسجلة</span>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border/70 rounded-lg p-3">
+          <div className="flex items-center justify-between text-muted-foreground text-xs">
+            <span>تحت المتابعة الدورية</span>
+            <Radio className="w-3.5 h-3.5 text-amber-500" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-base font-bold font-mono text-foreground tabular-nums">
+              {statusCounts.FOLLOWING}
+            </span>
+            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">Tracking</span>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border/70 rounded-lg p-3">
+          <div className="flex items-center justify-between text-muted-foreground text-xs">
+            <span>اكتمال الرصد الشامل</span>
+            <Radar className="w-3.5 h-3.5 text-emerald-500" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-base font-bold font-mono text-foreground tabular-nums">
+              {statusCounts.COMPLETED}
+            </span>
+            <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">Indexed</span>
+          </div>
+        </div>
       </div>
 
-      <div className="mb-6">
+      {/* Search and Global Status Filter */}
+      <div className="bg-card border border-border/70 rounded-xl p-3.5 space-y-3">
+        <div className="relative">
+          <Search size={15} className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="البحث باسم المتجر المنافس أو الرابط..."
+            className="w-full h-9 ltr:pl-9 ltr:pr-3 rtl:pr-9 rtl:pl-3 text-xs rounded-lg border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+          />
+        </div>
+
         <GlobalCompetitorStatusBar
           selectedFilter={statusFilter}
           onFilterChange={handleStatusFilterChange}
@@ -172,109 +253,125 @@ const CompetitorList: React.FC = () => {
         />
       </div>
 
+      {/* Grid of Competitors */}
       {isLoading ? (
-        <div className="text-center py-12 text-gray-500">{t('common.loading')}</div>
+        <div className="py-12 text-center text-xs text-muted-foreground">جاري فحص وتحديث قائمة المنافسين...</div>
       ) : competitors.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">{t('competitors.noCompetitors')}</div>
+        <div className="py-12 text-center bg-card border border-dashed border-border/80 rounded-xl space-y-2">
+          <Radar className="w-8 h-8 text-muted-foreground/30 mx-auto" />
+          <p className="text-xs font-semibold text-foreground">لا يوجد منافسين مسجلين بعد</p>
+          <p className="text-[11px] text-muted-foreground">أضف متجراً منافساً لبدء سحب أسعاره وحملاته الإعلانية</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {competitors.map(c => (
-            <div key={c.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow dark:border-gray-700">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
+            <div key={c.id} className="bg-card border border-border/70 rounded-xl p-4 hover:border-primary/50 transition-all space-y-3 shadow-2xs">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
                   {c.logo ? (
-                    <img src={c.logo} alt={c.name} className="w-10 h-10 rounded-full object-cover" />
+                    <img src={c.logo} alt={c.name} className="w-9 h-9 rounded-lg object-cover border border-border/60 shrink-0" />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 font-bold text-lg">
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 border border-border/60 flex items-center justify-center text-primary font-bold text-xs shrink-0">
                       {c.name.charAt(0)}
                     </div>
                   )}
-                  <div>
-                    <h3 className="font-semibold">{c.name}</h3>
-                    <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                  <div className="min-w-0">
+                    <h3 className="text-xs font-semibold text-foreground truncate">{c.name}</h3>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
                       <CompetitorStatusBar
                         currentStatus={c.status}
                         competitorId={c.id}
-                        onChange={(newStatus) => handleStatusChange(c.id, newStatus)}
+                        onChange={(newStatus) => void handleStatusChange(c.id, newStatus)}
                         size="sm"
                       />
-                      {c.activityType && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                          {t(`competitors.activityTypes.${c.activityType}`)}
-                        </span>
-                      )}
                       {c.location && (
-                        <span className="text-xs text-gray-400">📍 {c.location}</span>
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 truncate">
+                          <MapPin size={10} className="shrink-0" />
+                          <span>{c.location}</span>
+                        </span>
                       )}
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-1">
-                  <button onClick={() => navigate(`/competitors/${c.id}`)} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800">
-                    <Eye size={16} />
+
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/competitors/${c.id}`)}
+                    className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                    title="عرض التفاصيل"
+                  >
+                    <Eye size={14} />
                   </button>
-                  <button onClick={() => navigate(`/competitors/${c.id}/edit`)} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800">
-                    <Pencil size={16} />
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/competitors/${c.id}/edit`)}
+                    className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                    title="تعديل"
+                  >
+                    <Pencil size={14} />
                   </button>
-                  <button onClick={() => setDeleteConfirm(c.id)} className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900 text-red-500">
-                    <Trash2 size={16} />
+                  <button
+                    type="button"
+                    onClick={() => setDeleteConfirm(c.id)}
+                    className="p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    title="حذف"
+                  >
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>
+
               {c.url && (
-                <a href={c.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 mt-2 text-sm text-blue-500 hover:underline">
-                  <ExternalLink size={14} />
-                  {c.url.replace(/^https?:\/\//, '').slice(0, 40)}
+                <a
+                  href={c.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] font-mono text-primary hover:underline truncate max-w-full"
+                >
+                  <ExternalLink size={11} className="shrink-0" />
+                  <span className="truncate">{c.url.replace(/^https?:\/\//, '')}</span>
                 </a>
               )}
-              {c.socialProfiles && c.socialProfiles.length > 0 && (
-                <div className="flex items-center gap-2 mt-2">
-                  {c.socialProfiles.map(sp => {
-                    const platform = SOCIAL_PLATFORMS.find(p => p.key === sp.platform);
-                    if (!platform) return null;
-                    return (
-                      <a
-                        key={sp.id || sp.platform}
-                        href={sp.profileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title={t(`competitors.${platform.labelKey}`)}
-                        className="text-sm hover:opacity-70 transition-opacity"
-                      >
-                        {platform.icon}
-                      </a>
-                    );
-                  })}
-                </div>
-              )}
-              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-gray-400 dark:text-gray-500">
-                <Calendar size={11} className="shrink-0" />
-                <span dir="ltr" className="whitespace-nowrap">{getLocalizedDateTime(c.createdAt)}</span>
-              </div>
-              <div className="flex gap-4 mt-2 text-sm text-gray-500">
-                <span>{c._count.products} {t('competitors.products')}</span>
-                <span>{c._count.ads} {t('competitors.adsTab')}</span>
-                <span>{c._count.reports} {t('competitors.reports')}</span>
+
+              {/* Counts Telemetry */}
+              <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground font-mono">
+                <span className="tabular-nums font-medium text-foreground">{c._count.products} منتجات</span>
+                <span className="text-border">|</span>
+                <span className="tabular-nums font-medium text-foreground">{c._count.ads} إعلانات</span>
+                <span className="text-border">|</span>
+                <span className="tabular-nums font-medium text-foreground">{c._count.reports} تقارير</span>
               </div>
             </div>
           ))}
         </div>
       )}
 
+      {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setDeleteConfirm(null)}>
-          <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-2 text-red-500 mb-4">
-              <AlertTriangle size={20} />
-              <h2 className="text-lg font-bold">{t('common.confirm')}</h2>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setDeleteConfirm(null)}>
+          <div className="bg-card border border-border/70 rounded-xl p-5 w-full max-w-sm space-y-3 shadow-lg" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 text-destructive font-semibold text-xs">
+              <AlertTriangle size={16} />
+              <span>تأكيد حذف المنافس</span>
             </div>
-            <p className="mb-4">{t('competitors.deleteConfirm')}</p>
-            <div className="flex gap-2 ltr:justify-end rtl:justify-start">
-              <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
-                {t('common.cancel')}
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              هل أنت متأكد من حذف هذا المنافس وسجلاته من قاعدة البيانات؟ لا يمكن التراجع عن هذا الإجراء.
+            </p>
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirm(null)}
+                className="px-3 py-1.5 text-xs rounded-lg border border-border bg-background text-foreground hover:bg-muted"
+              >
+                إلغاء
               </button>
-              <button onClick={() => handleDelete(deleteConfirm)} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-                {t('common.delete')}
+              <button
+                type="button"
+                onClick={() => void handleDelete(deleteConfirm)}
+                className="px-3.5 py-1.5 text-xs rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                حذف نهائي
               </button>
             </div>
           </div>

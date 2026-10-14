@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Scale, CheckCircle, XCircle, Minus, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Scale, CheckCircle2, AlertCircle, Minus, RefreshCw, ArrowUpRight, ArrowDownRight, Layers, Sparkles } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import CompetitorStatusBar, { type CompetitorStatus } from './CompetitorStatusBar';
 import { updateCompetitorStatus } from './useCompetitorStatus';
@@ -35,7 +35,9 @@ const Comparison: React.FC = () => {
   const [comparisons, setComparisons] = useState<ComparisonItem[]>([]);
   const [summary, setSummary] = useState<any>(null);
 
-  useEffect(() => { fetchCompetitors(); }, []);
+  useEffect(() => {
+    fetchCompetitors();
+  }, []);
 
   const fetchCompetisons = async () => {
     if (!competitorId) return;
@@ -48,16 +50,26 @@ const Comparison: React.FC = () => {
         const yours = data.yourProducts || [];
 
         const comps: ComparisonItem[] = prods.map((cp: any) => {
-          const match = yours.find((yp: any) => yp.sku === cp.sku || yp.name.toLowerCase().includes(cp.name.toLowerCase().slice(0, 10)));
+          const match = yours.find((yp: any) =>
+            yp.sku === cp.sku ||
+            yp.name.toLowerCase().includes(cp.name.toLowerCase().slice(0, 10))
+          );
           let status: ComparisonItem['status'] = 'missing';
-          let priceDiff = null, priceDiffPercent = null;
+          let priceDiff = null;
+          let priceDiffPercent = null;
 
           if (match) {
             const cpPrice = Number(cp.price) || 0;
             const ypPrice = Number(match.price) || 0;
-            if (cpPrice < ypPrice) { status = 'expensive'; priceDiff = ypPrice - cpPrice; }
-            else if (cpPrice > ypPrice) { status = 'cheaper'; priceDiff = cpPrice - ypPrice; }
-            else { status = 'equal'; }
+            if (cpPrice < ypPrice) {
+              status = 'expensive';
+              priceDiff = ypPrice - cpPrice;
+            } else if (cpPrice > ypPrice) {
+              status = 'cheaper';
+              priceDiff = cpPrice - ypPrice;
+            } else {
+              status = 'equal';
+            }
             priceDiffPercent = ypPrice ? ((priceDiff / ypPrice) * 100).toFixed(1) : null;
           }
 
@@ -79,7 +91,9 @@ const Comparison: React.FC = () => {
           missing: comps.filter(c => c.status === 'missing').length,
         });
       }
-    } catch { console.error('Failed to compare'); }
+    } catch {
+      console.error('Failed to compare');
+    }
     setIsLoading(false);
   };
 
@@ -87,154 +101,252 @@ const Comparison: React.FC = () => {
     try {
       const res = await apiClient.get('/competitors', { params: { isActive: 'true' } });
       if (res.data.success) setCompetitors(res.data.data || []);
-    } catch { console.error('Failed to fetch competitors'); }
-  };
-
-  const StatusIcon = ({ status }: { status: string }) => {
-    switch (status) {
-      case 'cheaper': return <ArrowRight size={16} className="text-green-500" />;
-      case 'expensive': return <ArrowRight size={16} className="text-red-500" />;
-      case 'equal': return <Minus size={16} className="text-gray-400" />;
-      case 'missing': return <XCircle size={16} className="text-orange-400" />;
-      default: return null;
+    } catch {
+      console.error('Failed to fetch competitors');
     }
   };
 
+  const selectedCompetitor = competitors.find(c => c.id === competitorId);
+
   return (
-    <div className="p-6" dir={i18n.dir()}>
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/competitors')} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-          {i18n.dir() === 'rtl' ? <ArrowRight size={20} /> : <ArrowLeft size={20} />}
-        </button>
-        <h1 className="text-2xl font-bold">{t('competitors.comparison')}</h1>
-      </div>
+    <div className="w-full min-h-screen bg-background text-foreground" dir={i18n.dir()}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">{t('competitors.selectCompetitorCompare')}</h2>
-          <div className="flex gap-4 items-end">
-          <div className="flex-1">
-            <label className="block text-sm font-medium mb-2">{t('competitors.competitor')}</label>
-            <select
-              value={competitorId}
-              onChange={e => setCompetitorId(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
+        {/* Top Command Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/competitors')}
+              className="p-2 rounded-lg border border-border/60 hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
+              title={t('common.back')}
             >
-              <option value="">{t('common.select')}...</option>
-              {competitors.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-          <button
-            onClick={fetchCompetisons}
-            disabled={!competitorId || isLoading}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-          >
-            {isLoading ? <RefreshCw size={18} className="animate-spin" /> : <Scale size={18} />}
-            {t('competitors.compare')}
-          </button>
-        </div>
-        {competitorId && (() => {
-          const sel = competitors.find(c => c.id === competitorId);
-          if (!sel) return null;
-          return (
-            <div className="flex items-center gap-2 mt-4">
-              <span className="text-sm font-medium">{sel.name}</span>
-              <CompetitorStatusBar
-                currentStatus={sel.status || 'NEW'}
-                competitorId={sel.id}
-                onChange={(newStatus) => updateCompetitorStatus(sel.id, newStatus)}
-                size="sm"
-              />
-            </div>
-          );
-        })()}
-      </div>
-
-      {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-          <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border text-center">
-            <div className="text-2xl font-bold text-gray-700">{summary.total}</div>
-            <div className="text-xs text-gray-500">{t('competitors.totalProducts')}</div>
-          </div>
-          <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 border text-center">
-            <div className="text-2xl font-bold text-green-600">{summary.cheaper}</div>
-            <div className="text-xs text-green-700 dark:text-green-400">{t('competitors.cheaper')}</div>
-          </div>
-          <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 border text-center">
-            <div className="text-2xl font-bold text-red-600">{summary.expensive}</div>
-            <div className="text-xs text-red-700 dark:text-red-400">{t('competitors.yourPriceHigher')}</div>
-          </div>
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border text-center">
-            <div className="text-2xl font-bold text-gray-600">{summary.equal}</div>
-            <div className="text-xs text-gray-500">{t('competitors.equal')}</div>
-          </div>
-          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4 border text-center">
-            <div className="text-2xl font-bold text-orange-600">{summary.missing}</div>
-            <div className="text-xs text-orange-700 dark:text-orange-400">{t('competitors.gaps')}</div>
-          </div>
-        </div>
-      )}
-
-      {comparisons.length > 0 && (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border overflow-hidden">
-          <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-gray-50 dark:bg-gray-800 text-sm font-semibold border-b">
-            <div className="col-span-4">{t('competitors.competitorProduct')}</div>
-            <div className="col-span-1 text-center">{t('competitors.status')}</div>
-            <div className="col-span-4">{t('competitors.yourProduct')}</div>
-            <div className="col-span-3 text-end">{t('competitors.diff')}</div>
-          </div>
-          <div className="divide-y dark:divide-gray-700">
-            {comparisons.map((item, idx) => (
-              <div key={idx} className="grid grid-cols-12 gap-4 px-4 py-3 items-center">
-                <div className="col-span-4">
-                  <div className="font-medium text-sm">{item.competitorProduct.name}</div>
-                  {item.competitorProduct.sku && <div className="text-xs text-gray-500">{t('competitors.skuLabel')} {item.competitorProduct.sku}</div>}
-                  {item.competitorProduct.price && (
-                    <div className="text-lg font-bold text-red-600">
-                      {Number(item.competitorProduct.price).toFixed(2)} {item.competitorProduct.currency}
-                    </div>
-                  )}
-                </div>
-                <div className="col-span-1 flex justify-center">
-                  <StatusIcon status={item.status} />
-                </div>
-                <div className="col-span-4">
-                  {item.yourProduct ? (
-                    <>
-                      <div className="font-medium text-sm">{item.yourProduct.name}</div>
-                      {item.yourProduct.sku && <div className="text-xs text-gray-500">{t('competitors.skuLabel')} {item.yourProduct.sku}</div>}
-                      {item.yourProduct.price && (
-                        <div className="text-lg font-bold text-green-600">
-                          {Number(item.yourProduct.price).toFixed(2)} {item.competitorProduct.currency}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="text-sm text-orange-500 flex items-center gap-1">
-                      <XCircle size={14} />
-                      {t('competitors.notInYourCatalog')}
-                    </div>
-                  )}
-                </div>
-                <div className="col-span-3 text-end">
-                  {item.priceDiff !== null && item.status !== 'missing' && (
-                    <div className={`text-sm font-medium ${item.status === 'cheaper' ? 'text-green-600' : item.status === 'expensive' ? 'text-red-600' : 'text-gray-500'}`}>
-                      {item.status === 'cheaper' ? '+' : item.status === 'expensive' ? '-' : ''}{item.priceDiff.toFixed(2)} {item.competitorProduct.currency}
-                      {item.priceDiffPercent !== null && ` (${item.priceDiffPercent}%)`}
-                    </div>
-                  )}
-                  {item.status === 'missing' && (
-                    <span className="text-xs px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 rounded">
-                      {t('competitors.opportunity')}
-                    </span>
-                  )}
-                </div>
+              {i18n.dir() === 'rtl' ? <ArrowRight size={18} /> : <ArrowLeft size={18} />}
+            </button>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold tracking-tight">{t('competitors.comparison')}</h1>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  HEAD-TO-HEAD
+                </span>
               </div>
-            ))}
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Benchmark competitor catalog pricing directly against your store offerings
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="relative min-w-[200px] sm:min-w-[240px]">
+              <select
+                value={competitorId}
+                onChange={e => setCompetitorId(e.target.value)}
+                className="w-full text-xs h-9 px-3 pr-8 rounded-lg border border-border/70 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+              >
+                <option value="">{t('competitors.selectCompetitorCompare')}...</option>
+                {competitors.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={fetchCompetisons}
+              disabled={!competitorId || isLoading}
+              className="h-9 px-4 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold flex items-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+            >
+              {isLoading ? (
+                <RefreshCw size={14} className="animate-spin" />
+              ) : (
+                <Scale size={14} />
+              )}
+              <span>{t('competitors.compare')}</span>
+            </button>
+
+            {selectedCompetitor && (
+              <div className="hidden md:flex items-center gap-1.5 pl-2 border-l border-border/60">
+                <CompetitorStatusBar
+                  currentStatus={selectedCompetitor.status || 'NEW'}
+                  competitorId={selectedCompetitor.id}
+                  onChange={(newStatus) => updateCompetitorStatus(selectedCompetitor.id, newStatus)}
+                  size="sm"
+                />
+              </div>
+            )}
           </div>
         </div>
-      )}
+
+        {/* Telemetry Summary Ribbon */}
+        {summary && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 bg-card border border-border/70 rounded-xl p-3 shadow-xs">
+            <div className="p-3 rounded-lg bg-muted/20 border border-border/40">
+              <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                {t('competitors.totalProducts')}
+              </div>
+              <div className="text-2xl font-bold font-mono tabular-nums text-foreground mt-1">
+                {summary.total}
+              </div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">Matched items checked</div>
+            </div>
+
+            <div className="p-3 rounded-lg bg-muted/20 border border-border/40">
+              <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                {t('competitors.cheaper')}
+              </div>
+              <div className="text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400 mt-1">
+                {summary.cheaper}
+              </div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">Your price is lower</div>
+            </div>
+
+            <div className="p-3 rounded-lg bg-muted/20 border border-border/40">
+              <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                {t('competitors.yourPriceHigher')}
+              </div>
+              <div className="text-2xl font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400 mt-1">
+                {summary.expensive}
+              </div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">Your price is higher</div>
+            </div>
+
+            <div className="p-3 rounded-lg bg-muted/20 border border-border/40">
+              <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                {t('competitors.equal')}
+              </div>
+              <div className="text-2xl font-bold font-mono tabular-nums text-muted-foreground mt-1">
+                {summary.equal}
+              </div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">Identical retail price</div>
+            </div>
+
+            <div className="p-3 rounded-lg bg-muted/20 border border-border/40 col-span-2 sm:col-span-1">
+              <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                {t('competitors.gaps')}
+              </div>
+              <div className="text-2xl font-bold font-mono tabular-nums text-amber-600 dark:text-amber-400 mt-1">
+                {summary.missing}
+              </div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">Catalog gaps found</div>
+            </div>
+          </div>
+        )}
+
+        {/* Head-to-Head Comparison Matrix */}
+        {comparisons.length > 0 && (
+          <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-xs">
+            <div className="grid grid-cols-12 gap-3 px-4 py-3 bg-muted/30 border-b border-border/70 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="col-span-5">{t('competitors.competitorProduct')}</div>
+              <div className="col-span-2 text-center">{t('competitors.status')}</div>
+              <div className="col-span-5 text-end">{t('competitors.yourProduct')} &amp; {t('competitors.diff')}</div>
+            </div>
+
+            <div className="divide-y divide-border/60">
+              {comparisons.map((item, idx) => (
+                <div key={idx} className="grid grid-cols-12 gap-3 px-4 py-3 items-center hover:bg-muted/10 transition-colors">
+                  {/* Competitor Product Info */}
+                  <div className="col-span-5 min-w-0">
+                    <div className="font-semibold text-xs text-foreground truncate">
+                      {item.competitorProduct.name}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      {item.competitorProduct.sku && (
+                        <span className="text-[10px] font-mono text-muted-foreground">
+                          SKU: {item.competitorProduct.sku}
+                        </span>
+                      )}
+                      {item.competitorProduct.price !== null && (
+                        <span className="text-xs font-bold font-mono tabular-nums text-foreground">
+                          {Number(item.competitorProduct.price).toFixed(2)} {item.competitorProduct.currency}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Status Indicator */}
+                  <div className="col-span-2 flex justify-center">
+                    {item.status === 'cheaper' && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        <ArrowDownRight size={12} />
+                        CHEAPER
+                      </span>
+                    )}
+                    {item.status === 'expensive' && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                        <ArrowUpRight size={12} />
+                        HIGHER
+                      </span>
+                    )}
+                    {item.status === 'equal' && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-muted/40 text-muted-foreground border border-border/60">
+                        <Minus size={12} />
+                        EQUAL
+                      </span>
+                    )}
+                    {item.status === 'missing' && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                        <AlertCircle size={12} />
+                        GAP
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Your Product & Variance */}
+                  <div className="col-span-5 text-end min-w-0">
+                    {item.yourProduct ? (
+                      <div>
+                        <div className="font-semibold text-xs text-foreground truncate">
+                          {item.yourProduct.name}
+                        </div>
+                        <div className="flex items-center justify-end gap-2 mt-1">
+                          {item.yourProduct.sku && (
+                            <span className="text-[10px] font-mono text-muted-foreground">
+                              {item.yourProduct.sku}
+                            </span>
+                          )}
+                          {item.yourProduct.price !== null && (
+                            <span className="text-xs font-bold font-mono tabular-nums text-foreground">
+                              {Number(item.yourProduct.price).toFixed(2)} {item.competitorProduct.currency}
+                            </span>
+                          )}
+                          {item.priceDiff !== null && (
+                            <span className={`text-[11px] font-mono tabular-nums font-semibold ${
+                              item.status === 'cheaper'
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : item.status === 'expensive'
+                                ? 'text-rose-600 dark:text-rose-400'
+                                : 'text-muted-foreground'
+                            }`}>
+                              ({item.status === 'cheaper' ? '-' : '+'}{item.priceDiff.toFixed(2)})
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                        <AlertCircle size={13} />
+                        <span>{t('competitors.notInYourCatalog')}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {comparisons.length === 0 && !isLoading && (
+          <div className="py-16 text-center border border-dashed border-border/70 rounded-xl bg-card/40">
+            <Layers size={36} className="mx-auto text-muted-foreground/60 mb-3" />
+            <h3 className="text-sm font-semibold text-foreground">
+              {t('competitors.selectCompetitorCompare')}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+              Select a competitor above and run comparison to generate side-by-side pricing intelligence.
+            </p>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 };
