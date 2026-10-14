@@ -281,12 +281,13 @@ function formatNotificationDate(value) {
  * خلال 10 ثوانٍ لنفس الطلب كانت الثانية بتتبلع بصمت. الصفوف القديمة
  * (rawEventType=null) بتتطابق احتياطيًا زي قبل كده.
  */
-async function isDuplicateNotification({ companyId, orderId, recipientPhone, eventType, rawEventType = null, windowMs = 10000 }) {
+async function isDuplicateNotification({ companyId, orderId, recipientPhone, eventType, rawEventType = null, windowMs = 300000 }) {
   const prisma = getSharedPrismaClient();
   const persistedEventType = getPersistedNotificationEventType(eventType);
   const where = {
     companyId,
     eventType: persistedEventType,
+    status: { not: 'FAILED' },
     createdAt: { gte: new Date(Date.now() - windowMs) },
   };
   if (rawEventType) {
@@ -1579,6 +1580,17 @@ async function sendNotification(options) {
         if (options.contentOverride) {
           console.warn(`⚠️ [META-CLOUD] contentOverride present but no APPROVED template — rejecting free-text.`);
         }
+        if (notificationLog) {
+          await safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.update({
+            where: { id: notificationLog.id },
+            data: {
+              status: 'FAILED',
+              failedAt: new Date(),
+              failureReason: `[META_TEMPLATE_NOT_APPROVED] ${reason}`,
+              errorCode: 'META_TEMPLATE_NOT_APPROVED',
+            }
+          }));
+        }
         return { success: false, reason: 'meta_template_not_approved', message: reason };
       }
 
@@ -2548,6 +2560,20 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
 
   try {
     const { trackedOrderId } = getOrderNotificationTracking(order);
+
+    // 🛡️ فحص عدم التكرار (5 دقائق) لمنع إرسال إشعارين لنفس الحالة لنفس الطلب
+    const isDup = await isDuplicateNotification({
+      companyId: order.companyId,
+      orderId: trackedOrderId || undefined,
+      recipientPhone: phone,
+      eventType: statusConfig.event,
+      rawEventType: newStatus,
+    });
+    if (isDup) {
+      console.log(`⚠️ [WHATSAPP-STATUS] Duplicate ${statusConfig.event} (${newStatus}) blocked for order ${order?.orderNumber} within 5m window.`);
+      return { success: false, reason: 'duplicate_blocked' };
+    }
+
     const result = await sendNotification({
       companyId: order.companyId,
       recipientPhone: phone,

@@ -4,8 +4,9 @@
  * 🚀 Optimized for 10,000+ requests per minute
  */
 
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true });
+try {
+  require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true });
+} catch (_) {}
 require('../utils/patchPrismaDecimal');
 const tenantContext = require('./tenantContext');
 const companyCacheService = require('./companyCacheService');
