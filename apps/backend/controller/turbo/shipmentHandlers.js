@@ -83,8 +83,16 @@ const createShipment = async (req, res) => {
     const baseTurboMetadata = result.data && typeof result.data === 'object' ? { ...result.data } : (result.data ? { result: result.data } : {});
     if (previousTurboShipment) { baseTurboMetadata.previousTurboShipment = previousTurboShipment; baseTurboMetadata.replacedExistingTurboShipment = true; }
     const updateData = { turboShipmentId: String(result.shipmentId || ''), turboTrackingNumber: String(result.trackingNumber || ''), turboShipmentStatus: result.status, turboLabelUrl: result.labelUrl, turboMetadata: Object.keys(baseTurboMetadata).length > 0 ? serializeTurboMetadata(order.turboMetadata, baseTurboMetadata) : serializeTurboMetadata(order.turboMetadata, {}) };
-    if (order.tableType === 'GuestOrder') { await safeQuery(() => prisma.guestOrder.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: updateData }), 3); }
-    else if (order.orderNumber) { await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: updateData }), 3); }
+    if (order.tableType === 'GuestOrder') {
+      await safeQuery(() => prisma.guestOrder.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: updateData }), 3);
+      if (order.orderNumber) {
+        await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: updateData }), 3).catch(() => {});
+      }
+    }
+    else if (order.orderNumber) {
+      await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: updateData }), 3);
+      await safeQuery(() => prisma.guestOrder.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: updateData }), 3).catch(() => {});
+    }
     else if (order.id) { await safeQuery(() => prisma.order.update({ where: { id: order.id }, data: updateData }), 3); }
 
     // Sync to prisma.shipment for unified shipments logs
@@ -277,6 +285,7 @@ const bulkCreateShipments = async (req, res) => {
 
         if (order.orderNumber) {
           await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: updateData }), 3);
+          await safeQuery(() => prisma.guestOrder.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: updateData }), 3).catch(() => {});
         } else if (order.id) {
           await safeQuery(() => prisma.order.update({ where: { id: order.id }, data: updateData }), 3);
         }
@@ -435,6 +444,13 @@ const bulkCreateShipments = async (req, res) => {
           data: updateData
         }), 3);
 
+        if (guest.orderNumber) {
+          await safeQuery(() => prisma.order.updateMany({
+            where: { orderNumber: guest.orderNumber, companyId },
+            data: updateData
+          }), 3).catch(() => {});
+        }
+
         if (automationStatus && automationStatus !== guest.status) {
           try {
             await orderService.updateGuestOrderStatus(guest.orderNumber, companyId, automationStatus, 'تغيير تلقائي للحالة بعد إنشاء شحنة تربو بنجاح (إرسال جماعي)', 'SYSTEM', 'System Automation', null, { skipCallAttemptGuard: true, skipTransitionValidation: true });
@@ -483,8 +499,16 @@ const cancelShipment = async (req, res) => {
     if (!order.company?.turboApiKey) return res.status(400).json({ success: false, error: 'Turbo API key is not configured for this company' });
     const turboService = new TurboService(order.company.turboApiKey, companyId);
     const result = await turboService.cancelShipment(shipmentSearchKeys, reason);
-    if (order.tableType === 'GuestOrder') { await safeQuery(() => prisma.guestOrder.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: { turboShipmentStatus: 'cancelled', turboMetadata: serializeTurboMetadata(order.turboMetadata, result.data) } }), 3); }
-    else if (order.orderNumber) { await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: { turboShipmentStatus: 'cancelled', turboMetadata: serializeTurboMetadata(order.turboMetadata, result.data) } }), 3); }
+    if (order.tableType === 'GuestOrder') {
+      await safeQuery(() => prisma.guestOrder.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: { turboShipmentStatus: 'cancelled', turboMetadata: serializeTurboMetadata(order.turboMetadata, result.data) } }), 3);
+      if (order.orderNumber) {
+        await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: { turboShipmentStatus: 'cancelled', turboMetadata: serializeTurboMetadata(order.turboMetadata, result.data) } }), 3).catch(() => {});
+      }
+    }
+    else if (order.orderNumber) {
+      await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: { turboShipmentStatus: 'cancelled', turboMetadata: serializeTurboMetadata(order.turboMetadata, result.data) } }), 3);
+      await safeQuery(() => prisma.guestOrder.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: { turboShipmentStatus: 'cancelled', turboMetadata: serializeTurboMetadata(order.turboMetadata, result.data) } }), 3).catch(() => {});
+    }
     else if (order.id) { await safeQuery(() => prisma.order.update({ where: { id: order.id }, data: { turboShipmentStatus: 'cancelled', turboMetadata: serializeTurboMetadata(order.turboMetadata, result.data) } }), 3); }
     res.json({ success: true, data: result });
   } catch (error) {
@@ -512,8 +536,16 @@ const unlinkShipment = async (req, res) => {
     if (!order) return res.status(404).json({ success: false, error: 'Order not found', searchedValue: orderId });
     if (order.companyId !== companyId) return res.status(403).json({ success: false, error: 'Unauthorized access to this order' });
     if (!hasTurboLink(order)) return res.status(400).json({ success: false, error: 'No Turbo shipment link found for this order', message: 'لا يوجد ربط Turbo محفوظ لهذا الطلب' });
-    if (order.tableType === 'GuestOrder') { await safeQuery(() => prisma.guestOrder.updateMany({ where: order.orderNumber ? { orderNumber: order.orderNumber, companyId } : { id: order.id, companyId }, data: buildTurboUnlinkUpdateData(false) }), 3); }
-    else if (order.orderNumber) { await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: buildTurboUnlinkUpdateData(true) }), 3); }
+    if (order.tableType === 'GuestOrder') {
+      await safeQuery(() => prisma.guestOrder.updateMany({ where: order.orderNumber ? { orderNumber: order.orderNumber, companyId } : { id: order.id, companyId }, data: buildTurboUnlinkUpdateData(false) }), 3);
+      if (order.orderNumber) {
+        await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: buildTurboUnlinkUpdateData(true) }), 3).catch(() => {});
+      }
+    }
+    else if (order.orderNumber) {
+      await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: buildTurboUnlinkUpdateData(true) }), 3);
+      await safeQuery(() => prisma.guestOrder.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: buildTurboUnlinkUpdateData(false) }), 3).catch(() => {});
+    }
     else if (order.id) { await safeQuery(() => prisma.order.update({ where: { id: order.id }, data: buildTurboUnlinkUpdateData(true) }), 3); }
     res.json({ success: true, message: 'تم إلغاء ربط Turbo من الطلب بنجاح', data: { orderId: order.id, orderNumber: order.orderNumber, turboShipmentId: null, turboTrackingNumber: null, turboShipmentStatus: null, turboLabelUrl: null, turboMetadata: null, turboBranchId: null } });
   } catch (error) {

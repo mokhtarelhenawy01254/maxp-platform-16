@@ -1736,6 +1736,84 @@ class OrderService {
         });
       }, 3);
 
+      if (order && !order.turboTrackingNumber) {
+        try {
+          const prisma = this.getPrisma();
+          const guestTwin = await safeQuery(async () => {
+            return await prisma.guestOrder.findFirst({
+              where: {
+                OR: [
+                  { orderNumber: order.orderNumber, companyId: order.companyId },
+                  { id: order.orderNumber, companyId: order.companyId }
+                ]
+              },
+              select: {
+                turboTrackingNumber: true,
+                turboShipmentStatus: true,
+                turboShipmentId: true,
+                turboLabelUrl: true,
+                turboCaptainName: true,
+                turboCaptainPhone: true,
+                turboBranchName: true,
+                turboBranchPhone: true,
+                turboDelayReason: true,
+                turboReturnReason: true,
+                turboMetadata: true
+              }
+            });
+          }, 2);
+          if (guestTwin?.turboTrackingNumber) {
+            order.turboTrackingNumber = guestTwin.turboTrackingNumber;
+            order.turboShipmentStatus = order.turboShipmentStatus || guestTwin.turboShipmentStatus;
+            order.turboShipmentId = order.turboShipmentId || guestTwin.turboShipmentId;
+            order.turboLabelUrl = order.turboLabelUrl || guestTwin.turboLabelUrl;
+            order.turboCaptainName = order.turboCaptainName || guestTwin.turboCaptainName;
+            order.turboCaptainPhone = order.turboCaptainPhone || guestTwin.turboCaptainPhone;
+            order.turboBranchName = order.turboBranchName || guestTwin.turboBranchName;
+            order.turboBranchPhone = order.turboBranchPhone || guestTwin.turboBranchPhone;
+            order.turboDelayReason = order.turboDelayReason || guestTwin.turboDelayReason;
+            order.turboReturnReason = order.turboReturnReason || guestTwin.turboReturnReason;
+            order.turboMetadata = order.turboMetadata || guestTwin.turboMetadata;
+          }
+        } catch (_) {}
+      }
+
+      if (!order) {
+        try {
+          const prisma = this.getPrisma();
+          const guest = await safeQuery(async () => {
+            return await prisma.guestOrder.findFirst({
+              where: {
+                OR: [
+                  { id: orderNumber, companyId },
+                  { orderNumber: orderNumber, companyId }
+                ]
+              }
+            });
+          }, 3);
+          if (guest) {
+            let parsedItems = [];
+            try {
+              parsedItems = typeof guest.items === 'string' ? JSON.parse(guest.items) : (guest.items || []);
+            } catch (_) {}
+            return {
+              ...guest,
+              customerName: guest.guestName,
+              customerPhone: guest.guestPhone,
+              customerEmail: guest.guestEmail,
+              orderItems: (Array.isArray(parsedItems) ? parsedItems : []).map(item => ({
+                productName: item.name || item.productName || 'منتج',
+                quantity: item.quantity || 1,
+                price: parseFloat(item.price || 0),
+                total: parseFloat((item.price || 0) * (item.quantity || 1)),
+                productColor: item.color || item.productColor || null,
+                productSize: item.size || item.productSize || null
+              }))
+            };
+          }
+        } catch (_) {}
+      }
+
       return order;
     } catch (error) {
       console.error('❌ Error fetching order:', error);

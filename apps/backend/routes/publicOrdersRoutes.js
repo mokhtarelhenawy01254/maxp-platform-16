@@ -3456,7 +3456,24 @@ router.get('/track', async (req, res) => {
               { orderNumber: order.orderNumber }
             ]
           },
-          select: { metadata: true, status: true, total: true, subtotal: true, shipping: true, discount: true }
+          select: {
+            metadata: true,
+            status: true,
+            total: true,
+            subtotal: true,
+            shipping: true,
+            discount: true,
+            turboTrackingNumber: true,
+            turboShipmentStatus: true,
+            turboShipmentId: true,
+            turboLabelUrl: true,
+            turboCaptainName: true,
+            turboCaptainPhone: true,
+            turboBranchName: true,
+            turboBranchPhone: true,
+            turboDelayReason: true,
+            turboReturnReason: true
+          }
         });
         if (primaryOrder) {
           const guestMeta = (() => {
@@ -3475,6 +3492,38 @@ router.get('/track', async (req, res) => {
           if (primaryOrder.discount !== null && primaryOrder.discount !== undefined) order.discountAmount = primaryOrder.discount;
           if (primaryOrder.shipping !== null && primaryOrder.shipping !== undefined) order.shippingCost = primaryOrder.shipping;
           if (primaryOrder.subtotal !== null && primaryOrder.subtotal !== undefined) order.subtotal = primaryOrder.subtotal;
+
+          // Merge Turbo tracking fields if present on primaryOrder
+          if (primaryOrder.turboTrackingNumber && !order.turboTrackingNumber) {
+            order.turboTrackingNumber = primaryOrder.turboTrackingNumber;
+          }
+          if (primaryOrder.turboShipmentStatus && !order.turboShipmentStatus) {
+            order.turboShipmentStatus = primaryOrder.turboShipmentStatus;
+          }
+          if (primaryOrder.turboShipmentId && !order.turboShipmentId) {
+            order.turboShipmentId = primaryOrder.turboShipmentId;
+          }
+          if (primaryOrder.turboLabelUrl && !order.turboLabelUrl) {
+            order.turboLabelUrl = primaryOrder.turboLabelUrl;
+          }
+          if (primaryOrder.turboCaptainName && !order.turboCaptainName) {
+            order.turboCaptainName = primaryOrder.turboCaptainName;
+          }
+          if (primaryOrder.turboCaptainPhone && !order.turboCaptainPhone) {
+            order.turboCaptainPhone = primaryOrder.turboCaptainPhone;
+          }
+          if (primaryOrder.turboBranchName && !order.turboBranchName) {
+            order.turboBranchName = primaryOrder.turboBranchName;
+          }
+          if (primaryOrder.turboBranchPhone && !order.turboBranchPhone) {
+            order.turboBranchPhone = primaryOrder.turboBranchPhone;
+          }
+          if (primaryOrder.turboDelayReason && !order.turboDelayReason) {
+            order.turboDelayReason = primaryOrder.turboDelayReason;
+          }
+          if (primaryOrder.turboReturnReason && !order.turboReturnReason) {
+            order.turboReturnReason = primaryOrder.turboReturnReason;
+          }
         }
       } catch (mergeError) {
         console.error('⚠️ [TRACK-ORDER] Failed to merge primary order data:', mergeError.message);

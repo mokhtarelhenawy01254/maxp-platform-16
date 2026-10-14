@@ -266,6 +266,26 @@ async function syncTurboStatusToOrder({
       data: updateData
     }), 3);
 
+    // 🛡️ Sync to twin regular order if exists
+    if (existingGuestOrder.orderNumber) {
+      await safeQuery(() => prisma.order.updateMany({
+        where: { orderNumber: existingGuestOrder.orderNumber, companyId: existingGuestOrder.companyId },
+        data: {
+          turboShipmentStatus: canonicalTurboStatus,
+          turboMetadata: JSON.stringify(updatedMetadata),
+          turboCaptainName: updateData.turboCaptainName,
+          turboCaptainPhone: updateData.turboCaptainPhone,
+          turboBranchName: updateData.turboBranchName,
+          turboBranchPhone: updateData.turboBranchPhone,
+          turboDelayReason: updateData.turboDelayReason,
+          turboReturnReason: updateData.turboReturnReason,
+          turboExpectedBranch: updateData.turboExpectedBranch,
+          ...(updateData.turboTrackingNumber ? { turboTrackingNumber: updateData.turboTrackingNumber, turboShipmentId: updateData.turboShipmentId } : {}),
+          ...(updateData.status ? { status: updateData.status } : {})
+        }
+      }), 3).catch(e => console.warn('⚠️ [TURBO-SYNC] Order twin sync warning:', e.message));
+    }
+
     // Emit Socket.IO
     emitSocketEvent(existingGuestOrder.companyId, {
       orderNumber: existingGuestOrder.orderNumber,
@@ -480,6 +500,26 @@ async function syncTurboStatusToOrder({
         : {}),
     }
   }), 3);
+
+  // 🛡️ Sync to twin guest order if exists
+  if (existingOrder.orderNumber) {
+    await safeQuery(() => prisma.guestOrder.updateMany({
+      where: { orderNumber: existingOrder.orderNumber, companyId: existingOrder.companyId },
+      data: {
+        turboShipmentStatus: canonicalTurboStatus,
+        turboMetadata: JSON.stringify(turboMetaObj),
+        turboCaptainName: updateData.turboCaptainName,
+        turboCaptainPhone: updateData.turboCaptainPhone,
+        turboBranchName: updateData.turboBranchName,
+        turboBranchPhone: updateData.turboBranchPhone,
+        turboDelayReason: updateData.turboDelayReason,
+        turboReturnReason: updateData.turboReturnReason,
+        turboExpectedBranch: updateData.turboExpectedBranch,
+        ...(updateData.turboTrackingNumber ? { turboTrackingNumber: updateData.turboTrackingNumber, turboShipmentId: updateData.turboShipmentId } : {}),
+        ...(updateData.status ? { status: updateData.status } : {})
+      }
+    }), 3).catch(e => console.warn('⚠️ [TURBO-SYNC] Guest twin sync warning:', e.message));
+  }
 
   console.log(`✅ [TURBO-SYNC] Updated Order ${existingOrder.orderNumber}: turboStatus="${canonicalTurboStatus}", status="${updateData.status || existingOrder.status}", paymentStatus="${updateData.paymentStatus || existingOrder.paymentStatus}"`);
 
