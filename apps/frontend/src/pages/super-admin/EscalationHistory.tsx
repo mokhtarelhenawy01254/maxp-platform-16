@@ -13,6 +13,7 @@ import {
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
 
 interface EscalationLog {
   id: string;
@@ -71,7 +72,7 @@ const FALLBACK_LOGS: EscalationLog[] = [
   },
 ];
 
-const EscalationHistory: React.FC = () => {
+export default function EscalationHistory() {
   const navigate = useNavigate();
   const [logs, setLogs] = useState<EscalationLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +82,7 @@ const EscalationHistory: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
-    fetchHistory(true);
+    void fetchHistory(true);
   }, [page]);
 
   const fetchHistory = async (showLoading = true) => {
@@ -134,35 +135,33 @@ const EscalationHistory: React.FC = () => {
   );
 
   return (
-    <div className="w-full space-y-4" dir={i18n.dir()}>
-      {/* Linear Control Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/60 pb-3.5">
-        <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-foreground shrink-0 shadow-2xs">
-            <ShieldAlert className="size-4.5 text-primary" />
+    <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-4" dir={i18n.dir()}>
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/70 pb-3.5">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <ShieldAlert className="size-4" />
+            </span>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              سجل تصعيد المهام
+            </h1>
+            <Badge variant="outline" className="text-[11px] font-mono border-border/80 bg-muted/30">
+              {totalCount} تصعيد
+            </Badge>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
-                سجل تصعيد المهام
-              </h1>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
-                {totalCount} تصعيد
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              تدقيق ومتابعة المهام التي تم تحويلها أو تصعيدها تلقائياً بسبب فوات مواعيد التنفيذ
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            تدقيق ومتابعة المهام التي تم تحويلها أو تصعيدها تلقائياً بسبب فوات مواعيد التنفيذ
+          </p>
         </div>
 
-        <div className="flex items-center gap-1.5 self-end sm:self-auto font-mono text-xs">
+        <div className="flex items-center gap-2 self-end sm:self-auto font-mono text-xs">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => fetchHistory(false)}
+            onClick={() => void fetchHistory(false)}
             disabled={refreshing}
-            className="h-8 text-xs font-mono gap-1.5 shadow-2xs active:scale-[0.98]"
+            className="h-8 px-2.5 text-xs font-mono gap-1 border-border/70 active:scale-[0.98]"
           >
             <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
             <span>تحديث</span>
@@ -172,7 +171,7 @@ const EscalationHistory: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={() => window.history.back()}
-            className="h-8 text-xs font-mono gap-1.5 shadow-2xs active:scale-[0.98]"
+            className="h-8 px-2.5 text-xs font-mono gap-1 border-border/70 active:scale-[0.98]"
           >
             <ArrowRight className="size-3.5 rtl:rotate-0 rotate-180" />
             <span>عودة</span>
@@ -181,55 +180,61 @@ const EscalationHistory: React.FC = () => {
       </div>
 
       {/* Telemetry Strip */}
-      <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
-        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
-          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">إجمالي سجلات التصعيد</span>
-              <span className="size-1.5 rounded-full bg-primary" />
-            </div>
-            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-muted-foreground">إجمالي سجلات التصعيد</p>
+            <p className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums mt-0.5">
               {totalCount}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">سجل محفوظ</p>
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 mt-0.5 font-mono">سجل محفوظ بالنظام</p>
           </div>
-          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">مهام تم تصعيدها</span>
-              <span className="size-1.5 rounded-full bg-amber-500" />
-            </div>
-            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+          <div className="size-7 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+            <ShieldAlert className="size-3.5" />
+          </div>
+        </div>
+
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-amber-600 dark:text-amber-400">مهام تم تصعيدها</p>
+            <p className="text-xl font-bold tracking-tight text-amber-600 dark:text-amber-400 font-mono tabular-nums mt-0.5">
               {uniqueTasksCount}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">مهام فريدة</p>
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 mt-0.5 font-mono">مهام فريدة خضعت للتصعيد</p>
           </div>
-          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">الصفحة الحالية</span>
-              <span className="size-1.5 rounded-full bg-emerald-500" />
-            </div>
-            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+          <div className="size-7 rounded-md bg-amber-500/10 flex items-center justify-center text-amber-600">
+            <span className="text-xs font-mono font-bold">TASK</span>
+          </div>
+        </div>
+
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-blue-600 dark:text-blue-400">الصفحة الحالية</p>
+            <p className="text-xl font-bold tracking-tight text-blue-600 dark:text-blue-400 font-mono tabular-nums mt-0.5">
               {page} / {totalPages}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">تصفح السجلات</p>
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 mt-0.5 font-mono">تصفح السجلات</p>
+          </div>
+          <div className="size-7 rounded-md bg-blue-500/10 flex items-center justify-center text-blue-600">
+            <span className="text-xs font-mono font-bold">PG</span>
           </div>
         </div>
       </div>
 
       {/* Single-Surface Table Chassis */}
-      <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
+      <div className="rounded-lg border border-border/70 bg-card shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-right border-collapse text-xs">
-            <thead className="border-b border-border/60 bg-muted/20 text-muted-foreground uppercase text-[11px] font-mono">
+            <thead className="border-b border-border/70 bg-muted/30 text-muted-foreground text-[11px] font-mono">
               <tr>
-                <th className="px-4 py-3 font-semibold">المهمة المستهدفة</th>
-                <th className="px-4 py-3 font-semibold">المُصعّد منه</th>
-                <th className="px-4 py-3 font-semibold">المُصعّد إليه</th>
-                <th className="px-4 py-3 font-semibold">سبب التصعيد والوصف</th>
-                <th className="px-4 py-3 font-semibold">تاريخ وساعة الإجراء</th>
+                <th className="px-4 py-2.5 font-medium">المهمة المستهدفة</th>
+                <th className="px-4 py-2.5 font-medium">المُصعّد منه</th>
+                <th className="px-4 py-2.5 font-medium">المُصعّد إليه</th>
+                <th className="px-4 py-2.5 font-medium">سبب التصعيد والوصف</th>
+                <th className="px-4 py-2.5 font-medium">تاريخ وساعة الإجراء</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/60">
+            <tbody className="divide-y divide-border/50">
               {loading ? (
                 <tr>
                   <td colSpan={5} className="p-10 text-center text-muted-foreground font-mono">
@@ -247,11 +252,11 @@ const EscalationHistory: React.FC = () => {
                 </tr>
               ) : (
                 logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-muted/15 transition-colors">
+                  <tr key={log.id} className="hover:bg-muted/20 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-0.5 max-w-xs">
                         <span
-                          className="font-semibold text-foreground truncate cursor-pointer hover:text-primary transition-colors"
+                          className="font-medium text-foreground truncate cursor-pointer hover:text-primary transition-colors"
                           title={log.task?.title || "مهمة تطوير"}
                           onClick={() => navigate(`/super-admin/dev-tasks/${log.taskId}`)}
                         >
@@ -327,6 +332,4 @@ const EscalationHistory: React.FC = () => {
       </div>
     </div>
   );
-};
-
-export default EscalationHistory;
+}

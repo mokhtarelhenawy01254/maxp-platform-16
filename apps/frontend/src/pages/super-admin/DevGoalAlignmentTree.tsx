@@ -5,30 +5,16 @@ import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import {
   ArrowRight,
-  ChevronDown,
-  ChevronRight,
-  User,
   Plus,
-  Target,
+  GitFork,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
-
-interface GoalNode {
-  id: string;
-  title: string;
-  type: string;
-  status: string;
-  progress: number;
-  confidence: string | null;
-  priority: string;
-  currentValue: number;
-  targetValue: number;
-  unit: string | null;
-  owner: { id: string; name: string } | null;
-  keyResults: Array<{ id: string; title: string; targetValue: number; currentValue: number; status: string }>;
-  _count: { linkedTasks: number; childGoals: number };
-  children: GoalNode[];
-}
+import { Badge } from "../../components/ui/badge";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import {
+  DevGoalNodeComponent,
+  type GoalNode,
+} from "./DevGoalNodeComponent";
 
 const DEFAULT_GOAL_TREE: GoalNode[] = [
   {
@@ -84,7 +70,7 @@ const DEFAULT_GOAL_TREE: GoalNode[] = [
         ],
         _count: { linkedTasks: 8, childGoals: 0 },
         children: [],
-      }
+      },
     ],
   },
   {
@@ -104,134 +90,10 @@ const DEFAULT_GOAL_TREE: GoalNode[] = [
     ],
     _count: { linkedTasks: 9, childGoals: 0 },
     children: [],
-  }
+  },
 ];
 
-const statusColors: Record<string, string> = {
-  ACTIVE: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
-  COMPLETED: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
-  ON_HOLD: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
-  CANCELLED: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20",
-};
-
-const confidenceColors: Record<string, string> = {
-  ON_TRACK: "bg-emerald-500",
-  AT_RISK: "bg-amber-500",
-  OFF_TRACK: "bg-rose-500",
-};
-
-const GoalNodeComponent: React.FC<{
-  goal: GoalNode;
-  level: number;
-  navigate: ReturnType<typeof useNavigate>;
-}> = ({ goal, level, navigate }) => {
-  const [expanded, setExpanded] = useState(level < 2);
-  const hasChildren = goal.children && goal.children.length > 0;
-
-  return (
-    <div style={{ marginRight: `${level * 24}px` }} className="relative">
-      {level > 0 && (
-        <div className="absolute right-[-12px] top-5 w-3 h-[1px] bg-border/80" />
-      )}
-      <div
-        className={`bg-card rounded-xl border border-border/80 p-3.5 mb-2.5 hover:border-primary/40 transition-colors shadow-2xs ${
-          level > 0 ? "border-r-2 border-r-primary/70" : ""
-        }`}
-      >
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            {hasChildren ? (
-              <button
-                type="button"
-                onClick={() => setExpanded(!expanded)}
-                className="p-1 hover:bg-muted/40 rounded text-muted-foreground transition-colors shrink-0 cursor-pointer"
-              >
-                {expanded ? (
-                  <ChevronDown className="size-4" />
-                ) : (
-                  <ChevronRight className="size-4" />
-                )}
-              </button>
-            ) : (
-              <div className="w-5 shrink-0" />
-            )}
-
-            <div
-              className="cursor-pointer min-w-0 flex-1"
-              onClick={() => navigate(`/super-admin/dev-goals/${goal.id}`)}
-            >
-              <div className="flex items-center gap-2 flex-wrap">
-                <h4 className="text-xs font-semibold text-foreground hover:text-primary transition-colors tracking-tight truncate">
-                  {goal.title}
-                </h4>
-                <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-medium ${statusColors[goal.status] || ""}`}>
-                  {goal.status}
-                </span>
-                {goal.confidence && (
-                  <span className="flex items-center gap-1 text-[10px]">
-                    <span className={`size-1.5 rounded-full ${confidenceColors[goal.confidence] || ""}`} />
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground flex-wrap font-mono">
-                {goal.owner && (
-                  <span className="flex items-center gap-1 font-sans">
-                    <User className="size-3" />
-                    <span>{goal.owner.name}</span>
-                  </span>
-                )}
-                <span className="tabular-nums">{goal._count.linkedTasks} مهمة</span>
-                <span className="tabular-nums">{goal.keyResults.length} نتائج رئيسية</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            {goal.keyResults.length > 0 && (
-              <div className="hidden sm:flex items-center gap-1">
-                {goal.keyResults.slice(0, 4).map((kr) => {
-                  const krProg = kr.targetValue > 0 ? (kr.currentValue / kr.targetValue) * 100 : 0;
-                  return (
-                    <div key={kr.id} className="w-6 h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${krProg >= 80 ? "bg-emerald-500" : krProg >= 50 ? "bg-blue-500" : "bg-amber-500"}`}
-                        style={{ width: `${Math.min(krProg, 100)}%` }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            <div className="text-left min-w-[60px]">
-              <div className="text-xs font-bold font-mono text-foreground tabular-nums">
-                {goal.progress}%
-              </div>
-              <div className="w-14 bg-muted rounded-full h-1 mt-1 overflow-hidden">
-                <div
-                  className={`h-1 rounded-full ${
-                    goal.progress >= 80 ? "bg-emerald-500" : goal.progress >= 50 ? "bg-blue-500" : "bg-amber-500"
-                  }`}
-                  style={{ width: `${goal.progress}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {expanded && hasChildren && (
-        <div className="relative border-r border-border/50 mr-2.5 pr-2 my-1">
-          {goal.children.map((child) => (
-            <GoalNodeComponent key={child.id} goal={child} level={level + 1} navigate={navigate} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const DevGoalAlignmentTree: React.FC = () => {
+export default function DevGoalAlignmentTree() {
   const navigate = useNavigate();
   const [tree, setTree] = useState<GoalNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -261,7 +123,7 @@ const DevGoalAlignmentTree: React.FC = () => {
   }, [filterQuarter]);
 
   useEffect(() => {
-    fetchTree();
+    void fetchTree();
   }, [fetchTree]);
 
   const currentTree = tree.length > 0 ? tree : DEFAULT_GOAL_TREE;
@@ -275,29 +137,32 @@ const DevGoalAlignmentTree: React.FC = () => {
     : 0;
 
   return (
-    <div className="w-full space-y-4" dir={i18n.dir()}>
-      {/* Linear Control Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+    <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-4" dir={i18n.dir()}>
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-border/70 pb-3.5">
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
             size="icon"
             onClick={() => navigate("/super-admin/dev-goals")}
-            className="size-8 rounded-lg shadow-2xs active:scale-[0.98]"
+            className="size-8 rounded-lg border-border/70 active:scale-[0.98]"
             title="العودة لقائمة الأهداف"
           >
             <ArrowRight className="size-4 rtl:rotate-0 rotate-180" />
           </Button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
+              <span className="inline-flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+                <GitFork className="size-4" />
+              </span>
+              <h1 className="text-xl font-semibold tracking-tight text-foreground">
                 شجرة محاذاة الأهداف الاستراتيجية
               </h1>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
-                OKR Alignment
-              </span>
+              <Badge variant="outline" className="text-[11px] font-mono border-border/80 bg-muted/30">
+                OKR Alignment Tree
+              </Badge>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-xs text-muted-foreground mt-1">
               كيف ترتبط أهداف الفريق التقني بالأهداف الاستراتيجية الشاملة للمنصة
             </p>
           </div>
@@ -307,7 +172,7 @@ const DevGoalAlignmentTree: React.FC = () => {
           <select
             value={filterQuarter}
             onChange={(e) => setFilterQuarter(e.target.value)}
-            className="border border-border/80 rounded-lg px-2.5 py-1 text-xs font-mono bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-2xs h-8"
+            className="border border-border/70 rounded-md px-2.5 py-1 text-xs font-mono bg-background text-foreground h-8"
           >
             <option value="">كل الفترات</option>
             <option value="Q1-2026">Q1 2026</option>
@@ -318,7 +183,7 @@ const DevGoalAlignmentTree: React.FC = () => {
           <Button
             size="sm"
             onClick={() => navigate("/super-admin/dev-goals/new")}
-            className="h-8 text-xs font-mono gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xs active:scale-[0.98]"
+            className="h-8 text-xs font-mono gap-1 active:scale-[0.98]"
           >
             <Plus className="size-3.5" />
             <span>هدف جديد</span>
@@ -327,51 +192,61 @@ const DevGoalAlignmentTree: React.FC = () => {
       </div>
 
       {/* Telemetry Stats Ribbon */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 rounded-xl border border-border/80 bg-card shadow-xs divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60 overflow-hidden">
-        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-            <span className="font-medium text-[11px]">إجمالي الأهداف بالشجرة</span>
-            <span className="size-1.5 rounded-full bg-primary" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-muted-foreground">إجمالي الأهداف بالشجرة</p>
+            <p className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums mt-0.5">
+              {totalGoals}
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">أهداف كلية وفرعية</p>
           </div>
-          <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-            {totalGoals}
+          <div className="size-7 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+            <span className="text-xs font-mono font-bold">ALL</span>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">أهداف كلية وفرعية</p>
         </div>
 
-        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-            <span className="font-medium text-[11px]">متوسط التقدم الإجمالي</span>
-            <span className="size-1.5 rounded-full bg-emerald-500" />
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-emerald-600 dark:text-emerald-400">متوسط التقدم الإجمالي</p>
+            <p className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums mt-0.5">
+              {avgProgress}%
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">نسبة الإنجاز المحققة</p>
           </div>
-          <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
-            {avgProgress}%
+          <div className="size-7 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+            <span className="text-xs font-mono font-bold">AVG</span>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">نسبة الإنجاز المحققة</p>
         </div>
 
-        <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-            <span className="font-medium text-[11px]">الأهداف الاستراتيجية الكبرى</span>
-            <span className="size-1.5 rounded-full bg-blue-500" />
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-blue-600 dark:text-blue-400">الأهداف الاستراتيجية الكبرى</p>
+            <p className="text-xl font-bold tracking-tight text-blue-600 dark:text-blue-400 font-mono tabular-nums mt-0.5">
+              {currentTree.length}
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">محاور رئيسية معتمدة</p>
           </div>
-          <div className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400 font-mono tabular-nums">
-            {currentTree.length}
+          <div className="size-7 rounded-md bg-blue-500/10 flex items-center justify-center text-blue-600">
+            <span className="text-xs font-mono font-bold">CORE</span>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">محاور رئيسية معتمدة</p>
         </div>
       </div>
 
       {/* Tree Single-Surface Chassis */}
-      <div className="bg-card rounded-xl border border-border/80 p-4 sm:p-5 shadow-xs">
-        <div className="space-y-1">
-          {currentTree.map((goal) => (
-            <GoalNodeComponent key={goal.id} goal={goal} level={0} navigate={navigate} />
-          ))}
-        </div>
+      <div className="bg-card rounded-lg border border-border/70 p-3.5 sm:p-4 shadow-xs">
+        {loading ? (
+          <div className="flex items-center justify-center min-h-[300px]">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {currentTree.map((goal) => (
+              <DevGoalNodeComponent key={goal.id} goal={goal} level={0} navigate={navigate} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
-};
-
-export default DevGoalAlignmentTree;
+}
