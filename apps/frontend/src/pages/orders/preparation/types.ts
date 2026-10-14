@@ -18,6 +18,10 @@ export interface SimpleOrderItem {
   price?: number | string | null;
   quantity?: number | string | null;
   total?: number | string | null;
+  carModel?: string | null;
+  customAttributes?: any;
+  attributes?: any;
+  customFields?: any;
   metadata?: JsonObject | string | null;
 }
 
@@ -235,6 +239,10 @@ export interface ApiOrderItemResponse {
   price?: number | string | null;
   quantity?: number | string | null;
   total?: number | string | null;
+  carModel?: string | null;
+  customAttributes?: any;
+  attributes?: any;
+  customFields?: any;
   metadata?: JsonObject | string | null;
 }
 

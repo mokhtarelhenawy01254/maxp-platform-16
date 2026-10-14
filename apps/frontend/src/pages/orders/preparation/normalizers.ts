@@ -19,6 +19,28 @@ import type {
 
 const normalizeOrderItem = (item: ApiOrderItemResponse): SimpleOrderItem => {
   const metadata = parseMaybeJsonObject(item.metadata);
+  const metaAttrs = (metadata?.attributeValues as Record<string, any>) || null;
+  const carModel =
+    (item as any).carModel ||
+    (item as any).car_model ||
+    (metadata?.carModel as string) ||
+    (metadata?.car_model as string) ||
+    (metaAttrs?.car_model as string) ||
+    (metaAttrs?.carModel as string) ||
+    (metaAttrs?.["نوع وموديل وسنة صنع السيارة"] as string) ||
+    (metaAttrs?.["موديل السيارة"] as string) ||
+    (metaAttrs?.["السيارة"] as string) ||
+    (typeof metadata?.details === "string" && (metadata.details as string).trim().length > 1 ? (metadata.details as string).trim() : null) ||
+    null;
+
+  const customAttributes =
+    (item as any).customAttributes ||
+    (item as any).attributes ||
+    (item as any).customFields ||
+    metadata?.customAttributes ||
+    metaAttrs ||
+    null;
+
   return {
     id: String(item.id || item.productId || Math.random()),
     productId: String(item.productId || ""),
@@ -30,6 +52,10 @@ const normalizeOrderItem = (item: ApiOrderItemResponse): SimpleOrderItem => {
     price: toNumber(item.price),
     quantity: toNumber(item.quantity),
     total: toNumber(item.total),
+    carModel,
+    customAttributes,
+    attributes: (item as any).attributes || customAttributes,
+    customFields: (item as any).customFields || null,
     metadata,
   };
 };
