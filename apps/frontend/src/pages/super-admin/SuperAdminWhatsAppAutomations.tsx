@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { BellRing, Link2, Smartphone, Workflow, RefreshCw, CheckCircle2 } from "lucide-react";
+import { BellRing, Smartphone, Workflow, RefreshCw, Layers } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { apiClient } from "../../services/apiClient";
-import { WhatsAppPageShell, WhatsAppSurfaceCard } from "../whatsapp/components/WhatsAppPageShell";
 
 interface CompanyOption {
   id: string;
@@ -109,7 +108,6 @@ export default function SuperAdminWhatsAppAutomations() {
   const [companyId, setCompanyId] = useState("all");
   const [platformReadyNow, setPlatformReadyNow] = useState<PlatformAutomation[]>([]);
   const [companyOwnedSummary, setCompanyOwnedSummary] = useState<CompanyOwnedSummary | null>(null);
-  const [nextPhase, setNextPhase] = useState<PlannedAutomation[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -134,7 +132,6 @@ export default function SuperAdminWhatsAppAutomations() {
             const data = catalogRes.value.data.data;
             setPlatformReadyNow(data.platformReadyNow?.length ? data.platformReadyNow : DEFAULT_PLATFORM_AUTOMATIONS);
             setCompanyOwnedSummary(data.companyOwnedSummary || DEFAULT_COMPANY_OWNED_SUMMARY);
-            setNextPhase(data.nextPhase || []);
           } else {
             setPlatformReadyNow(DEFAULT_PLATFORM_AUTOMATIONS);
             setCompanyOwnedSummary(DEFAULT_COMPANY_OWNED_SUMMARY);
@@ -161,7 +158,7 @@ export default function SuperAdminWhatsAppAutomations() {
   );
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-4 p-4 sm:p-6" dir="rtl">
+    <div className="w-full space-y-4" dir="rtl">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-3">
@@ -178,36 +175,35 @@ export default function SuperAdminWhatsAppAutomations() {
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              إدارة أتمتة المنصة واشتراكات الشركات، مع فصل أتمتة العملاء داخل مساحات العمل الخاصة بكل شركة
+              إدارة أتمتة المنصة واشتراكات الشركات، مع عزل أتمتة العملاء داخل مساحات العمل الخاصة بكل شركة
             </p>
           </div>
         </div>
 
-        {selectedCompany && (
-          <div className="flex items-center gap-2 self-end sm:self-auto">
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="h-8 text-xs font-mono gap-1.5"
-            >
-              <Link to={`/super-admin/whatsapp/companies/${selectedCompany.id}/settings?tab=sessions`}>
-                <Smartphone className="size-3.5" />
-                <span>ربط الجلسة</span>
-              </Link>
-            </Button>
-            <Button
-              asChild
-              size="sm"
-              className="h-8 text-xs font-mono gap-1.5 bg-primary text-primary-foreground"
-            >
-              <Link to={`/super-admin/whatsapp/companies/${selectedCompany.id}/notifications`}>
-                <BellRing className="size-3.5" />
-                <span>إدارة {selectedCompany.name}</span>
-              </Link>
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          {selectedCompany && (
+            <>
+              <Button asChild variant="outline" size="sm" className="h-8 text-xs font-mono gap-1.5 active:scale-[0.98]">
+                <Link to={`/super-admin/whatsapp/companies/${selectedCompany.id}/settings?tab=sessions`}>
+                  <Smartphone className="size-3.5" />
+                  <span>ربط الجلسة</span>
+                </Link>
+              </Button>
+              <Button asChild size="sm" className="h-8 text-xs font-mono gap-1.5 bg-primary text-primary-foreground active:scale-[0.98]">
+                <Link to={`/super-admin/whatsapp/companies/${selectedCompany.id}/notifications`}>
+                  <BellRing className="size-3.5" />
+                  <span>إدارة {selectedCompany.name}</span>
+                </Link>
+              </Button>
+            </>
+          )}
+          <Button asChild variant="outline" size="sm" className="h-8 text-xs font-mono gap-1.5 active:scale-[0.98]">
+            <Link to="/super-admin/whatsapp">
+              <Layers className="size-3.5" />
+              <span>نظرة عامة</span>
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Telemetry Strip */}
@@ -240,7 +236,7 @@ export default function SuperAdminWhatsAppAutomations() {
               <span className="font-medium text-[11px]">نطاق الفحص والتصفية</span>
               <span className="size-1.5 rounded-full bg-sky-500" />
             </div>
-            <div className="text-xs font-semibold text-foreground mt-1">
+            <div className="text-xs font-semibold text-foreground mt-1 truncate">
               {companyId === "all" ? "جميع شركات المنصة" : selectedCompany?.name}
             </div>
             <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">تطبيق القواعد لحظياً</p>
@@ -249,11 +245,11 @@ export default function SuperAdminWhatsAppAutomations() {
       </div>
 
       {/* Scope Selector Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl border border-border/80 bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl border border-border/80 bg-card shadow-xs">
         <div className="flex items-center gap-2 max-w-sm w-full">
-          <span className="text-xs font-mono text-muted-foreground whitespace-nowrap">الشركة:</span>
+          <span className="text-xs font-mono text-muted-foreground whitespace-nowrap">الشركة المستهدفة:</span>
           <Select value={companyId} onValueChange={setCompanyId}>
-            <SelectTrigger className="h-8 text-xs font-mono bg-background/50">
+            <SelectTrigger className="h-8 text-xs font-mono bg-background border-border/70">
               <SelectValue placeholder="اختر شركة أو اعرض الكل" />
             </SelectTrigger>
             <SelectContent>
@@ -267,7 +263,7 @@ export default function SuperAdminWhatsAppAutomations() {
           </Select>
         </div>
 
-        <div className="text-xs font-mono text-muted-foreground">
+        <div className="text-xs font-mono text-muted-foreground tabular-nums">
           {platformReadyNow.length} نمط أتمتة متاح
         </div>
       </div>
@@ -291,7 +287,7 @@ export default function SuperAdminWhatsAppAutomations() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-foreground">{item.name}</span>
-                    <Badge variant="outline" className="text-[10px] font-mono">{item.category}</Badge>
+                    <Badge variant="outline" className="text-[10px] font-mono rounded-md">{item.category}</Badge>
                   </div>
                   <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
                     {item.activeCompanies} شركة فعالة
@@ -299,7 +295,7 @@ export default function SuperAdminWhatsAppAutomations() {
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">{item.description}</p>
                 <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono pt-1">
-                  <code>{item.eventType}</code>
+                  <code className="text-primary font-mono">{item.eventType}</code>
                   <span>•</span>
                   <span>{item.templateCount} قوالب</span>
                   <span>•</span>
@@ -327,7 +323,7 @@ export default function SuperAdminWhatsAppAutomations() {
 
               <div className="space-y-2">
                 {(companyOwnedSummary?.categories || []).map((cat) => (
-                  <div key={cat.category} className="p-2.5 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-between">
+                  <div key={cat.category} className="p-2.5 rounded-lg border border-border/60 bg-muted/15 flex items-center justify-between">
                     <div>
                       <p className="text-xs font-semibold text-foreground">{cat.category}</p>
                       <p className="text-[10px] text-muted-foreground font-mono">{cat.activeCompanies} شركة تستخدمها</p>
@@ -342,7 +338,7 @@ export default function SuperAdminWhatsAppAutomations() {
           </div>
 
           <div className="p-3 border-t border-border/60 bg-muted/10">
-            <p className="text-[10px] text-muted-foreground font-mono">
+            <p className="text-[10px] font-mono text-muted-foreground">
               توجيه آمن: لا يتم خلط بيانات عملاء المتاجر مع إشعارات المنصة.
             </p>
           </div>

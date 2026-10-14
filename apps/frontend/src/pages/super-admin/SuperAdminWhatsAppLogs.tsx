@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Activity, AlertTriangle, RefreshCw, Search } from "lucide-react";
+import { Activity, AlertTriangle, RefreshCw, Search, Layers } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +24,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { apiClient } from "../../services/apiClient";
-import { WhatsAppPageShell, WhatsAppSurfaceCard } from "../whatsapp/components/WhatsAppPageShell";
 
 interface CompanyOption {
   id: string;
@@ -56,10 +56,6 @@ export default function SuperAdminWhatsAppLogs() {
   const [status, setStatus] = useState("all");
   const [companyId, setCompanyId] = useState("all");
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
-  const controlClass =
-    "h-11 rounded-2xl border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]";
-  const cardSurfaceClass =
-    "rounded-[22px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_84%,var(--shell-control-bg)_16%)] p-4";
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -69,7 +65,6 @@ export default function SuperAdminWhatsAppLogs() {
 
   useEffect(() => {
     let active = true;
-
     const loadCompanies = async () => {
       try {
         const response = await apiClient.get("/admin/companies");
@@ -82,9 +77,7 @@ export default function SuperAdminWhatsAppLogs() {
     };
 
     void loadCompanies();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, []);
 
   const loadLogs = useCallback(async () => {
@@ -113,39 +106,92 @@ export default function SuperAdminWhatsAppLogs() {
     void loadLogs();
   }, [loadLogs]);
 
+  const getStatusBadge = (logStatus: string) => {
+    switch (logStatus) {
+      case "DELIVERED":
+      case "READ":
+        return <Badge variant="outline" className="text-[10px] font-mono rounded-md text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10">{logStatus}</Badge>;
+      case "SENT":
+        return <Badge variant="outline" className="text-[10px] font-mono rounded-md text-blue-600 dark:text-blue-400 border-blue-500/30 bg-blue-500/10">{logStatus}</Badge>;
+      case "FAILED":
+        return <Badge variant="outline" className="text-[10px] font-mono rounded-md text-rose-600 dark:text-rose-400 border-rose-500/30 bg-rose-500/10">{logStatus}</Badge>;
+      default:
+        return <Badge variant="outline" className="text-[10px] font-mono rounded-md">{logStatus}</Badge>;
+    }
+  };
+
   return (
-    <WhatsAppPageShell
-      title={t("superAdmin.whatsapp.logs.title")}
-      description={t("superAdmin.whatsapp.logs.description")}
-      icon={Activity}
-      eyebrow="Super Admin"
-    >
-      {error ? (
-        <Alert className="rounded-[24px] border-amber-300/70 bg-amber-500/10 text-amber-900">
-          <AlertTriangle className="size-4" />
-          <AlertTitle>{t("superAdmin.whatsapp.overview.errorTitle")}</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-          <Button onClick={loadLogs} variant="outline" className="mt-3 rounded-full">
-            <RefreshCw className="size-4" />
-            {t("superAdmin.whatsapp.overview.retry")}
+    <div className="w-full space-y-4" dir="rtl">
+      {/* Top Header Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0 shadow-2xs">
+            <Activity className="size-4 text-primary" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
+                {t("superAdmin.whatsapp.logs.title")}
+              </h1>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+                {logs.length} سجل
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {t("superAdmin.whatsapp.logs.description")}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={loadLogs}
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform"
+          >
+            <RefreshCw className="size-3.5" />
+            <span>تحديث</span>
           </Button>
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98]"
+          >
+            <Link to="/super-admin/whatsapp">
+              <Layers className="size-3.5" />
+              <span>نظرة عامة</span>
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      {error ? (
+        <Alert variant="destructive" className="py-2.5">
+          <AlertTriangle className="size-4" />
+          <AlertTitle className="text-xs font-bold">{t("superAdmin.whatsapp.overview.errorTitle")}</AlertTitle>
+          <AlertDescription className="text-xs">{error}</AlertDescription>
         </Alert>
       ) : (
         <>
-          <WhatsAppSurfaceCard title={t("superAdmin.whatsapp.logs.filtersTitle")}>
-            <div className="grid gap-3 md:grid-cols-[1.4fr_0.8fr_0.8fr]">
+          {/* Filters Bar */}
+          <div className="p-2.5 rounded-xl border border-border/80 bg-card shadow-xs">
+            <div className="grid gap-2.5 sm:grid-cols-3">
               <div className="relative">
-                <Search className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder={t("superAdmin.whatsapp.logs.searchPlaceholder")}
                   aria-label={t("superAdmin.whatsapp.logs.searchPlaceholder")}
-                  className="h-11 rounded-2xl pr-9 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                  className="h-8 text-xs pr-8 font-mono bg-background border-border/70"
                 />
               </div>
+
               <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className={controlClass} aria-label={t("superAdmin.whatsapp.logs.statusPlaceholder")}>
+                <SelectTrigger className="h-8 text-xs font-mono bg-background border-border/70">
                   <SelectValue placeholder={t("superAdmin.whatsapp.logs.statusPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -156,8 +202,9 @@ export default function SuperAdminWhatsAppLogs() {
                   <SelectItem value="FAILED">FAILED</SelectItem>
                 </SelectContent>
               </Select>
+
               <Select value={companyId} onValueChange={setCompanyId}>
-                <SelectTrigger className={controlClass} aria-label={t("superAdmin.whatsapp.logs.companyPlaceholder")}>
+                <SelectTrigger className="h-8 text-xs font-mono bg-background border-border/70">
                   <SelectValue placeholder={t("superAdmin.whatsapp.logs.companyPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -170,115 +217,106 @@ export default function SuperAdminWhatsAppLogs() {
                 </SelectContent>
               </Select>
             </div>
-          </WhatsAppSurfaceCard>
+          </div>
 
-          <WhatsAppSurfaceCard
-            title={t("superAdmin.whatsapp.logs.listTitle")}
-            description={t("superAdmin.whatsapp.logs.listDescription")}
-          >
+          {/* Single-Surface Table Container */}
+          <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
+            <div className="p-3 border-b border-border/60 bg-muted/20 flex items-center justify-between">
+              <h2 className="text-xs font-semibold text-foreground">
+                {t("superAdmin.whatsapp.logs.listTitle")}
+              </h2>
+              <span className="text-[10px] font-mono text-muted-foreground tabular-nums">
+                {logs.length} سجلات مرصودة
+              </span>
+            </div>
+
             {loading ? (
-              <div className="space-y-3">
+              <div className="p-4 space-y-2">
                 {Array.from({ length: 6 }).map((_, index) => (
-                  <Skeleton key={index} className="h-16 rounded-[18px]" />
+                  <Skeleton key={index} className="h-10 rounded-md" />
                 ))}
               </div>
             ) : (
               <>
-                <div className="space-y-3 lg:hidden">
+                {/* Mobile View */}
+                <div className="p-3 space-y-2 lg:hidden">
                   {logs.length === 0 ? (
-                    <p className="text-center text-sm text-muted-foreground">
+                    <p className="text-center py-6 text-xs text-muted-foreground font-mono">
                       {t("superAdmin.whatsapp.logs.empty")}
                     </p>
                   ) : (
                     logs.map((log) => (
-                      <div key={log.id} className={cardSurfaceClass}>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge className="rounded-full bg-[color:var(--color-primary)] text-white">
-                            {log.company.name}
-                          </Badge>
-                          <Badge variant="outline" className="rounded-full">
-                            {log.status}
-                          </Badge>
+                      <div key={log.id} className="p-3 rounded-lg border border-border/60 bg-muted/15 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold text-xs text-foreground truncate">{log.company.name}</span>
+                          {getStatusBadge(log.status)}
                         </div>
-                        <p className="mt-3 font-medium text-[color:var(--color-foreground)]">
-                          {log.eventType}
-                        </p>
-                        <p className="mt-1 text-xs text-[color:var(--color-muted-foreground)]">
-                          {log.category}
-                        </p>
-                        <div className="mt-3 space-y-1 text-sm">
-                          <p>{log.recipientPhone}</p>
-                          {log.recipientName ? (
-                            <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                              {log.recipientName}
-                            </p>
-                          ) : null}
+                        <div className="text-[11px] font-mono text-foreground">
+                          <span className="text-primary font-bold">{log.eventType}</span> · <span className="text-muted-foreground">{log.category}</span>
                         </div>
-                          {log.status === "FAILED" && log.failureReason ? (
-                            <p className="mt-2 text-xs text-red-600 dark:text-red-400 truncate" title={log.failureReason}>
-                              {log.failureReason}
-                            </p>
-                          ) : null}
-                          <p className="mt-1 text-xs text-[color:var(--color-muted-foreground)]">
-                            {new Date(log.createdAt).toLocaleString("ar-EG")}
+                        <div className="text-[10px] font-mono text-muted-foreground flex items-center justify-between">
+                          <span>{log.recipientPhone} {log.recipientName ? `(${log.recipientName})` : ""}</span>
+                          <span>{new Date(log.createdAt).toLocaleDateString("ar-EG")}</span>
+                        </div>
+                        {log.status === "FAILED" && log.failureReason && (
+                          <p className="text-[10px] font-mono text-rose-500 bg-rose-500/10 p-1.5 rounded border border-rose-500/20">
+                            {log.failureReason}
                           </p>
-                        </div>
+                        )}
+                      </div>
                     ))
                   )}
                 </div>
 
-                <div className="hidden lg:block">
+                {/* Desktop High-Density Table */}
+                <div className="hidden lg:block overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>{t("superAdmin.whatsapp.logs.columns.company")}</TableHead>
-                        <TableHead>{t("superAdmin.whatsapp.logs.columns.event")}</TableHead>
-                         <TableHead>{t("superAdmin.whatsapp.logs.columns.status")}</TableHead>
-                        <TableHead>{t("superAdmin.whatsapp.logs.columns.error")}</TableHead>
-                        <TableHead>{t("superAdmin.whatsapp.logs.columns.recipient")}</TableHead>
-                        <TableHead className="text-left">{t("superAdmin.whatsapp.logs.columns.time")}</TableHead>
+                      <TableRow className="border-border/60 bg-muted/10">
+                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.company")}</TableHead>
+                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.event")}</TableHead>
+                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.status")}</TableHead>
+                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.error")}</TableHead>
+                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.recipient")}</TableHead>
+                        <TableHead className="text-left text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.time")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {logs.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          <TableCell colSpan={6} className="text-center py-8 text-xs text-muted-foreground font-mono">
                             {t("superAdmin.whatsapp.logs.empty")}
                           </TableCell>
                         </TableRow>
                       ) : (
                         logs.map((log) => (
-                          <TableRow key={log.id}>
-                            <TableCell>{log.company.name}</TableCell>
+                          <TableRow key={log.id} className="border-border/50 hover:bg-muted/15 transition-colors">
+                            <TableCell className="font-semibold text-xs text-foreground">{log.company.name}</TableCell>
                             <TableCell>
-                              <div className="space-y-1">
-                                <p className="font-medium">{log.eventType}</p>
-                                <p className="text-xs text-muted-foreground">{log.category}</p>
+                              <div>
+                                <p className="font-mono text-xs font-medium text-foreground">{log.eventType}</p>
+                                <p className="text-[10px] text-muted-foreground">{log.category}</p>
                               </div>
                             </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="rounded-full">
-                                {log.status}
-                              </Badge>
-                            </TableCell>
+                            <TableCell>{getStatusBadge(log.status)}</TableCell>
                             <TableCell>
                               {log.status === "FAILED" && log.failureReason ? (
-                                <span className="max-w-[200px] truncate block text-xs text-red-600 dark:text-red-400" title={log.failureReason}>
+                                <span className="max-w-[220px] truncate block text-[11px] font-mono text-rose-600 dark:text-rose-400" title={log.failureReason}>
                                   {log.failureReason}
                                 </span>
                               ) : (
-                                <span className="text-xs text-muted-foreground">—</span>
+                                <span className="text-xs text-muted-foreground font-mono">—</span>
                               )}
                             </TableCell>
-                            <TableCell>
-                              <div className="space-y-1">
-                                <p>{log.recipientPhone}</p>
-                                {log.recipientName ? (
-                                  <p className="text-xs text-muted-foreground">{log.recipientName}</p>
-                                ) : null}
+                            <TableCell className="font-mono text-xs">
+                              <div>
+                                <p className="tabular-nums">{log.recipientPhone}</p>
+                                {log.recipientName && (
+                                  <p className="text-[10px] text-muted-foreground">{log.recipientName}</p>
+                                )}
                               </div>
                             </TableCell>
-                            <TableCell className="text-left">
+                            <TableCell className="text-left font-mono tabular-nums text-[11px] text-muted-foreground">
                               {new Date(log.createdAt).toLocaleString("ar-EG")}
                             </TableCell>
                           </TableRow>
@@ -289,9 +327,9 @@ export default function SuperAdminWhatsAppLogs() {
                 </div>
               </>
             )}
-          </WhatsAppSurfaceCard>
+          </div>
         </>
       )}
-    </WhatsAppPageShell>
+    </div>
   );
 }

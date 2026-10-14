@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, Building2, RefreshCw, Search, Settings2, Smartphone } from "lucide-react";
+import { AlertTriangle, Building2, RefreshCw, Search, Settings2, Smartphone, ExternalLink } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { apiClient } from "../../services/apiClient";
-import { WhatsAppPageShell, WhatsAppSurfaceCard } from "../whatsapp/components/WhatsAppPageShell";
 
 interface CompanyRow {
   id: string;
@@ -57,10 +56,6 @@ export default function SuperAdminWhatsAppCompanies() {
   const [status, setStatus] = useState("all");
   const [notifications, setNotifications] = useState("all");
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
-  const controlClass =
-    "h-11 rounded-2xl border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]";
-  const cardSurfaceClass =
-    "rounded-[22px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_84%,var(--shell-control-bg)_16%)] p-4";
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
@@ -97,42 +92,74 @@ export default function SuperAdminWhatsAppCompanies() {
   const sl = (key: string) => t(`superAdmin.whatsapp.companies.statusLabels.${key}`);
 
   return (
-    <WhatsAppPageShell
-      title={t("superAdmin.whatsapp.companies.title")}
-      description={t("superAdmin.whatsapp.companies.description")}
-      icon={Building2}
-      eyebrow="Super Admin"
-    >
-      {error ? (
-        <Alert className="rounded-[24px] border-amber-300/70 bg-amber-500/10 text-amber-900">
-          <AlertTriangle className="size-4" />
-          <AlertTitle>{t("superAdmin.whatsapp.overview.errorTitle")}</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-          <Button onClick={load} variant="outline" className="mt-3 rounded-full">
-            <RefreshCw className="size-4" />
-            {t("superAdmin.whatsapp.overview.retry")}
+    <div className="w-full space-y-4" dir="rtl">
+      {/* Top Header Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0 shadow-2xs">
+            <Building2 className="size-4 text-primary" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
+                {t("superAdmin.whatsapp.companies.title")}
+              </h1>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+                {rows.length} شركة
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {t("superAdmin.whatsapp.companies.description")}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={load}
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform"
+          >
+            <RefreshCw className="size-3.5" />
+            <span>تحديث</span>
           </Button>
+          <Button
+            nativeButton={false}
+            render={<Link to="/super-admin/whatsapp" />}
+            size="sm"
+            className="h-8 gap-1.5 text-xs font-mono font-medium bg-muted text-foreground border border-border/70 hover:bg-muted/80 active:scale-[0.98] transition-transform"
+          >
+            <span>نظرة عامة</span>
+          </Button>
+        </div>
+      </div>
+
+      {error ? (
+        <Alert variant="destructive" className="py-2.5">
+          <AlertTriangle className="size-4" />
+          <AlertTitle className="text-xs font-bold">{t("superAdmin.whatsapp.overview.errorTitle")}</AlertTitle>
+          <AlertDescription className="text-xs">{error}</AlertDescription>
         </Alert>
       ) : (
         <>
-          <WhatsAppSurfaceCard
-            title={t("superAdmin.whatsapp.companies.filtersTitle")}
-            description={t("superAdmin.whatsapp.companies.filtersDescription")}
-          >
-            <div className="grid gap-3 md:grid-cols-[1.4fr_0.8fr_0.8fr]">
+          {/* Filters Bar */}
+          <div className="p-2.5 rounded-xl border border-border/80 bg-card shadow-xs">
+            <div className="grid gap-2.5 sm:grid-cols-3">
               <div className="relative">
-                <Search className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder={t("superAdmin.whatsapp.companies.searchPlaceholder")}
                   aria-label={t("superAdmin.whatsapp.companies.searchPlaceholder")}
-                  className="h-11 rounded-2xl pr-9 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                  className="h-8 text-xs pr-8 font-mono bg-background border-border/70"
                 />
               </div>
 
               <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className={controlClass} aria-label={t("superAdmin.whatsapp.companies.statusAll")}>
+                <SelectTrigger className="h-8 text-xs font-mono bg-background border-border/70">
                   <SelectValue placeholder={t("superAdmin.whatsapp.companies.statusAll")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -145,7 +172,7 @@ export default function SuperAdminWhatsAppCompanies() {
               </Select>
 
               <Select value={notifications} onValueChange={setNotifications}>
-                <SelectTrigger className={controlClass} aria-label={t("superAdmin.whatsapp.companies.notificationsAll")}>
+                <SelectTrigger className="h-8 text-xs font-mono bg-background border-border/70">
                   <SelectValue placeholder={t("superAdmin.whatsapp.companies.notificationsAll")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -155,108 +182,74 @@ export default function SuperAdminWhatsAppCompanies() {
                 </SelectContent>
               </Select>
             </div>
-          </WhatsAppSurfaceCard>
+          </div>
 
-          <WhatsAppSurfaceCard
-            title={t("superAdmin.whatsapp.companies.listTitle")}
-            description={t("superAdmin.whatsapp.companies.listDescription")}
-          >
+          {/* Single-Surface Table Container */}
+          <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
+            <div className="p-3 border-b border-border/60 bg-muted/20 flex items-center justify-between">
+              <h2 className="text-xs font-semibold text-foreground">
+                {t("superAdmin.whatsapp.companies.listTitle")}
+              </h2>
+              <span className="text-[10px] font-mono text-muted-foreground tabular-nums">
+                {rows.length} نتائج
+              </span>
+            </div>
+
             {loading ? (
-              <div className="space-y-3">
+              <div className="p-4 space-y-2">
                 {Array.from({ length: 6 }).map((_, index) => (
-                  <Skeleton key={index} className="h-16 rounded-[18px]" />
+                  <Skeleton key={index} className="h-10 rounded-md" />
                 ))}
               </div>
             ) : (
               <>
-                <div className="space-y-3 lg:hidden">
+                {/* Mobile Cards */}
+                <div className="p-3 space-y-2 lg:hidden">
                   {rows.length === 0 ? (
-                    <p className="text-center text-sm text-muted-foreground">
+                    <p className="text-center py-6 text-xs text-muted-foreground font-mono">
                       {t("superAdmin.whatsapp.companies.empty")}
                     </p>
                   ) : (
                     rows.map((row) => (
-                      <div key={row.id} className={cardSurfaceClass}>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0 space-y-1">
-                            <p className="font-medium text-[color:var(--color-foreground)]">
-                              {row.name}
-                            </p>
-                            <p className="break-words text-xs text-[color:var(--color-muted-foreground)]">
-                              {row.email} {row.slug ? `· ${row.slug}` : ""}
-                            </p>
+                      <div key={row.id} className="p-3 rounded-lg border border-border/60 bg-muted/15 space-y-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-semibold text-xs text-foreground">{row.name}</p>
+                            <p className="text-[10px] font-mono text-muted-foreground truncate">{row.email} {row.slug ? `· @${row.slug}` : ""}</p>
                           </div>
-                          <Badge variant="outline" className="rounded-full">
+                          <Badge variant="outline" className="text-[10px] font-mono">
                             {sl(row.whatsapp.status) || row.whatsapp.status}
                           </Badge>
                         </div>
 
-                        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                          <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--shell-control-bg)_76%,transparent)] px-3 py-2">
-                            <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                              {t("superAdmin.whatsapp.companies.stats.sessions")}
-                            </p>
-                            <p className="mt-1 font-semibold">
-                              {row.whatsapp.connectedSessions}/{row.whatsapp.sessionsTotal}
-                            </p>
+                        <div className="grid grid-cols-2 gap-2 text-[11px] font-mono pt-1 border-t border-border/50">
+                          <div>
+                            <span className="text-muted-foreground">الجلسات: </span>
+                            <span className="font-bold tabular-nums text-foreground">{row.whatsapp.connectedSessions}/{row.whatsapp.sessionsTotal}</span>
                           </div>
-                          <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--shell-control-bg)_76%,transparent)] px-3 py-2">
-                            <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                              {t("superAdmin.whatsapp.companies.stats.notifications")}
-                            </p>
-                            <p className="mt-1 font-semibold">
-                              {row.whatsapp.notificationsEnabled ? t("superAdmin.whatsapp.companies.notificationsEnabled") : t("superAdmin.whatsapp.companies.notificationsDisabled")}
-                            </p>
+                          <div>
+                            <span className="text-muted-foreground">التنبيهات: </span>
+                            <span className="font-bold text-foreground">{row.whatsapp.notificationsEnabled ? "مفعلة" : "معطلة"}</span>
                           </div>
-                          <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--shell-control-bg)_76%,transparent)] px-3 py-2">
-                            <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                              {t("superAdmin.whatsapp.companies.stats.templates")}
-                            </p>
-                            <p className="mt-1 font-semibold">
-                              {row.whatsapp.activeTemplates}/{row.whatsapp.templatesTotal}
-                            </p>
+                          <div>
+                            <span className="text-muted-foreground">القوالب: </span>
+                            <span className="font-bold tabular-nums text-foreground">{row.whatsapp.activeTemplates}/{row.whatsapp.templatesTotal}</span>
                           </div>
-                          <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--shell-control-bg)_76%,transparent)] px-3 py-2">
-                            <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                              {t("superAdmin.whatsapp.companies.stats.failures")}
-                            </p>
-                            <p className="mt-1 font-semibold">{row.whatsapp.failedLast30Days}</p>
+                          <div>
+                            <span className="text-muted-foreground">الفشل: </span>
+                            <span className="font-bold tabular-nums text-rose-500">{row.whatsapp.failedLast30Days}</span>
                           </div>
                         </div>
 
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          <Button
-                            nativeButton={false}
-                            variant="outline"
-                            render={
-                              <Link
-                                to={`/super-admin/whatsapp/companies/${row.id}/settings?tab=sessions`}
-                              />
-                            }
-                            className="flex-1 rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_80%,var(--shell-control-bg)_20%)]"
-                          >
-                            <Smartphone className="size-4" />
-                            {t("superAdmin.whatsapp.companies.buttons.linkSession")}
+                        <div className="flex items-center gap-1.5 pt-1">
+                          <Button nativeButton={false} variant="outline" size="sm" render={<Link to={`/super-admin/whatsapp/companies/${row.id}/settings?tab=sessions`} />} className="flex-1 h-7 text-[10px] font-mono gap-1">
+                            <Smartphone className="size-3" /> جلسات
                           </Button>
-                          <Button
-                            nativeButton={false}
-                            variant="outline"
-                            render={<Link to={`/super-admin/whatsapp/companies/${row.id}`} />}
-                            className="rounded-full"
-                          >
-                            {t("superAdmin.whatsapp.companies.buttons.openWorkspace")}
+                          <Button nativeButton={false} variant="outline" size="sm" render={<Link to={`/super-admin/whatsapp/companies/${row.id}`} />} className="flex-1 h-7 text-[10px] font-mono">
+                            مساحة العمل
                           </Button>
-                          <Button
-                            nativeButton={false}
-                            render={
-                              <Link
-                                to={`/super-admin/whatsapp/companies/${row.id}/notifications`}
-                              />
-                            }
-                            className="rounded-full bg-[color:var(--color-primary)] text-white hover:bg-[color:color-mix(in_srgb,var(--color-primary)_84%,black)]"
-                          >
-                            <Settings2 className="size-4" />
-                            {t("superAdmin.whatsapp.companies.buttons.notifications")}
+                          <Button nativeButton={false} size="sm" render={<Link to={`/super-admin/whatsapp/companies/${row.id}/notifications`} />} className="h-7 text-[10px] font-mono bg-primary text-primary-foreground gap-1">
+                            <Settings2 className="size-3" /> إشعارات
                           </Button>
                         </div>
                       </div>
@@ -264,86 +257,68 @@ export default function SuperAdminWhatsAppCompanies() {
                   )}
                 </div>
 
-                <div className="hidden lg:block">
+                {/* Desktop High-Density Table */}
+                <div className="hidden lg:block overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>{t("superAdmin.whatsapp.companies.columns.company")}</TableHead>
-                        <TableHead>{t("superAdmin.whatsapp.companies.columns.status")}</TableHead>
-                        <TableHead>{t("superAdmin.whatsapp.companies.columns.sessions")}</TableHead>
-                        <TableHead>{t("superAdmin.whatsapp.companies.columns.notifications")}</TableHead>
-                        <TableHead>{t("superAdmin.whatsapp.companies.columns.templates")}</TableHead>
-                        <TableHead>{t("superAdmin.whatsapp.companies.columns.failures")}</TableHead>
-                        <TableHead className="text-left">{t("superAdmin.whatsapp.companies.columns.actions")}</TableHead>
+                      <TableRow className="border-border/60 bg-muted/10">
+                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.companies.columns.company")}</TableHead>
+                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.companies.columns.status")}</TableHead>
+                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.companies.columns.sessions")}</TableHead>
+                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.companies.columns.notifications")}</TableHead>
+                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.companies.columns.templates")}</TableHead>
+                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.companies.columns.failures")}</TableHead>
+                        <TableHead className="text-left text-xs font-mono">{t("superAdmin.whatsapp.companies.columns.actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {rows.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-muted-foreground">
+                          <TableCell colSpan={7} className="text-center py-8 text-xs text-muted-foreground font-mono">
                             {t("superAdmin.whatsapp.companies.empty")}
                           </TableCell>
                         </TableRow>
                       ) : (
                         rows.map((row) => (
-                          <TableRow key={row.id}>
+                          <TableRow key={row.id} className="border-border/50 hover:bg-muted/15 transition-colors">
                             <TableCell>
-                              <div className="space-y-1">
-                                <p className="font-medium">{row.name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {row.email} {row.slug ? `· ${row.slug}` : ""}
-                                </p>
+                              <div>
+                                <p className="font-semibold text-xs text-foreground">{row.name}</p>
+                                <p className="text-[10px] font-mono text-muted-foreground">{row.email} {row.slug ? `· @${row.slug}` : ""}</p>
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline" className="rounded-full">
+                              <Badge variant="outline" className="text-[10px] font-mono rounded-md">
                                 {sl(row.whatsapp.status) || row.whatsapp.status}
                               </Badge>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="font-mono tabular-nums text-xs">
                               {row.whatsapp.connectedSessions}/{row.whatsapp.sessionsTotal}
                             </TableCell>
-                            <TableCell>
-                              {row.whatsapp.notificationsEnabled ? t("superAdmin.whatsapp.companies.notificationsEnabled") : t("superAdmin.whatsapp.companies.notificationsDisabled")}
+                            <TableCell className="text-xs font-mono">
+                              <span className={`inline-flex items-center gap-1 ${row.whatsapp.notificationsEnabled ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>
+                                <span className={`size-1.5 rounded-full ${row.whatsapp.notificationsEnabled ? "bg-emerald-500" : "bg-muted-foreground"}`} />
+                                {row.whatsapp.notificationsEnabled ? "مفعلة" : "معطلة"}
+                              </span>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="font-mono tabular-nums text-xs">
                               {row.whatsapp.activeTemplates}/{row.whatsapp.templatesTotal}
                             </TableCell>
-                            <TableCell>{row.whatsapp.failedLast30Days}</TableCell>
+                            <TableCell className="font-mono tabular-nums text-xs text-rose-500">
+                              {row.whatsapp.failedLast30Days}
+                            </TableCell>
                             <TableCell className="text-left">
-                              <div className="flex flex-wrap justify-end gap-2">
-                                <Button
-                                  nativeButton={false}
-                                  variant="outline"
-                                  render={
-                                    <Link
-                                      to={`/super-admin/whatsapp/companies/${row.id}/settings?tab=sessions`}
-                                    />
-                                  }
-                                  className="rounded-full"
-                                >
-                                  <Smartphone className="size-4" />
-                                  {t("superAdmin.whatsapp.companies.buttons.linkSession")}
+                              <div className="flex items-center justify-end gap-1.5">
+                                <Button nativeButton={false} variant="outline" size="sm" render={<Link to={`/super-admin/whatsapp/companies/${row.id}/settings?tab=sessions`} />} className="h-7 px-2 text-xs font-mono gap-1 active:scale-[0.98]">
+                                  <Smartphone className="size-3" />
+                                  <span>جلسات</span>
                                 </Button>
-                                <Button
-                                  nativeButton={false}
-                                  variant="outline"
-                                  render={<Link to={`/super-admin/whatsapp/companies/${row.id}`} />}
-                                  className="rounded-full"
-                                >
-                                  {t("superAdmin.whatsapp.companies.buttons.openWorkspace")}
+                                <Button nativeButton={false} variant="outline" size="sm" render={<Link to={`/super-admin/whatsapp/companies/${row.id}`} />} className="h-7 px-2 text-xs font-mono active:scale-[0.98]">
+                                  <span>مساحة العمل</span>
                                 </Button>
-                                <Button
-                                  nativeButton={false}
-                                  render={
-                                    <Link
-                                      to={`/super-admin/whatsapp/companies/${row.id}/notifications`}
-                                    />
-                                  }
-                                  className="rounded-full bg-[color:var(--color-primary)] text-white hover:bg-[color:color-mix(in_srgb,var(--color-primary)_84%,black)]"
-                                >
-                                  <Settings2 className="size-4" />
-                                  {t("superAdmin.whatsapp.companies.buttons.notifications")}
+                                <Button nativeButton={false} size="sm" render={<Link to={`/super-admin/whatsapp/companies/${row.id}/notifications`} />} className="h-7 px-2 text-xs font-mono bg-primary text-primary-foreground gap-1 active:scale-[0.98]">
+                                  <Settings2 className="size-3" />
+                                  <span>إشعارات</span>
                                 </Button>
                               </div>
                             </TableCell>
@@ -355,9 +330,9 @@ export default function SuperAdminWhatsAppCompanies() {
                 </div>
               </>
             )}
-          </WhatsAppSurfaceCard>
+          </div>
         </>
       )}
-    </WhatsAppPageShell>
+    </div>
   );
 }
