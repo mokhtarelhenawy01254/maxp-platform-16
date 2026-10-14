@@ -10,6 +10,23 @@ const cachedInvoiceSettingsByCompany: Record<string, InvoicePrintSettings> = {};
 let inflightInvoiceSettingsPromise: Promise<InvoicePrintSettings> | null = null;
 let inflightCompanyId: string | null = null;
 
+const getCurrentCompanyId = (overrideCompanyId?: string): string => {
+  if (overrideCompanyId) return overrideCompanyId;
+  try {
+    const user = typeof tokenManager.getUser === "function" ? tokenManager.getUser() : null;
+    if (user?.companyId) return user.companyId;
+    if (user?.company?.id) return user.company.id;
+    if (typeof window !== "undefined") {
+      const raw = sessionStorage.getItem("user") || localStorage.getItem("user");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return parsed.companyId || parsed.company?.id || "default";
+      }
+    }
+  } catch {}
+  return "default";
+};
+
 export const clearInvoiceSettingsCache = (companyId?: string) => {
   if (companyId) {
     delete cachedInvoiceSettingsByCompany[companyId];
@@ -24,14 +41,12 @@ export const clearInvoiceSettingsCache = (companyId?: string) => {
 
 export const setCachedInvoiceSettings = (settings: InvoicePrintSettings, companyId?: string) => {
   const merged = { ...DEFAULT_INVOICE_SETTINGS, ...settings };
-  const user = tokenManager.getUser();
-  const targetCompany = companyId || user?.companyId || (user as any)?.company?.id || "default";
+  const targetCompany = getCurrentCompanyId(companyId);
   cachedInvoiceSettingsByCompany[targetCompany] = merged;
 };
 
 export function useInvoiceSettings() {
-  const user = tokenManager.getUser();
-  const currentCompanyId = user?.companyId || (user as any)?.company?.id || "default";
+  const currentCompanyId = getCurrentCompanyId();
   const cachedForCurrent = cachedInvoiceSettingsByCompany[currentCompanyId];
 
   const [settings, setSettings] = useState<InvoicePrintSettings>(
@@ -40,8 +55,7 @@ export function useInvoiceSettings() {
   const [loading, setLoading] = useState(!cachedForCurrent);
 
   const fetchSettings = useCallback(async (force = false) => {
-    const currentUser = tokenManager.getUser();
-    const activeCompany = currentUser?.companyId || (currentUser as any)?.company?.id || "default";
+    const activeCompany = getCurrentCompanyId();
     const cached = cachedInvoiceSettingsByCompany[activeCompany];
     if (cached && !force) {
       setSettings(cached);
@@ -80,8 +94,7 @@ export function useInvoiceSettings() {
   }, []);
 
   useEffect(() => {
-    const currentUser = tokenManager.getUser();
-    const activeCompany = currentUser?.companyId || (currentUser as any)?.company?.id || "default";
+    const activeCompany = getCurrentCompanyId();
     if (!cachedInvoiceSettingsByCompany[activeCompany]) {
       void fetchSettings();
     } else {

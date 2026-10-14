@@ -71,6 +71,16 @@ export const tokenManager = {
     return token ? `Bearer ${token}` : null;
   },
 
+  getUser(): any | null {
+    try {
+      if (typeof window === "undefined") return null;
+      const raw = sessionStorage.getItem("user") || localStorage.getItem("user");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  },
+
   createAuthHeaders(additionalHeaders: Record<string, string> = {}): Record<string, string> {
     const authorization = this.getAuthorizationHeaderValue();
     let fingerprint: string | null = null;
