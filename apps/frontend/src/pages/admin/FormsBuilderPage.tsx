@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import {
   Plus,
@@ -97,151 +97,178 @@ export default function FormsBuilderPage() {
   const avgConv = totalViews > 0 ? ((totalSubs / totalViews) * 100).toFixed(1) : "0.0";
 
   return (
-    <div className="w-full min-h-screen bg-background text-foreground flex flex-col font-sans" dir="rtl">
-      {/* Header Bar */}
-      <div className="border-b border-border/70 bg-card px-4 sm:px-6 py-4">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-          <div className="space-y-0.5">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">نماذج جمع البيانات والتسجيل</h1>
-            <p className="text-xs text-muted-foreground">بناء وإدارة صفحات الهبوط السريعة مع ربط Facebook Pixel ومتابعة التحويل</p>
+    <div className="w-full space-y-3.5" dir="rtl">
+      {/* Linear Single Chassis Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="size-8 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center text-foreground shrink-0 shadow-xs">
+            <FileText className="size-4 text-primary" />
           </div>
-          <button
-            onClick={() => { setEditForm(null); setModalOpen(true); }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 transition-colors shadow-xs"
-          >
-            <Plus className="w-4 h-4" />
-            إنشاء نموذج جديد
-          </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm sm:text-base font-bold tracking-tight text-foreground">
+                نماذج جمع البيانات والتسجيل
+              </h1>
+              <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/30 px-2 py-0.5 text-[10px] font-mono tabular-nums text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-blue-500" />
+                {forms.length} نموذج
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              بناء وإدارة صفحات الهبوط السريعة مع ربط Facebook Pixel ومتابعة التحويل
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => { setEditForm(null); setModalOpen(true); }}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-xs active:scale-[0.98]"
+        >
+          <Plus className="size-3.5" />
+          <span>إنشاء نموذج جديد</span>
+        </button>
+      </div>
+
+      {/* KPI Telemetry Ribbon */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 rounded-xl border border-border/80 bg-card/40 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+        <div className="p-3 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">إجمالي النماذج</span>
+            <FileText className="size-3.5 text-primary" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-foreground">{forms.length}</div>
+          <p className="text-[10px] text-muted-foreground font-mono mt-0.5">صفحة تسجيل نشطة</p>
+        </div>
+
+        <div className="p-3 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">إجمالي الزيارات</span>
+            <MousePointerClick className="size-3.5 text-purple-500" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-foreground">{totalViews.toLocaleString()}</div>
+          <p className="text-[10px] text-muted-foreground font-mono mt-0.5">زيارة فريدة مسجلة</p>
+        </div>
+
+        <div className="p-3 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">إجمالي التسجيلات</span>
+            <Users className="size-3.5 text-emerald-500" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{totalSubs.toLocaleString()}</div>
+          <p className="text-[10px] text-muted-foreground font-mono mt-0.5">بيانات عميل مؤكدة</p>
+        </div>
+
+        <div className="p-3 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span className="font-medium text-[11px]">متوسط التحويل</span>
+            <TrendingUp className="size-3.5 text-blue-500" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-blue-600 dark:text-blue-400">{avgConv}%</div>
+          <p className="text-[10px] text-muted-foreground font-mono mt-0.5">نسبة التسجيل للزيارات</p>
         </div>
       </div>
 
-      <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-5">
-        {/* KPI Ribbon */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
-            <div className="flex items-center justify-between text-xs text-muted-foreground"><span>إجمالي النماذج</span><FileText className="w-4 h-4 text-primary" /></div>
-            <div className="text-2xl font-bold font-mono tabular-nums text-foreground">{forms.length}</div>
-            <div className="text-[11px] text-muted-foreground">صفحة تسجيل نشطة</div>
+      {/* Table Chassis */}
+      <div className="rounded-xl border border-border/80 bg-card/40 overflow-hidden shadow-xs">
+        <div className="p-2.5 border-b border-border/60 bg-muted/20 flex items-center gap-2">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="size-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="بحث في أسماء وروابط النماذج..."
+              className="w-full pr-8 pl-3 py-1 bg-background/50 border border-border/70 rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary font-mono"
+            />
           </div>
-          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
-            <div className="flex items-center justify-between text-xs text-muted-foreground"><span>إجمالي الزيارات</span><MousePointerClick className="w-4 h-4 text-purple-500" /></div>
-            <div className="text-2xl font-bold font-mono tabular-nums text-foreground">{totalViews.toLocaleString()}</div>
-            <div className="text-[11px] text-muted-foreground">زيارة فريدة</div>
-          </div>
-          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
-            <div className="flex items-center justify-between text-xs text-muted-foreground"><span>إجمالي التسجيلات</span><Users className="w-4 h-4 text-emerald-500" /></div>
-            <div className="text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{totalSubs.toLocaleString()}</div>
-            <div className="text-[11px] text-muted-foreground">بيانات عميل مسجلة</div>
-          </div>
-          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
-            <div className="flex items-center justify-between text-xs text-muted-foreground"><span>متوسط التحويل</span><TrendingUp className="w-4 h-4 text-blue-500" /></div>
-            <div className="text-2xl font-bold font-mono tabular-nums text-blue-600 dark:text-blue-400">{avgConv}%</div>
-            <div className="text-[11px] text-muted-foreground">نسبة التسجيل للزيارات</div>
-          </div>
+          <span className="text-[11px] text-muted-foreground font-mono tabular-nums mr-auto">{filtered.length} نموذج</span>
         </div>
 
-        {/* Table Chassis */}
-        <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-xs">
-          <div className="p-3 border-b border-border/70 bg-muted/20 flex items-center gap-2">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="بحث في أسماء وروابط النماذج..."
-                className="w-full pr-8 pl-3 py-1.5 bg-background border border-border/80 rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
-              />
-            </div>
-            <span className="text-xs text-muted-foreground font-mono tabular-nums mr-auto">{filtered.length} نموذج</span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-right text-xs">
-              <thead>
-                <tr className="border-b border-border/70 bg-muted/40 text-muted-foreground">
-                  <th className="py-2.5 px-4 font-semibold">عنوان النموذج</th>
-                  <th className="py-2.5 px-4 font-semibold">الرابط السريع</th>
-                  <th className="py-2.5 px-3 font-semibold text-center">الزيارات</th>
-                  <th className="py-2.5 px-3 font-semibold text-center">الردود</th>
-                  <th className="py-2.5 px-3 font-semibold text-center">معدل التحويل</th>
-                  <th className="py-2.5 px-3 font-semibold text-center">الحالة</th>
-                  <th className="py-2.5 px-4 font-semibold text-left">الإجراءات</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {filtered.map((form) => {
-                  const subs = form._count?.submissions || 0;
-                  const conv = form.viewCount > 0 ? ((subs / form.viewCount) * 100).toFixed(1) : "0.0";
-                  return (
-                    <tr key={form.id} className="hover:bg-muted/20 transition-colors">
-                      <td className="py-3 px-4 font-medium text-foreground">
-                        <div>{form.title}</div>
-                        {form.description && <div className="text-[11px] text-muted-foreground line-clamp-1">{form.description}</div>}
-                      </td>
-                      <td className="py-3 px-4">
-                        <button
-                          onClick={() => copyPublicUrl(form.slug)}
-                          className="inline-flex items-center gap-1 font-mono text-[11px] text-primary hover:underline bg-muted/30 px-2 py-0.5 rounded border border-border/60"
-                          dir="ltr"
-                          title="نسخ الرابط"
-                        >
-                          {copiedSlug === form.slug ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                          /forms/{form.slug}
-                        </button>
-                      </td>
-                      <td className="py-3 px-3 text-center font-mono tabular-nums text-foreground">{form.viewCount}</td>
-                      <td className="py-3 px-3 text-center font-mono tabular-nums font-bold text-foreground">{subs}</td>
-                      <td className="py-3 px-3 text-center font-mono tabular-nums text-blue-600 dark:text-blue-400">{conv}%</td>
-                      <td className="py-3 px-3 text-center">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${form.isActive ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" : "bg-muted text-muted-foreground border-border"}`}>
-                          {form.isActive ? "نشط" : "معطل"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-left">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button onClick={() => { setEditForm(form); setModalOpen(true); }} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60" title="تعديل"><FileText className="w-3.5 h-3.5" /></button>
-                          <a href={`/forms/${form.slug}${user?.companyId ? `?companyId=${user.companyId}` : ""}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60" title="فتح"><ExternalLink className="w-3.5 h-3.5" /></a>
-                          <button onClick={() => handleDelete(form)} className="p-1.5 rounded-md text-rose-500 hover:text-rose-700 hover:bg-rose-500/10" title="حذف"><Trash2 className="w-3.5 h-3.5" /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {!filtered.length && <tr><td colSpan={7} className="text-center py-12 text-muted-foreground">لا توجد نماذج مطابقة للبحث</td></tr>}
-              </tbody>
-            </table>
-          </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-right text-xs">
+            <thead>
+              <tr className="border-b border-border/60 bg-muted/30 text-muted-foreground">
+                <th className="py-2.5 px-3.5 font-semibold">عنوان النموذج</th>
+                <th className="py-2.5 px-3.5 font-semibold">الرابط السريع</th>
+                <th className="py-2.5 px-3 font-semibold text-center">الزيارات</th>
+                <th className="py-2.5 px-3 font-semibold text-center">الردود</th>
+                <th className="py-2.5 px-3 font-semibold text-center">معدل التحويل</th>
+                <th className="py-2.5 px-3 font-semibold text-center">الحالة</th>
+                <th className="py-2.5 px-3.5 font-semibold text-left">الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {filtered.map((form) => {
+                const subs = form._count?.submissions || 0;
+                const conv = form.viewCount > 0 ? ((subs / form.viewCount) * 100).toFixed(1) : "0.0";
+                return (
+                  <tr key={form.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="py-2.5 px-3.5 font-medium text-foreground">
+                      <div className="font-semibold text-xs">{form.title}</div>
+                      {form.description && <div className="text-[10px] text-muted-foreground line-clamp-1">{form.description}</div>}
+                    </td>
+                    <td className="py-2.5 px-3.5">
+                      <button
+                        onClick={() => copyPublicUrl(form.slug)}
+                        className="inline-flex items-center gap-1 font-mono text-[10px] text-primary hover:underline bg-muted/40 px-2 py-0.5 rounded border border-border/60 cursor-pointer"
+                        dir="ltr"
+                        title="نسخ الرابط"
+                      >
+                        {copiedSlug === form.slug ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+                        /forms/{form.slug}
+                      </button>
+                    </td>
+                    <td className="py-2.5 px-3 text-center font-mono tabular-nums text-foreground">{form.viewCount}</td>
+                    <td className="py-2.5 px-3 text-center font-mono tabular-nums font-bold text-foreground">{subs}</td>
+                    <td className="py-2.5 px-3 text-center font-mono tabular-nums text-blue-600 dark:text-blue-400">{conv}%</td>
+                    <td className="py-2.5 px-3 text-center">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${form.isActive ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" : "bg-muted text-muted-foreground border-border"}`}>
+                        {form.isActive ? "نشط" : "معطل"}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3.5 text-left">
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => { setEditForm(form); setModalOpen(true); }} className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60" title="تعديل"><FileText className="size-3.5" /></button>
+                        <a href={`/forms/${form.slug}${user?.companyId ? `?companyId=${user.companyId}` : ""}`} target="_blank" rel="noopener noreferrer" className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60" title="فتح"><ExternalLink className="size-3.5" /></a>
+                        <button onClick={() => handleDelete(form)} className="p-1 rounded-md text-rose-500 hover:text-rose-700 hover:bg-rose-500/10" title="حذف"><Trash2 className="size-3.5" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {!filtered.length && <tr><td colSpan={7} className="text-center py-10 text-xs font-mono text-muted-foreground">لا توجد نماذج مطابقة للبحث</td></tr>}
+            </tbody>
+          </table>
         </div>
       </div>
 
       {/* Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-2xs p-4" onClick={() => setModalOpen(false)}>
-          <div className="bg-card border border-border/80 rounded-xl shadow-2xl w-full max-w-lg space-y-4 p-5" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between pb-3 border-b border-border/70">
-              <h2 className="text-sm font-bold text-foreground">{editForm ? "تعديل النموذج" : "إنشاء نموذج تسجيل جديد"}</h2>
-              <button onClick={() => setModalOpen(false)} className="text-muted-foreground hover:text-foreground p-1"><X className="w-4 h-4" /></button>
+          <div className="bg-card border border-border/80 rounded-xl shadow-2xl w-full max-w-lg space-y-3.5 p-4.5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-2.5 border-b border-border/70">
+              <h2 className="text-xs sm:text-sm font-bold text-foreground">{editForm ? "تعديل النموذج" : "إنشاء نموذج تسجيل جديد"}</h2>
+              <button onClick={() => setModalOpen(false)} className="text-muted-foreground hover:text-foreground p-1"><X className="size-4" /></button>
             </div>
-            <div className="space-y-3 text-xs">
+            <div className="space-y-2.5 text-xs">
               <div>
-                <label className="block font-medium text-foreground mb-1">عنوان النموذج *</label>
-                <input defaultValue={editForm?.title || ""} placeholder="مثال: تسجيل ورشة الذكاء الاصطناعي" className="w-full bg-background border border-border/80 rounded-lg px-3 py-2 text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary" id="m-title" />
+                <label className="block font-medium text-foreground mb-1 text-[11px]">عنوان النموذج *</label>
+                <input defaultValue={editForm?.title || ""} placeholder="مثال: تسجيل ورشة الذكاء الاصطناعي" className="w-full bg-background/50 border border-border/70 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary" id="m-title" />
               </div>
               <div>
-                <label className="block font-medium text-foreground mb-1">الرابط المختصر (Slug) *</label>
-                <input defaultValue={editForm?.slug || ""} placeholder="ai-workshop" className="w-full bg-background border border-border/80 rounded-lg px-3 py-2 text-foreground font-mono focus:outline-hidden focus:ring-1 focus:ring-primary" dir="ltr" id="m-slug" />
+                <label className="block font-medium text-foreground mb-1 text-[11px]">الرابط المختصر (Slug) *</label>
+                <input defaultValue={editForm?.slug || ""} placeholder="ai-workshop" className="w-full bg-background/50 border border-border/70 rounded-lg px-2.5 py-1.5 text-xs text-foreground font-mono focus:outline-hidden focus:ring-1 focus:ring-primary" dir="ltr" id="m-slug" />
               </div>
               <div>
-                <label className="block font-medium text-foreground mb-1">الوصف</label>
-                <textarea defaultValue={editForm?.description || ""} rows={2} placeholder="وصف موجز للمحتوى..." className="w-full bg-background border border-border/80 rounded-lg px-3 py-2 text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary" id="m-desc" />
+                <label className="block font-medium text-foreground mb-1 text-[11px]">الوصف</label>
+                <textarea defaultValue={editForm?.description || ""} rows={2} placeholder="وصف موجز للمحتوى..." className="w-full bg-background/50 border border-border/70 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary" id="m-desc" />
               </div>
               <div>
-                <label className="block font-medium text-foreground mb-1">Facebook Pixel ID</label>
-                <input defaultValue={editForm?.pixelId || ""} placeholder="1234567890123" className="w-full bg-background border border-border/80 rounded-lg px-3 py-2 text-foreground font-mono focus:outline-hidden focus:ring-1 focus:ring-primary" dir="ltr" id="m-pixel" />
+                <label className="block font-medium text-foreground mb-1 text-[11px]">Facebook Pixel ID</label>
+                <input defaultValue={editForm?.pixelId || ""} placeholder="1234567890123" className="w-full bg-background/50 border border-border/70 rounded-lg px-2.5 py-1.5 text-xs text-foreground font-mono focus:outline-hidden focus:ring-1 focus:ring-primary" dir="ltr" id="m-pixel" />
               </div>
             </div>
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/70">
-              <button onClick={() => setModalOpen(false)} className="px-3.5 py-1.5 text-xs rounded-lg border border-border/80 text-foreground hover:bg-muted/50">إلغاء</button>
+            <div className="flex items-center justify-end gap-2 pt-2.5 border-t border-border/70">
+              <button onClick={() => setModalOpen(false)} className="px-3 py-1.5 text-xs rounded-lg border border-border/70 text-foreground hover:bg-muted/50 font-mono">إلغاء</button>
               <button
                 onClick={() => {
                   const title = (document.getElementById("m-title") as HTMLInputElement)?.value;
@@ -268,7 +295,7 @@ export default function FormsBuilderPage() {
                   }
                   setModalOpen(false);
                 }}
-                className="px-3.5 py-1.5 text-xs bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90"
+                className="px-3 py-1.5 text-xs bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 font-mono active:scale-[0.98]"
               >
                 {editForm ? "حفظ التعديلات" : "إنشاء النموذج"}
               </button>

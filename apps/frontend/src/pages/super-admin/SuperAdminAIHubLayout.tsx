@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useLayoutEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Bot, Building2, AlertCircle } from "lucide-react";
+import { Bot, Building2 } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
-import { Alert, AlertDescription } from "../../components/ui/alert";
 
 const AgentSkillsPage = React.lazy(() => import("../admin/AgentSkillsPage"));
 const AgentToolsPage = React.lazy(() => import("../admin/AgentToolsPage"));
@@ -47,8 +46,7 @@ export default function SuperAdminAIHubLayout() {
       }
       finally { setLoadingCompanies(false); }
     })();
-  }, [currentTabMeta.needsCompany, companies.length]);
-
+  }, [currentTabMeta.needsCompany, companies.length, t]);
 
   useLayoutEffect(() => {
     const appShellContent = document.querySelector<HTMLElement>(".app-shell-content");
@@ -67,27 +65,39 @@ export default function SuperAdminAIHubLayout() {
   }, []);
 
   return (
-    <div className="w-full flex flex-col flex-1 min-h-0 overflow-hidden">
-      {/* Sticky top nav */}
-      <div className="border-b bg-background/95 backdrop-blur sticky top-0 z-40 px-6 py-3">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-2">
-            <Bot className="size-5 text-primary animate-pulse" />
-            <h1 className="text-lg font-bold tracking-tight text-foreground">
-              AI Hub — Super Admin
-            </h1>
+    <div className="w-full flex flex-col flex-1 min-h-0 overflow-hidden" dir="rtl">
+      {/* Sticky top nav - Linear Single Chassis */}
+      <div className="border-b border-border/60 bg-card/60 backdrop-blur sticky top-0 z-40 px-4 py-2.5">
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="size-8 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center text-foreground shrink-0 shadow-xs">
+              <Bot className="size-4 text-primary" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-sm sm:text-base font-bold tracking-tight text-foreground">
+                  مركز الذكاء الاصطناعي — الإدارة المركزية
+                </h1>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+                  AI Hub Super
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                إدارة المهارات، الأدوات المركزية، مراقبة الأعطال اللحظية، ومختبر الذاكرة والـ RAG
+              </p>
+            </div>
           </div>
 
           {/* Tab buttons */}
-          <div className="flex gap-1">
+          <div className="flex items-center gap-1 bg-muted/30 p-0.5 rounded-lg border border-border/70 overflow-x-auto no-scrollbar">
             {TABS.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setSearchParams({ tab: tab.key })}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all shrink-0 cursor-pointer ${
                   activeTab === tab.key
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-muted"
+                    ? "bg-background text-foreground font-semibold shadow-xs border border-border/60"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {t(tab.labelKey, tab.labelDefault)}
@@ -98,18 +108,18 @@ export default function SuperAdminAIHubLayout() {
 
         {/* Company selector — shown only for tabs needing it */}
         {currentTabMeta.needsCompany && (
-          <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border">
-            <Building2 className="size-4 text-muted-foreground shrink-0" />
-            <span className="text-sm font-medium">{t("aiHub.company")}:</span>
+          <div className="flex items-center gap-2.5 mt-2.5 pt-2.5 border-t border-border/50">
+            <Building2 className="size-3.5 text-muted-foreground shrink-0" />
+            <span className="text-xs font-medium text-foreground">{t("aiHub.company")}:</span>
             {loadingCompanies ? (
-              <span className="text-sm text-muted-foreground">{t("common.loading")}</span>
+              <span className="text-xs font-mono text-muted-foreground">{t("common.loading")}</span>
             ) : companiesError ? (
-              <span className="text-sm text-destructive">{companiesError}</span>
+              <span className="text-xs text-destructive">{companiesError}</span>
             ) : (
               <select
                 value={selectedCompanyId}
                 onChange={(e) => setSelectedCompanyId(e.target.value)}
-                className="h-9 rounded-lg border border-input bg-background px-3 text-sm min-w-[220px] text-foreground"
+                className="h-7.5 rounded-lg border border-border/70 bg-background/50 px-2.5 text-xs min-w-[200px] text-foreground font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
               >
                 <option value="">{t("aiHub.selectCompany")}</option>
                 {companies.map((c) => (
@@ -122,11 +132,11 @@ export default function SuperAdminAIHubLayout() {
       </div>
 
       {/* Content area */}
-      <div className="flex-1 bg-muted/20 overflow-y-auto">
+      <div className="flex-1 bg-background/50 overflow-y-auto p-3 sm:p-4">
         <React.Suspense
           fallback={
-            <div className="flex h-[400px] items-center justify-center">
-              <div className="animate-spin rounded-full size-8 border-b-2 border-primary" />
+            <div className="flex h-[350px] items-center justify-center">
+              <div className="animate-spin rounded-full size-7 border-b-2 border-primary" />
             </div>
           }
         >
@@ -142,7 +152,7 @@ export default function SuperAdminAIHubLayout() {
           {activeTab === "rag" && (
             selectedCompanyId
               ? <AgenticRAGLab key={selectedCompanyId} companyId={selectedCompanyId} />
-              : <div className="flex h-64 items-center justify-center text-muted-foreground">{t("aiHub.selectCompanyForRag")}</div>
+              : <div className="flex h-64 items-center justify-center text-xs font-mono text-muted-foreground">{t("aiHub.selectCompanyForRag")}</div>
           )}
         </React.Suspense>
       </div>
