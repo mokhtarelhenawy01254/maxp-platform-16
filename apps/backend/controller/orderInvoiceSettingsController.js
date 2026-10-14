@@ -2,7 +2,7 @@ const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedD
 
 const getSettings = async (req, res) => {
   try {
-    const companyId = req.user.companyId;
+    const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
     const prisma = getSharedPrismaClient();
 
     let settings = await executeWithRetry(async () => {
@@ -36,7 +36,7 @@ const getSettings = async (req, res) => {
 
 const updateSettings = async (req, res) => {
   try {
-    const companyId = req.user.companyId;
+    const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
     const updateData = req.body;
     const prisma = getSharedPrismaClient();
 
@@ -102,7 +102,7 @@ const updateSettings = async (req, res) => {
 
 const resetSettings = async (req, res) => {
   try {
-    const companyId = req.user.companyId;
+    const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
     const prisma = getSharedPrismaClient();
 
     await executeWithRetry(async () => {
