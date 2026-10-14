@@ -3,18 +3,8 @@ import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import {
-  Database,
-  Play,
-  CheckCircle2,
-  XCircle,
-  RefreshCw,
-  Terminal,
-  Download,
-  Info,
-  Users,
-  Folder,
-  Tag,
-  ClipboardList,
+  Database, Play, CheckCircle2, XCircle, RefreshCw, Terminal, Download, Info,
+  Users, Folder, Tag, ClipboardList,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -72,19 +62,16 @@ const DatabaseMigration: React.FC = () => {
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (migrating && jobId) {
-      interval = setInterval(fetchJobStatus, 2000);
-    }
+    if (migrating && jobId) interval = setInterval(fetchJobStatus, 2000);
     return () => clearInterval(interval);
   }, [migrating, jobId]);
 
   const fetchJobStatus = async () => {
     if (!jobId) return;
     try {
-      const response = await fetch(
-        buildApiUrl(`super-admin/db-migration/status/${jobId}`),
-        { headers: tokenManager.createAuthHeaders() },
-      );
+      const response = await fetch(buildApiUrl(`super-admin/db-migration/status/${jobId}`), {
+        headers: tokenManager.createAuthHeaders(),
+      });
       const data = await response.json();
       if (data.success) {
         if (data.data.progress) setProgress(data.data.progress);
@@ -107,20 +94,14 @@ const DatabaseMigration: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      const response = await fetch(
-        buildApiUrl("super-admin/db-migration/test-connection"),
-        {
-          method: "POST",
-          headers: tokenManager.createAuthHeaders({ "Content-Type": "application/json" }),
-          body: JSON.stringify({ url: sourceUrl }),
-        },
-      );
+      const response = await fetch(buildApiUrl("super-admin/db-migration/test-connection"), {
+        method: "POST",
+        headers: tokenManager.createAuthHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ url: sourceUrl }),
+      });
       const data = await response.json();
-      if (data.success) {
-        setSuccess("تم الاتصال بقاعدة البيانات بنجاح!");
-      } else {
-        setError(data.message || "فشل الاتصال بقاعدة البيانات المصدر");
-      }
+      if (data.success) setSuccess("تم الاتصال بقاعدة البيانات بنجاح!");
+      else setError(data.message || "فشل الاتصال بقاعدة البيانات المصدر");
     } catch {
       setError("خطأ في الاتصال بالخادم، يرجى التأكد من تشغيل الخدمة");
     } finally {
@@ -130,26 +111,19 @@ const DatabaseMigration: React.FC = () => {
 
   const startMigration = async () => {
     if (!window.confirm("هل أنت متأكد من بدء عملية الاستيراد؟ قد يستغرق ذلك بعض الوقت.")) return;
-
     setMigrating(true);
     setError(null);
     setSuccess(null);
     try {
-      const response = await fetch(
-        buildApiUrl("super-admin/db-migration/start"),
-        {
-          method: "POST",
-          headers: tokenManager.createAuthHeaders({ "Content-Type": "application/json" }),
-          body: JSON.stringify({ url: sourceUrl }),
-        },
-      );
+      const response = await fetch(buildApiUrl("super-admin/db-migration/start"), {
+        method: "POST",
+        headers: tokenManager.createAuthHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ url: sourceUrl }),
+      });
       const data = await response.json();
       if (data.success) {
         setJobId(data.data.jobId);
-        setLogs((prev) => [
-          ...prev,
-          { timestamp: new Date().toISOString(), message: "Migration job initiated successfully", level: "info" }
-        ]);
+        setLogs((prev) => [...prev, { timestamp: new Date().toISOString(), message: "Migration job initiated successfully", level: "info" }]);
       } else {
         setError(data.message || "فشل بدء العملية");
         setMigrating(false);
@@ -263,26 +237,19 @@ const DatabaseMigration: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            {/* Progress Bar */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center text-xs font-mono">
                 <span className="text-muted-foreground">الإنجاز التراكمي</span>
-                <span className="font-bold text-foreground tabular-nums">
-                  {progress.percentage}%
-                </span>
+                <span className="font-bold text-foreground tabular-nums">{progress.percentage}%</span>
               </div>
               <div className="w-full bg-muted rounded-full h-2 overflow-hidden" dir="ltr">
-                <div
-                  className="bg-primary h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${progress.percentage}%` }}
-                />
+                <div className="bg-primary h-2 rounded-full transition-all duration-500" style={{ width: `${progress.percentage}%` }} />
               </div>
               <p className="text-[11px] font-mono text-muted-foreground">
                 المرحلة: <strong className="text-foreground font-semibold">{progress.message}</strong>
               </p>
             </div>
 
-            {/* Detailed Stats */}
             <div className="grid grid-cols-2 gap-2.5">
               <StatBox label="المستخدمين" stats={progress.users} icon={<Users className="size-3.5" />} />
               <StatBox label="فريق العمل" stats={progress.teamMembers} icon={<Users className="size-3.5" />} />
@@ -315,16 +282,10 @@ const DatabaseMigration: React.FC = () => {
               <div
                 key={i}
                 className={`flex gap-2 ${
-                  log.level === "error"
-                    ? "text-destructive"
-                    : log.level === "warn"
-                      ? "text-amber-500"
-                      : "text-emerald-500/90"
+                  log.level === "error" ? "text-destructive" : log.level === "warn" ? "text-amber-500" : "text-emerald-500/90"
                 }`}
               >
-                <span className="text-muted-foreground/60 select-none">
-                  [{new Date(log.timestamp).toLocaleTimeString()}]
-                </span>
+                <span className="text-muted-foreground/60 select-none">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
                 <span>{log.message}</span>
               </div>
             ))}
@@ -360,39 +321,23 @@ interface StatBoxProps {
 const StatBox: React.FC<StatBoxProps> = ({ label, stats, icon }) => (
   <div className="p-2.5 bg-muted/20 rounded-lg border border-border/50">
     <div className="flex items-center gap-1.5 mb-2">
-      <div className="p-1 rounded bg-card border border-border/40 text-muted-foreground">
-        {icon}
-      </div>
-      <span className="text-[11px] font-mono font-semibold text-muted-foreground uppercase">
-        {label}
-      </span>
+      <div className="p-1 rounded bg-card border border-border/40 text-muted-foreground">{icon}</div>
+      <span className="text-[11px] font-mono font-semibold text-muted-foreground uppercase">{label}</span>
     </div>
     <div className="flex justify-between items-center px-1 font-mono">
       <div className="text-center">
-        <p className="text-sm font-bold tabular-nums text-foreground">
-          {stats?.total || 0}
-        </p>
-        <p className="text-[10px] text-muted-foreground uppercase">
-          إجمالي
-        </p>
+        <p className="text-sm font-bold tabular-nums text-foreground">{stats?.total || 0}</p>
+        <p className="text-[10px] text-muted-foreground uppercase">إجمالي</p>
       </div>
       <div className="h-6 w-px bg-border/60" />
       <div className="text-center">
-        <p className="text-sm font-bold tabular-nums text-emerald-500">
-          {stats?.imported || 0}
-        </p>
-        <p className="text-[10px] text-muted-foreground uppercase">
-          تم
-        </p>
+        <p className="text-sm font-bold tabular-nums text-emerald-500">{stats?.imported || 0}</p>
+        <p className="text-[10px] text-muted-foreground uppercase">تم</p>
       </div>
       <div className="h-6 w-px bg-border/60" />
       <div className="text-center">
-        <p className="text-sm font-bold tabular-nums text-amber-500">
-          {stats?.skipped || 0}
-        </p>
-        <p className="text-[10px] text-muted-foreground uppercase">
-          تخطي
-        </p>
+        <p className="text-sm font-bold tabular-nums text-amber-500">{stats?.skipped || 0}</p>
+        <p className="text-[10px] text-muted-foreground uppercase">تخطي</p>
       </div>
     </div>
   </div>

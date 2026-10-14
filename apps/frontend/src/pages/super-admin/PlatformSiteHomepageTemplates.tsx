@@ -1,14 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  RefreshCw,
-  ExternalLink,
-  Zap,
-  CheckCircle2,
-  Eye,
-  Link as LinkIcon,
-  Sparkles,
-  Layout,
-} from "lucide-react";
+import { RefreshCw, ExternalLink, Zap, CheckCircle2, Eye, Link as LinkIcon, Sparkles, Layout } from "lucide-react";
 import { toast } from "sonner";
 import {
   DEFAULT_PLATFORM_SITE_HOMEPAGE_SETTINGS,
@@ -27,11 +18,7 @@ const formatDateTime = (value?: string | null) => {
   if (!value) return "لم يتم الحفظ بعد";
   try {
     return new Date(value).toLocaleString("ar-EG", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
+      year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
     });
   } catch {
     return "لم يتم الحفظ بعد";
@@ -44,25 +31,15 @@ const resolveAvailableVariants = (
   settings: PlatformSiteHomepageSettings,
 ): PlatformLandingVariantDefinition[] => {
   const allowedIds = new Set(settings.availableLandingIds);
-  const registryAligned = PLATFORM_LANDING_VARIANTS.filter((variant) =>
-    allowedIds.has(variant.id),
-  );
-  if (registryAligned.length === PLATFORM_LANDING_VARIANTS.length) {
-    return registryAligned;
-  }
-  const missingRegistryVariants = PLATFORM_LANDING_VARIANTS.filter(
-    (variant) => !allowedIds.has(variant.id),
-  );
+  const registryAligned = PLATFORM_LANDING_VARIANTS.filter((variant) => allowedIds.has(variant.id));
+  if (registryAligned.length === PLATFORM_LANDING_VARIANTS.length) return registryAligned;
+  const missingRegistryVariants = PLATFORM_LANDING_VARIANTS.filter((variant) => !allowedIds.has(variant.id));
   return [...registryAligned, ...missingRegistryVariants];
 };
 
 const PlatformSiteHomepageTemplates: React.FC = () => {
-  const [settings, setSettings] = useState<PlatformSiteHomepageSettings>(
-    DEFAULT_PLATFORM_SITE_HOMEPAGE_SETTINGS,
-  );
-  const [selectedVariantId, setSelectedVariantId] = useState(
-    DEFAULT_PLATFORM_SITE_HOMEPAGE_SETTINGS.activeLandingId,
-  );
+  const [settings, setSettings] = useState<PlatformSiteHomepageSettings>(DEFAULT_PLATFORM_SITE_HOMEPAGE_SETTINGS);
+  const [selectedVariantId, setSelectedVariantId] = useState(DEFAULT_PLATFORM_SITE_HOMEPAGE_SETTINGS.activeLandingId);
   const [loading, setLoading] = useState(false);
   const [savingVariantId, setSavingVariantId] = useState<string | null>(null);
 
@@ -74,21 +51,14 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
         setSettings(nextSettings);
         setSelectedVariantId(nextSettings.activeLandingId);
       }
-    } catch {
-      // Fallback
-    } finally {
+    } catch {} finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    void loadSettings();
-  }, []);
+  useEffect(() => { void loadSettings(); }, []);
 
-  const availableVariants = useMemo(
-    () => resolveAvailableVariants(settings),
-    [settings],
-  );
+  const availableVariants = useMemo(() => resolveAvailableVariants(settings), [settings]);
 
   useEffect(() => {
     if (!availableVariants.some((variant) => variant.id === selectedVariantId)) {
@@ -97,38 +67,25 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
   }, [availableVariants, selectedVariantId, settings.activeLandingId]);
 
   const activeVariant = useMemo(
-    () =>
-      availableVariants.find(
-        (variant) => variant.id === settings.activeLandingId,
-      ) || availableVariants[0],
+    () => availableVariants.find((variant) => variant.id === settings.activeLandingId) || availableVariants[0],
     [availableVariants, settings.activeLandingId],
   );
 
   const selectedVariant = useMemo(
-    () =>
-      availableVariants.find((variant) => variant.id === selectedVariantId) ||
-      activeVariant ||
-      availableVariants[0],
+    () => availableVariants.find((variant) => variant.id === selectedVariantId) || activeVariant || availableVariants[0],
     [activeVariant, availableVariants, selectedVariantId],
   );
 
   const previewHref = getPlatformLandingPreviewPath(selectedVariant.id);
   const isSelectionActive = selectedVariant.id === settings.activeLandingId;
   const isSavingSelection = savingVariantId === selectedVariant.id;
+  const selectedVariantIndex = availableVariants.findIndex((variant) => variant.id === selectedVariant.id);
 
-  const selectedVariantIndex = availableVariants.findIndex(
-    (variant) => variant.id === selectedVariant.id,
-  );
-
-  const handleActivateVariant = async (
-    nextVariantId: PlatformSiteHomepageSettings["activeLandingId"],
-  ) => {
+  const handleActivateVariant = async (nextVariantId: PlatformSiteHomepageSettings["activeLandingId"]) => {
     try {
       setSavingVariantId(nextVariantId);
       try {
-        const saved = await platformSiteHomepageService.updateSettings({
-          activeLandingId: nextVariantId,
-        });
+        const saved = await platformSiteHomepageService.updateSettings({ activeLandingId: nextVariantId });
         setSettings(saved);
         setSelectedVariantId(saved.activeLandingId);
       } catch {
@@ -388,10 +345,7 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
                       key={`${selectedVariant.id}-${point}`}
                       className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-card px-2.5 py-1 text-[11px] font-medium text-foreground shadow-2xs"
                     >
-                      <span
-                        className="size-1.5 rounded-full"
-                        style={{ backgroundColor: selectedVariant.accent || "#3b82f6" }}
-                      />
+                      <span className="size-1.5 rounded-full" style={{ backgroundColor: selectedVariant.accent || "#3b82f6" }} />
                       <span>{formatVariantIndex(idx)} {point}</span>
                     </span>
                   ))}
