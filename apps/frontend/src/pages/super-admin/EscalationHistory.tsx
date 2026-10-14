@@ -5,13 +5,10 @@ import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import {
   ArrowRight,
-  Clock,
   RefreshCw,
-  AlertTriangle,
   ChevronLeft,
   ChevronRight,
   ShieldAlert,
-  ArrowUpRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -121,8 +118,7 @@ const EscalationHistory: React.FC = () => {
         setTotalPages(1);
         setTotalCount(FALLBACK_LOGS.length);
       }
-    } catch (error) {
-      console.warn("Using fallback escalation history", error);
+    } catch {
       setLogs(FALLBACK_LOGS);
       setTotalPages(1);
       setTotalCount(FALLBACK_LOGS.length);
@@ -138,35 +134,35 @@ const EscalationHistory: React.FC = () => {
   );
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto" dir={i18n.dir()}>
+    <div className="w-full space-y-4" dir={i18n.dir()}>
       {/* Linear Control Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg border border-border/80 bg-card flex items-center justify-center text-foreground shadow-2xs">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-foreground shrink-0 shadow-2xs">
             <ShieldAlert className="size-4.5 text-primary" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-foreground">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
                 سجل تصعيد المهام
               </h1>
               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
                 {totalCount} تصعيد
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-0.5">
               تدقيق ومتابعة المهام التي تم تحويلها أو تصعيدها تلقائياً بسبب فوات مواعيد التنفيذ
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 self-end sm:self-auto">
+        <div className="flex items-center gap-1.5 self-end sm:self-auto font-mono text-xs">
           <Button
             variant="outline"
             size="sm"
             onClick={() => fetchHistory(false)}
             disabled={refreshing}
-            className="h-8 text-xs font-medium gap-1.5 shadow-2xs active:scale-[0.98] transition-transform"
+            className="h-8 text-xs font-mono gap-1.5 shadow-2xs active:scale-[0.98]"
           >
             <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
             <span>تحديث</span>
@@ -176,7 +172,7 @@ const EscalationHistory: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={() => window.history.back()}
-            className="h-8 text-xs font-medium gap-1.5 shadow-2xs active:scale-[0.98] transition-transform"
+            className="h-8 text-xs font-mono gap-1.5 shadow-2xs active:scale-[0.98]"
           >
             <ArrowRight className="size-3.5 rtl:rotate-0 rotate-180" />
             <span>عودة</span>
@@ -184,41 +180,44 @@ const EscalationHistory: React.FC = () => {
         </div>
       </div>
 
-      {/* Linear Telemetry Strip */}
-      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+      {/* Telemetry Strip */}
+      <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
         <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
-          <div className="p-3 flex flex-col justify-between">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">إجمالي سجلات التصعيد</span>
               <span className="size-1.5 rounded-full bg-primary" />
             </div>
-            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
               {totalCount}
             </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">سجل محفوظ</p>
           </div>
-          <div className="p-3 flex flex-col justify-between">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">مهام تم تصعيدها</span>
               <span className="size-1.5 rounded-full bg-amber-500" />
             </div>
-            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
               {uniqueTasksCount}
             </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">مهام فريدة</p>
           </div>
-          <div className="p-3 flex flex-col justify-between">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">الصفحة الحالية</span>
               <span className="size-1.5 rounded-full bg-emerald-500" />
             </div>
-            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
               {page} / {totalPages}
             </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">تصفح السجلات</p>
           </div>
         </div>
       </div>
 
       {/* Single-Surface Table Chassis */}
-      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+      <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-right border-collapse text-xs">
             <thead className="border-b border-border/60 bg-muted/20 text-muted-foreground uppercase text-[11px] font-mono">
@@ -248,12 +247,13 @@ const EscalationHistory: React.FC = () => {
                 </tr>
               ) : (
                 logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-muted/20 transition-colors">
+                  <tr key={log.id} className="hover:bg-muted/15 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-0.5 max-w-xs">
                         <span
-                          className="font-semibold text-foreground truncate"
+                          className="font-semibold text-foreground truncate cursor-pointer hover:text-primary transition-colors"
                           title={log.task?.title || "مهمة تطوير"}
+                          onClick={() => navigate(`/super-admin/dev-tasks/${log.taskId}`)}
                         >
                           {log.task?.title || log.taskId || "مهمة تطوير"}
                         </span>
@@ -266,7 +266,7 @@ const EscalationHistory: React.FC = () => {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 text-foreground/80 font-mono">
                         <span className="size-6 rounded-md bg-muted/60 border border-border/60 flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                          {log.fromUser ? log.fromUser.charAt(0) : "؟"}
+                          {log.fromUser ? log.fromUser.charAt(0) : "?"}
                         </span>
                         <span>{log.fromUser || "النظام"}</span>
                       </div>
@@ -275,7 +275,7 @@ const EscalationHistory: React.FC = () => {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 font-medium text-foreground font-mono">
                         <span className="size-6 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">
-                          {log.toUser ? log.toUser.charAt(0) : "؟"}
+                          {log.toUser ? log.toUser.charAt(0) : "?"}
                         </span>
                         <span>{log.toUser || "المسؤول"}</span>
                       </div>

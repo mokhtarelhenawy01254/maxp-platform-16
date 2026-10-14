@@ -13,9 +13,6 @@ import {
   CheckCircle2,
   XCircle,
   ShieldCheck,
-  Activity,
-  Layers,
-  Sparkles,
 } from "lucide-react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import axios from "axios";
@@ -137,9 +134,9 @@ const SuperAdminAppDetail: React.FC = () => {
     : [];
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto" dir={i18n.dir()}>
+    <div className="w-full space-y-4" dir={i18n.dir()}>
       {/* Linear Control Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
@@ -181,7 +178,7 @@ const SuperAdminAppDetail: React.FC = () => {
       </div>
 
       {/* Hero Overview Surface */}
-      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card p-4 sm:p-5 shadow-2xs">
+      <div className="rounded-xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
           <div className="size-16 rounded-xl border border-border/80 bg-muted/30 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
             {isLikelyImageUrl(app.logo ?? app.icon ?? app.coverImage) ? (
@@ -196,8 +193,8 @@ const SuperAdminAppDetail: React.FC = () => {
           </div>
 
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground truncate">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+              <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground truncate">
                 {app.name}
               </h1>
               {app.isFeatured && (
@@ -228,10 +225,10 @@ const SuperAdminAppDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Linear Telemetry Strip */}
-      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+      {/* Telemetry Strip */}
+      <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
         <div className="grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60 font-mono">
-          <div className="p-3.5 flex flex-col justify-between">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">السعر الشهري</span>
               <DollarSign className="size-3.5 text-emerald-500" />
@@ -244,7 +241,7 @@ const SuperAdminAppDetail: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-3.5 flex flex-col justify-between">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">مرات التثبيت</span>
               <Boxes className="size-3.5 text-primary" />
@@ -255,7 +252,7 @@ const SuperAdminAppDetail: React.FC = () => {
             <p className="text-[10px] text-muted-foreground mt-0.5">شركة مستخدمة</p>
           </div>
 
-          <div className="p-3.5 flex flex-col justify-between">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">التقييم العام</span>
               <Star className="size-3.5 text-amber-500" />
@@ -263,10 +260,10 @@ const SuperAdminAppDetail: React.FC = () => {
             <div className="text-2xl font-bold tracking-tight text-amber-500 tabular-nums">
               {app.rating ?? "5.0"}
             </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">({app.reviewCount ?? 0} تقييم)</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">({app.reviewCount ?? 0} تقييم)</p>
           </div>
 
-          <div className="p-3.5 flex flex-col justify-between">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">فترة التجربة</span>
               <ShieldCheck className="size-3.5 text-blue-500" />
@@ -282,7 +279,7 @@ const SuperAdminAppDetail: React.FC = () => {
       {/* Grid: Details, Features & Controls */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Core Controls */}
-        <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card p-4 space-y-3.5 shadow-2xs font-mono text-xs">
+        <div className="rounded-xl border border-border/80 bg-card p-4 space-y-3.5 shadow-xs font-mono text-xs">
           <h3 className="font-semibold text-foreground uppercase tracking-wider text-[11px] border-b border-border/60 pb-2">
             مفاتيح التحكم المباشر
           </h3>
@@ -324,7 +321,7 @@ const SuperAdminAppDetail: React.FC = () => {
         </div>
 
         {/* Features List */}
-        <div className="lg:col-span-2 rounded-xl border border-border/80 dark:border-border/60 bg-card p-4 space-y-3.5 shadow-2xs">
+        <div className="lg:col-span-2 rounded-xl border border-border/80 bg-card p-4 space-y-3.5 shadow-xs">
           <h3 className="font-mono font-semibold text-foreground uppercase tracking-wider text-[11px] border-b border-border/60 pb-2">
             المميزات والخصائص التشغيلية
           </h3>

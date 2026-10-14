@@ -3,14 +3,7 @@ import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { toast } from "sonner";
-import {
-  Users,
-  Plus,
-  Trash2,
-  Building2,
-  Search,
-  RefreshCw,
-} from "lucide-react";
+import { Users, Plus, Trash2, Building2, Search, RefreshCw } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { StaffCompanyAccessDialog, Company } from "./StaffCompanyAccessDialog";
@@ -95,7 +88,7 @@ const StaffCompanyAccess = () => {
         setShowAddModal(false);
         toast.success("تم ربط الموظف بالشركة بنجاح");
       } else {
-        toast.error("فشل الربط: " + (data.message || "حدث خطأ غير متوقع"));
+        toast.error("فشل الربط: " + (data.message || "حدث خطأ"));
       }
     } catch {
       toast.error("تعذر إكمال عملية ربط الموظف بالشركة");
@@ -168,20 +161,9 @@ const StaffCompanyAccess = () => {
     [staff]
   );
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[360px]" dir="rtl">
-        <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
-          <RefreshCw className="size-4 animate-spin text-primary" />
-          <span>جاري استدعاء بيانات وصول الموظفين...</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full space-y-4" dir={i18n.dir()}>
-      {/* Linear Single-Surface Control Bar */}
+      {/* Linear Control Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-3">
           <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0 shadow-2xs">
@@ -204,7 +186,7 @@ const StaffCompanyAccess = () => {
 
         <div className="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto justify-end">
           <div className="relative w-full sm:w-64">
-            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -218,7 +200,7 @@ const StaffCompanyAccess = () => {
             size="icon"
             onClick={() => fetchStaff(false)}
             disabled={refreshing}
-            className="size-8 rounded-lg shrink-0 active:scale-[0.98] transition-transform"
+            className="size-8 rounded-lg shrink-0 active:scale-[0.98]"
             title="تحديث القائمة"
           >
             <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
@@ -229,32 +211,35 @@ const StaffCompanyAccess = () => {
       {/* Telemetry Strip */}
       <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
         <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
-          <div className="p-3 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">موظفو إدارة النظام</span>
               <span className="size-1.5 rounded-full bg-primary" />
             </div>
-            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
               {staff.length}
             </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">حسابات مسجلة</p>
           </div>
-          <div className="p-3 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">الشركات المسجلة</span>
               <span className="size-1.5 rounded-full bg-emerald-500" />
             </div>
-            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
               {companies.length}
             </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">كيانات نشطة</p>
           </div>
-          <div className="p-3 flex flex-col justify-between hover:bg-muted/10 transition-colors">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">روابط الوصول والتصاريح</span>
               <span className="size-1.5 rounded-full bg-purple-500" />
             </div>
-            <div className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
               {totalLinks}
             </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">تصريح وصول مفعل</p>
           </div>
         </div>
       </div>
@@ -272,7 +257,16 @@ const StaffCompanyAccess = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
-              {filteredStaff.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={4} className="p-10 text-center text-xs font-mono text-muted-foreground">
+                    <div className="flex items-center justify-center gap-2">
+                      <RefreshCw className="size-4 animate-spin text-primary" />
+                      <span>جاري تحميل بيانات الموظفين...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredStaff.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="p-8 text-center text-xs font-mono text-muted-foreground">
                     لا يوجد موظفون يطابقون معايير البحث
@@ -290,7 +284,7 @@ const StaffCompanyAccess = () => {
                           {user.email}
                         </span>
                         {user.company && user.company.id !== systemCompanyId && (
-                          <span className="text-[10px] font-mono px-1.5 py-0.2 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 rounded w-fit mt-0.5">
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 rounded w-fit mt-0.5">
                             الشركة الأساسية ليست شركة النظام
                           </span>
                         )}

@@ -177,13 +177,13 @@ const PendingReceipts: React.FC = () => {
           disabled={loading}
           className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform self-end sm:self-auto"
         >
-          <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
+          <RefreshCw className={cn("size-3.5", loading && "animate-spin text-primary")} />
           <span>تحديث</span>
         </Button>
       </div>
 
       {/* Telemetry Ribbon */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 rounded-xl border border-border/80 bg-card divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-3 rounded-xl border border-border/80 bg-card divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
         <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
             <span className="font-medium text-[11px]">إجمالي الإيصالات المعلقة</span>
@@ -211,36 +211,36 @@ const PendingReceipts: React.FC = () => {
             <span className="font-medium text-[11px]">نظام الاعتماد</span>
             <span className="size-1.5 rounded-full bg-purple-500" />
           </div>
-          <div className="text-xs font-semibold text-foreground font-mono mt-1">
-            فوري ومباشر
+          <div className="text-2xl font-bold tracking-tight text-foreground font-mono">
+            فوري
           </div>
           <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">يُحدث رصيد الشركة لحظياً</p>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl border border-border/80 bg-card shadow-xs">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
-          <Input
-            className="h-8 pr-8 text-xs font-mono bg-background border-border/70"
-            placeholder="بحث بالرقم المرجعي أو اسم الشركة..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        <div className="text-xs font-mono text-muted-foreground tabular-nums">
-          {filteredReceipts.length} إيصال مطابق
-        </div>
-      </div>
-
       {/* Single Surface Table Chassis */}
       <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
+        {/* Chassis Controls */}
+        <div className="p-2.5 sm:p-3 border-b border-border/60 bg-muted/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              className="h-8 pr-8 text-xs font-mono bg-background border-border/70"
+              placeholder="بحث بالمرجع أو اسم الشركة..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <div className="text-xs font-mono text-muted-foreground tabular-nums self-end sm:self-auto">
+            {filteredReceipts.length} إيصال مطابق
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-border/60 bg-muted/20">
+              <TableRow className="border-b border-border/60 bg-muted/10">
                 <TableHead className="font-mono text-xs text-right">المرجع</TableHead>
                 <TableHead className="font-mono text-xs text-right">الشركة / الحساب</TableHead>
                 <TableHead className="font-mono text-xs text-right">المبلغ المطلوب</TableHead>

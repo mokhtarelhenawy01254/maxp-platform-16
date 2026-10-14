@@ -207,72 +207,79 @@ const ActiveTimers: React.FC = () => {
         </div>
 
         {/* Timers Container Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x md:rtl:divide-x-reverse divide-border/60">
-          {filteredTimers.map((timer) => (
-            <div key={timer.id} className="p-4 flex flex-col justify-between hover:bg-muted/15 transition-colors">
-              <div>
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono border border-border/60 bg-muted/40 text-muted-foreground">{timer.taskPriority}</span>
-                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-primary/10 text-primary border border-primary/20">{timer.taskStatus}</span>
-                  </div>
-
-                  <span className={`inline-flex items-center gap-1 text-[11px] font-mono ${timer.isPaused ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>
-                    <span className={`size-1.5 rounded-full ${timer.isPaused ? "bg-amber-500" : "bg-emerald-500 animate-pulse"}`} />
-                    {timer.isPaused ? "متوقف مؤقتاً" : "نشط"}
-                  </span>
-                </div>
-
-                <h3 className="text-xs font-semibold text-foreground hover:text-primary transition-colors cursor-pointer line-clamp-2 leading-snug mb-2" onClick={() => navigate(`/super-admin/dev-tasks/${timer.taskId}`)}>
-                  {timer.taskTitle}
-                </h3>
-
-                <div className="flex items-center gap-3 text-[11px] text-muted-foreground mb-3 font-mono">
-                  <div className="flex items-center gap-1">
-                    <User className="size-3 text-muted-foreground/70" />
-                    <span>{timer.memberName}</span>
-                  </div>
-                  {timer.projectName && (
-                    <div className="flex items-center gap-1">
-                      <Folder className="size-3 text-muted-foreground/70" />
-                      <span>{timer.projectName}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-border/60 flex items-center justify-between gap-3">
+        {filteredTimers.length === 0 ? (
+          <div className="p-12 text-center text-xs font-mono text-muted-foreground">
+            <Timer className="size-6 mx-auto mb-2 text-muted-foreground/50" />
+            <p>لا توجد مؤقتات نشطة تطابق معايير البحث والفلترة</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x md:rtl:divide-x-reverse divide-border/60">
+            {filteredTimers.map((timer) => (
+              <div key={timer.id} className="p-4 flex flex-col justify-between hover:bg-muted/15 transition-colors">
                 <div>
-                  <span className="text-[10px] text-muted-foreground font-mono block">الوقت المنقضي</span>
-                  <div className="text-lg font-mono font-bold tracking-tight text-foreground tabular-nums">
-                    {formatElapsedTime(timer.startTime, timer.isPaused)}
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono border border-border/60 bg-muted/40 text-muted-foreground">{timer.taskPriority}</span>
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-primary/10 text-primary border border-primary/20">{timer.taskStatus}</span>
+                    </div>
+
+                    <span className={`inline-flex items-center gap-1 text-[11px] font-mono ${timer.isPaused ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                      <span className={`size-1.5 rounded-full ${timer.isPaused ? "bg-amber-500" : "bg-emerald-500 animate-pulse"}`} />
+                      {timer.isPaused ? "متوقف مؤقتاً" : "نشط"}
+                    </span>
+                  </div>
+
+                  <h3 className="text-xs font-semibold text-foreground hover:text-primary transition-colors cursor-pointer line-clamp-2 leading-snug mb-2" onClick={() => navigate(`/super-admin/dev-tasks/${timer.taskId}`)}>
+                    {timer.taskTitle}
+                  </h3>
+
+                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground mb-3 font-mono">
+                    <div className="flex items-center gap-1">
+                      <User className="size-3 text-muted-foreground/70" />
+                      <span>{timer.memberName}</span>
+                    </div>
+                    {timer.projectName && (
+                      <div className="flex items-center gap-1">
+                        <Folder className="size-3 text-muted-foreground/70" />
+                        <span>{timer.projectName}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  {timer.isPaused ? (
-                    <Button variant="outline" size="sm" onClick={() => handleResume(timer.taskId, timer.id)} className="h-7 px-2.5 text-xs font-mono text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10 gap-1 active:scale-[0.98]">
-                      <Play className="size-3 fill-current" />
-                      <span>استئناف</span>
+                <div className="pt-3 border-t border-border/60 flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[10px] text-muted-foreground font-mono block">الوقت المنقضي</span>
+                    <div className="text-lg font-mono font-bold tracking-tight text-foreground tabular-nums">
+                      {formatElapsedTime(timer.startTime, timer.isPaused)}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    {timer.isPaused ? (
+                      <Button variant="outline" size="sm" onClick={() => handleResume(timer.taskId, timer.id)} className="h-7 px-2.5 text-xs font-mono text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10 gap-1 active:scale-[0.98]">
+                        <Play className="size-3 fill-current" />
+                        <span>استئناف</span>
+                      </Button>
+                    ) : (
+                      <Button variant="outline" size="sm" onClick={() => handlePause(timer.taskId, timer.id)} className="h-7 px-2.5 text-xs font-mono text-amber-600 border-amber-500/30 hover:bg-amber-500/10 gap-1 active:scale-[0.98]">
+                        <Pause className="size-3" />
+                        <span>إيقاف</span>
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" onClick={() => handleStop(timer.taskId, timer.id)} className="h-7 px-2 text-xs font-mono text-rose-600 hover:bg-rose-500/10 border-rose-500/30 gap-1 active:scale-[0.98]">
+                      <Square className="size-3 fill-current" />
+                      <span>إنهاء</span>
                     </Button>
-                  ) : (
-                    <Button variant="outline" size="sm" onClick={() => handlePause(timer.taskId, timer.id)} className="h-7 px-2.5 text-xs font-mono text-amber-600 border-amber-500/30 hover:bg-amber-500/10 gap-1 active:scale-[0.98]">
-                      <Pause className="size-3" />
-                      <span>إيقاف</span>
+                    <Button variant="ghost" size="icon" onClick={() => navigate(`/super-admin/dev-tasks/${timer.taskId}`)} className="size-7 rounded-lg text-muted-foreground hover:text-foreground">
+                      <ExternalLink className="size-3.5" />
                     </Button>
-                  )}
-                  <Button variant="outline" size="sm" onClick={() => handleStop(timer.taskId, timer.id)} className="h-7 px-2 text-xs font-mono text-rose-600 hover:bg-rose-500/10 border-rose-500/30 gap-1 active:scale-[0.98]">
-                    <Square className="size-3 fill-current" />
-                    <span>إنهاء</span>
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => navigate(`/super-admin/dev-tasks/${timer.taskId}`)} className="size-7 rounded-lg text-muted-foreground hover:text-foreground">
-                    <ExternalLink className="size-3.5" />
-                  </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
