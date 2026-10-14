@@ -42,14 +42,6 @@ interface CompanyOwnedSummary {
   note: string;
 }
 
-interface PlannedAutomation {
-  eventType: string;
-  name: string;
-  category: string;
-  description: string;
-  requiresHook: boolean;
-}
-
 const DEFAULT_PLATFORM_AUTOMATIONS: PlatformAutomation[] = [
   {
     eventType: "company.registered",
@@ -158,19 +150,19 @@ export default function SuperAdminWhatsAppAutomations() {
   );
 
   return (
-    <div className="w-full space-y-4" dir="rtl">
+    <div className="w-full space-y-4 font-sans" dir="rtl">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/80 bg-card p-4 rounded-xl shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-foreground shrink-0 shadow-2xs">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center text-foreground shrink-0 shadow-2xs">
             <Workflow className="size-4.5 text-primary" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
+              <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
                 كتالوج أتمتة واتساب المركزية
               </h1>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
                 Super Admin Catalog
               </span>
             </div>
@@ -245,7 +237,7 @@ export default function SuperAdminWhatsAppAutomations() {
       </div>
 
       {/* Scope Selector Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl border border-border/80 bg-card shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl border border-border/80 bg-card shadow-xs">
         <div className="flex items-center gap-2 max-w-sm w-full">
           <span className="text-xs font-mono text-muted-foreground whitespace-nowrap">الشركة المستهدفة:</span>
           <Select value={companyId} onValueChange={setCompanyId}>

@@ -96,7 +96,7 @@ export default function SuperAdminWhatsAppLogs() {
       setLogs(response.data.logs || []);
     } catch (err) {
       console.error("Error loading WhatsApp logs:", err);
-      setError(t("superAdmin.whatsapp.logs.empty"));
+      setError(t("superAdmin.whatsapp.logs.empty", "تعذر استدعاء سجلات واتساب"));
     } finally {
       setLoading(false);
     }
@@ -121,24 +121,24 @@ export default function SuperAdminWhatsAppLogs() {
   };
 
   return (
-    <div className="w-full space-y-4" dir="rtl">
+    <div className="w-full space-y-4 font-sans" dir="rtl">
       {/* Top Header Control Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/80 bg-card p-4 rounded-xl shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0 shadow-2xs">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center shrink-0 shadow-2xs">
             <Activity className="size-4 text-primary" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
-                {t("superAdmin.whatsapp.logs.title")}
+              <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
+                {t("superAdmin.whatsapp.logs.title", "سجل إرسال رسائل واتساب")}
               </h1>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
                 {logs.length} سجل
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {t("superAdmin.whatsapp.logs.description")}
+              {t("superAdmin.whatsapp.logs.description", "مراقبة لحظية لحالة الإرسال والتسليم وأسباب الفشل عبر كل الشركات")}
             </p>
           </div>
         </div>
@@ -149,7 +149,7 @@ export default function SuperAdminWhatsAppLogs() {
             variant="outline"
             size="sm"
             onClick={loadLogs}
-            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform"
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform cursor-pointer"
           >
             <RefreshCw className="size-3.5" />
             <span>تحديث</span>
@@ -158,7 +158,7 @@ export default function SuperAdminWhatsAppLogs() {
             asChild
             variant="outline"
             size="sm"
-            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98]"
+            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] cursor-pointer"
           >
             <Link to="/super-admin/whatsapp">
               <Layers className="size-3.5" />
@@ -171,31 +171,31 @@ export default function SuperAdminWhatsAppLogs() {
       {error ? (
         <Alert variant="destructive" className="py-2.5">
           <AlertTriangle className="size-4" />
-          <AlertTitle className="text-xs font-bold">{t("superAdmin.whatsapp.overview.errorTitle")}</AlertTitle>
+          <AlertTitle className="text-xs font-bold">{t("superAdmin.whatsapp.overview.errorTitle", "خطأ")}</AlertTitle>
           <AlertDescription className="text-xs">{error}</AlertDescription>
         </Alert>
       ) : (
         <>
           {/* Filters Bar */}
-          <div className="p-2.5 rounded-xl border border-border/80 bg-card shadow-xs">
+          <div className="p-3 rounded-xl border border-border/80 bg-card shadow-xs">
             <div className="grid gap-2.5 sm:grid-cols-3">
               <div className="relative">
                 <Search className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder={t("superAdmin.whatsapp.logs.searchPlaceholder")}
-                  aria-label={t("superAdmin.whatsapp.logs.searchPlaceholder")}
+                  placeholder={t("superAdmin.whatsapp.logs.searchPlaceholder", "بحث بالهاتف أو نوع الحدث...")}
+                  aria-label={t("superAdmin.whatsapp.logs.searchPlaceholder", "بحث")}
                   className="h-8 text-xs pr-8 font-mono bg-background border-border/70"
                 />
               </div>
 
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger className="h-8 text-xs font-mono bg-background border-border/70">
-                  <SelectValue placeholder={t("superAdmin.whatsapp.logs.statusPlaceholder")} />
+                  <SelectValue placeholder={t("superAdmin.whatsapp.logs.statusPlaceholder", "جميع حالات التسليم")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("superAdmin.whatsapp.logs.statusAll")}</SelectItem>
+                  <SelectItem value="all">{t("superAdmin.whatsapp.logs.statusAll", "جميع الحالات")}</SelectItem>
                   <SelectItem value="SENT">SENT</SelectItem>
                   <SelectItem value="DELIVERED">DELIVERED</SelectItem>
                   <SelectItem value="READ">READ</SelectItem>
@@ -205,10 +205,10 @@ export default function SuperAdminWhatsAppLogs() {
 
               <Select value={companyId} onValueChange={setCompanyId}>
                 <SelectTrigger className="h-8 text-xs font-mono bg-background border-border/70">
-                  <SelectValue placeholder={t("superAdmin.whatsapp.logs.companyPlaceholder")} />
+                  <SelectValue placeholder={t("superAdmin.whatsapp.logs.companyPlaceholder", "جميع الشركات")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("superAdmin.whatsapp.logs.companyAll")}</SelectItem>
+                  <SelectItem value="all">{t("superAdmin.whatsapp.logs.companyAll", "جميع الشركات")}</SelectItem>
                   {companies.map((company) => (
                     <SelectItem key={company.id} value={company.id}>
                       {company.name}
@@ -223,7 +223,7 @@ export default function SuperAdminWhatsAppLogs() {
           <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
             <div className="p-3 border-b border-border/60 bg-muted/20 flex items-center justify-between">
               <h2 className="text-xs font-semibold text-foreground">
-                {t("superAdmin.whatsapp.logs.listTitle")}
+                {t("superAdmin.whatsapp.logs.listTitle", "سجلات الرسائل اللحظية")}
               </h2>
               <span className="text-[10px] font-mono text-muted-foreground tabular-nums">
                 {logs.length} سجلات مرصودة
@@ -232,7 +232,7 @@ export default function SuperAdminWhatsAppLogs() {
 
             {loading ? (
               <div className="p-4 space-y-2">
-                {Array.from({ length: 6 }).map((_, index) => (
+                {Array.from({ length: 5 }).map((_, index) => (
                   <Skeleton key={index} className="h-10 rounded-md" />
                 ))}
               </div>
@@ -242,7 +242,7 @@ export default function SuperAdminWhatsAppLogs() {
                 <div className="p-3 space-y-2 lg:hidden">
                   {logs.length === 0 ? (
                     <p className="text-center py-6 text-xs text-muted-foreground font-mono">
-                      {t("superAdmin.whatsapp.logs.empty")}
+                      {t("superAdmin.whatsapp.logs.empty", "لا توجد سجلات")}
                     </p>
                   ) : (
                     logs.map((log) => (
@@ -273,19 +273,19 @@ export default function SuperAdminWhatsAppLogs() {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border/60 bg-muted/10">
-                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.company")}</TableHead>
-                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.event")}</TableHead>
-                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.status")}</TableHead>
-                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.error")}</TableHead>
-                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.recipient")}</TableHead>
-                        <TableHead className="text-left text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.time")}</TableHead>
+                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.company", "الشركة")}</TableHead>
+                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.event", "نوع الحدث والتصنيف")}</TableHead>
+                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.status", "الحالة")}</TableHead>
+                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.error", "ملاحظة الفشل")}</TableHead>
+                        <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.recipient", "المستلم")}</TableHead>
+                        <TableHead className="text-left text-xs font-mono">{t("superAdmin.whatsapp.logs.columns.time", "الوقت")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {logs.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={6} className="text-center py-8 text-xs text-muted-foreground font-mono">
-                            {t("superAdmin.whatsapp.logs.empty")}
+                            {t("superAdmin.whatsapp.logs.empty", "لا توجد سجلات")}
                           </TableCell>
                         </TableRow>
                       ) : (

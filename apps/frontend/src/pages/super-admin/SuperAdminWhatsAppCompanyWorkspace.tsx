@@ -71,7 +71,7 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<CompanySummaryResponse | null>(null);
 
-  const ws = (key: string) => t(`superAdmin.whatsapp.workspace.${key}`);
+  const ws = (key: string) => t(`superAdmin.whatsapp.workspace.${key}`, key);
 
   const load = useCallback(async () => {
     if (!companyId) return;
@@ -85,7 +85,7 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
       setData(response.data.data);
     } catch (err) {
       console.error("Error loading company WhatsApp workspace:", err);
-      setError(t("superAdmin.whatsapp.overview.errorMessage"));
+      setError(t("superAdmin.whatsapp.overview.errorMessage", "تعذر استدعاء مساحة عمل الشركة"));
     } finally {
       setLoading(false);
     }
@@ -98,7 +98,7 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
   if (loading) {
     return (
       <div className="w-full space-y-4" dir="rtl">
-        <div className="flex items-center justify-between border-b border-border/60 pb-3.5">
+        <div className="flex items-center justify-between border-b border-border/80 bg-card p-4 rounded-xl shadow-xs">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-8 w-32" />
         </div>
@@ -112,25 +112,25 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
   const company = data?.company;
 
   return (
-    <div className="w-full space-y-4" dir="rtl">
+    <div className="w-full space-y-4 font-sans" dir="rtl">
       {/* Linear Single-Surface Control Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/80 bg-card p-4 rounded-xl shadow-xs">
         <div className="flex items-center gap-3">
-          <Button asChild variant="outline" size="icon" className="size-8 rounded-lg shrink-0">
+          <Button asChild variant="outline" size="icon" className="size-8 rounded-lg shrink-0 cursor-pointer">
             <Link to="/super-admin/whatsapp/companies" title={ws("backLabel")}>
               <ArrowRight className="size-4" />
             </Link>
           </Button>
-          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0 shadow-2xs">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center shrink-0 shadow-2xs">
             <Building2 className="size-4 text-primary" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
+              <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
                 {company ? t("superAdmin.whatsapp.workspace.titleWithName", { name: company.name }) : ws("title")}
               </h1>
               {company?.slug && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono text-muted-foreground bg-muted/40 border border-border/70">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono text-muted-foreground bg-muted/30 border border-border/70">
                   @{company.slug}
                 </span>
               )}
@@ -174,7 +174,7 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
               </Button>
             </>
           )}
-          <Button variant="outline" size="sm" onClick={load} className="h-7 text-xs font-mono gap-1">
+          <Button variant="outline" size="sm" onClick={load} className="h-7 text-xs font-mono gap-1 cursor-pointer">
             <RefreshCw className="size-3" />
           </Button>
         </div>
@@ -183,7 +183,7 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
       {error ? (
         <Alert variant="destructive" className="py-2.5">
           <AlertTriangle className="size-4" />
-          <AlertTitle className="text-xs font-bold">{t("superAdmin.whatsapp.overview.errorTitle")}</AlertTitle>
+          <AlertTitle className="text-xs font-bold">{t("superAdmin.whatsapp.overview.errorTitle", "خطأ")}</AlertTitle>
           <AlertDescription className="text-xs">{error}</AlertDescription>
         </Alert>
       ) : (

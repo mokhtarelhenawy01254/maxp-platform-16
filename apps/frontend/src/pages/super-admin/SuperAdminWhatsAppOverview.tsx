@@ -74,7 +74,7 @@ export default function SuperAdminWhatsAppOverview() {
       setOverview(response.data.data);
     } catch (loadError) {
       console.error("Error loading super admin WhatsApp overview:", loadError);
-      setError(t("superAdmin.whatsapp.overview.errorMessage"));
+      setError(t("superAdmin.whatsapp.overview.errorMessage", "تعذر استدعاء إحصائيات واتساب المركزية"));
     } finally {
       setLoading(false);
     }
@@ -85,10 +85,10 @@ export default function SuperAdminWhatsAppOverview() {
   }, [load]);
 
   const quickLinks = [
-    { title: t("superAdmin.whatsapp.overview.quickNav.links.companies.title"), description: t("superAdmin.whatsapp.overview.quickNav.links.companies.description"), href: "/super-admin/whatsapp/companies", icon: Building2 },
-    { title: t("superAdmin.whatsapp.overview.quickNav.links.session.title"), description: t("superAdmin.whatsapp.overview.quickNav.links.session.description"), href: "/super-admin/whatsapp/companies", icon: Smartphone },
-    { title: t("superAdmin.whatsapp.overview.quickNav.links.automations.title"), description: t("superAdmin.whatsapp.overview.quickNav.links.automations.description"), href: "/super-admin/whatsapp/automations", icon: Settings2 },
-    { title: t("superAdmin.whatsapp.overview.quickNav.links.logs.title"), description: t("superAdmin.whatsapp.overview.quickNav.links.logs.description"), href: "/super-admin/whatsapp/logs", icon: Activity },
+    { title: t("superAdmin.whatsapp.overview.quickNav.links.companies.title", "شركات المنصة"), description: t("superAdmin.whatsapp.overview.quickNav.links.companies.description", "إدارة كافة المستأجرين والجلسات"), href: "/super-admin/whatsapp/companies", icon: Building2 },
+    { title: t("superAdmin.whatsapp.overview.quickNav.links.session.title", "حالة الربط والاتصال"), description: t("superAdmin.whatsapp.overview.quickNav.links.session.description", "الجلسات الفعالة وفحص الـ QR"), href: "/super-admin/whatsapp/companies", icon: Smartphone },
+    { title: t("superAdmin.whatsapp.overview.quickNav.links.automations.title", "كتالوج الأتمتة"), description: t("superAdmin.whatsapp.overview.quickNav.links.automations.description", "قوالب وأحداث الإشعارات اللحظية"), href: "/super-admin/whatsapp/automations", icon: Settings2 },
+    { title: t("superAdmin.whatsapp.overview.quickNav.links.logs.title", "سجل الإرسال والأخطاء"), description: t("superAdmin.whatsapp.overview.quickNav.links.logs.description", "تتبع الرسائل ومراقبة التسليم"), href: "/super-admin/whatsapp/logs", icon: Activity },
   ];
 
   const metricsCards = [
@@ -103,7 +103,7 @@ export default function SuperAdminWhatsAppOverview() {
   if (loading) {
     return (
       <div className="w-full space-y-4" dir="rtl">
-        <div className="flex items-center justify-between border-b border-border/60 pb-3.5">
+        <div className="flex items-center justify-between border-b border-border/80 bg-card p-4 rounded-xl shadow-xs">
           <Skeleton className="h-8 w-48" /><Skeleton className="h-8 w-32" />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
@@ -114,35 +114,37 @@ export default function SuperAdminWhatsAppOverview() {
   }
 
   return (
-    <div className="w-full space-y-4" dir="rtl">
-      {/* Linear Single-Surface Control Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+    <div className="w-full space-y-4 font-sans" dir="rtl">
+      {/* Linear Single Chassis Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/80 bg-card p-4 rounded-xl shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0 shadow-2xs">
-            <RadioTower className="size-4 text-primary" />
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center shrink-0 shadow-2xs">
+            <RadioTower className="size-4.5 text-primary" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
-                {t("superAdmin.whatsapp.overview.title")}
+              <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
+                {t("superAdmin.whatsapp.overview.title", "شبكة واتساب المركزية (WhatsApp Hub)")}
               </h1>
-              <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] font-mono tabular-nums text-muted-foreground">
+              <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/30 px-2 py-0.5 text-[11px] font-mono tabular-nums text-muted-foreground">
                 <span className="size-1.5 rounded-full bg-emerald-500" />
                 {overview?.metrics.connectedSessions || 0} جلسة متصلة
               </span>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">{t("superAdmin.whatsapp.overview.description")}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t("superAdmin.whatsapp.overview.description", "مراقبة وإدارة جلسات واتساب وقنوات الإرسال المباشر للشركات والمتاجر")}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={load} className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98]">
+          <Button type="button" variant="outline" size="sm" onClick={load} className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] cursor-pointer">
             <RefreshCw className="size-3.5" />
             <span>تحديث</span>
           </Button>
-          <Button nativeButton={false} render={<Link to="/super-admin/whatsapp/companies" />} size="sm" className="h-8 gap-1.5 text-xs font-mono font-medium bg-primary text-primary-foreground active:scale-[0.98]">
-            <Building2 className="size-3.5" />
-            <span>{t("superAdmin.whatsapp.overview.openCompanies")}</span>
+          <Button asChild size="sm" className="h-8 gap-1.5 text-xs font-mono font-medium bg-primary text-primary-foreground active:scale-[0.98] cursor-pointer">
+            <Link to="/super-admin/whatsapp/companies">
+              <Building2 className="size-3.5" />
+              <span>{t("superAdmin.whatsapp.overview.openCompanies", "شركات المنصة")}</span>
+            </Link>
           </Button>
         </div>
       </div>
@@ -150,7 +152,7 @@ export default function SuperAdminWhatsAppOverview() {
       {error ? (
         <Alert variant="destructive" className="py-2.5">
           <AlertTriangle className="size-4" />
-          <AlertTitle className="text-xs font-bold">{t("superAdmin.whatsapp.overview.errorTitle")}</AlertTitle>
+          <AlertTitle className="text-xs font-bold">{t("superAdmin.whatsapp.overview.errorTitle", "تنبيه خطأ")}</AlertTitle>
           <AlertDescription className="text-xs">{error}</AlertDescription>
         </Alert>
       ) : (
@@ -170,11 +172,15 @@ export default function SuperAdminWhatsAppOverview() {
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <Button size="sm" variant="outline" className="h-7 text-xs font-mono rounded-lg bg-background border-border/80 text-foreground active:scale-[0.98]" nativeButton={false} render={<Link to="/super-admin/whatsapp/companies/cmopgxu3a07i4jujj6f1oh32h" />}>
-                <Smartphone className="size-3 mr-1 text-emerald-600 dark:text-emerald-400" /> جلسات المنصة
+              <Button size="sm" variant="outline" className="h-7 text-xs font-mono rounded-lg bg-background border-border/80 text-foreground active:scale-[0.98] cursor-pointer" asChild>
+                <Link to="/super-admin/whatsapp/companies/cmopgxu3a07i4jujj6f1oh32h">
+                  <Smartphone className="size-3 mr-1 text-emerald-600 dark:text-emerald-400" /> جلسات المنصة
+                </Link>
               </Button>
-              <Button size="sm" className="h-7 text-xs font-mono rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs active:scale-[0.98]" nativeButton={false} render={<Link to="/super-admin/whatsapp/companies/cmopgxu3a07i4jujj6f1oh32h/routing" />}>
-                <MessageSquareText className="size-3 mr-1" /> صندوق المحادثات
+              <Button size="sm" className="h-7 text-xs font-mono rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs active:scale-[0.98] cursor-pointer" asChild>
+                <Link to="/super-admin/whatsapp/companies/cmopgxu3a07i4jujj6f1oh32h/routing">
+                  <MessageSquareText className="size-3 mr-1" /> صندوق المحادثات
+                </Link>
               </Button>
             </div>
           </div>
@@ -201,8 +207,8 @@ export default function SuperAdminWhatsAppOverview() {
             <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
               <div className="p-3 border-b border-border/60 bg-muted/20 flex items-center justify-between">
                 <div>
-                  <h2 className="text-xs font-semibold text-foreground">{t("superAdmin.whatsapp.overview.topEvents.title")}</h2>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{t("superAdmin.whatsapp.overview.topEvents.description")}</p>
+                  <h2 className="text-xs font-semibold text-foreground">{t("superAdmin.whatsapp.overview.topEvents.title", "الأحداث الأكثر نشاطاً")}</h2>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{t("superAdmin.whatsapp.overview.topEvents.description", "توزيع رسائل الإشعارات حسب نوع الحدث")}</p>
                 </div>
                 <Badge variant="outline" className="text-[10px] font-mono">{(overview?.topEvents || []).length} حدث</Badge>
               </div>
@@ -211,16 +217,16 @@ export default function SuperAdminWhatsAppOverview() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border/60 bg-muted/10">
-                      <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.overview.topEvents.eventColumn")}</TableHead>
-                      <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.overview.topEvents.categoryColumn")}</TableHead>
-                      <TableHead className="text-left text-xs font-mono">{t("superAdmin.whatsapp.overview.topEvents.totalColumn")}</TableHead>
+                      <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.overview.topEvents.eventColumn", "الحدث")}</TableHead>
+                      <TableHead className="text-xs font-mono">{t("superAdmin.whatsapp.overview.topEvents.categoryColumn", "التصنيف")}</TableHead>
+                      <TableHead className="text-left text-xs font-mono">{t("superAdmin.whatsapp.overview.topEvents.totalColumn", "الإجمالي")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {(overview?.topEvents || []).length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={3} className="text-center py-8 text-xs text-muted-foreground">
-                          {t("superAdmin.whatsapp.overview.topEvents.empty")}
+                          {t("superAdmin.whatsapp.overview.topEvents.empty", "لا توجد أحداث مسجلة حالياً")}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -243,8 +249,8 @@ export default function SuperAdminWhatsAppOverview() {
             <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden flex flex-col justify-between">
               <div>
                 <div className="p-3 border-b border-border/60 bg-muted/20">
-                  <h2 className="text-xs font-semibold text-foreground">{t("superAdmin.whatsapp.overview.quickNav.title")}</h2>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{t("superAdmin.whatsapp.overview.quickNav.description")}</p>
+                  <h2 className="text-xs font-semibold text-foreground">{t("superAdmin.whatsapp.overview.quickNav.title", "روابط الوصول السريع")}</h2>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{t("superAdmin.whatsapp.overview.quickNav.description", "الانتقال المباشر لأدوات إدارة واتساب")}</p>
                 </div>
 
                 <div className="p-3 space-y-2">
@@ -278,8 +284,8 @@ export default function SuperAdminWhatsAppOverview() {
           <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
             <div className="p-3 border-b border-border/60 bg-muted/20 flex items-center justify-between">
               <div>
-                <h2 className="text-xs font-semibold text-foreground">{t("superAdmin.whatsapp.overview.recentFailures.title")}</h2>
-                <p className="text-[11px] text-muted-foreground mt-0.5">{t("superAdmin.whatsapp.overview.recentFailures.description")}</p>
+                <h2 className="text-xs font-semibold text-foreground">{t("superAdmin.whatsapp.overview.recentFailures.title", "تنبيهات الإرسال الفاشل الأخيرة")}</h2>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{t("superAdmin.whatsapp.overview.recentFailures.description", "رصد الرسائل التي تعذر تسليمها عبر كافة الشركات")}</p>
               </div>
               <Badge variant="outline" className="text-[10px] font-mono text-rose-500 border-rose-500/30">
                 {(overview?.recentFailures || []).length} أخطاء
@@ -290,7 +296,7 @@ export default function SuperAdminWhatsAppOverview() {
               {(overview?.recentFailures || []).length === 0 ? (
                 <div className="flex items-center justify-center p-8 text-xs font-mono text-muted-foreground">
                   <CheckCircle2 className="size-4 text-emerald-500 mr-2" />
-                  <span>{t("superAdmin.whatsapp.overview.recentFailures.empty")}</span>
+                  <span>{t("superAdmin.whatsapp.overview.recentFailures.empty", "لا توجد أخطاء إرسال حديثة")}</span>
                 </div>
               ) : (
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -302,7 +308,7 @@ export default function SuperAdminWhatsAppOverview() {
                           {failure.eventType}
                         </span>
                       </div>
-                      <p className="text-xs text-rose-600 dark:text-rose-400 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-rose-600 dark:text-rose-400 line-clamp-2 leading-relaxed font-mono">
                         {failure.failureReason || "No failure reason"}
                       </p>
                       <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground pt-1 border-t border-rose-500/10">
