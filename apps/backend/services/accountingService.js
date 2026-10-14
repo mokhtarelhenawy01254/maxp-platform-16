@@ -1035,11 +1035,11 @@ class AccountingService {
       orderBy: { code: 'asc' },
     });
 
-    // Fetch all posted journal lines
+    // Fetch all posted and voided/reversing journal lines (reversals offset voided entries)
     const lineWhere = {
       entry: {
         companyId,
-        status: 'POSTED',
+        status: { in: ['POSTED', 'VOID'] },
       },
     };
 
@@ -1093,10 +1093,23 @@ class AccountingService {
       periodCredit = round2(periodCredit);
       endingBalance = round2(endingBalance);
 
-      const opDebit = openingBalance > 0 ? openingBalance : 0;
-      const opCredit = openingBalance < 0 ? Math.abs(openingBalance) : 0;
-      const endDebit = endingBalance > 0 ? endingBalance : 0;
-      const endCredit = endingBalance < 0 ? Math.abs(endingBalance) : 0;
+      const isDebitNature = ['ASSET', 'EXPENSE'].includes(acc.type);
+      let opDebit = 0;
+      let opCredit = 0;
+      let endDebit = 0;
+      let endCredit = 0;
+
+      if (isDebitNature) {
+        opDebit = openingBalance >= 0 ? openingBalance : 0;
+        opCredit = openingBalance < 0 ? Math.abs(openingBalance) : 0;
+        endDebit = endingBalance >= 0 ? endingBalance : 0;
+        endCredit = endingBalance < 0 ? Math.abs(endingBalance) : 0;
+      } else {
+        opCredit = openingBalance >= 0 ? openingBalance : 0;
+        opDebit = openingBalance < 0 ? Math.abs(openingBalance) : 0;
+        endCredit = endingBalance >= 0 ? endingBalance : 0;
+        endDebit = endingBalance < 0 ? Math.abs(endingBalance) : 0;
+      }
 
       totalOpeningDebit = round2(totalOpeningDebit + opDebit);
       totalOpeningCredit = round2(totalOpeningCredit + opCredit);
@@ -1155,7 +1168,7 @@ class AccountingService {
       accountId,
       entry: {
         companyId,
-        status: 'POSTED',
+        status: { in: ['POSTED', 'VOID'] },
       },
     };
 
@@ -1251,7 +1264,7 @@ class AccountingService {
     });
 
     const where = {
-      entry: { companyId, status: 'POSTED' },
+      entry: { companyId, status: { in: ['POSTED', 'VOID'] } },
       account: { type: { in: ['REVENUE', 'EXPENSE'] } },
     };
     if (startDate || endDate) {
