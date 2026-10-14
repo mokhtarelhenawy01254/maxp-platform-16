@@ -2,7 +2,11 @@ let Prisma;
 try {
   Prisma = require('../prisma/generated/postgresql_v2').Prisma;
 } catch (_error) {
-  Prisma = require('@prisma/client').Prisma;
+  try {
+    Prisma = require('@prisma/client').Prisma;
+  } catch (_e) {
+    Prisma = {};
+  }
 }
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const {
@@ -601,6 +605,28 @@ const parseOrderItemMetadata = (value) => {
   }
 };
 
+const resolveItemCustomAttributes = (item) => {
+  if (!item) return { attributes: null, customAttributes: null, customFields: null, carModel: null, metadata: null };
+  let itemMeta = null;
+  if (typeof item.metadata === 'string' && item.metadata.trim()) {
+    try { itemMeta = JSON.parse(item.metadata); } catch (e) { itemMeta = null; }
+  } else if (item.metadata && typeof item.metadata === 'object') {
+    itemMeta = item.metadata;
+  }
+  const attrValues = itemMeta?.attributeValues || item.attributeValues || (typeof item.attributes === 'object' && !Array.isArray(item.attributes) ? item.attributes : null);
+  const carModelVal = item.carModel || item.car_model || itemMeta?.carModel || itemMeta?.car_model || (attrValues ? (attrValues.car_model || attrValues.carModel || attrValues['نوع وموديل وسنة صنع السيارة'] || attrValues['موديل السيارة'] || null) : null);
+  const customAttrs = item.customAttributes || itemMeta?.customAttributes || attrValues || null;
+  const customFlds = item.customFields || itemMeta?.customFields || null;
+
+  return {
+    attributes: item.attributes || customAttrs || customFlds || null,
+    customAttributes: customAttrs,
+    customFields: customFlds,
+    metadata: itemMeta || item.metadata || null,
+    carModel: carModelVal,
+  };
+};
+
 const parseMerchantOrderItems = (value) => {
   if (Array.isArray(value)) {
     return value;
@@ -654,6 +680,8 @@ const mapMerchantScopedOrderItems = (order, merchantFulfillment) => {
       ? (matchedOrderItem?.price ?? assignedItem.price ?? 0)
       : 0;
 
+    const customAttrData = resolveItemCustomAttributes({ ...matchedOrderItem, metadata: parsedMetadata });
+
     return {
       id: matchedOrderItem?.id || `${merchantFulfillment.merchantOrderId}-${index}`,
       productId: assignedItem.productId || matchedOrderItem?.productId || '',
@@ -674,13 +702,19 @@ const mapMerchantScopedOrderItems = (order, merchantFulfillment) => {
       price,
       quantity,
       total: merchantFulfillment.canViewFullDetails ? Number(price || 0) * quantity : 0,
+      carModel: customAttrData.carModel,
+      customAttributes: customAttrData.customAttributes,
+      attributes: customAttrData.attributes,
+      customFields: customAttrData.customFields,
       metadata: {
         ...parsedMetadata,
         color: matchedOrderItem?.productColor || parsedMetadata.color || parsedMetadata.productColor,
         size: matchedOrderItem?.productSize || parsedMetadata.size || parsedMetadata.productSize,
         merchantSku: assignedItem.merchantSku || parsedMetadata.merchantSku,
         fulfillmentSource: assignedItem.fulfillmentSource || merchantFulfillment.fulfillmentSource,
-        warehouseId: assignedItem.warehouseId || merchantFulfillment.warehouseId
+        warehouseId: assignedItem.warehouseId || merchantFulfillment.warehouseId,
+        carModel: customAttrData.carModel,
+        customAttributes: customAttrData.customAttributes,
       }
     };
   });
@@ -719,6 +753,7 @@ const mapRegularOrderToSimple = (order, { merchantScope = null } = {}) => {
         Array.isArray(order.orderItems) && order.orderItems.length > 0
           ? order.orderItems.map((item) => {
             const parsedMetadata = parseOrderItemMetadata(item.metadata || '{}');
+            const customAttrData = resolveItemCustomAttributes({ ...item, metadata: parsedMetadata });
             return {
               id: item.id,
               productId: item.productId,
@@ -728,10 +763,16 @@ const mapRegularOrderToSimple = (order, { merchantScope = null } = {}) => {
               price: item.price,
               quantity: item.quantity,
               total: item.total,
+              carModel: customAttrData.carModel,
+              customAttributes: customAttrData.customAttributes,
+              attributes: customAttrData.attributes,
+              customFields: customAttrData.customFields,
               metadata: {
                 ...parsedMetadata,
                 color: item.productColor || parsedMetadata.color || parsedMetadata.productColor,
-                size: item.productSize || parsedMetadata.size || parsedMetadata.productSize
+                size: item.productSize || parsedMetadata.size || parsedMetadata.productSize,
+                carModel: customAttrData.carModel,
+                customAttributes: customAttrData.customAttributes,
               }
             };
           })
@@ -866,19 +907,30 @@ const mapGuestOrderToSimple = (order) => {
     paymentMethod: order.paymentMethod?.toLowerCase() || 'cash_on_delivery',
     shippingAddress,
     items: Array.isArray(items)
-      ? items.map((item) => ({
-        id: item.id || item.productId || '',
-        productId: item.productId || item.id || '',
-        name: item.name || item.productName || '',
-        price: item.price || 0,
-        quantity: item.quantity || 1,
-        total: (item.price || 0) * (item.quantity || 1),
-        sku: item.sku || item.productSku || '',
-        color: item.color || item.productColor || '',
-        size: item.size || item.productSize || '',
-        image: item.image || item.productImage || '',
-        metadata: item.metadata && typeof item.metadata === 'object' ? item.metadata : {}
-      }))
+      ? items.map((item) => {
+        const customAttrData = resolveItemCustomAttributes(item);
+        return {
+          id: item.id || item.productId || '',
+          productId: item.productId || item.id || '',
+          name: item.name || item.productName || '',
+          price: item.price || 0,
+          quantity: item.quantity || 1,
+          total: (item.price || 0) * (item.quantity || 1),
+          sku: item.sku || item.productSku || '',
+          color: item.color || item.productColor || '',
+          size: item.size || item.productSize || '',
+          image: item.image || item.productImage || '',
+          carModel: customAttrData.carModel,
+          customAttributes: customAttrData.customAttributes,
+          attributes: customAttrData.attributes,
+          customFields: customAttrData.customFields,
+          metadata: {
+            ...(item.metadata && typeof item.metadata === 'object' ? item.metadata : {}),
+            carModel: customAttrData.carModel,
+            customAttributes: customAttrData.customAttributes,
+          }
+        };
+      })
       : [],
     turboTrackingNumber: order.turboTrackingNumber || null,
     turboShipmentId: order.turboShipmentId || null,
