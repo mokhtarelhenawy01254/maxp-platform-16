@@ -99,10 +99,14 @@ export default function SuperAdminCompaniesReports() {
       <div dir="rtl" className="w-full space-y-4 p-1">
         <div className="h-10 w-72 rounded-lg bg-muted/20 animate-pulse border border-border/40" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-24 rounded-xl bg-muted/20 border border-border/40 animate-pulse" />}
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-24 rounded-xl bg-muted/20 border border-border/40 animate-pulse" />
+          ))}
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          {[...Array(2)].map((_, i) => <div key={i} className="h-64 rounded-xl bg-muted/20 border border-border/40 animate-pulse" />}
+          {[0, 1].map((i) => (
+            <div key={i} className="h-64 rounded-xl bg-muted/20 border border-border/40 animate-pulse" />
+          ))}
         </div>
       </div>
     );
