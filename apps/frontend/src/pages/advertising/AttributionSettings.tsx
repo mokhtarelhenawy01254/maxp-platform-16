@@ -1,7 +1,8 @@
 /**
  * 📊 Attribution Settings
  *
- * إعدادات إحالة التحويلات
+ * إعدادات إحالة التحويلات لحملات فيسبوك
+ * Linear Single-Surface Chassis - Zero Emoji - MaxP Platform Standards
  */
 
 import React, { useState } from "react";
@@ -10,14 +11,17 @@ import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import {
   Settings,
-  ArrowLeft,
+  ArrowRight,
   Clock,
   MousePointer,
   Eye,
   Loader2,
-  CheckCircle,
+  CheckCircle2,
   Info,
-  BarChart3,
+  Sliders,
+  Sparkles,
+  Layers,
+  ShieldCheck,
 } from "lucide-react";
 import { facebookAdsService } from "../../services/facebookAdsService";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
@@ -36,27 +40,36 @@ const AttributionSettings: React.FC = () => {
   const clickWindowOptions = [
     {
       value: "1d",
-      label: "يوم واحد",
-      description: "تحويلات خلال 24 ساعة من النقر",
+      label: "يوم واحد (1d)",
+      badge: "دقة فورية",
+      description: "احتساب التحويلات المباشرة خلال 24 ساعة من النقر",
     },
     {
       value: "7d",
-      label: "7 أيام",
-      description: "تحويلات خلال أسبوع من النقر (موصى به)",
+      label: "7 أيام (7d)",
+      badge: "الموصى به",
+      description: "المعيار القياسي لاحتساب التحويلات خلال أسبوع من النقر",
     },
-    { value: "28d", label: "28 يوم", description: "تحويلات خلال شهر من النقر" },
+    {
+      value: "28d",
+      label: "28 يوماً (28d)",
+      badge: "دورة مبيعات طويلة",
+      description: "تتبع استراتيجي للقرارات الشرائية المعقدة خلال شهر",
+    },
   ];
 
   const viewWindowOptions = [
     {
       value: "1d",
-      label: "يوم واحد",
-      description: "تحويلات خلال 24 ساعة من المشاهدة",
+      label: "يوم واحد (1d)",
+      badge: "الافتراضي الموصى به",
+      description: "احتساب الشراء خلال 24 ساعة من مشاهدة الإعلان فقط",
     },
     {
       value: "7d",
-      label: "7 أيام",
-      description: "تحويلات خلال أسبوع من المشاهدة",
+      label: "7 أيام (7d)",
+      badge: "تأثير متراكم",
+      description: "احتساب التحويل حتى 7 أيام بعد مشاهدة الإعلان بدون نقر",
     },
   ];
 
@@ -80,171 +93,265 @@ const AttributionSettings: React.FC = () => {
       tToast.success("AttributionSettings.success_save_97ba");
     } catch (error: any) {
       console.error("Error saving settings:", error);
-      toast.error(error?.response?.data?.error || "فشل في حفظ الإعدادات");
+      toast.error(error?.response?.data?.error || "فشل في حفظ إعدادات الإحالة");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
+    <div className="p-4 sm:p-6 space-y-6 max-w-6xl mx-auto" dir="rtl">
       <FacebookAdsModuleNav />
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={() => navigate("/advertising/facebook-ads")}
-          className="p-2 hover:bg-gray-100 rounded-lg"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Settings className="w-7 h-7 text-gray-600" />
-            إعدادات الإحالة (Attribution)
-          </h1>
-          <p className="text-gray-600 mt-1">
-            تحديد كيفية احتساب التحويلات للإعلانات
-          </p>
-        </div>
-      </div>
 
-      {/* Info Card */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <div className="flex items-start gap-3">
-          <Info className="w-5 h-5 text-blue-600 mt-0.5" />
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/advertising/facebook-ads")}
+            className="p-2 border border-border/70 rounded-lg hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground"
+            title="رجوع لإعلانات فيسبوك"
+          >
+            <ArrowRight className="w-5 h-5" />
+          </button>
           <div>
-            <h3 className="font-medium text-blue-900">ما هي نافذة الإحالة؟</h3>
-            <p className="text-sm text-blue-700 mt-1">
-              نافذة الإحالة تحدد الفترة الزمنية التي يتم فيها احتساب التحويل
-              للإعلان. مثلاً، إذا اخترت 7 أيام للنقر، فإن أي عملية شراء تحدث
-              خلال 7 أيام من النقر على الإعلان ستُحتسب كتحويل.
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-md bg-primary/10 text-primary">
+                <Settings className="w-4 h-4" />
+              </span>
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
+                إعدادات الإحالة (Attribution Engine)
+              </h1>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              تحديد النوافذ الزمنية المعيارية لقياس واحتساب مبيعات الحملات
             </p>
           </div>
         </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate("/advertising/facebook-ads")}
+            className="px-3.5 py-1.5 text-xs font-medium border border-border/70 rounded-lg hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            إلغاء
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={loading || !settings.adSetId.trim()}
+            className="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-semibold text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-all shadow-xs"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                جاري الحفظ...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                حفظ نافذة الإحالة
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Main Form */}
-      <div className="bg-white rounded-xl shadow-sm border">
-        <div className="p-6 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">
-            تحديد مجموعة الإعلانات
-          </h2>
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              معرف مجموعة الإعلانات (Ad Set ID) *
+      {/* Single Surface Chassis */}
+      <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-xs">
+        {/* Telemetry Status Ribbon */}
+        <div className="grid grid-cols-2 md:grid-cols-4 border-b border-border/70 bg-muted/20 divide-x divide-x-reverse divide-border/60">
+          <div className="p-3.5 px-4">
+            <span className="text-[11px] font-medium text-muted-foreground block">
+              مجموعة الإعلانات (Ad Set)
+            </span>
+            <span className="text-sm font-bold font-mono text-foreground mt-0.5 block truncate">
+              {settings.adSetId.trim() ? settings.adSetId : "لم يتم التحديد"}
+            </span>
+          </div>
+          <div className="p-3.5 px-4">
+            <span className="text-[11px] font-medium text-muted-foreground block">
+              نافذة النقر (Click Window)
+            </span>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-sm font-bold font-mono text-primary">
+                {settings.clickWindow}
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                ({clickWindowOptions.find((o) => o.value === settings.clickWindow)?.label})
+              </span>
+            </div>
+          </div>
+          <div className="p-3.5 px-4">
+            <span className="text-[11px] font-medium text-muted-foreground block">
+              نافذة المشاهدة (View Window)
+            </span>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-sm font-bold font-mono text-foreground">
+                {settings.viewWindow}
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                ({viewWindowOptions.find((o) => o.value === settings.viewWindow)?.label})
+              </span>
+            </div>
+          </div>
+          <div className="p-3.5 px-4">
+            <span className="text-[11px] font-medium text-muted-foreground block">
+              نمط الإسناد
+            </span>
+            <span
+              className={`inline-flex items-center gap-1 text-xs font-semibold mt-0.5 ${
+                settings.useAccountDefault ? "text-amber-500" : "text-emerald-500"
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              {settings.useAccountDefault ? "افتراضي الحساب" : "مخصص للمجموعة"}
+            </span>
+          </div>
+        </div>
+
+        {/* AdSet ID Input Section */}
+        <div className="p-5 border-b border-border/70 space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-foreground flex items-center gap-2">
+              <Layers className="w-4 h-4 text-muted-foreground" />
+              معرف مجموعة الإعلانات المستهدفة (Ad Set ID)
+              <span className="text-destructive">*</span>
             </label>
-            <input
-              type="text"
-              value={settings.adSetId}
-              onChange={(e) =>
-                setSettings((prev) => ({ ...prev, adSetId: e.target.value }))
-              }
-              placeholder="أدخل معرف Ad Set"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
+            <span className="text-[11px] text-muted-foreground">
+              مطلوب لحفظ قواعد الإسناد في Meta Graph API
+            </span>
           </div>
+          <input
+            type="text"
+            value={settings.adSetId}
+            onChange={(e) =>
+              setSettings((prev) => ({ ...prev, adSetId: e.target.value }))
+            }
+            placeholder="مثال: 2384958291029384"
+            className="w-full px-3.5 py-2 text-sm bg-background border border-border/70 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-primary font-mono"
+          />
         </div>
 
-        {/* Click Attribution */}
-        <div className="p-6 border-b">
-          <div className="flex items-center gap-2 mb-4">
-            <MousePointer className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">
-              نافذة النقر (Click-Through)
-            </h2>
+        {/* Click Attribution Window */}
+        <div className="p-5 border-b border-border/70 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="p-1 rounded-md bg-primary/10 text-primary">
+              <MousePointer className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">
+                نافذة إحالة النقر (Click-Through Attribution)
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                الفترة الزمنية المعتمدة بعد نقر العميل على الإعلان لحساب الطلب كتحويل إعلاني
+              </p>
+            </div>
           </div>
-          <p className="text-sm text-gray-600 mb-4">
-            الفترة الزمنية بعد النقر على الإعلان التي يتم فيها احتساب التحويلات
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {clickWindowOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    clickWindow: option.value as any,
-                  }))
-                }
-                className={`p-4 rounded-xl border-2 text-right transition-all ${
-                  settings.clickWindow === option.value
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <Clock
-                    className={`w-5 h-5 ${settings.clickWindow === option.value ? "text-blue-600" : "text-gray-400"}`}
-                  />
-                  {settings.clickWindow === option.value && (
-                    <CheckCircle className="w-5 h-5 text-blue-600" />
-                  )}
-                </div>
-                <h3
-                  className={`font-semibold ${settings.clickWindow === option.value ? "text-blue-900" : "text-gray-900"}`}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+            {clickWindowOptions.map((option) => {
+              const isSelected = settings.clickWindow === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      clickWindow: option.value as any,
+                    }))
+                  }
+                  className={`p-3.5 rounded-lg border text-right transition-all cursor-pointer relative ${
+                    isSelected
+                      ? "border-primary bg-primary/5 text-foreground ring-1 ring-primary"
+                      : "border-border/70 bg-card hover:bg-muted/20 text-muted-foreground"
+                  }`}
                 >
-                  {option.label}
-                </h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  {option.description}
-                </p>
-              </button>
-            ))}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                      {option.label}
+                    </span>
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {option.badge}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {option.description}
+                  </p>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* View Attribution */}
-        <div className="p-6 border-b">
-          <div className="flex items-center gap-2 mb-4">
-            <Eye className="w-5 h-5 text-purple-600" />
-            <h2 className="text-lg font-semibold text-gray-900">
-              نافذة المشاهدة (View-Through)
-            </h2>
+        {/* View Attribution Window */}
+        <div className="p-5 border-b border-border/70 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="p-1 rounded-md bg-purple-500/10 text-purple-500">
+              <Eye className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">
+                نافذة إحالة المشاهدة (View-Through Attribution)
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                احتساب التحويلات الناتجة عن ظهور الإعلان للمستخدم بدون نقر مباشر
+              </p>
+            </div>
           </div>
-          <p className="text-sm text-gray-600 mb-4">
-            الفترة الزمنية بعد مشاهدة الإعلان (بدون نقر) التي يتم فيها احتساب
-            التحويلات
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {viewWindowOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    viewWindow: option.value as any,
-                  }))
-                }
-                className={`p-4 rounded-xl border-2 text-right transition-all ${
-                  settings.viewWindow === option.value
-                    ? "border-purple-500 bg-purple-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <Clock
-                    className={`w-5 h-5 ${settings.viewWindow === option.value ? "text-purple-600" : "text-gray-400"}`}
-                  />
-                  {settings.viewWindow === option.value && (
-                    <CheckCircle className="w-5 h-5 text-purple-600" />
-                  )}
-                </div>
-                <h3
-                  className={`font-semibold ${settings.viewWindow === option.value ? "text-purple-900" : "text-gray-900"}`}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            {viewWindowOptions.map((option) => {
+              const isSelected = settings.viewWindow === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      viewWindow: option.value as any,
+                    }))
+                  }
+                  className={`p-3.5 rounded-lg border text-right transition-all cursor-pointer relative ${
+                    isSelected
+                      ? "border-purple-500 bg-purple-500/5 text-foreground ring-1 ring-purple-500"
+                      : "border-border/70 bg-card hover:bg-muted/20 text-muted-foreground"
+                  }`}
                 >
-                  {option.label}
-                </h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  {option.description}
-                </p>
-              </button>
-            ))}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                      {option.label}
+                    </span>
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                        isSelected
+                          ? "bg-purple-600 text-white"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {option.badge}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {option.description}
+                  </p>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Account Default */}
-        <div className="p-6 border-b">
-          <label className="flex items-center gap-3 cursor-pointer">
+        {/* Account Default Fallback Toggle */}
+        <div className="p-4 bg-muted/10 border-b border-border/70">
+          <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
               checked={settings.useAccountDefault}
@@ -254,76 +361,26 @@ const AttributionSettings: React.FC = () => {
                   useAccountDefault: e.target.checked,
                 }))
               }
-              className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+              className="mt-1 w-4 h-4 rounded border-border/70 text-primary focus:ring-primary"
             />
             <div>
-              <span className="font-medium text-gray-900">
-                استخدام الإعدادات الافتراضية للحساب
+              <span className="text-xs font-bold text-foreground block">
+                تفعيل الإعدادات الافتراضية لحساب الإعلانات (Account Default)
               </span>
-              <p className="text-sm text-gray-500">
-                تجاهل الإعدادات أعلاه واستخدام إعدادات الحساب
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                تجاهل النوافذ المخصصة أعلاه والاعتماد مباشرة على الضبط العام في Business Manager
               </p>
             </div>
           </label>
         </div>
 
-        {/* Summary */}
-        <div className="p-6 border-b bg-gray-50">
-          <div className="flex items-center gap-2 mb-3">
-            <BarChart3 className="w-5 h-5 text-gray-600" />
-            <h3 className="font-medium text-gray-900">ملخص الإعدادات</h3>
-          </div>
-          <div className="bg-white rounded-lg p-4 border">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">نافذة النقر:</span>
-                <span className="font-medium text-gray-900 mr-2">
-                  {
-                    clickWindowOptions.find(
-                      (o) => o.value === settings.clickWindow,
-                    )?.label
-                  }
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-500">نافذة المشاهدة:</span>
-                <span className="font-medium text-gray-900 mr-2">
-                  {
-                    viewWindowOptions.find(
-                      (o) => o.value === settings.viewWindow,
-                    )?.label
-                  }
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="p-6 flex gap-3 justify-end">
-          <button
-            onClick={() => navigate("/advertising/facebook-ads")}
-            className="px-6 py-2 text-gray-700 bg-white border rounded-lg hover:bg-gray-50"
-          >
-            إلغاء
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={loading || !settings.adSetId.trim()}
-            className="px-6 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                جاري الحفظ...
-              </>
-            ) : (
-              <>
-                <CheckCircle className="w-4 h-4" />
-                حفظ الإعدادات
-              </>
-            )}
-          </button>
+        {/* Explanatory Technical Note */}
+        <div className="p-4 bg-muted/20 flex items-start gap-3 text-xs text-muted-foreground">
+          <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+          <p className="leading-relaxed">
+            يتم تطبيق هذه الإعدادات مباشرة على مستوى Ad Set في Meta API، وتؤثر على خوارزميات
+            التحسين (Optimization for Ad Delivery) وتقارير العائد على الإنفاق الإعلاني (ROAS).
+          </p>
         </div>
       </div>
     </div>

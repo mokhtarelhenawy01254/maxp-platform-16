@@ -1,49 +1,45 @@
-/**
- * A/B Tests Management Page
- *
- * صفحة إدارة اختبارات A/B للإعلانات
- */
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  PlusIcon,
-  PlayIcon,
-  PauseIcon,
-  TrashIcon,
-  EyeIcon,
-  ChartBarIcon,
-  BeakerIcon,
-} from "@heroicons/react/24/outline";
+  Plus,
+  Play,
+  Pause,
+  Trash2,
+  Eye,
+  RotateCcw,
+  FlaskConical,
+  Sparkles,
+  BarChart3,
+  CheckCircle2,
+  Clock,
+  Layers,
+} from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
-import {
-  facebookAdsService,
-  FacebookAdTest,
-} from "../../services/facebookAdsService";
+import { facebookAdsService, FacebookAdTest } from "../../services/facebookAdsService";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
-import { useTheme } from "../../hooks/useTheme";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+
+const statusMap: Record<string, { label: string; class: string }> = {
+  RUNNING: { label: "قيد التشغيل", class: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" },
+  PAUSED: { label: "متوقف مؤقتاً", class: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
+  DRAFT: { label: "مسودة", class: "bg-muted text-muted-foreground border-border/60" },
+  COMPLETED: { label: "مكتمل بحسم", class: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
+  ARCHIVED: { label: "مؤرشف", class: "bg-muted text-muted-foreground border-border/60" },
+};
 
 const ABTestsManagement: React.FC = () => {
   const navigate = useNavigate();
-  const { derivedTheme } = useTheme();
   const [tests, setTests] = useState<FacebookAdTest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<
-    "all" | "DRAFT" | "RUNNING" | "PAUSED" | "COMPLETED"
-  >("all");
-
-  useEffect(() => {
-    loadTests();
-  }, [filter]);
+  const [filter, setFilter] = useState<"all" | "DRAFT" | "RUNNING" | "PAUSED" | "COMPLETED">("all");
 
   const loadTests = async () => {
     try {
       setLoading(true);
-      const data = await facebookAdsService.getAdTests(
-        filter === "all" ? undefined : filter,
-      );
-      setTests(data);
+      const data = await facebookAdsService.getAdTests(filter === "all" ? undefined : filter);
+      setTests(data || []);
     } catch (error: any) {
       console.error("Error loading tests:", error);
       toast.error(error?.response?.data?.error || "فشل في تحميل الاختبارات");
@@ -52,6 +48,10 @@ const ABTestsManagement: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    loadTests();
+  }, [filter]);
+
   const handleStartTest = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -59,7 +59,6 @@ const ABTestsManagement: React.FC = () => {
       tToast.success("ABTestsManagement.msg_cba6");
       loadTests();
     } catch (error: any) {
-      console.error("Error starting test:", error);
       toast.error(error?.response?.data?.error || "فشل في بدء الاختبار");
     }
   };
@@ -71,7 +70,6 @@ const ABTestsManagement: React.FC = () => {
       tToast.success("ABTestsManagement.msg_e722");
       loadTests();
     } catch (error: any) {
-      console.error("Error pausing test:", error);
       toast.error(error?.response?.data?.error || "فشل في إيقاف الاختبار");
     }
   };
@@ -79,257 +77,207 @@ const ABTestsManagement: React.FC = () => {
   const handleDeleteTest = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!window.confirm("هل أنت متأكد من حذف هذا الاختبار؟")) return;
-
     try {
       await facebookAdsService.deleteAdTest(id);
       tToast.success("ABTestsManagement.success_delete_414c");
       loadTests();
     } catch (error: any) {
-      console.error("Error deleting test:", error);
       toast.error(error?.response?.data?.error || "فشل في حذف الاختبار");
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const badges = {
-      DRAFT:
-        derivedTheme === "dark"
-          ? "bg-gray-700 text-gray-300"
-          : "bg-gray-100 text-gray-800",
-      RUNNING:
-        derivedTheme === "dark"
-          ? "bg-green-900 text-green-300"
-          : "bg-green-100 text-green-800",
-      PAUSED:
-        derivedTheme === "dark"
-          ? "bg-yellow-900 text-yellow-300"
-          : "bg-yellow-100 text-yellow-800",
-      COMPLETED:
-        derivedTheme === "dark"
-          ? "bg-blue-900 text-blue-300"
-          : "bg-blue-100 text-blue-800",
-      ARCHIVED:
-        derivedTheme === "dark"
-          ? "bg-gray-700 text-gray-400"
-          : "bg-gray-100 text-gray-600",
-    };
-    return (
-      badges[status as keyof typeof badges] ||
-      (derivedTheme === "dark"
-        ? "bg-gray-700 text-gray-300"
-        : "bg-gray-100 text-gray-800")
-    );
-  };
-
-  const getStatusLabel = (status: string) => {
-    const labels = {
-      DRAFT: "مسودة",
-      RUNNING: "قيد التشغيل",
-      PAUSED: "متوقف",
-      COMPLETED: "مكتمل",
-      ARCHIVED: "مؤرشف",
-    };
-    return labels[status as keyof typeof labels] || status;
-  };
-
   const getTestTypeLabel = (type: string) => {
-    const labels = {
-      CREATIVE: "Creative",
-      TARGETING: "Targeting",
-      BUDGET: "Budget",
-      PLACEMENT: "Placement",
+    const labels: Record<string, string> = {
+      CREATIVE: "المحتوى الإبداعي",
+      TARGETING: "الجمهور والاستهداف",
+      BUDGET: "الميزانية والتوزيع",
+      PLACEMENT: "المواضع والمنصات",
     };
-    return labels[type as keyof typeof labels] || type;
+    return labels[type] || type || "عام";
   };
+
+  const stats = useMemo(() => {
+    const total = tests.length;
+    const running = tests.filter((t) => t.status === "RUNNING").length;
+    const completed = tests.filter((t) => t.status === "COMPLETED").length;
+    const scoredList = tests.filter((t) => t.confidenceLevel !== undefined && t.confidenceLevel !== null);
+    const avgConfidence = scoredList.length
+      ? Math.round(scoredList.reduce((acc, t) => acc + (t.confidenceLevel || 0), 0) / scoredList.length)
+      : 0;
+    return { total, running, completed, avgConfidence };
+  }, [tests]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 p-4 md:p-6" dir="rtl">
       <FacebookAdsModuleNav />
-      {/* Header */}
-      <div className="flex items-center justify-between">
+
+      {/* Top Chassis Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/70">
         <div>
-          <h1
-            className={`text-3xl font-bold ${derivedTheme === "dark" ? "text-white" : "text-gray-900"}`}
-          >
-            اختبارات A/B
-          </h1>
-          <p
-            className={`mt-2 text-sm ${derivedTheme === "dark" ? "text-gray-400" : "text-gray-600"}`}
-          >
-            إدارة اختبارات A/B لتحسين أداء الإعلانات
+          <div className="flex items-center gap-2">
+            <FlaskConical className="h-5 w-5 text-primary" />
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              اختبارات A/B وتقسيم الزوايا الإعلانية
+            </h1>
+            <Badge variant="outline" className="text-xs px-2 py-0.5 font-mono tabular-nums bg-muted/40 border-border/70 text-muted-foreground">
+              {tests.length} تجربة
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            مقارنة متغيرات الإعلانات، الزوايا التسويقية، والاستهداف لاكتشاف الفائز إحصائياً بأعلى عائد
           </p>
         </div>
-        <button
-          onClick={() => navigate("/advertising/facebook-ads/tests/create")}
-          className="flex items-center gap-2 px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
-        >
-          <PlusIcon className="w-5 h-5" />
-          إنشاء اختبار جديد
-        </button>
-      </div>
 
-      {/* Filters */}
-      <div
-        className={`${derivedTheme === "dark" ? "bg-gray-800 border-gray-700" : "bg-white"} p-4 rounded-lg shadow`}
-      >
         <div className="flex items-center gap-2">
-          <span
-            className={`text-sm font-medium ${derivedTheme === "dark" ? "text-gray-300" : "text-gray-700"}`}
-          >
-            التصفية:
-          </span>
-          {["all", "DRAFT", "RUNNING", "PAUSED", "COMPLETED"].map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilter(status as any)}
-              className={`px-3 py-1 text-sm rounded-lg ${
-                filter === status
-                  ? "bg-indigo-600 text-white"
-                  : derivedTheme === "dark"
-                    ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              {status === "all" ? "الكل" : getStatusLabel(status)}
-            </button>
-          ))}
+          <Button variant="outline" size="sm" onClick={loadTests} className="h-8 gap-1.5 text-xs border-border/70">
+            <RotateCcw className="h-3.5 w-3.5" /> تحديث
+          </Button>
+          <Button size="sm" onClick={() => navigate("/advertising/facebook-ads/tests/create")} className="h-8 gap-1.5 text-xs font-medium">
+            <Plus className="h-3.5 w-3.5" /> إنشاء اختبار جديد
+          </Button>
         </div>
       </div>
 
-      {/* Tests List */}
-      <div
-        className={`${derivedTheme === "dark" ? "bg-gray-800 border-gray-700" : "bg-white"} rounded-lg shadow`}
-      >
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-            <p
-              className={`mt-4 ${derivedTheme === "dark" ? "text-gray-400" : "text-gray-600"}`}
-            >
-              جاري التحميل...
-            </p>
+      {/* Telemetry Ribbon */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+        <div className="p-3 rounded-lg border border-border/70 bg-card">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>إجمالي التجارب</span>
+            <FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />
           </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-foreground">{stats.total}</div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">اختبار مسجل</div>
+        </div>
+
+        <div className="p-3 rounded-lg border border-border/70 bg-card">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>قيد التشغيل والجمع</span>
+            <Play className="h-3.5 w-3.5 text-emerald-500" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-emerald-500">{stats.running}</div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">تجمع بيانات حية</div>
+        </div>
+
+        <div className="p-3 rounded-lg border border-border/70 bg-card">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>مكتمل بنتيجة حاسمة</span>
+            <CheckCircle2 className="h-3.5 w-3.5 text-blue-500" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-blue-500">{stats.completed}</div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">تم تحديد الفائز</div>
+        </div>
+
+        <div className="p-3 rounded-lg border border-border/70 bg-card">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>متوسط الثقة الإحصائية</span>
+            <BarChart3 className="h-3.5 w-3.5 text-primary" />
+          </div>
+          <div className="text-xl font-bold font-mono tabular-nums text-foreground">
+            {stats.avgConfidence > 0 ? `${stats.avgConfidence}%` : "—"}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">Statistical Confidence</div>
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-lg border border-border/60 bg-muted/20 w-fit">
+        {[
+          { key: "all", label: "الكل" },
+          { key: "RUNNING", label: "قيد التشغيل" },
+          { key: "PAUSED", label: "متوقف" },
+          { key: "DRAFT", label: "مسودة" },
+          { key: "COMPLETED", label: "مكتمل" },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setFilter(tab.key as any)}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+              filter === tab.key ? "bg-card text-foreground shadow-sm border border-border/60" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tests Single Surface Container */}
+      <div className="rounded-lg border border-border/70 bg-card overflow-hidden">
+        <div className="p-3 px-4 bg-muted/20 border-b border-border/70 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="text-xs font-semibold text-foreground">سجل اختبارات A/B</span>
+          </div>
+          <span className="text-xs text-muted-foreground font-mono tabular-nums">{tests.length} تجربة</span>
+        </div>
+
+        {loading ? (
+          <div className="p-12 text-center text-xs text-muted-foreground">جاري تحميل الاختبارات...</div>
         ) : tests.length === 0 ? (
-          <div className="text-center py-12">
-            <BeakerIcon
-              className={`w-16 h-16 ${derivedTheme === "dark" ? "text-gray-500" : "text-gray-400"} mx-auto mb-4`}
-            />
-            <p
-              className={`mb-4 ${derivedTheme === "dark" ? "text-gray-400" : "text-gray-600"}`}
-            >
-              لا توجد اختبارات
-            </p>
-            <button
-              onClick={() => navigate("/advertising/facebook-ads/tests/create")}
-              className="inline-flex items-center gap-2 px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
-            >
-              <PlusIcon className="w-5 h-5" />
-              إنشاء اختبار جديد
-            </button>
+          <div className="p-12 text-center text-xs text-muted-foreground space-y-2">
+            <FlaskConical className="h-8 w-8 mx-auto text-muted-foreground/30" />
+            <p className="font-semibold text-foreground">لا توجد اختبارات مسجلة</p>
+            <p className="text-muted-foreground">أنشئ اختباراً جديداً لمقارنة زوايا الإعلانات وتحديد الفائز بالأرقام</p>
           </div>
         ) : (
-          <div
-            className={`divide-y ${derivedTheme === "dark" ? "divide-gray-700" : "divide-gray-200"}`}
-          >
-            {tests.map((test) => (
-              <div
-                key={test.id}
-                onClick={() =>
-                  navigate(`/advertising/facebook-ads/tests/${test.id}`)
-                }
-                className={`p-6 ${derivedTheme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"} cursor-pointer`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <h3
-                        className={`font-semibold ${derivedTheme === "dark" ? "text-white" : "text-gray-900"}`}
-                      >
-                        {test.name}
-                      </h3>
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(test.status)}`}
-                      >
-                        {getStatusLabel(test.status)}
-                      </span>
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${derivedTheme === "dark" ? "bg-indigo-900 text-indigo-300" : "bg-indigo-100 text-indigo-800"}`}
-                      >
+          <div className="divide-y divide-border/60">
+            {tests.map((test) => {
+              const status = statusMap[test.status] || { label: test.status, class: "bg-muted text-muted-foreground border-border/60" };
+              return (
+                <div
+                  key={test.id}
+                  onClick={() => navigate(`/advertising/facebook-ads/tests/${test.id}`)}
+                  className="p-3.5 px-4 hover:bg-muted/30 transition-colors cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-3"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-semibold text-foreground">{test.name}</h3>
+                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 font-medium ${status.class}`}>
+                        {status.label}
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-medium bg-muted text-muted-foreground border-border/60">
                         {getTestTypeLabel(test.testType)}
-                      </span>
+                      </Badge>
                     </div>
-                    {test.description && (
-                      <p
-                        className={`mt-1 text-sm ${derivedTheme === "dark" ? "text-gray-400" : "text-gray-600"}`}
-                      >
-                        {test.description}
-                      </p>
-                    )}
-                    <div
-                      className={`mt-3 flex items-center gap-6 text-sm ${derivedTheme === "dark" ? "text-gray-400" : "text-gray-600"}`}
-                    >
-                      {test.variantsList && (
-                        <span>{test.variantsList.length} متغير</span>
-                      )}
+                    {test.description && <p className="text-xs text-muted-foreground line-clamp-1">{test.description}</p>}
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground pt-0.5">
+                      {test.variantsList && <span className="font-mono">{test.variantsList.length} متغيرات</span>}
                       {test.totalImpressions > 0 && (
                         <>
-                          <span>
-                            {test.totalImpressions.toLocaleString()} مشاهدة
-                          </span>
-                          <span>{test.totalClicks.toLocaleString()} نقرة</span>
-                          {test.confidenceLevel && (
-                            <span
-                              className={`font-medium ${derivedTheme === "dark" ? "text-indigo-400" : "text-indigo-600"}`}
-                            >
-                              {test.confidenceLevel.toFixed(1)}% ثقة
-                            </span>
-                          )}
+                          <span className="font-mono tabular-nums">{test.totalImpressions.toLocaleString()} مشاهدة</span>
+                          <span className="font-mono tabular-nums">{test.totalClicks.toLocaleString()} نقرة</span>
                         </>
+                      )}
+                      {test.confidenceLevel && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono bg-indigo-500/10 text-indigo-500 border-indigo-500/20">
+                          {test.confidenceLevel.toFixed(1)}% ثقة إحصائية
+                        </Badge>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+
+                  <div className="flex items-center gap-1.5 self-end md:self-center" onClick={(e) => e.stopPropagation()}>
                     {test.status === "DRAFT" && (
-                      <button
-                        onClick={(e) => handleStartTest(test.id, e)}
-                        className={`p-2 ${derivedTheme === "dark" ? "text-green-400 hover:bg-green-900" : "text-green-600 hover:bg-green-50"} rounded-lg`}
-                        title="بدء الاختبار"
-                      >
-                        <PlayIcon className="w-5 h-5" />
-                      </button>
+                      <Button variant="outline" size="sm" onClick={(e) => handleStartTest(test.id, e)} className="h-7 text-xs gap-1 border-border/70 text-emerald-600">
+                        <Play className="h-3 w-3" /> تشغيل
+                      </Button>
                     )}
                     {test.status === "RUNNING" && (
-                      <button
-                        onClick={(e) => handlePauseTest(test.id, e)}
-                        className={`p-2 ${derivedTheme === "dark" ? "text-yellow-400 hover:bg-yellow-900" : "text-yellow-600 hover:bg-yellow-50"} rounded-lg`}
-                        title="إيقاف الاختبار"
-                      >
-                        <PauseIcon className="w-5 h-5" />
-                      </button>
+                      <Button variant="outline" size="sm" onClick={(e) => handlePauseTest(test.id, e)} className="h-7 text-xs gap-1 border-border/70 text-amber-600">
+                        <Pause className="h-3 w-3" /> إيقاف
+                      </Button>
                     )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/advertising/facebook-ads/tests/${test.id}`);
-                      }}
-                      className={`p-2 ${derivedTheme === "dark" ? "text-indigo-400 hover:bg-indigo-900" : "text-indigo-600 hover:bg-indigo-50"} rounded-lg`}
-                      title="عرض التفاصيل"
-                    >
-                      <EyeIcon className="w-5 h-5" />
-                    </button>
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/advertising/facebook-ads/tests/${test.id}`)} className="h-7 text-xs gap-1 border-border/70">
+                      <Eye className="h-3 w-3" /> التفاصيل
+                    </Button>
                     {test.status !== "RUNNING" && (
-                      <button
-                        onClick={(e) => handleDeleteTest(test.id, e)}
-                        className={`p-2 ${derivedTheme === "dark" ? "text-red-400 hover:bg-red-900" : "text-red-600 hover:bg-red-50"} rounded-lg`}
-                        title="حذف"
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
+                      <Button variant="ghost" size="icon" onClick={(e) => handleDeleteTest(test.id, e)} className="h-7 w-7 text-rose-500 hover:bg-rose-500/10 hover:text-rose-600">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     )}
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
