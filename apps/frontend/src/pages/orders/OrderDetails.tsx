@@ -953,7 +953,7 @@ const OrderDetails: React.FC = () => {
 
   const effectiveStatus = (order as any).effectiveStatus || order.status || 'PENDING';
   const currentStatusConfig = orderStatuses.find(
-    (s) => s.code === effectiveStatus,
+    (s) => (s.code || "").toUpperCase() === String(effectiveStatus || "").toUpperCase(),
   ) || {
     code: effectiveStatus,
     name: effectiveStatus.replace(/_/g, " "),
