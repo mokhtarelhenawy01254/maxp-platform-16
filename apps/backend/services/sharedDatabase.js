@@ -4,6 +4,7 @@
  * 🚀 Optimized for 10,000+ requests per minute
  */
 
+const path = require('path');
 try {
   require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true });
 } catch (_) {}
