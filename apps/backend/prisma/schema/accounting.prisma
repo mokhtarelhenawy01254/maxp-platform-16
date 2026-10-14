@@ -1,0 +1,139 @@
+// ============================================================================
+// Accounting & Double-Entry General Ledger Schema
+// Wave 1: Core backend models for Accounts, Journal Entries, Periods, and Settings
+// ============================================================================
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum JournalEntryStatus {
+  DRAFT
+  POSTED
+  VOID
+}
+
+enum FiscalPeriodStatus {
+  OPEN
+  CLOSED
+}
+
+/// Chart of Accounts (دليل الحسابات)
+model Account {
+  id            String       @id @default(cuid())
+  companyId     String
+  code          String
+  name          String
+  nameEn        String?
+  type          AccountType
+  parentId      String?
+  isGroup       Boolean      @default(false)
+  isPostable    Boolean      @default(true)
+  isActive      Boolean      @default(true)
+  description   String?
+  currency      String       @default("EGP")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  parent        Account?     @relation("AccountHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children      Account[]    @relation("AccountHierarchy")
+  journalLines  JournalLine[]
+
+  @@unique([companyId, code])
+  @@index([companyId, type])
+  @@index([companyId, parentId])
+  @@index([companyId, isActive])
+  @@map("accounts")
+}
+
+/// Journal Entry Header (رأس قيد اليومية)
+model JournalEntry {
+  id           String             @id @default(cuid())
+  companyId    String
+  entryNumber  String
+  date         DateTime           @default(now())
+  narration    String
+  sourceType   String?
+  sourceId     String?
+  status       JournalEntryStatus @default(DRAFT)
+  postedAt     DateTime?
+  postedById   String?
+  createdById  String?
+  reversalOfId String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  lines        JournalLine[]
+
+  @@unique([companyId, entryNumber])
+  @@index([companyId, date])
+  @@index([companyId, status])
+  @@index([companyId, sourceType, sourceId])
+  @@map("journal_entries")
+}
+
+/// Journal Entry Line Item (سطر قيد اليومية)
+model JournalLine {
+  id          String       @id @default(cuid())
+  entryId     String
+  accountId   String
+  debit       Decimal      @default(0.0) @db.Decimal(12, 2)
+  credit      Decimal      @default(0.0) @db.Decimal(12, 2)
+  narration   String?
+  costCenter  String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  account     Account      @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@index([entryId])
+  @@index([accountId])
+  @@map("journal_lines")
+}
+
+/// Fiscal Accounting Period (الفترة المالية)
+model FiscalPeriod {
+  id         String             @id @default(cuid())
+  companyId  String
+  year       Int
+  month      Int
+  status     FiscalPeriodStatus @default(OPEN)
+  closedAt   DateTime?
+  closedById String?
+  isYearEnd  Boolean            @default(false)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@unique([companyId, year, month])
+  @@index([companyId, status])
+  @@map("fiscal_periods")
+}
+
+/// Accounting Settings per Company (إعدادات المحاسبة للشركة)
+model AccountingSettings {
+  id                             String   @id @default(cuid())
+  companyId                      String   @unique
+  fiscalYearStartMonth           Int      @default(1)
+  defaultCashAccountId           String?
+  defaultBankAccountId           String?
+  defaultArAccountId             String?
+  defaultApAccountId             String?
+  defaultSalesAccountId          String?
+  defaultCogsAccountId           String?
+  defaultInventoryAccountId      String?
+  defaultExpenseAccountId        String?
+  defaultRetainedEarningsAccountId String?
+  defaultVatOutputAccountId      String?
+  defaultVatInputAccountId       String?
+  defaultTaxRate                 Decimal  @default(14.00) @db.Decimal(5, 2)
+  autoPostingEnabled             Boolean  @default(false)
+  createdAt                      DateTime @default(now())
+  updatedAt                      DateTime @updatedAt
+
+  @@map("accounting_settings")
+}
