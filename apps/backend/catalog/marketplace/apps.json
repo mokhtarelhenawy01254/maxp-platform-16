@@ -4222,5 +4222,68 @@
     "engineCompatibility": null,
     "createdAt": "2026-09-22T00:00:00Z",
     "updatedAt": "2026-09-22T00:00:00Z"
+  },
+  {
+    "id": "cat-app-accounting",
+    "slug": "accounting",
+    "name": "المحاسبة",
+    "nameEn": "Accounting",
+    "description": "نظام محاسبي قانوني متكامل بالقيد المزدوج: دليل حسابات شجري، قيود يومية، أستاذ عام، ميزان مراجعة، قوائم مالية ختامية، وإقرارات ضريبية. (سعر تجريبي مؤقت غير معتمد).",
+    "descriptionEn": "Full double-entry statutory accounting engine: hierarchical chart of accounts, journal entries, general ledger, trial balance, and financial statements. (Placeholder pricing - unapproved).",
+    "category": "ACCOUNTING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 249,
+    "yearlyPrice": 2490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "الشركات والمصانع والتجار الذين يحتاجون إلى دفاتر محاسبية وقيد مزدوج قانوني متكامل.",
+      "surface": "داخل قسم المحاسبة — دليل الحسابات، قيود اليومية، والتقارير المالية.",
+      "outcome": "دفاتر محاسبية متوازنة ودقيقة متوافقة مع معايير المحاسبة والتقارير القانونية والضريبية."
+    },
+    "features": {
+      "chartOfAccounts": {
+        "enabled": true,
+        "name": "دليل الحسابات الشجري",
+        "description": "شجرة حسابات متعددة المستويات متوافقة مع معايير المحاسبة المصرية.",
+        "access": "PAID"
+      },
+      "journalEntries": {
+        "enabled": true,
+        "name": "دفتر قيود اليومية",
+        "description": "تسجيل وترحيل وإلغاء القيود اليومية بتوازن رياضي صارم وترقيم تسلسلي سنوي.",
+        "access": "PAID"
+      },
+      "generalLedger": {
+        "enabled": true,
+        "name": "الأستاذ العام وكشف الحساب",
+        "description": "متابعة كشوف حسابات العملاء والموردين وحسابات الأصول والمصروفات.",
+        "access": "PAID"
+      },
+      "trialBalance": {
+        "enabled": true,
+        "name": "ميزان المراجعة",
+        "description": "ميزان مراجعة بالمجاميع والأرصدة مع التحقق الآلي من التوازن.",
+        "access": "PAID"
+      },
+      "financialStatements": {
+        "enabled": true,
+        "name": "القوائم المالية الختامية",
+        "description": "قائمة الدخل (الأرباح والخسائر) والميزانية العمومية حتى تاريخه.",
+        "access": "PAID"
+      }
+    },
+    "isActive": false,
+    "isPublic": false,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "book-open",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-10-14T00:00:00Z",
+    "updatedAt": "2026-10-14T00:00:00Z"
   }
 ]
