@@ -49,7 +49,13 @@ async function expireCompanyTrial(companyId) {
       installedInTrial: true,
       status: { in: TRIAL_APP_STATUSES },
     },
-    select: { id: true, appId: true, app: { select: { name: true } } },
+    select: {
+      id: true,
+      appId: true,
+      activePricingModel: true,
+      validUntil: true,
+      app: { select: { name: true, pricingModel: true } }
+    },
   });
 
   if (trialApps.length === 0) {
@@ -73,12 +79,38 @@ async function expireCompanyTrial(companyId) {
 
   const totalConsumption = Number(consumption._sum?.totalCost || 0);
 
-  // تجميد التطبيقات + مسح علامة التجربة كي لا يُعاد تجميدها بعد دفع/تفعيل لاحق
+  // 🛡️ تجميد التطبيقات غير المشتركة فقط:
+  // - التطبيقات ذات الاشتراك المدفوع المستقبلي (validUntil > now) تظل ACTIVE مع مسح علامة التجربة
+  // - التطبيقات بنظام الدفع بالاستهلاك (PAY_PER_USE) تظل ACTIVE لمواصلة الخصم بالطلب مع مسح علامة التجربة
+  // - التطبيقات الأخرى بدون اشتراك مدفوع تتحول إلى EXPIRED
+  const now = new Date();
+  const toExpireIds = [];
+  const toKeepActiveIds = [];
+
+  for (const ca of trialApps) {
+    const isPpu = ca.activePricingModel === 'PAY_PER_USE' || ca.app?.pricingModel === 'PAY_PER_USE';
+    const hasValidSubscription = Boolean(ca.validUntil && new Date(ca.validUntil) > now);
+
+    if (hasValidSubscription || isPpu) {
+      toKeepActiveIds.push(ca.id);
+    } else {
+      toExpireIds.push(ca.id);
+    }
+  }
+
   await executeWithRetry(async () => {
-    await prisma.companyApp.updateMany({
-      where: { id: { in: companyAppIds } },
-      data: { status: 'EXPIRED', installedInTrial: false },
-    });
+    if (toExpireIds.length > 0) {
+      await prisma.companyApp.updateMany({
+        where: { id: { in: toExpireIds } },
+        data: { status: 'EXPIRED', installedInTrial: false },
+      });
+    }
+    if (toKeepActiveIds.length > 0) {
+      await prisma.companyApp.updateMany({
+        where: { id: { in: toKeepActiveIds } },
+        data: { status: 'ACTIVE', installedInTrial: false, trialEndsAt: null },
+      });
+    }
   });
 
   let billed = 0;
@@ -107,9 +139,9 @@ async function expireCompanyTrial(companyId) {
     }
   }
 
-  console.warn(`⏸️ [TRIAL-EXPIRY] Company ${companyId}: frozen ${trialApps.length} app(s), consumption ${totalConsumption}, billed ${billed}`);
+  console.warn(`⏸️ [TRIAL-EXPIRY] Company ${companyId}: frozen ${toExpireIds.length} app(s), kept active ${toKeepActiveIds.length} app(s), consumption ${totalConsumption}, billed ${billed}`);
 
-  return { frozen: trialApps.length, billed, totalConsumption };
+  return { frozen: toExpireIds.length, billed, totalConsumption };
 }
 
 module.exports = { expireCompanyTrial, isCompanyTrialActive };

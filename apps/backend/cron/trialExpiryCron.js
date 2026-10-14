@@ -20,11 +20,40 @@ async function runTrialExpiryCheck() {
   try {
     const prisma = getSharedPrismaClient();
 
-    // 1. Freeze individually expired trial apps
+    // 1. Handle individually expired trial apps
+    const now = new Date();
+    // 1a. Promote apps with valid paid subscriptions or PAY_PER_USE to ACTIVE
+    const validTrialApps = await prisma.companyApp.findMany({
+      where: {
+        status: 'TRIAL',
+        trialEndsAt: { not: null, lt: now },
+        OR: [
+          { activePricingModel: 'PAY_PER_USE' },
+          { validUntil: { gt: now } }
+        ]
+      },
+      select: { id: true },
+      take: 50,
+    });
+
+    if (validTrialApps.length > 0) {
+      await prisma.companyApp.updateMany({
+        where: { id: { in: validTrialApps.map((a) => a.id) } },
+        data: { status: 'ACTIVE', trialEndsAt: null, installedInTrial: false },
+      });
+      console.log(`[TRIAL-EXPIRY-CRON] Promoted ${validTrialApps.length} trial app(s) to ACTIVE (paid sub or PPU).`);
+    }
+
+    // 1b. Freeze truly expired trial apps (no valid sub and not PPU)
     const expiredApps = await prisma.companyApp.findMany({
       where: {
         status: 'TRIAL',
-        trialEndsAt: { not: null, lt: new Date() },
+        trialEndsAt: { not: null, lt: now },
+        activePricingModel: { not: 'PAY_PER_USE' },
+        OR: [
+          { validUntil: null },
+          { validUntil: { lte: now } }
+        ]
       },
       select: { id: true, companyId: true, appId: true, app: { select: { slug: true, name: true } } },
       take: 50,

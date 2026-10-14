@@ -435,9 +435,10 @@ async function ensureCompanyAppInstalled(tx, {
         activePricingModel: requestedPricingModel,
         status: inTrial ? 'TRIAL' : 'ACTIVE',
         validUntil,
-        trialEndsAt: resolvedTrialEnds,
+        trialEndsAt: inTrial ? resolvedTrialEnds : null,
         settings: installedSettings,
         nextBillingAt,
+        installedInTrial: Boolean(inTrial),
         updatedAt: new Date()
       }
     });
@@ -450,9 +451,10 @@ async function ensureCompanyAppInstalled(tx, {
         activePricingModel: requestedPricingModel,
         status: resolvedStatus,
         validUntil,
-        trialEndsAt: resolvedTrialEnds,
+        trialEndsAt: inTrial ? resolvedTrialEnds : null,
         settings: installedSettings,
-        nextBillingAt
+        nextBillingAt,
+        installedInTrial: Boolean(inTrial)
       }
     });
 
@@ -2253,8 +2255,8 @@ exports.subscribeToBundle = async (req, res) => {
           if (app) {
             await tx.companyApp.upsert({
               where: { companyId_appId: { companyId, appId: app.id } },
-              update: { status: 'ACTIVE', validUntil: nextBillingDate, nextBillingAt: nextBillingDate },
-              create: { companyId, appId: app.id, status: 'ACTIVE', validUntil: nextBillingDate, nextBillingAt: nextBillingDate }
+              update: { status: 'ACTIVE', validUntil: nextBillingDate, nextBillingAt: nextBillingDate, installedInTrial: false, trialEndsAt: null },
+              create: { companyId, appId: app.id, status: 'ACTIVE', validUntil: nextBillingDate, nextBillingAt: nextBillingDate, installedInTrial: false, trialEndsAt: null }
             });
           }
         }
@@ -2377,6 +2379,8 @@ exports.subscribeToBundle = async (req, res) => {
                 status: 'ACTIVE',
                 validUntil: nextBillingAt,
                 settings: mergedSettings,
+                installedInTrial: false,
+                trialEndsAt: null,
               }
             });
           } else {
@@ -2388,6 +2392,8 @@ exports.subscribeToBundle = async (req, res) => {
                 status: 'ACTIVE',
                 validUntil: nextBillingAt,
                 settings: mergedSettings,
+                installedInTrial: false,
+                trialEndsAt: null,
               }
             });
           }
@@ -2493,7 +2499,7 @@ async function activatePaidBundleApps(prisma, bundle, bundleAppIds, companyId) {
     if (existingInstallation) {
       await prisma.companyApp.update({
         where: { id: existingInstallation.id },
-        data: { status: 'ACTIVE', validUntil: nextBillingAt, settings: mergedSettings }
+        data: { status: 'ACTIVE', validUntil: nextBillingAt, settings: mergedSettings, installedInTrial: false, trialEndsAt: null }
       });
     } else {
       await prisma.companyApp.create({
@@ -2503,7 +2509,9 @@ async function activatePaidBundleApps(prisma, bundle, bundleAppIds, companyId) {
           appId,
           status: 'ACTIVE',
           validUntil: nextBillingAt,
-          settings: mergedSettings
+          settings: mergedSettings,
+          installedInTrial: false,
+          trialEndsAt: null
         }
       });
     }

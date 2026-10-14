@@ -393,6 +393,12 @@ describe("checkAppAccess middleware", () => {
             validUntil: future,
             app: { slug: "crm-basic", monthlyPrice: 99, pricingModel: "SUBSCRIPTION" },
           },
+          {
+            status: "ACTIVE",
+            validUntil: null,
+            activePricingModel: "PAY_PER_USE",
+            app: { slug: "store", monthlyPrice: 699, pricingModel: "PAY_PER_USE" },
+          },
         ],
         {
           trialModeEnabled: false,
@@ -400,7 +406,7 @@ describe("checkAppAccess middleware", () => {
         }
       );
 
-      expect(slugs).toEqual(["ecommerce-basic", "crm-basic"]);
+      expect(slugs).toEqual(["crm-basic", "store"]);
     });
   });
 });

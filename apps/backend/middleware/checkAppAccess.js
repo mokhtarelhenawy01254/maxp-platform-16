@@ -163,6 +163,13 @@ const isCompanyAppInstallationValid = (ca, company = null) => {
   const appSlug = String(ca.app?.slug || ca.slug || '').trim().toLowerCase();
   const pricingModelUpper = String(ca.activePricingModel || ca.app?.pricingModel || '').trim().toUpperCase();
   const monthlyPrice = Number(ca.app?.monthlyPrice ?? ca.monthlyPrice ?? 0);
+
+  // 🛡️ Pay-Per-Use apps (such as store) charge per order/transaction via orderBasedBillingService.
+  // When status is ACTIVE or TRIAL, they must NEVER be expired by monthly subscription validity checks!
+  if (pricingModelUpper === 'PAY_PER_USE') {
+    return true;
+  }
+
   const isPaidApp = monthlyPrice > 0 || pricingModelUpper === 'SUBSCRIPTION';
 
   if (!STRICT_EXPIRY_ENFORCED_SLUGS.has(appSlug) && !isPaidApp) {
@@ -500,12 +507,14 @@ const checkAppAccess = (appSlug) => {
             return next();
           }
 
-          await executeWithRetry(async () => {
-            return await getSharedPrismaClient().companyApp.update({
-              where: { id: companyAppRecord.id },
-              data: { status: 'EXPIRED' }
+          if (String(companyAppRecord.activePricingModel || '').toUpperCase() !== 'PAY_PER_USE') {
+            await executeWithRetry(async () => {
+              return await getSharedPrismaClient().companyApp.update({
+                where: { id: companyAppRecord.id },
+                data: { status: 'EXPIRED' }
+              });
             });
-          });
+          }
           if (candidateApp.slug === primarySlug) {
             primaryAppExplicitlyInactive = true;
           }
