@@ -2671,12 +2671,17 @@ const Orders: React.FC = () => {
       };
     }
 
-    const customStyle = getStatusBadgeStyle(order.status || "");
+    const effectiveStatusKey =
+      (order as any).effectiveStatus ||
+      (order as any).customStatusCode ||
+      order.status ||
+      "";
+    const customStyle = getStatusBadgeStyle(effectiveStatusKey);
     // 🛡️ (custom-status-persist): الحالات المخصصة — الباك-إند بيرجّع الكود المخصص
     // والـ registry مش بيعرفه، فكان بيقع على fallback بيعرض الكود الإنجليزي الخام.
     // لو الحالة مخصّصة عند الشركة، نعرض اسمها المعرّف (العربي) من إعداداتها.
     const configuredStatus = orderStatusMap.get(
-      normalizeStatusCode(order.status || ""),
+      normalizeStatusCode(effectiveStatusKey),
     );
     const registryText = display.primary.labelKey
       ? translate(display.primary.labelKey) || display.primary.label
