@@ -74,6 +74,9 @@ import DispatchInternalCourierModal from "./preparation/components/DispatchInter
 type BulkStatusResult = {
   id?: string | number | null;
   success?: boolean;
+  orderType?: string;
+  workflowStatus?: string;
+  error?: string;
 };
 
 const PREPARATION_STORAGE_KEY = "preparation:queue:view-state:v1";
@@ -273,6 +276,11 @@ const PreparationQueue: React.FC = () => {
   const [editReasonOrder, setEditReasonOrder] = useState<{
     orderNumber: string;
     reason: string;
+  } | null>(null);
+  const [bulkHoldDialog, setBulkHoldDialog] = useState<{
+    mode: "selected" | "all";
+    validOrders: PreparationOrder[];
+    count: number;
   } | null>(null);
   const [sendingToTurbo, setSendingToTurbo] = useState(false);
   const [activeCarriers, setActiveCarriers] = useState<ActiveCarrier[]>([]);
@@ -523,8 +531,20 @@ const PreparationQueue: React.FC = () => {
       addOption(preparationSettings.startingStatus, t('preparation.page.stages.WAITING'));
     }
 
+    const problemHoldCode = toUpper(PROBLEM_HOLD_STATUS);
+    addOption(
+      problemHoldCode,
+      statusLabelMap.get(problemHoldCode) || t('orders.onHoldPrep') || 'تجهيز معلق'
+    );
+
     return dynamicOptions;
-  }, [preparationStatuses, preparationSettings.handoffStatus, preparationSettings.startingStatus]);
+  }, [
+    preparationStatuses,
+    preparationSettings.handoffStatus,
+    preparationSettings.startingStatus,
+    statusLabelMap,
+    t,
+  ]);
 
   const filterTabs = useMemo(() => {
     const seen = new Set<string>();
@@ -1416,6 +1436,71 @@ const PreparationQueue: React.FC = () => {
     ],
   );
 
+  const executeBulkUpdateSelected = useCallback(
+    async (validOrders: PreparationOrder[], reason?: string) => {
+      try {
+        setBulkUpdating(true);
+        const response = await apiClient.post("/orders-new/bulk/status", {
+          orderIds: validOrders.map((order) => order.orderNumber),
+          status: bulkStatus,
+          notes: reason ? reason.trim() : undefined,
+        });
+
+        const results: BulkStatusResult[] = Array.isArray(response.data?.data?.results)
+          ? response.data.data.results
+          : [];
+        const pendingApprovalResults = results.filter(
+          (result) => result.workflowStatus === "pending"
+        );
+        const directSuccessResults = results.filter(
+          (result) => result.success && result.workflowStatus !== "pending"
+        );
+        const directSuccessIds = directSuccessResults.map((result) => String(result.id));
+        const failedResults = results.filter((result) => !result.success);
+
+        if (directSuccessIds.length > 0) {
+          updateLocalStatuses(directSuccessIds, bulkStatus);
+        }
+
+        if (pendingApprovalResults.length > 0) {
+          toast.info(
+            t("preparation.toasts.workflowPendingApproval", { count: pendingApprovalResults.length }) ||
+              `تم تقديم ${pendingApprovalResults.length} طلب للاعتماد`
+          );
+        }
+
+        if (directSuccessIds.length > 0) {
+          if (failedResults.length > 0) {
+            toast.success(
+              t("preparation.toasts.bulkUpdatePartial", {
+                success: directSuccessIds.length,
+                failed: failedResults.length,
+              })
+            );
+          } else {
+            toast.success(
+              t("preparation.toasts.bulkUpdateSuccess", { count: directSuccessIds.length })
+            );
+          }
+        } else if (pendingApprovalResults.length === 0) {
+          const firstError = failedResults.find((r) => r.error)?.error;
+          toast.error(firstError || t("preparation.page.stageUpdateFailed"));
+        }
+
+        uiActions.clearBulkControls();
+        void fetchAll();
+      } catch (error: unknown) {
+        console.error("Failed bulk status update:", error);
+        toast.error(
+          getApiErrorMessage(error) || t("preparation.page.stageUpdateFailed")
+        );
+      } finally {
+        setBulkUpdating(false);
+      }
+    },
+    [bulkStatus, fetchAll, updateLocalStatuses, uiActions, t]
+  );
+
   const handleBulkUpdate = useCallback(async () => {
     if (!bulkStatus || selectedOrders.length === 0) return;
 
@@ -1439,6 +1524,15 @@ const PreparationQueue: React.FC = () => {
       return;
     }
 
+    if (bulkStatus === PROBLEM_HOLD_STATUS) {
+      setBulkHoldDialog({
+        mode: "selected",
+        validOrders,
+        count: validOrders.length,
+      });
+      return;
+    }
+
     const confirmed = window.confirm(
       t("preparation.confirm.bulkUpdate", {
         count: validOrders.length,
@@ -1449,51 +1543,105 @@ const PreparationQueue: React.FC = () => {
 
     if (!confirmed) return;
 
-    try {
-      setBulkUpdating(true);
-      const response = await apiClient.post("/orders-new/bulk/status", {
-        orderIds: validOrders.map((order) => order.orderNumber),
-        status: bulkStatus,
-      });
-
-      const results: BulkStatusResult[] = Array.isArray(response.data?.data?.results)
-        ? response.data.data.results
-        : [];
-      const successIds = results
-        .filter((result) => result.success)
-        .map((result) => String(result.id));
-
-      if (successIds.length > 0) {
-        updateLocalStatuses(successIds, bulkStatus);
-      }
-
-      const failedCount = results.filter((result) => !result.success).length;
-      toast.success(
-        failedCount > 0
-          ? t("preparation.toasts.bulkUpdatePartial", { success: successIds.length, failed: failedCount })
-          : t("preparation.toasts.bulkUpdateSuccess", { count: successIds.length }),
-      );
-
-      uiActions.clearBulkControls();
-      void fetchAll();
-    } catch (error: unknown) {
-      console.error("Failed bulk status update:", error);
-      toast.error(
-        getApiErrorMessage(error) || t('preparation.page.stageUpdateFailed'),
-      );
-    } finally {
-      setBulkUpdating(false);
-    }
+    void executeBulkUpdateSelected(validOrders);
   }, [
     bulkStatus,
-    fetchAll,
+    executeBulkUpdateSelected,
     getOrderByNumber,
     selectedOrders,
     statusLabelMap,
-    updateLocalStatuses,
-    uiActions,
+    t,
     validateTransition,
   ]);
+
+  const executeBulkUpdateAll = useCallback(
+    async (reason?: string) => {
+      const filters = {
+        stage: activeStage,
+        warehouseId: selectedWarehouseId,
+        stockFilter,
+        shortageReason: shortageReasonFilter,
+        shortageFollowUp: shortageFollowUpFilter,
+        shortageOwner: shortageOwnerFilter,
+        productFilter,
+        colorFilter: uiState.productColorFilter || undefined,
+        sizeFilter: uiState.productSizeFilter || undefined,
+        productId: uiState.productIdFilter || undefined,
+        variantId: uiState.variantIdFilter || undefined,
+        itemCountFilter,
+        notPrinted: notPrintedFilter === "not_printed" ? "true" : undefined,
+        noShippingCode: noShippingCodeFilter === "no_shipping_code" ? "true" : undefined,
+        search: deferredSearch,
+        sortBy,
+        sortOrder,
+      };
+
+      try {
+        setBulkUpdating(true);
+        const response = await apiClient.post("/orders-new/bulk/status/by-filters", {
+          status: bulkStatus,
+          notes: reason ? reason.trim() : undefined,
+          filters,
+        });
+
+        const result = response.data?.data;
+        const successCount = result?.successCount ?? 0;
+        const totalRequested = result?.totalRequested ?? 0;
+        const results: BulkStatusResult[] = Array.isArray(result?.results)
+          ? result.results
+          : [];
+
+        if (totalRequested === 0) {
+          toast.error(t('preparation.k_26'));
+          return;
+        }
+
+        if (successCount === 0) {
+          const firstError = results.find((r) => !r.success && r.error)?.error;
+          toast.error(firstError || t("preparation.page.stageUpdateFailed"));
+        } else {
+          toast.success(
+            successCount < totalRequested
+              ? t("preparation.toasts.bulkUpdatePartial", { success: successCount, failed: totalRequested - successCount })
+              : t("preparation.toasts.bulkUpdateSuccess", { count: successCount }),
+          );
+        }
+
+        uiActions.clearBulkControls();
+        void fetchAll();
+      } catch (error: unknown) {
+        console.error("Failed bulk status update all:", error);
+        toast.error(
+          getApiErrorMessage(error) || t('preparation.page.stageUpdateFailed'),
+        );
+      } finally {
+        setBulkUpdating(false);
+      }
+    },
+    [
+      bulkStatus,
+      activeStage,
+      selectedWarehouseId,
+      stockFilter,
+      shortageReasonFilter,
+      shortageFollowUpFilter,
+      shortageOwnerFilter,
+      productFilter,
+      uiState.productColorFilter,
+      uiState.productSizeFilter,
+      uiState.productIdFilter,
+      uiState.variantIdFilter,
+      itemCountFilter,
+      notPrintedFilter,
+      noShippingCodeFilter,
+      deferredSearch,
+      sortBy,
+      sortOrder,
+      uiActions,
+      fetchAll,
+      t,
+    ]
+  );
 
   const handleBulkUpdateAll = useCallback(async () => {
     if (!bulkStatus) return;
@@ -1515,6 +1663,15 @@ const PreparationQueue: React.FC = () => {
       return;
     }
 
+    if (bulkStatus === PROBLEM_HOLD_STATUS) {
+      setBulkHoldDialog({
+        mode: "all",
+        validOrders,
+        count: pagination.total,
+      });
+      return;
+    }
+
     const confirmed = window.confirm(
       t("preparation.confirm.bulkUpdateAll", {
         count: pagination.total,
@@ -1524,81 +1681,15 @@ const PreparationQueue: React.FC = () => {
 
     if (!confirmed) return;
 
-    const filters = {
-      stage: activeStage,
-      warehouseId: selectedWarehouseId,
-      stockFilter,
-      shortageReason: shortageReasonFilter,
-      shortageFollowUp: shortageFollowUpFilter,
-      shortageOwner: shortageOwnerFilter,
-      productFilter,
-      colorFilter: uiState.productColorFilter || undefined,
-      sizeFilter: uiState.productSizeFilter || undefined,
-      productId: uiState.productIdFilter || undefined,
-      variantId: uiState.variantIdFilter || undefined,
-      itemCountFilter,
-      notPrinted: notPrintedFilter === "not_printed" ? "true" : undefined,
-      noShippingCode: noShippingCodeFilter === "no_shipping_code" ? "true" : undefined,
-      search: deferredSearch,
-      sortBy,
-      sortOrder,
-    };
-
-    try {
-      setBulkUpdating(true);
-      const response = await apiClient.post("/orders-new/bulk/status/by-filters", {
-        status: bulkStatus,
-        filters,
-      });
-
-      const result = response.data?.data;
-      const successCount = result?.successCount ?? 0;
-      const totalRequested = result?.totalRequested ?? 0;
-
-      if (totalRequested === 0) {
-        toast.error(t('preparation.k_26'));
-        return;
-      }
-
-      toast.success(
-        successCount < totalRequested
-          ? t("preparation.toasts.bulkUpdatePartial", { success: successCount, failed: totalRequested - successCount })
-          : t("preparation.toasts.bulkUpdateSuccess", { count: successCount }),
-      );
-
-      uiActions.clearBulkControls();
-      void fetchAll();
-    } catch (error: unknown) {
-      console.error("Failed bulk status update all:", error);
-      toast.error(
-        getApiErrorMessage(error) || t('preparation.page.stageUpdateFailed'),
-      );
-    } finally {
-      setBulkUpdating(false);
-    }
+    void executeBulkUpdateAll();
   }, [
     bulkStatus,
-    activeStage,
-    selectedWarehouseId,
-    stockFilter,
-    shortageReasonFilter,
-    shortageFollowUpFilter,
-    shortageOwnerFilter,
-    productFilter,
-    uiState.productColorFilter,
-    uiState.productSizeFilter,
-    uiState.productIdFilter,
-    uiState.variantIdFilter,
-    itemCountFilter,
-    notPrintedFilter,
-    noShippingCodeFilter,
-    deferredSearch,
-    sortBy,
-    sortOrder,
+    enrichedOrders,
+    executeBulkUpdateAll,
     pagination.total,
     statusLabelMap,
-    uiActions,
-    fetchAll,
+    t,
+    validateTransition,
   ]);
 
   const handleQuickTransfer = useCallback(
@@ -2461,6 +2552,39 @@ const PreparationQueue: React.FC = () => {
         )}
         onClose={() => setStatusChangeDialog(null)}
         onConfirm={(payload) => void handleConfirmStatusChange(payload)}
+      />
+
+      <PreparationStatusChangeDialog
+        isOpen={Boolean(bulkHoldDialog)}
+        order={
+          bulkHoldDialog
+            ? ({
+                orderNumber:
+                  t("preparation.bulkHoldOrderLabel", {
+                    count: bulkHoldDialog.count,
+                  }) || `المحدد (${bulkHoldDialog.count} طلب)`,
+              } as any)
+            : null
+        }
+        targetStatus={PROBLEM_HOLD_STATUS}
+        targetStatusLabel={
+          statusLabelMap.get(PROBLEM_HOLD_STATUS) ||
+          t("orders.onHoldPrep") ||
+          "تجهيز معلق"
+        }
+        isHold={true}
+        busy={bulkUpdating}
+        onClose={() => setBulkHoldDialog(null)}
+        onConfirm={(payload) => {
+          const reason = (payload.holdReason || payload.note || "").trim();
+          if (!reason) return;
+          if (bulkHoldDialog?.mode === "selected") {
+            void executeBulkUpdateSelected(bulkHoldDialog.validOrders, reason);
+          } else if (bulkHoldDialog?.mode === "all") {
+            void executeBulkUpdateAll(reason);
+          }
+          setBulkHoldDialog(null);
+        }}
       />
 
       <ProblemHoldReasonDialog

@@ -167,7 +167,8 @@
     "transferSuccess": "Transferred {{qty}} units from {{source}} to selected warehouse",
     "turboPartial": "Sent {{success}} orders to Turbo successfully",
     "turboPartialMore": ", {{failed}} failed",
-    "bulkNoValidOrders": "All selected orders do not meet requirements for the new stage"
+    "bulkNoValidOrders": "All selected orders do not meet requirements for the new stage",
+    "workflowPendingApproval": "{{count}} order(s) submitted for approval and pending review"
   },
   "confirm": {
     "bulkUpdate": "Update {{count}} orders to {{stage}}{{extra}}?",
@@ -432,5 +433,6 @@
   "k_4": "Execution Queue",
   "k_9": "On Hold (Shortage)",
   "k_20": "Selected order not found",
-  "k_26": "All visible orders violate current preparation rules"
+  "k_26": "All visible orders violate current preparation rules",
+  "bulkHoldOrderLabel": "Selected ({{count}} orders)"
 }
