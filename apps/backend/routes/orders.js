@@ -1315,11 +1315,35 @@ const updateAnyOrderStatus = async ({
         }
       }
 
+      const actor = userName || userId || 'System';
+      const now = new Date().toISOString();
+      let nextPreparationHold = currentMetadata.preparationHold
+        ? { ...currentMetadata.preparationHold }
+        : null;
+
+      if (normalizedStatus === 'ON_HOLD_PREP') {
+        nextPreparationHold = {
+          ...(nextPreparationHold || {}),
+          reason: notes || nextPreparationHold?.reason || '',
+          heldAt: now,
+          heldBy: actor,
+          state: 'held',
+        };
+      } else if (previousPreparationStatus === 'ON_HOLD_PREP') {
+        nextPreparationHold = {
+          ...(nextPreparationHold || {}),
+          releasedAt: now,
+          releasedBy: actor,
+          state: 'released',
+        };
+      }
+
       const mappedStatus = getMappedRegularOrderStatus(normalizedStatus);
       const nextMetadata = {
         ...currentMetadata,
         preparationStatus: normalizedStatus,
-        preparationStatusUpdatedAt: new Date().toISOString()
+        preparationStatusUpdatedAt: now,
+        ...(nextPreparationHold ? { preparationHold: nextPreparationHold } : {})
       };
 
       const updatedOrder = await prisma.order.update({
@@ -1368,10 +1392,47 @@ const updateAnyOrderStatus = async ({
 
     if (guestOrder) {
       const currentMetadata = parseOrderMetadata(guestOrder.metadata);
+      const previousPreparationStatus =
+        typeof currentMetadata.preparationStatus === 'string'
+          ? currentMetadata.preparationStatus
+          : guestOrder.status;
+
+      const { assertPreparationHoldRule } = preparationQueueService;
+      await assertPreparationHoldRule({
+        currentPreparationStatus: previousPreparationStatus,
+        targetStatus: normalizedStatus,
+        notes,
+        isOverride: options.isOverride || false,
+      });
+
+      const actor = userName || userId || 'System';
+      const now = new Date().toISOString();
+      let nextPreparationHold = currentMetadata.preparationHold
+        ? { ...currentMetadata.preparationHold }
+        : null;
+
+      if (normalizedStatus === 'ON_HOLD_PREP') {
+        nextPreparationHold = {
+          ...(nextPreparationHold || {}),
+          reason: notes || nextPreparationHold?.reason || '',
+          heldAt: now,
+          heldBy: actor,
+          state: 'held',
+        };
+      } else if (previousPreparationStatus === 'ON_HOLD_PREP') {
+        nextPreparationHold = {
+          ...(nextPreparationHold || {}),
+          releasedAt: now,
+          releasedBy: actor,
+          state: 'released',
+        };
+      }
+
       const nextMetadata = {
         ...currentMetadata,
         preparationStatus: normalizedStatus,
-        preparationStatusUpdatedAt: new Date().toISOString()
+        preparationStatusUpdatedAt: now,
+        ...(nextPreparationHold ? { preparationHold: nextPreparationHold } : {})
       };
 
       const updatedGuestOrder = await prisma.guestOrder.update({
@@ -5198,11 +5259,35 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
           prepSettings,
         });
 
+        const actor = userName || userId || 'System';
+        const now = new Date().toISOString();
+        let nextPreparationHold = currentMetadata.preparationHold
+          ? { ...currentMetadata.preparationHold }
+          : null;
+
+        if (statusUpper === 'ON_HOLD_PREP') {
+          nextPreparationHold = {
+            ...(nextPreparationHold || {}),
+            reason: statusNotes || nextPreparationHold?.reason || '',
+            heldAt: now,
+            heldBy: actor,
+            state: 'held',
+          };
+        } else if (previousPreparationStatus === 'ON_HOLD_PREP') {
+          nextPreparationHold = {
+            ...(nextPreparationHold || {}),
+            releasedAt: now,
+            releasedBy: actor,
+            state: 'released',
+          };
+        }
+
         const mappedStatus = getMappedRegularOrderStatus(statusUpper);
         const nextMetadata = {
           ...currentMetadata,
           preparationStatus: statusUpper,
-          preparationStatusUpdatedAt: new Date().toISOString()
+          preparationStatusUpdatedAt: now,
+          ...(nextPreparationHold ? { preparationHold: nextPreparationHold } : {})
         };
 
         const updatedRegularOrder = await getSharedPrismaClient().order.update({
@@ -8873,6 +8958,9 @@ router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
           }
         }
 
+        const isOverride = ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'].includes(req.user?.role) ||
+          ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'].includes(req.user?.effectiveRole);
+
         const updateResult = await updateAnyOrderStatus({
           orderIdentifier: id,
           companyId,
@@ -8880,9 +8968,14 @@ router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
           notes: safeOrderNotes,
           userId,
           userName,
-          options: { skipTransitionValidation: true, statusReason: bulkNote }
+          options: { skipTransitionValidation: true, statusReason: bulkNote, isOverride }
         });
-        results.push({ id, success: true, orderType: updateResult.orderType });
+        results.push({
+          id,
+          success: true,
+          orderType: updateResult.orderType,
+          workflowStatus: updateResult.workflowStatus
+        });
       } catch (err) {
         results.push({ id, success: false, error: err.message });
       }
