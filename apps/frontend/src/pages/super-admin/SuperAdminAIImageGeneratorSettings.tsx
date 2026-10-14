@@ -1,63 +1,36 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
 import {
-  Image as ImageIcon,
-  Save,
-  Search,
-  ToggleLeft,
-  ToggleRight,
-  RefreshCw,
-  Sparkles,
-  Sliders,
-  Building2,
-  Cpu,
-  Layers,
+  Image as ImageIcon, Save, Search, ToggleLeft, ToggleRight, RefreshCw,
+  Sparkles, Sliders, Building2, Cpu, Layers,
 } from "lucide-react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 
-interface Tier {
-  displayName: string;
-  description: string;
-  model: string;
-}
-
-interface CompanyOverride {
-  enabled: boolean;
-  tier: string;
-  maxRequestsPerDay: number;
-}
-
+interface Tier { displayName: string; description: string; model: string; }
+interface CompanyOverride { enabled: boolean; tier: string; maxRequestsPerDay: number; }
 interface Company {
-  id: string;
-  name: string;
-  domain: string;
-  isActive: boolean;
-  overrides: CompanyOverride | null;
-  effectiveTier: string;
-  enabled: boolean;
+  id: string; name: string; domain: string; isActive: boolean;
+  overrides: CompanyOverride | null; effectiveTier: string; enabled: boolean;
 }
-
 interface Config {
-  tiers: Record<string, Tier>;
-  defaultTier: string;
-  defaultMaxRequestsPerDay: number;
+  tiers: Record<string, Tier>; defaultTier: string; defaultMaxRequestsPerDay: number;
   companies: Record<string, CompanyOverride>;
 }
 
 const DEFAULT_TIER_KEYS = ["fast", "balanced", "premium"];
 const MODEL_OPTIONS = [
-  "google/gemini-3.1-flash-image",
-  "google/gemini-3.1-flash-lite-image",
-  "google/gemini-3-pro-image",
-  "openai/gpt-image-2",
-  "openai/gpt-image-1-mini",
-  "openai/gpt-5.4-image-2",
-  "x-ai/grok-imagine-image-quality",
+  "google/gemini-3.1-flash-image", "google/gemini-3.1-flash-lite-image", "google/gemini-3-pro-image",
+  "openai/gpt-image-2", "openai/gpt-image-1-mini", "openai/gpt-5.4-image-2", "x-ai/grok-imagine-image-quality",
 ];
+
+const getTierBadgeClass = (tier: string) => {
+  if (tier === "fast") return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20";
+  if (tier === "balanced") return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20";
+  return "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20";
+};
 
 const getAuthHeaders = () => {
   const token = tokenManager.getAccessToken();
@@ -79,19 +52,15 @@ export default function SuperAdminAIImageGeneratorSettings() {
   const fetchConfig = async () => {
     try {
       const res = await axios.get(buildApiUrl("super-admin/ai-image-generator-settings"), { headers: getAuthHeaders() });
-      if (res.data.success) setConfig(res.data.data);
-    } catch (e) {
-      console.error(e);
-    }
+      if (res.data?.success) setConfig(res.data.data);
+    } catch (e) { console.error(e); }
   };
 
   const fetchCompanies = async () => {
     try {
       const res = await axios.get(buildApiUrl("super-admin/ai-image-generator-settings/companies"), { headers: getAuthHeaders() });
-      if (res.data.success) setCompanies(res.data.data);
-    } catch (e) {
-      console.error(e);
-    }
+      if (res.data?.success) setCompanies(res.data.data);
+    } catch (e) { console.error(e); }
   };
 
   const saveConfig = async () => {
@@ -99,25 +68,21 @@ export default function SuperAdminAIImageGeneratorSettings() {
     setSaving(true);
     try {
       const res = await axios.put(buildApiUrl("super-admin/ai-image-generator-settings"), { config }, { headers: getAuthHeaders() });
-      if (res.data.success) {
-        tToast.success("SuperAdminAIImageGeneratorSettings.success_save_d643");
+      if (res.data?.success) {
+        toast.success("تم حفظ وتحديث إعدادات مولد الصور بنجاح");
         setConfig(res.data.data);
       }
     } catch {
-      tToast.error("SuperAdminAIImageGeneratorSettings.error_save_f591");
-    } finally {
-      setSaving(false);
-    }
+      toast.error("فشل في حفظ الإعدادات");
+    } finally { setSaving(false); }
   };
 
   const toggleCompany = async (companyId: string, enabled: boolean) => {
     try {
       await axios.put(buildApiUrl(`super-admin/ai-image-generator-settings/companies/${companyId}`), { enabled }, { headers: getAuthHeaders() });
-      setCompanies(p => p.map(c => c.id === companyId ? { ...c, enabled } : c));
+      setCompanies((p) => p.map((c) => (c.id === companyId ? { ...c, enabled } : c)));
       toast.success(enabled ? "تم تفعيل الشركة" : "تم تعطيل الشركة");
-    } catch (e) {
-      toast.error("فشل في تحديث حالة الشركة");
-    }
+    } catch { toast.error("فشل في تحديث حالة الشركة"); }
   };
 
   const saveCompanyOverride = async (companyId: string, data: { tier?: string; maxRequestsPerDay?: number }) => {
@@ -125,10 +90,8 @@ export default function SuperAdminAIImageGeneratorSettings() {
       await axios.put(buildApiUrl(`super-admin/ai-image-generator-settings/companies/${companyId}`), data, { headers: getAuthHeaders() });
       setEditingCompany(null);
       await fetchCompanies();
-      tToast.success("SuperAdminAIImageGeneratorSettings.success_save_c57f");
-    } catch (e) {
-      toast.error("فشل في حفظ التخصيص");
-    }
+      toast.success("تم حفظ تخصيص الشركة بنجاح");
+    } catch { toast.error("فشل في حفظ التخصيص"); }
   };
 
   const updateTierModel = (tierKey: string, model: string) => {
@@ -141,12 +104,10 @@ export default function SuperAdminAIImageGeneratorSettings() {
     setConfig({ ...config, tiers: { ...config.tiers, [tierKey]: { ...config.tiers[tierKey], [field]: value } } });
   };
 
-  const filteredCompanies = companies.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.domain?.toLowerCase().includes(search.toLowerCase())
+  const filteredCompanies = companies.filter(
+    (c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.domain?.toLowerCase().includes(search.toLowerCase()),
   );
-
-  const activeCompaniesCount = companies.filter(c => c.enabled).length;
+  const activeCompaniesCount = companies.filter((c) => c.enabled).length;
 
   if (loading) {
     return (
@@ -188,10 +149,10 @@ export default function SuperAdminAIImageGeneratorSettings() {
         <button
           onClick={saveConfig}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-all shadow-xs"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs md:text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-all shadow-xs active:scale-[0.98] cursor-pointer"
         >
           {saving ? <RefreshCw className="size-4 animate-spin" /> : <Save className="size-4" />}
-          حفظ الإعدادات العامة
+          <span>حفظ الإعدادات العامة</span>
         </button>
       </div>
 
@@ -202,31 +163,22 @@ export default function SuperAdminAIImageGeneratorSettings() {
             <span>الشركات المسجلة</span>
             <Building2 className="size-3.5" />
           </div>
-          <p className="text-xl md:text-2xl font-bold font-mono tabular-nums text-foreground">
-            {companies.length}
-          </p>
+          <p className="text-xl md:text-2xl font-bold font-mono tabular-nums text-foreground">{companies.length}</p>
         </div>
-
         <div className="p-4 space-y-1">
           <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-medium">
             <span>الشركات المفعّلة</span>
             <ToggleRight className="size-3.5" />
           </div>
-          <p className="text-xl md:text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-            {activeCompaniesCount}
-          </p>
+          <p className="text-xl md:text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{activeCompaniesCount}</p>
         </div>
-
         <div className="p-4 space-y-1">
           <div className="flex items-center justify-between text-xs text-primary font-medium">
             <span>المستوى الافتراضي</span>
             <Layers className="size-3.5" />
           </div>
-          <p className="text-base md:text-lg font-bold text-foreground">
-            {config.tiers[config.defaultTier]?.displayName || config.defaultTier}
-          </p>
+          <p className="text-base md:text-lg font-bold text-foreground">{config.tiers[config.defaultTier]?.displayName || config.defaultTier}</p>
         </div>
-
         <div className="p-4 space-y-1">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>الحد الافتراضي يومياً</span>
@@ -243,13 +195,9 @@ export default function SuperAdminAIImageGeneratorSettings() {
         <div className="p-3 md:p-4 bg-muted/30 border-b border-border/60 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="size-4 text-primary" />
-            <h2 className="text-sm font-bold text-foreground">
-              مستويات الجودة والنماذج (Quality Tiers)
-            </h2>
+            <h2 className="text-sm font-bold text-foreground">مستويات الجودة والنماذج (Quality Tiers)</h2>
           </div>
-          <span className="text-xs font-mono text-muted-foreground">
-            3 مستويات مدعومة
-          </span>
+          <span className="text-xs font-mono text-muted-foreground">3 مستويات مدعومة</span>
         </div>
 
         <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -257,32 +205,17 @@ export default function SuperAdminAIImageGeneratorSettings() {
             const tier = config.tiers[key];
             if (!tier) return null;
             return (
-              <div
-                key={key}
-                className="rounded-lg border border-border bg-background p-3.5 space-y-2.5 flex flex-col justify-between shadow-xs"
-              >
+              <div key={key} className="rounded-lg border border-border bg-background p-3.5 space-y-2.5 flex flex-col justify-between shadow-xs">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider font-mono border ${
-                        key === "fast"
-                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
-                          : key === "balanced"
-                            ? "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                            : "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200 dark:border-purple-800"
-                      }`}
-                    >
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider font-mono border ${getTierBadgeClass(key)}`}>
                       {key}
                     </span>
-                    <span className="text-[11px] text-muted-foreground font-mono">
-                      {key === config.defaultTier ? "افتراضي" : ""}
-                    </span>
+                    <span className="text-[11px] text-muted-foreground font-mono">{key === config.defaultTier ? "افتراضي" : ""}</span>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-medium text-muted-foreground block mb-1">
-                      اسم العرض
-                    </label>
+                    <label className="text-[11px] font-medium text-muted-foreground block mb-1">اسم العرض</label>
                     <input
                       value={tier.displayName}
                       onChange={(e) => updateTierDisplay(key, "displayName", e.target.value)}
@@ -291,9 +224,7 @@ export default function SuperAdminAIImageGeneratorSettings() {
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-medium text-muted-foreground block mb-1">
-                      الوصف
-                    </label>
+                    <label className="text-[11px] font-medium text-muted-foreground block mb-1">الوصف</label>
                     <input
                       value={tier.description}
                       onChange={(e) => updateTierDisplay(key, "description", e.target.value)}
@@ -304,19 +235,13 @@ export default function SuperAdminAIImageGeneratorSettings() {
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground block mb-1">
-                    نموذج الذكاء الاصطناعي (Model)
-                  </label>
+                  <label className="text-[11px] font-medium text-muted-foreground block mb-1">نموذج الذكاء الاصطناعي (Model)</label>
                   <select
                     value={tier.model}
                     onChange={(e) => updateTierModel(key, e.target.value)}
                     className="w-full px-2.5 py-1.5 rounded-md border border-border bg-card text-foreground text-xs font-mono focus:ring-1 focus:ring-primary"
                   >
-                    {MODEL_OPTIONS.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
+                    {MODEL_OPTIONS.map((m) => (<option key={m} value={m}>{m}</option>))}
                   </select>
                 </div>
               </div>
@@ -330,40 +255,30 @@ export default function SuperAdminAIImageGeneratorSettings() {
         <div className="p-3 md:p-4 bg-muted/30 border-b border-border/60 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sliders className="size-4 text-primary" />
-            <h2 className="text-sm font-bold text-foreground">
-              الإعدادات الافتراضية للشركات الجديدة
-            </h2>
+            <h2 className="text-sm font-bold text-foreground">الإعدادات الافتراضية للشركات الجديدة</h2>
           </div>
         </div>
 
         <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-foreground mb-1.5">
-              المستوى الافتراضي للمنصة
-            </label>
+            <label className="block text-xs font-medium text-foreground mb-1.5">المستوى الافتراضي للمنصة</label>
             <select
               value={config.defaultTier}
               onChange={(e) => setConfig({ ...config, defaultTier: e.target.value })}
               className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-xs md:text-sm focus:ring-1 focus:ring-primary"
             >
               {DEFAULT_TIER_KEYS.map((key) => (
-                <option key={key} value={key}>
-                  {config.tiers[key]?.displayName || key} ({key})
-                </option>
+                <option key={key} value={key}>{config.tiers[key]?.displayName || key} ({key})</option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-foreground mb-1.5">
-              الحد اليومي الافتراضي لإنشاء الصور
-            </label>
+            <label className="block text-xs font-medium text-foreground mb-1.5">الحد اليومي الافتراضي لإنشاء الصور</label>
             <input
               type="number"
               value={config.defaultMaxRequestsPerDay}
-              onChange={(e) =>
-                setConfig({ ...config, defaultMaxRequestsPerDay: Number(e.target.value) })
-              }
+              onChange={(e) => setConfig({ ...config, defaultMaxRequestsPerDay: Number(e.target.value) })}
               className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-xs md:text-sm font-mono focus:ring-1 focus:ring-primary"
               min={1}
             />
@@ -376,12 +291,8 @@ export default function SuperAdminAIImageGeneratorSettings() {
         <div className="p-3 md:p-4 bg-muted/30 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Building2 className="size-4 text-primary" />
-            <h2 className="text-sm font-bold text-foreground">
-              تخصيص الشركات وحدود الاستهلاك
-            </h2>
-            <span className="text-xs font-mono text-muted-foreground">
-              ({filteredCompanies.length})
-            </span>
+            <h2 className="text-sm font-bold text-foreground">تخصيص الشركات وحدود الاستهلاك</h2>
+            <span className="text-xs font-mono text-muted-foreground">({filteredCompanies.length})</span>
           </div>
 
           <div className="relative w-full sm:w-64">
@@ -397,31 +308,15 @@ export default function SuperAdminAIImageGeneratorSettings() {
 
         <div className="divide-y divide-border/60">
           {filteredCompanies.length === 0 ? (
-            <div className="p-8 text-center text-xs text-muted-foreground">
-              لا توجد شركات مطابقة للبحث
-            </div>
+            <div className="p-8 text-center text-xs text-muted-foreground">لا توجد شركات مطابقة للبحث</div>
           ) : (
             filteredCompanies.map((company) => (
               <div key={company.id} className="p-3 md:p-4 hover:bg-muted/20 transition-colors">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs md:text-sm font-semibold text-foreground">
-                      {company.name}
-                    </span>
-                    {company.domain && (
-                      <span className="text-xs font-mono text-muted-foreground">
-                        ({company.domain})
-                      </span>
-                    )}
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono border ${
-                        company.effectiveTier === "fast"
-                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
-                          : company.effectiveTier === "balanced"
-                            ? "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                            : "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200 dark:border-purple-800"
-                      }`}
-                    >
+                    <span className="text-xs md:text-sm font-semibold text-foreground">{company.name}</span>
+                    {company.domain && (<span className="text-xs font-mono text-muted-foreground">({company.domain})</span>)}
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono border ${getTierBadgeClass(company.effectiveTier)}`}>
                       {config.tiers[company.effectiveTier]?.displayName || company.effectiveTier}
                     </span>
                     {company.overrides && (
@@ -434,20 +329,17 @@ export default function SuperAdminAIImageGeneratorSettings() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => toggleCompany(company.id, !company.enabled)}
-                      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                        company.enabled
-                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                        company.enabled ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
                           : "bg-destructive/10 text-destructive border-destructive/20"
                       }`}
                     >
                       {company.enabled ? <ToggleRight className="size-3.5" /> : <ToggleLeft className="size-3.5" />}
-                      {company.enabled ? "مفعّل" : "معطّل"}
+                      <span>{company.enabled ? "مفعّل" : "معطّل"}</span>
                     </button>
                     <button
-                      onClick={() =>
-                        setEditingCompany(editingCompany === company.id ? null : company.id)
-                      }
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border bg-background hover:bg-muted text-foreground transition-colors"
+                      onClick={() => setEditingCompany(editingCompany === company.id ? null : company.id)}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border bg-background hover:bg-muted text-foreground transition-colors cursor-pointer"
                     >
                       {editingCompany === company.id ? "إغلاق" : "تخصيص"}
                     </button>
@@ -455,11 +347,7 @@ export default function SuperAdminAIImageGeneratorSettings() {
                 </div>
 
                 {editingCompany === company.id && (
-                  <CompanyOverrideForm
-                    company={company}
-                    config={config}
-                    onSave={saveCompanyOverride}
-                  />
+                  <CompanyOverrideForm company={company} config={config} onSave={saveCompanyOverride} />
                 )}
               </div>
             ))
@@ -471,60 +359,34 @@ export default function SuperAdminAIImageGeneratorSettings() {
 }
 
 function CompanyOverrideForm({
-  company,
-  config,
-  onSave,
+  company, config, onSave,
 }: {
-  company: Company;
-  config: Config;
-  onSave: (id: string, data: { tier?: string; maxRequestsPerDay?: number }) => void;
+  company: Company; config: Config; onSave: (id: string, data: { tier?: string; maxRequestsPerDay?: number }) => void;
 }) {
   const [tier, setTier] = useState(company.overrides?.tier || "");
-  const [maxReq, setMaxReq] = useState(
-    company.overrides?.maxRequestsPerDay || config.defaultMaxRequestsPerDay,
-  );
+  const [maxReq, setMaxReq] = useState(company.overrides?.maxRequestsPerDay || config.defaultMaxRequestsPerDay);
 
   return (
     <div className="mt-3 pt-3 border-t border-border/60 bg-muted/20 p-3 rounded-lg space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-foreground mb-1">
-            مستوى الجودة للشركة
-          </label>
-          <select
-            value={tier}
-            onChange={(e) => setTier(e.target.value)}
-            className="w-full px-2.5 py-1.5 rounded-md border border-border bg-background text-foreground text-xs focus:ring-1 focus:ring-primary"
-          >
-            <option value="">
-              استخدام الافتراضي ({config.tiers[config.defaultTier]?.displayName})
-            </option>
+          <label className="block text-xs font-medium text-foreground mb-1">مستوى الجودة للشركة</label>
+          <select value={tier} onChange={(e) => setTier(e.target.value)} className="w-full px-2.5 py-1.5 rounded-md border border-border bg-background text-foreground text-xs focus:ring-1 focus:ring-primary">
+            <option value="">استخدام الافتراضي ({config.tiers[config.defaultTier]?.displayName})</option>
             {DEFAULT_TIER_KEYS.filter((k) => config.tiers[k]).map((key) => (
-              <option key={key} value={key}>
-                {config.tiers[key].displayName}
-              </option>
+              <option key={key} value={key}>{config.tiers[key].displayName}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-foreground mb-1">
-            الحد اليومي المخصص (صورة)
-          </label>
-          <input
-            type="number"
-            value={maxReq}
-            onChange={(e) => setMaxReq(Number(e.target.value))}
-            className="w-full px-2.5 py-1.5 rounded-md border border-border bg-background text-foreground text-xs font-mono focus:ring-1 focus:ring-primary"
-            min={1}
-          />
+          <label className="block text-xs font-medium text-foreground mb-1">الحد اليومي المخصص (صورة)</label>
+          <input type="number" value={maxReq} onChange={(e) => setMaxReq(Number(e.target.value))} className="w-full px-2.5 py-1.5 rounded-md border border-border bg-background text-foreground text-xs font-mono focus:ring-1 focus:ring-primary" min={1} />
         </div>
       </div>
       <div className="flex justify-end">
         <button
-          onClick={() =>
-            onSave(company.id, { ...(tier ? { tier } : {}), maxRequestsPerDay: maxReq })
-          }
-          className="px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors shadow-xs"
+          onClick={() => onSave(company.id, { ...(tier ? { tier } : {}), maxRequestsPerDay: maxReq })}
+          className="px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors shadow-xs cursor-pointer"
         >
           حفظ التخصيص
         </button>

@@ -1,35 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
-import {
-  Wallet,
-  CheckCircle2,
-  XCircle,
-  RefreshCw,
-  Search,
-  Eye,
-  Filter,
-  ShieldCheck,
-  Building2,
-  DollarSign,
-} from "lucide-react";
+import { Wallet, CheckCircle2, XCircle, RefreshCw, Search, Eye, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../../components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { apiClient } from "../../services/apiClient";
 import i18n from "../../i18n";
 
@@ -49,53 +24,24 @@ interface PayoutRequest {
 
 const fallbackPayouts: PayoutRequest[] = [
   {
-    id: "po_1",
-    partnerName: "أحمد كمال الشناوي",
-    partnerPhone: "+201011223344",
-    amount: 12500,
-    currency: "EGP",
-    status: "PENDING",
-    method: "InstaPay",
-    accountDetails: "ahmed.kamal@instapay",
-    requestedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-    notes: "عمولات باقات الاشتراك للربع الأول",
+    id: "po_1", partnerName: "أحمد كمال الشناوي", partnerPhone: "+201011223344", amount: 12500,
+    currency: "EGP", status: "PENDING", method: "InstaPay", accountDetails: "ahmed.kamal@instapay",
+    requestedAt: new Date(Date.now() - 3600000 * 4).toISOString(), notes: "عمولات باقات الاشتراك للربع الأول",
   },
   {
-    id: "po_2",
-    partnerName: "سارة محمود عبد العزيز",
-    partnerPhone: "+201099887766",
-    amount: 8400,
-    currency: "EGP",
-    status: "APPROVED",
-    method: "Vodafone Cash",
-    accountDetails: "01099887766",
-    requestedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-    reviewedAt: new Date(Date.now() - 3600000 * 18).toISOString(),
-    notes: "تحويل فوري معتمد",
+    id: "po_2", partnerName: "سارة محمود عبد العزيز", partnerPhone: "+201099887766", amount: 8400,
+    currency: "EGP", status: "APPROVED", method: "Vodafone Cash", accountDetails: "01099887766",
+    requestedAt: new Date(Date.now() - 3600000 * 24).toISOString(), reviewedAt: new Date(Date.now() - 3600000 * 18).toISOString(),
   },
   {
-    id: "po_3",
-    partnerName: "شركة رواد التقنية للتسويق",
-    partnerPhone: "+201055554444",
-    amount: 24800,
-    currency: "EGP",
-    status: "PENDING",
-    method: "تحويل بنكي (CIB)",
-    accountDetails: "IBAN: EG45000200000123456789012",
-    requestedAt: new Date(Date.now() - 3600000 * 8).toISOString(),
-    notes: "سحب أرباح إحالات الشركات والمصانع",
+    id: "po_3", partnerName: "شركة رواد التقنية للتسويق", partnerPhone: "+201055554444", amount: 24800,
+    currency: "EGP", status: "PENDING", method: "تحويل بنكي (CIB)", accountDetails: "IBAN: EG45000200000123456789012",
+    requestedAt: new Date(Date.now() - 3600000 * 8).toISOString(), notes: "سحب أرباح إحالات الشركات والمصانع",
   },
   {
-    id: "po_4",
-    partnerName: "محمد طارق إبراهيم",
-    partnerPhone: "+201122334455",
-    amount: 3200,
-    currency: "EGP",
-    status: "REJECTED",
-    method: "InstaPay",
-    accountDetails: "mohamed@instapay",
-    requestedAt: new Date(Date.now() - 3600000 * 48).toISOString(),
-    reviewedAt: new Date(Date.now() - 3600000 * 40).toISOString(),
+    id: "po_4", partnerName: "محمد طارق إبراهيم", partnerPhone: "+201122334455", amount: 3200,
+    currency: "EGP", status: "REJECTED", method: "InstaPay", accountDetails: "mohamed@instapay",
+    requestedAt: new Date(Date.now() - 3600000 * 48).toISOString(), reviewedAt: new Date(Date.now() - 3600000 * 40).toISOString(),
     notes: "رقم المحفظة غير مسجل باسم الشريك",
   },
 ];
@@ -103,24 +49,16 @@ const fallbackPayouts: PayoutRequest[] = [
 const formatPrice = (price: number, currency = "EGP") => {
   try {
     return new Intl.NumberFormat("ar-EG", { style: "currency", currency, maximumFractionDigits: 0 }).format(price);
-  } catch {
-    return `${price} ${currency}`;
-  }
+  } catch { return `${price} ${currency}`; }
 };
 
 const formatDate = (dateString?: string | null) => {
   if (!dateString) return "—";
   try {
     return new Date(dateString).toLocaleString("ar-EG", {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
+      day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
     });
-  } catch {
-    return dateString;
-  }
+  } catch { return dateString; }
 };
 
 const PayoutRequestsPage: React.FC = () => {
@@ -137,19 +75,11 @@ const PayoutRequestsPage: React.FC = () => {
       const res = await apiClient.get("/super-admin/payout-requests");
       if (res.data?.success && Array.isArray(res.data?.data) && res.data.data.length > 0) {
         setPayouts(res.data.data);
-      } else {
-        setPayouts(fallbackPayouts);
-      }
-    } catch {
-      setPayouts(fallbackPayouts);
-    } finally {
-      setLoading(false);
-    }
+      } else { setPayouts(fallbackPayouts); }
+    } catch { setPayouts(fallbackPayouts); } finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    void fetchPayouts();
-  }, []);
+  useEffect(() => { void fetchPayouts(); }, []);
 
   const handleReview = async (id: string, status: "APPROVED" | "REJECTED") => {
     try {
@@ -158,18 +88,13 @@ const PayoutRequestsPage: React.FC = () => {
       setPayouts((prev) => prev.map((p) => (p.id === id ? { ...p, status, reviewedAt: new Date().toISOString() } : p)));
       toast.success(status === "APPROVED" ? "تم اعتماد وصرف طلب السحب بنجاح" : "تم رفض طلب السحب");
       if (selectedPayout?.id === id) setSelectedPayout(null);
-    } finally {
-      setActionLoading(null);
-    }
+    } finally { setActionLoading(null); }
   };
 
   const filteredPayouts = useMemo(() => {
     return payouts.filter((p) => {
-      const matchesSearch =
-        !searchTerm ||
-        p.partnerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.partnerPhone && p.partnerPhone.includes(searchTerm)) ||
-        p.id.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = !searchTerm || p.partnerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.partnerPhone && p.partnerPhone.includes(searchTerm)) || p.id.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === "ALL" || p.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -206,65 +131,46 @@ const PayoutRequestsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-auto font-mono text-xs">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchPayouts}
-            disabled={loading}
-            className="h-8 gap-1.5 shadow-2xs active:scale-[0.98]"
-          >
-            <RefreshCw className={`size-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-            <span>تحديث الطلبات</span>
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" onClick={fetchPayouts} disabled={loading} className="h-8 gap-1.5 font-mono text-xs shadow-2xs active:scale-[0.98] self-end sm:self-auto">
+          <RefreshCw className={`size-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+          <span>تحديث الطلبات</span>
+        </Button>
       </div>
 
-      {/* Linear Telemetry Strip */}
+      {/* Telemetry Strip */}
       <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
         <div className="grid grid-cols-2 md:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60 font-mono">
           <div className="p-3.5 flex flex-col justify-between">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">إجمالي الطلبات</span>
+              <span className="text-[11px]">إجمالي الطلبات</span>
               <span className="size-1.5 rounded-full bg-blue-500" />
             </div>
-            <div className="text-2xl font-bold tracking-tight text-foreground tabular-nums">
-              {stats.totalCount}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">طلب سحب مسجل</p>
+            <div className="text-2xl font-bold tabular-nums text-foreground">{stats.totalCount}</div>
+            <p className="text-[10px] text-muted-foreground">طلب سحب مسجل</p>
           </div>
-
           <div className="p-3.5 flex flex-col justify-between">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">بانتظار الاعتماد</span>
+              <span className="text-[11px]">بانتظار الاعتماد</span>
               <span className="size-1.5 rounded-full bg-amber-500" />
             </div>
-            <div className="text-2xl font-bold tracking-tight text-amber-500 tabular-nums">
-              {stats.pendingCount}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">بقيمة {formatPrice(stats.pendingAmount)}</p>
+            <div className="text-2xl font-bold tabular-nums text-amber-500">{stats.pendingCount}</div>
+            <p className="text-[10px] text-muted-foreground">بقيمة {formatPrice(stats.pendingAmount)}</p>
           </div>
-
           <div className="p-3.5 flex flex-col justify-between">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">أرباح معتمدة ومصروفة</span>
+              <span className="text-[11px]">أرباح معتمدة ومصروفة</span>
               <span className="size-1.5 rounded-full bg-emerald-500" />
             </div>
-            <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 tabular-nums">
-              {formatPrice(stats.approvedAmount)}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">تم تحويلها للشريك</p>
+            <div className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{formatPrice(stats.approvedAmount)}</div>
+            <p className="text-[10px] text-muted-foreground">تم تحويلها للشريك</p>
           </div>
-
           <div className="p-3.5 flex flex-col justify-between">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">طرق التحويل المدعومة</span>
+              <span className="text-[11px]">طرق التحويل المدعومة</span>
               <ShieldCheck className="size-3.5 text-purple-500" />
             </div>
-            <div className="text-xs font-semibold text-foreground mt-1">
-              InstaPay · Cash · Bank
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">تسوية فورية</p>
+            <div className="text-xs font-semibold text-foreground mt-1">InstaPay · Cash · Bank</div>
+            <p className="text-[10px] text-muted-foreground">تسوية فورية</p>
           </div>
         </div>
       </div>
@@ -283,10 +189,8 @@ const PayoutRequestsPage: React.FC = () => {
 
         <div className="flex items-center gap-1.5 overflow-x-auto">
           {[
-            { id: "ALL", label: "الكل" },
-            { id: "PENDING", label: "معلقة" },
-            { id: "APPROVED", label: "معتمدة" },
-            { id: "REJECTED", label: "مرفوضة" },
+            { id: "ALL", label: "الكل" }, { id: "PENDING", label: "معلقة" },
+            { id: "APPROVED", label: "معتمدة" }, { id: "REJECTED", label: "مرفوضة" },
           ].map((tab) => (
             <Button
               key={tab.id}
@@ -321,9 +225,7 @@ const PayoutRequestsPage: React.FC = () => {
                   <TableCell>
                     <div className="flex flex-col gap-0.5 font-sans">
                       <span className="font-semibold text-xs text-foreground">{payout.partnerName}</span>
-                      {payout.partnerPhone && (
-                        <span className="text-[10px] font-mono text-muted-foreground">{payout.partnerPhone}</span>
-                      )}
+                      {payout.partnerPhone && (<span className="text-[10px] font-mono text-muted-foreground">{payout.partnerPhone}</span>)}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -335,9 +237,7 @@ const PayoutRequestsPage: React.FC = () => {
                     <div className="flex flex-col gap-0.5">
                       <span className="font-medium text-xs text-foreground font-sans">{payout.method}</span>
                       {payout.accountDetails && (
-                        <span className="text-[10px] font-mono text-muted-foreground truncate max-w-[200px]">
-                          {payout.accountDetails}
-                        </span>
+                        <span className="text-[10px] font-mono text-muted-foreground truncate max-w-[200px]">{payout.accountDetails}</span>
                       )}
                     </div>
                   </TableCell>
@@ -351,46 +251,23 @@ const PayoutRequestsPage: React.FC = () => {
                           : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
                       }`}
                     >
-                      <span
-                        className={`size-1.5 rounded-full ${
-                          payout.status === "APPROVED" ? "bg-emerald-500" : payout.status === "PENDING" ? "bg-amber-500" : "bg-rose-500"
-                        }`}
-                      />
+                      <span className={`size-1.5 rounded-full ${payout.status === "APPROVED" ? "bg-emerald-500" : payout.status === "PENDING" ? "bg-amber-500" : "bg-rose-500"}`} />
                       {payout.status === "APPROVED" ? "معتمد" : payout.status === "PENDING" ? "قيد المراجعة" : "مرفوض"}
                     </span>
                   </TableCell>
-                  <TableCell className="text-xs font-mono text-muted-foreground">
-                    {formatDate(payout.requestedAt)}
-                  </TableCell>
+                  <TableCell className="text-xs font-mono text-muted-foreground">{formatDate(payout.requestedAt)}</TableCell>
                   <TableCell className="text-left">
                     <div className="flex items-center gap-1 justify-end">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedPayout(payout)}
-                        className="h-7 px-2 text-xs font-mono text-muted-foreground hover:text-foreground active:scale-[0.98]"
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedPayout(payout)} className="h-7 px-2 text-xs font-mono text-muted-foreground hover:text-foreground active:scale-[0.98]">
                         <Eye className="size-3.5 ml-1" />
                         <span>تفاصيل</span>
                       </Button>
                       {payout.status === "PENDING" && (
                         <>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            disabled={actionLoading === payout.id}
-                            onClick={() => handleReview(payout.id, "APPROVED")}
-                            className="h-7 px-2 text-xs font-mono bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.98]"
-                          >
+                          <Button variant="default" size="sm" disabled={actionLoading === payout.id} onClick={() => handleReview(payout.id, "APPROVED")} className="h-7 px-2 text-xs font-mono bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.98]">
                             <CheckCircle2 className="size-3.5" />
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={actionLoading === payout.id}
-                            onClick={() => handleReview(payout.id, "REJECTED")}
-                            className="h-7 px-2 text-xs font-mono border-rose-500/30 text-rose-600 hover:bg-rose-500/10 active:scale-[0.98]"
-                          >
+                          <Button variant="outline" size="sm" disabled={actionLoading === payout.id} onClick={() => handleReview(payout.id, "REJECTED")} className="h-7 px-2 text-xs font-mono border-rose-500/30 text-rose-600 hover:bg-rose-500/10 active:scale-[0.98]">
                             <XCircle className="size-3.5" />
                           </Button>
                         </>
@@ -409,9 +286,7 @@ const PayoutRequestsPage: React.FC = () => {
         <DialogContent className="max-w-md font-mono text-xs">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold">تفاصيل طلب السحب</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              مراجعة بيانات الشريك وحساب الدفع المسجل قبل التحويل
-            </DialogDescription>
+            <DialogDescription className="text-xs text-muted-foreground">مراجعة بيانات الشريك وحساب الدفع المسجل قبل التحويل</DialogDescription>
           </DialogHeader>
 
           {selectedPayout && (
@@ -453,19 +328,10 @@ const PayoutRequestsPage: React.FC = () => {
             </Button>
             {selectedPayout?.status === "PENDING" && (
               <>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleReview(selectedPayout.id, "REJECTED")}
-                  className="h-8 text-xs font-mono"
-                >
+                <Button variant="destructive" size="sm" onClick={() => handleReview(selectedPayout.id, "REJECTED")} className="h-8 text-xs font-mono">
                   رفض
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={() => handleReview(selectedPayout.id, "APPROVED")}
-                  className="h-8 text-xs font-mono bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
+                <Button size="sm" onClick={() => handleReview(selectedPayout.id, "APPROVED")} className="h-8 text-xs font-mono bg-emerald-600 hover:bg-emerald-700 text-white">
                   اعتماد وصرف
                 </Button>
               </>
