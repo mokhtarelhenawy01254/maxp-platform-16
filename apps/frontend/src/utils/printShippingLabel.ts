@@ -634,7 +634,10 @@ function buildShippingLabelPageMarkup(
 ): string {
   const ctx = resolveLabelContext(order);
   const { customFields, displayNotes } = resolveCustomFieldsForDisplay(order, {
-    showCustomFields: settings?.showCustomFields ? true : undefined,
+    showCustomFields:
+      typeof settings?.showCustomFields === "boolean"
+        ? settings.showCustomFields
+        : undefined,
   });
   const orderBarcode = order.orderNumber
     ? `<div style="text-align:center;margin-bottom:4px">${generateBarcodeSvg(order.orderNumber)}<div style="font-size:10px;font-weight:600;color:#000">كود الطلب</div></div>`
