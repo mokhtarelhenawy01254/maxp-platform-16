@@ -11,9 +11,11 @@ import {
   Layers,
   Pencil,
   RefreshCw,
+  Search,
 } from "lucide-react";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 
 interface PriceList {
   id: string;
@@ -22,6 +24,7 @@ interface PriceList {
   currency: string;
   isActive: boolean;
   customerCount: number;
+  discountPct?: number;
   createdAt: string;
 }
 
@@ -29,13 +32,30 @@ export default function WholesalePriceLists() {
   const [lists, setLists] = useState<PriceList[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
       const res = await apiClient.get("/wholesale/price-lists");
-      setLists(res?.data?.data || []);
+      const raw = res?.data?.data ?? res?.data;
+      const listArray = Array.isArray(raw)
+        ? raw
+        : (raw?.priceLists || raw?.items || raw?.lists || []);
+
+      const normalized: PriceList[] = listArray.map((l: any) => ({
+        id: l.id || String(Math.random()),
+        name: l.name || "قائمة تسعير",
+        nameEn: l.nameEn,
+        currency: l.currency || "EGP",
+        isActive: l.isActive !== undefined ? Boolean(l.isActive) : (l.isDefault !== undefined ? true : true),
+        customerCount: Number(l.customerCount ?? l.productsCount ?? 0),
+        discountPct: l.discountPct ? Number(l.discountPct) : undefined,
+        createdAt: l.createdAt || new Date().toISOString(),
+      }));
+
+      setLists(normalized);
     } catch (err: any) {
       setError(err?.response?.data?.message || "تعذر تحميل قوائم الأسعار");
     } finally {
@@ -57,14 +77,24 @@ export default function WholesalePriceLists() {
     }
   };
 
-  const stats = useMemo(() => {
-    const total = lists.length;
-    const active = lists.filter((l) => l.isActive).length;
-    const totalAssignedCustomers = lists.reduce((acc, l) => acc + (l.customerCount || 0), 0);
-    return { total, active, totalAssignedCustomers };
-  }, [lists]);
+  const safeLists = useMemo(() => (Array.isArray(lists) ? lists : []), [lists]);
 
-  if (loading && lists.length === 0) {
+  const filteredLists = useMemo(() => {
+    if (!search.trim()) return safeLists;
+    const q = search.toLowerCase();
+    return safeLists.filter(
+      (l) => l.name.toLowerCase().includes(q) || (l.nameEn && l.nameEn.toLowerCase().includes(q))
+    );
+  }, [safeLists, search]);
+
+  const stats = useMemo(() => {
+    const total = safeLists.length;
+    const active = safeLists.filter((l) => l.isActive).length;
+    const totalAssignedCustomers = safeLists.reduce((acc, l) => acc + (l.customerCount || 0), 0);
+    return { total, active, totalAssignedCustomers };
+  }, [safeLists]);
+
+  if (loading && safeLists.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[350px] gap-2.5 text-muted-foreground">
         <RefreshCw className="size-5 animate-spin text-primary" />
@@ -108,7 +138,7 @@ export default function WholesalePriceLists() {
           <Link to="/wholesale/price-lists/new">
             <Button size="sm" className="h-8 px-3 text-xs font-mono gap-1 active:scale-[0.98]">
               <Plus className="size-3.5" />
-              <span>إضافة قائمة أسعار جديدة</span>
+              <span>إضافة قائمة أسعار</span>
             </Button>
           </Link>
         </div>
@@ -122,35 +152,35 @@ export default function WholesalePriceLists() {
             <p className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums mt-0.5">
               {stats.total}
             </p>
-            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">هياكل تسعير مفعلة</p>
+            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">هياكل تسعير معرفة</p>
           </div>
-          <div className="size-7 rounded-md bg-blue-500/10 flex items-center justify-center text-blue-600">
+          <div className="size-7 rounded-md bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
             <Layers className="size-3.5" />
           </div>
         </div>
 
         <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
           <div>
-            <p className="text-[11px] text-emerald-600 dark:text-emerald-400">القوائم النشطة</p>
-            <p className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums mt-0.5">
+            <p className="text-[11px] text-emerald-500">القوائم النشطة</p>
+            <p className="text-xl font-bold tracking-tight text-emerald-500 font-mono tabular-nums mt-0.5">
               {stats.active}
             </p>
             <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">سارية المفعول حالياً</p>
           </div>
-          <div className="size-7 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+          <div className="size-7 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
             <CheckCircle2 className="size-3.5" />
           </div>
         </div>
 
         <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
           <div>
-            <p className="text-[11px] text-purple-600 dark:text-purple-400">التجار المرتبطين</p>
-            <p className="text-xl font-bold tracking-tight text-purple-600 dark:text-purple-400 font-mono tabular-nums mt-0.5">
+            <p className="text-[11px] text-purple-500">التجار المرتبطين</p>
+            <p className="text-xl font-bold tracking-tight text-purple-500 font-mono tabular-nums mt-0.5">
               {stats.totalAssignedCustomers}
             </p>
             <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">تاجر معين لقوائم</p>
           </div>
-          <div className="size-7 rounded-md bg-purple-500/10 flex items-center justify-center text-purple-600">
+          <div className="size-7 rounded-md bg-purple-500/10 flex items-center justify-center text-purple-500 border border-purple-500/20">
             <Users className="size-3.5" />
           </div>
         </div>
@@ -165,12 +195,29 @@ export default function WholesalePriceLists() {
 
       {/* Main Single-Surface Chassis */}
       <div className="rounded-lg border border-border/70 bg-card shadow-xs overflow-hidden">
-        {lists.length === 0 ? (
+        {/* Search Bar */}
+        <div className="p-2.5 sm:p-3 border-b border-border/60 bg-muted/20 flex items-center justify-between gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="size-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <Input
+              type="text"
+              className="h-8 pr-8 text-xs font-mono bg-background border-border/70"
+              placeholder="بحث في قوائم الأسعار..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground font-mono tabular-nums">
+            {filteredLists.length} قائمة
+          </span>
+        </div>
+
+        {filteredLists.length === 0 ? (
           <div className="p-10 text-center space-y-2">
             <div className="size-9 rounded-full bg-muted/60 text-muted-foreground mx-auto flex items-center justify-center">
               <Tag className="size-4" />
             </div>
-            <h3 className="text-xs font-semibold text-foreground font-mono">لا توجد قوائم أسعار بعد</h3>
+            <h3 className="text-xs font-semibold text-foreground font-mono">لا توجد قوائم أسعار تطابق البحث</h3>
             <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
               قم بإضافة أول قائمة أسعار لتطبيق أسعار خاصة لتجار الجملة والموزعين
             </p>
@@ -188,6 +235,7 @@ export default function WholesalePriceLists() {
                 <tr>
                   <th className="px-4 py-2.5 font-medium">اسم قائمة الأسعار</th>
                   <th className="px-4 py-2.5 font-medium">العملة</th>
+                  <th className="px-4 py-2.5 font-medium">الخصم / الأصناف</th>
                   <th className="px-4 py-2.5 font-medium text-center">الحالة</th>
                   <th className="px-4 py-2.5 font-medium">التجار المرتبطين</th>
                   <th className="px-4 py-2.5 font-medium">تاريخ الإنشاء</th>
@@ -195,7 +243,7 @@ export default function WholesalePriceLists() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
-                {lists.map((list) => (
+                {filteredLists.map((list) => (
                   <tr key={list.id} className="hover:bg-muted/20 transition-colors">
                     <td className="px-4 py-2.5 font-medium text-foreground">
                       <Link
@@ -211,11 +259,14 @@ export default function WholesalePriceLists() {
                       </Link>
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground font-mono text-[11px]">{list.currency}</td>
+                    <td className="px-4 py-2.5 font-mono text-muted-foreground text-[11px]">
+                      {list.discountPct ? `${list.discountPct}% خصم` : "أسعار مخصصة"}
+                    </td>
                     <td className="px-4 py-2.5 text-center">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono border ${
                           list.isActive
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                             : "bg-muted/60 text-muted-foreground border-border/60"
                         }`}
                       >

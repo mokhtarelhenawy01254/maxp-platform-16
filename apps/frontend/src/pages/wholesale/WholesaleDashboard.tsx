@@ -13,6 +13,8 @@ import {
   FileSpreadsheet,
   BadgeAlert,
   RefreshCw,
+  Clock,
+  ArrowRight,
 } from "lucide-react";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -36,7 +38,16 @@ export default function WholesaleDashboard() {
       setLoading(true);
       setError(null);
       const res = await apiClient.get("/wholesale/dashboard");
-      setStats(res?.data?.data || null);
+      const raw = res?.data?.data?.stats || res?.data?.data || {};
+      const parsedStats: DashboardStats = {
+        totalCustomers: Number(raw.totalCustomers ?? raw.activeCustomers ?? 0),
+        activePriceLists: Number(raw.activePriceLists ?? (Array.isArray(raw.priceLists) ? raw.priceLists.length : 0)),
+        totalOutstanding: Number(raw.totalOutstanding ?? raw.totalDebts ?? 0),
+        overdueAmount: Number(raw.overdueAmount ?? raw.overdueDebts ?? 0),
+        monthlySales: Number(raw.monthlySales ?? raw.totalWholesaleRevenue ?? 0),
+        monthlyOrderCount: Number(raw.monthlyOrderCount ?? 0),
+      };
+      setStats(parsedStats);
     } catch (err: any) {
       setError(err?.response?.data?.message || "تعذر تحميل لوحة الجملة");
     } finally {
@@ -75,49 +86,55 @@ export default function WholesaleDashboard() {
   const cards = [
     {
       label: "عملاء الجملة المسجلين",
-      value: stats?.totalCustomers ?? 0,
+      value: (stats?.totalCustomers ?? 0).toLocaleString("en-US"),
       suffix: "تاجر / عميل",
       icon: Users,
-      color: "text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20",
+      color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
       link: "/wholesale/customers",
+      hint: "سجل حسابات الموزعين المعتمدين",
     },
     {
       label: "قوائم الأسعار الفعالة",
-      value: stats?.activePriceLists ?? 0,
+      value: (stats?.activePriceLists ?? 0).toLocaleString("en-US"),
       suffix: "قائمة تسعير",
       icon: Tag,
-      color: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+      color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
       link: "/wholesale/price-lists",
+      hint: "هياكل التسعير والخصم الشرائحي",
     },
     {
       label: "إجمالي المديونية القائمة",
       value: (stats?.totalOutstanding ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       suffix: "ج.م",
       icon: Wallet,
-      color: "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20",
+      color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
       link: "/wholesale/debts",
+      hint: "أرصدة مستحقة قيد التحصيل",
     },
     {
-      label: "المديونيات المتأخرة",
+      label: "المديونيات المتأخرة الحرجة",
       value: (stats?.overdueAmount ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       suffix: "ج.م",
       icon: BadgeAlert,
-      color: "text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20",
+      color: "text-rose-500 bg-rose-500/10 border-rose-500/20",
       link: "/wholesale/debts",
+      hint: "تجاوزت فترة السماح المتفق عليها",
     },
     {
-      label: "مبيعات الجملة هذا الشهر",
+      label: "مبيعات الجملة التراكمية",
       value: (stats?.monthlySales ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       suffix: "ج.م",
       icon: TrendingUp,
-      color: "text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20",
+      color: "text-purple-500 bg-purple-500/10 border-purple-500/20",
+      hint: "حجم التوريد خلال الشهر الجاري",
     },
     {
-      label: "طلبات الجملة خلال الشهر",
-      value: stats?.monthlyOrderCount ?? 0,
+      label: "طلبات التوريد الجارية",
+      value: (stats?.monthlyOrderCount ?? 0).toLocaleString("en-US"),
       suffix: "طلب توريد",
       icon: ShoppingBag,
-      color: "text-sky-600 dark:text-sky-400 bg-sky-500/10 border-sky-500/20",
+      color: "text-sky-500 bg-sky-500/10 border-sky-500/20",
+      hint: "أوامر توريد معالجة وشحن",
     },
   ];
 
@@ -134,7 +151,7 @@ export default function WholesaleDashboard() {
               لوحة قيادة البيع بالجملة والتوزيع
             </h1>
             <Badge variant="outline" className="text-[11px] font-mono border-border/80 bg-muted/30">
-              B2B Commerce Engine
+              B2B Engine v2.4
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
@@ -183,6 +200,39 @@ export default function WholesaleDashboard() {
         </div>
       </div>
 
+      {/* Telemetry Status Ribbon */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 font-mono">
+        <div className="rounded-lg border border-border/70 bg-card/60 p-2.5">
+          <span className="text-[10px] text-muted-foreground block">حالة شبكة التوزيع</span>
+          <span className="text-xs font-semibold text-emerald-500 mt-0.5 inline-flex items-center gap-1.5">
+            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            نشطة ومطابقة
+          </span>
+        </div>
+        <div className="rounded-lg border border-border/70 bg-card/60 p-2.5">
+          <span className="text-[10px] text-muted-foreground block">نسبة الائتمان للمبيعات</span>
+          <span className="text-xs font-semibold text-foreground mt-0.5 tabular-nums">
+            {stats && stats.monthlySales > 0
+              ? `${((stats.totalOutstanding / stats.monthlySales) * 100).toFixed(1)}%`
+              : "0.0%"}
+          </span>
+        </div>
+        <div className="rounded-lg border border-border/70 bg-card/60 p-2.5">
+          <span className="text-[10px] text-muted-foreground block">التجار المتعثرين</span>
+          <span className="text-xs font-semibold text-rose-500 mt-0.5 tabular-nums">
+            {stats && stats.overdueAmount > 0 ? "تنبيه تحصيل نشط" : "لا يوجد تعثر"}
+          </span>
+        </div>
+        <div className="rounded-lg border border-border/70 bg-card/60 p-2.5">
+          <span className="text-[10px] text-muted-foreground block">متوسط السحب الشهري</span>
+          <span className="text-xs font-semibold text-foreground mt-0.5 tabular-nums">
+            {stats && stats.totalCustomers > 0
+              ? `${Math.round(stats.monthlySales / stats.totalCustomers).toLocaleString("en-US")} ج.م`
+              : "0 ج.م"}
+          </span>
+        </div>
+      </div>
+
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {cards.map((card) => {
@@ -201,8 +251,9 @@ export default function WholesaleDashboard() {
                     </span>
                     <span className="text-[11px] text-muted-foreground font-medium">{card.suffix}</span>
                   </div>
+                  <p className="text-[10px] text-muted-foreground/70 font-mono">{card.hint}</p>
                 </div>
-                <div className={`size-8 rounded-md flex items-center justify-center border ${card.color}`}>
+                <div className={`size-8 rounded-md flex items-center justify-center border shrink-0 ${card.color}`}>
                   <Icon className="size-4" />
                 </div>
               </div>

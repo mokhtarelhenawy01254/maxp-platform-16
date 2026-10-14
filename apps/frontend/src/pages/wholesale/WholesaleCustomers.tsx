@@ -19,12 +19,11 @@ import { Input } from "../../components/ui/input";
 
 interface WholesaleCustomer {
   id: string;
-  customerId: string;
-  customer: { firstName: string; lastName: string; phone?: string };
+  name: string;
+  phone: string;
   creditLimit: number;
   currentBalance: number;
   paymentTermsDays: number;
-  priceListId?: string;
   priceListName?: string;
   isActive: boolean;
 }
@@ -41,9 +40,31 @@ export default function WholesaleCustomers() {
       setLoading(true);
       setError(null);
       const res = await apiClient.get("/wholesale/customers");
-      setCustomers(res?.data?.data || []);
+      const raw = res?.data?.data ?? res?.data;
+      const custArray = Array.isArray(raw)
+        ? raw
+        : (raw?.customers || raw?.items || []);
+
+      const normalized: WholesaleCustomer[] = custArray.map((c: any) => {
+        const name = c.customer
+          ? `${c.customer.firstName || ""} ${c.customer.lastName || ""}`.trim()
+          : (c.name || c.customerName || "تاجر معتمد");
+        const phone = c.customer?.phone || c.phone || "—";
+        return {
+          id: c.id || String(Math.random()),
+          name: name || "تاجر معتمد",
+          phone,
+          creditLimit: Number(c.creditLimit) || 0,
+          currentBalance: Number(c.currentBalance ?? c.debt ?? 0),
+          paymentTermsDays: Number(c.paymentTermsDays ?? 30),
+          priceListName: c.priceListName || c.priceList || undefined,
+          isActive: c.isActive !== undefined ? Boolean(c.isActive) : (c.status === "ACTIVE" || c.status === undefined),
+        };
+      });
+
+      setCustomers(normalized);
     } catch (err: any) {
-      setError(err?.response?.data?.message || "تعذر تحميل عملاء الجملة");
+      setError(err?.response?.data?.message || "تعذر تحميل عملاء وتجار الجملة");
     } finally {
       setLoading(false);
     }
@@ -53,28 +74,29 @@ export default function WholesaleCustomers() {
     void loadData();
   }, []);
 
+  const safeCustomers = useMemo(() => (Array.isArray(customers) ? customers : []), [customers]);
+
   const filteredCustomers = useMemo(() => {
-    return customers.filter((c) => {
-      const name = c.customer ? `${c.customer.firstName} ${c.customer.lastName}` : "";
-      const phone = c.customer?.phone || "";
-      const matchesSearch = !search || name.includes(search) || phone.includes(search);
+    return safeCustomers.filter((c) => {
+      const q = search.trim().toLowerCase();
+      const matchesSearch = !q || c.name.toLowerCase().includes(q) || c.phone.includes(q);
       const matchesActive =
         filterActive === "all" ||
         (filterActive === "active" && c.isActive) ||
         (filterActive === "inactive" && !c.isActive);
       return matchesSearch && matchesActive;
     });
-  }, [customers, search, filterActive]);
+  }, [safeCustomers, search, filterActive]);
 
   const stats = useMemo(() => {
-    const total = customers.length;
-    const active = customers.filter((c) => c.isActive).length;
-    const totalLimit = customers.reduce((acc, c) => acc + (Number(c.creditLimit) || 0), 0);
-    const totalBalance = customers.reduce((acc, c) => acc + (Number(c.currentBalance) || 0), 0);
+    const total = safeCustomers.length;
+    const active = safeCustomers.filter((c) => c.isActive).length;
+    const totalLimit = safeCustomers.reduce((acc, c) => acc + (Number(c.creditLimit) || 0), 0);
+    const totalBalance = safeCustomers.reduce((acc, c) => acc + (Number(c.currentBalance) || 0), 0);
     return { total, active, totalLimit, totalBalance };
-  }, [customers]);
+  }, [safeCustomers]);
 
-  if (loading && customers.length === 0) {
+  if (loading && safeCustomers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[350px] gap-2.5 text-muted-foreground">
         <RefreshCw className="size-5 animate-spin text-primary" />
@@ -132,48 +154,48 @@ export default function WholesaleCustomers() {
             <p className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums mt-0.5">
               {stats.total}
             </p>
-            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">في قاعدة البيانات</p>
+            <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">في شبكة التوزيع</p>
           </div>
-          <div className="size-7 rounded-md bg-blue-500/10 flex items-center justify-center text-blue-600">
+          <div className="size-7 rounded-md bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
             <Users className="size-3.5" />
           </div>
         </div>
 
         <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
           <div>
-            <p className="text-[11px] text-emerald-600 dark:text-emerald-400">الحسابات النشطة</p>
-            <p className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums mt-0.5">
+            <p className="text-[11px] text-emerald-500">الحسابات النشطة</p>
+            <p className="text-xl font-bold tracking-tight text-emerald-500 font-mono tabular-nums mt-0.5">
               {stats.active}
             </p>
             <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">حساب مؤهل للطلب</p>
           </div>
-          <div className="size-7 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+          <div className="size-7 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
             <CheckCircle2 className="size-3.5" />
           </div>
         </div>
 
         <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
           <div>
-            <p className="text-[11px] text-purple-600 dark:text-purple-400">الحدود الائتمانية</p>
-            <p className="text-lg font-bold tracking-tight text-purple-600 dark:text-purple-400 font-mono tabular-nums mt-0.5">
+            <p className="text-[11px] text-purple-500">الحدود الائتمانية</p>
+            <p className="text-lg font-bold tracking-tight text-purple-500 font-mono tabular-nums mt-0.5">
               {stats.totalLimit.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ج.م
             </p>
             <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">تسهيلات سحب ممنوحة</p>
           </div>
-          <div className="size-7 rounded-md bg-purple-500/10 flex items-center justify-center text-purple-600">
+          <div className="size-7 rounded-md bg-purple-500/10 flex items-center justify-center text-purple-500 border border-purple-500/20">
             <ShieldCheck className="size-3.5" />
           </div>
         </div>
 
         <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
           <div>
-            <p className="text-[11px] text-amber-600 dark:text-amber-400">الأرصدة القائمة</p>
-            <p className="text-lg font-bold tracking-tight text-amber-600 dark:text-amber-400 font-mono tabular-nums mt-0.5">
+            <p className="text-[11px] text-amber-500">الأرصدة القائمة</p>
+            <p className="text-lg font-bold tracking-tight text-amber-500 font-mono tabular-nums mt-0.5">
               {stats.totalBalance.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ج.م
             </p>
             <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">مبالغ واجبة التحصيل</p>
           </div>
-          <div className="size-7 rounded-md bg-amber-500/10 flex items-center justify-center text-amber-600">
+          <div className="size-7 rounded-md bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
             <Wallet className="size-3.5" />
           </div>
         </div>
@@ -203,7 +225,7 @@ export default function WholesaleCustomers() {
 
           <div className="flex items-center gap-1 font-mono text-xs">
             {[
-              { id: "all", label: `الكل (${customers.length})` },
+              { id: "all", label: `الكل (${safeCustomers.length})` },
               { id: "active", label: `نشط (${stats.active})` },
               { id: "inactive", label: `موقوف (${stats.total - stats.active})` },
             ].map((tab) => (
@@ -256,17 +278,17 @@ export default function WholesaleCustomers() {
                         to={`/wholesale/customers/${c.id}`}
                         className="hover:text-primary transition-colors inline-flex items-center gap-1"
                       >
-                        {c.customer ? `${c.customer.firstName} ${c.customer.lastName}` : "—"}
+                        {c.name}
                       </Link>
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground font-mono text-[11px]" dir="ltr">
-                      {c.customer?.phone || "—"}
+                      {c.phone}
                     </td>
                     <td className="px-4 py-2.5 font-mono tabular-nums text-foreground">
                       {Number(c.creditLimit).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م
                     </td>
                     <td className="px-4 py-2.5 font-mono tabular-nums font-bold">
-                      <span className={Number(c.currentBalance) > 0 ? "text-amber-600 dark:text-amber-400" : "text-foreground"}>
+                      <span className={Number(c.currentBalance) > 0 ? "text-amber-500" : "text-foreground"}>
                         {Number(c.currentBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م
                       </span>
                     </td>
@@ -287,7 +309,7 @@ export default function WholesaleCustomers() {
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono border ${
                           c.isActive
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                             : "bg-muted/60 text-muted-foreground border-border/60"
                         }`}
                       >
