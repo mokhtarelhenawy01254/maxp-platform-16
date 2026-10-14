@@ -3424,7 +3424,9 @@ const getProductFulfillmentAnalytics = async (req, res) => {
         order: {
           select: {
             id: true,
-            status: true
+            status: true,
+            customStatusCode: true,
+            metadata: true,
           }
         },
         product: {
@@ -3443,7 +3445,7 @@ const getProductFulfillmentAnalytics = async (req, res) => {
     orderItems.forEach(item => {
       const orderId = item.order?.id;
       if (orderId) distinctOrders.add(orderId);
-      const status = (item.order?.status || 'PENDING').toUpperCase().trim();
+      const status = (computeEffectiveOrderStatus(item.order) || 'PENDING').toUpperCase().trim();
 
       const key = item.productId || item.product?.name || item.productName || item.productSku || 'unknown';
       const name = item.product?.name || item.productName || 'منتج غير معروف';
@@ -4810,6 +4812,7 @@ const getCampaignAttributionAnalytics = async (req, res) => {
         id: true,
         orderNumber: true,
         status: true,
+        customStatusCode: true,
         total: true,
         createdAt: true,
         metadata: true,
@@ -4831,7 +4834,7 @@ const getCampaignAttributionAnalytics = async (req, res) => {
       const attribution = buildOrderAttributionSnapshot(metadata, order);
       const total = Number.parseFloat(String(order.total || 0));
       const safeTotal = Number.isFinite(total) ? total : 0;
-      const safeStatus = normalizeAttributionText(order.status, 'PENDING');
+      const safeStatus = normalizeAttributionText(computeEffectiveOrderStatus(order), 'PENDING');
       const createdAtDate = order.createdAt instanceof Date ? order.createdAt : new Date(order.createdAt);
       const createdAtKey = createdAtDate.toISOString().slice(0, 10);
       const searchText = [

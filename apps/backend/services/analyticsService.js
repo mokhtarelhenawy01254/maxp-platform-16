@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
+const { effectiveOrderStatusSql } = require('../utils/orderEffectiveStatus');
 
 const startOfDay = (date) => {
   const value = new Date(date);
@@ -1176,12 +1177,25 @@ class AnalyticsService {
       const prisma = getSharedPrismaClient();
       const where = { companyId: cid, createdAt: { gte: start, lte: end } };
 
-      const [statusGroups, paymentGroups, guestOrders, orderNumbers] = await Promise.all([
-        prisma.order.groupBy({
+      const statusGroupsPromise = (typeof prisma.$queryRawUnsafe === 'function'
+        ? prisma.$queryRawUnsafe(`
+            SELECT (${effectiveOrderStatusSql()}) AS status, COUNT(*)::int AS count
+            FROM "orders"
+            WHERE "companyId" = $1 AND "createdAt" >= $2 AND "createdAt" <= $3
+            GROUP BY (${effectiveOrderStatusSql()})
+          `, cid, start, end).then((rows) => (Array.isArray(rows) ? rows.map((r) => ({ status: r.status, _count: { status: Number(r.count || 0) } })) : []))
+        : Promise.resolve([])
+      ).catch((err) => {
+        console.warn('⚠️ [ANALYTICS] Raw effective status group failed, fallback to prisma groupBy:', err.message);
+        return prisma.order.groupBy({
           by: ['status'],
           where,
           _count: { status: true },
-        }),
+        });
+      });
+
+      const [statusGroups, paymentGroups, guestOrders, orderNumbers] = await Promise.all([
+        statusGroupsPromise,
         prisma.order.groupBy({
           by: ['paymentMethod'],
           where,
