@@ -180,28 +180,46 @@ exports.deleteReturnReason = async (req, res) => {
 async function ensureShippingReturnRequestsSynced(companyId) {
     try {
         const prisma = getPrisma();
+        const settings = await prisma.returnSettings.findUnique({
+            where: { companyId }
+        });
+        const ordersStartDate = settings?.reviewDisplayConfig?.ordersStartDate;
+
+        const orderWhere = {
+            companyId,
+            OR: [
+                { status: 'RETURNED' },
+                { turboShipmentStatus: { in: ['returned_to_company', 'status_5', '5', 'status_14', '14', 'returned'] } }
+            ]
+        };
+
+        if (ordersStartDate) {
+            const startDate = new Date(ordersStartDate);
+            if (!isNaN(startDate.getTime())) {
+                orderWhere.createdAt = { gte: startDate };
+            }
+        }
+
         const returnedOrders = await prisma.order.findMany({
-            where: {
-                companyId,
-                OR: [
-                    { status: 'RETURNED' },
-                    { turboShipmentStatus: { in: ['returned_to_company', 'status_5', '5', 'status_14', '14', 'returned'] } }
-                ]
-            },
-            select: { id: true, customerId: true, createdAt: true, turboTrackingNumber: true }
+            where: orderWhere,
+            select: { id: true, orderNumber: true, customerId: true, createdAt: true, turboTrackingNumber: true }
         });
 
         if (!returnedOrders.length) return;
 
+        // Ignore partial return mirror orders (e.g. R-ORD-...) if original order exists or already handled
+        const eligibleOrders = returnedOrders.filter(o => !o.orderNumber?.startsWith('R-'));
+        if (!eligibleOrders.length) return;
+
         const existingReqs = await prisma.returnRequest.findMany({
             where: {
                 companyId,
-                orderId: { in: returnedOrders.map(o => o.id) }
+                orderId: { in: eligibleOrders.map(o => o.id) }
             },
             select: { orderId: true }
         });
         const existingOrderIds = new Set(existingReqs.map(r => r.orderId));
-        const missingOrders = returnedOrders.filter(o => !existingOrderIds.has(o.id));
+        const missingOrders = eligibleOrders.filter(o => !existingOrderIds.has(o.id));
 
         if (!missingOrders.length) return;
 
@@ -277,8 +295,8 @@ exports.getReturnRequests = async (req, res) => {
         });
         const ordersStartDate = settings?.reviewDisplayConfig?.ordersStartDate;
 
-        const effectiveFrom = dateFrom || (req.query.dateFrom ? req.query.dateFrom : req.query.startDate);
-        const effectiveTo = dateTo || (req.query.dateTo ? req.query.dateTo : req.query.endDate);
+        const effectiveFrom = dateFrom || req.query.dateFrom;
+        const effectiveTo = dateTo || req.query.dateTo;
 
         if (effectiveFrom) {
             const from = new Date(effectiveFrom);
