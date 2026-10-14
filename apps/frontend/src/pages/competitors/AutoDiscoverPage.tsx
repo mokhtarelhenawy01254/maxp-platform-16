@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import {
   Compass,
   ArrowRight,
-  Search,
   Plus,
   Loader2,
   Sliders,
@@ -66,26 +65,26 @@ export const AutoDiscoverPage: React.FC = () => {
   };
 
   return (
-    <div dir={i18n.dir()} className="space-y-4">
+    <div dir={i18n.dir()} className="w-full min-h-screen bg-background text-foreground space-y-4 p-3 sm:p-5">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-sm">
+      <div className="bg-card border border-border/70 rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => navigate('/competitors')}
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               <span>قائمة المنافسين</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
             <span className="text-xs text-muted-foreground">/</span>
-            <span className="text-xs font-semibold text-foreground">الاستكشاف التلقائي</span>
+            <span className="text-xs font-semibold text-foreground">الاستكشاف الذكي</span>
           </div>
-          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-            <Compass className="w-4 h-4 text-primary" />
-            الاستكشاف الذكي للمنافسين (AI Auto-Discovery Engine)
-          </h2>
+          <h1 className="text-base font-bold text-foreground flex items-center gap-2 tracking-tight">
+            <Compass className="w-4 h-4 text-primary shrink-0" />
+            الاستكشاف التلقائي للمنافسين (AI Market Radar)
+          </h1>
           <p className="text-xs text-muted-foreground">
             فحص وتحليل الكتالوج للعثور على المتاجر التي تبيع نفس منتجاتك في السوق المحلي
           </p>
@@ -95,57 +94,59 @@ export const AutoDiscoverPage: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/competitors')}
-            className="px-3.5 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-medium transition-colors"
+            className="px-3.5 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted/40 text-foreground text-xs font-medium transition-colors cursor-pointer"
           >
-            العودة للمنافسين
+            العودة للرادار
           </button>
         </div>
       </div>
 
-      {/* Telemetry ribbon */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-        <div className="bg-card border border-border/70 rounded-lg p-3">
-          <div className="flex items-center justify-between text-muted-foreground text-xs">
-            <span>محرك الاستكشاف</span>
-            <Sparkles className="w-3.5 h-3.5 text-primary" />
+      {/* Telemetry Ribbon */}
+      <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 bg-muted/20">
+          <div className="p-3.5 px-4">
+            <div className="flex items-center justify-between text-muted-foreground text-xs">
+              <span className="font-medium text-[11px]">محرك الاستكشاف</span>
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="text-base font-bold text-foreground">تحليل الكتالوج</span>
+              <span className="text-[10px] font-mono text-emerald-500 font-semibold">AI Active</span>
+            </div>
           </div>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-base font-bold text-foreground">تحليل الكلمات والكتالوج</span>
-            <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">AI Active</span>
-          </div>
-        </div>
 
-        <div className="bg-card border border-border/70 rounded-lg p-3">
-          <div className="flex items-center justify-between text-muted-foreground text-xs">
-            <span>الحد الأقصى للنتائج</span>
-            <Sliders className="w-3.5 h-3.5" />
+          <div className="p-3.5 px-4">
+            <div className="flex items-center justify-between text-muted-foreground text-xs">
+              <span className="font-medium text-[11px]">الحد الأقصى للنتائج</span>
+              <Sliders className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="text-base font-bold font-mono text-foreground tabular-nums">
+                {maxResults} منافسين
+              </span>
+              <span className="text-[11px] text-muted-foreground">لكل جولة فحص</span>
+            </div>
           </div>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-base font-bold font-mono text-foreground tabular-nums">
-              {maxResults} منافسين
-            </span>
-            <span className="text-[11px] text-muted-foreground">لكل جولة فحص</span>
-          </div>
-        </div>
 
-        <div className="bg-card border border-border/70 rounded-lg p-3">
-          <div className="flex items-center justify-between text-muted-foreground text-xs">
-            <span>مطابقة المنتجات</span>
-            <Layers className="w-3.5 h-3.5" />
-          </div>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-base font-bold text-foreground">
-              {data ? `${data.yourProductCount} منتج محلل` : "جاهز للبدء"}
-            </span>
-            <span className="text-[10px] font-mono text-muted-foreground">Catalog Match</span>
+          <div className="p-3.5 px-4">
+            <div className="flex items-center justify-between text-muted-foreground text-xs">
+              <span className="font-medium text-[11px]">مطابقة المنتجات</span>
+              <Layers className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="text-base font-bold text-foreground">
+                {data ? `${data.yourProductCount} منتج محلل` : "جاهز للبدء"}
+              </span>
+              <span className="text-[10px] font-mono text-muted-foreground">Catalog Match</span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Discovery Control Surface */}
-      <div className="bg-card border border-border/70 rounded-xl p-5 space-y-4">
+      <div className="bg-card border border-border/70 rounded-xl p-4 sm:p-5 space-y-4 shadow-xs">
         {error && (
-          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive flex items-center gap-2">
+          <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -161,7 +162,7 @@ export const AutoDiscoverPage: React.FC = () => {
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               placeholder="مثال: أحذية، عطور، ملابس نسائية..."
-              className="w-full h-9 px-3 text-xs rounded-lg border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+              className="w-full h-9 px-3 text-xs rounded-lg border border-border/70 bg-background text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
             />
           </div>
 
@@ -187,7 +188,7 @@ export const AutoDiscoverPage: React.FC = () => {
             type="button"
             onClick={handleDiscover}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 active:scale-[0.98]"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 active:scale-[0.98] cursor-pointer"
           >
             {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Compass className="w-3.5 h-3.5" />}
             <span>{loading ? "جاري الفحص والتحليل في السوق..." : "بدء الاستكشاف الذكي"}</span>
@@ -197,14 +198,14 @@ export const AutoDiscoverPage: React.FC = () => {
 
       {/* Results View */}
       {data && (
-        <div className="bg-card border border-border/70 rounded-xl overflow-hidden divide-y divide-border/60">
+        <div className="bg-card border border-border/70 rounded-xl overflow-hidden divide-y divide-border/60 shadow-xs">
           <div className="px-4 py-3 bg-muted/20 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-bold text-foreground">
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
               <span>نتائج الاستكشاف التلقائي ({data.discovered.length} منافس محتمل)</span>
             </div>
             {data.suggestion && (
-              <span className="text-[11px] text-muted-foreground">{data.suggestion}</span>
+              <span className="text-[11px] text-muted-foreground font-mono">{data.suggestion}</span>
             )}
           </div>
 
@@ -220,7 +221,7 @@ export const AutoDiscoverPage: React.FC = () => {
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h4 className="text-xs font-bold text-foreground truncate">{item.suggestedName}</h4>
-                      <span className="text-[10px] font-mono px-2 py-0.2 rounded-full bg-primary/10 text-primary font-medium">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold border border-primary/20">
                         {item.matchedProducts} منتجات متطابقة
                       </span>
                     </div>
@@ -230,7 +231,7 @@ export const AutoDiscoverPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleAdd(item.suggestedName)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-medium transition-colors shrink-0"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-medium transition-colors shrink-0 cursor-pointer active:scale-[0.98]"
                   >
                     <Plus className="w-3.5 h-3.5 text-primary" />
                     <span>إضافة ومراقبة</span>
