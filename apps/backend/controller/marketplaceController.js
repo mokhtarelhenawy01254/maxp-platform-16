@@ -16,7 +16,6 @@ const LEGACY_TEMPLATE_CATEGORY_VALUES = Array.from(LEGACY_TEMPLATE_CATEGORIES);
 
 const LOG_FILE = path.join(__dirname, '../debug_marketplace.log');
 const ACTIVE_STATUSES = ['ACTIVE', 'TRIAL', 'active', 'trial'];
-const LEGACY_AUTOMATION_CATEGORY = ['A', 'I'].join('');
 
 function getMarketplaceCatalogSource() {
   const defaultSource = process.env.NODE_ENV === 'production' ? 'db' : 'hybrid';
@@ -1380,7 +1379,7 @@ exports.getCategories = async (req, res) => {
       WHOLESALE: { name: 'البيع بالجملة', nameEn: 'Wholesale & B2B', icon: '🏪' },
       SALES: { name: 'المبيعات', nameEn: 'Sales', icon: '🛒' },
       HR: { name: 'الموارد البشرية', nameEn: 'HR', icon: '👥' },
-        [LEGACY_AUTOMATION_CATEGORY]: { name: 'الأتمتة', nameEn: 'Automation', icon: '⚙️' },
+      AI: { name: 'الذكاء الاصطناعي', nameEn: 'AI', icon: '🧠' },
       COMMUNICATION: { name: 'التواصل', nameEn: 'Communication', icon: '💬' },
       CRM: { name: 'إدارة العملاء', nameEn: 'CRM', icon: '📊' },
       ANALYTICS: { name: 'التحليلات', nameEn: 'Analytics', icon: '📈' },
@@ -1393,21 +1392,27 @@ exports.getCategories = async (req, res) => {
       SEO: { name: 'تحسين محركات البحث', nameEn: 'SEO', icon: '🌐' },
       THEMES: { name: 'الثيمات والقوالب', nameEn: 'Themes', icon: '🎨' },
       DESIGN: { name: 'التصميم', nameEn: 'Design', icon: '🎨' },
-      GAMIFICATION: { name: 'الألعاب والترفيه', nameEn: 'Gamification', icon: '🎮' },
+      GAMIFICATION: { name: 'التحفيز والولاء', nameEn: 'Loyalty & Incentives', icon: '🏅' },
       MEDICAL: { name: 'النظام الطبي', nameEn: 'Medical System', icon: '🏥' }
     };
 
     console.log('🔍 [Marketplace] Fetching categories from DB...');
-    const result = categories.map(cat => {
-      if (!categoryMap[cat.category]) {
-        console.warn(`⚠️ [Marketplace] Unknown category found in DB: ${cat.category}`);
-      }
-      return {
+    // Guard: categories missing from the canonical map are excluded from the
+    // response entirely — a stray category value in the DB must never reach
+    // the storefront with its raw key as a display name.
+    const result = categories
+      .filter(cat => {
+        if (!categoryMap[cat.category]) {
+          console.warn(`⚠️ [Marketplace] Unknown category excluded from response: ${cat.category}`);
+          return false;
+        }
+        return true;
+      })
+      .map(cat => ({
         category: cat.category,
         count: cat._count.id,
-        ...(categoryMap[cat.category] || { name: cat.category, nameEn: cat.category, icon: '📦' })
-      };
-    });
+        ...categoryMap[cat.category]
+      }));
 
     console.log('✅ [Marketplace] Returning categories:', result.length);
 
