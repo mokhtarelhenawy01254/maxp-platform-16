@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   RefreshCw,
   Loader2,
@@ -14,22 +10,26 @@ import {
   ThumbsUp,
   MessageCircle,
   Eye,
-  CheckCircle,
+  CheckCircle2,
   Inbox,
+  ArrowLeft,
+  ArrowRight,
+  TrendingUp,
+  Share2,
 } from 'lucide-react';
 import axios from 'axios';
 import i18n from '../../../i18n';
 
-const platformIcons = {
-  instagram: <Instagram className="size-6 text-[#E4405F]" />,
-  facebook: <Facebook className="size-6 text-[#1877F2]" />,
-  tiktok: <Music className="size-6" />,
+const platformIcons: Record<string, React.ReactNode> = {
+  instagram: <Instagram className="size-5 text-[#E4405F]" />,
+  facebook: <Facebook className="size-5 text-[#1877F2]" />,
+  tiktok: <Music className="size-5 text-foreground" />,
 };
 
-const platformColors = {
+const platformColors: Record<string, string> = {
   instagram: '#E4405F',
   facebook: '#1877F2',
-  tiktok: '#000000',
+  tiktok: '#6366f1',
 };
 
 const platforms = ['instagram', 'facebook', 'tiktok'];
@@ -37,13 +37,13 @@ const platforms = ['instagram', 'facebook', 'tiktok'];
 export default function SocialOverview() {
   const { t } = useTranslation();
   const { competitorId } = useParams();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [profiles, setProfiles] = useState([]);
-  const [engagementStats, setEngagementStats] = useState({});
-  const [metricsHistory, setMetricsHistory] = useState({});
-  const [sentimentData, setSentimentData] = useState({});
-  const [metricsTimeline, setMetricsTimeline] = useState({});
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [engagementStats, setEngagementStats] = useState<Record<string, any>>({});
+  const [sentimentData, setSentimentData] = useState<Record<string, any>>({});
+  const [metricsTimeline, setMetricsTimeline] = useState<Record<string, any>>({});
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -55,9 +55,9 @@ export default function SocialOverview() {
         axios.get(`/api/v1/competitors/social/engagement/${competitorId}/tiktok`).catch(() => null),
       ]);
 
-      setProfiles(profilesRes.data);
+      setProfiles(profilesRes.data || []);
 
-      const stats = {};
+      const stats: Record<string, any> = {};
       if (instagramStats?.data) stats.instagram = instagramStats.data;
       if (facebookStats?.data) stats.facebook = facebookStats.data;
       if (tiktokStats?.data) stats.tiktok = tiktokStats.data;
@@ -72,8 +72,8 @@ export default function SocialOverview() {
   const fetchSentimentAndMetrics = useCallback(async () => {
     if (!competitorId) return;
 
-    const sentimentResults = {};
-    const metricsResults = {};
+    const sentimentResults: Record<string, any> = {};
+    const metricsResults: Record<string, any> = {};
 
     const sentimentPromises = platforms.map(async (platform) => {
       try {
@@ -119,163 +119,186 @@ export default function SocialOverview() {
     setRefreshing(false);
   };
 
-  const getEngagementColor = (rate) => {
-    if (rate >= 5) return '#52c41a';
-    if (rate >= 2) return '#faad14';
-    return '#f5222d';
+  const getEngagementColor = (rate: number) => {
+    if (rate >= 5) return 'text-emerald-500';
+    if (rate >= 2) return 'text-amber-500';
+    return 'text-rose-500';
   };
 
-  const getSentimentTag = (sentiment) => {
-    if (sentiment === 'positive') return <Badge variant="secondary" className="bg-green-500/10 text-green-600 hover:bg-green-500/20">{t('competitors.sentiment.positive')}</Badge>;
-    if (sentiment === 'negative') return <Badge variant="destructive">{t('competitors.sentiment.negative')}</Badge>;
-    return <Badge variant="outline">{t('competitors.sentiment.neutral')}</Badge>;
-  };
-
-  if (loading) return <Loader2 className="animate-spin mx-auto mt-10 size-8" />;
-
-  if (profiles.length === 0) {
+  const getSentimentTag = (sentiment: string) => {
+    if (sentiment === 'positive') {
+      return (
+        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+          {t('competitors.sentiment.positive')}
+        </span>
+      );
+    }
+    if (sentiment === 'negative') {
+      return (
+        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+          {t('competitors.sentiment.negative')}
+        </span>
+      );
+    }
     return (
-      <div className="flex flex-col items-center mt-10 text-muted-foreground">
-        <Inbox className="size-12 mb-2" />
-        <p>{t('competitors.social.noSocialProfiles')}</p>
-        <Badge variant="outline" className="mt-2 border-blue-500 text-blue-500">
-          {t('competitors.social.addSocialProfile')}
-        </Badge>
+      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-muted/40 text-muted-foreground border border-border/60">
+        {t('competitors.sentiment.neutral')}
+      </span>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-muted-foreground">
+        <Loader2 className="animate-spin size-8 text-primary mb-2" />
+        <span className="text-xs font-mono">LOADING SOCIAL INTELLIGENCE...</span>
       </div>
     );
   }
 
-  const maxFollowers = Math.max(
-    ...Object.values(metricsTimeline).flatMap((data) =>
-      data.map((d) => d.followersCount || 0)
-    ),
-    1
-  );
-
-  const maxEngagement = Math.max(
-    ...Object.values(metricsTimeline).flatMap((data) =>
-      data.map((d) => d.engagementRate || 0)
-    ),
-    1
-  );
+  if (profiles.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-border/70 rounded-xl bg-card/40 my-6">
+        <Inbox className="size-10 text-muted-foreground/60 mb-2" />
+        <h3 className="text-sm font-semibold text-foreground">{t('competitors.social.noSocialProfiles')}</h3>
+        <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+          No social channels linked to this competitor dossier.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6" dir={i18n.dir()}>
-      <div className="flex justify-end">
-        <Button onClick={handleRefresh} disabled={refreshing}>
-          <RefreshCw className={`size-4 ${refreshing ? 'animate-spin' : ''}`} />
-          {t('competitors.refresh')}
-        </Button>
-      </div>
+    <div className="w-full min-h-screen bg-background text-foreground space-y-6" dir={i18n.dir()}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {profiles.map((profile) => (
-          <Card key={profile.platform}>
-            <CardHeader className="flex flex-row items-center justify-between gap-2">
-              <CardTitle className="flex items-center gap-2">
-                {platformIcons[profile.platform]}
-                <span className="capitalize">{profile.platform}</span>
-                {profile.isVerified && (
-                  <CheckCircle className="text-blue-500 size-4" />
-                )}
-              </CardTitle>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <span className={`h-2 w-2 rounded-full ${profile.isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
-                {profile.isActive ? t('competitors.active') : t('competitors.inactive')}
+        {/* Header Command Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 rounded-lg border border-border/60 hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
+              title={t('common.back')}
+            >
+              {i18n.dir() === 'rtl' ? <ArrowRight size={18} /> : <ArrowLeft size={18} />}
+            </button>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold tracking-tight">Social Intelligence</h1>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  ENGAGEMENT RADAR
+                </span>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">{t('competitors.followers')}</span>
-                  <span className="text-xl font-bold">
-                    {profile.followersCount?.toLocaleString() || 0}
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Multi-channel presence, audience velocity, and community sentiment tracking
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="h-9 px-3.5 rounded-lg border border-border/70 bg-card hover:bg-muted/30 text-xs font-semibold flex items-center gap-2 transition-all disabled:opacity-50"
+            >
+              <RefreshCw className={`size-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              <span>{t('competitors.refresh')}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Profiles Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {profiles.map((profile) => {
+            const engRate = Number(engagementStats[profile.platform]?.avgEngagementRate) || 0;
+            return (
+              <div key={profile.platform} className="bg-card border border-border/70 rounded-xl p-4 shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {platformIcons[profile.platform]}
+                    <span className="capitalize text-xs font-bold text-foreground">{profile.platform}</span>
+                    {profile.isVerified && <CheckCircle2 className="text-primary size-3.5" />}
+                  </div>
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                    profile.isActive
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                      : 'bg-muted/40 text-muted-foreground border-border/60'
+                  }`}>
+                    {profile.isActive ? t('competitors.active') : t('competitors.inactive')}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">{t('competitors.posts')}</span>
-                  <span className="text-lg">{profile.postsCount || 0}</span>
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50 text-xs">
+                  <div className="p-2.5 rounded-lg bg-muted/20">
+                    <div className="text-[10px] text-muted-foreground uppercase font-mono">{t('competitors.followers')}</div>
+                    <div className="text-lg font-bold font-mono tabular-nums text-foreground mt-0.5">
+                      {profile.followersCount?.toLocaleString() || 0}
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-muted/20">
+                    <div className="text-[10px] text-muted-foreground uppercase font-mono">{t('competitors.posts')}</div>
+                    <div className="text-lg font-bold font-mono tabular-nums text-foreground mt-0.5">
+                      {profile.postsCount?.toLocaleString() || 0}
+                    </div>
+                  </div>
                 </div>
 
                 {engagementStats[profile.platform] && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">{t('competitors.engagementRate')}</span>
-                      <span
-                        className="font-bold"
-                        style={{
-                          color: getEngagementColor(
-                            Number(engagementStats[profile.platform].avgEngagementRate) || 0
-                          ),
-                        }}
-                      >
-                        {engagementStats[profile.platform].avgEngagementRate}%
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground text-[11px]">{t('competitors.engagementRate')}</span>
+                      <span className={`font-mono font-bold ${getEngagementColor(engRate)}`}>
+                        {engRate.toFixed(2)}%
                       </span>
                     </div>
-                    <Progress
-                      value={Math.min(Number(engagementStats[profile.platform].avgEngagementRate) || 0, 100)}
-                      className="[&>div]:bg-[var(--progress-color)]"
-                      style={{ '--progress-color': getEngagementColor(Number(engagementStats[profile.platform].avgEngagementRate) || 0) } as React.CSSProperties}
-                    />
+                    <div className="h-1.5 w-full bg-muted/40 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all"
+                        style={{ width: `${Math.min(engRate * 10, 100)}%` }}
+                      />
+                    </div>
                   </div>
                 )}
 
-                <div className="grid grid-cols-3 gap-2 mt-4">
-                  <div className="text-center">
-                    <ThumbsUp className="mx-auto text-muted-foreground size-4" />
-                    <div className="text-sm">
+                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/50 text-center">
+                  <div className="p-1.5 rounded bg-muted/10">
+                    <ThumbsUp className="mx-auto text-muted-foreground size-3.5" />
+                    <div className="text-xs font-bold font-mono tabular-nums mt-1">
                       {engagementStats[profile.platform]?.avgLikes?.toLocaleString() || 0}
                     </div>
-                    <div className="text-xs text-muted-foreground">{t('competitors.avgLikes')}</div>
+                    <div className="text-[10px] text-muted-foreground">{t('competitors.avgLikes')}</div>
                   </div>
-                  <div className="text-center">
-                    <MessageCircle className="mx-auto text-muted-foreground size-4" />
-                    <div className="text-sm">
+                  <div className="p-1.5 rounded bg-muted/10">
+                    <MessageCircle className="mx-auto text-muted-foreground size-3.5" />
+                    <div className="text-xs font-bold font-mono tabular-nums mt-1">
                       {engagementStats[profile.platform]?.avgComments?.toLocaleString() || 0}
                     </div>
-                    <div className="text-xs text-muted-foreground">{t('competitors.avgComments')}</div>
+                    <div className="text-[10px] text-muted-foreground">{t('competitors.avgComments')}</div>
                   </div>
-                  <div className="text-center">
-                    <Eye className="mx-auto text-muted-foreground size-4" />
-                    <div className="text-sm">
+                  <div className="p-1.5 rounded bg-muted/10">
+                    <Eye className="mx-auto text-muted-foreground size-3.5" />
+                    <div className="text-xs font-bold font-mono tabular-nums mt-1">
                       {engagementStats[profile.platform]?.avgViews?.toLocaleString() || 0}
                     </div>
-                    <div className="text-xs text-muted-foreground">{t('competitors.avgViews')}</div>
+                    <div className="text-[10px] text-muted-foreground">{t('competitors.avgViews')}</div>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            );
+          })}
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('competitors.engagementComparison')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-4">
-            {Object.entries(engagementStats).map(([platform, stats]) => (
-              <div className="text-center" key={platform}>
-                {platformIcons[platform]}
-                <div className="text-2xl font-bold mt-2">
-                  {stats.avgEngagementRate}%
-                </div>
-                <div className="text-muted-foreground">{t('competitors.avgEngagement')}</div>
-              </div>
-            ))}
+        {/* Sentiment Analysis Panel */}
+        <div className="bg-card border border-border/70 rounded-xl p-5 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-border/60">
+            <Share2 size={16} className="text-primary" />
+            <h2 className="text-sm font-bold tracking-tight text-foreground">
+              {t('competitors.sentiment.title')}
+            </h2>
           </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('competitors.sentiment.title')}</CardTitle>
-        </CardHeader>
-        <CardContent>
           {Object.keys(sentimentData).length === 0 ? (
-            <div className="text-center text-muted-foreground py-4">
+            <div className="text-center text-muted-foreground py-6 text-xs font-mono">
               {t('competitors.sentiment.noData')}
             </div>
           ) : (
@@ -288,133 +311,89 @@ export default function SocialOverview() {
                 const neuPct = totalCount ? ((latest.neutralCount || 0) / totalCount) * 100 : 0;
 
                 return (
-                  <div key={platform} className="p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-2 mb-3">
-                      {platformIcons[platform]}
-                      <span className="capitalize font-medium">{platform}</span>
-                    </div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm text-muted-foreground">{t('competitors.score')}:</span>
-                      <span className="font-bold text-lg">{latest.score?.toFixed(2) || '—'}</span>
+                  <div key={platform} className="p-3.5 rounded-lg bg-muted/15 border border-border/50 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {platformIcons[platform]}
+                        <span className="capitalize text-xs font-bold text-foreground">{platform}</span>
+                      </div>
                       {getSentimentTag(latest.sentiment)}
                     </div>
-                    <div className="flex h-6 rounded overflow-hidden">
-                      <div
-                        className="bg-green-500 transition-all"
-                        style={{ width: `${posPct}%` }}
-                        title={`${t('competitors.positive')}: ${latest.positiveCount || 0}`}
-                      />
-                      <div
-                        className="bg-gray-400 transition-all"
-                        style={{ width: `${neuPct}%` }}
-                        title={`${t('competitors.neutral')}: ${latest.neutralCount || 0}`}
-                      />
-                      <div
-                        className="bg-red-500 transition-all"
-                        style={{ width: `${negPct}%` }}
-                        title={`${t('competitors.negative')}: ${latest.negativeCount || 0}`}
-                      />
+
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="text-muted-foreground">{t('competitors.score')}:</span>
+                      <span className="font-bold text-foreground">{latest.score?.toFixed(2) || '—'}</span>
                     </div>
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>{latest.positiveCount || 0} {t('competitors.positive')}</span>
-                      <span>{latest.neutralCount || 0} {t('competitors.neutral')}</span>
-                      <span>{latest.negativeCount || 0} {t('competitors.negative')}</span>
+
+                    <div className="flex h-2.5 rounded-full overflow-hidden bg-muted/40">
+                      <div className="bg-emerald-500 transition-all" style={{ width: `${posPct}%` }} />
+                      <div className="bg-slate-400 transition-all" style={{ width: `${neuPct}%` }} />
+                      <div className="bg-rose-500 transition-all" style={{ width: `${negPct}%` }} />
+                    </div>
+
+                    <div className="flex justify-between text-[10px] font-mono text-muted-foreground pt-1">
+                      <span className="text-emerald-500">{latest.positiveCount || 0} pos</span>
+                      <span className="text-muted-foreground">{latest.neutralCount || 0} neu</span>
+                      <span className="text-rose-500">{latest.negativeCount || 0} neg</span>
                     </div>
                   </div>
                 );
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('competitors.metrics.followersGrowth')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {Object.keys(metricsTimeline).length === 0 ? (
-            <div className="text-center text-muted-foreground py-4">
-              {t('competitors.metrics.noData')}
+        {/* Follower Growth & Velocity */}
+        {Object.keys(metricsTimeline).length > 0 && (
+          <div className="bg-card border border-border/70 rounded-xl p-5 shadow-xs space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-border/60">
+              <TrendingUp size={16} className="text-primary" />
+              <h2 className="text-sm font-bold tracking-tight text-foreground">
+                {t('competitors.metrics.followersGrowth')}
+              </h2>
             </div>
-          ) : (
-            <div className="space-y-6">
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {Object.entries(metricsTimeline).map(([platform, dataPoints]) => {
-                const color = platformColors[platform] || '#888';
-                const recent = dataPoints.slice(-30);
-                const fMax = Math.max(...recent.map((d) => d.followersCount || 0), 1);
-                const eMax = Math.max(...recent.map((d) => d.engagementRate || 0), 0.1);
+                const recent = dataPoints.slice(-10);
+                const fMax = Math.max(...recent.map((d: any) => d.followersCount || 0), 1);
 
                 return (
-                  <div key={platform}>
-                    <div className="flex items-center gap-2 mb-2">
+                  <div key={platform} className="p-3.5 rounded-lg bg-muted/15 border border-border/50 space-y-2">
+                    <div className="flex items-center gap-2 pb-2 border-b border-border/40">
                       {platformIcons[platform]}
-                      <span className="font-medium capitalize">{platform}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {t('competitors.metrics.followersGrowth')} — {t('competitors.metrics.engagementTrend')}
-                      </span>
+                      <span className="text-xs font-bold capitalize text-foreground">{platform}</span>
                     </div>
 
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-2">
-                      <div className="text-xs text-muted-foreground mb-1">
-                        {t('competitors.metrics.followersGrowth')}
-                      </div>
-                      <div className="space-y-0.5">
-                        {recent.map((dp, i) => {
-                          const pct = fMax ? ((dp.followersCount || 0) / fMax) * 100 : 0;
-                          return (
-                            <div key={dp.metricDate || i} className="flex items-center gap-1">
-                              <span className="text-[10px] text-muted-foreground w-16 truncate">
-                                {dp.metricDate ? dp.metricDate.slice(5) : ''}
-                              </span>
-                              <div className="flex-1 h-2.5 bg-gray-100 dark:bg-gray-800 rounded">
-                                <div
-                                  className="h-full rounded transition-all"
-                                  style={{ width: `${pct}%`, backgroundColor: color }}
-                                />
-                              </div>
-                              <span className="text-[10px] text-muted-foreground w-14 text-end">
-                                {(dp.followersCount || 0).toLocaleString()}
-                              </span>
+                    <div className="space-y-1">
+                      {recent.map((dp: any, i: number) => {
+                        const pct = fMax ? ((dp.followersCount || 0) / fMax) * 100 : 0;
+                        return (
+                          <div key={dp.metricDate || i} className="flex items-center gap-2 text-[10px] font-mono">
+                            <span className="text-muted-foreground w-12 truncate">
+                              {dp.metricDate ? dp.metricDate.slice(5) : ''}
+                            </span>
+                            <div className="flex-1 h-2 bg-muted/40 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary rounded-full transition-all"
+                                style={{ width: `${pct}%` }}
+                              />
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                      <div className="text-xs text-muted-foreground mb-1">
-                        {t('competitors.metrics.engagementTrend')}
-                      </div>
-                      <div className="flex items-end h-16 gap-px">
-                        {recent.slice(-30).map((dp, i) => {
-                          const pct = eMax ? ((dp.engagementRate || 0) / eMax) * 100 : 0;
-                          return (
-                            <div
-                              key={dp.metricDate || i}
-                              className="flex-1 rounded-t transition-all"
-                              style={{
-                                height: `${pct}%`,
-                                backgroundColor: color,
-                                minHeight: dp.engagementRate ? '2px' : '0',
-                                opacity: 0.8,
-                              }}
-                            />
-                          );
-                        })}
-                      </div>
-                      <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
-                        <span>{recent.length > 0 ? recent[0].metricDate?.slice(5) : ''}</span>
-                        <span>{recent.length > 0 ? recent[recent.length - 1].metricDate?.slice(5) : ''}</span>
-                      </div>
+                            <span className="text-foreground w-12 text-end tabular-nums font-semibold">
+                              {(dp.followersCount || 0).toLocaleString()}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
               })}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }
