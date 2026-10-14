@@ -2131,6 +2131,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
           employeeName: true,
           method: true,
           result: true,
+          note: true,
           createdAt: true
         }
       }),
@@ -2457,9 +2458,11 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       }
     });
 
-    // 3. احتساب معدل التحويل لكل يوم
+    // 3. احتساب معدل التحويل وغير المكتمل لكل يوم
     cohortMap.forEach((entry) => {
       entry.conversionRate = entry.entered > 0 ? (entry.converted / entry.entered) * 100 : 0;
+      entry.uncompleted = entry.cancelled + entry.lost + entry.active;
+      entry.uncompletedValue = entry.cancelledValue + entry.lostValue + entry.activeValue;
     });
 
     // ضمان وجود تاريخ اليوم إذا كان ضمن النطاق
@@ -2472,7 +2475,28 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       .filter((e) => e.date !== 'unknown')
       .sort((a, b) => (a.date < b.date ? 1 : -1));
 
-    // 4. ملخص إجمالي شامل للفترة المحددة (كروت الحصاد الخمسة)
+    // تجميع أسباب الإلغاء والاستبعاد المسجلة من الفريق
+    const reasonsMap = new Map();
+    const countReason = (rawReason) => {
+      const trimmed = (rawReason || '').toString().trim();
+      if (!trimmed) return;
+      const r = trimmed.length > 80 ? trimmed.slice(0, 80) + '...' : trimmed;
+      reasonsMap.set(r, (reasonsMap.get(r) || 0) + 1);
+    };
+
+    contactWindow.forEach((ct) => {
+      const meth = (ct.method || '').toString().toLowerCase();
+      const res = (ct.result || '').toString().toLowerCase();
+      if (meth === 'dismissed' || res === 'cancelled') {
+        countReason(ct.note || ct.result);
+      }
+    });
+
+    const dismissalReasons = Array.from(reasonsMap.entries())
+      .map(([reason, count]) => ({ reason, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // 4. ملخص إجمالي شامل للفترة المحددة (تركيز على الفاقد وغير المكتمل)
     const summary = {
       entered: cohorts.reduce((s, c) => s + c.entered, 0),
       enteredValue: cohorts.reduce((s, c) => s + c.enteredValue, 0),
@@ -2488,6 +2512,8 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       lostValue: cohorts.reduce((s, c) => s + c.lostValue, 0),
       active: cohorts.reduce((s, c) => s + c.active, 0),
       activeValue: cohorts.reduce((s, c) => s + c.activeValue, 0),
+      uncompleted: cohorts.reduce((s, c) => s + (c.uncompleted || 0), 0),
+      uncompletedValue: cohorts.reduce((s, c) => s + (c.uncompletedValue || 0), 0),
       conversionRate: 0,
       lostAfterHours,
     };
@@ -2568,6 +2594,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
         to: toDate ? toDate.toISOString() : null,
         summary,
         cohorts,
+        dismissalReasons,
         pipeline: {
           total,
           windowTotal: total,

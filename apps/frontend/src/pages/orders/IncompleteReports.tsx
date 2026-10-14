@@ -7,10 +7,10 @@ import {
   ArrowRightIcon,
   ArrowPathIcon,
   ShoppingCartIcon,
-  CheckCircleIcon,
   ExclamationTriangleIcon,
   ClockIcon,
   XCircleIcon,
+  ShieldExclamationIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
@@ -31,6 +31,8 @@ export interface CohortDay {
   lostValue: number;
   active: number;
   activeValue: number;
+  uncompleted?: number;
+  uncompletedValue?: number;
   conversionRate: number;
 }
 
@@ -49,14 +51,22 @@ export interface SummaryData {
   lostValue: number;
   active: number;
   activeValue: number;
+  uncompleted?: number;
+  uncompletedValue?: number;
   conversionRate: number;
   lostAfterHours?: number;
+}
+
+export interface DismissalReason {
+  reason: string;
+  count: number;
 }
 
 interface ReportData {
   periodDays: number | null;
   summary?: SummaryData;
   cohorts?: CohortDay[];
+  dismissalReasons?: DismissalReason[];
   pipeline: {
     total: number;
     windowTotal?: number;
@@ -162,7 +172,7 @@ const IncompleteReports: React.FC = () => {
   const { formatPrice } = useCurrency();
   const isRTL = getDirection() === "rtl";
 
-  // الوضع الافتراضي لتقرير السلات هو "اليوم" كما طلب التاجر بدقة
+  // الوضع الافتراضي لتقرير السلات هو "اليوم"
   const [period, setPeriod] = useState("today");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -236,7 +246,7 @@ const IncompleteReports: React.FC = () => {
 
   const BackIcon = isRTL ? ArrowRightIcon : ArrowLeftIcon;
 
-  // حل بيانات الملخص الموحدة لكروت الحصاد الخمسة
+  // حل بيانات الملخص الموحدة لكروت الفاقد والمعلق
   const summary: SummaryData = data?.summary ?? {
     entered: (data?.pipeline?.total || 0) + (data?.recovery?.converted || 0),
     enteredValue: (data?.pipeline?.totalValue || 0) + (data?.recovery?.convertedValue || 0),
@@ -252,11 +262,20 @@ const IncompleteReports: React.FC = () => {
     lostValue: data?.pipeline?.lostValue || 0,
     active: data?.pipeline?.active || 0,
     activeValue: data?.pipeline?.activeValue || 0,
+    uncompleted: data?.pipeline?.total || 0,
+    uncompletedValue: data?.pipeline?.totalValue || 0,
     conversionRate: data?.recovery?.recoveryRate || 0,
     lostAfterHours: 24,
   };
 
+  // إجمالي السلات التي لم تتحول لأوردر (الملغاة + المفقودة + النشطة)
+  const totalUncompletedCount =
+    summary.uncompleted ?? summary.cancelled + summary.lost + summary.active;
+  const totalUncompletedValue =
+    summary.uncompletedValue ?? summary.cancelledValue + summary.lostValue + summary.activeValue;
+
   const cohorts = data?.cohorts ?? [];
+  const dismissalReasons = data?.dismissalReasons ?? [];
 
   const sourceMeta: Record<string, { label: string; color: string }> = {
     facebook: { label: t("orders.sourceFacebook", "فيسبوك (Facebook)"), color: "bg-blue-600" },
@@ -285,13 +304,10 @@ const IncompleteReports: React.FC = () => {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {t("orders.incompleteReports", "تقارير الطلبات غير المكتملة")}
+            {t("orders.incompleteReports", "تقارير السلات غير المكتملة")}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-            {t(
-              "orders.incompleteSubtitle",
-              "تتبع حركة السلات اليومية، السلات المحولة، الملغاة بالتأكيد، والمفقودة بالتقادم",
-            )}
+            رصد السلات المتروكة التي لم تتحول لطلبات: الملغاة بالتأكيد، المفقودة بالتقادم، والفرص المعلقة في الطابور
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -403,78 +419,53 @@ const IncompleteReports: React.FC = () => {
             </div>
           )}
 
-          {/* 🌟 كروت الحصاد الخمسة: ملخص حركة السلات في الفترة المحددة */}
+          {/* 🎯 كروت الفاقد والمعلق: تركيز 100% على السلات التي لم تتحول لأوردر */}
           <section>
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
                 {period === "today"
-                  ? "حصاد اليوم (حركة السلات اليومية)"
+                  ? "كشف السلات غير المكتملة لليوم (الفاقد والمعلق)"
                   : period === "yesterday"
-                    ? "حصاد أمس (حركة السلات)"
-                    : `حصاد الفترة (${period === "custom" ? "مخصص" : `آخر ${period} يوم`})`}
+                    ? "كشف السلات غير المكتملة لأمس"
+                    : `كشف السلات غير المكتملة (${period === "custom" ? "فترة مخصصة" : `آخر ${period} يوم`})`}
               </h2>
               <span className="text-xs text-gray-500 dark:text-gray-400">
-                المعادلة: الداخل ({summary.entered}) = المحول ({summary.converted}) + المستبعد ({summary.cancelled}) +
-                المفقود ({summary.lost}) + النشط ({summary.active})
+                إجمالي غير المكتمل ({totalUncompletedCount}) = ألغاها الفريق ({summary.cancelled}) + مفقودة بالتقادم (
+                {summary.lost}) + معلقة في الطابور ({summary.active})
               </span>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3.5">
-              {/* 1. السلات الداخلة */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* 1. إجمالي غير المكتمل (الفاقد والمعلق) */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">السلات الداخلة</span>
-                    <div className="p-1.5 rounded-lg text-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-900/30">
+                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                      إجمالي غير المكتمل (المهدر والمعلق)
+                    </span>
+                    <div className="p-1.5 rounded-lg text-gray-700 bg-gray-100 dark:text-gray-300 dark:bg-gray-700">
                       <ShoppingCartIcon className="h-4 w-4" />
                     </div>
                   </div>
                   <div className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
-                    {summary.entered.toLocaleString()}
+                    {totalUncompletedCount.toLocaleString()}
                   </div>
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5 tabular-nums">
-                    {formatPrice(summary.enteredValue)}
-                  </div>
-                </div>
-                <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-3 pt-2 border-t border-gray-50 dark:border-gray-700/60">
-                  بدأت الشراء في هذه الفترة
-                </div>
-              </div>
-
-              {/* 2. تم تحويلها بنجاح */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-emerald-100 dark:border-emerald-800/40 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                      تم تحويلها بنجاح
-                    </span>
-                    <div className="p-1.5 rounded-lg text-emerald-600 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-900/30">
-                      <CheckCircleIcon className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
-                      {summary.converted.toLocaleString()}
-                    </div>
-                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded border border-emerald-200/60 dark:border-emerald-800/40 tabular-nums">
-                      {summary.conversionRate.toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 tabular-nums">
-                    {formatPrice(summary.convertedValue)}
+                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-0.5 tabular-nums">
+                    {formatPrice(totalUncompletedValue)}
                   </div>
                 </div>
-                <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 pt-2 border-t border-emerald-50 dark:border-emerald-800/30 flex items-center justify-between gap-1 flex-wrap">
-                  <span>الفريق: {summary.byTeam.toLocaleString()}</span>
-                  {summary.natural > 0 && <span>المتجر: {summary.natural.toLocaleString()}</span>}
+                <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/60">
+                  سلات بدأت الشراء ولم تكتمل كأوردرات
                 </div>
               </div>
 
-              {/* 3. ألغاها الفريق بالتأكيد */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-rose-100 dark:border-rose-800/40 flex flex-col justify-between">
+              {/* 2. ألغاها الفريق بالتأكيد */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-rose-200 dark:border-rose-800/40 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-rose-700 dark:text-rose-300">ألغاها الفريق</span>
+                    <span className="text-xs font-semibold text-rose-700 dark:text-rose-300">
+                      ألغاها الفريق بالتأكيد
+                    </span>
                     <div className="p-1.5 rounded-lg text-rose-600 bg-rose-50 dark:text-rose-300 dark:bg-rose-900/30">
                       <XCircleIcon className="h-4 w-4" />
                     </div>
@@ -482,69 +473,87 @@ const IncompleteReports: React.FC = () => {
                   <div className="text-2xl font-bold text-rose-700 dark:text-rose-400 tabular-nums">
                     {summary.cancelled.toLocaleString()}
                   </div>
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5 tabular-nums">
+                  <div className="text-xs font-semibold text-rose-600 dark:text-rose-400 mt-0.5 tabular-nums">
                     {formatPrice(summary.cancelledValue)}
                   </div>
                 </div>
-                <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-3 pt-2 border-t border-rose-50 dark:border-rose-800/30">
-                  تم التأكيد مع العميل بالإلغاء
+                <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 pt-2 border-t border-rose-50 dark:border-rose-800/30">
+                  تم التواصل مع العميل وتأكيد الإلغاء
                 </div>
               </div>
 
-              {/* 4. مفقودة بالتقادم */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between">
+              {/* 3. مفقودة بالتقادم */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-amber-200 dark:border-amber-800/40 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">مفقودة بالتقادم</span>
-                    <div className="p-1.5 rounded-lg text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-700/60">
+                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">
+                      مفقودة بالتقادم
+                    </span>
+                    <div className="p-1.5 rounded-lg text-amber-600 bg-amber-50 dark:text-amber-300 dark:bg-amber-900/30">
                       <ExclamationTriangleIcon className="h-4 w-4" />
                     </div>
                   </div>
-                  <div className="text-2xl font-bold text-gray-700 dark:text-gray-300 tabular-nums">
+                  <div className="text-2xl font-bold text-amber-700 dark:text-amber-400 tabular-nums">
                     {summary.lost.toLocaleString()}
                   </div>
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5 tabular-nums">
+                  <div className="text-xs font-semibold text-amber-600 dark:text-amber-400 mt-0.5 tabular-nums">
                     {formatPrice(summary.lostValue)}
                   </div>
                 </div>
-                <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-3 pt-2 border-t border-gray-50 dark:border-gray-700/60">
-                  مرت عليها مهلة الصلاحية
+                <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 pt-2 border-t border-amber-50 dark:border-amber-800/30">
+                  انتهت مهلة الصلاحية ({summary.lostAfterHours || 24} ساعة) دون استرداد
                 </div>
               </div>
 
-              {/* 5. فرص قائمة لا تزال نشطة */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-amber-100 dark:border-amber-800/40 flex flex-col justify-between col-span-2 md:col-span-1">
+              {/* 4. معلقة في الطابور حالياً */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-blue-200 dark:border-blue-800/40 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">لا تزال نشطة</span>
-                    <div className="p-1.5 rounded-lg text-amber-600 bg-amber-50 dark:text-amber-300 dark:bg-amber-900/30">
+                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                      معلقة في الطابور (فرص قائمة)
+                    </span>
+                    <div className="p-1.5 rounded-lg text-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-900/30">
                       <ClockIcon className="h-4 w-4" />
                     </div>
                   </div>
-                  <div className="text-2xl font-bold text-amber-700 dark:text-amber-400 tabular-nums">
+                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-400 tabular-nums">
                     {summary.active.toLocaleString()}
                   </div>
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5 tabular-nums">
+                  <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-0.5 tabular-nums">
                     {formatPrice(summary.activeValue)}
                   </div>
                 </div>
-                <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-3 pt-2 border-t border-amber-50 dark:border-amber-800/30">
-                  في طابور العمل لم تنتهِ صلاحيتها
+                <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 pt-2 border-t border-blue-50 dark:border-blue-800/30">
+                  في طابور العمل لم تنتهِ ومتاحة للإنقاذ الآن
                 </div>
               </div>
             </div>
+
+            {/* سطر مرجعي شفاف لتوضيح أن ما تحول خرج للطلبات */}
+            <div className="flex items-center justify-between gap-3 mt-3 text-xs text-gray-500 dark:text-gray-400 bg-gray-50/70 dark:bg-gray-800/40 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700/60 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-blue-500" />
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  التقرير يركز حصرياً على السلات التي لم تتحول لأوردرات (الملغاة + المفقودة + المعلقة)
+                </span>
+              </div>
+              {summary.converted > 0 && (
+                <span className="text-[11px] text-gray-400">
+                  * السلات التي تحولت بنجاح ({summary.converted.toLocaleString()} طلب بقيمة {formatPrice(summary.convertedValue)}) خرجت من هذا القسم وأصبحت أوردرات فعلية في إدارة الطلبات
+                </span>
+              )}
+            </div>
           </section>
 
-          {/* 📅 جدول كشف حركة وتدفق السلات اليومي (Daily Cohort Lifecycle Flow Table) */}
+          {/* 📅 جدول كشف حركة السلات غير المكتملة والفاقد اليومي (Daily Uncompleted Flow Table) */}
           <section className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <div>
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-                  جدول تتبع حركة السلات اليومي (Daily Cohort Flow)
+                  جدول كشف السلات غير المكتملة والفاقد اليومي (Daily Uncompleted Flow)
                 </h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  تفصيل السلات التي دخلت كل يوم ومصيرها: كم تحول لطلب حقيقي، كم ألغاه الفريق، كم فُقد بالتقادم، وكم لا
-                  يزال نشطاً
+                  تتبع يومي للسلات التي لم تكتمل ومصيرها: كم ألغاه الفريق بعد التواصل، كم فُقد بمرور الوقت، وكم لا يزال معلقاً في الطابور
                 </p>
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-600">
@@ -554,40 +563,42 @@ const IncompleteReports: React.FC = () => {
 
             {cohorts.length > 0 ? (
               <div className="overflow-x-auto rounded-lg border border-gray-100 dark:border-gray-700/60">
-                <table className="w-full text-start min-w-[880px] divide-y divide-gray-100 dark:divide-gray-700/60">
+                <table className="w-full text-start min-w-[800px] divide-y divide-gray-100 dark:divide-gray-700/60">
                   <thead className="bg-gray-50/70 dark:bg-gray-700/30">
                     <tr>
                       <th className="px-4 py-3 text-start text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         اليوم / التاريخ
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                        السلات الداخلة
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                        تم تحويلها لطلب
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                        إجمالي غير المكتمل
                       </th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
                         ألغاها الفريق بالتأكيد
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
                         مفقودة بالتقادم
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-                        لا تزال نشطة
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                        معلقة في الطابور (فرص)
                       </th>
                       <th className="px-4 py-3 text-end text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                        معدل التحويل
+                        حالة الحسم
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50 dark:divide-gray-700/40 bg-white dark:bg-gray-800">
                     {cohorts.map((row) => {
                       const dayLabel = formatCohortDayLabel(row.date, isRTL);
+                      const rowUncompleted = row.uncompleted ?? (row.cancelled + row.lost + row.active);
+                      const rowUncompletedValue = row.uncompletedValue ?? (row.cancelledValue + row.lostValue + row.activeValue);
+                      const resolvedCount = row.cancelled + row.lost;
+                      const resolvedRate = rowUncompleted > 0 ? (resolvedCount / rowUncompleted) * 100 : 0;
+
                       return (
                         <tr
                           key={row.date}
                           className={`hover:bg-gray-50/60 dark:hover:bg-gray-700/20 transition-colors ${
-                            dayLabel.isToday ? "bg-blue-50/30 dark:bg-blue-900/10 font-medium" : ""
+                            dayLabel.isToday ? "bg-blue-50/20 dark:bg-blue-900/10 font-medium" : ""
                           }`}
                         >
                           {/* اليوم والتاريخ */}
@@ -612,30 +623,14 @@ const IncompleteReports: React.FC = () => {
                             </div>
                           </td>
 
-                          {/* السلات الداخلة */}
+                          {/* إجمالي غير المكتمل */}
                           <td className="px-4 py-3 text-center">
                             <div className="text-sm font-bold text-gray-900 dark:text-white tabular-nums">
-                              {row.entered.toLocaleString()}
+                              {rowUncompleted.toLocaleString()}
                             </div>
                             <div className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
-                              {formatPrice(row.enteredValue)}
+                              {formatPrice(rowUncompletedValue)}
                             </div>
-                          </td>
-
-                          {/* تم تحويلها */}
-                          <td className="px-4 py-3 text-center">
-                            <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                              {row.converted.toLocaleString()}
-                            </div>
-                            <div className="text-xs text-emerald-500/80 dark:text-emerald-400/80 tabular-nums">
-                              {formatPrice(row.convertedValue)}
-                            </div>
-                            {(row.byTeamConverted > 0 || row.naturalConverted > 0) && (
-                              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
-                                {row.byTeamConverted > 0 && <span>فريق: {row.byTeamConverted} </span>}
-                                {row.naturalConverted > 0 && <span>متجر: {row.naturalConverted}</span>}
-                              </div>
-                            )}
                           </td>
 
                           {/* ألغاها الفريق بالتأكيد */}
@@ -652,7 +647,7 @@ const IncompleteReports: React.FC = () => {
 
                           {/* مفقودة بالتقادم */}
                           <td className="px-4 py-3 text-center">
-                            <div className="text-sm font-semibold text-gray-600 dark:text-gray-300 tabular-nums">
+                            <div className="text-sm font-semibold text-amber-700 dark:text-amber-400 tabular-nums">
                               {row.lost.toLocaleString()}
                             </div>
                             {row.lostValue > 0 && (
@@ -662,9 +657,9 @@ const IncompleteReports: React.FC = () => {
                             )}
                           </td>
 
-                          {/* لا تزال نشطة */}
+                          {/* معلقة في الطابور */}
                           <td className="px-4 py-3 text-center">
-                            <div className="text-sm font-semibold text-amber-600 dark:text-amber-400 tabular-nums">
+                            <div className="text-sm font-semibold text-blue-600 dark:text-blue-400 tabular-nums">
                               {row.active.toLocaleString()}
                             </div>
                             {row.activeValue > 0 && (
@@ -674,16 +669,23 @@ const IncompleteReports: React.FC = () => {
                             )}
                           </td>
 
-                          {/* معدل التحويل مع ميني بار */}
+                          {/* حالة الحسم */}
                           <td className="px-4 py-3 text-end">
                             <div className="inline-flex flex-col items-end gap-1">
-                              <span className="text-xs font-bold text-gray-900 dark:text-white tabular-nums">
-                                {row.conversionRate.toFixed(1)}%
+                              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 tabular-nums">
+                                {row.active > 0 ? (
+                                  <span className="text-blue-600 dark:text-blue-400 font-bold">
+                                    {row.active} معلقة
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">حُسمت بالكامل</span>
+                                )}
                               </span>
                               <div className="w-16 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
                                 <div
-                                  className="bg-emerald-600 dark:bg-emerald-500 h-1.5 rounded-full transition-all"
-                                  style={{ width: `${Math.min(100, Math.max(0, row.conversionRate))}%` }}
+                                  className="bg-gray-500 dark:bg-gray-400 h-1.5 rounded-full transition-all"
+                                  style={{ width: `${Math.min(100, Math.max(0, resolvedRate))}%` }}
+                                  title={`تم حسم ${resolvedRate.toFixed(0)}% من السلات غير المكتملة`}
                                 />
                               </div>
                             </div>
@@ -700,15 +702,9 @@ const IncompleteReports: React.FC = () => {
                         إجمالي الفترة المحددة
                       </td>
                       <td className="px-4 py-3 text-center text-gray-900 dark:text-white tabular-nums">
-                        <div className="font-bold">{summary.entered.toLocaleString()}</div>
+                        <div className="font-bold">{totalUncompletedCount.toLocaleString()}</div>
                         <div className="text-gray-500 dark:text-gray-400 text-[11px]">
-                          {formatPrice(summary.enteredValue)}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-center text-emerald-700 dark:text-emerald-300 tabular-nums">
-                        <div className="font-bold">{summary.converted.toLocaleString()}</div>
-                        <div className="text-emerald-600/80 dark:text-emerald-400/80 text-[11px]">
-                          {formatPrice(summary.convertedValue)}
+                          {formatPrice(totalUncompletedValue)}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center text-rose-600 dark:text-rose-400 tabular-nums font-bold">
@@ -717,20 +713,20 @@ const IncompleteReports: React.FC = () => {
                           <div className="text-gray-400 text-[11px]">{formatPrice(summary.cancelledValue)}</div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400 tabular-nums font-bold">
+                      <td className="px-4 py-3 text-center text-amber-700 dark:text-amber-400 tabular-nums font-bold">
                         <div>{summary.lost.toLocaleString()}</div>
                         {summary.lostValue > 0 && (
                           <div className="text-gray-400 text-[11px]">{formatPrice(summary.lostValue)}</div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-center text-amber-600 dark:text-amber-400 tabular-nums font-bold">
+                      <td className="px-4 py-3 text-center text-blue-600 dark:text-blue-400 tabular-nums font-bold">
                         <div>{summary.active.toLocaleString()}</div>
                         {summary.activeValue > 0 && (
                           <div className="text-gray-400 text-[11px]">{formatPrice(summary.activeValue)}</div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-end text-emerald-600 dark:text-emerald-400 tabular-nums font-bold text-sm">
-                        {summary.conversionRate.toFixed(1)}%
+                      <td className="px-4 py-3 text-end text-gray-700 dark:text-gray-300 tabular-nums font-bold text-xs">
+                        {summary.active > 0 ? `${summary.active} فرصة معلقة` : "لا توجد سلات معلقة"}
                       </td>
                     </tr>
                   </tfoot>
@@ -743,15 +739,47 @@ const IncompleteReports: React.FC = () => {
             )}
           </section>
 
-          {/* 👥 جدول أداء فريق استرداد السلات (الموظفون وإنجازاتهم) */}
+          {/* 🔍 أسباب الإلغاء والاستبعاد المسجلة من الفريق */}
+          {dismissalReasons.length > 0 && (
+            <section className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-3">
+                <ShieldExclamationIcon className="h-5 w-5 text-rose-500" />
+                <div>
+                  <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+                    أسباب الإلغاء والاستبعاد الموثقة
+                  </h2>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    الأسباب التي سجلها الفريق عند التواصل مع العملاء وتأكيد إلغاء السلة
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {dismissalReasons.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-gray-50/70 dark:bg-gray-700/30 border border-gray-100 dark:border-gray-700/50"
+                  >
+                    <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
+                      {item.reason}
+                    </span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/40 tabular-nums shrink-0">
+                      {item.count.toLocaleString()} سلة
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* 👥 جدول تعامل الموظفين مع السلات غير المكتملة */}
           <section className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <div>
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {t("orders.incompleteTeamPerformance", "أداء فريق استرداد السلات")}
+                  تعامل الفريق مع السلات المتروكة
                 </h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  تفصيل إنجاز كل موظف: السلات المتداولة، التحويلات الناجحة، السلات المستبعدة، والقيمة المالية المستردة
+                  تفصيل إنجاز كل موظف: السلات المتداولة، السلات المستبعدة بعد التأكيد، ومحاولات التواصل
                 </p>
               </div>
               {data.team.length > 0 && (
@@ -764,29 +792,23 @@ const IncompleteReports: React.FC = () => {
 
             {data.team.length ? (
               <div className="overflow-x-auto rounded-lg border border-gray-100 dark:border-gray-700/60">
-                <table className="w-full text-start min-w-[760px] divide-y divide-gray-100 dark:divide-gray-700/60">
+                <table className="w-full text-start min-w-[700px] divide-y divide-gray-100 dark:divide-gray-700/60">
                   <thead className="bg-gray-50/70 dark:bg-gray-700/30">
                     <tr>
                       <th className="px-4 py-3 text-start text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         {t("orders.incompleteTeamEmployee", "الموظف")}
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {t("orders.incompleteTeamConversions", "التحويلات الناجحة")}
-                      </th>
-                      <th className="px-4 py-3 text-end text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {t("orders.incompleteTeamValue", "القيمة المستردة")}
-                      </th>
-                      <th className="px-4 py-3 text-end text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {t("orders.incompleteTeamAvg", "متوسط الطلب")}
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+                        سلات ألغاها بالتأكيد
                       </th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {t("orders.incompleteTeamDismissed", "سلات مستبعدة")}
+                        محاولات التواصل
                       </th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {t("orders.incompleteTeamHandledTotal", "إجمالي التعامل")}
+                        إجمالي التعامل
                       </th>
                       <th className="px-4 py-3 text-end text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {t("orders.incompleteTeamConversionRate", "معدل التحويل")}
+                        معدل الاستجابة
                       </th>
                     </tr>
                   </thead>
@@ -803,9 +825,6 @@ const IncompleteReports: React.FC = () => {
                           .join("")
                           .toUpperCase() || "U";
                       const handled = Number(member.handledTotal ?? member.conversions + (member.dismissed || 0));
-                      const convRate = Number(
-                        member.conversionRate ?? (handled > 0 ? (member.conversions / handled) * 100 : 0),
-                      );
 
                       return (
                         <tr
@@ -842,41 +861,21 @@ const IncompleteReports: React.FC = () => {
                           </td>
 
                           <td className="px-4 py-3 text-center">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/50 tabular-nums">
-                              {member.conversions.toLocaleString()}
-                            </span>
-                          </td>
-
-                          <td className="px-4 py-3 text-end font-bold text-sm text-emerald-600 dark:text-emerald-400 tabular-nums">
-                            {formatPrice(member.value)}
-                          </td>
-
-                          <td className="px-4 py-3 text-end text-sm text-gray-700 dark:text-gray-300 tabular-nums">
-                            {formatPrice(member.avgValue)}
-                          </td>
-
-                          <td className="px-4 py-3 text-center">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700/60 dark:text-gray-300 tabular-nums">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/40 tabular-nums">
                               {Number(member.dismissed || 0).toLocaleString()}
                             </span>
+                          </td>
+
+                          <td className="px-4 py-3 text-center text-sm text-gray-700 dark:text-gray-300 tabular-nums">
+                            {member.contacts.toLocaleString()}
                           </td>
 
                           <td className="px-4 py-3 text-center text-sm font-medium text-gray-900 dark:text-white tabular-nums">
                             {handled.toLocaleString()}
                           </td>
 
-                          <td className="px-4 py-3 text-end">
-                            <div className="inline-flex flex-col items-end gap-1">
-                              <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 tabular-nums">
-                                {convRate.toFixed(1)}%
-                              </span>
-                              <div className="w-16 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
-                                <div
-                                  className="bg-blue-600 dark:bg-blue-500 h-1.5 rounded-full transition-all"
-                                  style={{ width: `${Math.min(100, Math.max(0, convRate))}%` }}
-                                />
-                              </div>
-                            </div>
+                          <td className="px-4 py-3 text-end text-sm text-gray-700 dark:text-gray-300 tabular-nums">
+                            {member.responseRate.toFixed(1)}%
                           </td>
                         </tr>
                       );
@@ -886,37 +885,24 @@ const IncompleteReports: React.FC = () => {
                     <tfoot className="bg-gray-50/80 dark:bg-gray-700/40 font-semibold border-t-2 border-gray-200 dark:border-gray-700 text-xs">
                       <tr>
                         <td className="px-4 py-3 text-start text-gray-900 dark:text-white font-bold">
-                          {t("orders.incompleteTeamTotal", "إجمالي أداء الفريق")}
+                          إجمالي تعامل الفريق
                         </td>
-                        <td className="px-4 py-3 text-center text-emerald-700 dark:text-emerald-300 tabular-nums font-bold">
-                          {data.team.reduce((s, m) => s + m.conversions, 0).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-3 text-end text-emerald-600 dark:text-emerald-400 tabular-nums font-bold">
-                          {formatPrice(data.team.reduce((s, m) => s + m.value, 0))}
-                        </td>
-                        <td className="px-4 py-3 text-end text-gray-700 dark:text-gray-300 tabular-nums font-bold">
-                          {(() => {
-                            const totalConv = data.team.reduce((s, m) => s + m.conversions, 0);
-                            const totalVal = data.team.reduce((s, m) => s + m.value, 0);
-                            return formatPrice(totalConv > 0 ? totalVal / totalConv : 0);
-                          })()}
-                        </td>
-                        <td className="px-4 py-3 text-center text-gray-600 dark:text-gray-400 tabular-nums font-bold">
+                        <td className="px-4 py-3 text-center text-rose-700 dark:text-rose-300 tabular-nums font-bold">
                           {data.team.reduce((s, m) => s + Number(m.dismissed || 0), 0).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700 dark:text-gray-300 tabular-nums font-bold">
+                          {data.team.reduce((s, m) => s + m.contacts, 0).toLocaleString()}
                         </td>
                         <td className="px-4 py-3 text-center text-gray-900 dark:text-white tabular-nums font-bold">
                           {data.team
                             .reduce((s, m) => s + Number(m.handledTotal ?? m.conversions + (m.dismissed || 0)), 0)
                             .toLocaleString()}
                         </td>
-                        <td className="px-4 py-3 text-end text-blue-600 dark:text-blue-400 tabular-nums font-bold">
+                        <td className="px-4 py-3 text-end text-gray-700 dark:text-gray-300 tabular-nums font-bold">
                           {(() => {
-                            const totalConv = data.team.reduce((s, m) => s + m.conversions, 0);
-                            const totalHandled = data.team.reduce(
-                              (s, m) => s + Number(m.handledTotal ?? m.conversions + (m.dismissed || 0)),
-                              0,
-                            );
-                            return `${totalHandled > 0 ? ((totalConv / totalHandled) * 100).toFixed(1) : "0.0"}%`;
+                            const totalContacts = data.team.reduce((s, m) => s + m.contacts, 0);
+                            const totalResponses = data.team.reduce((s, m) => s + m.responses, 0);
+                            return `${totalContacts > 0 ? ((totalResponses / totalContacts) * 100).toFixed(1) : "0.0"}%`;
                           })()}
                         </td>
                       </tr>
@@ -926,7 +912,7 @@ const IncompleteReports: React.FC = () => {
               </div>
             ) : (
               <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">
-                {t("orders.incompleteNoConversions", "لا توجد تحويلات مسجلة للفريق في هذه الفترة")}
+                لا توجد تعاملات مسجلة للفريق في هذه الفترة
               </p>
             )}
           </section>
@@ -939,7 +925,7 @@ const IncompleteReports: React.FC = () => {
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
               {t(
                 "orders.incompleteOrderSourcesHint",
-                "القنوات الإعلانية والمنصات التي دخل منها العملاء الذين تركوا سلاتهم",
+                "القنوات الإعلانية والمنصات التي دخل منها العملاء الذين تركوا سلاتهم دون إتمام",
               )}
             </p>
             {data.orderSources.length ? (
