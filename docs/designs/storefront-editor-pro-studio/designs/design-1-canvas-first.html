@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MaxP — تصميم 1: Canvas First (شوبيفاي 2026)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Cairo:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* BODYRESET */
+  body { margin: 0; padding: 0; }
+  /* ============ تصميم 1 — "Canvas First" بروح شوبيفاي 2026 ============ */
+  .d1, .d1 * { box-sizing: border-box; margin: 0; padding: 0; }
+  .d1 {
+    font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+    background: #dcdad6; width: 100%; padding: 18px 0 10px;
+    --blue: #2563eb; --ink: #17181c; --muted: #83878f; --hair: #e7e6e3;
+    --chrome: #131417; --panel: #ffffff; --backdrop: #e9e7e3; --ai: #7c5cff;
+  }
+  .d1 .stagewrap { width: 100%; overflow: hidden; }
+  .d1 .stage {
+    width: 1360px; height: 852px; transform-origin: top right;
+    background: var(--backdrop); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 30px 70px rgba(20,20,25,.28); margin: 0 auto;
+    display: flex; flex-direction: column; direction: rtl;
+  }
+  /* ---------- شريط علوي (التنقل انتقل له بنفس أسلوب شوبيفاي 2026) ---------- */
+  .d1 .topbar { height: 54px; background: var(--chrome); color: #fff; display: flex; align-items: center; gap: 10px; padding: 0 12px; flex: 0 0 auto; }
+  .d1 .brandmark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg,#3b82f6,#1d4ed8); display: flex; align-items: center; justify-content: center; font-family: Cairo; font-weight: 800; font-size: 15px; color: #fff; }
+  .d1 .storechip { display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 6px; border-radius: 10px; background: #1e2025; }
+  .d1 .storechip .av { width: 22px; height: 22px; border-radius: 7px; background: linear-gradient(135deg,#c98a5b,#8a5a34); color: #fff; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+  .d1 .storechip .nm { font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+  .d1 .storechip .tag { font-size: 10px; color: #9aa0a8; border: 1px solid #34373d; padding: 1px 6px; border-radius: 999px; }
+  .d1 .tbtn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; min-width: 32px; padding: 0 8px; border-radius: 9px; color: #c9ccd2; font-size: 12px; border: 0; background: transparent; cursor: default; }
+  .d1 .tbtn.on { background: #23262b; color: #fff; }
+  .d1 .tbtn .ic { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .d1 .sep { width: 1px; height: 22px; background: #2b2e34; margin: 0 4px; }
+  .d1 .tpl { display: flex; align-items: center; gap: 7px; background: #1e2025; height: 32px; padding: 0 12px; border-radius: 9px; font-size: 12.5px; color: #e8eaed; }
+  .d1 .tpl .mini { font-size: 10.5px; color: #8b9099; }
+  .d1 .flex1 { flex: 1; }
+  .d1 .devseg { display: flex; background: #1e2025; border-radius: 10px; padding: 3px; gap: 2px; }
+  .d1 .devseg .dv { height: 28px; padding: 0 10px; display: flex; align-items: center; gap: 6px; border-radius: 8px; color: #9ba0a8; font-size: 12px; }
+  .d1 .devseg .dv.on { background: #2e3238; color: #fff; }
+  .d1 .pct { font-size: 12px; color: #9ba0a8; padding: 0 4px; }
+  .d1 .btn-primary { height: 34px; padding: 0 18px; border-radius: 10px; background: var(--blue); color: #fff; font-size: 13px; font-weight: 600; border: 0; display: inline-flex; align-items: center; gap: 7px; }
+  .d1 .btn-ghost { height: 34px; padding: 0 12px; border-radius: 10px; color: #e8eaed; font-size: 12.5px; border: 1px solid #33363c; background: transparent; display: inline-flex; align-items: center; gap: 6px; }
+  .d1 .saved { font-size: 11.5px; color: #7f8791; display: flex; align-items: center; gap: 5px; }
+  /* ---------- المنطقة الرئيسية ---------- */
+  .d1 .main { flex: 1; display: flex; min-height: 0; }
+  /* لوحة الإعدادات (مرآة RTL لشريط شوبيفاي الجانبي) */
+  .d1 .panel { width: 322px; background: var(--panel); border-left: 1px solid var(--hair); display: flex; flex-direction: column; flex: 0 0 auto; }
+  .d1 .panel .ph { padding: 14px 16px 10px; border-bottom: 1px solid var(--hair); display: flex; align-items: center; gap: 10px; }
+  .d1 .panel .ph .collapse { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--hair); color: #6b6f76; display: flex; align-items: center; justify-content: center; }
+  .d1 .panel .ph .ttl { flex: 1; }
+  .d1 .panel .ph .ttl b { font-size: 14px; color: var(--ink); display: block; }
+  .d1 .panel .ph .ttl span { font-size: 11px; color: var(--muted); }
+  .d1 .pbody { flex: 1; overflow: hidden; padding: 4px 16px 14px; }
+  .d1 .grp { padding: 12px 0 10px; border-bottom: 1px solid var(--hair); }
+  .d1 .grp:last-child { border-bottom: 0; }
+  .d1 .grp .gt { font-size: 10.5px; letter-spacing: .08em; color: #9aa0a8; font-weight: 600; margin-bottom: 9px; }
+  .d1 .fld { margin-bottom: 9px; }
+  .d1 .fld label { display: block; font-size: 11.5px; color: #5c6068; margin-bottom: 5px; }
+  .d1 .inp { height: 34px; border: 1px solid #e2e2e4; background: #f8f8f9; border-radius: 9px; display: flex; align-items: center; padding: 0 11px; font-size: 12.5px; color: var(--ink); }
+  .d1 .inp.ta { height: 52px; align-items: flex-start; padding-top: 8px; color: #4a4e55; }
+  .d1 .media { display: flex; align-items: center; gap: 10px; }
+  .d1 .media .thumb { width: 52px; height: 44px; border-radius: 9px; background: radial-gradient(42% 55% at 60% 62%, rgba(96,64,32,.36), rgba(96,64,32,0) 72%), radial-gradient(120% 100% at 72% 16%, #ecdcc0, #cfb086 60%, #a8825a); border: 1px solid #e4e4e6; }
+  .d1 .media .mmeta { flex: 1; }
+  .d1 .media .mmeta b { font-size: 12px; color: var(--ink); display: block; }
+  .d1 .media .mmeta span { font-size: 10.5px; color: var(--muted); }
+  .d1 .linkbtn { font-size: 12px; color: var(--blue); font-weight: 600; }
+  .d1 .seg { display: flex; background: #f1f1f3; border-radius: 9px; padding: 3px; gap: 2px; }
+  .d1 .seg .s { flex: 1; text-align: center; font-size: 11.5px; color: #6b6f76; padding: 6px 0; border-radius: 7px; }
+  .d1 .seg .s.on { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.09); }
+  .d1 .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+  .d1 .row span { font-size: 12px; color: #4a4e55; }
+  .d1 .tgl { width: 34px; height: 20px; border-radius: 999px; background: var(--blue); position: relative; }
+  .d1 .tgl::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; }
+  .d1 .tgl.off { background: #d9dbdf; }
+  .d1 .tgl.off::after { left: auto; right: 2px; }
+  .d1 .swatches { display: flex; gap: 8px; align-items: center; }
+  .d1 .sw { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #dedee0; }
+  .d1 .sw.on { box-shadow: 0 0 0 2px var(--blue); }
+  .d1 .sw.add { border: 1px dashed #c6c8cc; display: flex; align-items: center; justify-content: center; color: #8a8e95; font-size: 14px; box-shadow: none; }
+  .d1 .panel .pfoot { border-top: 1px solid var(--hair); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
+  .d1 .panel .pfoot .hide { font-size: 12px; color: #5c6068; display: flex; align-items: center; gap: 8px; }
+  .d1 .panel .pfoot .reset { font-size: 12px; color: var(--blue); font-weight: 600; }
+  /* الكانفس */
+  .d1 .canvas { flex: 1; position: relative; overflow: hidden;
+    background:
+      linear-gradient(#e2e0dc 1px, transparent 1px), linear-gradient(90deg, #e2e0dc 1px, transparent 1px),
+      var(--backdrop);
+    background-size: 72px 72px, 72px 72px, auto; }
+  .d1 .page { width: 764px; margin: 22px auto 0; background: #fff; border-radius: 12px 12px 0 0; box-shadow: 0 22px 50px rgba(25,25,30,.16); overflow: hidden; }
+  /* هيدر المتجر */
+  .d1 .sh { display: flex; align-items: center; justify-content: space-between; padding: 14px 22px; border-bottom: 1px solid #f0eeea; background: #fffdfa; }
+  .d1 .sh .logo { font-family: Cairo; font-weight: 800; font-size: 16px; color: #2b241d; }
+  .d1 .sh .logo i { font-style: normal; color: #b4552d; }
+  .d1 .sh nav { display: flex; gap: 16px; font-size: 11.5px; color: #6b6257; }
+  .d1 .sh .cm { display: flex; align-items: center; gap: 10px; color: #4a4237; }
+  .d1 .sh .cart { position: relative; width: 26px; height: 26px; }
+  .d1 .sh .cart .b { position: absolute; top: -4px; left: -4px; background: #b4552d; color: #fff; font-size: 9px; min-width: 14px; height: 14px; border-radius: 999px; display: flex; align-items: center; justify-content: center; padding: 0 3px; }
+  /* أقسام المتجر داخل المعاينة */
+  .d1 .sec { position: relative; }
+  .d1 .sec.sel { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .d1 .sec .lbl { position: absolute; top: 8px; right: 10px; background: var(--blue); color: #fff; font-size: 10.5px; font-weight: 600; padding: 3px 9px; border-radius: 7px; display: flex; align-items: center; gap: 6px; z-index: 4; box-shadow: 0 6px 14px rgba(37,99,235,.35); }
+  .d1 .sec .drag { letter-spacing: 1px; opacity: .85; font-size: 11px; }
+  .d1 .sec .corner { position: absolute; width: 9px; height: 9px; background: #fff; border: 2px solid var(--blue); border-radius: 2px; z-index: 4; }
+  .d1 .hero { padding: 40px 34px 34px; background: linear-gradient(180deg,#faf7f2,#f4efe7); text-align: right; }
+  .d1 .hero .kick { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; color: #8a6b4f; background: #f1e6d6; border-radius: 999px; padding: 4px 10px; margin-bottom: 12px; }
+  .d1 .hero h1 { font-family: Cairo; font-size: 30px; line-height: 1.35; color: #241d15; font-weight: 800; }
+  .d1 .hero h1 em { font-style: normal; color: #b4552d; }
+  .d1 .hero p { margin-top: 9px; font-size: 12.5px; color: #6f6659; line-height: 1.8; width: 420px; }
+  .d1 .hero .cta { display: inline-flex; margin-top: 16px; gap: 10px; }
+  .d1 .hero .b1 { background: #241d15; color: #fff; font-size: 12.5px; font-weight: 600; padding: 10px 22px; border-radius: 10px; }
+  .d1 .hero .b2 { border: 1px solid #d8cfc0; color: #4a4237; font-size: 12.5px; padding: 10px 18px; border-radius: 10px; background: #fff; }
+  .d1 .hero .art { position: absolute; left: 30px; top: 34px; width: 220px; height: 168px; border-radius: 14px; background: radial-gradient(45% 62% at 64% 60%, rgba(128,90,50,.35), rgba(128,90,50,0) 72%), radial-gradient(120% 100% at 74% 16%, #f7ecd9, #e4cfa9 55%, #c9ab7f); box-shadow: inset 0 0 0 1px #e2d4c0; }
+  .d1 .addsec { position: relative; height: 0; z-index: 6; }
+  .d1 .addsec .pill { position: absolute; top: -15px; right: 50%; transform: translateX(50%); background: #fff; border: 1px solid #d9dade; color: var(--blue); font-size: 11px; font-weight: 600; border-radius: 999px; padding: 5px 13px; display: flex; align-items: center; gap: 5px; box-shadow: 0 8px 18px rgba(0,0,0,.12); }
+  .d1 .cats { display: flex; gap: 10px; padding: 18px 22px 6px; background: #fff; }
+  .d1 .cats .c { flex: 1; height: 58px; border-radius: 10px; background: linear-gradient(135deg,#f6efe4,#eaddc7); display: flex; align-items: center; justify-content: center; font-size: 11.5px; color: #5d5344; font-weight: 600; border: 1px solid #efe7d8; }
+  .d1 .prods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 14px 22px 20px; background: #fff; }
+  .d1 .pc { border: 1px solid #f0eeea; border-radius: 12px; overflow: hidden; }
+  .d1 .pc .im { height: 104px; background: radial-gradient(46% 60% at 60% 62%, rgba(124,92,55,.30), rgba(124,92,55,0) 72%), radial-gradient(120% 100% at 70% 18%, #f5ecdd, #dfcba8 58%, #c3a67d); position: relative; }
+  .d1 .pc .im .bdg { position: absolute; top: 8px; right: 8px; background: #b4552d; color: #fff; font-size: 9.5px; padding: 2px 8px; border-radius: 999px; }
+  .d1 .pc .im .bdg.g { background: #3f7d54; }
+  .d1 .pc .inf { padding: 9px 10px 11px; }
+  .d1 .pc .inf b { font-size: 12px; color: #2b241d; display: block; }
+  .d1 .pc .inf .pr { margin-top: 4px; font-size: 12px; font-weight: 700; color: #241d15; }
+  .d1 .pc .inf .pr s { color: #b3aca1; font-weight: 400; font-size: 10.5px; margin-right: 6px; }
+  .d1 .pgfooter { height: 54px; background: #241d15; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; }
+  .d1 .pgfooter span { font-size: 10.5px; color: #b9b0a2; }
+  .d1 .pgfooter b { font-family: Cairo; color: #f4efe7; font-size: 12.5px; }
+  /* كبسولة المساعد العائمة (Sidekick-style) */
+  .d1 .sidekick { position: absolute; bottom: 18px; right: 50%; transform: translateX(50%); background: #fff; border-radius: 999px; box-shadow: 0 14px 34px rgba(20,20,30,.22), 0 0 0 1px rgba(0,0,0,.03); display: flex; align-items: center; gap: 10px; padding: 7px 8px 7px 16px; z-index: 9; }
+  .d1 .sidekick .sp { width: 28px; height: 28px; border-radius: 50%; background: var(--ai); display: flex; align-items: center; justify-content: center; }
+  .d1 .sidekick .sp svg { width: 15px; height: 15px; stroke: #fff; }
+  .d1 .sidekick .txt { font-size: 12.5px; color: #5c6068; }
+  .d1 .sidekick kbd { font-family: inherit; font-size: 10.5px; color: #8a8e95; background: #f1f1f3; border: 1px solid #e3e3e5; border-radius: 6px; padding: 2px 6px; }
+  .d1 .sidekick .dv2 { width: 1px; height: 20px; background: #ececee; }
+  .d1 .sidekick .ico { width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: #6b6f76; }
+  /* تعليق أسفل النموذج */
+  .d1 .cap { width: auto; max-width: 1360px; margin: 14px auto 0; display: flex; align-items: center; gap: 12px; padding: 0 20px; flex-wrap: wrap; row-gap: 8px; }
+  .d1 .cap .num { font-family: Cairo; font-weight: 800; font-size: 22px; color: #fff; background: #131417; border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+  .d1 .cap .tx b { color: #17181c; font-size: 15px; display: block; }
+  .d1 .cap .tx span { color: #5e6268; font-size: 12px; }
+  .d1 .cap .tags { margin-right: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .d1 .cap .tags i { font-style: normal; font-size: 10.5px; color: #3f434a; background: #fff; border: 1px solid #d8d8d8; padding: 4px 10px; border-radius: 999px; }
+  .d1 .pc .inf .pr { white-space: nowrap; }
+  .d1 .pc .inf b { white-space: nowrap; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M8 7 4 11l4 4"/><path d="M4 11h9a6 6 0 0 1 0 12h-1"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="m16 7 4 4-4 4"/><path d="M20 11h-9a6 6 0 0 0 0 12h1"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/></symbol>
+  <symbol id="i-tablet" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 19h2"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-collapse" viewBox="0 0 24 24"><path d="m14 7-5 5 5 5"/><path d="M19 5v14"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><path d="M4 5h2l2.2 10.5a1.5 1.5 0 0 0 1.5 1.2h7.6a1.5 1.5 0 0 0 1.5-1.2L20.5 8H7"/><circle cx="10.5" cy="19.5" r="1"/><circle cx="17.5" cy="19.5" r="1"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M4 12v1M8 9v6M12 6v12M16 9v6M20 12v1"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="9" cy="18" r="1.3"/><circle cx="15" cy="6" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="15" cy="18" r="1.3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.8-3.8"/></symbol>
+</svg>
+
+<div class="d1" id="d1root">
+  <div class="stagewrap"><div class="stage" id="d1stage">
+
+    <!-- ═══ شريط علوي موحّد (كما نقلت شوبيفاي التنقل للسكة العلوية في 2026) ═══ -->
+    <div class="topbar">
+      <div class="brandmark">م</div>
+      <div class="storechip">
+        <span class="av">د</span><span class="nm">دار الديكور</span>
+        <span class="tag">تجريبي</span>
+        <svg class="ic" style="width:14px;height:14px;stroke:#9aa0a8;fill:none;stroke-width:1.8"><use href="#i-chev"/></svg>
+      </div>
+      <div class="sep"></div>
+      <div class="tpl">
+        <span class="mini">القالب:</span> الرئيسية
+        <svg class="ic" style="width:14px;height:14px;stroke:#9ba0a8;fill:none;stroke-width:1.8"><use href="#i-chev"/></svg>
+      </div>
+
+      <div class="flex1"></div>
+
+      <div class="devseg">
+        <div class="dv on"><svg class="ic" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7"><use href="#i-monitor"/></svg>سطح المكتب</div>
+        <div class="dv"><svg class="ic" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7"><use href="#i-tablet"/></svg></div>
+        <div class="dv"><svg class="ic" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7"><use href="#i-phone"/></svg></div>
+      </div>
+      <div class="pct">100%</div>
+
+      <div class="flex1"></div>
+
+      <div class="saved">تم الحفظ تلقائيًا 14:32</div>
+      <div class="sep"></div>
+      <button class="tbtn"><svg class="ic"><use href="#i-undo"/></svg></button>
+      <button class="tbtn"><svg class="ic"><use href="#i-redo"/></svg></button>
+      <button class="tbtn"><svg class="ic"><use href="#i-eye"/></svg> معاينة</button>
+      <button class="btn-ghost">حفظ</button>
+      <button class="btn-primary">نشر</button>
+    </div>
+
+    <!-- ═══ الجسم: كانفس في المنتصف + لوحة إعدادات قابلة للطي ═══ -->
+    <div class="main">
+
+      <!-- لوحة الإعدادات السياقية -->
+      <aside class="panel">
+        <div class="ph">
+          <div class="collapse"><svg class="ic" style="width:15px;height:15px;stroke:#6b6f76;fill:none;stroke-width:1.8"><use href="#i-collapse"/></svg></div>
+          <div class="ttl"><b>قسم البطل</b><span>الرئيسية ← قسم البطل</span></div>
+        </div>
+        <div class="pbody">
+          <div class="grp">
+            <div class="gt">المحتوى</div>
+            <div class="fld"><label>العنوان الرئيسي</label><div class="inp">أناقة تُناسب بيتك</div></div>
+            <div class="fld"><label>العنوان الفرعي</label><div class="inp ta">مجموعة جديدة من الأثاث والديكور بلمسة هادئة…</div></div>
+            <div class="fld"><label>نص الزر</label><div class="inp">تسوق المجموعة</div></div>
+          </div>
+          <div class="grp">
+            <div class="gt">الوسائط</div>
+            <div class="media">
+              <div class="thumb"></div>
+              <div class="mmeta"><b>hero-living-room.jpg</b><span>1600 × 900 • 240KB</span></div>
+              <span class="linkbtn">تغيير</span>
+            </div>
+          </div>
+          <div class="grp">
+            <div class="gt">التخطيط</div>
+            <div class="seg" style="margin-bottom:10px"><div class="s">ضيق</div><div class="s on">متوسط</div><div class="s">واسع</div></div>
+            <div class="seg"><div class="s on">نص بجانب صورة</div><div class="s">عرض كامل</div></div>
+          </div>
+          <div class="grp">
+            <div class="gt">الألوان</div>
+            <div class="swatches">
+              <span class="sw on" style="background:#241d15"></span>
+              <span class="sw" style="background:#b4552d"></span>
+              <span class="sw" style="background:#f1e6d6"></span>
+              <span class="sw" style="background:#3f7d54"></span>
+              <span class="sw add">+</span>
+            </div>
+          </div>
+          <div class="grp">
+            <div class="gt">الحركات</div>
+            <div class="row"><span>ظهور تدريجي عند التمرير</span><span class="tgl"></span></div>
+            <div class="row" style="margin-bottom:0"><span>تأثير الصورة (تكبير بطيء)</span><span class="tgl off"></span></div>
+          </div>
+        </div>
+        <div class="pfoot">
+          <span class="hide">إخفاء القسم <span class="tgl off"></span></span>
+          <span class="reset">إعادة تعيين</span>
+        </div>
+      </aside>
+
+      <!-- الكانفس -->
+      <div class="canvas">
+        <div class="page">
+
+          <!-- هيدر المتجر -->
+          <div class="sh">
+            <div class="logo">دار <i>الديكور</i></div>
+            <nav><span>الرئيسية</span><span>المتجر</span><span>العروض</span><span>تواصل معنا</span></nav>
+            <div class="cm">
+              <svg class="ic" style="width:19px;height:19px;stroke:#4a4237;fill:none;stroke-width:1.6"><use href="#i-search"/></svg>
+              <span class="cart"><svg class="ic" style="width:20px;height:20px;stroke:#4a4237;fill:none;stroke-width:1.6"><use href="#i-cart"/></svg><span class="b">3</span></span>
+            </div>
+          </div>
+
+          <!-- قسم البطل — محدد -->
+          <div class="sec sel" style="background:linear-gradient(180deg,#faf7f2,#f4efe7)">
+            <div class="lbl"><span class="drag">⠿</span> قسم البطل</div>
+            <span class="corner" style="top:6px;right:6px"></span>
+            <span class="corner" style="top:6px;left:6px"></span>
+            <span class="corner" style="bottom:6px;right:6px"></span>
+            <span class="corner" style="bottom:6px;left:6px"></span>
+            <div class="hero" style="position:relative">
+              <span class="kick">✦ تشكيلة 2026 وصلت</span>
+              <h1>أناقة تُناسب بيتك<br>بلمسة <em>هادئة ودافئة</em></h1>
+              <p>مجموعة جديدة من الأثاث والديكور المصنوع بعناية ليضيف دفئًا وأناقة لمساحتك الخاصة.</p>
+              <div class="cta"><span class="b1">تسوق المجموعة</span><span class="b2">تصفح الفئات</span></div>
+              <div class="art"></div>
+            </div>
+          </div>
+
+          <div class="addsec"><span class="pill"><svg class="ic" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.8"><use href="#i-plus"/></svg> إضافة قسم</span></div>
+
+          <!-- الفئات -->
+          <div class="cats">
+            <div class="c">غرف المعيشة</div><div class="c">غرف النوم</div><div class="c">إضاءة</div><div class="c">ديكور الجدران</div>
+          </div>
+
+          <!-- المنتجات -->
+          <div class="prods">
+            <div class="pc"><div class="im"><span class="bdg">جديد</span></div><div class="inf"><b>كنبة «سحابة»</b><div class="pr">4,850 ج.م</div></div></div>
+            <div class="pc"><div class="im" style="background:radial-gradient(48% 58% at 38% 60%, rgba(110,74,40,.34), rgba(110,74,40,0) 72%), radial-gradient(120% 100% at 32% 18%, #efe2cb, #d9c19c 58%, #b6976e)"><span class="bdg g">خصم 20%</span></div><div class="inf"><b>طاولة قهوة</b><div class="pr">2,300 ج.م <s>2,875</s></div></div></div>
+            <div class="pc"><div class="im" style="background:radial-gradient(44% 58% at 58% 60%, rgba(105,95,80,.28), rgba(105,95,80,0) 72%), radial-gradient(120% 100% at 68% 16%, #f4efe7, #ddd2bf 58%, #bfb09a)"></div><div class="inf"><b>مرآة «ذهب»</b><div class="pr">1,150 ج.م</div></div></div>
+            <div class="pc"><div class="im" style="background:radial-gradient(48% 58% at 42% 62%, rgba(130,80,45,.30), rgba(130,80,45,0) 72%), radial-gradient(120% 100% at 34% 16%, #f1e6d4, #dcc3a2 56%, #b99872)"></div><div class="inf"><b>سجادة «واحة»</b><div class="pr">3,400 ج.م</div></div></div>
+          </div>
+
+          <div class="pgfooter"><b>دار الديكور</b><span>الدفع عند الاستلام • شحن لكل المحافظات • استبدال خلال 14 يوم</span></div>
+        </div>
+
+        <!-- المساعد العائم -->
+        <div class="sidekick">
+          <span class="sp"><svg class="ic" style="fill:none;stroke-width:1.7"><use href="#i-spark"/></svg></span>
+          <span class="txt">اسأل مساعد ماكس…</span>
+          <kbd>Ctrl K</kbd>
+          <span class="dv2"></span>
+          <span class="ico"><svg class="ic" style="width:16px;height:16px;stroke:#6b6f76;fill:none;stroke-width:1.7"><use href="#i-wave"/></svg></span>
+          <span class="ico"><svg class="ic" style="width:15px;height:15px;stroke:#6b6f76;fill:none;stroke-width:1.7"><use href="#i-expand"/></svg></span>
+        </div>
+      </div>
+    </div>
+  </div></div>
+
+  <div class="cap">
+    <div class="num">1</div>
+    <div class="tx">
+      <b>Canvas First — المعاينة أولًا</b>
+      <span>مستوحى من محرر ثيمات شوبيفاي (تحديث مارس 2026): التنقل في شريط علوي، المعاينة في المنتصف، لوحة إعدادات قابلة للطي، ومساعد AI عائم في كل صفحة.</span>
+    </div>
+    <div class="tags">
+      <i>شريط علوي موحّد</i><i>لوحة سياقية قابلة للطي</i><i>مساعد AI عائم</i><i>إضافة أقسام داخل المعاينة</i>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var wrap = document.querySelector('#d1root .stagewrap');
+  var stage = document.getElementById('d1stage');
+  function fit(){
+    var w = wrap.clientWidth; if(!w) return;
+    var s = Math.min(1, w / 1360);
+    if('zoom' in stage.style){ stage.style.zoom = s; wrap.style.height = (852*s) + 'px'; }
+    else { stage.style.transform = 'scale(' + s + ')'; wrap.style.height = (852*s) + 'px'; }
+  }
+  if(window.ResizeObserver) new ResizeObserver(fit).observe(wrap); else window.addEventListener('resize', fit);
+  fit();
+})();
+</script>
+</body>
+</html>
