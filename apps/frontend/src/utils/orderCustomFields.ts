@@ -50,6 +50,44 @@ const matchesCarSpec = (line: string): boolean => {
   return CAR_BRAND_KEYWORDS.some((kw) => lower.includes(kw));
 };
 
+const STANDARD_VARIANT_KEYS = new Set([
+  "type",
+  "pieces",
+  "color",
+  "size",
+  "style",
+  "qty",
+  "quantity",
+  "النوع",
+  "عدد_القطع",
+  "عددالقطع",
+  "اللون",
+  "المقاس",
+  "الستايل",
+  "الكمية",
+]);
+
+const isStandardVariantKey = (key: string): boolean => {
+  const normalized = String(key || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[-_\s]/g, "");
+  return STANDARD_VARIANT_KEYS.has(normalized);
+};
+
+const isEnglishCarKey = (key: string): boolean => {
+  const clean = String(key || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[-_\s]/g, "");
+  return (
+    clean === "carmodel" ||
+    clean === "car" ||
+    clean === "vehiclemodel" ||
+    clean === "automodel"
+  );
+};
+
 export function extractOrderCustomFields(
   source: any,
   options?: ExtractOrderCustomFieldsOptions | string,
@@ -57,15 +95,36 @@ export function extractOrderCustomFields(
   if (!source) return [];
   const entries: OrderCustomFieldEntry[] = [];
   const seenKeys = new Set<string>();
+  const seenCarValues = new Set<string>();
 
   const configuredFallbackLabel =
     (typeof options === "string" ? options : options?.defaultLabel)?.trim() || "";
   const defaultFallbackLabel = configuredFallbackLabel || "نوع وموديل وسنة صنع السيارة";
 
   const addEntry = (label: string, value: string) => {
-    const cleanLabel = String(label || "").trim();
+    let cleanLabel = String(label || "").trim();
     const cleanValue = String(value || "").trim();
     if (!cleanLabel || !cleanValue) return;
+
+    // 1. Skip standard variant attributes (Type, Pieces, Color, Size, etc.) as they are already printed in the products table row
+    if (isStandardVariantKey(cleanLabel)) return;
+
+    // 2. Normalize English car keys to canonical Arabic label
+    if (isEnglishCarKey(cleanLabel)) {
+      cleanLabel = defaultFallbackLabel;
+    }
+
+    // 3. Deduplicate car model values (e.g. if 'سيات ابيزا' is already added, do not add it again under car_model or another car key)
+    const isCarField =
+      cleanLabel === defaultFallbackLabel ||
+      cleanLabel.includes("سيار") ||
+      cleanLabel.toLowerCase().includes("car");
+    if (isCarField) {
+      const valLower = cleanValue.toLowerCase();
+      if (seenCarValues.has(valLower)) return;
+      seenCarValues.add(valLower);
+    }
+
     const dedupeKey = `${cleanLabel.toLowerCase()}:${cleanValue.toLowerCase()}`;
     if (seenKeys.has(dedupeKey)) return;
     seenKeys.add(dedupeKey);

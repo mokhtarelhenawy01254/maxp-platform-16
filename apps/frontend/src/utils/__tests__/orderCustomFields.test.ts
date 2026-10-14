@@ -312,7 +312,51 @@ describe("resolveCustomFieldsForDisplay", () => {
     expect(result.isEnabled).toBe(false);
     expect(result.customFields).toEqual([]);
   });
+
+  it("filters out standard variants (Type, Pieces, النوع, عدد القطع) from custom fields and dedupes car model to a single row", () => {
+    const redlineInvoiceWithRedundantFields = {
+      notes: "تفاصيل الطلب: نوع وموديل وسنة صنع السيارة: سيات ابيزا",
+      order: {
+        orderNumber: "ORD-165297-546",
+        notes: "تفاصيل الطلب: نوع وموديل وسنة صنع السيارة: سيات ابيزا",
+        orderItems: [
+          {
+            productName: "ستائر شبابيك سيارات عازلة للحرارة والشمس (تفصيل بالمللي)",
+            productColor: "جرار",
+            productSize: "4",
+            attributes: {
+              Type: "جرار",
+              Pieces: "4",
+              car_model: "سيات ابيزا",
+            },
+            customAttributes: {
+              "النوع": "جرار",
+              "عدد_القطع": "4",
+            },
+            carModel: "سيات ابيزا",
+          },
+        ],
+      },
+    };
+
+    const result = resolveCustomFieldsForDisplay(redlineInvoiceWithRedundantFields, {
+      showCustomFields: true,
+    });
+
+    expect(result.isEnabled).toBe(true);
+    // Must NOT contain Type, Pieces, النوع, or عدد_القطع
+    expect(result.customFields.some((f) => f.label.toLowerCase().includes("type"))).toBe(false);
+    expect(result.customFields.some((f) => f.label.toLowerCase().includes("pieces"))).toBe(false);
+    expect(result.customFields.some((f) => f.label.includes("النوع"))).toBe(false);
+    expect(result.customFields.some((f) => f.label.includes("القطع"))).toBe(false);
+
+    // Must contain exactly ONE clean row for car model
+    expect(result.customFields).toEqual([
+      { label: "نوع وموديل وسنة صنع السيارة", value: "سيات ابيزا" },
+    ]);
+  });
 });
+
 
 
 
