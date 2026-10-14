@@ -3,8 +3,9 @@ import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, Building2, Search, RefreshCw } from "lucide-react";
+import { Users, Plus, Trash2, Building2, Search, RefreshCw, ShieldCheck } from "lucide-react";
 import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { StaffCompanyAccessDialog, Company } from "./StaffCompanyAccessDialog";
 
@@ -27,7 +28,7 @@ interface StaffUser {
 const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);
 
-const StaffCompanyAccess = () => {
+export default function StaffCompanyAccess() {
   const [staff, setStaff] = useState<StaffUser[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,26 +163,24 @@ const StaffCompanyAccess = () => {
   );
 
   return (
-    <div className="w-full space-y-4" dir={i18n.dir()}>
-      {/* Linear Control Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/60 pb-3.5">
-        <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0 shadow-2xs">
-            <Users className="size-4 text-primary" />
+    <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-4" dir={i18n.dir()}>
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/70 pb-3.5">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <Users className="size-4" />
+            </span>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              إدارة وصول الموظفين للشركات
+            </h1>
+            <Badge variant="outline" className="text-[11px] font-mono border-border/80 bg-muted/30">
+              {staff.length} موظف
+            </Badge>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
-                إدارة وصول الموظفين للشركات
-              </h1>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
-                {staff.length} موظف
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              ربط حسابات إدارة النظام بالشركات وإدارة تصاريح الأعضاء عبر المنصة
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            ربط حسابات إدارة النظام بالشركات وإدارة تصاريح الوصول والأدوار التشغيلية
+          </p>
         </div>
 
         <div className="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto justify-end">
@@ -191,7 +190,7 @@ const StaffCompanyAccess = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="بحث بالاسم أو البريد..."
-              className="h-8 text-xs pr-8 font-mono bg-background border-border/70"
+              className="h-8 text-xs pr-8 font-mono bg-card border-border/70"
             />
           </div>
 
@@ -200,7 +199,7 @@ const StaffCompanyAccess = () => {
             size="icon"
             onClick={() => fetchStaff(false)}
             disabled={refreshing}
-            className="size-8 rounded-lg shrink-0 active:scale-[0.98]"
+            className="size-8 rounded-lg shrink-0 border-border/70 active:scale-[0.98]"
             title="تحديث القائمة"
           >
             <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
@@ -209,54 +208,54 @@ const StaffCompanyAccess = () => {
       </div>
 
       {/* Telemetry Strip */}
-      <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
-        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
-          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">موظفو إدارة النظام</span>
-              <span className="size-1.5 rounded-full bg-primary" />
-            </div>
-            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-              {staff.length}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">حسابات مسجلة</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-muted-foreground">موظفو إدارة النظام</p>
+            <p className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums mt-0.5">{staff.length}</p>
+            <p className="text-[10px] text-muted-foreground/70 mt-0.5 font-mono">حسابات مسجلة</p>
           </div>
-          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">الشركات المسجلة</span>
-              <span className="size-1.5 rounded-full bg-emerald-500" />
-            </div>
-            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-              {companies.length}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">كيانات نشطة</p>
+          <div className="size-7 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+            <Users className="size-3.5" />
           </div>
-          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">روابط الوصول والتصاريح</span>
-              <span className="size-1.5 rounded-full bg-purple-500" />
-            </div>
-            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
-              {totalLinks}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">تصريح وصول مفعل</p>
+        </div>
+
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-muted-foreground">الشركات المعتمدة</p>
+            <p className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums mt-0.5">{companies.length}</p>
+            <p className="text-[10px] text-muted-foreground/70 mt-0.5 font-mono">كيانات ومتاجر</p>
+          </div>
+          <div className="size-7 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+            <Building2 className="size-3.5" />
+          </div>
+        </div>
+
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-muted-foreground">روابط الوصول والتصاريح</p>
+            <p className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums mt-0.5">{totalLinks}</p>
+            <p className="text-[10px] text-muted-foreground/70 mt-0.5 font-mono">تصريح وصول نشط</p>
+          </div>
+          <div className="size-7 rounded-md bg-purple-500/10 flex items-center justify-center text-purple-600">
+            <ShieldCheck className="size-3.5" />
           </div>
         </div>
       </div>
 
-      {/* Single-Surface Table Chassis */}
-      <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
+      {/* Single-Surface Table */}
+      <div className="rounded-lg border border-border/70 bg-card shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-right border-collapse text-xs">
-            <thead className="border-b border-border/60 bg-muted/20 text-muted-foreground uppercase text-[11px] font-mono">
+            <thead className="border-b border-border/70 bg-muted/30 text-muted-foreground text-[11px] font-mono">
               <tr>
-                <th className="px-3.5 py-2.5 font-semibold">الموظف</th>
-                <th className="px-3.5 py-2.5 font-semibold">الرتبة بالنظام</th>
-                <th className="px-3.5 py-2.5 font-semibold">الشركات المرتبطة</th>
-                <th className="px-3.5 py-2.5 font-semibold text-left">إجراءات</th>
+                <th className="px-3.5 py-2.5 font-medium">الموظف</th>
+                <th className="px-3.5 py-2.5 font-medium">الرتبة بالنظام</th>
+                <th className="px-3.5 py-2.5 font-medium">الشركات المرتبطة</th>
+                <th className="px-3.5 py-2.5 font-medium text-left">إجراءات</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/60">
+            <tbody className="divide-y divide-border/50">
               {loading ? (
                 <tr>
                   <td colSpan={4} className="p-10 text-center text-xs font-mono text-muted-foreground">
@@ -277,7 +276,7 @@ const StaffCompanyAccess = () => {
                   <tr key={user.id} className="hover:bg-muted/15 transition-colors">
                     <td className="px-3.5 py-2.5">
                       <div className="flex flex-col gap-0.5">
-                        <span className="font-semibold text-foreground text-xs">
+                        <span className="font-medium text-foreground text-xs">
                           {user.firstName} {user.lastName}
                         </span>
                         <span className="text-[10px] font-mono text-muted-foreground">
@@ -291,10 +290,9 @@ const StaffCompanyAccess = () => {
                       </div>
                     </td>
                     <td className="px-3.5 py-2.5">
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-border/70 bg-muted/40 text-[10px] font-mono font-medium text-foreground">
-                        <span className="size-1.5 rounded-full bg-primary" />
+                      <Badge variant="outline" className="text-[10px] font-mono border-border/70 bg-muted/20">
                         {user.role}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="px-3.5 py-2.5">
                       <div className="flex flex-wrap items-center gap-1">
@@ -318,7 +316,7 @@ const StaffCompanyAccess = () => {
                                   <span className="text-muted-foreground">({link.role})</span>
                                   <button
                                     onClick={() => handleRemoveAccess(user.id, link.companyId)}
-                                    className="text-muted-foreground hover:text-rose-600 transition-colors ml-0.5 cursor-pointer"
+                                    className="text-muted-foreground hover:text-destructive transition-colors ml-0.5 cursor-pointer"
                                     title="إزالة الوصول"
                                   >
                                     <Trash2 className="size-2.5" />
@@ -342,7 +340,7 @@ const StaffCompanyAccess = () => {
                             setShowAddModal(true);
                             setCompanySearch("");
                           }}
-                          className="h-7 px-2 text-xs font-mono gap-1 active:scale-[0.98]"
+                          className="h-7 px-2 text-xs font-mono gap-1 active:scale-[0.98] border-border/70"
                         >
                           <Plus className="size-3" />
                           <span>ربط</span>
@@ -385,6 +383,4 @@ const StaffCompanyAccess = () => {
       />
     </div>
   );
-};
-
-export default StaffCompanyAccess;
+}

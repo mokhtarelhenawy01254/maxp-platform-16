@@ -8,9 +8,10 @@ import {
 } from "lucide-react";
 import { marketingSections } from "../landing/marketingLandingData";
 import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 
-const SuperAdminMarketingLinks: React.FC = () => {
+export default function SuperAdminMarketingLinks() {
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "live" | "upcoming">("ALL");
@@ -49,33 +50,31 @@ const SuperAdminMarketingLinks: React.FC = () => {
   };
 
   return (
-    <div className="w-full space-y-4" dir="rtl">
-      {/* Linear Control Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/60 pb-3.5">
-        <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-foreground shrink-0 shadow-2xs">
-            <Megaphone className="size-4.5 text-primary" />
+    <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-4" dir="rtl">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/70 pb-3.5">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <Megaphone className="size-4" />
+            </span>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              دليل روابط صفحات التسويق
+            </h1>
+            <Badge variant="outline" className="text-[11px] font-mono border-border/80 bg-muted/30">
+              {marketingSections.length} صفحة
+            </Badge>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
-                دليل روابط صفحات التسويق
-              </h1>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
-                {marketingSections.length} صفحة
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              دليل صفحات الهبوط التسويقية، الأهداف التحويلية، والجمهور المستهدف لكل قطاع
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            دليل صفحات الهبوط التسويقية، الأهداف التحويلية، والجمهور المستهدف لكل قطاع
+          </p>
         </div>
 
         <Button
           asChild
           variant="outline"
           size="sm"
-          className="h-8 text-xs font-mono gap-1.5 shadow-2xs active:scale-[0.98] self-end sm:self-auto"
+          className="h-8 text-xs font-mono gap-1.5 border-border/70 active:scale-[0.98] self-end sm:self-auto"
         >
           <a href="/marketing" target="_blank" rel="noreferrer">
             <span>فتح مركز اللاندنج العام</span>
@@ -85,52 +84,56 @@ const SuperAdminMarketingLinks: React.FC = () => {
       </div>
 
       {/* Telemetry Strip */}
-      <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
-        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
-          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">إجمالي صفحات اللاندنج</span>
-              <span className="size-1.5 rounded-full bg-primary" />
-            </div>
-            <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-muted-foreground">إجمالي صفحات اللاندنج</p>
+            <p className="text-xl font-bold tracking-tight text-foreground font-mono tabular-nums mt-0.5">
               {marketingSections.length}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">صفحة تسويقية مهيأة</p>
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 mt-0.5 font-mono">صفحة تسويقية مهيأة</p>
           </div>
+          <div className="size-7 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+            <Megaphone className="size-3.5" />
+          </div>
+        </div>
 
-          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">صفحات منشورة</span>
-              <span className="size-1.5 rounded-full bg-emerald-500" />
-            </div>
-            <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-emerald-600 dark:text-emerald-400">صفحات منشورة</p>
+            <p className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums mt-0.5">
               {liveCount}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">مفعلة وتستقبل الزوار</p>
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 mt-0.5 font-mono">مفعلة وتستقبل الزوار</p>
           </div>
+          <div className="size-7 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+            <Check className="size-3.5" />
+          </div>
+        </div>
 
-          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="font-medium text-[11px]">صفحات قيد الإطلاق</span>
-              <span className="size-1.5 rounded-full bg-amber-500" />
-            </div>
-            <div className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400 font-mono tabular-nums">
+        <div className="p-3 rounded-lg border border-border/70 bg-card/60 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-amber-600 dark:text-amber-400">صفحات قيد الإطلاق</p>
+            <p className="text-xl font-bold tracking-tight text-amber-600 dark:text-amber-400 font-mono tabular-nums mt-0.5">
               {upcomingCount}
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">جاهزة للنشر بالجدول</p>
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 mt-0.5 font-mono">جاهزة للنشر بالجدول</p>
+          </div>
+          <div className="size-7 rounded-md bg-amber-500/10 flex items-center justify-center text-amber-600">
+            <ExternalLink className="size-3.5" />
           </div>
         </div>
       </div>
 
       {/* Single-Surface Chassis */}
-      <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
+      <div className="rounded-lg border border-border/70 bg-card shadow-xs overflow-hidden">
         {/* Chassis Controls */}
         <div className="p-2.5 sm:p-3 border-b border-border/60 bg-muted/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
           <div className="flex items-center gap-1 text-xs shrink-0 self-start">
             <button
               type="button"
               onClick={() => setStatusFilter("ALL")}
-              className={`px-2.5 py-1 rounded-md text-xs font-mono transition-colors ${
+              className={`px-2.5 py-1 rounded text-xs font-mono transition-colors ${
                 statusFilter === "ALL"
                   ? "bg-primary text-primary-foreground font-semibold"
                   : "text-muted-foreground hover:bg-muted/40"
@@ -141,7 +144,7 @@ const SuperAdminMarketingLinks: React.FC = () => {
             <button
               type="button"
               onClick={() => setStatusFilter("live")}
-              className={`px-2.5 py-1 rounded-md text-xs font-mono transition-colors ${
+              className={`px-2.5 py-1 rounded text-xs font-mono transition-colors ${
                 statusFilter === "live"
                   ? "bg-emerald-600 text-white font-semibold"
                   : "text-muted-foreground hover:bg-muted/40"
@@ -152,7 +155,7 @@ const SuperAdminMarketingLinks: React.FC = () => {
             <button
               type="button"
               onClick={() => setStatusFilter("upcoming")}
-              className={`px-2.5 py-1 rounded-md text-xs font-mono transition-colors ${
+              className={`px-2.5 py-1 rounded text-xs font-mono transition-colors ${
                 statusFilter === "upcoming"
                   ? "bg-amber-600 text-white font-semibold"
                   : "text-muted-foreground hover:bg-muted/40"
@@ -187,7 +190,7 @@ const SuperAdminMarketingLinks: React.FC = () => {
               return (
                 <div
                   key={section.slug}
-                  className="p-4 hover:bg-muted/15 transition-colors space-y-2.5"
+                  className="p-3.5 hover:bg-muted/15 transition-colors space-y-2.5"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
@@ -218,7 +221,7 @@ const SuperAdminMarketingLinks: React.FC = () => {
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-                    <div className="rounded-lg border border-border/50 bg-muted/20 p-2.5">
+                    <div className="rounded-md border border-border/50 bg-muted/20 p-2">
                       <span className="text-[10px] text-muted-foreground block mb-0.5 font-mono">
                         الجمهور المستهدف
                       </span>
@@ -226,7 +229,7 @@ const SuperAdminMarketingLinks: React.FC = () => {
                         {section.audience}
                       </span>
                     </div>
-                    <div className="rounded-lg border border-border/50 bg-muted/20 p-2.5">
+                    <div className="rounded-md border border-border/50 bg-muted/20 p-2">
                       <span className="text-[10px] text-muted-foreground block mb-0.5 font-mono">
                         هدف الصفحة التحويلي (Conversion)
                       </span>
@@ -280,6 +283,4 @@ const SuperAdminMarketingLinks: React.FC = () => {
       </div>
     </div>
   );
-};
-
-export default SuperAdminMarketingLinks;
+}
