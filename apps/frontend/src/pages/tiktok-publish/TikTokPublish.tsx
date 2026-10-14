@@ -1,5 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Send,
+  AlertTriangle,
+  Film,
+} from "lucide-react";
+import {
   getAccountStatus,
   createPublish,
   listPosts,
@@ -9,39 +14,20 @@ import {
   type TikTokPagination,
   type TikTokPrivacyLevel,
 } from "../../services/tiktokPublishService";
+import TikTokPublishPostsTable from "./TikTokPublishPostsTable";
 
 const POLL_INTERVAL_MS = 8000;
 const MAX_POLL_TRIES = 8;
 
 const PRIVACY_OPTIONS: { value: TikTokPrivacyLevel; label: string }[] = [
-  { value: "PUBLIC_TO_EVERYONE", label: "عام" },
-  { value: "FOLLOWERS", label: "للمتابعين" },
-  { value: "SELF_ONLY", label: "لنفسي" },
+  { value: "PUBLIC_TO_EVERYONE", label: "عام (الكل)" },
+  { value: "FOLLOWERS", label: "للمتابعين فقط" },
+  { value: "SELF_ONLY", label: "خاص (لنفسي)" },
 ];
 
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "في الانتظار",
-  PROCESSING: "قيد المعالجة",
-  PUBLISHED: "منشور",
-  FAILED: "فشل",
-};
-
-const STATUS_BADGE_CLASSES: Record<string, string> = {
-  PENDING: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  PROCESSING: "bg-blue-100 text-blue-800 border-blue-200",
-  PUBLISHED: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  FAILED: "bg-red-100 text-red-800 border-red-200",
-};
-
 const inputClass =
-  "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
-const labelClass = "mb-1 block text-sm font-medium text-gray-700";
-const cardClass =
-  "rounded-xl border border-gray-200 bg-white p-5 shadow-sm";
-const primaryBtnClass =
-  "rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50";
-const secondaryBtnClass =
-  "rounded-lg border border-blue-600 px-3 py-1.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50";
+  "w-full rounded-md border border-border/80 bg-background px-3 py-1.5 text-xs text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary";
+const labelClass = "mb-1 block text-xs font-medium text-foreground";
 
 function formatDate(value?: string | null): string {
   if (!value) return "—";
@@ -151,11 +137,11 @@ export default function TikTokPublish() {
   const handlePublish = async () => {
     setError("");
     if (!videoUrl.trim()) {
-      setError("يرجى إدخال رابط الفيديو");
+      setError("يرجى إدخال رابط الفيديو المباشر");
       return;
     }
     if (!account?.connected) {
-      setError("اربط حساب TikTok أولاً من إدارة الحسابات");
+      setError("يرجى ربط حساب TikTok أولاً من لوحة الربط");
       return;
     }
     setPublishing(true);
@@ -189,201 +175,174 @@ export default function TikTokPublish() {
   };
 
   return (
-    <div dir="rtl" className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="mb-1 text-2xl font-bold text-gray-900">
-        نشر محتوى على TikTok
-      </h1>
-      <p className="mb-6 text-sm text-gray-500">
-        انشر فيديوهات مباشرة على حسابك في TikTok
-      </p>
-
-      {error && (
-        <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {/* Account status card */}
-      <section className={`${cardClass} mb-6`}>
-        <h2 className="mb-3 text-sm font-semibold text-gray-900">
-          حالة الحساب
-        </h2>
-        {account?.connected ? (
-          <div className="flex items-center gap-4">
-            {account.avatarUrl ? (
-              <img
-                src={account.avatarUrl}
-                alt={account.displayName || "حساب TikTok"}
-                className="h-12 w-12 rounded-full object-cover"
-              />
-            ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-lg font-bold text-blue-600">
-                {(account.displayName || "T").charAt(0)}
-              </div>
-            )}
-            <div>
-              <div className="font-semibold text-gray-900">
-                {account.displayName || "حساب TikTok"}
-              </div>
-              <div className="mt-1 flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                  متصل
-                </span>
-                <span className="text-xs text-gray-500">
-                  {account.tokenExpiresAt
-                    ? `انتهاء التوكن: ${formatDate(account.tokenExpiresAt)}`
-                    : "التوكن دائم"}
-                </span>
-              </div>
-            </div>
+    <div dir="rtl" className="min-h-screen bg-card text-foreground font-sans rtl">
+      {/* Telemetry Status Ribbon */}
+      <div className="border-b border-border/70 bg-muted/20 px-4 sm:px-6 py-2">
+        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 text-muted-foreground font-medium">
+              <span className={`inline-block w-2 h-2 rounded-full ${account?.connected ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+              {account?.connected ? "بث الفيديو التلقائي نشط" : "غير متصل بحساب TikTok"}
+            </span>
+            <span className="text-border">|</span>
+            <span className="text-muted-foreground font-mono">
+              AUTH: {account?.displayName || "OFFLINE"}
+            </span>
           </div>
-        ) : (
-          <div className="text-sm text-gray-600">
-            غير متصل — اربط حساب TikTok من إدارة الحسابات
+          <div className="flex items-center gap-4 font-mono tabular-nums text-muted-foreground">
+            <span>المنشورات: <strong className="text-foreground">{pagination?.total ?? posts.length}</strong></span>
+            <span className="text-border">|</span>
+            <span>انتهاء الصلاحية: <strong className="text-foreground">{account?.tokenExpiresAt ? formatDate(account.tokenExpiresAt) : "دائم"}</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 space-y-6">
+        {/* Top Control Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-muted/40 text-foreground border border-border/70">
+                <Film className="w-3.5 h-3.5 text-muted-foreground" />
+                محرك النشر التلقائي
+              </span>
+              <span className="text-[11px] text-muted-foreground font-mono">
+                tiktok.publish.v2
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+              نشر مقاطع الفيديو على TikTok
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              بث ونشر محتوى الفيديو المباشر وحملات المنتجات على حساب TikTok الرسمي
+            </p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-500 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            {error}
           </div>
         )}
-      </section>
 
-      {/* Publish form */}
-      <section className={`${cardClass} mb-6`}>
-        <h2 className="mb-4 text-sm font-semibold text-gray-900">
-          منشور جديد
-        </h2>
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="videoUrl" className={labelClass}>
-              رابط الفيديو
-            </label>
-            <input
-              id="videoUrl"
-              type="text"
-              dir="ltr"
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="https://example.com/video.mp4"
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="caption" className={labelClass}>
-              الوصف
-            </label>
-            <textarea
-              id="caption"
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              placeholder="اكتب وصف الفيديو هنا"
-              rows={3}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="privacyLevel" className={labelClass}>
-              الخصوصية
-            </label>
-            <select
-              id="privacyLevel"
-              value={privacyLevel}
-              onChange={(e) =>
-                setPrivacyLevel(e.target.value as TikTokPrivacyLevel)
-              }
-              className={inputClass}
-            >
-              {PRIVACY_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <button
-            type="button"
-            onClick={handlePublish}
-            disabled={publishing || !account?.connected}
-            className={primaryBtnClass}
-          >
-            {publishing ? "جاري النشر..." : "نشر"}
-          </button>
-        </div>
-      </section>
-
-      {/* Posts list */}
-      <section className={cardClass}>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">المنشورات</h2>
-          {pagination && (
-            <span className="text-xs text-gray-500">
-              إجمالي {pagination.total} منشور
-            </span>
+        {/* Account status card */}
+        <div className="rounded-lg border border-border/70 bg-card p-4 space-y-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            الحساب المقترن
+          </h2>
+          {account?.connected ? (
+            <div className="flex items-center gap-3">
+              {account.avatarUrl ? (
+                <img
+                  src={account.avatarUrl}
+                  alt={account.displayName || "حساب TikTok"}
+                  className="h-10 w-10 rounded-full object-cover border border-border/80"
+                />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary border border-primary/20">
+                  {(account.displayName || "T").charAt(0)}
+                </div>
+              )}
+              <div className="space-y-0.5">
+                <div className="text-xs font-semibold text-foreground">
+                  {account.displayName || "حساب TikTok"}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.2 text-[10px] font-medium border border-emerald-500/20 bg-emerald-500/10 text-emerald-500">
+                    متصل ونشط
+                  </span>
+                  <span className="text-[11px] text-muted-foreground font-mono">
+                    {account.tokenExpiresAt
+                      ? `ينتهي: ${formatDate(account.tokenExpiresAt)}`
+                      : "جلسة دائمة"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground">
+              الحساب غير متصل — يرجى ربط حساب TikTok من إعدادات الربط للتفعيل
+            </div>
           )}
         </div>
 
-        {loading ? (
-          <div className="py-8 text-center text-sm text-gray-500">
-            جاري التحميل...
-          </div>
-        ) : posts.length === 0 ? (
-          <div className="py-8 text-center text-sm text-gray-500">
-            لا توجد منشورات بعد
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-right text-xs text-gray-500">
-                  <th className="px-3 py-2 font-medium">الوصف</th>
-                  <th className="px-3 py-2 font-medium">الحالة</th>
-                  <th className="px-3 py-2 font-medium">الخطأ</th>
-                  <th className="px-3 py-2 font-medium">التاريخ</th>
-                  <th className="px-3 py-2 font-medium">إجراء</th>
-                </tr>
-              </thead>
-              <tbody>
-                {posts.map((post) => (
-                  <tr key={post.id} className="border-b border-gray-100">
-                    <td className="px-3 py-3">
-                      <div className="max-w-[280px] truncate text-gray-900">
-                        {post.caption || "بدون وصف"}
-                      </div>
-                      <div className="mt-1 text-xs text-gray-400">
-                        {post.account?.displayName || "TikTok"}
-                      </div>
-                    </td>
-                    <td className="px-3 py-3">
-                      <span
-                        className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${
-                          STATUS_BADGE_CLASSES[post.status] ||
-                          "border-gray-200 bg-gray-100 text-gray-700"
-                        }`}
-                      >
-                        {STATUS_LABELS[post.status] || post.status}
-                      </span>
-                    </td>
-                    <td className="max-w-[200px] truncate px-3 py-3 text-xs text-red-600">
-                      {post.errorMessage || "—"}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-3 text-xs text-gray-500">
-                      {formatDate(post.createdAt)}
-                    </td>
-                    <td className="px-3 py-3">
-                      <button
-                        type="button"
-                        onClick={() => handleRefresh(post.id)}
-                        disabled={refreshingId === post.id}
-                        className={secondaryBtnClass}
-                      >
-                        {refreshingId === post.id
-                          ? "جاري التحديث..."
-                          : "تحديث الحالة"}
-                      </button>
-                    </td>
-                  </tr>
+        {/* Publish form */}
+        <div className="rounded-lg border border-border/70 bg-card p-5 space-y-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/70 pb-2">
+            إنشاء وبث منشور جديد
+          </h2>
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="videoUrl" className={labelClass}>
+                رابط الفيديو المباشر (MP4 / WebM)
+              </label>
+              <input
+                id="videoUrl"
+                type="text"
+                dir="ltr"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="https://cdn.maxp.online/videos/product-showcase.mp4"
+                className={`${inputClass} font-mono`}
+              />
+            </div>
+            <div>
+              <label htmlFor="caption" className={labelClass}>
+                نص الوصف والوسوم (Caption & Hashtags)
+              </label>
+              <textarea
+                id="caption"
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder="اكتب وصف الفيديو والوسوم المرفقة..."
+                rows={3}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label htmlFor="privacyLevel" className={labelClass}>
+                مستوى الخصوصية في تيك توك
+              </label>
+              <select
+                id="privacyLevel"
+                value={privacyLevel}
+                onChange={(e) =>
+                  setPrivacyLevel(e.target.value as TikTokPrivacyLevel)
+                }
+                className={inputClass}
+              >
+                {PRIVACY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
                 ))}
-              </tbody>
-            </table>
+              </select>
+            </div>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={publishing || !account?.connected}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              >
+                <Send className="w-3.5 h-3.5" />
+                {publishing ? "جاري الإرسال والمعالجة..." : "نشر الفيديو الآن"}
+              </button>
+            </div>
           </div>
-        )}
-      </section>
+        </div>
+
+        {/* Posts list table component */}
+        <TikTokPublishPostsTable
+          posts={posts}
+          pagination={pagination}
+          loading={loading}
+          refreshingId={refreshingId}
+          onRefresh={handleRefresh}
+          formatDate={formatDate}
+        />
+      </div>
     </div>
   );
 }

@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
+  RefreshCw,
+  Package,
+  Link2,
+  Store,
+} from "lucide-react";
+import {
   getAccountStatus,
   saveAccount,
   syncOrders,
@@ -9,18 +15,13 @@ import {
   TikTokShopOrder,
   TikTokShopProduct,
 } from "../../services/tiktokShopService";
+import TikTokShopTables from "./TikTokShopTables";
 
 const inputClass =
-  "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500 dark:focus:border-blue-400 dark:focus:ring-blue-900/40";
-
-const primaryButtonClass =
-  "inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50";
-
-const secondaryButtonClass =
-  "inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700";
+  "w-full rounded-md border border-border/80 bg-background px-3 py-1.5 text-xs text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary";
 
 const labelClass =
-  "mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300";
+  "mb-1 block text-xs font-medium text-foreground";
 
 const getErrorMessage = (error: unknown): string => {
   const err = error as {
@@ -142,72 +143,129 @@ export default function TikTokShop() {
   };
 
   return (
-    <div
-      dir="rtl"
-      className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8 dark:bg-gray-900"
-    >
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            متجر TikTok Shop
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            ربط حساب متجر TikTok Shop ومزامنة الطلبات والمنتجات
-          </p>
+    <div dir="rtl" className="min-h-screen bg-card text-foreground font-sans rtl">
+      {/* Telemetry Status Ribbon */}
+      <div className="border-b border-border/70 bg-muted/20 px-4 sm:px-6 py-2">
+        <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 text-muted-foreground font-medium">
+              <span className={`inline-block w-2 h-2 rounded-full ${account?.connected ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+              {account?.connected ? "متصل بـ TikTok Shop API" : "بانتظار التهيئة والربط"}
+            </span>
+            <span className="text-border">|</span>
+            <span className="text-muted-foreground font-mono">
+              REGION: {account?.region || "GLOBAL"}
+            </span>
+          </div>
+          <div className="flex items-center gap-4 font-mono tabular-nums text-muted-foreground">
+            <span>الطلبات المستوردة: <strong className="text-foreground">{orders.length}</strong></span>
+            <span className="text-border">|</span>
+            <span>المنتجات المتزامنة: <strong className="text-foreground">{products.length}</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
+        {/* Top Control Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-muted/40 text-foreground border border-border/70">
+                <Store className="w-3.5 h-3.5 text-muted-foreground" />
+                تكامل التجارة الاجتماعية
+              </span>
+              <span className="text-[11px] text-muted-foreground font-mono">
+                tiktok.shop.v2
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+              متجر TikTok Shop
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              ربط حساب البائع في تيك توك ومزامنة المنتجات والطلبات والمخزون لحظياً
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSyncOrders}
+              disabled={syncingOrders || !account?.connected}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-muted/50 text-foreground hover:bg-muted/80 border border-border/70 text-xs font-medium transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${syncingOrders ? "animate-spin" : ""}`} />
+              {syncingOrders ? "جاري المزامنة..." : "مزامنة الطلبات"}
+            </button>
+            <button
+              onClick={handleSyncProducts}
+              disabled={syncingProducts || !account?.connected}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium transition-colors disabled:opacity-50"
+            >
+              <Package className="w-3.5 h-3.5" />
+              {syncingProducts ? "جاري المزامنة..." : "مزامنة المنتجات"}
+            </button>
+          </div>
         </div>
 
         {/* Connect card */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-            {account?.connected ? "حالة الربط" : "ربط المتجر"}
-          </h2>
+        <div className="rounded-lg border border-border/70 bg-card p-5 space-y-4">
+          <div className="flex items-center justify-between border-b border-border/70 pb-3">
+            <div className="flex items-center gap-2">
+              <Link2 className="w-4 h-4 text-primary" />
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {account?.connected ? "تفاصيل الاتصال النشط" : "تهيئة بيانات الربط البرمجي"}
+              </h2>
+            </div>
+            {account?.connected && (
+              <button
+                onClick={handleDisconnect}
+                className="text-xs font-medium text-muted-foreground hover:text-red-500 transition-colors"
+              >
+                فصل وإعادة التهيئة
+              </button>
+            )}
+          </div>
 
           {loading ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              جاري تحميل حالة الحساب...
+            <p className="text-xs text-muted-foreground font-mono py-2">
+              جاري فحص حالة الحساب...
             </p>
           ) : account?.connected ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">اسم المتجر</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {account.shopName || "—"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">المنطقة</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {account.region || "—"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">الحالة</p>
-                  <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                    {account.status === "connected" ? "متصل" : account.status || "—"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">آخر مزامنة</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {formatDate(account.lastSyncedAt || null)}
-                  </p>
-                </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+              <div className="p-3 bg-muted/10 border border-border/60 rounded-md">
+                <p className="text-[11px] text-muted-foreground">اسم المتجر</p>
+                <p className="text-xs font-semibold text-foreground mt-0.5">
+                  {account.shopName || "—"}
+                </p>
               </div>
-              <button onClick={handleDisconnect} className={secondaryButtonClass}>
-                فصل/إعادة ربط
-              </button>
+              <div className="p-3 bg-muted/10 border border-border/60 rounded-md">
+                <p className="text-[11px] text-muted-foreground">المنطقة الجغرافية</p>
+                <p className="text-xs font-semibold font-mono text-foreground mt-0.5">
+                  {account.region || "—"}
+                </p>
+              </div>
+              <div className="p-3 bg-muted/10 border border-border/60 rounded-md">
+                <p className="text-[11px] text-muted-foreground">حالة الاتصال</p>
+                <p className="text-xs font-semibold text-emerald-500 mt-0.5">
+                  {account.status === "connected" ? "متصل ونشط" : account.status || "—"}
+                </p>
+              </div>
+              <div className="p-3 bg-muted/10 border border-border/60 rounded-md">
+                <p className="text-[11px] text-muted-foreground">آخر مزامنة ناجحة</p>
+                <p className="text-xs font-semibold font-mono tabular-nums text-foreground mt-0.5">
+                  {formatDate(account.lastSyncedAt || null)}
+                </p>
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div>
-                <label className={labelClass}>معرف المتجر</label>
+                <label className={labelClass}>معرف المتجر (Shop ID)</label>
                 <input
                   name="shopId"
                   value={form.shopId}
                   onChange={handleFormChange}
-                  placeholder="shop id"
-                  className={inputClass}
+                  placeholder="e.g. 7492109841"
+                  className={`${inputClass} font-mono`}
                 />
               </div>
               <div>
@@ -216,8 +274,8 @@ export default function TikTokShop() {
                   name="appKey"
                   value={form.appKey}
                   onChange={handleFormChange}
-                  placeholder="app key"
-                  className={inputClass}
+                  placeholder="App Key"
+                  className={`${inputClass} font-mono`}
                 />
               </div>
               <div>
@@ -227,7 +285,7 @@ export default function TikTokShop() {
                   type="password"
                   value={form.appSecret}
                   onChange={handleFormChange}
-                  placeholder="app secret"
+                  placeholder="••••••••••••"
                   className={inputClass}
                 />
               </div>
@@ -238,136 +296,50 @@ export default function TikTokShop() {
                   type="password"
                   value={form.accessToken}
                   onChange={handleFormChange}
-                  placeholder="access token"
+                  placeholder="Bearer token"
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className={labelClass}>اسم المتجر</label>
+                <label className={labelClass}>اسم المتجر (Shop Name)</label>
                 <input
                   name="shopName"
                   value={form.shopName}
                   onChange={handleFormChange}
-                  placeholder="اسم المتجر"
+                  placeholder="MaxP Store"
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className={labelClass}>المنطقة</label>
+                <label className={labelClass}>المنطقة (Region)</label>
                 <input
                   name="region"
                   value={form.region}
                   onChange={handleFormChange}
-                  placeholder="مثال: AE أو US"
-                  className={inputClass}
+                  placeholder="مثال: AE أو EG أو US"
+                  className={`${inputClass} font-mono`}
                 />
               </div>
-              <div className="sm:col-span-2">
+              <div className="sm:col-span-3 pt-2">
                 <button
                   onClick={handleConnect}
                   disabled={saving}
-                  className={primaryButtonClass}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
                 >
-                  {saving ? "جاري الحفظ..." : "حفظ وربط"}
+                  {saving ? "جاري الحفظ والتحقق..." : "حفظ وربط المتجر"}
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Sync actions */}
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={handleSyncOrders}
-            disabled={syncingOrders || !account?.connected}
-            className={primaryButtonClass}
-          >
-            {syncingOrders ? "جاري المزامنة..." : "مزامنة الطلبات"}
-          </button>
-          <button
-            onClick={handleSyncProducts}
-            disabled={syncingProducts || !account?.connected}
-            className={primaryButtonClass}
-          >
-            {syncingProducts ? "جاري المزامنة..." : "مزامنة المنتجات"}
-          </button>
-        </div>
-
-        {/* Orders table */}
-        {orders.length > 0 && (
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-            <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                الطلبات
-              </h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-xs text-gray-500 dark:bg-gray-700/50 dark:text-gray-400">
-                  <tr>
-                    <th className="px-6 py-3 text-right font-medium">معرف الطلب</th>
-                    <th className="px-6 py-3 text-right font-medium">الحالة</th>
-                    <th className="px-6 py-3 text-right font-medium">المشتري</th>
-                    <th className="px-6 py-3 text-right font-medium">الإجمالي</th>
-                    <th className="px-6 py-3 text-right font-medium">العملة</th>
-                    <th className="px-6 py-3 text-right font-medium">التاريخ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {orders.map((order) => (
-                    <tr key={order.orderId} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                      <td className="px-6 py-3 text-gray-900 dark:text-gray-100">{order.orderId}</td>
-                      <td className="px-6 py-3 text-gray-900 dark:text-gray-100">{order.status}</td>
-                      <td className="px-6 py-3 text-gray-900 dark:text-gray-100">
-                        {order.buyerName || order.buyerUsername || "—"}
-                      </td>
-                      <td className="px-6 py-3 text-gray-900 dark:text-gray-100">
-                        {formatAmount(order.totalAmount)}
-                      </td>
-                      <td className="px-6 py-3 text-gray-900 dark:text-gray-100">{order.currency}</td>
-                      <td className="px-6 py-3 text-gray-900 dark:text-gray-100">
-                        {formatDate(order.createTime)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Products table */}
-        {products.length > 0 && (
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-            <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                المنتجات
-              </h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-xs text-gray-500 dark:bg-gray-700/50 dark:text-gray-400">
-                  <tr>
-                    <th className="px-6 py-3 text-right font-medium">المعرف</th>
-                    <th className="px-6 py-3 text-right font-medium">الاسم</th>
-                    <th className="px-6 py-3 text-right font-medium">الحالة</th>
-                    <th className="px-6 py-3 text-right font-medium">عدد الـ SKU</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {products.map((product) => (
-                    <tr key={product.productId} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                      <td className="px-6 py-3 text-gray-900 dark:text-gray-100">{product.productId}</td>
-                      <td className="px-6 py-3 text-gray-900 dark:text-gray-100">{product.title}</td>
-                      <td className="px-6 py-3 text-gray-900 dark:text-gray-100">{product.status}</td>
-                      <td className="px-6 py-3 text-gray-900 dark:text-gray-100">{product.skuCount}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+        {/* Orders and Products Data Tables */}
+        <TikTokShopTables
+          orders={orders}
+          products={products}
+          formatDate={formatDate}
+          formatAmount={formatAmount}
+        />
       </div>
     </div>
   );
