@@ -12,6 +12,7 @@ import {
   FileText, Clock,
   HelpCircle, Headphones,
   RefreshCw, ExternalLink,
+  PlayCircle, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -30,6 +31,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { MarketplaceApp as MPA } from "@/types/marketplace";
 import { getMarketplaceFeatureItems, getFeatureAccessKind, getFeatureAccessLabel } from "./featureCatalog";
+import { getYouTubeEmbedUrl, getDirectVideoUrl } from "../../utils/explanationVideo";
 import { appIconsBySlug, categoryIcons, appIcons, categoryCssClass, shouldUseTextIcon, getPrice, formatInstallCount, getAppDestination } from "@/utils/marketplace";
 
 const numberFormatter = new Intl.NumberFormat("ar-EG");
@@ -39,7 +41,7 @@ function formatNumber(value?: number | null) {
 }
 
 function formatMoney(value?: number | null) {
-  return `${formatNumber(value)} ${"ج"}`;
+  return `${formatNumber(value)} ${"ج.م"}`;
 }
 
 function safeParseJson(value: unknown) {
@@ -85,6 +87,7 @@ export default function AppDetails() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [appExplanation, setAppExplanation] = useState<{ title: string; videoUrl: string | null } | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<PlanOption>("PAY_PER_USE");
 
   const isAccessDenied = Boolean(location.state?.accessDenied);
@@ -146,6 +149,25 @@ export default function AppDetails() {
       setLoading(false);
     }
   };
+
+  // Reuse the platform's existing page-explanation videos inside the details
+  // page: keyed by the app's own main route, so recorded walkthroughs surface
+  // here without producing any new content.
+  useEffect(() => {
+    const route = app?.mainRoute;
+    if (!route) { setAppExplanation(null); return; }
+    let cancelled = false;
+    apiClient
+      .get(`/app-explanations/by-route?route=${encodeURIComponent(route)}`)
+      .then((res) => {
+        if (cancelled) return;
+        const data = res.data as { success?: boolean; explanations?: Array<{ title: string; videoUrl: string | null }> };
+        const first = data?.success && Array.isArray(data.explanations) ? data.explanations.find((e) => e.videoUrl) : null;
+        setAppExplanation(first || null);
+      })
+      .catch(() => { if (!cancelled) setAppExplanation(null); });
+    return () => { cancelled = true; };
+  }, [app?.mainRoute]);
 
   const handleInstall = async (planToInstall: PlanOption = selectedPlan) => {
     if (!app) return;
@@ -264,11 +286,16 @@ export default function AppDetails() {
   const BrandIcon = app.slug ? appIconsBySlug[app.slug] : undefined;
   const IconComp = appIcons[app.icon?.trim().toLowerCase() || ""] || categoryIcons[app.category] || Package;
   const textIcon = shouldUseTextIcon(app.icon) ? app.icon?.trim() : null;
-  const screenshots = Array.isArray(app.screenshots)
+  const rawScreenshots: unknown[] = Array.isArray(app.screenshots)
     ? app.screenshots
     : Array.isArray(app.images)
       ? app.images
       : [];
+  // Only entries that resolve to a real image URL make the cut — a stray
+  // empty string in the JSON must not render a ghost screenshots tab.
+  const screenshots = rawScreenshots
+    .map((s) => (typeof s === "string" ? s : (s as { url?: string })?.url || ""))
+    .filter((s) => isLikelyImageUrl(s));
   const faq = Array.isArray(app.faq) ? app.faq : [];
   const changelog = Array.isArray(app.changelog) ? app.changelog : [];
   const reviews = Array.isArray(app.reviews) ? app.reviews : [];
@@ -305,7 +332,7 @@ export default function AppDetails() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-[1280px] px-4 pb-10 pt-5 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1280px] px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pb-10">
         <button
           onClick={() => navigate('/marketplace')}
           className="inline-flex items-center gap-2 rounded-xl px-2 py-1 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"
@@ -833,6 +860,44 @@ export default function AppDetails() {
             )}
           </Tabs>
 
+          {appExplanation?.videoUrl && (
+            <section className="rounded-2xl border bg-card p-5 text-right">
+              <h2 className="text-xl font-extrabold text-foreground mb-4 flex items-center gap-2">
+                <PlayCircle size={20} className="text-primary" />
+                شرح بالفيديو
+              </h2>
+              <p className="text-sm text-muted-foreground mb-3">{appExplanation.title}</p>
+              <div className="overflow-hidden rounded-xl bg-black/90 mx-auto w-full max-w-3xl">
+                {getYouTubeEmbedUrl(appExplanation.videoUrl) ? (
+                  <iframe
+                    src={getYouTubeEmbedUrl(appExplanation.videoUrl) as string}
+                    title={appExplanation.title}
+                    className="w-full aspect-video"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    loading="lazy"
+                  />
+                ) : getDirectVideoUrl(appExplanation.videoUrl) ? (
+                  <video
+                    src={getDirectVideoUrl(appExplanation.videoUrl) as string}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="w-full max-h-[70vh]"
+                  />
+                ) : (
+                  <video
+                    src={appExplanation.videoUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="w-full max-h-[70vh]"
+                  />
+                )}
+              </div>
+            </section>
+          )}
+
           {app.pricingRules && app.pricingRules.length > 0 && (
             <section className="rounded-2xl border bg-card p-5 text-right">
               <h2 className="text-xl font-extrabold text-foreground">{t('marketplace.pricing')}</h2>
@@ -970,6 +1035,54 @@ export default function AppDetails() {
           )}
         </div>
       </div>
+
+      {/* Sticky mobile action bar — the activate/open action stays reachable
+          without scrolling to the sidebar column. */}
+      {!loading && app && (
+        <div
+          className="fixed bottom-0 inset-x-0 z-40 border-t border-border/40 bg-background/95 backdrop-blur px-4 pt-3 lg:hidden"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 text-right">
+              <div className="text-sm font-extrabold text-foreground tabular-nums truncate">
+                {isFree ? "مجاني" : planPrices[selectedPlan]}
+              </div>
+              <div className="text-[11px] text-muted-foreground truncate">
+                {isInstalled ? "مفعل — جاهز للاستخدام" : planTitles[selectedPlan]}
+              </div>
+            </div>
+            <div className="flex-1" />
+            {isInstalled ? (
+              <Button
+                onClick={() => {
+                  const dest = app.mainRoute || getAppDestination(app);
+                  if (!dest) return;
+                  if (dest.startsWith("http://") || dest.startsWith("https://")) {
+                    window.location.href = dest;
+                  } else {
+                    navigate(dest);
+                  }
+                }}
+                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                size="sm"
+              >
+                <ExternalLink size={14} /> فتح التطبيق
+              </Button>
+            ) : (
+              <Button
+                className="gap-2 font-bold"
+                size="sm"
+                disabled={installing}
+                onClick={() => handleInstall(selectedPlan)}
+              >
+                {installing ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+                {isExpired ? "تجديد الاشتراك" : isFree ? "تفعيل مجاني" : `تفعيل ${planTitles[selectedPlan]}`}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

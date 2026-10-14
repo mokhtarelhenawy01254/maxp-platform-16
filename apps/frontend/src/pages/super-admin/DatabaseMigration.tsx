@@ -16,6 +16,8 @@ import {
   Tag,
   ClipboardList,
 } from "lucide-react";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 
 interface MigrationProgress {
   step: string;
@@ -81,9 +83,7 @@ const DatabaseMigration: React.FC = () => {
     try {
       const response = await fetch(
         buildApiUrl(`super-admin/db-migration/status/${jobId}`),
-        {
-          headers: tokenManager.createAuthHeaders(),
-        },
+        { headers: tokenManager.createAuthHeaders() },
       );
       const data = await response.json();
       if (data.success) {
@@ -161,23 +161,23 @@ const DatabaseMigration: React.FC = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto" dir={i18n.dir()}>
+    <div className="w-full space-y-4" dir={i18n.dir()}>
       {/* Linear Control Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg border border-border/80 bg-card flex items-center justify-center text-foreground shadow-2xs">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-foreground shrink-0 shadow-2xs">
             <Database className="size-4.5 text-primary" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-foreground">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
                 استيراد وترحيل قواعد البيانات
               </h1>
               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
                 DB Migration
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-0.5">
               نقل ومزامنة المهام والمشاريع وبيانات المنظومة من خوادم وقواعد بيانات خارجية
             </p>
           </div>
@@ -185,7 +185,7 @@ const DatabaseMigration: React.FC = () => {
       </div>
 
       {/* Configuration Card */}
-      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card p-4 space-y-3.5 shadow-2xs">
+      <div className="rounded-xl border border-border/80 bg-card p-4 space-y-3 shadow-xs">
         <div className="flex items-center gap-2">
           <Terminal className="size-4 text-primary" />
           <h3 className="text-xs font-mono uppercase tracking-wider text-foreground font-semibold">
@@ -198,53 +198,48 @@ const DatabaseMigration: React.FC = () => {
             <label className="block text-xs font-mono text-muted-foreground mb-1.5">
               رابط الاتصال المشفر (Database Connection URI)
             </label>
-            <input
+            <Input
               type="password"
               value={sourceUrl}
               onChange={(e) => setSourceUrl(e.target.value)}
               disabled={migrating}
               placeholder="mysql://username:password@hostname:3306/database_name"
-              className="w-full px-3 py-2 bg-muted/30 border border-border/70 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none text-foreground font-mono text-xs placeholder:text-muted-foreground/50 transition-all"
+              className="h-9 font-mono text-xs bg-background border-border/70"
             />
           </div>
 
-          <div className="flex items-center gap-2 pt-1">
-            <button
+          <div className="flex items-center gap-2 pt-1 font-mono text-xs">
+            <Button
+              variant="outline"
+              size="sm"
               onClick={testConnection}
               disabled={testing || migrating || !sourceUrl}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card text-foreground hover:bg-muted/50 text-xs font-mono transition-colors disabled:opacity-40 active:scale-[0.98]"
+              className="h-8 gap-1.5 active:scale-[0.98]"
             >
-              {testing ? (
-                <RefreshCw className="size-3.5 animate-spin text-primary" />
-              ) : (
-                <CheckCircle2 className="size-3.5 text-emerald-500" />
-              )}
+              <RefreshCw className={`size-3.5 ${testing ? "animate-spin text-primary" : ""}`} />
               <span>فحص الاتصال</span>
-            </button>
-            <button
+            </Button>
+            <Button
+              size="sm"
               onClick={startMigration}
               disabled={testing || migrating || !sourceUrl}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-mono font-medium transition-colors disabled:opacity-40 active:scale-[0.98]"
+              className="h-8 gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground active:scale-[0.98]"
             >
-              {migrating ? (
-                <RefreshCw className="size-3.5 animate-spin" />
-              ) : (
-                <Play className="size-3.5 fill-current" />
-              )}
+              {migrating ? <RefreshCw className="size-3.5 animate-spin" /> : <Play className="size-3.5 fill-current" />}
               <span>بدء الاستيراد</span>
-            </button>
+            </Button>
           </div>
         </div>
 
         {error && (
-          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2 text-destructive text-xs font-mono">
+          <div className="p-2.5 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2 text-destructive text-xs font-mono">
             <XCircle className="size-4 shrink-0" />
             <p>{error}</p>
           </div>
         )}
 
         {success && (
-          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-mono">
+          <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-mono">
             <CheckCircle2 className="size-4 shrink-0" />
             <p>{success}</p>
           </div>
@@ -254,7 +249,7 @@ const DatabaseMigration: React.FC = () => {
       {/* Progress & Live Terminal Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Progress Stats */}
-        <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card p-4 space-y-4 shadow-2xs">
+        <div className="rounded-xl border border-border/80 bg-card p-4 space-y-4 shadow-xs">
           <div className="flex items-center justify-between pb-2 border-b border-border/60">
             <div className="flex items-center gap-2">
               <Download className="size-4 text-primary" />
@@ -262,7 +257,7 @@ const DatabaseMigration: React.FC = () => {
                 حالة تقدم الترحيل اللحظية
               </h3>
             </div>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-muted text-muted-foreground">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-muted text-muted-foreground border border-border/50">
               {progress.step}
             </span>
           </div>
@@ -301,7 +296,7 @@ const DatabaseMigration: React.FC = () => {
         </div>
 
         {/* Terminal Logs */}
-        <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card p-3 shadow-2xs flex flex-col h-[380px]">
+        <div className="rounded-xl border border-border/80 bg-card p-3 shadow-xs flex flex-col h-[380px]">
           <div className="flex items-center justify-between pb-2 border-b border-border/60 mb-2">
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Terminal className="size-3.5 text-primary" />
@@ -339,7 +334,7 @@ const DatabaseMigration: React.FC = () => {
       </div>
 
       {/* Info Notice Strip */}
-      <div className="rounded-xl border border-border/70 dark:border-border/60 bg-card p-4 flex items-start gap-3 shadow-2xs">
+      <div className="rounded-xl border border-border/70 bg-card p-4 flex items-start gap-3 shadow-xs">
         <Info className="size-4.5 text-primary shrink-0 mt-0.5" />
         <div className="space-y-1">
           <h4 className="text-xs font-mono font-semibold text-foreground uppercase tracking-wider">

@@ -142,49 +142,47 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
   };
 
   return (
-    <div dir={i18n.dir()} className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto">
+    <div dir={i18n.dir()} className="w-full space-y-4">
       {/* Linear Control Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg border border-border/80 bg-card flex items-center justify-center text-foreground shadow-2xs">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-foreground shrink-0 shadow-2xs">
             <Layout className="size-4.5 text-primary" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-foreground">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
                 إدارة واجهة الصفحة الرئيسية للمنصة
               </h1>
               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
                 Homepage Governance
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-0.5">
               اختيار واعتماد لاندنج المنصة الرئيسية (/) مع عزل تام لقوالب المتاجر
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={loadSettings}
-            disabled={loading}
-            className="h-8 gap-1.5 text-xs font-mono shadow-2xs active:scale-[0.98] transition-transform"
-          >
-            <RefreshCw className={`size-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-            <span>تحديث</span>
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={loadSettings}
+          disabled={loading}
+          className="h-8 gap-1.5 text-xs font-mono shadow-2xs active:scale-[0.98] self-end sm:self-auto"
+        >
+          <RefreshCw className={`size-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+          <span>تحديث</span>
+        </Button>
       </div>
 
-      {/* Linear Telemetry Strip */}
-      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+      {/* Telemetry Strip */}
+      <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
         <div className="grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
-          <div className="p-3.5 flex flex-col justify-between">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">النسخة المنشورة الآن</span>
-              <span className="size-1.5 rounded-full bg-emerald-500" />
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
             </div>
             <div className="text-base sm:text-lg font-bold tracking-tight text-emerald-600 dark:text-emerald-400 truncate font-mono">
               {activeVariant.label}
@@ -192,7 +190,7 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
             <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">الظاهرة على الجذر /</p>
           </div>
 
-          <div className="p-3.5 flex flex-col justify-between">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">النسخ المتاحة</span>
               <span className="size-1.5 rounded-full bg-primary" />
@@ -203,7 +201,7 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
             <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">نماذج معتمدة</p>
           </div>
 
-          <div className="p-3.5 flex flex-col justify-between">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">النسخة المحددة</span>
               <span className="size-1.5 rounded-full bg-amber-500" />
@@ -216,7 +214,7 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-3.5 flex flex-col justify-between">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">آخر اعتماد</span>
               <span className="size-1.5 rounded-full bg-slate-400" />
@@ -233,12 +231,12 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
         {/* Sidebar: Selector List */}
         <aside className="space-y-3.5">
-          <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card p-3.5 shadow-2xs space-y-3">
+          <div className="rounded-xl border border-border/80 bg-card p-3.5 shadow-xs space-y-3">
             <div className="flex items-center justify-between border-b border-border/60 pb-2">
               <h3 className="text-xs font-mono font-semibold text-foreground uppercase tracking-wider">
                 قائمة النسخ المعتمدة
               </h3>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border/50">
                 {availableVariants.length}
               </span>
             </div>
@@ -253,7 +251,7 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
                     key={variant.id}
                     type="button"
                     onClick={() => setSelectedVariantId(variant.id)}
-                    className={`w-full rounded-lg border p-2.5 text-right transition-colors text-xs ${
+                    className={`w-full rounded-lg border p-2.5 text-right transition-colors text-xs cursor-pointer active:scale-[0.98] ${
                       isSelected
                         ? "border-primary/50 bg-primary/10 text-foreground"
                         : "border-border/60 bg-muted/10 hover:bg-muted/30 text-muted-foreground"
@@ -286,13 +284,13 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
 
         {/* Main Details & Activation Surface */}
         <main className="space-y-3.5">
-          <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card p-4 sm:p-5 shadow-2xs space-y-4">
+          <div className="rounded-xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
               <div>
                 <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
                   {formatVariantIndex(selectedVariantIndex >= 0 ? selectedVariantIndex : 0)} · {selectedVariant.badge}
                 </span>
-                <h2 className="text-xl font-bold tracking-tight text-foreground mt-0.5">
+                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground mt-0.5">
                   {selectedVariant.label}
                 </h2>
               </div>
@@ -314,7 +312,7 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
                   className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-card px-2.5 py-1 text-xs font-mono text-foreground hover:bg-muted/50 transition-colors shadow-2xs"
                 >
                   <Eye className="size-3 text-muted-foreground" />
-                  <span>معاينة في تبويب جديد</span>
+                  <span>معاينة</span>
                   <ExternalLink className="size-3 text-muted-foreground" />
                 </a>
 
@@ -323,25 +321,25 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
                   size="sm"
                   disabled={isSelectionActive || isSavingSelection}
                   onClick={() => void handleActivateVariant(selectedVariant.id)}
-                  className={`h-7 px-3 text-xs font-mono gap-1.5 shadow-2xs active:scale-[0.98] transition-transform ${
+                  className={`h-8 px-3 text-xs font-mono gap-1.5 shadow-2xs active:scale-[0.98] ${
                     isSelectionActive
                       ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 cursor-default"
-                      : ""
+                      : "bg-primary hover:bg-primary/90 text-primary-foreground"
                   }`}
                 >
                   {isSelectionActive ? (
                     <>
-                      <CheckCircle2 className="size-3 text-emerald-600" />
+                      <CheckCircle2 className="size-3.5 text-emerald-600" />
                       <span>منشورة</span>
                     </>
                   ) : isSavingSelection ? (
                     <>
-                      <RefreshCw className="size-3 animate-spin" />
+                      <RefreshCw className="size-3.5 animate-spin" />
                       <span>جاري النشر...</span>
                     </>
                   ) : (
                     <>
-                      <Zap className="size-3" />
+                      <Zap className="size-3.5" />
                       <span>اعتماد ونشر النسخة</span>
                     </>
                   )}

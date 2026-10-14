@@ -327,6 +327,34 @@ export function resolveCustomFieldsForDisplay(
   ].filter((n) => Boolean(n && n.trim()));
   const rawNotes = Array.from(new Set(rawNotesPool)).join("\n").trim();
 
+  // If company explicitly enabled showCustomFields, but this specific order didn't have custom fields extracted:
+  if (options?.showCustomFields === true && !hasCustomFields) {
+    const items = Array.isArray(source?.order?.orderItems)
+      ? source.order.orderItems
+      : Array.isArray(source?.orderItems)
+      ? source.orderItems
+      : Array.isArray(source?.items)
+      ? source.items
+      : [];
+
+    const isCustomOrCarProduct = items.some((it: any) => {
+      const name = String(it.productName || it.name || "").toLowerCase();
+      return name.includes("سيار") || name.includes("عرب") || name.includes("تفصيل") || name.includes("ستائر");
+    });
+
+    if (isCustomOrCarProduct || items.length > 0) {
+      const fallbackLabel = options?.defaultLabel?.trim() || "نوع وموديل وسنة صنع السيارة";
+      const fallbackFields: OrderCustomFieldEntry[] = [
+        { label: fallbackLabel, value: "—" },
+      ];
+      return {
+        isEnabled: true,
+        customFields: fallbackFields,
+        displayNotes: rawNotes,
+      };
+    }
+  }
+
   if (!isEnabled || !hasCustomFields) {
     return {
       isEnabled: false,

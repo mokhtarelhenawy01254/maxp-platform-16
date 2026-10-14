@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../../services/apiClient";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Search, RefreshCw, DollarSign, Activity, Building2, ChevronLeft, ChevronRight, Cpu } from "lucide-react";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 import i18n from "../../i18n";
 
 const PAGE_SIZE = 15;
@@ -185,23 +187,23 @@ const SuperAdminAIConsumption: React.FC = () => {
   const maxCost = sorted.length > 0 ? Math.max(...sorted.map((c) => c.totalCost)) : 0;
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto" dir={i18n.dir()}>
+    <div className="w-full space-y-4" dir={i18n.dir()}>
       {/* Linear Control Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg border border-border/80 bg-card flex items-center justify-center text-foreground shadow-2xs">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-foreground shrink-0 shadow-2xs">
             <Activity className="size-4.5 text-primary" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-foreground">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
                 استهلاك الشركات من الذكاء الاصطناعي
               </h1>
               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
                 AI Consumption
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-0.5">
               متابعة إجمالي الإنفاق، حجم التوكنز، ونسب النجاح عبر نماذج ومزودي الذكاء الاصطناعي
             </p>
           </div>
@@ -209,7 +211,7 @@ const SuperAdminAIConsumption: React.FC = () => {
 
         <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto font-mono text-xs">
           <Select value={days} onValueChange={(v) => { setDays(v); setPage(0); }}>
-            <SelectTrigger className="w-[125px] h-8 text-xs font-mono bg-card border-border/70">
+            <SelectTrigger className="w-[120px] h-8 text-xs font-mono bg-card border-border/70">
               <SelectValue placeholder="الفترة" />
             </SelectTrigger>
             <SelectContent>
@@ -221,7 +223,7 @@ const SuperAdminAIConsumption: React.FC = () => {
           </Select>
 
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-            <SelectTrigger className="w-[125px] h-8 text-xs font-mono bg-card border-border/70">
+            <SelectTrigger className="w-[120px] h-8 text-xs font-mono bg-card border-border/70">
               <SelectValue placeholder="الترتيب" />
             </SelectTrigger>
             <SelectContent>
@@ -232,22 +234,23 @@ const SuperAdminAIConsumption: React.FC = () => {
             </SelectContent>
           </Select>
 
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => refetch()}
             disabled={isLoading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted/50 text-foreground transition-all active:scale-[0.98] disabled:opacity-50"
+            className="h-8 gap-1.5 text-xs font-mono shadow-2xs active:scale-[0.98]"
           >
             <RefreshCw className={`size-3.5 ${isLoading ? "animate-spin text-primary" : ""}`} />
             <span>تحديث</span>
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* Linear Telemetry Strip */}
-      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
+      {/* Telemetry Strip */}
+      <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
         <div className="grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
-          <div className="p-3.5 flex flex-col justify-between">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">إجمالي التكلفة</span>
               <DollarSign className="size-3.5 text-emerald-500" />
@@ -258,7 +261,7 @@ const SuperAdminAIConsumption: React.FC = () => {
             <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">في آخر {summary.periodDays} يوم</p>
           </div>
 
-          <div className="p-3.5 flex flex-col justify-between">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">إجمالي الطلبات</span>
               <Activity className="size-3.5 text-primary" />
@@ -269,7 +272,7 @@ const SuperAdminAIConsumption: React.FC = () => {
             <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">استدعاء لنماذج AI</p>
           </div>
 
-          <div className="p-3.5 flex flex-col justify-between">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">الشركات النشطة</span>
               <Building2 className="size-3.5 text-blue-500" />
@@ -280,7 +283,7 @@ const SuperAdminAIConsumption: React.FC = () => {
             <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">تستخدم ميزات الذكاء</p>
           </div>
 
-          <div className="p-3.5 flex flex-col justify-between">
+          <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">معدل الأخطاء</span>
               <span className="size-1.5 rounded-full bg-amber-500" />
@@ -294,7 +297,7 @@ const SuperAdminAIConsumption: React.FC = () => {
       </div>
 
       {/* Model Distribution Ribbon */}
-      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card p-3.5 shadow-2xs space-y-2.5">
+      <div className="rounded-xl border border-border/80 bg-card p-3.5 shadow-xs space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs font-mono font-semibold text-foreground uppercase tracking-wider">
             <Cpu className="size-3.5 text-primary" />
@@ -321,19 +324,18 @@ const SuperAdminAIConsumption: React.FC = () => {
       </div>
 
       {/* Main Single-Surface Table Chassis */}
-      <div className="rounded-xl border border-border/80 dark:border-border/60 bg-card shadow-2xs overflow-hidden">
-        <div className="p-3 border-b border-border/60 flex items-center justify-between bg-muted/20">
+      <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
+        <div className="p-3 border-b border-border/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-muted/20">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-            <input
-              type="text"
+            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+            <Input
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }}
               placeholder="البحث باسم الشركة..."
-              className="w-full pl-3 pr-8 py-1.5 text-xs font-mono rounded-lg border border-border/70 bg-card text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
+              className="h-8 pr-8 text-xs font-mono bg-background border-border/70"
             />
           </div>
-          <span className="text-[10px] font-mono text-muted-foreground">
+          <span className="text-[10px] font-mono text-muted-foreground self-end sm:self-auto">
             {sorted.length} شركة مسجلة
           </span>
         </div>
@@ -352,7 +354,7 @@ const SuperAdminAIConsumption: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-border/60 font-mono">
               {paged.map((c) => (
-                <tr key={c.id} className="hover:bg-muted/20 transition-colors">
+                <tr key={c.id} className="hover:bg-muted/15 transition-colors">
                   <td className="px-4 py-3">
                     <div className="font-semibold text-foreground text-xs">{c.name}</div>
                     <div className="text-[10px] text-muted-foreground font-mono">ID: {c.id}</div>
@@ -395,22 +397,24 @@ const SuperAdminAIConsumption: React.FC = () => {
               صفحة {page + 1} من {totalPages}
             </span>
             <div className="flex items-center gap-1.5">
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
                 disabled={page === 0}
                 onClick={() => setPage((p) => p - 1)}
-                className="px-2.5 py-1 rounded border border-border/70 bg-card disabled:opacity-40"
+                className="h-7 text-xs font-mono"
               >
                 السابق
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 disabled={page >= totalPages - 1}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-2.5 py-1 rounded border border-border/70 bg-card disabled:opacity-40"
+                className="h-7 text-xs font-mono"
               >
                 التالي
-              </button>
+              </Button>
             </div>
           </div>
         )}

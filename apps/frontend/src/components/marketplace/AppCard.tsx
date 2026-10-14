@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  Star, CheckCircle2, Clock, Shield, BadgeCheck, Brain, Package
+  Star, CheckCircle2, Clock, Shield, BadgeCheck, Brain, Package, Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MarketplaceApp } from "@/types/marketplace";
@@ -146,6 +146,12 @@ export function AppCard({
               <span className="truncate">{systemHub.nameAr}</span>
             </span>
           </div>
+
+          {app.description && (
+            <p className="hidden sm:block text-[11px] text-muted-foreground/90 line-clamp-1 mt-0.5" dir="auto">
+              {app.description.replace(/\s+/g, " ").trim()}
+            </p>
+          )}
         </div>
       </div>
 
@@ -167,9 +173,27 @@ export function AppCard({
           </span>
         ) : null}
 
-        <span className="text-xs font-bold text-foreground/80 tabular-nums">
-          {app.isIncludedInPlan ? "مشمول في باقتك" : getPrice(app, t)}
-        </span>
+        {app.isInstalled && (
+          <button
+            type="button"
+            aria-label={t('marketplace.viewDetails', 'تفاصيل التطبيق')}
+            title={t('marketplace.viewDetails', 'تفاصيل التطبيق')}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate(`/marketplace/${app.slug}`);
+            }}
+            className="size-6 rounded-md flex items-center justify-center text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors"
+          >
+            <Info size={13} />
+          </button>
+        )}
+
+        {!app.isIncludedInPlan && (
+          <span className="text-xs font-bold text-foreground/80 tabular-nums">
+            {getPrice(app, t)}
+          </span>
+        )}
       </div>
     </Link>
   );

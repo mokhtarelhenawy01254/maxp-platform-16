@@ -271,6 +271,47 @@ describe("resolveCustomFieldsForDisplay", () => {
     ]);
     expect(result.displayNotes).toBe("");
   });
+
+  it("renders custom field fallback when showCustomFields is true but order lacks car model", () => {
+    const prepOrderInvoice = {
+      notes: "Bulk status update",
+      order: {
+        notes: "Bulk status update",
+        orderItems: [
+          {
+            productName: "ستائر شبابيك سيارات عازلة للحرارة والشمس (تفصيل بالمللي)",
+            productColor: "جرار",
+            productSize: "4",
+          },
+        ],
+      },
+    };
+    const result = resolveCustomFieldsForDisplay(prepOrderInvoice, { showCustomFields: true });
+
+    expect(result.isEnabled).toBe(true);
+    expect(result.customFields).toEqual([
+      { label: "نوع وموديل وسنة صنع السيارة", value: "—" },
+    ]);
+  });
+
+  it("does not render custom field when showCustomFields is false (e.g. Swan company)", () => {
+    const swanInvoice = {
+      notes: "يرجى التسليم في الموعد",
+      order: {
+        orderItems: [
+          {
+            productName: "طقم ملابس رجالي",
+            productColor: "أزرق",
+            productSize: "L",
+          },
+        ],
+      },
+    };
+    const result = resolveCustomFieldsForDisplay(swanInvoice, { showCustomFields: false });
+
+    expect(result.isEnabled).toBe(false);
+    expect(result.customFields).toEqual([]);
+  });
 });
 
 

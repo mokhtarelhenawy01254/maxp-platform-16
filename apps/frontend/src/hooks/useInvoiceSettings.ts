@@ -4,48 +4,69 @@ import {
   InvoicePrintSettings,
   DEFAULT_INVOICE_SETTINGS,
 } from "../types/invoiceSettings";
+import { tokenManager } from "../utils/tokenManager";
 
-let cachedInvoiceSettings: InvoicePrintSettings | null = null;
+const cachedInvoiceSettingsByCompany: Record<string, InvoicePrintSettings> = {};
 let inflightInvoiceSettingsPromise: Promise<InvoicePrintSettings> | null = null;
+let inflightCompanyId: string | null = null;
 
-export const clearInvoiceSettingsCache = () => {
-  cachedInvoiceSettings = null;
+export const clearInvoiceSettingsCache = (companyId?: string) => {
+  if (companyId) {
+    delete cachedInvoiceSettingsByCompany[companyId];
+  } else {
+    for (const k of Object.keys(cachedInvoiceSettingsByCompany)) {
+      delete cachedInvoiceSettingsByCompany[k];
+    }
+  }
   inflightInvoiceSettingsPromise = null;
+  inflightCompanyId = null;
 };
 
-export const setCachedInvoiceSettings = (settings: InvoicePrintSettings) => {
-  cachedInvoiceSettings = { ...DEFAULT_INVOICE_SETTINGS, ...settings };
+export const setCachedInvoiceSettings = (settings: InvoicePrintSettings, companyId?: string) => {
+  const merged = { ...DEFAULT_INVOICE_SETTINGS, ...settings };
+  const user = tokenManager.getUser();
+  const targetCompany = companyId || user?.companyId || (user as any)?.company?.id || "default";
+  cachedInvoiceSettingsByCompany[targetCompany] = merged;
 };
 
 export function useInvoiceSettings() {
+  const user = tokenManager.getUser();
+  const currentCompanyId = user?.companyId || (user as any)?.company?.id || "default";
+  const cachedForCurrent = cachedInvoiceSettingsByCompany[currentCompanyId];
+
   const [settings, setSettings] = useState<InvoicePrintSettings>(
-    cachedInvoiceSettings || DEFAULT_INVOICE_SETTINGS,
+    cachedForCurrent || DEFAULT_INVOICE_SETTINGS,
   );
-  const [loading, setLoading] = useState(!cachedInvoiceSettings);
+  const [loading, setLoading] = useState(!cachedForCurrent);
 
   const fetchSettings = useCallback(async (force = false) => {
-    if (cachedInvoiceSettings && !force) {
-      setSettings(cachedInvoiceSettings);
+    const currentUser = tokenManager.getUser();
+    const activeCompany = currentUser?.companyId || (currentUser as any)?.company?.id || "default";
+    const cached = cachedInvoiceSettingsByCompany[activeCompany];
+    if (cached && !force) {
+      setSettings(cached);
       setLoading(false);
-      return cachedInvoiceSettings;
+      return cached;
     }
 
-    if (!inflightInvoiceSettingsPromise || force) {
+    if (!inflightInvoiceSettingsPromise || force || inflightCompanyId !== activeCompany) {
+      inflightCompanyId = activeCompany;
       inflightInvoiceSettingsPromise = apiClient
         .get("/order-invoice-settings")
         .then((res) => {
           if (res.data?.success && res.data?.data) {
             const merged = { ...DEFAULT_INVOICE_SETTINGS, ...res.data.data };
-            cachedInvoiceSettings = merged;
+            cachedInvoiceSettingsByCompany[activeCompany] = merged;
             return merged;
           }
-          return cachedInvoiceSettings || DEFAULT_INVOICE_SETTINGS;
+          return cachedInvoiceSettingsByCompany[activeCompany] || DEFAULT_INVOICE_SETTINGS;
         })
         .catch(() => {
-          return cachedInvoiceSettings || DEFAULT_INVOICE_SETTINGS;
+          return cachedInvoiceSettingsByCompany[activeCompany] || DEFAULT_INVOICE_SETTINGS;
         })
         .finally(() => {
           inflightInvoiceSettingsPromise = null;
+          inflightCompanyId = null;
         });
     }
 
@@ -59,10 +80,15 @@ export function useInvoiceSettings() {
   }, []);
 
   useEffect(() => {
-    if (!cachedInvoiceSettings) {
+    const currentUser = tokenManager.getUser();
+    const activeCompany = currentUser?.companyId || (currentUser as any)?.company?.id || "default";
+    if (!cachedInvoiceSettingsByCompany[activeCompany]) {
       void fetchSettings();
+    } else {
+      setSettings(cachedInvoiceSettingsByCompany[activeCompany]);
+      setLoading(false);
     }
-  }, [fetchSettings]);
+  }, [currentCompanyId, fetchSettings]);
 
   const mergeSettings = useCallback(
     (overrides?: Partial<InvoicePrintSettings>): InvoicePrintSettings => ({

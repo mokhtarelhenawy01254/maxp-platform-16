@@ -326,7 +326,7 @@ const PrintMultipleInvoices: React.FC = () => {
   const [guestSlots, setGuestSlots] = useState<InvoiceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { settings } = useInvoiceSettings();
+  const { settings, loading: settingsLoading } = useInvoiceSettings();
   const [printLayout, setPrintLayout] = useState<PrintLayout>("grid");
   const [autoLayout, setAutoLayout] = useState(true); // tracks if user overrode auto
 
@@ -412,28 +412,28 @@ const PrintMultipleInvoices: React.FC = () => {
 
   // Auto-set layout once slots are known (only if user hasn't overridden)
   useEffect(() => {
-    if (allSlots.length > 0 && !loading && autoLayout) {
+    if (allSlots.length > 0 && !loading && !settingsLoading && autoLayout) {
       setPrintLayout(autoDetectLayout(allSlots.length));
     }
-  }, [allSlots, loading, autoLayout]);
+  }, [allSlots, loading, settingsLoading, autoLayout]);
 
   // Increment print count for DB invoices only (skip guest orders — لا يوجد لها سجل فاتورة)
   const printedRef = useRef(false);
   useEffect(() => {
-    if (!loading && invoices.length > 0 && !printedRef.current) {
+    if (!loading && !settingsLoading && invoices.length > 0 && !printedRef.current) {
       printedRef.current = true;
       invoices.forEach((inv) => {
         apiClient.post(`/order-invoices/${inv.id}/print`).catch(() => {});
       });
     }
-  }, [invoices, loading]);
+  }, [invoices, loading, settingsLoading]);
 
   // Trigger print after layout is set and data is ready
   useEffect(() => {
-    if (allSlots.length > 0 && !loading) {
+    if (allSlots.length > 0 && !loading && !settingsLoading) {
       setTimeout(() => { printClean(); }, 1200);
     }
-  }, [allSlots, loading]);
+  }, [allSlots, loading, settingsLoading]);
 
   // Group slots into sheets
   const sheets = useMemo(() => {
@@ -559,7 +559,7 @@ const PrintMultipleInvoices: React.FC = () => {
   /** is the current layout compact (multiple per sheet)? */
   const isCompact = printLayout !== "single";
 
-  if (loading) {
+  if (loading || settingsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

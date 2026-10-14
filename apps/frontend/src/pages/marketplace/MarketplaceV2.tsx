@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -7,14 +7,14 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   Package, Loader2,
-  Layers3, Sparkles, PackageX, X, Zap,
+  Layers3, PackageX, X, Zap,
   Store, Users, MessageSquare, BarChart3, TrendingUp,
   DollarSign, Heart, CheckCircle2,
   ShoppingBag, Brain,
   LayoutGrid, List,
   Truck,
   CreditCard, Gamepad2, Palette, ClipboardList, Percent,
-  Laptop, History,
+  ChevronDown, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,9 +31,16 @@ import {
   AppCard,
   SearchBar,
   CategorySidebar,
-  CategoryBar,
   SectionSkeleton,
 } from "@/components/marketplace";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import type { MarketplaceApp, Category, MarketplaceSpecialty, MarketplaceFilters, SortOption, ToolCollectionId } from "@/types/marketplace";
 import {
   categoryGroups,
@@ -155,7 +162,7 @@ function getCategoryDisplayCategories(categories: Category[], categoryCounts: Re
 
 export default function MarketplaceV2() {
   const { t } = useTranslation();
-  const { user, refreshUser } = useAuth();
+  const { refreshUser } = useAuth();
   const [apps, setApps] = useState<MarketplaceApp[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -327,43 +334,8 @@ export default function MarketplaceV2() {
         <div className="mx-auto max-w-[1600px] px-3 sm:px-6 lg:px-8 pb-16">
           {/* ── Top Header & Omni Filter Bar ── */}
           <div className="pt-4 pb-2">
-            {/* 1. Recommended Hub Callout (if company has specialty) */}
-            {recommendedHub && (
-              <div className="mb-3.5 flex items-center justify-between gap-3 p-3 rounded-2xl border border-primary/20 bg-primary/[0.03] text-xs">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="size-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                    <Sparkles size={16} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-foreground">
-                      منظومة مخصصة لنشاط حسابك: <span className="text-primary">{user?.company?.businessSpecialty?.nameAr || recommendedHub.nameAr}</span>
-                    </p>
-                    <p className="text-[11px] text-muted-foreground line-clamp-1">
-                      {recommendedHub.descriptionAr}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedSystemHub(selectedSystemHub === recommendedHub.id ? "ALL" : recommendedHub.id);
-                    setSelectedCategory("");
-                    setDisplayCount(DISPLAY_INCREMENT);
-                  }}
-                  className={cn(
-                    "px-3 py-1.5 rounded-xl font-bold shrink-0 transition-colors text-xs",
-                    selectedSystemHub === recommendedHub.id
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-background border border-border/40 hover:border-primary/40 text-foreground"
-                  )}
-                >
-                  {selectedSystemHub === recommendedHub.id ? "معروضة حالياً ✓" : `عرض حلول ${recommendedHub.nameAr}`}
-                </button>
-              </div>
-            )}
-
-            {/* 2. System Hubs Switcher (Multi-System Solution Selector) */}
-            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-2 mb-3 border-b border-border/20">
+            {/* 1. System Hubs Switcher (Multi-System Solution Selector) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-2 mb-3 border-b border-border/20 pe-1">
               {SYSTEM_HUBS.map(hub => {
                 const Icon = hub.icon;
                 const active = hub.id === selectedSystemHub;
@@ -384,19 +356,19 @@ export default function MarketplaceV2() {
                     className={cn(
                       "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-150 shrink-0",
                       active
-                        ? "bg-foreground text-background shadow-sm"
+                        ? "bg-primary text-primary-foreground shadow-sm"
                         : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/30"
                     )}
                   >
-                    <Icon size={14} className={active ? "text-background" : "text-primary"} />
+                    <Icon size={14} className={active ? "text-primary-foreground" : "text-primary"} />
                     <span>{hub.nameAr}</span>
                     <span className={cn(
                       "text-[10px] tabular-nums px-1.5 py-0.2 rounded-full",
-                      active ? "bg-background/20 text-background font-semibold" : "bg-muted text-muted-foreground"
+                      active ? "bg-primary-foreground/20 text-primary-foreground font-semibold" : "bg-muted text-muted-foreground"
                     )}>
                       {hubAppCount}
                     </span>
-                    {isRecommended && (
+                    {isRecommended && !active && (
                       <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                         موصى به
                       </span>
@@ -404,32 +376,12 @@ export default function MarketplaceV2() {
                   </button>
                 );
               })}
-
-              <Link
-                to="/marketplace/history"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/30 transition-all shrink-0 active:scale-[0.98] mr-auto"
-                title="سجل حركات وتثبيت التطبيقات"
-              >
-                <History size={14} className="text-primary" />
-                <span>سجل التطبيقات</span>
-              </Link>
-
-              <Link
-                to="/marketplace/downloads"
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 transition-all shrink-0 active:scale-[0.98]"
-              >
-                <Laptop size={14} className="text-primary" />
-                <span>تطبيقات الأجهزة والموبايل</span>
-                <span className="text-[10px] tabular-nums px-1.5 py-0.2 rounded-full bg-primary/20 text-primary font-semibold">
-                  تحميل
-                </span>
-              </Link>
             </div>
 
-            {/* Row 1: Search, Status Segmented Controls, Drawer Sheet Trigger, and View Switcher */}
+            {/* Row 1: Search, Status Segmented Controls, Category Picker, and View Switcher */}
             <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
-              {/* Search Bar */}
-              <div className="flex-1 min-w-[240px]">
+              {/* Search Bar — sticky on mobile so search stays reachable while browsing apps */}
+              <div className="flex-1 min-w-[240px] sticky top-14 z-30 bg-background py-1.5 sm:py-0 sm:static sm:z-auto">
                 <SearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
@@ -472,13 +424,72 @@ export default function MarketplaceV2() {
                 </button>
               </div>
 
-              {/* All Categories Drawer Sheet Trigger */}
+              {/* Category dropdown (desktop) — scoped to the selected system hub */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(
+                      "hidden sm:flex items-center gap-1.5 h-10 px-3 rounded-xl text-xs font-bold shrink-0 border transition-all",
+                      selectedCategory
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-background border-border/40 hover:border-primary/40 text-foreground"
+                    )}
+                  >
+                    <Layers3 size={14} />
+                    <span>
+                      {selectedCategory
+                        ? categories.find(c => (c.category || "").toUpperCase() === selectedCategory.toUpperCase())?.name || selectedCategory
+                        : "التصنيفات"}
+                    </span>
+                    {selectedCategory && (
+                      <span className="text-[10px] tabular-nums px-1.5 py-0.5 rounded-full bg-primary-foreground/20">
+                        {filteredApps.length}
+                      </span>
+                    )}
+                    <ChevronDown size={13} className={cn("opacity-70", selectedCategory && "text-primary-foreground")} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="max-h-80 overflow-y-auto w-56 rounded-xl">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    {activeHubDef && selectedSystemHub !== "ALL" ? `تصنيفات ${activeHubDef.nameAr}` : "كل التصنيفات"}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => handleCategorySelect(selectedCategory)}
+                    className={cn("text-xs font-bold gap-2", !selectedCategory && "bg-muted/60")}
+                  >
+                    <Package size={13} className="text-primary" />
+                    <span className="flex-1">كل التصنيفات</span>
+                    <span className="text-[10px] tabular-nums text-muted-foreground">{hubFiltered.length}</span>
+                    {!selectedCategory && <Check size={13} className="text-primary" />}
+                  </DropdownMenuItem>
+                  {categoryDisplay.map(cat => {
+                    const Icon = cat.icon;
+                    const active = cat.id === selectedCategory;
+                    return (
+                      <DropdownMenuItem
+                        key={cat.id}
+                        onClick={() => handleCategorySelect(active ? "" : cat.id)}
+                        className={cn("text-xs font-bold gap-2", active && "bg-muted/60")}
+                      >
+                        <Icon size={13} className="text-primary" />
+                        <span className="flex-1 truncate">{cat.name}</span>
+                        <span className="text-[10px] tabular-nums text-muted-foreground">{cat.count}</span>
+                        {active && <Check size={13} className="text-primary" />}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* All Categories Drawer Sheet Trigger (mobile only) */}
               <CategorySidebar
                 isMobile
-                categories={availableCategories}
+                categories={categoryDisplay}
                 selectedCategory={selectedCategory}
                 onSelect={handleCategorySelect}
-                className="h-10 px-3 rounded-xl border-border/40 font-bold shrink-0"
+                className="sm:hidden h-10 px-3 rounded-xl border-border/40 font-bold shrink-0"
               />
 
               {/* Grid / List View Switcher */}
@@ -508,15 +519,6 @@ export default function MarketplaceV2() {
                   <List size={16} />
                 </button>
               </div>
-            </div>
-
-            {/* Row 2: Category Pills Bar */}
-            <div className="mt-3 pt-3 border-t border-border/20">
-              <CategoryBar
-                categories={categoryDisplay}
-                selectedCategory={selectedCategory}
-                onSelect={handleCategorySelect}
-              />
             </div>
 
             {/* Active Filter summary if any filter is on */}
