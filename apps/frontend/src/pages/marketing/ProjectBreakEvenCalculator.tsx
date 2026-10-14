@@ -1,20 +1,42 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  CalculatorIcon, CurrencyDollarIcon, ChartBarIcon,
-  ExclamationTriangleIcon, InformationCircleIcon, ArrowTrendingUpIcon,
-  BookmarkIcon as SaveIcon, TrashIcon, DocumentTextIcon,
-} from "@heroicons/react/24/outline";
+  Calculator,
+  Building2,
+  DollarSign,
+  TrendingUp,
+  AlertTriangle,
+  Info,
+  FileText,
+  Bookmark,
+  Trash2,
+  ArrowDown,
+  Layers,
+} from "lucide-react";
 import SliderInput from "@/components/common/SliderInput";
+import {
+  MarketingTelemetryRibbon,
+  MarketingChassisCard,
+  MarketingPresetBar,
+  MarketingMetricTile,
+  TelemetryItem,
+} from "./MarketingCalculatorComponents";
 
 const CURRENCIES = ["EGP", "SAR", "USD"] as const;
-
 type Scenario = "conservative" | "balanced" | "aggressive";
 
 interface Inputs {
-  fixedCosts: number; aov: number; piecesPerOrder: number; cogs: number; packingFees: number;
-  shippingFees: number; rtoFees: number; cpp: number;
-  confirmationRate: number; deliveryRate: number; ordersPerDay: number;
+  fixedCosts: number;
+  aov: number;
+  piecesPerOrder: number;
+  cogs: number;
+  packingFees: number;
+  shippingFees: number;
+  rtoFees: number;
+  cpp: number;
+  confirmationRate: number;
+  deliveryRate: number;
+  ordersPerDay: number;
 }
 
 const SCENARIOS: Record<Scenario, Inputs> = {
@@ -59,6 +81,7 @@ export default function ProjectBreakEvenCalculator() {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === "rtl";
   const [currency, setCurrency] = useState("EGP");
+  const [activeScenario, setActiveScenario] = useState<Scenario>("balanced");
   const [inputs, setInputs] = useState<Inputs>({ ...SCENARIOS.balanced });
   const [saved, setSaved] = useState<SavedScenario[]>([]);
 
@@ -73,7 +96,10 @@ export default function ProjectBreakEvenCalculator() {
   const set = (field: keyof Inputs) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setInputs((p) => ({ ...p, [field]: parseFloat(e.target.value) || 0 }));
 
-  const applyScenario = (s: Scenario) => setInputs({ ...SCENARIOS[s] });
+  const applyScenario = (s: Scenario) => {
+    setActiveScenario(s);
+    setInputs({ ...SCENARIOS[s] });
+  };
 
   const s = sym(currency);
   const r = useMemo(() => compute(inputs), [inputs]);
@@ -90,159 +116,193 @@ export default function ProjectBreakEvenCalculator() {
     persist([...saved, { name, inputs: { ...inputs }, currency }]);
   };
 
-  const loadSaved = (s: SavedScenario) => { setInputs({ ...s.inputs }); setCurrency(s.currency); };
+  const loadSaved = (sc: SavedScenario) => { setInputs({ ...sc.inputs }); setCurrency(sc.currency); };
   const deleteSaved = (i: number) => persist(saved.filter((_, idx) => idx !== i));
-
   const T = (k: string) => t(`projectBreakEven.${k}`);
 
+  const telemetryItems: TelemetryItem[] = [
+    {
+      label: T("breakEvenOrders"),
+      value: isFinite(r.breakEvenOrders) ? fmt(r.breakEvenOrders) : "∞",
+      sub: isFinite(r.breakEvenOrders) ? T("orders") : undefined,
+      color: isProfit ? "emerald" : "rose",
+    },
+    {
+      label: T("revenueRequired"),
+      value: isFinite(r.revenueRequired) ? `${fmt(r.revenueRequired)} ${s}` : "∞",
+      sub: T("revenueRequiredSub"),
+      color: "primary",
+    },
+    {
+      label: T("timeToBe"),
+      value: timeLabel,
+      sub: `${fmt1(r.deliveredPerDay)} ${T("deliveredPerDay")}`,
+      color: isFinite(r.daysToBe) && r.daysToBe < 60 ? "emerald" : "amber",
+    },
+    {
+      label: T("profitPerOrder"),
+      value: `${fmt(r.contributionPerOrder)} ${s}`,
+      sub: `${r.contributionMargin.toFixed(1)}%`,
+      color: isProfit ? "emerald" : "rose",
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-4 sm:py-6 px-3 sm:px-4" dir={i18n.dir()}>
-      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+    <div className="min-h-screen bg-background text-foreground" dir={i18n.dir()}>
+      <div className="max-w-7xl mx-auto space-y-4 p-3 sm:p-5">
+        {/* Chassis Top Control Bar */}
+        <div className="bg-card border border-border/70 rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <CalculatorIcon className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600 shrink-0" />
+            <h1 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
+              <Calculator className="w-5 h-5 text-primary shrink-0" />
               {T("title")}
             </h1>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1">{T("desc")}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{T("desc")}</p>
           </div>
-          <select value={currency} onChange={(e) => setCurrency(e.target.value)}
-            className="w-full sm:w-auto border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg px-3 py-1.5 text-sm">
-            {CURRENCIES.map((c) => <option key={c} value={c}>{c} — {T(c)}</option>)}
-          </select>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className="w-full sm:w-auto border border-border/70 bg-background rounded-lg px-3 py-1.5 text-xs font-medium text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+            >
+              {CURRENCIES.map((c) => <option key={c} value={c}>{c} ({sym(c)})</option>)}
+            </select>
+          </div>
         </div>
 
-        {/* Scenario + Save */}
-        <div className="flex flex-wrap gap-2 items-center">
-          {(["conservative", "balanced", "aggressive"] as Scenario[]).map((s) => (
-            <button key={s} onClick={() => applyScenario(s)}
-              className="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium border transition-colors border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20">
-              {s === "conservative" ? "🛡 " : s === "balanced" ? "⚖️ " : "🚀 "}{T(s)}
-            </button>
-          ))}
-          <span className="text-gray-300 dark:text-gray-700 mx-1 hidden sm:inline">|</span>
-          <button onClick={saveCurrent} disabled={saved.length >= 3}
-            className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium border border-green-300 dark:border-green-700 text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 disabled:opacity-40 disabled:cursor-not-allowed">
-            <SaveIcon className="w-4 h-4 shrink-0" /> {T("save")} ({saved.length}/3)
-          </button>
-          {saved.map((sc, i) => (
-            <div key={i} className="flex items-center gap-1 px-2 sm:px-3 py-1 rounded-lg text-xs bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-              <button onClick={() => loadSaved(sc)} className="text-gray-700 dark:text-gray-300 hover:text-blue-600 truncate max-w-20 sm:max-w-none">{sc.name}</button>
-              <button onClick={() => deleteSaved(i)} className="text-red-400 hover:text-red-600 shrink-0"><TrashIcon className="w-3 h-3" /></button>
+        {/* Telemetry Ribbon */}
+        <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-xs">
+          <MarketingTelemetryRibbon items={telemetryItems} />
+
+          {/* Action Ribbon: Presets + Saved */}
+          <div className="p-3 bg-muted/10 border-t border-border/70 flex flex-wrap gap-2 items-center justify-between">
+            <MarketingPresetBar
+              presets={["conservative", "balanced", "aggressive"] as Scenario[]}
+              current={activeScenario}
+              onSelect={applyScenario}
+              labels={{
+                conservative: T("conservative"),
+                balanced: T("balanced"),
+                aggressive: T("aggressive"),
+              }}
+            />
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={saveCurrent}
+                disabled={saved.length >= 3}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border/70 text-foreground hover:bg-muted/30 disabled:opacity-40 transition-colors"
+              >
+                <Bookmark className="w-3.5 h-3.5 text-primary" />
+                {T("save")} ({saved.length}/3)
+              </button>
+              {saved.map((sc, i) => (
+                <div key={i} className="flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-muted/40 border border-border/70">
+                  <button type="button" onClick={() => loadSaved(sc)} className="text-foreground hover:text-primary truncate max-w-24 font-medium">
+                    {sc.name}
+                  </button>
+                  <button type="button" onClick={() => deleteSaved(i)} className="text-muted-foreground hover:text-rose-500">
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
 
-        {/* Input sliders */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          <Card title={T("fixedCosts")} icon={<BuildingOfficeIcon className="w-5 h-5 text-gray-500" />}>
-            <SliderInput currencySymbol={sym(currency)} label={T("fixedCostsHint")} value={inputs.fixedCosts} min={0} max={500000} step={1000} onChange={set("fixedCosts")} />
-          </Card>
-          <Card title={T("revenueCosts")} icon={<CurrencyDollarIcon className="w-5 h-5 text-green-500" />}>
-            <SliderInput currencySymbol={sym(currency)} label={T("aov")} value={inputs.aov} min={50} max={5000} step={10} onChange={set("aov")} />
-            <SliderInput currencySymbol={sym(currency)} label={T("piecesPerOrder")} value={inputs.piecesPerOrder} min={1} max={20} step={1} onChange={set("piecesPerOrder")} />
-            <SliderInput currencySymbol={sym(currency)} label={T("cogs")} value={inputs.cogs} min={0} max={3000} step={10} onChange={set("cogs")} />
-            <SliderInput currencySymbol={sym(currency)} label={T("packing")} value={inputs.packingFees} min={0} max={200} step={5} onChange={set("packingFees")} />
-            <SliderInput currencySymbol={sym(currency)} label={T("shipping")} value={inputs.shippingFees} min={0} max={500} step={10} onChange={set("shippingFees")} />
-            <SliderInput currencySymbol={sym(currency)} label={T("rtoFee")} value={inputs.rtoFees} min={0} max={300} step={10} onChange={set("rtoFees")} />
-          </Card>
-          <Card title={T("marketing")} icon={<ChartBarIcon className="w-5 h-5 text-purple-500" />}>
-            <SliderInput currencySymbol={sym(currency)} label={T("cpp")} value={inputs.cpp} min={0} max={1000} step={10} onChange={set("cpp")} />
-            <SliderInput currencySymbol={sym(currency)} label={T("confirmRate")} value={inputs.confirmationRate} min={0} max={100} step={5} isPercent onChange={set("confirmationRate")} />
-            <SliderInput currencySymbol={sym(currency)} label={T("deliveryRate")} value={inputs.deliveryRate} min={0} max={100} step={5} isPercent onChange={set("deliveryRate")} />
-            <SliderInput currencySymbol={sym(currency)} label={T("ordersPerDay")} value={inputs.ordersPerDay} min={1} max={500} step={1} onChange={set("ordersPerDay")} />
-          </Card>
+        {/* Main Grid: Inputs */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <MarketingChassisCard title={T("fixedCosts")} icon={<Building2 className="w-4 h-4 text-primary" />}>
+            <SliderInput currencySymbol={s} label={T("fixedCostsHint")} value={inputs.fixedCosts} min={0} max={500000} step={1000} onChange={set("fixedCosts")} />
+          </MarketingChassisCard>
+
+          <MarketingChassisCard title={T("revenueCosts")} icon={<DollarSign className="w-4 h-4 text-emerald-500" />}>
+            <SliderInput currencySymbol={s} label={T("aov")} value={inputs.aov} min={50} max={5000} step={10} onChange={set("aov")} />
+            <SliderInput currencySymbol={s} label={T("piecesPerOrder")} value={inputs.piecesPerOrder} min={1} max={20} step={1} onChange={set("piecesPerOrder")} />
+            <SliderInput currencySymbol={s} label={T("cogs")} value={inputs.cogs} min={0} max={3000} step={10} onChange={set("cogs")} />
+            <SliderInput currencySymbol={s} label={T("packing")} value={inputs.packingFees} min={0} max={200} step={5} onChange={set("packingFees")} />
+            <SliderInput currencySymbol={s} label={T("shipping")} value={inputs.shippingFees} min={0} max={500} step={10} onChange={set("shippingFees")} />
+            <SliderInput currencySymbol={s} label={T("rtoFee")} value={inputs.rtoFees} min={0} max={300} step={10} onChange={set("rtoFees")} />
+          </MarketingChassisCard>
+
+          <MarketingChassisCard title={T("marketing")} icon={<TrendingUp className="w-4 h-4 text-purple-500" />}>
+            <SliderInput currencySymbol={s} label={T("cpp")} value={inputs.cpp} min={0} max={1000} step={10} onChange={set("cpp")} />
+            <SliderInput currencySymbol={s} label={T("confirmRate")} value={inputs.confirmationRate} min={0} max={100} step={5} isPercent onChange={set("confirmationRate")} />
+            <SliderInput currencySymbol={s} label={T("deliveryRate")} value={inputs.deliveryRate} min={0} max={100} step={5} isPercent onChange={set("deliveryRate")} />
+            <SliderInput currencySymbol={s} label={T("ordersPerDay")} value={inputs.ordersPerDay} min={1} max={500} step={1} onChange={set("ordersPerDay")} />
+          </MarketingChassisCard>
         </div>
 
-        {/* Results */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-6 space-y-4 sm:space-y-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        {/* Results Chassis Card */}
+        <div className="bg-card border border-border/70 rounded-xl p-4 sm:p-5 space-y-4 shadow-xs">
+          <div className="flex items-center justify-between border-b border-border/70 pb-3">
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                <ArrowTrendingUpIcon className="w-5 h-5 text-blue-600 shrink-0" /> {T("results")}
+              <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Layers className="w-4 h-4 text-primary" /> {T("results")}
               </h2>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{T("codModel")} • {dateStr}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{T("codModel")} • {dateStr}</p>
             </div>
             {marginLevel === "marginal" && (
-              <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">
-                <ExclamationTriangleIcon className="w-3.5 h-3.5 shrink-0" /> ⚠️ {T("marginal")}
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                <AlertTriangle className="w-3 h-3" /> {T("marginal")}
               </span>
             )}
             {marginLevel === "loss" && (
-              <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700">
-                <ExclamationTriangleIcon className="w-3.5 h-3.5 shrink-0" /> 🛑 {T("lossBadge")}
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                <AlertTriangle className="w-3 h-3" /> {T("lossBadge")}
               </span>
             )}
           </div>
 
-          {/* Break-even Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            <BigCard value={isFinite(r.breakEvenOrders) ? fmt(r.breakEvenOrders) : "∞"} label={T("breakEvenOrders")} sub={T("breakEvenOrdersSub")} isProfit={isProfit} />
-            <BigCard value={isFinite(r.revenueRequired) ? `${fmt(r.revenueRequired)} ${s}` : "∞"} label={T("revenueRequired")} sub={T("revenueRequiredSub")} isProfit={isProfit} />
-            <BigCard value={timeLabel} label={T("timeToBe")} sub={`${T("timeToBeSub")} ${fmt(inputs.ordersPerDay)} ${T("ordersPerDay")} → ${fmt1(r.deliveredPerDay)} ${T("deliveredPerDay")}`} isProfit={isProfit} />
-          </div>
-
           {!isProfit && (
-            <div className="flex items-center gap-2 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-300 text-xs sm:text-sm">
-              <ExclamationTriangleIcon className="w-5 h-5 shrink-0" />
+            <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-600 dark:text-rose-400 text-xs font-medium">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
               <span>{T("lossWarning")}</span>
             </div>
           )}
 
-          {/* Key Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-            <MetricCard label={T("profitPerOrder")} value={`${fmt(r.contributionPerOrder)} ${s}`} sub={`${T("margin")} ${r.contributionMargin.toFixed(1)}%`} positive={isProfit} />
-            <MetricCard label={T("effectiveCac")} value={`${isFinite(r.effectiveCac) ? fmt(r.effectiveCac) : "∞"} ${s}`} sub={T("effectiveCacSub")} positive={r.effectiveCac < inputs.aov} />
-            <MetricCard label={T("costPerDelivered")} value={`${fmt(r.costPerDelivered)} ${s}`} sub={T("costPerDeliveredSub")} positive={r.costPerDelivered < inputs.aov} />
-            <MetricCard label={T("rtoImpact")} value={`${fmt(r.monthlyRtoImpact)} ${s}`} sub={`${T("rtoImpactSub")} ${fmt(r.monthlyRtoOrders)} ${T("returnMonth")}`} positive={false} />
+          {/* Secondary Metric Tiles */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <MarketingMetricTile label={T("profitPerOrder")} value={`${fmt(r.contributionPerOrder)} ${s}`} sub={`${T("margin")} ${r.contributionMargin.toFixed(1)}%`} positive={isProfit} accent="emerald" />
+            <MarketingMetricTile label={T("effectiveCac")} value={`${isFinite(r.effectiveCac) ? fmt(r.effectiveCac) : "∞"} ${s}`} sub={T("effectiveCacSub")} positive={r.effectiveCac < inputs.aov} accent="blue" />
+            <MarketingMetricTile label={T("costPerDelivered")} value={`${fmt(r.costPerDelivered)} ${s}`} sub={T("costPerDeliveredSub")} positive={r.costPerDelivered < inputs.aov} accent="gray" />
+            <MarketingMetricTile label={T("rtoImpact")} value={`${fmt(r.monthlyRtoImpact)} ${s}`} sub={`${T("rtoImpactSub")} ${fmt(r.monthlyRtoOrders)} ${T("returnMonth")}`} positive={false} accent="red" />
           </div>
 
-          {/* Unit Economics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{T("rtoUnitCost")}</h3>
-              <div className="text-xl sm:text-2xl font-bold text-orange-500">{fmt(r.rtoCostPerFail)} {s}</div>
-              <div className="text-xs text-gray-400">{T("rtoUnitCostSub")}</div>
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{T("effectiveDeliveryRate")}</h3>
-              <div className="text-xl sm:text-2xl font-bold text-blue-500">{r.effectiveDr.toFixed(1)}%</div>
-              <div className="text-xs text-gray-400">{inputs.confirmationRate}% × {inputs.deliveryRate}%</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Order Flow Simulation */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-6 space-y-3 sm:space-y-4">
-          <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-            <ChartBarIcon className="w-4 h-4 shrink-0" /> {T("orderFlow")}
-          </h3>
-          <div className="space-y-0">
-            <FunnelStep label={T("placed")} value={100} cost={`${fmt(100 * inputs.cpp)} ${s} ${T("ads")}`} color="bg-blue-500" />
-            <FunnelArrow />
-            <FunnelStep label={`${T("confirmed")} (${inputs.confirmationRate}%)`} value={r.confirmed} split={
-              <span className="text-xs text-gray-400">{fmt(100 - r.confirmed)} {T("unconfirmed")}</span>
-            } color="bg-green-500" />
-            <FunnelArrow />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div>
-                <FunnelStep label={`${T("delivered")} (${inputs.deliveryRate}% ${T("ofConfirmed")})`} value={r.delivered} cost={`${fmt(r.revenue)} ${s} ${T("revenue")}`} color="bg-emerald-500" />
+          {/* Funnel Flow */}
+          <div className="bg-muted/10 border border-border/70 rounded-lg p-3.5 space-y-2">
+            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">{T("orderFlow")}</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
+              <div className="p-2.5 bg-card border border-border/60 rounded-md">
+                <div className="text-muted-foreground text-[10px]">{T("placed")}</div>
+                <div className="text-sm font-bold font-mono text-foreground mt-0.5">100</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">{fmt(100 * inputs.cpp)} {s} {T("ads")}</div>
               </div>
-              <div>
-                <FunnelStep label={T("returned")} value={r.rto} cost={`${fmt(Math.round(r.rto * r.rtoCostPerFail))} ${s} ${T("loss")}`} color="bg-red-500" />
+              <div className="p-2.5 bg-card border border-border/60 rounded-md">
+                <div className="text-muted-foreground text-[10px]">{T("confirmed")} ({inputs.confirmationRate}%)</div>
+                <div className="text-sm font-bold font-mono text-primary mt-0.5">{fmt1(r.confirmed)}</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">{fmt(100 - r.confirmed)} {T("unconfirmed")}</div>
+              </div>
+              <div className="p-2.5 bg-card border border-border/60 rounded-md">
+                <div className="text-muted-foreground text-[10px]">{T("delivered")} ({inputs.deliveryRate}%)</div>
+                <div className="text-sm font-bold font-mono text-emerald-500 mt-0.5">{fmt1(r.delivered)}</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">{fmt(r.revenue)} {s} {T("revenue")}</div>
+              </div>
+              <div className="p-2.5 bg-card border border-border/60 rounded-md">
+                <div className="text-muted-foreground text-[10px]">{T("returned")} (RTO)</div>
+                <div className="text-sm font-bold font-mono text-rose-500 mt-0.5">{fmt1(r.rto)}</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">{fmt(Math.round(r.rto * r.rtoCostPerFail))} {s} {T("loss")}</div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Input Parameters + Cost Breakdown */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-5 space-y-3">
-            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300">{T("inputSummary")}</h3>
-            <div className="overflow-x-auto text-xs sm:text-sm">
-              <table className="w-full border-collapse">
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+          {/* Breakdown Tables */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div className="border border-border/70 rounded-lg p-3">
+              <h3 className="text-xs font-bold text-foreground mb-2">{T("inputSummary")}</h3>
+              <table className="w-full text-xs">
+                <tbody className="divide-y divide-border/60 font-mono">
                   {[
                     [T("fixedCosts"), `${fmt(inputs.fixedCosts)} ${s}`],
                     [T("aov"), `${fmt(inputs.aov)} ${s}`],
@@ -251,23 +311,20 @@ export default function ProjectBreakEvenCalculator() {
                     [T("confirmRate"), `${inputs.confirmationRate}%`],
                     [T("deliveryRate"), `${inputs.deliveryRate}%`],
                     [T("effectiveDeliveryRate"), `${r.effectiveDr.toFixed(1)}%`],
-                    [T("ordersPerDay"), `${fmt(inputs.ordersPerDay)}`],
                   ].map(([k, v]) => (
-                    <tr key={k} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                      <td className="py-1.5 sm:py-2 text-gray-600 dark:text-gray-400">{k}</td>
-                      <td className={`py-1.5 sm:py-2 font-semibold text-gray-900 dark:text-gray-100 ${isRtl ? "text-left" : "text-right"}`}>{v}</td>
+                    <tr key={k}>
+                      <td className="py-1 text-muted-foreground font-sans">{k}</td>
+                      <td className={`py-1 font-semibold text-foreground ${isRtl ? "text-left" : "text-right"}`}>{v}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
 
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-5 space-y-3">
-            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300">{T("costBreakdown")}</h3>
-            <div className="overflow-x-auto text-xs sm:text-sm">
-              <table className="w-full border-collapse">
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+            <div className="border border-border/70 rounded-lg p-3">
+              <h3 className="text-xs font-bold text-foreground mb-2">{T("costBreakdown")}</h3>
+              <table className="w-full text-xs">
+                <tbody className="divide-y divide-border/60 font-mono">
                   {[
                     [T("cogs"), `${fmt(inputs.cogs)} ${s}`],
                     [T("packing"), `${fmt(inputs.packingFees)} ${s}`],
@@ -276,186 +333,54 @@ export default function ProjectBreakEvenCalculator() {
                     [T("costPerDelivered"), `${fmt(r.costPerDelivered)} ${s}`],
                     [T("rtoUnitCost"), `${fmt(r.rtoCostPerFail)} ${s}`],
                   ].map(([k, v]) => (
-                    <tr key={k} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                      <td className="py-1.5 sm:py-2 text-gray-600 dark:text-gray-400">{k}</td>
-                      <td className={`py-1.5 sm:py-2 font-semibold text-gray-900 dark:text-gray-100 ${isRtl ? "text-left" : "text-right"}`}>{v}</td>
+                    <tr key={k}>
+                      <td className="py-1 text-muted-foreground font-sans">{k}</td>
+                      <td className={`py-1 font-semibold text-foreground ${isRtl ? "text-left" : "text-right"}`}>{v}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
-        </div>
 
-        {/* Step-by-Step Formula */}
-        <details className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-5 group">
-          <summary className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
-            <InformationCircleIcon className="w-4 h-4 shrink-0" /> {T("stepByStep")}
-          </summary>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-xs sm:text-sm border-collapse">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className={`py-2 px-2 sm:px-3 text-gray-500 dark:text-gray-400 ${isRtl ? "text-right" : "text-left"}`}>#</th>
-                  <th className={`py-2 px-2 sm:px-3 text-gray-500 dark:text-gray-400 ${isRtl ? "text-right" : "text-left"}`}>{T("step")}</th>
-                  <th className={`py-2 px-2 sm:px-3 text-gray-500 dark:text-gray-400 ${isRtl ? "text-right" : "text-left"}`}>{T("formula")}</th>
-                  <th className={`py-2 px-2 sm:px-3 text-gray-500 dark:text-gray-400 ${isRtl ? "text-left" : "text-right"}`}>{T("result")}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {[
-                  [T("costPerDelivered"), T("costPerDeliveredFormula"), `${fmt(r.costPerDelivered)} ${s}`],
-                  [T("rtoUnitCost"), T("rtoCostPerFailFormula"), `${fmt(r.rtoCostPerFail)} ${s}`],
-                  [T("confirmedPer100"), `100 × ${inputs.confirmationRate}%`, `${fmt1(r.confirmed)} ${T("orders")}`],
-                  [T("deliveredRtoSplit"), `${fmt1(r.confirmed)} × ${inputs.deliveryRate}%`, `${fmt1(r.delivered)} ${T("deliveredLabel")} / ${fmt1(r.rto)} RTO`],
-                  [T("effectiveDrFormula"), `${inputs.confirmationRate}% × ${inputs.deliveryRate}%`, `${r.effectiveDr.toFixed(1)}%`],
-                  [T("revenuePer100"), `${fmt1(r.delivered)} × AOV ${fmt(inputs.aov)}`, `${fmt(r.revenue)} ${s}`],
-                  [T("totalDeliveredCost"), `${fmt1(r.delivered)} × ${fmt(r.costPerDelivered)}`, `- ${fmt(Math.round(r.delivered * r.costPerDelivered))} ${s}`],
-                  [T("totalRtoCost"), `${fmt1(r.rto)} × ${fmt(r.rtoCostPerFail)}`, `- ${fmt(Math.round(r.rto * r.rtoCostPerFail))} ${s}`],
-                  [T("totalAdSpend"), `100 × CPP ${fmt(inputs.cpp)}`, `- ${fmt(100 * inputs.cpp)} ${s}`],
-                  [T("operatingProfit"), "Revenue − Costs − Ad Spend", `${fmt(r.opProfit)} ${s}`],
-                  [T("profitPerOrderCalc"), "Op. Profit ÷ 100", `${fmt(r.contributionPerOrder)} ${s}`],
-                  [T("marginPercent"), `(Contribution ÷ AOV) × 100`, `${r.contributionMargin.toFixed(1)}%`],
-                  [T("breakEvenCalc"), `${T("fixedCosts")} ÷ ${T("profitPerOrder")}`, `${isFinite(r.breakEvenOrders) ? fmt(r.breakEvenOrders) : "∞"}`],
-                  [T("revenueRequiredCalc"), "BE Orders × AOV", `${isFinite(r.revenueRequired) ? fmt(r.revenueRequired) : "∞"} ${s}`],
-                  [T("timeToBeCalc"), `BE Orders ÷ ${T("ordersPerDay")}`, timeLabel],
-                ].map(([step, formula, result], i) => (
-                  <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                    <td className="py-1.5 sm:py-2 px-2 sm:px-3 text-gray-400">{i + 1}</td>
-                    <td className={`py-1.5 sm:py-2 px-2 sm:px-3 text-gray-900 dark:text-gray-100 font-medium ${isRtl ? "text-right" : "text-left"}`}>{step}</td>
-                    <td className={`py-1.5 sm:py-2 px-2 sm:px-3 text-gray-500 dark:text-gray-400 ${isRtl ? "text-right" : "text-left"}`}>{formula}</td>
-                    <td className={`py-1.5 sm:py-2 px-2 sm:px-3 font-semibold text-gray-900 dark:text-gray-100 ${isRtl ? "text-left" : "text-right"}`}>{result}</td>
+          {/* Step-by-Step Formula Accordion */}
+          <details className="border border-border/70 rounded-lg p-3 text-xs group">
+            <summary className="font-semibold text-muted-foreground group-open:text-foreground cursor-pointer flex items-center gap-2">
+              <Info className="w-3.5 h-3.5 text-primary" />
+              {T("stepByStep")}
+            </summary>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-xs font-mono">
+                <thead>
+                  <tr className="border-b border-border/60 text-muted-foreground font-sans">
+                    <th className={`py-1.5 px-2 ${isRtl ? "text-right" : "text-left"}`}>#</th>
+                    <th className={`py-1.5 px-2 ${isRtl ? "text-right" : "text-left"}`}>{T("step")}</th>
+                    <th className={`py-1.5 px-2 ${isRtl ? "text-right" : "text-left"}`}>{T("formula")}</th>
+                    <th className={`py-1.5 px-2 ${isRtl ? "text-left" : "text-right"}`}>{T("result")}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </details>
-
-        {/* Report */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-6 space-y-4 print:shadow-none print:border-0">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300">
-              <DocumentTextIcon className="w-4 h-4 inline ml-1 shrink-0" />{T("report")}
-            </h3>
-            <span className="text-xs text-gray-400">{dateStr}</span>
-          </div>
-          <p className="text-xs text-gray-400">{T("codModel")} • {currency} • {marginLevel === "good" ? T("reportProfit") : marginLevel === "marginal" ? T("reportMarginal") : T("reportLoss")}</p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-center">
-            <div>
-              <div className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">{isFinite(r.breakEvenOrders) ? fmt(r.breakEvenOrders) : "∞"}</div>
-              <div className="text-xs text-gray-500">{T("breakEvenOrders")}</div>
-            </div>
-            <div>
-              <div className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">{isFinite(r.revenueRequired) ? `${fmt(r.revenueRequired)} ${s}` : "∞"}</div>
-              <div className="text-xs text-gray-500">{T("revenueRequired")}</div>
-            </div>
-            <div>
-              <div className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">{timeLabel}</div>
-              <div className="text-xs text-gray-500">{T("timeToBe")}</div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
-            <div>
-              <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">{T("reportInputs")}</h4>
-              <table className="w-full border-collapse">
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-xs">
+                </thead>
+                <tbody className="divide-y divide-border/40">
                   {[
-                    [T("fixedCosts"), `${fmt(inputs.fixedCosts)} ${s}`],
-                    ["AOV", `${fmt(inputs.aov)} ${s}`],
-                    [T("piecesPerOrder"), `${fmt(inputs.piecesPerOrder)}`],
-                    ["CPP", `${fmt(inputs.cpp)} ${s}`],
-                    [T("confirmRate"), `${inputs.confirmationRate}%`],
-                    [T("deliveryRate"), `${inputs.deliveryRate}%`],
-                    [T("effectiveDeliveryRate"), `${r.effectiveDr.toFixed(1)}%`],
-                    [T("ordersPerDay"), `${fmt(inputs.ordersPerDay)}`],
-                  ].map(([k, v]) => (
-                    <tr key={k}><td className="py-1 text-gray-500">{k}</td><td className={`py-1 font-semibold ${isRtl ? "text-left" : "text-right"}`}>{v}</td></tr>
+                    [T("costPerDelivered"), T("costPerDeliveredFormula"), `${fmt(r.costPerDelivered)} ${s}`],
+                    [T("rtoUnitCost"), T("rtoCostPerFailFormula"), `${fmt(r.rtoCostPerFail)} ${s}`],
+                    [T("revenuePer100"), `${fmt1(r.delivered)} × AOV`, `${fmt(r.revenue)} ${s}`],
+                    [T("operatingProfit"), "Revenue − Costs − Ad Spend", `${fmt(r.opProfit)} ${s}`],
+                    [T("breakEvenCalc"), `${T("fixedCosts")} ÷ Contribution`, `${isFinite(r.breakEvenOrders) ? fmt(r.breakEvenOrders) : "∞"}`],
+                    [T("revenueRequiredCalc"), "BE Orders × AOV", `${isFinite(r.revenueRequired) ? fmt(r.revenueRequired) : "∞"} ${s}`],
+                  ].map(([step, formula, res], i) => (
+                    <tr key={i}>
+                      <td className="py-1 px-2 text-muted-foreground">{i + 1}</td>
+                      <td className="py-1 px-2 font-medium font-sans text-foreground">{step}</td>
+                      <td className="py-1 px-2 text-muted-foreground">{formula}</td>
+                      <td className={`py-1 px-2 font-bold text-foreground ${isRtl ? "text-left" : "text-right"}`}>{res}</td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <div>
-              <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">{T("reportResults")}</h4>
-              <table className="w-full border-collapse">
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-xs">
-                  {[
-                    [T("profitPerOrder"), `${fmt(r.contributionPerOrder)} ${s}`],
-                    [T("marginPercent"), `${r.contributionMargin.toFixed(1)}%`],
-                    [T("effectiveCac"), `${isFinite(r.effectiveCac) ? fmt(r.effectiveCac) : "∞"} ${s}`],
-                    [T("costPerDelivered"), `${fmt(r.costPerDelivered)} ${s}`],
-                    [T("rtoImpact"), `${fmt(r.monthlyRtoImpact)} ${s}`],
-                    [T("reportRtoMonth"), `${fmt(r.monthlyRtoOrders)}`],
-                  ].map(([k, v]) => (
-                    <tr key={k}><td className="py-1 text-gray-500">{k}</td><td className={`py-1 font-semibold ${isRtl ? "text-left" : "text-right"}`}>{v}</td></tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          </details>
         </div>
       </div>
     </div>
-  );
-}
-
-/* ── Helpers ── */
-
-function Card({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-5 space-y-4 sm:space-y-5">
-      <h2 className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 text-sm sm:text-base">{icon}{title}</h2>
-      {children}
-    </div>
-  );
-}
-
-function BigCard({ value, label, sub, isProfit }: { value: string; label: string; sub: string; isProfit: boolean }) {
-  return (
-    <div className={`rounded-xl p-4 sm:p-5 text-center border-2 ${isProfit ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/10" : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10"}`}>
-      <div className="text-xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{value}</div>
-      <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">{label}</div>
-      <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">{sub}</div>
-    </div>
-  );
-}
-
-function MetricCard({ label, value, sub, positive }: { label: string; value: string; sub: string; positive: boolean }) {
-  return (
-    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 sm:p-4 border border-gray-100 dark:border-gray-800">
-      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</div>
-      <div className={`text-base sm:text-lg font-bold ${positive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>{value}</div>
-      <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{sub}</div>
-    </div>
-  );
-}
-
-function FunnelStep({ label, value, cost, split, color }: { label: string; value: number; cost?: React.ReactNode; split?: React.ReactNode; color: string }) {
-  return (
-    <div className="flex items-center gap-2 sm:gap-3 py-1.5 sm:py-2">
-      <div className={`w-2 h-2 rounded-full shrink-0 ${color}`} />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-1 sm:gap-2 flex-wrap">
-          <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base">{fmt1(value)}</span>
-          <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{label}</span>
-        </div>
-        {cost && <div className="text-xs text-gray-400 dark:text-gray-500">{cost}</div>}
-        {split}
-      </div>
-    </div>
-  );
-}
-
-function FunnelArrow() {
-  return <div className="text-xs text-gray-400 dark:text-gray-500 text-center py-0.5">↓</div>;
-}
-
-function BuildingOfficeIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M3 21h18" /><path d="M6 21V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v14" /><path d="M10 11h4" /><path d="M10 15h4" /><path d="M10 7V3" />
-    </svg>
   );
 }
