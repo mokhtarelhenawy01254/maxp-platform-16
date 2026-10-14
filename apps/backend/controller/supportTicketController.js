@@ -1,5 +1,6 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { processImage, isProcessableImage } = require('../utils/imageProcessor');
+const tenantContext = require('../services/tenantContext');
 const getPrisma = () => getSharedPrismaClient();
 const multer = require('multer');
 const path = require('path');
@@ -141,7 +142,10 @@ const transformTicket = (ticket) => {
 // Create new ticket
 const createTicket = async (req, res) => {
   try {
-    const { subject, category, content } = req.body;
+    let { subject, category, content } = req.body;
+    if (!subject && content) {
+      subject = content.trim().slice(0, 50);
+    }
     const userId = req.user.id;
     const companyId = req.user.companyId;
 
@@ -149,7 +153,7 @@ const createTicket = async (req, res) => {
     const ticket = await getPrisma().supportTicket.create({
       data: {
         ticketId: generateTicketId(),
-        subject,
+        subject: subject || 'بدون عنوان',
         description: content,
         category: mapCategory(category),
         status: 'OPEN',
@@ -274,27 +278,31 @@ const getTicketDetails = async (req, res) => {
 
     const where = isAdmin ? { ticketId } : { ticketId, userId };
 
-    const ticket = await getPrisma().supportTicket.findFirst({
-      where,
-      include: {
-        user: {
-          select: { id: true, firstName: true, lastName: true, email: true }
-        },
-        assignedUser: {
-          select: { id: true, firstName: true, lastName: true, email: true }
-        },
-        SupportMessage: {
-          include: {
-            user: {
-              select: { id: true, firstName: true, lastName: true, email: true }
-            },
-            SupportAttachment: true
+    const fetchTicket = async () => {
+      return await getPrisma().supportTicket.findFirst({
+        where,
+        include: {
+          user: {
+            select: { id: true, firstName: true, lastName: true, email: true }
           },
-          orderBy: { createdAt: 'asc' }
-        },
-        SupportAttachment: true
-      }
-    });
+          assignedUser: {
+            select: { id: true, firstName: true, lastName: true, email: true }
+          },
+          SupportMessage: {
+            include: {
+              user: {
+                select: { id: true, firstName: true, lastName: true, email: true }
+              },
+              SupportAttachment: true
+            },
+            orderBy: { createdAt: 'asc' }
+          },
+          SupportAttachment: true
+        }
+      });
+    };
+
+    const ticket = isAdmin ? await tenantContext.bypass(fetchTicket) : await fetchTicket();
 
     if (!ticket) {
       return res.status(404).json({
@@ -350,68 +358,77 @@ const addMessage = async (req, res) => {
     const userId = req.user.id;
     const isAdmin = req.user.role === 'SUPER_ADMIN' || req.user.role === 'superadmin';
 
-    const where = isAdmin ? { ticketId } : { ticketId, userId };
+    const execute = async () => {
+      const where = isAdmin ? { ticketId } : { ticketId, userId };
 
-    const ticket = await getPrisma().supportTicket.findFirst({ where });
-    if (!ticket) {
+      const ticket = await getPrisma().supportTicket.findFirst({ where });
+      if (!ticket) {
+        return { notFound: true };
+      }
+
+      // Create new message
+      const message = await getPrisma().supportMessage.create({
+        data: {
+          content,
+          isFromAdmin: isAdmin,
+          isInternal: isAdmin && (isInternal === 'true' || isInternal === true),
+          ticketId: ticket.id,
+          senderId: userId
+        },
+        include: {
+          user: {
+            select: { id: true, firstName: true, lastName: true, email: true }
+          }
+        }
+      });
+
+      // Handle file attachments
+      if (req.files && req.files.length > 0) {
+        const attachmentData = [];
+        for (const file of req.files) {
+          let currentFilename = file.filename;
+          let currentSize = file.size;
+          let currentMimetype = file.mimetype;
+
+          if (isProcessableImage(file.mimetype)) {
+            try {
+              const processed = await processImage(file.path, path.dirname(file.path));
+              currentFilename = processed.filename;
+              currentSize = processed.size;
+              currentMimetype = 'image/webp';
+            } catch (procError) {
+              console.error(`❌ [IMAGE-PROC] Error processing support ticket image:`, procError.message);
+            }
+          }
+
+          attachmentData.push({
+            filename: currentFilename,
+            originalName: file.originalname,
+            mimeType: currentMimetype,
+            size: currentSize,
+            url: `/uploads/support/${currentFilename}`,
+            messageId: message.id
+          });
+        }
+        await getPrisma().supportAttachment.createMany({ data: attachmentData });
+      }
+
+      // Update ticket status if admin is replying
+      if (isAdmin && ticket.status === 'OPEN') {
+        await getPrisma().supportTicket.update({
+          where: { id: ticket.id },
+          data: { status: 'IN_PROGRESS' }
+        });
+      }
+
+      return { success: true };
+    };
+
+    const result = isAdmin ? await tenantContext.bypass(execute) : await execute();
+    if (result.notFound) {
       return res.status(404).json({
         success: false,
         message: 'التذكرة غير موجودة'
-      });
-    }
-
-    // Create new message
-    const message = await getPrisma().supportMessage.create({
-      data: {
-        content,
-        isFromAdmin: isAdmin,
-        isInternal: isAdmin && (isInternal === 'true' || isInternal === true),
-        ticketId: ticket.id,
-        senderId: userId
-      },
-      include: {
-        user: {
-          select: { id: true, firstName: true, lastName: true, email: true }
-        }
-      }
-    });
-
-    // Handle file attachments
-    if (req.files && req.files.length > 0) {
-      const attachmentData = [];
-      for (const file of req.files) {
-        let currentFilename = file.filename;
-        let currentSize = file.size;
-        let currentMimetype = file.mimetype;
-
-        if (isProcessableImage(file.mimetype)) {
-          try {
-            const processed = await processImage(file.path, path.dirname(file.path));
-            currentFilename = processed.filename;
-            currentSize = processed.size;
-            currentMimetype = 'image/webp';
-          } catch (procError) {
-            console.error(`❌ [IMAGE-PROC] Error processing support ticket image:`, procError.message);
-          }
-        }
-
-        attachmentData.push({
-          filename: currentFilename,
-          originalName: file.originalname,
-          mimeType: currentMimetype,
-          size: currentSize,
-          url: `/uploads/support/${currentFilename}`,
-          messageId: message.id
-        });
-      }
-      await getPrisma().supportAttachment.createMany({ data: attachmentData });
-    }
-
-    // Update ticket status if admin is replying
-    if (isAdmin && ticket.status === 'OPEN') {
-      await getPrisma().supportTicket.update({
-        where: { id: ticket.id },
-        data: { status: 'IN_PROGRESS' }
       });
     }
 
@@ -443,34 +460,41 @@ const updateTicket = async (req, res) => {
       });
     }
 
-    const ticket = await getPrisma().supportTicket.findFirst({ where: { ticketId } });
-    if (!ticket) {
+    const execute = async () => {
+      const ticket = await getPrisma().supportTicket.findFirst({ where: { ticketId } });
+      if (!ticket) {
+        return null;
+      }
+
+      const updateData = {};
+      if (status) {
+        updateData.status = mapStatus(status);
+        if (status === 'closed') updateData.closedAt = new Date();
+      }
+      if (priority) updateData.priority = mapPriority(priority);
+      if (assignedUserId) updateData.assignedUserId = assignedUserId;
+
+      return await getPrisma().supportTicket.update({
+        where: { id: ticket.id },
+        data: updateData,
+        include: {
+          user: {
+            select: { id: true, firstName: true, lastName: true, email: true }
+          },
+          assignedUser: {
+            select: { id: true, firstName: true, lastName: true, email: true }
+          }
+        }
+      });
+    };
+
+    const updatedTicket = await tenantContext.bypass(execute);
+    if (!updatedTicket) {
       return res.status(404).json({
         success: false,
         message: 'التذكرة غير موجودة'
       });
     }
-
-    const updateData = {};
-    if (status) {
-      updateData.status = mapStatus(status);
-      if (status === 'closed') updateData.closedAt = new Date();
-    }
-    if (priority) updateData.priority = mapPriority(priority);
-    if (assignedUserId) updateData.assignedUserId = assignedUserId;
-
-    const updatedTicket = await getPrisma().supportTicket.update({
-      where: { id: ticket.id },
-      data: updateData,
-      include: {
-        user: {
-          select: { id: true, firstName: true, lastName: true, email: true }
-        },
-        assignedUser: {
-          select: { id: true, firstName: true, lastName: true, email: true }
-        }
-      }
-    });
 
     res.json({
       success: true,
@@ -555,23 +579,32 @@ const getAllTickets = async (req, res) => {
       ];
     }
 
-    const [tickets, total, openCount, inProgressCount, closedCount] = await Promise.all([
-      getPrisma().supportTicket.findMany({
-        where,
-        include: {
-          user: {
-            select: { id: true, firstName: true, lastName: true, email: true }
-          }
-        },
-        orderBy: { createdAt: 'desc' },
-        take: parseInt(limit),
-        skip: (parseInt(page) - 1) * parseInt(limit)
-      }),
-      getPrisma().supportTicket.count({ where }),
-      getPrisma().supportTicket.count({ where: { status: 'OPEN' } }),
-      getPrisma().supportTicket.count({ where: { status: 'IN_PROGRESS' } }),
-      getPrisma().supportTicket.count({ where: { status: 'CLOSED' } })
-    ]);
+    const baseWhereForStats = { ...where };
+    delete baseWhereForStats.status;
+
+    const execute = async () => {
+      return await Promise.all([
+        getPrisma().supportTicket.findMany({
+          where,
+          include: {
+            user: {
+              select: { id: true, firstName: true, lastName: true, email: true }
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          take: parseInt(limit),
+          skip: (parseInt(page) - 1) * parseInt(limit)
+        }),
+        getPrisma().supportTicket.count({ where }),
+        getPrisma().supportTicket.count({ where: { ...baseWhereForStats, status: 'OPEN' } }),
+        getPrisma().supportTicket.count({ where: { ...baseWhereForStats, status: 'IN_PROGRESS' } }),
+        getPrisma().supportTicket.count({ where: { ...baseWhereForStats, status: 'CLOSED' } })
+      ]);
+    };
+
+    const [tickets, total, openCount, inProgressCount, closedCount] = isAdmin
+      ? await tenantContext.bypass(execute)
+      : await execute();
 
     // Format stats for frontend
     const stats = [
@@ -618,19 +651,23 @@ const getUserTicketHistory = async (req, res) => {
       where.ticketId = { not: excludeTicketId };
     }
 
-    const tickets = await getPrisma().supportTicket.findMany({
-      where,
-      select: {
-        id: true,
-        ticketId: true,
-        subject: true,
-        status: true,
-        createdAt: true,
-        priority: true
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 5
-    });
+    const execute = async () => {
+      return await getPrisma().supportTicket.findMany({
+        where,
+        select: {
+          id: true,
+          ticketId: true,
+          subject: true,
+          status: true,
+          createdAt: true,
+          priority: true
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5
+      });
+    };
+
+    const tickets = isAdmin ? await tenantContext.bypass(execute) : await execute();
 
     res.json({
       success: true,
@@ -663,18 +700,22 @@ const getSupportStaff = async (req, res) => {
     }
     console.log(' [DEBUG] Prisma user model:', !!prisma.user);
 
-    const staff = await getPrisma().user.findMany({
-      where: {
-        role: { in: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'AGENT'] }
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        role: true
-      }
-    });
+    const execute = async () => {
+      return await getPrisma().user.findMany({
+        where: {
+          role: { in: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'AGENT'] }
+        },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true
+        }
+      });
+    };
+
+    const staff = isAdmin ? await tenantContext.bypass(execute) : await execute();
 
     res.json({
       success: true,

@@ -7086,7 +7086,149 @@ const globalSearch = async (req, res) => {
   }
 };
 
+/**
+ * 💳 Get Billing Activity & Summary Stats
+ */
+const getBillingActivity = async (req, res) => {
+  try {
+    const prisma = getPrisma();
+    const {
+      period,
+      companyId,
+      type,
+      status,
+      search,
+      page = 1,
+      limit = 20,
+    } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 20));
+    const skip = (pageNum - 1) * limitNum;
+
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const where = {};
+
+    if (companyId) {
+      where.companyId = companyId;
+    }
+
+    if (type) {
+      where.type = type;
+    }
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (period) {
+      if (period === 'today') {
+        where.createdAt = { gte: startOfToday };
+      } else if (period === 'week') {
+        where.createdAt = { gte: startOfWeek };
+      } else if (period === 'month') {
+        where.createdAt = { gte: startOfMonth };
+      }
+    }
+
+    if (search && search.trim()) {
+      const searchTerm = search.trim();
+      where.OR = [
+        { description: { contains: searchTerm, mode: 'insensitive' } },
+        { company: { name: { contains: searchTerm, mode: 'insensitive' } } },
+      ];
+    }
+
+    const tenantContext = require('../services/tenantContext');
+    const result = await tenantContext.bypass(async () => {
+      const [activities, total, todayAgg, monthAgg, allTimeAgg] = await Promise.all([
+        prisma.billingHistory.findMany({
+          where,
+          include: {
+            company: {
+              select: { id: true, name: true, slug: true },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limitNum,
+        }),
+        prisma.billingHistory.count({ where }),
+        prisma.billingHistory.aggregate({
+          where: {
+            status: 'SUCCESS',
+            ...(companyId ? { companyId } : {}),
+            createdAt: { gte: startOfToday },
+          },
+          _count: { id: true },
+          _sum: { amount: true },
+        }),
+        prisma.billingHistory.aggregate({
+          where: {
+            status: 'SUCCESS',
+            ...(companyId ? { companyId } : {}),
+            createdAt: { gte: startOfMonth },
+          },
+          _count: { id: true },
+          _sum: { amount: true },
+        }),
+        prisma.billingHistory.aggregate({
+          where: {
+            status: 'SUCCESS',
+            ...(companyId ? { companyId } : {}),
+          },
+          _count: { id: true },
+          _sum: { amount: true },
+        }),
+      ]);
+
+      return {
+        activities,
+        total,
+        summary: {
+          today: {
+            count: todayAgg._count.id || 0,
+            amount: Number(todayAgg._sum.amount || 0),
+          },
+          thisMonth: {
+            count: monthAgg._count.id || 0,
+            amount: Number(monthAgg._sum.amount || 0),
+          },
+          allTime: {
+            count: allTimeAgg._count.id || 0,
+            amount: Number(allTimeAgg._sum.amount || 0),
+          },
+        },
+      };
+    });
+
+    return res.json({
+      success: true,
+      summary: result.summary,
+      activities: result.activities,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: result.total,
+        pages: Math.ceil(result.total / limitNum),
+      },
+    });
+  } catch (error) {
+    console.error('[SA-BILLING-ACTIVITY] Error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'فشل جلب سجل المعاملات المالية',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
+  getBillingActivity,
   triggerImageCompression,
   getImageCompressionStatus,
   getKeyUsageStats,

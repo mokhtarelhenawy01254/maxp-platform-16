@@ -932,6 +932,8 @@ enum SupportTicketCategory {
   TECHNICAL
   BILLING
   OTHER
+  SUGGESTION
+  COMPLAINT
 
   @@map("SupportTicket_category")
 }

@@ -216,6 +216,11 @@ export const getMenuGroups = (t: (key: string) => string): SuperAdminMenuGroup[]
         path: "/super-admin/payments",
       },
       {
+        text: "الحركة المالية",
+        icon: <TrendingUp className="h-4 w-4" />,
+        path: "/super-admin/billing-activity",
+      },
+      {
         text: t("superAdmin.sidebar.signupCoupons") || "كوبونات المنصة",
         icon: <Tag className="h-4 w-4" />,
         path: "/super-admin/platform-signup-coupons",

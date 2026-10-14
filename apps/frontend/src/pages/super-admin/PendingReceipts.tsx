@@ -55,36 +55,13 @@ interface Receipt {
   };
 }
 
-const DEFAULT_RECEIPTS: Receipt[] = [
-  {
-    id: "rec-8f921a44",
-    amount: 5000,
-    currency: "EGP",
-    status: "PENDING",
-    receiptImage: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&auto=format&fit=crop&q=80",
-    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-    walletNumber: { number: "01098765432", name: "فودافون كاش", provider: "Vodafone Cash" },
-    invoice: { companyId: "comp-101", totalAmount: 5000, currency: "EGP", company: { name: "متجر الأناقة للملابس", email: "elegance@example.com" } }
-  },
-  {
-    id: "rec-3c129e77",
-    amount: 12500,
-    currency: "EGP",
-    status: "PENDING",
-    receiptImage: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&auto=format&fit=crop&q=80",
-    createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
-    walletNumber: { number: "01123456789", name: "إتصالات كاش", provider: "Etisalat Cash" },
-    invoice: { companyId: "comp-102", totalAmount: 12500, currency: "EGP", company: { name: "عيادة دنتال كير التخصصية", email: "dentalcare@example.com" } }
-  }
-];
-
 const getFullImageUrl = (path: string) => {
   if (!path) return '';
   const normalizedPath = path.replace(/\\/g, '/');
-  if (normalizedPath.startsWith('uploads/')) {
-    return `http://localhost:3000/${normalizedPath}`;
+  if (normalizedPath.startsWith('http://') || normalizedPath.startsWith('https://')) {
+    return normalizedPath;
   }
-  return normalizedPath;
+  return normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`;
 };
 
 const PendingReceipts: React.FC = () => {
@@ -99,13 +76,13 @@ const PendingReceipts: React.FC = () => {
     try {
       setLoading(true);
       const response = await apiClient.get('/wallet-payment/admin/pending-receipts');
-      if (response.data?.success && Array.isArray(response.data?.data) && response.data.data.length > 0) {
+      if (response.data?.success && Array.isArray(response.data?.data)) {
         setReceipts(response.data.data);
       } else {
-        setReceipts(DEFAULT_RECEIPTS);
+        setReceipts([]);
       }
     } catch {
-      setReceipts(DEFAULT_RECEIPTS);
+      setReceipts([]);
     } finally {
       setLoading(false);
     }

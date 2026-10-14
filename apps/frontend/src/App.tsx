@@ -1415,6 +1415,12 @@ const TemplateSettingsPage = React.lazy(
 const PendingReceipts = React.lazy(
   () => import("./pages/super-admin/PendingReceipts"),
 );
+const BillingActivity = React.lazy(
+  () => import("./pages/super-admin/BillingActivity"),
+);
+const SuggestionFeedbackPage = React.lazy(
+  () => import("./pages/support/SuggestionFeedbackPage"),
+);
 const PayoutRequestsPage = React.lazy(
   () => import("./pages/super-admin/PayoutRequestsPage"),
 );
@@ -3090,6 +3096,14 @@ const AppContent = () => {
                 <Layout>
                   <PendingReceipts />
                 </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/billing-activity"
+              element={
+                <SuperAdminLayout>
+                  <BillingActivity />
+                </SuperAdminLayout>
               }
             />
             <Route
@@ -8278,6 +8292,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <CreateTicket />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/suggestions"
+                  element={
+                    <Layout>
+                      <SuggestionFeedbackPage />
                     </Layout>
                   }
                 />

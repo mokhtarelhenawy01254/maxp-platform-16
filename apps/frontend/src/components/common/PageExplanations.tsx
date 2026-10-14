@@ -213,6 +213,18 @@ const PageExplanations: React.FC<PageExplanationsProps> = ({
             className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed"
             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedExp.content) }}
           />
+
+          {/* Suggestion prompt link */}
+          <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-muted-foreground">
+            <span>عندك فكرة أو مقترح لتطوير المنصة؟</span>
+            <Link
+              to="/suggestions"
+              onClick={() => setSelectedExp(null)}
+              className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              عندك اقتراح؟ ابعتلنا ←
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -264,16 +276,23 @@ const PageExplanations: React.FC<PageExplanationsProps> = ({
             </div>
           )}
 
-          <div className="border-t border-gray-100 dark:border-gray-800 p-1.5">
+          <div className="border-t border-gray-100 dark:border-gray-800 p-1.5 flex items-center justify-between">
             <Link
               to="/app-explanations"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2
+              className="flex items-center gap-2 rounded-lg px-2.5 py-1.5
                 text-[13px] font-semibold text-blue-600 dark:text-blue-400
                 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors no-underline"
             >
               <BookOpenIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
               {t("explanations.allExplanations", "كل الشروحات")}
+            </Link>
+            <Link
+              to="/suggestions"
+              onClick={() => setOpen(false)}
+              className="text-xs font-medium text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1"
+            >
+              عندك اقتراح؟ ابعتلنا
             </Link>
           </div>
         </PopoverContent>

@@ -1636,5 +1636,10 @@ router.post('/ai/incidents/:id/retest', checkPermission('canManageSettings'), su
 router.post('/ai/incidents/:id/notify-tenant', checkPermission('canManageSettings'), superAdminAiIncidentsController.notifyTenant);
 router.post('/ai/incidents/:id/kill-switch', checkPermission('canManageSettings'), superAdminAiIncidentsController.toggleKillSwitch);
 
+// 💳 Billing Activity & Support Tickets (SuperAdmin Platform Management)
+const { getAllTickets } = require("../controller/supportTicketController");
+router.get("/billing/activity", checkPermission("canViewAll"), superAdminController.getBillingActivity);
+router.get("/support/tickets", checkPermission("canViewAll"), getAllTickets);
+
 module.exports = router;
 

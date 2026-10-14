@@ -17,6 +17,7 @@ import {
   MagnifyingGlassIcon,
   ChatBubbleLeftRightIcon,
   BuildingStorefrontIcon,
+  LightBulbIcon,
 } from "@heroicons/react/24/outline";
 import { buildStoreUrl } from "../utils/storeUrl";
 import { hasStoreApp } from "../utils/storeShortcut";
@@ -406,6 +407,15 @@ const Header: React.FC = () => {
                       {t("header.settings")}
                     </Link>
 
+                    <Link
+                      to="/suggestions"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => setIsProfileMenuOpen(false)}
+                    >
+                      <LightBulbIcon className="h-4 w-4 ml-2 text-amber-500" />
+                      {t("header.suggestions", "اقتراحاتك")}
+                    </Link>
+
                     <div className="border-t border-gray-100 dark:border-gray-700">
                       <button
                         onClick={handleLogout}
@@ -481,6 +491,14 @@ const Header: React.FC = () => {
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {t("header.settings")}
+                </Link>
+
+                <Link
+                  to="/suggestions"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {t("header.suggestions", "اقتراحاتك")}
                 </Link>
 
                 <button

@@ -1,0 +1,3 @@
+-- AlterEnum
+ALTER TYPE "SupportTicket_category" ADD VALUE IF NOT EXISTS 'SUGGESTION';
+ALTER TYPE "SupportTicket_category" ADD VALUE IF NOT EXISTS 'COMPLAINT';

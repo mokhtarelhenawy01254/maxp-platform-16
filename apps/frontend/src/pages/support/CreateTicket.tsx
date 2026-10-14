@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import SuggestionFeedbackPage from "./SuggestionFeedbackPage";
 import {
   ArrowRight,
   Upload,
@@ -30,6 +31,11 @@ const CATEGORIES = [
 
 export const CreateTicket: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  if (searchParams.get("preset") === "suggestion") {
+    return <SuggestionFeedbackPage />;
+  }
   const [formData, setFormData] = useState({
     subject: "",
     category: "technical",
