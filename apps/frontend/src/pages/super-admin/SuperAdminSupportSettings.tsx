@@ -6,9 +6,7 @@ import {
   Loader2,
   Phone,
   Headphones,
-  CheckCircle2,
   ShieldCheck,
-  ExternalLink,
 } from "lucide-react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
@@ -39,7 +37,7 @@ export default function SuperAdminSupportSettings() {
         setPhone(res.data.data.phone);
       }
     } catch {
-      // Use pre-configured fallback number gracefully
+      // Use fallback number
       setPhone((prev) => prev || "201012345678");
     } finally {
       setLoading(false);
@@ -68,7 +66,7 @@ export default function SuperAdminSupportSettings() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[360px]" dir="rtl">
         <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
           <Loader2 className="size-4 animate-spin text-primary" />
           <span>جاري استدعاء إعدادات الدعم الفني...</span>
@@ -78,7 +76,7 @@ export default function SuperAdminSupportSettings() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-5xl mx-auto" dir="rtl">
+    <div className="w-full space-y-4" dir="rtl">
       {/* Linear Control Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-3">
@@ -111,7 +109,7 @@ export default function SuperAdminSupportSettings() {
       </div>
 
       {/* Linear Telemetry Strip */}
-      <div className="rounded-xl border border-border/80 bg-card shadow-2xs overflow-hidden">
+      <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
         <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60">
           <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
@@ -149,7 +147,7 @@ export default function SuperAdminSupportSettings() {
       </div>
 
       {/* Single-Surface Chassis */}
-      <div className="rounded-xl border border-border/80 bg-card shadow-2xs overflow-hidden p-4 sm:p-5 space-y-4">
+      <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden p-4 sm:p-5 space-y-4">
         <div>
           <label className="block text-xs font-semibold text-foreground mb-1.5">
             رقم واتساب المعتمد للدعم الفني
@@ -161,7 +159,7 @@ export default function SuperAdminSupportSettings() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="2010XXXXXXXX"
-              className="pr-9 pl-3 h-8.5 text-xs font-mono text-left bg-background/50"
+              className="pr-9 pl-3 h-8.5 text-xs font-mono text-left bg-background border-border/70"
               dir="ltr"
             />
           </div>
@@ -171,7 +169,7 @@ export default function SuperAdminSupportSettings() {
         </div>
 
         {/* Informational Guidance Ribbon */}
-        <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 flex items-start gap-2.5 text-xs text-muted-foreground leading-relaxed">
+        <div className="rounded-lg border border-border/60 bg-muted/15 p-3.5 flex items-start gap-2.5 text-xs text-muted-foreground leading-relaxed">
           <ShieldCheck className="size-4 text-primary shrink-0 mt-0.5" />
           <div>
             <span className="font-semibold text-foreground block mb-0.5">آلية عمل رقم الدعم المركزي:</span>

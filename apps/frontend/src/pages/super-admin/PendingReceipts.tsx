@@ -7,8 +7,8 @@ import {
   CheckCircle2,
   XCircle,
   Receipt as ReceiptIcon,
-  RefreshCw as ArrowPathIcon,
-  Search
+  RefreshCw,
+  Search,
 } from 'lucide-react';
 import {
   Table,
@@ -63,20 +63,8 @@ const DEFAULT_RECEIPTS: Receipt[] = [
     status: "PENDING",
     receiptImage: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&auto=format&fit=crop&q=80",
     createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-    walletNumber: {
-      number: "01098765432",
-      name: "فودافون كاش",
-      provider: "Vodafone Cash"
-    },
-    invoice: {
-      companyId: "comp-101",
-      totalAmount: 5000,
-      currency: "EGP",
-      company: {
-        name: "متجر الأناقة للملابس",
-        email: "elegance@example.com"
-      }
-    }
+    walletNumber: { number: "01098765432", name: "فودافون كاش", provider: "Vodafone Cash" },
+    invoice: { companyId: "comp-101", totalAmount: 5000, currency: "EGP", company: { name: "متجر الأناقة للملابس", email: "elegance@example.com" } }
   },
   {
     id: "rec-3c129e77",
@@ -85,20 +73,8 @@ const DEFAULT_RECEIPTS: Receipt[] = [
     status: "PENDING",
     receiptImage: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&auto=format&fit=crop&q=80",
     createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
-    walletNumber: {
-      number: "01123456789",
-      name: "إتصالات كاش",
-      provider: "Etisalat Cash"
-    },
-    invoice: {
-      companyId: "comp-102",
-      totalAmount: 12500,
-      currency: "EGP",
-      company: {
-        name: "عيادة دنتال كير التخصصية",
-        email: "dentalcare@example.com"
-      }
-    }
+    walletNumber: { number: "01123456789", name: "إتصالات كاش", provider: "Etisalat Cash" },
+    invoice: { companyId: "comp-102", totalAmount: 12500, currency: "EGP", company: { name: "عيادة دنتال كير التخصصية", email: "dentalcare@example.com" } }
   }
 ];
 
@@ -163,7 +139,7 @@ const PendingReceipts: React.FC = () => {
       }
       toast.success(status === 'APPROVED' ? 'تم قبول الإيصال وإيداع الرصيد بنجاح' : 'تم رفض الإيصال');
       setReceipts(prev => prev.filter(r => r.id !== id));
-    } catch (error: any) {
+    } catch {
       toast.error('حدث خطأ أثناء المراجعة');
     } finally {
       setActionLoading(null);
@@ -171,11 +147,11 @@ const PendingReceipts: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-[1440px] mx-auto p-4 sm:p-6 space-y-4" dir="rtl">
+    <div className="w-full space-y-4" dir="rtl">
       {/* Linear Taste Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0 shadow-2xs">
             <ReceiptIcon className="size-4.5 text-primary" />
           </div>
           <div>
@@ -185,7 +161,7 @@ const PendingReceipts: React.FC = () => {
               </h1>
               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border border-border/80 bg-muted/30">
                 <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
-                {receipts.length} إيصال بانتظار المراجعة
+                {receipts.length} إيصال معلق
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -194,18 +170,16 @@ const PendingReceipts: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchReceipts}
-            disabled={loading}
-            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform"
-          >
-            <ArrowPathIcon className={cn("size-3.5", loading && "animate-spin")} />
-            <span>تحديث</span>
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={fetchReceipts}
+          disabled={loading}
+          className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform self-end sm:self-auto"
+        >
+          <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
+          <span>تحديث</span>
+        </Button>
       </div>
 
       {/* Telemetry Ribbon */}
@@ -223,7 +197,7 @@ const PendingReceipts: React.FC = () => {
 
         <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-            <span className="font-medium text-[11px]">إجمالي قيمة الشحن المطلوب</span>
+            <span className="font-medium text-[11px]">قيمة الشحن المطلوب</span>
             <span className="size-1.5 rounded-full bg-emerald-500" />
           </div>
           <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
@@ -245,18 +219,18 @@ const PendingReceipts: React.FC = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl border border-border/80 bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl border border-border/80 bg-card shadow-xs">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
           <Input
-            className="h-8 pr-8 text-xs font-mono bg-background/50"
+            className="h-8 pr-8 text-xs font-mono bg-background border-border/70"
             placeholder="بحث بالرقم المرجعي أو اسم الشركة..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        <div className="text-xs font-mono text-muted-foreground">
+        <div className="text-xs font-mono text-muted-foreground tabular-nums">
           {filteredReceipts.length} إيصال مطابق
         </div>
       </div>
@@ -266,7 +240,7 @@ const PendingReceipts: React.FC = () => {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-border/60 bg-muted/30">
+              <TableRow className="border-b border-border/60 bg-muted/20">
                 <TableHead className="font-mono text-xs text-right">المرجع</TableHead>
                 <TableHead className="font-mono text-xs text-right">الشركة / الحساب</TableHead>
                 <TableHead className="font-mono text-xs text-right">المبلغ المطلوب</TableHead>
@@ -287,15 +261,15 @@ const PendingReceipts: React.FC = () => {
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-12">
                     <div className="flex flex-col items-center justify-center gap-1.5 text-muted-foreground">
-                      <CheckCircle2 className="size-8 text-emerald-500/70" />
+                      <CheckCircle2 className="size-7 text-emerald-500/70" />
                       <p className="text-xs font-semibold text-foreground">لا توجد إيصالات معلقة حالياً</p>
-                      <p className="text-[11px] text-muted-foreground">تمت مراجعة واعتماد جميع طلبات الشحن بنجاح</p>
+                      <p className="text-[11px] text-muted-foreground font-mono">تمت مراجعة واعتماد جميع طلبات الشحن بنجاح</p>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredReceipts.map((receipt) => (
-                  <TableRow key={receipt.id} className="border-b border-border/60 hover:bg-muted/20 transition-colors">
+                  <TableRow key={receipt.id} className="border-b border-border/50 hover:bg-muted/15 transition-colors">
                     <TableCell>
                       <span className="text-xs font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/50">
                         #{receipt.id.substring(0, 8)}
@@ -329,10 +303,7 @@ const PendingReceipts: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <span className="text-xs font-mono text-muted-foreground tabular-nums">
-                        {new Date(receipt.createdAt).toLocaleString('ar-EG', {
-                          day: '2-digit', month: '2-digit', year: 'numeric',
-                          hour: '2-digit', minute: '2-digit', hour12: false
-                        })}
+                        {new Date(receipt.createdAt).toLocaleDateString('ar-EG')}
                       </span>
                     </TableCell>
                     <TableCell className="text-center">

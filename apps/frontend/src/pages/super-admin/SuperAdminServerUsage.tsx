@@ -61,8 +61,11 @@ const SuperAdminServerUsage: React.FC = () => {
 
   if (loading && !stats) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <LoadingSpinner size="lg" />
+      <div className="flex justify-center items-center min-h-[360px]" dir="rtl">
+        <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+          <LoadingSpinner size="sm" />
+          <span>جاري قراءة مؤشرات السيرفر...</span>
+        </div>
       </div>
     );
   }
@@ -94,11 +97,11 @@ const SuperAdminServerUsage: React.FC = () => {
   ];
 
   return (
-    <div className="w-full max-w-[1440px] mx-auto p-4 sm:p-6 space-y-4" dir="rtl">
+    <div className="w-full space-y-4" dir="rtl">
       {/* Linear Taste Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0 shadow-2xs">
             <Server className="size-4.5 text-primary" />
           </div>
           <div>
