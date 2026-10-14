@@ -333,7 +333,16 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
           },
         ];
       }
-      return productAttrs;
+      return productAttrs.map((a: any) => {
+        if (
+          a.key === "car_model" ||
+          a.key?.toLowerCase().includes("car") ||
+          a.label?.includes("سيار")
+        ) {
+          return { ...a, required: true };
+        }
+        return a;
+      });
     }
 
     if (productAttrs.length > 0) {
