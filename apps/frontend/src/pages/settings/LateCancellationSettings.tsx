@@ -3,11 +3,15 @@ import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/api";
 import {
-  CheckCircleIcon,
-  ArrowPathIcon,
-  ShieldExclamationIcon,
-  InformationCircleIcon,
-} from "@heroicons/react/24/outline";
+  ShieldAlert,
+  RotateCw,
+  CheckCircle2,
+  AlertCircle,
+  Shield,
+  Layers,
+  Save,
+  Check,
+} from "lucide-react";
 
 interface OrderStatusOption {
   code: string;
@@ -40,19 +44,17 @@ const EXCLUDED_STATUS_CODES = new Set([
   "EXCHANGED",
 ]);
 
-const LateCancellationSettings: React.FC = () => {
+export const LateCancellationSettings: React.FC = () => {
   const [settings, setSettings] = useState<LateCancellationState>({
     lateCancellationInterceptEnabled: false,
     lateCancellationTargetStatuses: ["PROCESSING", "PREPARING", "PACKAGED"],
   });
-  const [availableStatuses, setAvailableStatuses] = useState<
-    GroupedStatusOption[]
-  >([]);
+  const [availableStatuses, setAvailableStatuses] = useState<GroupedStatusOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    Promise.all([fetchSettings(), fetchOrderStatuses()]);
+    void Promise.all([fetchSettings(), fetchOrderStatuses()]);
   }, []);
 
   const fetchOrderStatuses = async () => {
@@ -77,10 +79,9 @@ const LateCancellationSettings: React.FC = () => {
       const prepList = mapStatuses(prepResp.data?.data);
 
       const merged = [...orderList, ...prepList].sort(
-        (a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999),
+        (a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999)
       );
 
-      // Group by name
       const groupedMap = new Map<string, GroupedStatusOption>();
       merged.forEach((s) => {
         if (!groupedMap.has(s.name)) {
@@ -127,17 +128,16 @@ const LateCancellationSettings: React.FC = () => {
     try {
       setSaving(true);
       const response = await apiClient.put("/settings/cancellation", {
-        lateCancellationInterceptEnabled:
-          settings.lateCancellationInterceptEnabled,
-        lateCancellationTargetStatuses:
-          settings.lateCancellationTargetStatuses,
+        lateCancellationInterceptEnabled: settings.lateCancellationInterceptEnabled,
+        lateCancellationTargetStatuses: settings.lateCancellationTargetStatuses,
       });
       if (response.data.success) {
         tToast.success("LateCancellationSettings.success_save_767c");
-        fetchSettings();
+        void fetchSettings();
       }
     } catch (error) {
       console.error("Error saving late cancellation settings:", error);
+      toast.error("فشل حفظ إعدادات اعتراض الإلغاء");
     } finally {
       setSaving(false);
     }
@@ -151,14 +151,11 @@ const LateCancellationSettings: React.FC = () => {
 
       let newStatuses = [...prev.lateCancellationTargetStatuses];
       if (isCurrentlySelected) {
-        // Remove all codes in this group
         newStatuses = newStatuses.filter((code) => !codes.includes(code));
       } else {
-        // Add all codes in this group
         newStatuses = [...newStatuses, ...codes];
       }
 
-      // Deduplicate in case of any overlaps
       newStatuses = Array.from(new Set(newStatuses));
 
       return {
@@ -170,196 +167,225 @@ const LateCancellationSettings: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-600"></div>
+      <div className="flex items-center justify-center p-12 text-muted-foreground">
+        <RotateCw className="w-5 h-5 animate-spin" />
+        <span className="mr-2 text-xs font-medium">جاري تحميل إعدادات الإلغاء المتأخر...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
-      {/* Header Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl flex items-center justify-center">
-            <ShieldExclamationIcon className="w-5 h-5 text-white" />
+    <div dir="rtl" className="space-y-4">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-sm">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border/60">
+              إعدادات الطلبات
+            </span>
+            <span className="text-xs text-muted-foreground">/</span>
+            <span className="text-xs font-semibold text-foreground">اعتراض الإلغاء المتأخر</span>
           </div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            نظام اعتراض الإلغاء المتأخر
+          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-rose-500" />
+            نظام اعتراض الإلغاء المتأخر (Late Cancellation Intercept)
           </h2>
+          <p className="text-xs text-muted-foreground">
+            إيقاف خروج الطلبات قيد التجهيز أو التغليف في المخزن عند طلب الإلغاء وتحويلها لحالة فحص فوري
+          </p>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mr-13">
-          عندما يطلب عميل إلغاء أوردر يكون في مرحلة التجهيز، يقوم السيستم
-          تلقائياً بتحويله لحالة "إلغاء قيد التنفيذ" بدلاً من إلغائه مباشرة،
-          مما يمنع خروجه للشحن قبل إيقافه في المخزن.
-        </p>
-      </div>
 
-      {/* Toggle Feature */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
-              تفعيل الميزة
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              عند التفعيل، يظهر زر "طلب إلغاء الأوردر" في صفحة تفاصيل الطلب
-              عند الحالات المستهدفة
-            </p>
-          </div>
+        <div className="flex items-center gap-2 self-start sm:self-center">
           <button
-            onClick={() =>
-              setSettings((prev) => ({
-                ...prev,
-                lateCancellationInterceptEnabled:
-                  !prev.lateCancellationInterceptEnabled,
-              }))
-            }
-            className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 ${
-              settings.lateCancellationInterceptEnabled
-                ? "bg-rose-600"
-                : "bg-gray-200 dark:bg-gray-600"
-            }`}
+            type="button"
+            onClick={() => { void fetchSettings(); void fetchOrderStatuses(); }}
+            disabled={saving}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-medium transition-colors disabled:opacity-50"
           >
-            <span
-              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform ${
-                settings.lateCancellationInterceptEnabled
-                  ? "translate-x-8"
-                  : "translate-x-1"
-              }`}
-            />
+            <RotateCw className="w-3.5 h-3.5" />
+            <span>تحديث</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium shadow-xs transition-colors disabled:opacity-50 active:scale-[0.98]"
+          >
+            {saving ? (
+              <RotateCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Save className="w-3.5 h-3.5" />
+            )}
+            <span>حفظ الإعدادات</span>
           </button>
         </div>
       </div>
 
-      {/* Target Statuses */}
-      <div
-        className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-opacity ${
-          !settings.lateCancellationInterceptEnabled
-            ? "opacity-40 pointer-events-none"
-            : ""
-        }`}
-      >
-        <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-1">
-          الحالات المستهدفة
-        </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
-          اختر الحالات التي سيظهر فيها زر "طلب إلغاء الأوردر" — عادةً حالات
-          التجهيز والتغليف
-        </p>
+      {/* Telemetry ribbon */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="bg-card border border-border/70 rounded-lg p-3">
+          <div className="flex items-center justify-between text-muted-foreground text-xs">
+            <span>حالة الاعتراض الآلي</span>
+            <Shield className="w-3.5 h-3.5" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-base font-bold text-foreground">
+              {settings.lateCancellationInterceptEnabled ? "مفعل ومحمى" : "معطل"}
+            </span>
+            <span className={`text-[10px] font-medium px-1.5 py-0.2 rounded ${
+              settings.lateCancellationInterceptEnabled
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : "bg-muted text-muted-foreground"
+            }`}>
+              {settings.lateCancellationInterceptEnabled ? "Online" : "Off"}
+            </span>
+          </div>
+        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {availableStatuses.length === 0 ? (
-            <div className="col-span-full flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
-              <InformationCircleIcon className="w-4 h-4 flex-shrink-0" />
-              لم يتم العثور على حالات — تأكد من تفعيل صلاحيات الطلبات
+        <div className="bg-card border border-border/70 rounded-lg p-3">
+          <div className="flex items-center justify-between text-muted-foreground text-xs">
+            <span>الحالات المستهدفة</span>
+            <Layers className="w-3.5 h-3.5" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-base font-bold font-mono text-foreground tabular-nums">
+              {settings.lateCancellationTargetStatuses.length}
+            </span>
+            <span className="text-[11px] text-muted-foreground">حالات خاضعة للاعتراض</span>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border/70 rounded-lg p-3">
+          <div className="flex items-center justify-between text-muted-foreground text-xs">
+            <span>حظر ماسح الشحن (AWB Scanner)</span>
+            <CheckCircle2 className="w-3.5 h-3.5" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-base font-bold text-foreground">
+              {settings.lateCancellationInterceptEnabled ? "حظر فوري" : "غير نشط"}
+            </span>
+            <span className="text-[10px] font-mono text-muted-foreground">Anti-Dispatch</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Single-Surface Panel */}
+      <div className="bg-card border border-border/70 rounded-xl overflow-hidden divide-y divide-border/60">
+        {/* Toggle Intercept */}
+        <div className="p-4 sm:p-5 flex items-start justify-between gap-4 transition-colors hover:bg-muted/15">
+          <div className="space-y-1 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                <ShieldAlert className="w-4 h-4" />
+              </span>
+              <label
+                htmlFor="late-cancellation-toggle"
+                className="text-sm font-semibold text-foreground cursor-pointer"
+              >
+                تفعيل نظام اعتراض الإلغاء المتأخر
+              </label>
+              <span className="text-[10px] px-1.5 py-0.5 rounded font-mono uppercase bg-rose-500/10 text-rose-700 dark:text-rose-300">
+                Intercept Gateway
+              </span>
             </div>
-          ) : (
-            availableStatuses.map((s) => {
-              const isSelected = s.codes.some((code) =>
-                settings.lateCancellationTargetStatuses.includes(code)
-              );
-              return (
-                <button
-                  key={s.name}
-                  onClick={() => toggleGroup(s.codes)}
-                  className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                    isSelected
-                      ? "border-rose-500 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300"
-                      : "border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-500"
-                  }`}
-                >
-                  <span
-                    className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center ${
+            <p className="text-xs text-muted-foreground leading-relaxed pr-8">
+              عند طلب العميل أو المشرف إلغاء طلب وصل لمرحلة التجهيز أو التغليف، يتم نقله تلقائياً إلى حالة{" "}
+              <span className="font-semibold text-foreground underline decoration-rose-500/40">
+                «إلغاء قيد التنفيذ»
+              </span>{" "}
+              بدلاً من إلغائه نهائياً، لتفادي خروج الشحنة مع المندوب قبل استردادها من المخزن.
+            </p>
+          </div>
+
+          <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+            <input
+              type="checkbox"
+              id="late-cancellation-toggle"
+              checked={settings.lateCancellationInterceptEnabled}
+              onChange={(e) =>
+                setSettings((prev) => ({
+                  ...prev,
+                  lateCancellationInterceptEnabled: e.target.checked,
+                }))
+              }
+              className="sr-only peer"
+            />
+            <div className="w-10 h-5.5 bg-muted peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+        </div>
+
+        {/* Target Statuses Selection */}
+        <div className={`p-4 sm:p-5 space-y-3 transition-opacity ${
+          !settings.lateCancellationInterceptEnabled ? "opacity-50 pointer-events-none" : ""
+        }`}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+            <div>
+              <h3 className="text-xs font-semibold text-foreground">الحالات الخاضعة لبروتوكول الاعتراض</h3>
+              <p className="text-[11px] text-muted-foreground">
+                اختر الحالات التشغيلية التي يتم حظر الإلغاء المباشر عندها وتحويلها لفحص المخزن أولاً
+              </p>
+            </div>
+            <span className="text-[11px] font-mono text-muted-foreground">
+              {settings.lateCancellationTargetStatuses.length} محددة
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 pt-1">
+            {availableStatuses.length === 0 ? (
+              <div className="col-span-full py-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+                <AlertCircle className="w-4 h-4" />
+                لم يتم العثور على حالات نشطة بالسيستم
+              </div>
+            ) : (
+              availableStatuses.map((s) => {
+                const isSelected = s.codes.some((code) =>
+                  settings.lateCancellationTargetStatuses.includes(code)
+                );
+                return (
+                  <button
+                    key={s.name}
+                    type="button"
+                    onClick={() => toggleGroup(s.codes)}
+                    className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all active:scale-[0.98] ${
                       isSelected
-                        ? "border-rose-500 bg-rose-500"
-                        : "border-gray-300 dark:border-gray-500"
+                        ? "border-primary bg-primary/10 text-primary font-semibold shadow-2xs"
+                        : "border-border/70 bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     }`}
                   >
-                    {isSelected && (
-                      <svg
-                        className="w-3 h-3 text-white"
-                        viewBox="0 0 12 12"
-                        fill="none"
-                      >
-                        <path
-                          d="M2 6l3 3 5-5"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
-                  </span>
-                  {s.name}
-                </button>
-              );
-            })
+                    <span className="truncate">{s.name}</span>
+                    <span
+                      className={`w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 border ${
+                        isSelected
+                          ? "bg-primary border-primary text-primary-foreground"
+                          : "border-border"
+                      }`}
+                    >
+                      {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          {settings.lateCancellationTargetStatuses.length === 0 && (
+            <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>تحذير: لم تحدد أي حالة مستهدفة — لن يتم اعتراض أي طلب حتى تختار حالة تشغيلية واحدة على الأقل.</span>
+            </div>
           )}
         </div>
 
-        {settings.lateCancellationTargetStatuses.length === 0 && (
-          <div className="mt-4 flex items-center gap-2 text-amber-600 dark:text-amber-400 text-sm bg-amber-50 dark:bg-amber-900/20 rounded-lg px-4 py-3">
-            <InformationCircleIcon className="w-4 h-4 flex-shrink-0" />
-            لم تحدد أي حالة مستهدفة — الميزة لن تعمل حتى تختار حالة واحدة على
-            الأقل
-          </div>
-        )}
-      </div>
-
-      {/* Info Box */}
-      <div className="bg-rose-50 dark:bg-rose-900/10 rounded-xl border border-rose-200 dark:border-rose-800 p-5">
-        <div className="flex gap-3">
-          <InformationCircleIcon className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-rose-800 dark:text-rose-300 space-y-2">
-            <p className="font-medium">كيف تعمل الميزة؟</p>
-            <ul className="list-disc list-inside space-y-1 text-rose-700 dark:text-rose-400">
-              <li>
-                عند ضغط المودريتور على "طلب إلغاء الأوردر" يتحول الأوردر تلقائياً
-                لحالة <strong>إلغاء قيد التنفيذ</strong>
-              </li>
-              <li>
-                تظهر هذه الأوردرات في قائمة مميزة بالمخزن لإيقاف التجهيز فوراً
-              </li>
-              <li>
-                السيستم لا يسمح باستكمال شحن أوردر بهذه الحالة (حظر الاسكانر)
-              </li>
-              <li>
-                بعد تأكيد إيقاف الأوردر في المخزن يتحول لحالة "ملغي" نهائياً
-              </li>
-            </ul>
+        {/* Operating workflow guidance */}
+        <div className="p-4 bg-muted/20 flex items-start gap-2.5 text-xs text-muted-foreground">
+          <AlertCircle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-semibold text-foreground">مسار عمل اعتراض الشحنات في المخزن:</p>
+            <p className="leading-relaxed">
+              عند تحويل الطلب إلى «إلغاء قيد التنفيذ»، يتم عزله فوراً من قوائم الشحن، كما يرفض ماسح الباركود (Barcode Scanner) إتمام بوليصة الشحن. بمجرد قيام أمين المخزن باسترجاع الأصناف وإعادتها للرف، يكتمل الإلغاء نهائياً ويتحول إلى «ملغي».
+            </p>
           </div>
         </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-3">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-6 py-2.5 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50 font-medium"
-        >
-          {saving ? (
-            <>
-              <ArrowPathIcon className="w-5 h-5 animate-spin" />
-              جاري الحفظ...
-            </>
-          ) : (
-            <>
-              <CheckCircleIcon className="w-5 h-5" />
-              حفظ الإعدادات
-            </>
-          )}
-        </button>
-        <button
-          onClick={() => { fetchSettings(); fetchOrderStatuses(); }}
-          disabled={saving}
-          className="flex items-center gap-2 px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
-        >
-          <ArrowPathIcon className="w-5 h-5" />
-          إعادة تحميل
-        </button>
       </div>
     </div>
   );

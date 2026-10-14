@@ -5,10 +5,12 @@ import {
   ShieldAlert,
   Percent,
   Ban,
-  CheckCircle,
+  CheckCircle2,
   Loader2,
   Save,
   AlertCircle,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 
 export const DiscountApprovalSettings: React.FC = () => {
@@ -71,48 +73,132 @@ export const DiscountApprovalSettings: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-12 text-slate-500 dark:text-slate-400">
-        <Loader2 className="w-6 h-6 animate-spin" />
-        <span className="mr-2 text-sm font-medium">جاري تحميل إعدادات الخصومات...</span>
+      <div className="flex items-center justify-center p-12 text-muted-foreground">
+        <Loader2 className="w-5 h-5 animate-spin" />
+        <span className="mr-2 text-xs font-medium">جاري تحميل إعدادات الخصومات...</span>
       </div>
     );
   }
 
   return (
-    <div dir="rtl" className="space-y-6">
-      {/* Header card */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400">
-            <ShieldAlert className="w-5 h-5" />
+    <div dir="rtl" className="space-y-4">
+      {/* Header bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-sm">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border/60">
+              إعدادات الطلبات
+            </span>
+            <span className="text-xs text-muted-foreground">/</span>
+            <span className="text-xs font-semibold text-foreground">اعتماد وحظر الخصومات</span>
           </div>
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-              سياسة حظر واعتماد الخصومات
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-              التحكم في تطبيق الخصومات والكوبونات التلقائية واشتراط موافقة المالك قبل التأكيد أو الشحن
-            </p>
+          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-amber-500" />
+            سياسة حظر واعتماد الخصومات
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            التحكم في تطبيق الخصومات والكوبونات التلقائية واشتراط موافقة المالك قبل التأكيد أو الشحن
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium shadow-xs transition-colors disabled:opacity-50 active:scale-[0.98]"
+          >
+            {saving ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Save className="w-3.5 h-3.5" />
+            )}
+            <span>حفظ الإعدادات</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Telemetry ribbon */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="bg-card border border-border/70 rounded-lg p-3">
+          <div className="flex items-center justify-between text-muted-foreground text-xs">
+            <span>شرط الاعتماد اليدوي</span>
+            <Percent className="w-3.5 h-3.5" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-base font-bold text-foreground">
+              {requireDiscountApproval ? "إلزامي للمالك" : "تطبيق فوري"}
+            </span>
+            <span className={`text-[10px] font-medium px-1.5 py-0.2 rounded ${
+              requireDiscountApproval
+                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                : "bg-muted text-muted-foreground"
+            }`}>
+              {requireDiscountApproval ? "نشط" : "معطل"}
+            </span>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border/70 rounded-lg p-3">
+          <div className="flex items-center justify-between text-muted-foreground text-xs">
+            <span>الكوبونات التلقائية</span>
+            <Ban className="w-3.5 h-3.5" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-base font-bold text-foreground">
+              {disableAutoDiscounts ? "محظورة بالمتجر" : "تطبيق تلقائي"}
+            </span>
+            <span className={`text-[10px] font-medium px-1.5 py-0.2 rounded ${
+              disableAutoDiscounts
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : "bg-muted text-muted-foreground"
+            }`}>
+              {disableAutoDiscounts ? "محمي" : "مفتوح"}
+            </span>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border/70 rounded-lg p-3">
+          <div className="flex items-center justify-between text-muted-foreground text-xs">
+            <span>مستوى حماية الهامش</span>
+            <ShieldCheck className="w-3.5 h-3.5" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-base font-bold font-mono text-foreground">
+              {requireDiscountApproval && disableAutoDiscounts ? "100%" : requireDiscountApproval || disableAutoDiscounts ? "50%" : "0%"}
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              {requireDiscountApproval && disableAutoDiscounts ? "أمان تام" : "حماية جزئية"}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Main Settings Form */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm space-y-6">
-        {/* Switch 1: Require Approval on any discount */}
-        <div className="flex items-start justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
+      {/* Main Single-Surface Panel */}
+      <div className="bg-card border border-border/70 rounded-xl overflow-hidden divide-y divide-border/60">
+        {/* Toggle 1 */}
+        <div className="p-4 sm:p-5 flex items-start justify-between gap-4 transition-colors hover:bg-muted/15">
           <div className="space-y-1 flex-1">
             <div className="flex items-center gap-2">
-              <Percent className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+              <span className="p-1.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <Percent className="w-4 h-4" />
+              </span>
               <label
                 htmlFor="require-discount-approval"
-                className="text-sm font-bold text-slate-900 dark:text-white cursor-pointer"
+                className="text-sm font-semibold text-foreground cursor-pointer"
               >
                 الموافقة الإلزامية على الخصومات والكوبونات
               </label>
+              <span className="text-[10px] px-1.5 py-0.5 rounded font-mono uppercase bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                Manual Approval
+              </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed pr-6">
-              عند تفعيل هذا الخيار، يتم وضع أي طلب يحتوي على خصم (كوبون، عرض، أو خصم يدوي) في حالة <span className="font-semibold text-amber-700 dark:text-amber-300">«بانتظار اعتماد الخصم»</span>، ويُمنع تأكيد الطلب أو شحنه حتى يتم اعتماده صراحة من قِبل الإدارة أو إلغاء الخصم.
+            <p className="text-xs text-muted-foreground leading-relaxed pr-8">
+              عند تفعيل هذا الخيار، يتم وضع أي طلب يحتوي على خصم (كوبون، عرض، أو خصم يدوي) في حالة{" "}
+              <span className="font-semibold text-foreground underline decoration-amber-500/40">
+                «بانتظار اعتماد الخصم»
+              </span>
+              ، ويُمنع تأكيد الطلب أو شحنه حتى يتم اعتماده صراحة من قِبل الإدارة أو إلغاء الخصم.
             </p>
           </div>
 
@@ -124,24 +210,29 @@ export const DiscountApprovalSettings: React.FC = () => {
               onChange={(e) => setRequireDiscountApproval(e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-amber-600"></div>
+            <div className="w-10 h-5.5 bg-muted peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-primary"></div>
           </label>
         </div>
 
-        {/* Switch 2: Block automatic promotions without prior approval */}
-        <div className="flex items-start justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
+        {/* Toggle 2 */}
+        <div className="p-4 sm:p-5 flex items-start justify-between gap-4 transition-colors hover:bg-muted/15">
           <div className="space-y-1 flex-1">
             <div className="flex items-center gap-2">
-              <Ban className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+              <span className="p-1.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                <Ban className="w-4 h-4" />
+              </span>
               <label
                 htmlFor="disable-auto-discounts"
-                className="text-sm font-bold text-slate-900 dark:text-white cursor-pointer"
+                className="text-sm font-semibold text-foreground cursor-pointer"
               >
-                إيقاف تطبيق الكوبونات التلقائية والعروض في المتجر بدون موافقة مسبقة
+                إيقاف تطبيق الكوبونات والعروض التلقائية بالمتجر بدون موافقة مسبقة
               </label>
+              <span className="text-[10px] px-1.5 py-0.5 rounded font-mono uppercase bg-rose-500/10 text-rose-700 dark:text-rose-300">
+                Block Auto-Apply
+              </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed pr-6">
-              يمنع السلة وواجهة المتجر من خصم الكوبونات التلقائية والعروض الترويجية بشكل تلقائي وسري للعملاء بدون مراجعة، مما يحمي هوامش أرباحك من الخصومات غير المحسوبة.
+            <p className="text-xs text-muted-foreground leading-relaxed pr-8">
+              يمنع السلة وواجهة المتجر من خصم الكوبونات التلقائية والعروض الترويجية بشكل خفي وتلقائي بدون مراجعة بشرية، مما يحمي هوامش أرباحك الصافية من التآكل.
             </p>
           </div>
 
@@ -153,33 +244,16 @@ export const DiscountApprovalSettings: React.FC = () => {
               onChange={(e) => setDisableAutoDiscounts(e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-amber-600"></div>
+            <div className="w-10 h-5.5 bg-muted peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-primary"></div>
           </label>
         </div>
 
-        {/* Guidance Alert */}
-        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-start gap-2.5 text-xs text-slate-600 dark:text-slate-300">
-          <AlertCircle className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5" />
+        {/* Audit info row */}
+        <div className="p-4 bg-muted/20 flex items-start gap-2.5 text-xs text-muted-foreground">
+          <AlertCircle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
           <p className="leading-relaxed">
-            عند اعتماد الخصم في تفاصيل الطلب، يتم تسجيل اسم المستخدم ووقت الاعتماد في سجل حركة الطلب، كما يمكن رفض الخصم بنقرة زر واحدة لإعادة احتساب الإجمالي بدون خصم.
+            عند اعتماد الخصم داخل تفاصيل الطلب، يتم توثيق اسم المشرف ووقت الاعتماد في سجل التدقيق (Audit Log)، كما يمكن نقض الخصم بنقرة زر واحدة لإعادة احتساب الإجمالي الأصلي فورياً.
           </p>
-        </div>
-
-        {/* Save Button */}
-        <div className="flex justify-end pt-2">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold shadow-sm transition-all duration-150 active:scale-[0.97] disabled:opacity-60"
-          >
-            {saving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            <span>حفظ الإعدادات</span>
-          </button>
         </div>
       </div>
     </div>

@@ -2,12 +2,20 @@ import React, { useEffect, useState } from "react";
 import { apiClient } from "../../services/api";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
-import { CheckCircleIcon, ArrowPathIcon, ClockIcon } from "@heroicons/react/24/outline";
+import {
+  Clock,
+  Save,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  ShoppingCart,
+  Layers,
+} from "lucide-react";
 
 const MIN_HOURS = 1;
 const MAX_HOURS = 720;
 
-const IncompleteOrdersSettings: React.FC = () => {
+export default function IncompleteOrdersSettings() {
   const [hours, setHours] = useState<number>(24);
   const [showIncompleteInOrders, setShowIncompleteInOrders] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -22,13 +30,18 @@ const IncompleteOrdersSettings: React.FC = () => {
       setLoading(true);
       const response = await apiClient.get("/order-settings");
       if (response.data?.success) {
-        const value = parseInt(response.data.data?.incompleteOrderLostAfterHours, 10);
+        const value = parseInt(
+          response.data.data?.incompleteOrderLostAfterHours,
+          10
+        );
         if (!Number.isNaN(value) && value >= MIN_HOURS && value <= MAX_HOURS) {
           setHours(value);
         } else {
           setHours(24);
         }
-        setShowIncompleteInOrders(Boolean(response.data.data?.showIncompleteCartsInOrders));
+        setShowIncompleteInOrders(
+          Boolean(response.data.data?.showIncompleteCartsInOrders)
+        );
       }
     } catch (error) {
       console.error("Error fetching incomplete order settings:", error);
@@ -65,94 +78,117 @@ const IncompleteOrdersSettings: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center p-8 text-muted-foreground font-mono text-xs">
+        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+        جاري تحميل إعدادات الطلبات غير المكتملة...
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
-            <ClockIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+    <div className="space-y-6 text-foreground font-sans rtl" dir="rtl">
+      {/* Telemetry Ribbon */}
+      <div className="border border-border/70 bg-muted/20 px-4 py-2.5 rounded-lg flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1.5 text-muted-foreground font-medium">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            نظام استعادة السلال المتروكة
+          </span>
+          <span className="text-border">|</span>
+          <span className="text-muted-foreground font-mono">
+            TIMEOUT: {hours}H
+          </span>
+        </div>
+        <div className="flex items-center gap-4 font-mono tabular-nums text-muted-foreground">
+          <span>
+            عرض السلال بقائمة الطلبات:{" "}
+            <strong className="text-foreground">
+              {showIncompleteInOrders ? "مفعل" : "معطل"}
+            </strong>
+          </span>
+        </div>
+      </div>
+
+      {/* Main Single Surface Panel */}
+      <div className="rounded-lg border border-border/70 bg-card p-5 space-y-5">
+        <div className="flex items-center gap-3 border-b border-border/70 pb-4">
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted/40 border border-border/70">
+            <Clock className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              إعدادات الطلبات غير المكتملة
+            <h2 className="text-sm font-semibold text-foreground">
+              إعدادات الطلبات غير المكتملة والسلال المتروكة
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              تحديد المدة التي بعدها يتم اعتبار الطلب غير المكتمل مفقود
+            <p className="text-xs text-muted-foreground">
+              تحديد الفترة الزمنية التي يتم بعدها اعتبار السلة المتروكة طلباً مفقوداً للبدء في إجراءات الاستعادة
             </p>
           </div>
         </div>
 
-        <div className="mt-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            مدة التحويل إلى مفقود (بالساعات)
-          </label>
-          <div className="flex items-center gap-3">
-            <input
-              type="number"
-              min={MIN_HOURS}
-              max={MAX_HOURS}
-              value={hours}
-              onChange={(e) => {
-                const value = parseInt(e.target.value, 10);
-                setHours(Number.isNaN(value) ? MIN_HOURS : value);
-              }}
-              className="w-full max-w-xs px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
-            />
-            <span className="text-sm text-gray-500 dark:text-gray-400">ساعة</span>
-          </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            يتم حساب المدة من آخر تحديث لبيانات العميل داخل الشيك آوت.
-          </p>
-
-          <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-sm text-amber-800 dark:text-amber-200">
-            مثال: إذا كانت القيمة {hours} ساعة، أي طلب لم يتم تحديثه خلال هذه المدة
-            سيظهر في قائمة الطلبات المفقودة.
-          </div>
-        </div>
-
-        <div className="mt-6 flex items-start gap-3">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={showIncompleteInOrders}
-            onClick={() => setShowIncompleteInOrders((prev) => !prev)}
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${showIncompleteInOrders ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"}`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${showIncompleteInOrders ? "translate-x-6" : "translate-x-1"}`}
-            />
-          </button>
+        <div className="space-y-4">
           <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              عرض الطلبات غير المكتملة في صفحة الطلبات
+            <label className="mb-1 block text-xs font-medium text-foreground">
+              مهلة اعتبار الطلب مفقوداً (بالساعات)
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min={MIN_HOURS}
+                max={MAX_HOURS}
+                value={hours}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value, 10);
+                  setHours(Number.isNaN(value) ? MIN_HOURS : value);
+                }}
+                className="w-full max-w-xs rounded-md border border-border/80 bg-background px-3 py-1.5 text-xs text-foreground font-mono tabular-nums focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <span className="text-xs text-muted-foreground font-mono">ساعة</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1.5">
+              يتم احتساب المدة من توقيت آخر إدخال لبيانات العميل داخل نموذج الشيك آوت
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              عند التفعيل تظهر السلال غير المكتملة (النشطة والمفقودة) داخل قائمة الطلبات الرئيسية،
-              مع إمكانية فلترتها بحالة "غير مكتمل" أو "مفقود".
-            </p>
+
+            <div className="mt-3 p-3 rounded-md border border-border/70 bg-muted/10 text-xs text-muted-foreground font-mono">
+              معيار الفرز: أي سلة لم يتم تأكيدها خلال <strong className="text-foreground font-bold">{hours} ساعة</strong> تُصنف تلقائياً كـ "طلب مفقود" للمتابعة.
+            </div>
+          </div>
+
+          {/* Toggle Switch */}
+          <div className="flex items-center justify-between gap-4 rounded-md border border-border/70 bg-muted/10 p-3.5">
+            <div>
+              <p className="text-xs font-semibold text-foreground">
+                دمج وعرض السلال غير المكتملة في جدول الطلبات الرئيسي
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                تظهر السلال المتروكة جنباً إلى جنب مع الطلبات المكتملة لسهولة الفلترة وتعيينها لفريق خدمة العملاء
+              </p>
+            </div>
+            <label className="relative inline-flex cursor-pointer items-center">
+              <input
+                type="checkbox"
+                checked={showIncompleteInOrders}
+                onChange={() => setShowIncompleteInOrders((prev) => !prev)}
+                className="peer sr-only"
+              />
+              <div className="h-5 w-9 rounded-full bg-muted border border-border/80 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-muted-foreground after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:bg-primary-foreground" />
+            </label>
           </div>
         </div>
 
-        <div className="mt-6">
+        <div className="border-t border-border/70 pt-4 flex justify-end">
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-5 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
             {saving ? (
               <>
-                <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 جاري الحفظ...
               </>
             ) : (
               <>
-                <CheckCircleIcon className="w-5 h-5" />
+                <Save className="h-3.5 w-3.5" />
                 حفظ الإعدادات
               </>
             )}
@@ -161,6 +197,4 @@ const IncompleteOrdersSettings: React.FC = () => {
       </div>
     </div>
   );
-};
-
-export default IncompleteOrdersSettings;
+}
