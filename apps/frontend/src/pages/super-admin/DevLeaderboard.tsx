@@ -12,6 +12,7 @@ import {
   User,
   TrendingUp,
 } from "lucide-react";
+import { Button } from "../../components/ui/button";
 
 interface LeaderboardEntry {
   id: string;
@@ -78,7 +79,7 @@ const DevLeaderboard: React.FC = () => {
   const top3 = currentList[2];
 
   return (
-    <div dir={i18n.dir()} className="w-full min-h-screen bg-background text-foreground space-y-4 p-4 sm:p-6 max-w-7xl mx-auto">
+    <div dir={i18n.dir()} className="w-full space-y-4">
       {/* Top Header Chassis */}
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-3">
@@ -95,24 +96,25 @@ const DevLeaderboard: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              تقييم الأداء التقني ونقاط الخبرة المكتسبة (XP) ومستويات المساهمة البرمجية عبر المنصة
+              تقييم الأداء التقني ونقاط الخبرة المكتسبة ومستويات المساهمة البرمجية عبر المنصة
             </p>
           </div>
         </div>
 
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
           onClick={fetchLeaderboard}
           disabled={loading}
-          className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-mono rounded-lg border border-border/80 bg-card hover:bg-muted/40 text-foreground transition-all active:scale-[0.98] disabled:opacity-50 self-end sm:self-auto"
+          className="h-8 gap-1.5 text-xs font-mono shadow-2xs active:scale-[0.98] self-end sm:self-auto"
         >
-          <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`size-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
           <span>تحديث الترتيب</span>
-        </button>
+        </Button>
       </header>
 
       {/* Telemetry Summary Ribbon */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/80 bg-card shadow-xs divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden">
+      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border/80 bg-card shadow-xs divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60 overflow-hidden">
         <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
             <span className="font-medium text-[11px]">إجمالي المطورين</span>
@@ -183,7 +185,7 @@ const DevLeaderboard: React.FC = () => {
                 <div>
                   <h3 className="text-xs font-bold text-foreground">{top2.name}</h3>
                   <div className="inline-flex items-center gap-1.5 mt-0.5">
-                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-muted text-muted-foreground border border-border/50">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted text-muted-foreground border border-border/50">
                       Lv. {top2.level}
                     </span>
                     <span className="text-xs font-mono font-bold text-foreground tabular-nums">
@@ -194,7 +196,7 @@ const DevLeaderboard: React.FC = () => {
                 {top2.badges && top2.badges.length > 0 && (
                   <div className="flex flex-wrap gap-1 justify-center pt-0.5">
                     {top2.badges.slice(0, 2).map((b, idx) => (
-                      <span key={idx} className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-muted/60 text-muted-foreground border border-border/40">
+                      <span key={idx} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/40">
                         {b}
                       </span>
                     ))}
@@ -216,7 +218,7 @@ const DevLeaderboard: React.FC = () => {
                 <div>
                   <h3 className="text-sm font-bold text-foreground">{top1.name}</h3>
                   <div className="inline-flex items-center gap-2 mt-0.5">
-                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                       Lv. {top1.level}
                     </span>
                     <span className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400 tabular-nums">
@@ -227,7 +229,7 @@ const DevLeaderboard: React.FC = () => {
                 {top1.badges && top1.badges.length > 0 && (
                   <div className="flex flex-wrap gap-1 justify-center pt-0.5">
                     {top1.badges.slice(0, 3).map((b, idx) => (
-                      <span key={idx} className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-medium">
+                      <span key={idx} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-medium">
                         {b}
                       </span>
                     ))}
@@ -249,7 +251,7 @@ const DevLeaderboard: React.FC = () => {
                 <div>
                   <h3 className="text-xs font-bold text-foreground">{top3.name}</h3>
                   <div className="inline-flex items-center gap-1.5 mt-0.5">
-                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-muted text-muted-foreground border border-border/50">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted text-muted-foreground border border-border/50">
                       Lv. {top3.level}
                     </span>
                     <span className="text-xs font-mono font-bold text-foreground tabular-nums">
@@ -260,7 +262,7 @@ const DevLeaderboard: React.FC = () => {
                 {top3.badges && top3.badges.length > 0 && (
                   <div className="flex flex-wrap gap-1 justify-center pt-0.5">
                     {top3.badges.slice(0, 2).map((b, idx) => (
-                      <span key={idx} className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-muted/60 text-muted-foreground border border-border/40">
+                      <span key={idx} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground border border-border/40">
                         {b}
                       </span>
                     ))}
@@ -297,7 +299,7 @@ const DevLeaderboard: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-border/60">
               {currentList.map((member) => (
-                <tr key={member.id} className="hover:bg-muted/20 transition-colors">
+                <tr key={member.id} className="hover:bg-muted/15 transition-colors">
                   <td className="px-3.5 py-2.5 text-center">
                     <span className={`inline-flex items-center justify-center size-5 rounded-full font-mono text-[10px] font-bold ${
                       member.rank === 1
@@ -313,14 +315,14 @@ const DevLeaderboard: React.FC = () => {
                   </td>
                   <td className="px-3.5 py-2.5">
                     <div className="flex items-center gap-2.5">
-                      <div className="size-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                      <div className="size-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0 font-mono">
                         {member.name.charAt(0)}
                       </div>
                       <span className="font-semibold text-foreground text-xs">{member.name}</span>
                     </div>
                   </td>
                   <td className="px-3.5 py-2.5">
-                    <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-primary/10 text-primary border border-primary/20">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-primary/10 text-primary border border-primary/20">
                       Level {member.level}
                     </span>
                   </td>
@@ -328,7 +330,7 @@ const DevLeaderboard: React.FC = () => {
                     <div className="flex flex-wrap gap-1">
                       {member.badges && member.badges.length > 0 ? (
                         member.badges.map((b, idx) => (
-                          <span key={idx} className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border/50">
+                          <span key={idx} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border/50">
                             {b}
                           </span>
                         ))

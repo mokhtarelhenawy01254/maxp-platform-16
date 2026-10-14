@@ -5,13 +5,13 @@ import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import {
   ArrowRight,
-  Flag,
   ChevronDown,
   ChevronRight,
-  BarChart3,
   User,
   Plus,
+  Target,
 } from "lucide-react";
+import { Button } from "../../components/ui/button";
 
 interface GoalNode {
   id: string;
@@ -144,7 +144,7 @@ const GoalNodeComponent: React.FC<{
               <button
                 type="button"
                 onClick={() => setExpanded(!expanded)}
-                className="p-1 hover:bg-muted/40 rounded text-muted-foreground transition-colors shrink-0"
+                className="p-1 hover:bg-muted/40 rounded text-muted-foreground transition-colors shrink-0 cursor-pointer"
               >
                 {expanded ? (
                   <ChevronDown className="size-4" />
@@ -164,7 +164,7 @@ const GoalNodeComponent: React.FC<{
                 <h4 className="text-xs font-semibold text-foreground hover:text-primary transition-colors tracking-tight truncate">
                   {goal.title}
                 </h4>
-                <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-medium ${statusColors[goal.status] || ""}`}>
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-medium ${statusColors[goal.status] || ""}`}>
                   {goal.status}
                 </span>
                 {goal.confidence && (
@@ -275,17 +275,19 @@ const DevGoalAlignmentTree: React.FC = () => {
     : 0;
 
   return (
-    <div className="space-y-4 p-4 sm:p-6 max-w-7xl mx-auto" dir={i18n.dir()}>
-      {/* Header */}
+    <div className="w-full space-y-4" dir={i18n.dir()}>
+      {/* Linear Control Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-3">
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="icon"
             onClick={() => navigate("/super-admin/dev-goals")}
-            className="size-8.5 rounded-lg border border-border/80 bg-card hover:bg-muted/40 text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors shadow-2xs"
+            className="size-8 rounded-lg shadow-2xs active:scale-[0.98]"
+            title="العودة لقائمة الأهداف"
           >
-            <ArrowRight className="size-4" />
-          </button>
+            <ArrowRight className="size-4 rtl:rotate-0 rotate-180" />
+          </Button>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
@@ -301,11 +303,11 @@ const DevGoalAlignmentTree: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-auto">
+        <div className="flex items-center gap-2 self-end sm:self-auto font-mono text-xs">
           <select
             value={filterQuarter}
             onChange={(e) => setFilterQuarter(e.target.value)}
-            className="border border-border/80 rounded-lg px-2.5 py-1 text-xs font-mono bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-2xs"
+            className="border border-border/80 rounded-lg px-2.5 py-1 text-xs font-mono bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-2xs h-8"
           >
             <option value="">كل الفترات</option>
             <option value="Q1-2026">Q1 2026</option>
@@ -313,19 +315,19 @@ const DevGoalAlignmentTree: React.FC = () => {
             <option value="Q3-2026">Q3 2026</option>
             <option value="Q4-2026">Q4 2026</option>
           </select>
-          <button
-            type="button"
+          <Button
+            size="sm"
             onClick={() => navigate("/super-admin/dev-goals/new")}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-2xs"
+            className="h-8 text-xs font-mono gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xs active:scale-[0.98]"
           >
             <Plus className="size-3.5" />
             <span>هدف جديد</span>
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Telemetry Stats Ribbon */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 rounded-xl border border-border/80 bg-card shadow-xs divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden">
+      <div className="grid grid-cols-1 sm:grid-cols-3 rounded-xl border border-border/80 bg-card shadow-xs divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60 overflow-hidden">
         <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
             <span className="font-medium text-[11px]">إجمالي الأهداف بالشجرة</span>

@@ -1,12 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  RefreshCw,
   Megaphone,
   Save,
   Loader2,
   Route,
   Activity,
-  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -50,7 +48,7 @@ const trackingOptions: Array<{
   {
     key: "trackLogin",
     title: "Login (Custom)",
-    description: "يرسل custom event بعد نجاح تسجيل الدخول لو محتاج تتابعه كحدث ثانوي.",
+    description: "يرسل custom event بعد نجاح تسجيل الدخول لمتابعة التحويل الثانوي.",
   },
 ];
 
@@ -112,7 +110,7 @@ const PlatformSiteMetaPixel: React.FC = () => {
       return {
         title: "مفعّل ونشط",
         tone: "text-emerald-600 dark:text-emerald-400",
-        dot: "bg-emerald-500",
+        dot: "bg-emerald-500 animate-pulse",
       };
     }
     if (!settings.isEnabled && hasValidPixelId) {
@@ -152,7 +150,7 @@ const PlatformSiteMetaPixel: React.FC = () => {
         });
         setSettings(savedSettings);
       } catch {
-        // Fallback
+        // Fallback local persistence
       }
       toast.success("تم حفظ إعدادات Meta Pixel للموقع العام بنجاح");
     } catch {
@@ -163,7 +161,7 @@ const PlatformSiteMetaPixel: React.FC = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto" dir="rtl">
+    <div className="w-full space-y-4" dir="rtl">
       {/* Linear Control Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-3">
@@ -195,9 +193,9 @@ const PlatformSiteMetaPixel: React.FC = () => {
         </Button>
       </div>
 
-      {/* Linear Telemetry Strip */}
+      {/* Telemetry Strip */}
       <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden">
-        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60">
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60">
           <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
               <span className="font-medium text-[11px]">حالة الـ Pixel</span>
@@ -277,7 +275,7 @@ const PlatformSiteMetaPixel: React.FC = () => {
               onChange={(e) => updateSetting("pixelId", e.target.value.replace(/\D/g, ""))}
               placeholder="مثال: 123456789012345"
               maxLength={16}
-              className="h-9 text-xs font-mono bg-background/50 tracking-wider"
+              className="h-9 text-xs font-mono bg-background tracking-wider"
             />
           </div>
 
@@ -303,7 +301,7 @@ const PlatformSiteMetaPixel: React.FC = () => {
                       type="checkbox"
                       checked={isChecked}
                       onChange={(e) => updateSetting(option.key, e.target.checked)}
-                      className="size-3.5 mt-0.5 rounded border-border/80 text-primary focus:ring-primary shrink-0"
+                      className="size-3.5 mt-0.5 rounded border-border/80 text-primary focus:ring-primary shrink-0 cursor-pointer"
                     />
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-foreground font-mono">{option.title}</p>
@@ -328,7 +326,7 @@ const PlatformSiteMetaPixel: React.FC = () => {
               onChange={(e) => updateSetting("loginEventName", e.target.value)}
               placeholder="PlatformLogin"
               disabled={!settings.trackLogin}
-              className="h-8 text-xs font-mono max-w-xs bg-background/50"
+              className="h-8 text-xs font-mono max-w-xs bg-background"
             />
           </div>
         </div>
