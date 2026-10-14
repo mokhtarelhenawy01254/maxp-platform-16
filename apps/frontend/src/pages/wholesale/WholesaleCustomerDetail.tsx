@@ -1,22 +1,19 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import {
   Users,
   ArrowRight,
   ShieldCheck,
-  Tag,
-  Wallet,
-  Clock,
-  Mail,
-  Phone,
   Search,
-  CheckCircle2,
-  AlertTriangle,
   Building2,
   Save,
-  X,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 
 interface WholesaleCustomerData {
   id?: string;
@@ -92,7 +89,7 @@ export default function WholesaleCustomerDetail() {
         setLoading(false);
       }
     };
-    load();
+    void load();
   }, [id, isNew]);
 
   const searchCustomers = async (q: string) => {
@@ -140,75 +137,100 @@ export default function WholesaleCustomerDetail() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[350px] gap-3 text-muted-foreground">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="flex flex-col items-center justify-center min-h-[350px] gap-2.5 text-muted-foreground">
+        <RefreshCw className="size-5 animate-spin text-primary" />
         <span className="text-xs font-mono">جاري تحميل ملف التاجر...</span>
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6 rtl font-sans" dir="rtl">
+    <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 space-y-4" dir="rtl">
       {/* Top Header */}
-      <div>
-        <Link
-          to="/wholesale/customers"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-3"
-        >
-          <ArrowRight className="w-3.5 h-3.5" />
-          العودة إلى قائمة عملاء الجملة
-        </Link>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
-          <div className="space-y-1">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/70 pb-3.5">
+        <div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate("/wholesale/customers")}
+              className="size-8 rounded-lg border-border/70 active:scale-[0.98]"
+              title="العودة للتجار"
+            >
+              <ArrowRight className="size-4 rtl:rotate-0 rotate-180" />
+            </Button>
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-                <Users className="w-3.5 h-3.5" />
-                ملف تاجر الجملة
+              <span className="inline-flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+                <Users className="size-4" />
               </span>
-              <span className="text-xs text-muted-foreground font-mono tabular-nums">
-                {isNew ? "حساب جديد" : `ID: ${id}`}
-              </span>
+              <h1 className="text-xl font-semibold tracking-tight text-foreground">
+                {isNew ? "تسجيل تاجر جملة جديد" : `ملف التاجر: ${form.customerName || "—"}`}
+              </h1>
+              <Badge variant="outline" className="text-[11px] font-mono border-border/80 bg-muted/30">
+                {isNew ? "حساب جديد" : `ID: ${id?.slice(0, 8)}`}
+              </Badge>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              {isNew ? "تسجيل تاجر جملة جديد" : `بيانات التاجر: ${form.customerName || "—"}`}
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              ضبط الحدود الائتمانية، فترات السداد، وقائمة الأسعار المخصصة لهذا العميل
-            </p>
           </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            ضبط الحدود الائتمانية، فترات السداد، وقائمة الأسعار المخصصة لهذا العميل
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 self-end sm:self-auto font-mono text-xs">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/wholesale/customers")}
+            className="h-8 px-2.5 text-xs font-mono border-border/70 active:scale-[0.98]"
+          >
+            إلغاء
+          </Button>
+
+          <Button
+            type="submit"
+            form="wholesale-customer-form"
+            disabled={saving}
+            size="sm"
+            className="h-8 px-3 text-xs font-mono gap-1 active:scale-[0.98]"
+          >
+            <Save className="size-3.5" />
+            <span>{saving ? "جاري الحفظ..." : "حفظ التغييرات"}</span>
+          </Button>
         </div>
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-xs text-red-600 dark:text-red-400 flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 shrink-0" />
-          {error}
+        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2 font-mono">
+          <AlertTriangle className="size-4 shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-card border border-border/80 rounded-xl p-5 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 border-b border-border/60 pb-3">
-            <Building2 className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">البيانات الأساسية للتاجر</h2>
+      <form id="wholesale-customer-form" onSubmit={handleSubmit} className="space-y-4">
+        {/* Basic Info Chassis */}
+        <div className="bg-card border border-border/70 rounded-lg p-4 shadow-xs space-y-3.5">
+          <div className="flex items-center gap-2 border-b border-border/60 pb-2.5">
+            <Building2 className="size-4 text-primary" />
+            <h2 className="text-xs font-semibold text-foreground font-mono">البيانات الأساسية للتاجر</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
             {isNew && (
-              <div className="md:col-span-2 space-y-1.5 relative">
-                <label className="font-medium text-foreground">ربط بحساب عميل مسجل *</label>
+              <div className="md:col-span-2 space-y-1 relative">
+                <label className="text-[11px] font-mono font-medium text-foreground">ربط بحساب عميل مسجل *</label>
                 <div className="relative">
-                  <Search className="w-3.5 h-3.5 absolute right-3 top-2.5 text-muted-foreground" />
-                  <input
+                  <Search className="size-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <Input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => searchCustomers(e.target.value)}
+                    onChange={(e) => void searchCustomers(e.target.value)}
                     placeholder="ابحث باسم العميل أو رقم الهاتف للربط..."
-                    className="w-full bg-background border border-input rounded-lg pr-9 pl-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="h-8 pr-8 text-xs font-mono bg-background border-border/70"
                   />
                 </div>
                 {searchResults.length > 0 && (
-                  <div className="absolute z-20 top-full mt-1 w-full rounded-lg border border-border bg-card shadow-xl overflow-hidden divide-y divide-border/60">
+                  <div className="absolute z-20 top-full mt-1 w-full rounded-md border border-border/70 bg-card shadow-lg overflow-hidden divide-y divide-border/60">
                     {searchResults.map((r) => (
                       <button
                         key={r.id}
@@ -225,43 +247,45 @@ export default function WholesaleCustomerDetail() {
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <label className="font-medium text-foreground">الاسم التجاري / اسم التاجر *</label>
-              <input
+            <div className="space-y-1">
+              <label className="text-[11px] font-mono font-medium text-foreground">الاسم التجاري / اسم التاجر *</label>
+              <Input
                 type="text"
                 value={form.customerName}
                 onChange={(e) => setForm({ ...form, customerName: e.target.value })}
-                className="w-full bg-background border border-input rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-8 text-xs font-mono bg-background border-border/70"
                 required
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="font-medium text-foreground">رقم الهاتف</label>
-              <input
+            <div className="space-y-1">
+              <label className="text-[11px] font-mono font-medium text-foreground">رقم الهاتف</label>
+              <Input
                 type="text"
                 value={form.customerPhone || ""}
                 onChange={(e) => setForm({ ...form, customerPhone: e.target.value })}
-                className="w-full bg-background border border-input rounded-lg px-3 py-2 text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-8 text-xs font-mono bg-background border-border/70"
+                dir="ltr"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="font-medium text-foreground">البريد الإلكتروني</label>
-              <input
+            <div className="space-y-1">
+              <label className="text-[11px] font-mono font-medium text-foreground">البريد الإلكتروني</label>
+              <Input
                 type="email"
                 value={form.customerEmail || ""}
                 onChange={(e) => setForm({ ...form, customerEmail: e.target.value })}
-                className="w-full bg-background border border-input rounded-lg px-3 py-2 text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-8 text-xs font-mono bg-background border-border/70"
+                dir="ltr"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="font-medium text-foreground">قائمة الأسعار المخصصة</label>
+            <div className="space-y-1">
+              <label className="text-[11px] font-mono font-medium text-foreground">قائمة الأسعار المخصصة</label>
               <select
                 value={form.priceListId || ""}
                 onChange={(e) => setForm({ ...form, priceListId: e.target.value || undefined })}
-                className="w-full bg-background border border-input rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full h-8 px-2 border border-border/70 rounded-md bg-background text-foreground text-xs font-mono"
               >
                 <option value="">بدون قائمة خاصة (الأسعار العامة)</option>
                 {priceLists.map((pl) => (
@@ -275,75 +299,56 @@ export default function WholesaleCustomerDetail() {
         </div>
 
         {/* Credit & Terms Box */}
-        <div className="bg-card border border-border/80 rounded-xl p-5 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 border-b border-border/60 pb-3">
-            <ShieldCheck className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">الشروط الائتمانية والسداد</h2>
+        <div className="bg-card border border-border/70 rounded-lg p-4 shadow-xs space-y-3.5">
+          <div className="flex items-center gap-2 border-b border-border/60 pb-2.5">
+            <ShieldCheck className="size-4 text-primary" />
+            <h2 className="text-xs font-semibold text-foreground font-mono">الشروط الائتمانية وفترة السداد</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-            <div className="space-y-1.5">
-              <label className="font-medium text-foreground">الحد الائتماني الأقصى (ج.م)</label>
-              <input
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs">
+            <div className="space-y-1">
+              <label className="text-[11px] font-mono font-medium text-foreground">الحد الائتماني الأقصى (ج.م)</label>
+              <Input
                 type="number"
                 value={form.creditLimit}
                 onChange={(e) => setForm({ ...form, creditLimit: parseFloat(e.target.value) || 0 })}
-                className="w-full bg-background border border-input rounded-lg px-3 py-2 text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-8 text-xs font-mono tabular-nums bg-background border-border/70"
                 step="0.01"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="font-medium text-foreground">أيام فترة السداد المسموحة (يوم)</label>
-              <input
+            <div className="space-y-1">
+              <label className="text-[11px] font-mono font-medium text-foreground">فترة السداد المسموحة (يوم)</label>
+              <Input
                 type="number"
                 value={form.paymentTermsDays}
                 onChange={(e) => setForm({ ...form, paymentTermsDays: parseInt(e.target.value) || 0 })}
-                className="w-full bg-background border border-input rounded-lg px-3 py-2 text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-8 text-xs font-mono tabular-nums bg-background border-border/70"
               />
             </div>
 
             {!isNew && (
-              <div className="space-y-1.5">
-                <label className="font-medium text-foreground">الرصيد المستحق الحالي</label>
-                <div className="w-full bg-muted/40 border border-border/60 rounded-lg px-3 py-2 text-foreground font-mono font-bold">
+              <div className="space-y-1">
+                <label className="text-[11px] font-mono font-medium text-foreground">الرصيد المستحق الحالي</label>
+                <div className="h-8 px-3 flex items-center bg-muted/40 border border-border/60 rounded-md text-foreground font-mono font-bold text-xs tabular-nums">
                   {Number(form.currentBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م
                 </div>
               </div>
             )}
           </div>
 
-          <div className="pt-2">
-            <label className="inline-flex items-center gap-2 cursor-pointer text-xs">
+          <div className="pt-1.5">
+            <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-mono">
               <input
                 type="checkbox"
                 id="isActive"
                 checked={form.isActive}
                 onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
-                className="rounded border-input text-primary focus:ring-primary"
+                className="rounded border-input text-primary focus:ring-primary size-4"
               />
-              <span className="font-medium text-foreground">حساب التاجر مفعل ومتاح لإصدار طلبيات الجملة</span>
+              <span className="font-medium text-foreground">حساب التاجر مفعل ومتاح لإصدار طلبيات وتوريدات الجملة</span>
             </label>
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-3">
-          <button
-            type="submit"
-            disabled={saving}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-all shadow-sm"
-          >
-            <Save className="w-4 h-4" />
-            {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("/wholesale/customers")}
-            className="px-4 py-2 text-xs font-medium rounded-lg bg-muted text-foreground hover:bg-muted/80 transition-colors"
-          >
-            إلغاء
-          </button>
         </div>
       </form>
     </div>

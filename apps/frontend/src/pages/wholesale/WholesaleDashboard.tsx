@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import {
@@ -9,11 +9,13 @@ import {
   TrendingUp,
   ShoppingBag,
   ArrowUpRight,
-  Sparkles,
   Building2,
   FileSpreadsheet,
   BadgeAlert,
+  RefreshCw,
 } from "lucide-react";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
 
 interface DashboardStats {
   totalCustomers: number;
@@ -29,39 +31,43 @@ export default function WholesaleDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await apiClient.get("/wholesale/dashboard");
+      setStats(res?.data?.data || null);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "تعذر تحميل لوحة الجملة");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await apiClient.get("/wholesale/dashboard");
-        setStats(res?.data?.data || null);
-      } catch (err: any) {
-        setError(err?.response?.data?.message || "تعذر تحميل لوحة الجملة");
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    void loadData();
   }, []);
 
-  if (loading) {
+  if (loading && !stats) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[350px] gap-3 text-muted-foreground">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs font-mono">جاري تحميل مؤشرات مبيعات الجملة...</span>
+      <div className="flex flex-col items-center justify-center min-h-[350px] gap-2.5 text-muted-foreground">
+        <RefreshCw className="size-5 animate-spin text-primary" />
+        <span className="text-xs font-mono">جاري تحميل مؤشرات مبيعات الجملة والتوزيع...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-8 max-w-2xl mx-auto text-center space-y-3 rtl font-sans" dir="rtl">
-        <div className="w-12 h-12 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 mx-auto flex items-center justify-center border border-red-500/20">
-          <AlertTriangle className="w-6 h-6" />
+      <div className="p-8 max-w-xl mx-auto text-center space-y-3" dir="rtl">
+        <div className="size-10 rounded-lg bg-destructive/10 text-destructive mx-auto flex items-center justify-center border border-destructive/20">
+          <AlertTriangle className="size-5" />
         </div>
-        <h2 className="text-base font-bold text-foreground">تعذر تحميل لوحة الجملة</h2>
+        <h2 className="text-sm font-semibold text-foreground font-mono">تعذر تحميل لوحة الجملة</h2>
         <p className="text-xs text-muted-foreground">{error}</p>
+        <Button size="sm" variant="outline" onClick={() => void loadData()} className="h-8 text-xs font-mono">
+          إعادة المحاولة
+        </Button>
       </div>
     );
   }
@@ -96,7 +102,7 @@ export default function WholesaleDashboard() {
       value: (stats?.overdueAmount ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       suffix: "ج.م",
       icon: BadgeAlert,
-      color: "text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/20",
+      color: "text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20",
       link: "/wholesale/debts",
     },
     {
@@ -116,92 +122,99 @@ export default function WholesaleDashboard() {
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 rtl font-sans" dir="rtl">
+    <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-4" dir="rtl">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
-        <div className="space-y-1">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/70 pb-3.5">
+        <div>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-              <Building2 className="w-3.5 h-3.5" />
-              منظومة البيع بالجملة
+            <span className="inline-flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <Building2 className="size-4" />
             </span>
-            <span className="text-xs text-muted-foreground font-mono tabular-nums">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              لوحة قيادة البيع بالجملة والتوزيع
+            </h1>
+            <Badge variant="outline" className="text-[11px] font-mono border-border/80 bg-muted/30">
               B2B Commerce Engine
-            </span>
+            </Badge>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            لوحة قيادة البيع بالجملة والتوزيع
-          </h1>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mt-1">
             متابعة حركة السحب، مديونيات التجار، وقوائم التسعير المخصصة لشركاء التوزيع
           </p>
         </div>
 
         {/* Quick Nav Links */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap font-mono text-xs self-end sm:self-auto">
           <Link
             to="/wholesale/customers"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-xs font-medium text-foreground transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-border/70 bg-card hover:bg-muted/40 text-foreground transition-colors active:scale-[0.98]"
           >
-            <Users className="w-3.5 h-3.5 text-primary" />
-            التجار
+            <Users className="size-3.5 text-primary" />
+            <span>التجار</span>
           </Link>
           <Link
             to="/wholesale/price-lists"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-xs font-medium text-foreground transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-border/70 bg-card hover:bg-muted/40 text-foreground transition-colors active:scale-[0.98]"
           >
-            <Tag className="w-3.5 h-3.5 text-primary" />
-            قوائم الأسعار
+            <Tag className="size-3.5 text-primary" />
+            <span>قوائم الأسعار</span>
           </Link>
           <Link
             to="/wholesale/debts"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-xs font-medium text-foreground transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-border/70 bg-card hover:bg-muted/40 text-foreground transition-colors active:scale-[0.98]"
           >
-            <Wallet className="w-3.5 h-3.5 text-primary" />
-            أعمار الديون
+            <Wallet className="size-3.5 text-primary" />
+            <span>أعمار الديون</span>
           </Link>
           <Link
             to="/wholesale/statements"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-xs font-medium text-foreground transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-border/70 bg-card hover:bg-muted/40 text-foreground transition-colors active:scale-[0.98]"
           >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-primary" />
-            كشوف الحسابات
+            <FileSpreadsheet className="size-3.5 text-primary" />
+            <span>كشوف الحسابات</span>
           </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void loadData()}
+            className="h-8 px-2 text-xs font-mono border-border/70 active:scale-[0.98]"
+          >
+            <RefreshCw className="size-3.5" />
+          </Button>
         </div>
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
             <div
               key={card.label}
-              className="bg-card border border-border/80 rounded-xl p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-primary/40 transition-all group"
+              className="bg-card border border-border/70 rounded-lg p-3.5 shadow-xs flex flex-col justify-between space-y-3 hover:border-border/90 transition-all"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground font-medium">{card.label}</p>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-2xl font-bold font-mono tabular-nums text-foreground">
+                <div className="space-y-0.5">
+                  <p className="text-[11px] text-muted-foreground font-medium">{card.label}</p>
+                  <div className="flex items-baseline gap-1.5 font-mono">
+                    <span className="text-xl font-bold tracking-tight tabular-nums text-foreground">
                       {card.value}
                     </span>
-                    <span className="text-xs text-muted-foreground font-medium">{card.suffix}</span>
+                    <span className="text-[11px] text-muted-foreground font-medium">{card.suffix}</span>
                   </div>
                 </div>
-                <div className={`p-2.5 rounded-xl border ${card.color}`}>
-                  <Icon className="w-5 h-5" />
+                <div className={`size-8 rounded-md flex items-center justify-center border ${card.color}`}>
+                  <Icon className="size-4" />
                 </div>
               </div>
 
               {card.link && (
-                <div className="pt-2 border-t border-border/60">
+                <div className="pt-2 border-t border-border/50">
                   <Link
                     to={card.link}
-                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+                    className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline font-mono"
                   >
-                    عرض التفاصيل والتقارير
-                    <ArrowUpRight className="w-3.5 h-3.5" />
+                    <span>عرض التفاصيل والتقارير</span>
+                    <ArrowUpRight className="size-3 rtl:rotate-90" />
                   </Link>
                 </div>
               )}
