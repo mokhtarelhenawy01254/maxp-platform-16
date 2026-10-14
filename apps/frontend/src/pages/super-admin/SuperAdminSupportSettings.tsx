@@ -7,6 +7,7 @@ import {
   Phone,
   Headphones,
   ShieldCheck,
+  CheckCircle2,
 } from "lucide-react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
@@ -37,7 +38,6 @@ export default function SuperAdminSupportSettings() {
         setPhone(res.data.data.phone);
       }
     } catch {
-      // Use fallback number
       setPhone((prev) => prev || "201012345678");
     } finally {
       setLoading(false);
@@ -77,19 +77,19 @@ export default function SuperAdminSupportSettings() {
 
   return (
     <div className="w-full space-y-4" dir="rtl">
-      {/* Linear Control Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/60 pb-3.5">
+      {/* Linear Single Chassis Control Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/80 bg-card p-4 rounded-xl shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-foreground shrink-0 shadow-2xs">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center text-foreground shrink-0 shadow-2xs">
             <Headphones className="size-4.5 text-primary" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
-                إعدادات الدعم الفني
+              <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
+                إعدادات الدعم الفني المركزي
               </h1>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
-                قناة المنصة المركزية
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+                Central Support Channel
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -101,7 +101,7 @@ export default function SuperAdminSupportSettings() {
         <Button
           onClick={handleSave}
           disabled={saving}
-          className="h-8 px-3 text-xs font-mono bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xs active:scale-[0.98] transition-transform gap-1.5 self-end sm:self-auto"
+          className="h-8 px-3 text-xs font-mono bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xs active:scale-[0.98] transition-transform gap-1.5 self-end sm:self-auto cursor-pointer"
         >
           {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
           <span>حفظ الإعدادات</span>
@@ -146,7 +146,7 @@ export default function SuperAdminSupportSettings() {
         </div>
       </div>
 
-      {/* Single-Surface Chassis */}
+      {/* Single-Surface Chassis Input Card */}
       <div className="rounded-xl border border-border/80 bg-card shadow-xs overflow-hidden p-4 sm:p-5 space-y-4">
         <div>
           <label className="block text-xs font-semibold text-foreground mb-1.5">

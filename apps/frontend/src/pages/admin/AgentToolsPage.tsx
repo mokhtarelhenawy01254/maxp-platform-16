@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { CheckCircle2, DownloadCloud, Wrench, Sparkles } from "lucide-react";
+import { CheckCircle2, DownloadCloud, Wrench, Sparkles, Layers, ShieldCheck } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import {
   ToolDefinition,
@@ -9,7 +9,6 @@ import {
   AgentToolInfo,
   ToolInstallFilter,
   ToolSideEffectFilter,
-  getToolGroupMeta,
 } from "./agent-tools/types";
 import { ToolRowCard } from "./agent-tools/ToolRowCard";
 import { ToolFilterBar } from "./agent-tools/ToolFilterBar";
@@ -111,14 +110,12 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
     return m;
   }, [agents, tools]);
 
-  // Counts
   const equippedCount = useMemo(() => {
     return tools.filter((t) => (toolToAgents.get(t.name) || []).length > 0).length;
   }, [tools, toolToAgents]);
 
   const unassignedCount = tools.length - equippedCount;
 
-  // Counts per group
   const groupCounts = useMemo(() => {
     const map: Record<string, number> = { all: tools.length };
     for (const t of tools) {
@@ -128,27 +125,18 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
     return map;
   }, [tools]);
 
-  // Filtered tools
   const filteredTools = useMemo(() => {
     return tools.filter((tool) => {
       const assigned = toolToAgents.get(tool.name) || [];
       const isEquipped = assigned.length > 0;
-
-      // Filter by install/equip status
       if (installFilter === "installed" && !isEquipped) return false;
       if (installFilter === "uninstalled" && isEquipped) return false;
-
-      // Filter by side-effects
       if (sideEffectFilter === "read" && tool.sideEffects === "write") return false;
       if (sideEffectFilter === "write" && tool.sideEffects !== "write") return false;
-
-      // Filter by category group
       if (selectedGroup !== "all") {
         const g = (tool.group || "other").toLowerCase();
         if (g !== selectedGroup.toLowerCase()) return false;
       }
-
-      // Filter by search query
       if (query.trim()) {
         const q = query.toLowerCase().trim();
         const agentNames = assigned.map((a) => a.name).join(" ");
@@ -159,12 +147,10 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
           (tool.group && tool.group.toLowerCase().includes(q));
         if (!match) return false;
       }
-
       return true;
     });
   }, [tools, toolToAgents, installFilter, sideEffectFilter, selectedGroup, query]);
 
-  // Split into equipped vs unassigned for default "all" view
   const equippedList = useMemo(() => {
     return filteredTools.filter((t) => (toolToAgents.get(t.name) || []).length > 0);
   }, [filteredTools, toolToAgents]);
@@ -173,17 +159,14 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
     return filteredTools.filter((t) => (toolToAgents.get(t.name) || []).length === 0);
   }, [filteredTools, toolToAgents]);
 
-  // Handlers
   const handleToggle = async (tool: ToolDefinition, enabled: boolean) => {
     if (enabled) {
-      // If no agents assigned yet, open assignment modal or assign to first active agent
       if (agents.length === 0) {
         toast.error("لا يوجد وكلاء متاحون في حسابك لتجهيز الأداة لهم.");
         return;
       }
       setAssignToolName(tool.name);
     } else {
-      // Unassign from all agents that currently have it
       try {
         const affectedAgents = agents.filter((a) => a.allowedTools?.includes(tool.name));
         await Promise.all(
@@ -252,7 +235,7 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
   };
 
   return (
-    <div dir="rtl" className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-5">
+    <div dir="rtl" className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-4">
       {/* 1. Header Filter Bar with Diagnostics Banner, Pills, and Underlined Tabs */}
       <ToolFilterBar
         totalCount={tools.length}
@@ -273,11 +256,11 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
 
       {/* 2. Main Content Area */}
       {loading ? (
-        <div className="flex min-h-[380px] items-center justify-center rounded-2xl border border-border/60 bg-card">
+        <div className="flex min-h-[380px] items-center justify-center rounded-xl border border-border/70 bg-card">
           <LoadingSpinner size="lg" />
         </div>
       ) : filteredTools.length === 0 ? (
-        <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-border p-8 text-center bg-card/40">
+        <div className="flex min-h-[220px] flex-col items-center justify-center rounded-xl border border-dashed border-border/80 p-8 text-center bg-card/40">
           <Wrench className="size-8 text-muted-foreground/50 mb-2" />
           <p className="text-sm font-bold text-foreground">لا توجد أدوات مطابقة لمعايير البحث</p>
           <p className="text-xs text-muted-foreground mt-1">
@@ -285,23 +268,21 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
           </p>
         </div>
       ) : installFilter === "all" ? (
-        /* When "all" is active, present two distinct visual sections (Equipped vs Available) */
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Section 1: Equipped Tools */}
           {equippedList.length > 0 && (
             <div className="space-y-2.5">
               <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
-                  <div className="size-2 rounded-full bg-emerald-500" />
-                  <h3 className="text-sm font-extrabold text-foreground">
+                  <span className="size-2 rounded-full bg-emerald-500" />
+                  <h3 className="text-xs font-bold text-foreground">
                     الأدوات المجهزة والنشطة للوكلاء
                   </h3>
-                  <span className="font-mono text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
+                  <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">
                     {equippedList.length}
                   </span>
                 </div>
               </div>
-
               <div className="space-y-2">
                 {equippedList.map((tool) => (
                   <ToolRowCard
@@ -324,15 +305,14 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
               <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
                   <DownloadCloud className="size-3.5 text-muted-foreground" />
-                  <h3 className="text-sm font-extrabold text-foreground">
+                  <h3 className="text-xs font-bold text-foreground">
                     مستودع الأدوات: متاحة للتجهيز
                   </h3>
-                  <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-bold">
+                  <span className="font-mono text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-bold">
                     {unassignedList.length}
                   </span>
                 </div>
               </div>
-
               <div className="space-y-2">
                 {unassignedList.map((tool) => (
                   <ToolRowCard
@@ -350,7 +330,6 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
           )}
         </div>
       ) : (
-        /* When specific filter is selected (Equipped or Unassigned), render single flat list */
         <div className="space-y-2">
           {filteredTools.map((tool) => (
             <ToolRowCard

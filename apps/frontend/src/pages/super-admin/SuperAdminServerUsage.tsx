@@ -98,17 +98,17 @@ const SuperAdminServerUsage: React.FC = () => {
 
   return (
     <div className="w-full space-y-4" dir="rtl">
-      {/* Linear Taste Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
+      {/* Linear Single Chassis Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/80 bg-card p-4 rounded-xl shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0 shadow-2xs">
+          <div className="size-9 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center shrink-0 shadow-2xs">
             <Server className="size-4.5 text-primary" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">تحليل استهلاك موارد السيرفر</h1>
+              <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground">تحليل استهلاك موارد السيرفر</h1>
               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border border-border/80 bg-muted/30">
-                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="size-1.5 rounded-full bg-emerald-500" />
                 مراقبة لحظية
               </span>
             </div>
@@ -121,7 +121,7 @@ const SuperAdminServerUsage: React.FC = () => {
           size="sm"
           onClick={fetchStats}
           disabled={loading}
-          className="h-8 rounded-lg text-xs font-mono active:scale-[0.98] transition-transform gap-1.5"
+          className="h-8 rounded-lg text-xs font-mono active:scale-[0.98] transition-transform gap-1.5 cursor-pointer"
         >
           <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
           <span>تحديث الإحصائيات</span>
@@ -144,7 +144,7 @@ const SuperAdminServerUsage: React.FC = () => {
           <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
             {formatSize(currentStats.total || currentStats.disk?.total)}
           </div>
-          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">سعة القرص الصلب الكلية</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">سعة القرص الكلية</p>
         </div>
 
         <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
@@ -294,7 +294,7 @@ const SuperAdminServerUsage: React.FC = () => {
       {/* Host Specs Chassis */}
       <div className="grid grid-cols-1 sm:grid-cols-3 rounded-xl border border-border/80 bg-card divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
         <div className="p-3.5 flex items-center gap-3 hover:bg-muted/10 transition-colors">
-          <div className="size-8 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-primary shrink-0">
+          <div className="size-8 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center text-primary shrink-0">
             <Cpu className="size-4" />
           </div>
           <div className="min-w-0">
@@ -304,7 +304,7 @@ const SuperAdminServerUsage: React.FC = () => {
         </div>
 
         <div className="p-3.5 flex items-center gap-3 hover:bg-muted/10 transition-colors">
-          <div className="size-8 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-primary shrink-0">
+          <div className="size-8 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center text-primary shrink-0">
             <HardDrive className="size-4" />
           </div>
           <div className="min-w-0">
@@ -314,7 +314,7 @@ const SuperAdminServerUsage: React.FC = () => {
         </div>
 
         <div className="p-3.5 flex items-center gap-3 hover:bg-muted/10 transition-colors">
-          <div className="size-8 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-primary shrink-0">
+          <div className="size-8 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center text-primary shrink-0">
             <Activity className="size-4" />
           </div>
           <div className="min-w-0">

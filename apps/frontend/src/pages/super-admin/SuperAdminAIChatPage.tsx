@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Building2, MessageSquare, RefreshCw, Sparkles, ShieldCheck } from "lucide-react";
+import { Building2, MessageSquare, RefreshCw, ShieldCheck } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import AIChatPage from "../admin/AIChatPage";
 import i18n from "../../i18n";
@@ -31,7 +31,7 @@ const SuperAdminAIChatPage: React.FC = () => {
           setSelectedCompanyId(data.companies[0].id);
         }
       } catch {
-        // Fallback
+        // Fallback active
       } finally {
         setLoading(false);
       }
@@ -41,11 +41,11 @@ const SuperAdminAIChatPage: React.FC = () => {
   const activeCompany = companies.find((c) => c.id === selectedCompanyId) || companies[0];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)] overflow-hidden" dir={i18n.dir()}>
+    <div className="flex flex-col h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)] overflow-hidden font-sans" dir={i18n.dir()}>
       {/* Single-Surface Top Control Bar */}
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/80 bg-card px-4 py-2.5 shadow-2xs">
-        <div className="flex items-center gap-3">
-          <div className="size-8 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center text-foreground shrink-0 shadow-2xs">
+        <div className="flex items-center gap-2.5">
+          <div className="size-8 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center text-foreground shrink-0 shadow-2xs">
             <MessageSquare className="size-4 text-primary" />
           </div>
           <div>
@@ -53,7 +53,7 @@ const SuperAdminAIChatPage: React.FC = () => {
               <h1 className="text-sm font-bold tracking-tight text-foreground">
                 محادثات الذكاء الاصطناعي المركزية
               </h1>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-primary/10 text-primary border border-primary/20">
                 Multi-Tenant Oversight
               </span>
             </div>
