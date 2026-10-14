@@ -193,12 +193,16 @@ async function ensureShippingReturnRequestsSynced(companyId) {
             ]
         };
 
+        // Cutoff: ordersStartDate, bounded by at most 30 days lookback to prevent resurrecting historical orders
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        let cutoffDate = thirtyDaysAgo;
         if (ordersStartDate) {
-            const startDate = new Date(ordersStartDate);
-            if (!isNaN(startDate.getTime())) {
-                orderWhere.createdAt = { gte: startDate };
+            const parsed = new Date(ordersStartDate);
+            if (!isNaN(parsed.getTime()) && parsed > thirtyDaysAgo) {
+                cutoffDate = parsed;
             }
         }
+        orderWhere.createdAt = { gte: cutoffDate };
 
         const returnedOrders = await prisma.order.findMany({
             where: orderWhere,
