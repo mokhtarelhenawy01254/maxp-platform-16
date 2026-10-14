@@ -2049,6 +2049,10 @@ class OrderService {
             data: {
               status: status,
               notes: finalOrderNotes || undefined,
+              ...(updatedOrder?.turboTrackingNumber ? { turboTrackingNumber: updatedOrder.turboTrackingNumber } : {}),
+              ...(updatedOrder?.turboShipmentStatus ? { turboShipmentStatus: updatedOrder.turboShipmentStatus } : {}),
+              ...(updatedOrder?.turboReturnReason ? { turboReturnReason: updatedOrder.turboReturnReason } : {}),
+              ...(updatedOrder?.turboDelayReason ? { turboDelayReason: updatedOrder.turboDelayReason } : {}),
               updatedAt: new Date()
             }
           });

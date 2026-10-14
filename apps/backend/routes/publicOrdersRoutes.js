@@ -2823,58 +2823,150 @@ router.post('/', async (req, res) => {
         customerPhone: order.guestPhone
       });
 
-      createdOrder = await prisma.order.create({
-        data: {
-          orderNumber: order.orderNumber,
-          customerId: customer.id,
-          companyId: company.id,
-          customerName: order.guestName,
-          customerPhone: order.guestPhone,
-          customerEmail: order.guestEmail || null,
-          customerAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress,
-          shippingAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress,
-          governorate: (() => {
-            const rawGovernorate = shippingAddress?.governorate || shippingAddress?.state || shippingAddress?.region || '';
-            try {
-              const { getTurboGovernorateName } = require('../utils/turbo/governorateMapper');
-              const normalized = getTurboGovernorateName(rawGovernorate);
-              return normalized || rawGovernorate || '';
-            } catch (e) {
-              return rawGovernorate || '';
-            }
-          })(),
-          city: shippingAddress?.city || '',
-          subtotal: parseFloat(order.total),
-          shipping: parseFloat(order.shippingCost || 0),
-          discount: parseFloat(order.discountAmount || 0),
-          total: parseFloat(order.finalTotal),
-          status: isDuplicateOrder ? 'DUPLICATE_ORDER' : 'PENDING',
-          paymentStatus: 'PENDING',
-          paymentMethod: mapPaymentMethodToEnum(paymentMethod || 'cash'),
-          notes: order.notes || `طلب من الموقع - ${order.orderNumber}`,
-          sourceType: 'storefront',
-          extractionMethod: 'storefront',
-          isViewed: false,
-          affiliateReferralId,
-          affiliateId,
-          orderSource: orderSource || 'STOREFRONT',
-          metadata:
-            Object.keys(regularOrderMetadata).length > 0
-              ? JSON.stringify(regularOrderMetadata)
-              : undefined,
-          orderItems: {
-            create: orderItems
-          }
-        },
-        include: {
-          orderItems: {
-            include: {
-              product: true
+      try {
+        createdOrder = await prisma.order.create({
+          data: {
+            orderNumber: order.orderNumber,
+            customerId: customer.id,
+            companyId: company.id,
+            customerName: order.guestName,
+            customerPhone: order.guestPhone,
+            customerEmail: order.guestEmail || null,
+            customerAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress,
+            shippingAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : shippingAddress,
+            governorate: (() => {
+              const rawGovernorate = shippingAddress?.governorate || shippingAddress?.state || shippingAddress?.region || '';
+              try {
+                const { getTurboGovernorateName } = require('../utils/turbo/governorateMapper');
+                const normalized = getTurboGovernorateName(rawGovernorate);
+                return normalized || rawGovernorate || '';
+              } catch (e) {
+                return rawGovernorate || '';
+              }
+            })(),
+            city: shippingAddress?.city || '',
+            subtotal: parseFloat(order.total),
+            shipping: parseFloat(order.shippingCost || 0),
+            discount: parseFloat(order.discountAmount || 0),
+            total: parseFloat(order.finalTotal),
+            status: isDuplicateOrder ? 'DUPLICATE_ORDER' : 'PENDING',
+            paymentStatus: 'PENDING',
+            paymentMethod: mapPaymentMethodToEnum(paymentMethod || 'cash'),
+            notes: order.notes || `طلب من الموقع - ${order.orderNumber}`,
+            sourceType: 'storefront',
+            extractionMethod: 'storefront',
+            isViewed: false,
+            affiliateReferralId,
+            affiliateId,
+            orderSource: orderSource || 'STOREFRONT',
+            metadata:
+              Object.keys(regularOrderMetadata).length > 0
+                ? JSON.stringify(regularOrderMetadata)
+                : undefined,
+            orderItems: {
+              create: orderItems
             }
           },
-          customer: true
+          include: {
+            orderItems: {
+              include: {
+                product: true
+              }
+            },
+            customer: true
+          }
+        });
+      } catch (firstErr) {
+        console.warn('⚠️ [ORDER-CREATE] First attempt to create Order failed, checking existing or self-healing fallback:', firstErr.message);
+
+        // 1. If order already exists with orderNumber, reuse it
+        const existingOrder = await prisma.order.findFirst({
+          where: {
+            companyId: company.id,
+            orderNumber: order.orderNumber
+          },
+          include: {
+            orderItems: {
+              include: {
+                product: true
+              }
+            },
+            customer: true
+          }
+        });
+
+        if (existingOrder) {
+          createdOrder = existingOrder;
+          console.log('✅ [ORDER-CREATE] Reusing existing Order matching orderNumber:', existingOrder.orderNumber);
+        } else {
+          // 2. Retry with fully sanitized order items (detaching variantId and productId to guarantee zero foreign key error)
+          const sanitizedItems = orderItems.map((item) => ({
+            productName: item.productName || 'منتج',
+            quantity: Number(item.quantity) || 1,
+            price: Number(item.price) || 0,
+            total: Number(item.total) || 0,
+            productSku: item.productSku || null,
+            productColor: item.productColor ? String(item.productColor) : null,
+            productSize: item.productSize ? String(item.productSize) : null,
+            productId: null,
+            variantId: null,
+            productImage: item.productImage || null,
+            metadata: item.metadata || null
+          }));
+
+          createdOrder = await prisma.order.create({
+            data: {
+              orderNumber: order.orderNumber,
+              customerId: customer.id,
+              companyId: company.id,
+              customerName: order.guestName,
+              customerPhone: order.guestPhone,
+              customerEmail: order.guestEmail || null,
+              customerAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : (shippingAddress || ''),
+              shippingAddress: typeof shippingAddress === 'object' ? JSON.stringify(shippingAddress) : (shippingAddress || ''),
+              governorate: (() => {
+                const rawGovernorate = shippingAddress?.governorate || shippingAddress?.state || shippingAddress?.region || '';
+                try {
+                  const { getTurboGovernorateName } = require('../utils/turbo/governorateMapper');
+                  const normalized = getTurboGovernorateName(rawGovernorate);
+                  return normalized || rawGovernorate || '';
+                } catch (e) {
+                  return rawGovernorate || '';
+                }
+              })(),
+              city: shippingAddress?.city || '',
+              subtotal: parseFloat(order.total || 0),
+              shipping: parseFloat(order.shippingCost || 0),
+              discount: parseFloat(order.discountAmount || 0),
+              total: parseFloat(order.finalTotal || 0),
+              status: isDuplicateOrder ? 'DUPLICATE_ORDER' : 'PENDING',
+              paymentStatus: 'PENDING',
+              paymentMethod: mapPaymentMethodToEnum(paymentMethod || 'cash'),
+              notes: order.notes || `طلب من الموقع - ${order.orderNumber}`,
+              sourceType: 'storefront',
+              extractionMethod: 'storefront',
+              isViewed: false,
+              orderSource: orderSource || 'STOREFRONT',
+              metadata:
+                Object.keys(regularOrderMetadata).length > 0
+                  ? JSON.stringify(regularOrderMetadata)
+                  : undefined,
+              orderItems: {
+                create: sanitizedItems
+              }
+            },
+            include: {
+              orderItems: {
+                include: {
+                  product: true
+                }
+              },
+              customer: true
+            }
+          });
+          console.log('✅ [ORDER-CREATE] Self-healing fallback succeeded for order:', createdOrder.orderNumber);
         }
-      });
+      }
 
       if (!isDuplicateOrder) {
         // Update referral to mark as converted
@@ -3629,6 +3721,37 @@ router.get('/:orderNumber/track', async (req, res) => {
     }
 
     if (!order) {
+      const primaryOrder = await prisma.order.findFirst({
+        where: {
+          companyId: company.id,
+          OR: [
+            { id: orderNumber },
+            { orderNumber }
+          ]
+        },
+        include: {
+          customer: true,
+          orderItems: {
+            include: { product: true }
+          }
+        }
+      });
+
+      if (primaryOrder && phoneMatchesGuest(phone, primaryOrder.customerPhone || primaryOrder.customer?.phone)) {
+        order = {
+          ...primaryOrder,
+          guestName: primaryOrder.customer?.name || primaryOrder.customerName,
+          guestPhone: primaryOrder.customerPhone || primaryOrder.customer?.phone,
+          guestEmail: primaryOrder.customerEmail || primaryOrder.customer?.email,
+          items: primaryOrder.orderItems?.map(buildTrackedOrderItem) || [],
+          finalTotal: primaryOrder.total,
+          shippingCost: primaryOrder.shipping,
+          discountAmount: primaryOrder.discount
+        };
+      }
+    }
+
+    if (!order) {
       return res.status(404).json({
         success: false,
         error: 'الطلب غير موجود'
@@ -3656,19 +3779,53 @@ router.get('/search', async (req, res) => {
     }
 
     const prisma = await getPrisma();
-    const orders = await prisma.guestOrder.findMany({
-      where: {
-        guestEmail: email,
-        companyId: company.id
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 10
-    });
+    const [guestOrders, regularOrders] = await Promise.all([
+      prisma.guestOrder.findMany({
+        where: {
+          guestEmail: email,
+          companyId: company.id
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10
+      }),
+      prisma.order.findMany({
+        where: {
+          companyId: company.id,
+          customerEmail: email
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10
+      })
+    ]);
 
     // 🔐 مطابقة الهاتف قبل إرجاع أي بيانات
-    const matched = orders.filter((order) => phoneMatchesGuest(phone, order.guestPhone));
+    const matchedGuests = guestOrders.filter((order) => phoneMatchesGuest(phone, order.guestPhone));
+    const matchedRegular = regularOrders.filter((order) => phoneMatchesGuest(phone, order.customerPhone)).map(order => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      companyId: order.companyId,
+      guestName: order.customerName,
+      guestPhone: order.customerPhone,
+      guestEmail: order.customerEmail,
+      total: order.subtotal,
+      finalTotal: order.total,
+      shippingCost: order.shipping,
+      discountAmount: order.discount,
+      status: order.status,
+      createdAt: order.createdAt
+    }));
 
-    res.json({ success: true, data: matched });
+    const seenOrderNumbers = new Set(matchedGuests.map(g => String(g.orderNumber).trim().toLowerCase()));
+    const finalMatched = [...matchedGuests];
+    for (const reg of matchedRegular) {
+      const key = String(reg.orderNumber).trim().toLowerCase();
+      if (!seenOrderNumbers.has(key)) {
+        finalMatched.push(reg);
+        seenOrderNumbers.add(key);
+      }
+    }
+
+    res.json({ success: true, data: finalMatched });
   } catch (error) {
     console.error('Error searching orders:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -3723,6 +3880,39 @@ router.get('/:id', async (req, res) => {
         success: false,
         error: 'الطلب غير موجود'
       });
+    }
+
+    // If not found in GuestOrder, try by ID or orderNumber in Order table
+    if (!order) {
+      console.log('🔍 [GET-ORDER] Trying in primary Order table...');
+      const primaryOrder = await prisma.order.findFirst({
+        where: {
+          companyId: company.id,
+          OR: [
+            { id },
+            { orderNumber: id }
+          ]
+        },
+        include: {
+          customer: true,
+          orderItems: {
+            include: { product: true }
+          }
+        }
+      });
+
+      if (primaryOrder && phoneMatchesGuest(phone, primaryOrder.customerPhone || primaryOrder.customer?.phone)) {
+        order = {
+          ...primaryOrder,
+          guestName: primaryOrder.customer?.name || primaryOrder.customerName,
+          guestPhone: primaryOrder.customerPhone || primaryOrder.customer?.phone,
+          guestEmail: primaryOrder.customerEmail || primaryOrder.customer?.email,
+          items: JSON.stringify(primaryOrder.orderItems?.map(buildTrackedOrderItem) || []),
+          finalTotal: primaryOrder.total,
+          shippingCost: primaryOrder.shipping,
+          discountAmount: primaryOrder.discount
+        };
+      }
     }
 
     if (!order) {
@@ -3787,6 +3977,40 @@ router.post('/:id/accept-offer', async (req, res) => {
           companyId: company.id
         }
       });
+    }
+
+    let isPrimaryOnly = false;
+    let primaryTargetOrder = null;
+    if (!order) {
+      primaryTargetOrder = await prisma.order.findFirst({
+        where: {
+          companyId: company.id,
+          OR: [
+            { id },
+            { orderNumber: id }
+          ]
+        },
+        include: {
+          customer: true
+        }
+      });
+      if (primaryTargetOrder) {
+        isPrimaryOnly = true;
+        order = {
+          id: primaryTargetOrder.id,
+          orderNumber: primaryTargetOrder.orderNumber,
+          companyId: primaryTargetOrder.companyId,
+          guestName: primaryTargetOrder.customer?.name || primaryTargetOrder.customerName,
+          guestPhone: primaryTargetOrder.customerPhone || primaryTargetOrder.customer?.phone,
+          total: primaryTargetOrder.total,
+          finalTotal: primaryTargetOrder.total,
+          shippingCost: primaryTargetOrder.shipping,
+          discountAmount: primaryTargetOrder.discount,
+          items: '[]',
+          metadata: primaryTargetOrder.metadata,
+          createdAt: primaryTargetOrder.createdAt
+        };
+      }
     }
 
     if (!order) {
@@ -3932,19 +4156,30 @@ router.post('/:id/accept-offer', async (req, res) => {
       acceptedAt: new Date().toISOString()
     };
 
-    const updatedOrder = await prisma.guestOrder.update({
-      where: { id: order.id },
-      data: {
+    let updatedOrder = null;
+    if (!isPrimaryOnly) {
+      updatedOrder = await prisma.guestOrder.update({
+        where: { id: order.id },
+        data: {
+          items: JSON.stringify(existingItems),
+          total: nextTotal,
+          finalTotal: nextFinalTotal,
+          metadata: JSON.stringify(metadata)
+        }
+      });
+    } else {
+      updatedOrder = {
+        ...order,
         items: JSON.stringify(existingItems),
         total: nextTotal,
         finalTotal: nextFinalTotal,
         metadata: JSON.stringify(metadata)
-      }
-    });
+      };
+    }
 
     // Also sync to primary order and create orderItem row if primary order exists
     try {
-      const primaryOrder = await prisma.order.findFirst({
+      const primaryOrder = primaryTargetOrder || await prisma.order.findFirst({
         where: {
           companyId: company.id,
           OR: [
@@ -3964,22 +4199,42 @@ router.post('/:id/accept-offer', async (req, res) => {
             subtotal: nextOrderSubtotal
           }
         });
-        await prisma.orderItem.create({
-          data: {
-            orderId: primaryOrder.id,
-            productId: productId || null,
-            variantId: variantId || null,
-            productName: resolvedName,
-            productSku: resolvedSku || null,
-            productColor: resolvedColor ? String(resolvedColor) : null,
-            productSize: resolvedSize ? String(resolvedSize) : null,
-            productImage: resolvedImage || null,
-            price: resolvedPrice,
-            total: Number((resolvedPrice * offerItemQty).toFixed(2)),
-            quantity: offerItemQty,
-            metadata: JSON.stringify({ isPostPurchaseOffer: true, addedPostPurchase: true, attributes: resolvedAttributes || {} })
-          }
-        });
+        try {
+          await prisma.orderItem.create({
+            data: {
+              orderId: primaryOrder.id,
+              productId: productId || null,
+              variantId: variantId || null,
+              productName: resolvedName,
+              productSku: resolvedSku || null,
+              productColor: resolvedColor ? String(resolvedColor) : null,
+              productSize: resolvedSize ? String(resolvedSize) : null,
+              productImage: resolvedImage || null,
+              price: resolvedPrice,
+              total: Number((resolvedPrice * offerItemQty).toFixed(2)),
+              quantity: offerItemQty,
+              metadata: JSON.stringify({ isPostPurchaseOffer: true, addedPostPurchase: true, attributes: resolvedAttributes || {} })
+            }
+          });
+        } catch (itemErr) {
+          console.warn('⚠️ [POST-PURCHASE-OFFER] orderItem create failed, retrying with detached productId/variantId:', itemErr.message);
+          await prisma.orderItem.create({
+            data: {
+              orderId: primaryOrder.id,
+              productId: null,
+              variantId: null,
+              productName: resolvedName,
+              productSku: resolvedSku || null,
+              productColor: resolvedColor ? String(resolvedColor) : null,
+              productSize: resolvedSize ? String(resolvedSize) : null,
+              productImage: resolvedImage || null,
+              price: resolvedPrice,
+              total: Number((resolvedPrice * offerItemQty).toFixed(2)),
+              quantity: offerItemQty,
+              metadata: JSON.stringify({ isPostPurchaseOffer: true, addedPostPurchase: true, attributes: resolvedAttributes || {} })
+            }
+          });
+        }
       } else {
         console.warn('⚠️ [POST-PURCHASE-OFFER] Primary order not found for sync:', order.orderNumber);
       }
