@@ -156,11 +156,11 @@ const SYSTEM_STATUS_MAPPING = {
   'returned_to_company': { orderStatus: 'RETURNED', paymentStatus: null },
   'returned_received': { orderStatus: 'RETURNED', paymentStatus: null },
   'returned_to_customer': { orderStatus: 'RETURNED', paymentStatus: null },
-  'returned_resent': { orderStatus: 'PROCESSING', paymentStatus: null },
+  'returned_resent': { orderStatus: 'SHIPPED', paymentStatus: null },
   'returned_missing': { orderStatus: 'RETURNED', paymentStatus: null },
   'returned_destroyed': { orderStatus: 'RETURNED', paymentStatus: null },
   'cancelled': { orderStatus: 'CANCELLED', paymentStatus: null },
-  'delayed': { orderStatus: 'ON_HOLD', paymentStatus: null },
+  'delayed': { orderStatus: 'SHIPPED', paymentStatus: null },
   'incomplete': { orderStatus: null, paymentStatus: null },
   'archived': { orderStatus: null, paymentStatus: null }
 };
@@ -170,12 +170,23 @@ const normalizeTurboStatus = (rawStatus) => {
   const key = String(rawStatus).toLowerCase().trim();
   if (CANONICAL_TURBO_MAP[key]) return CANONICAL_TURBO_MAP[key];
 
-  // Substring fallback checks for Arabic phrases
-  if (key.includes('انتظار') || key.includes('بانتظار') || key.includes('التسليم لتربو')) return 'turbo_sent';
-  if (key.includes('تنفيذ')) return 'processing';
+  // Specific substring checks first (avoid generic substring hijacking)
+  if (key.includes('مرتجعة للعميل') || key.includes('للعميل')) return 'returned_to_customer';
+  if (key.includes('وصلتني') || key.includes('وصلت الشحنة للمرسل')) return 'returned_received';
+  if (key.includes('معاد إرسال') || key.includes('معاد ارسال') || key.includes('اعادة ارسال') || key.includes('إعادة إرسال')) return 'returned_resent';
+  if (key.includes('مفقود') || key.includes('ضائع')) return 'returned_missing';
+  if (key.includes('معدوم') || key.includes('تالف') || key.includes('إعدام') || key.includes('تلف')) return 'returned_destroyed';
+  if (key.includes('تسليم') || key.includes('استلام')) return 'delivered';
+  if (key.includes('موردة') || key.includes('توريد') || key.includes('تحصيل')) return 'remitted';
+  if (key.includes('غير مكتمل')) return 'incomplete';
   if (key.includes('مؤجل') || key.includes('تأجيل')) return 'delayed';
-  if (key.includes('مرتجع') || key.includes('مسترجع')) return 'returned_to_company';
   if (key.includes('ملغي') || key.includes('إلغاء')) return 'cancelled';
+  if (key.includes('تنفيذ')) return 'processing';
+  if (key.includes('مندوب') || key.includes('كابتن') || key.includes('توزيع') || key.includes('في الطريق')) return 'out_for_delivery';
+  if (key.includes('انتظار') || key.includes('بانتظار') || key.includes('التسليم لتربو')) return 'turbo_sent';
+
+  // Generic fallback checks last
+  if (key.includes('مرتجع') || key.includes('مسترجع') || key.includes('راجع')) return 'returned_to_company';
 
   return key;
 };
