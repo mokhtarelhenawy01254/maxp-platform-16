@@ -4328,8 +4328,18 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     };
 
 
+    const guestOrdersByNumber = new Map();
+    if (Array.isArray(guestOrders)) {
+      for (const g of guestOrders) {
+        if (g.orderNumber) {
+          guestOrdersByNumber.set(normalizeOrderKey(g.orderNumber), g);
+        }
+      }
+    }
+
     // تحويل البيانات (Mapping)
     const formattedRegularOrders = regularOrders.map(order => {
+      const guestTwin = guestOrdersByNumber.get(normalizeOrderKey(order.orderNumber));
       const merchantOrderScope = serializeMerchantOrderScope(order.merchantOrders?.[0], order);
       const orderMetadata = safeParseOrderMetadata(order.metadata);
       let shippingAddress = order.shippingAddress || '';
@@ -4554,14 +4564,14 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
             }
           };
         }) : [],
-        trackingNumber: order.shipments?.[0]?.trackingNumber || orderMetadata?.trackingNumber || order.turboTrackingNumber || null,
-        carrierType: order.shipments?.[0]?.carrierType || orderMetadata?.shippingCarrier || (order.turboTrackingNumber ? 'TURBO' : null),
+        trackingNumber: order.shipments?.[0]?.trackingNumber || orderMetadata?.trackingNumber || order.turboTrackingNumber || guestTwin?.turboTrackingNumber || null,
+        carrierType: order.shipments?.[0]?.carrierType || orderMetadata?.shippingCarrier || (order.turboTrackingNumber || guestTwin?.turboTrackingNumber ? 'TURBO' : null),
         shipment: order.shipments?.[0] || null,
         shipments: order.shipments || [],
-        turboShipmentStatus: order.turboShipmentStatus || null,
-        turboReturnReason: order.turboReturnReason || null,
-        turboDelayReason: order.turboDelayReason || null,
-        turboTrackingNumber: order.turboTrackingNumber || null,
+        turboShipmentStatus: order.turboShipmentStatus || guestTwin?.turboShipmentStatus || null,
+        turboReturnReason: order.turboReturnReason || guestTwin?.turboReturnReason || null,
+        turboDelayReason: order.turboDelayReason || guestTwin?.turboDelayReason || null,
+        turboTrackingNumber: order.turboTrackingNumber || guestTwin?.turboTrackingNumber || null,
         notes: order.notes,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
@@ -7413,6 +7423,58 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             : order.status || 'PENDING'
       ).toLowerCase();
 
+      let detailTurboTrackingNumber = order.turboTrackingNumber;
+      let detailTurboShipmentStatus = order.turboShipmentStatus;
+      let detailTurboShipmentId = order.turboShipmentId;
+      let detailTurboLabelUrl = order.turboLabelUrl;
+      let detailTurboMetadata = order.turboMetadata;
+      let detailTurboBranchId = order.turboBranchId;
+      let detailTurboCaptainName = order.turboCaptainName;
+      let detailTurboCaptainPhone = order.turboCaptainPhone;
+      let detailTurboBranchName = order.turboBranchName;
+      let detailTurboBranchPhone = order.turboBranchPhone;
+      let detailTurboDelayReason = order.turboDelayReason;
+      let detailTurboReturnReason = order.turboReturnReason;
+      let detailTurboExpectedBranch = order.turboExpectedBranch;
+
+      if (!detailTurboTrackingNumber) {
+        try {
+          const guestTwin = await prisma.guestOrder.findFirst({
+            where: { companyId: order.companyId, orderNumber: order.orderNumber },
+            select: {
+              turboTrackingNumber: true,
+              turboShipmentStatus: true,
+              turboShipmentId: true,
+              turboLabelUrl: true,
+              turboMetadata: true,
+              turboBranchId: true,
+              turboCaptainName: true,
+              turboCaptainPhone: true,
+              turboBranchName: true,
+              turboBranchPhone: true,
+              turboDelayReason: true,
+              turboReturnReason: true,
+              turboExpectedBranch: true
+            }
+          });
+          if (guestTwin?.turboTrackingNumber) {
+            detailTurboTrackingNumber = guestTwin.turboTrackingNumber;
+            detailTurboShipmentStatus = guestTwin.turboShipmentStatus || detailTurboShipmentStatus;
+            detailTurboShipmentId = guestTwin.turboShipmentId || detailTurboShipmentId;
+            detailTurboLabelUrl = guestTwin.turboLabelUrl || detailTurboLabelUrl;
+            detailTurboMetadata = guestTwin.turboMetadata || detailTurboMetadata;
+            detailTurboBranchId = guestTwin.turboBranchId || detailTurboBranchId;
+            detailTurboCaptainName = guestTwin.turboCaptainName || detailTurboCaptainName;
+            detailTurboCaptainPhone = guestTwin.turboCaptainPhone || detailTurboCaptainPhone;
+            detailTurboBranchName = guestTwin.turboBranchName || detailTurboBranchName;
+            detailTurboBranchPhone = guestTwin.turboBranchPhone || detailTurboBranchPhone;
+            detailTurboDelayReason = guestTwin.turboDelayReason || detailTurboDelayReason;
+            detailTurboReturnReason = guestTwin.turboReturnReason || detailTurboReturnReason;
+            detailTurboExpectedBranch = guestTwin.turboExpectedBranch || detailTurboExpectedBranch;
+          }
+        } catch (_) {}
+      }
+
       formattedOrder = {
         id: order.orderNumber,
         orderNumber: order.orderNumber,
@@ -7562,8 +7624,8 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             }
           };
         }),
-        trackingNumber: order.shipments?.[0]?.trackingNumber || orderMetadata?.trackingNumber || order.turboTrackingNumber || null,
-        carrierType: order.shipments?.[0]?.carrierType || orderMetadata?.shippingCarrier || (order.turboTrackingNumber ? 'TURBO' : null),
+        trackingNumber: order.shipments?.[0]?.trackingNumber || orderMetadata?.trackingNumber || detailTurboTrackingNumber || null,
+        carrierType: order.shipments?.[0]?.carrierType || orderMetadata?.shippingCarrier || (detailTurboTrackingNumber ? 'TURBO' : null),
         shipment: order.shipments?.[0] || null,
         shipments: order.shipments || [],
         notes: order.notes,
@@ -7588,19 +7650,19 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         kashierPayment:
           orderMetadata?.kashierPayment || null,
         // Turbo Shipping Fields
-        turboShipmentId: order.turboShipmentId,
-        turboTrackingNumber: order.turboTrackingNumber,
-        turboShipmentStatus: order.turboShipmentStatus,
-        turboLabelUrl: order.turboLabelUrl,
-        turboMetadata: order.turboMetadata,
-        turboBranchId: order.turboBranchId,
-        turboCaptainName: order.turboCaptainName,
-        turboCaptainPhone: order.turboCaptainPhone,
-        turboBranchName: order.turboBranchName,
-        turboBranchPhone: order.turboBranchPhone,
-        turboDelayReason: order.turboDelayReason,
-        turboReturnReason: order.turboReturnReason,
-        turboExpectedBranch: order.turboExpectedBranch,
+        turboShipmentId: detailTurboShipmentId,
+        turboTrackingNumber: detailTurboTrackingNumber,
+        turboShipmentStatus: detailTurboShipmentStatus,
+        turboLabelUrl: detailTurboLabelUrl,
+        turboMetadata: detailTurboMetadata,
+        turboBranchId: detailTurboBranchId,
+        turboCaptainName: detailTurboCaptainName,
+        turboCaptainPhone: detailTurboCaptainPhone,
+        turboBranchName: detailTurboBranchName,
+        turboBranchPhone: detailTurboBranchPhone,
+        turboDelayReason: detailTurboDelayReason,
+        turboReturnReason: detailTurboReturnReason,
+        turboExpectedBranch: detailTurboExpectedBranch,
         // Source & Meta Fields
         sourceType: (order.sourceType === 'storefront' || orderMetadata?.source === 'storefront' || order.orderSource === 'STOREFRONT')
           ? 'storefront'
