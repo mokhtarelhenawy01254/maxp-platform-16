@@ -1,16 +1,13 @@
 import { useState } from "react";
-import { Building2, Sparkles, Clock, AlertTriangle, Users, CheckCircle2, Loader2, ArrowLeft, MessageCircle } from "lucide-react";
+import { Building2, AlertTriangle, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { tokenManager } from "../../utils/tokenManager";
 import { Button } from "../../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
-import { formatDate, extractErrorMessage } from "../SuperAdminCompaniesV2/utils";
-import { useCompanies, useFollowUpOwners } from "../SuperAdminCompaniesV2/hooks/useCompanies";
-import { enrichCompanies, computeQuickStats, getCount } from "../SuperAdminCompaniesV2/utils";
+import { extractErrorMessage } from "../SuperAdminCompaniesV2/utils";
+import { useCompanies } from "../SuperAdminCompaniesV2/hooks/useCompanies";
+import { enrichCompanies } from "../SuperAdminCompaniesV2/utils";
 import { CompaniesTable } from "../SuperAdminCompaniesV2/components/CompaniesTable";
 import { FOLLOW_UP_SAVED_VIEWS } from "../SuperAdminCompaniesV2/constants";
 import { toast } from "sonner";
@@ -23,14 +20,15 @@ export default function SuperAdminFollowUp() {
   const [activeView, setActiveView] = useState("FOLLOW_UP_NOW");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
-  const [fbQuery, setFbQuery] = useState("");
-  const [fbResults, setFbResults] = useState<import("../SuperAdminCompaniesV2/types").FacebookPageResult[]>([]);
-  const [fbSearched, setFbSearched] = useState(false);
+  const [isMobile] = useState(() => window.innerWidth < 768);
 
-  const { companies, isLoading, error, admin, refetch, total, totalPages, meta } = useCompanies({
-    search: "", status: "ALL", savedView: activeView,
-    page: currentPage, pageSize: 20, sort: "createdAt:desc",
+  const { companies, isLoading, error, admin, refetch, total, totalPages } = useCompanies({
+    search: "",
+    status: "ALL",
+    savedView: activeView,
+    page: currentPage,
+    pageSize: 20,
+    sort: "createdAt:desc",
   });
 
   const enriched = enrichCompanies(companies, admin?.id || null);
@@ -40,7 +38,10 @@ export default function SuperAdminFollowUp() {
 
   const handleOpenWhatsApp = (company: import("../SuperAdminCompaniesV2/types").Company) => {
     const phone = company.phone?.replace(/\s+/g, "").replace(/^0+/, "");
-    if (!phone) { tToast.error("index.msg_f7bf"); return; }
+    if (!phone) {
+      tToast.error("index.msg_f7bf");
+      return;
+    }
     const full = phone.startsWith("+") ? phone.slice(1) : phone.startsWith("20") ? phone : `20${phone}`;
     window.open(`https://wa.me/${full}`, "_blank", "noopener,noreferrer");
   };
@@ -56,39 +57,49 @@ export default function SuperAdminFollowUp() {
         tokenManager.setAccessToken(res.data.data.token);
         localStorage.setItem("user", JSON.stringify(res.data.data.user));
         window.location.href = "/company-dashboard";
-      } else toast.error(res.data?.message || "فشل");
-    } catch (err) { toast.error(extractErrorMessage(err, "فشل")); }
+      } else {
+        toast.error(res.data?.message || "فشل تسجيل الدخول كمسؤول");
+      }
+    } catch (err) {
+      toast.error(extractErrorMessage(err, "فشل تسجيل الدخول كمسؤول"));
+    }
   };
 
   const handleRunFollowUpAction = async (company: import("../SuperAdminCompaniesV2/types").Company, action: "remind" | "escalate") => {
     try {
       const payload = action === "remind" ? { markReminderSent: true } : { markEscalated: true };
       const res = await apiClient.put(`/admin/companies/${company.id}/follow-up`, payload);
-      if (res.data?.success) { toast.success(action === "remind" ? "تم تسجيل التذكير" : "تم تسجيل التصعيد"); refetch(); }
-      else toast.error(res.data?.message || "فشل");
-    } catch (err) { toast.error(extractErrorMessage(err, "فشل")); }
+      if (res.data?.success) {
+        toast.success(action === "remind" ? "تم تسجيل إرسال التذكير بنجاح" : "تم تسجيل التصعيد للمتابعة");
+        refetch();
+      } else {
+        toast.error(res.data?.message || "فشل تنفيذ إجراء المتابعة");
+      }
+    } catch (err) {
+      toast.error(extractErrorMessage(err, "فشل تنفيذ إجراء المتابعة"));
+    }
   };
 
   return (
-    <div dir="rtl" className="w-full space-y-4">
-      {/* Linear Taste Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
-        <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-center shrink-0">
+    <div dir="rtl" className="w-full space-y-3.5">
+      {/* Linear Single Chassis Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="size-8 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-center shrink-0">
             <Building2 className="size-4 text-foreground/80" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold tracking-tight text-foreground">
+              <h1 className="text-sm sm:text-base font-bold tracking-tight text-foreground">
                 مركز متابعة الشركات
               </h1>
-              <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] font-mono tabular-nums text-muted-foreground">
+              <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/30 px-2 py-0.5 text-[10px] font-mono tabular-nums text-muted-foreground">
                 <span className="size-1.5 rounded-full bg-amber-500" />
                 {total} شركة
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              إدارة ومتابعة حالات الشركات — تذكيرات، تصعيد، واتصالات
+            <p className="text-[11px] text-muted-foreground">
+              إدارة ومتابعة حالات الشركات وتذكيرات التفعيل والتصعيد المباشر
             </p>
           </div>
         </div>
@@ -99,10 +110,10 @@ export default function SuperAdminFollowUp() {
             variant="outline"
             size="sm"
             onClick={() => navigate("/super-admin/companies-v2")}
-            className="h-8 gap-1.5 text-xs font-mono active:scale-[0.98] transition-transform"
+            className="h-7 gap-1.5 text-xs font-mono border-border/70 active:scale-[0.98] transition-transform"
           >
-            <ArrowLeft className="size-3.5" />
-            <span>العودة للشركات</span>
+            <ArrowLeft className="size-3" />
+            <span>العودة لدليل الشركات</span>
           </Button>
         </div>
       </div>
@@ -129,12 +140,12 @@ export default function SuperAdminFollowUp() {
       {error ? (
         <Alert variant="destructive" className="rounded-xl border-destructive/30">
           <AlertTriangle className="size-4" />
-          <AlertTitle>تعذر التحميل</AlertTitle>
+          <AlertTitle>تعذر تحميل البيانات</AlertTitle>
           <AlertDescription>{(error as Error).message}</AlertDescription>
         </Alert>
       ) : null}
 
-      {/* Single Chassis Table */}
+      {/* Single Surface Table Container */}
       <div className="rounded-xl border border-border/80 bg-card/40 shadow-xs overflow-hidden">
         <CompaniesTable
           companies={enriched}
