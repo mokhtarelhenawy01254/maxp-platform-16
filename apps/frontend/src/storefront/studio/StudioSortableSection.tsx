@@ -20,6 +20,8 @@ interface StudioSortableSectionProps {
   totalSections: number;
   deviceMode?: StudioDeviceMode;
   showSpacingOverlay?: boolean;
+  actualPadding?: string | number;
+  settings?: Record<string, any>;
   onSelect: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
@@ -37,6 +39,8 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
   totalSections,
   deviceMode = "desktop",
   showSpacingOverlay = true,
+  actualPadding,
+  settings,
   onSelect,
   onMoveUp,
   onMoveDown,
@@ -44,6 +48,12 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
   onDelete,
   children,
 }) => {
+  const resolvedPadding =
+    actualPadding ??
+    settings?.padding ??
+    settings?.paddingTop ??
+    settings?.paddingBlock ??
+    settings?.sectionPadding;
   const {
     attributes,
     listeners,
@@ -160,9 +170,11 @@ export const StudioSortableSection: React.FC<StudioSortableSectionProps> = ({
               <div className="absolute inset-0 border border-dashed border-[#e29142]/60" />
               {/* Inner Padding in green with label */}
               <div className="absolute inset-[18px] sm:inset-[24px] border border-dashed border-[#3faa6f]/60 bg-[#3faa6f]/10">
-                <span className="absolute top-1 end-1.5 rounded bg-[#eaf7ef] px-1.5 py-0.5 text-[8.5px] font-bold text-[#2d8554] shadow-xs">
-                  padding 24
-                </span>
+                {resolvedPadding !== undefined && resolvedPadding !== "" && (
+                  <span className="absolute top-1 end-1.5 rounded bg-[#eaf7ef] px-1.5 py-0.5 text-[8.5px] font-bold text-[#2d8554] shadow-xs">
+                    padding {resolvedPadding}
+                  </span>
+                )}
               </div>
             </div>
           )}
