@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowUturnLeftIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import {
+  RotateCcw,
+  AlertCircle,
+  TrendingDown,
+  DollarSign,
+  Package,
+  MapPin,
+  RefreshCw,
+} from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -15,6 +23,8 @@ import PeriodSelector, {
   PeriodRange,
 } from "../../../components/common/PeriodSelector";
 import { useCurrency } from "../../../hooks/useCurrency";
+import { Card, CardContent } from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
 
 interface ReturnSummary {
   totalOrders: number;
@@ -50,12 +60,6 @@ const ReturnsAnalytics: React.FC = () => {
   const [range, setRange] = useState<PeriodRange | null>(null);
   const [data, setData] = useState<ReturnsData | null>(null);
 
-  useEffect(() => {
-    if (range) {
-      fetchData();
-    }
-  }, [range]);
-
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -64,7 +68,7 @@ const ReturnsAnalytics: React.FC = () => {
         range?.startDate,
         range?.endDate,
       );
-      if (response.success && response.data) {
+      if (response?.success && response.data) {
         setData(response.data);
       } else {
         setData({
@@ -75,161 +79,273 @@ const ReturnsAnalytics: React.FC = () => {
       }
     } catch (err: any) {
       console.error("ReturnsAnalytics error:", err);
-      setError(err.message || t("returnsAnalytics.fetchError"));
+      setError(err?.message || "فشل تحميل إحصائيات المرتجعات");
     } finally {
       setLoading(false);
     }
   };
 
-  const header = (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t("returnsAnalytics.title")}
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
-          {t("returnsAnalytics.subtitle")}
-        </p>
-      </div>
-      <PeriodSelector onRangeChange={setRange} />
-    </div>
-  );
+  useEffect(() => {
+    if (range) {
+      fetchData();
+    }
+  }, [range]);
 
-  if (loading) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl text-center">
-          <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 dark:text-red-400">{error}</p>
-          <button
-            onClick={fetchData}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            {t("returnsAnalytics.retry")}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const summary = data?.summary || {
+    totalOrders: 0,
+    totalReturns: 0,
+    returnRate: 0,
+    totalLostRevenue: 0,
+    avgReturnValue: 0,
+  };
 
   return (
-    <div className="space-y-6" dir="rtl">
-      {header}
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-red-500">
-              <ArrowUturnLeftIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">{t("returnsAnalytics.totalReturns")}</p>
-              <p className="text-2xl font-bold text-red-600">
-                {data?.summary?.totalReturns?.toLocaleString() || 0}
-              </p>
-            </div>
+    <div className="space-y-5" dir="rtl">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card border border-border/70 rounded-xl px-5 py-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <RotateCcw className="h-5 w-5 text-rose-500" />
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              {t("returnsAnalytics.title", "تحليل المرتجعات والإلغاءات")}
+            </h1>
           </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {t("returnsAnalytics.subtitle", "تتبع أسباب المرتجعات، الخسائر المالية، ومعدلات الرجوع بالمنتج والمنطقة")}
+          </p>
         </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-orange-500">
-              <XCircleIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">{t("returnsAnalytics.returnRateLabel")}</p>
-              <p className="text-2xl font-bold text-orange-600">
-                {data?.summary?.returnRate?.toFixed(1) || 0}%
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {t("returnsAnalytics.from")} {data?.summary?.totalOrders?.toLocaleString() || 0} {t("returnsAnalytics.order")}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-purple-500">
-              <ArrowUturnLeftIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">{t("returnsAnalytics.lostRevenue")}</p>
-              <p className="text-2xl font-bold text-purple-600">
-                {formatPrice(data?.summary?.totalLostRevenue || 0)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-blue-500">
-              <ArrowUturnLeftIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">{t("returnsAnalytics.avgReturnValue")}</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {formatPrice(data?.summary?.avgReturnValue || 0)}
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <PeriodSelector onRangeChange={setRange} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchData}
+            disabled={loading}
+            className="h-9 px-3 gap-1.5 text-xs border-border/70 text-muted-foreground hover:text-foreground"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            تحديث
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {t("returnsAnalytics.topProducts")}
-          </h3>
-          <div className="min-w-0 h-[300px]">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <BarChart
-                data={data?.topReturnedProducts || []}
-                layout="vertical"
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                <XAxis type="number" stroke="#9CA3AF" fontSize={12} />
-                <YAxis dataKey="name" type="category" stroke="#9CA3AF" fontSize={12} width={120} />
-                <Tooltip formatter={(value: any) => [value, t("returnsAnalytics.returnsCount")]} />
-                <Bar dataKey="returns" fill="#EF4444" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+      {/* Error state */}
+      {error && (
+        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
           </div>
+          <Button variant="outline" size="sm" onClick={fetchData} className="h-7 text-xs">
+            إعادة المحاولة
+          </Button>
         </div>
+      )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {t("returnsAnalytics.returnsByRegion")}
-          </h3>
-          <div className="min-w-0 h-[300px]">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <BarChart
-                data={data?.returnsByRegion || []}
-                layout="vertical"
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                <XAxis type="number" stroke="#9CA3AF" fontSize={12} />
-                <YAxis dataKey="name" type="category" stroke="#9CA3AF" fontSize={12} width={120} />
-                <Tooltip formatter={(value: any) => [value, t("returnsAnalytics.return")]} />
-                <Bar dataKey="returns" fill="#F59E0B" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+      {/* Telemetry Metrics Ribbon */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>إجمالي المرتجعات</span>
+              <RotateCcw className="h-4 w-4 text-rose-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-foreground">
+              {summary.totalReturns.toLocaleString()}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
+              <span>من أصل</span>
+              <span className="font-mono">{summary.totalOrders.toLocaleString()}</span>
+              <span>طلب كلي</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>معدل المرتجعات</span>
+              <TrendingDown className="h-4 w-4 text-amber-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-amber-600 dark:text-amber-400">
+              {summary.returnRate.toFixed(1)}%
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">
+              نسبة الشحنات المسترجعة
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>الإيراد المفقود</span>
+              <DollarSign className="h-4 w-4 text-rose-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400">
+              {formatPrice(summary.totalLostRevenue)}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">
+              قيمة البضائع العائدة
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>متوسط قيمة المرتجع</span>
+              <Package className="h-4 w-4 text-blue-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-foreground">
+              {formatPrice(summary.avgReturnValue)}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">
+              للكل شحنة مسترجعة
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Main Charts & Breakdown Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Top Returned Products */}
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-rose-500" />
+                <h3 className="text-sm font-semibold text-foreground">أعلى المنتجات مرتجعاً</h3>
+              </div>
+              <span className="text-xs text-muted-foreground font-mono">
+                {(data?.topReturnedProducts || []).length} أصناف
+              </span>
+            </div>
+
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={data?.topReturnedProducts || []}
+                  layout="vertical"
+                  margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-10" />
+                  <XAxis type="number" stroke="currentColor" className="text-muted-foreground" fontSize={11} />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    stroke="currentColor"
+                    className="text-muted-foreground"
+                    fontSize={11}
+                    width={110}
+                    tickFormatter={(val) => val.length > 15 ? val.slice(0, 15) + "…" : val}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      borderColor: "hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                      color: "hsl(var(--foreground))",
+                    }}
+                    formatter={(value: any, name: string) => [
+                      name === "lostRevenue" ? formatPrice(Number(value)) : value,
+                      name === "lostRevenue" ? "الخسارة" : "عدد المرتجعات",
+                    ]}
+                  />
+                  <Bar dataKey="returns" name="returns" fill="#F43F5E" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Returns by Region */}
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-amber-500" />
+                <h3 className="text-sm font-semibold text-foreground">المرتجعات حسب المنطقة</h3>
+              </div>
+              <span className="text-xs text-muted-foreground font-mono">
+                {(data?.returnsByRegion || []).length} محافظات
+              </span>
+            </div>
+
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={data?.returnsByRegion || []}
+                  layout="vertical"
+                  margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-10" />
+                  <XAxis type="number" stroke="currentColor" className="text-muted-foreground" fontSize={11} />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    stroke="currentColor"
+                    className="text-muted-foreground"
+                    fontSize={11}
+                    width={110}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      borderColor: "hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                      color: "hsl(var(--foreground))",
+                    }}
+                    formatter={(value: any, name: string) => [
+                      name === "lostRevenue" ? formatPrice(Number(value)) : value,
+                      name === "lostRevenue" ? "الخسارة" : "عدد المرتجعات",
+                    ]}
+                  />
+                  <Bar dataKey="returns" name="returns" fill="#F59E0B" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Detailed Top Returned Products Table */}
+      {data?.topReturnedProducts && data.topReturnedProducts.length > 0 && (
+        <Card className="border-border/70 bg-card overflow-hidden">
+          <div className="p-4 border-b border-border/70 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Package className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold text-foreground">تفاصيل المنتجات الأكثر ارتداداً</h3>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/40 text-muted-foreground border-b border-border/70">
+                <tr>
+                  <th className="py-2.5 px-4 text-right font-medium">اسم المنتج</th>
+                  <th className="py-2.5 px-4 text-center font-medium">عدد المرتجعات</th>
+                  <th className="py-2.5 px-4 text-left font-medium">الخسارة التقديرية</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {data.topReturnedProducts.map((p, idx) => (
+                  <tr key={idx} className="hover:bg-muted/20 transition-colors">
+                    <td className="py-2.5 px-4 font-medium text-foreground">{p.name}</td>
+                    <td className="py-2.5 px-4 text-center font-mono tabular-nums text-rose-500 font-semibold">
+                      {p.returns.toLocaleString()}
+                    </td>
+                    <td className="py-2.5 px-4 text-left font-mono tabular-nums text-muted-foreground">
+                      {formatPrice(p.lostRevenue || 0)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };

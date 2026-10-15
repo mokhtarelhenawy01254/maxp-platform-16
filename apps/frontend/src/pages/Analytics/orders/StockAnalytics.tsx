@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ArchiveBoxIcon,
-  ExclamationTriangleIcon,
-  ArrowTrendingUpIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/outline";
+  Boxes,
+  AlertTriangle,
+  TrendingUp,
+  PackageX,
+  Archive,
+  RefreshCw,
+  AlertCircle,
+  ArrowUpRight,
+} from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
 import PeriodSelector, {
   PeriodRange,
 } from "../../../components/common/PeriodSelector";
+import { Card, CardContent } from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
 
 interface StockStats {
   lowStockProducts: Array<{
@@ -42,12 +48,6 @@ const StockAnalytics: React.FC = () => {
   const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<StockStats | null>(null);
 
-  useEffect(() => {
-    if (range) {
-      fetchData();
-    }
-  }, [range]);
-
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -55,7 +55,7 @@ const StockAnalytics: React.FC = () => {
       const response = await analyticsService.getStockForecastAnalytics(
         range?.period,
       );
-      if (response.success) {
+      if (response?.success) {
         const data = response.data || {};
         setStats({
           lowStockProducts: data.lowStockProducts || [],
@@ -66,241 +66,269 @@ const StockAnalytics: React.FC = () => {
         });
       }
     } catch (err: any) {
-      setError(err.message || t("stockAnalytics.fetchError"));
+      setError(err?.message || "فشل تحميل توقعات وحركة المخزون");
     } finally {
       setLoading(false);
     }
   };
 
-  const header = (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t("stockAnalytics.title")}
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
-          {t("stockAnalytics.subtitle")}
-        </p>
-      </div>
-      <PeriodSelector onRangeChange={setRange} />
-    </div>
-  );
-
-  if (loading) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl text-center">
-          <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 dark:text-red-400">{error}</p>
-          <button
-            onClick={fetchData}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            {t("stockAnalytics.retry")}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (range) {
+      fetchData();
+    }
+  }, [range]);
 
   return (
-    <div className="space-y-6" dir="rtl">
-      {header}
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-yellow-500">
-              <ExclamationTriangleIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("stockAnalytics.lowStockProducts")}
-              </p>
-              <p className="text-2xl font-bold text-yellow-600">
-                {stats?.totalLowStock || 0}
-              </p>
-            </div>
+    <div className="space-y-5" dir="rtl">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card border border-border/70 rounded-xl px-5 py-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Boxes className="h-5 w-5 text-indigo-500" />
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              {t("stockAnalytics.title", "توقعات ومؤشرات المخزون")}
+            </h1>
           </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {t("stockAnalytics.subtitle", "مراقبة النواقص، معدل دوران الأصناف، وتنبؤات إعادة الطلب")}
+          </p>
         </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-red-500">
-              <XCircleIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("stockAnalytics.outOfStockProducts")}
-              </p>
-              <p className="text-2xl font-bold text-red-600">
-                {stats?.totalOutOfStock || 0}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-green-500">
-              <ArrowTrendingUpIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("stockAnalytics.fastMovingProducts")}
-              </p>
-              <p className="text-2xl font-bold text-green-600">
-                {stats?.fastMovingProducts?.length || 0}
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <PeriodSelector onRangeChange={setRange} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchData}
+            disabled={loading}
+            className="h-9 px-3 gap-1.5 text-xs border-border/70 text-muted-foreground hover:text-foreground"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            تحديث
+          </Button>
         </div>
       </div>
 
-      {/* Low Stock Alert */}
+      {/* Error Banner */}
+      {error && (
+        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <Button variant="outline" size="sm" onClick={fetchData} className="h-7 text-xs">
+            إعادة المحاولة
+          </Button>
+        </div>
+      )}
+
+      {/* Summary Telemetry Metrics Ribbon */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>أوشك على النفاد</span>
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-amber-600 dark:text-amber-400">
+              {(stats?.totalLowStock || 0).toLocaleString()}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">
+              منتجات تحت حد إعادة الطلب
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>نفد من المخزون</span>
+              <PackageX className="h-4 w-4 text-rose-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400">
+              {(stats?.totalOutOfStock || 0).toLocaleString()}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">
+              أصناف رصيدها صفر حالياً
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>سريعة الحركة</span>
+              <TrendingUp className="h-4 w-4 text-emerald-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+              {(stats?.fastMovingProducts?.length || 0).toLocaleString()}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">
+              أعلى سرعة دوران وسحب
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>فائض / راكد</span>
+              <Archive className="h-4 w-4 text-blue-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-foreground">
+              {(stats?.overstockedProducts?.length || 0).toLocaleString()}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">
+              أصناف تتجاوز كفاية الشهور
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Low Stock Replenishment Alert Table */}
       {stats?.lowStockProducts && stats.lowStockProducts.length > 0 && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-100 mb-4 flex items-center gap-2">
-            <ExclamationTriangleIcon className="h-5 w-5" />
-            {t("stockAnalytics.replenishAlert")}
-          </h3>
+        <Card className="border-amber-500/30 bg-card overflow-hidden">
+          <div className="p-4 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <h3 className="text-sm font-semibold text-foreground">
+                تنبيهات النواقص وإعادة الطلب العاجلة
+              </h3>
+            </div>
+            <span className="text-xs font-mono font-medium text-amber-600 dark:text-amber-400">
+              {stats.lowStockProducts.length} صنف يتطلب توريداً
+            </span>
+          </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-yellow-200 dark:border-yellow-700">
-                  <th className="text-right py-2 px-4 text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                    {t("stockAnalytics.product")}
-                  </th>
-                  <th className="text-right py-2 px-4 text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                    {t("stockAnalytics.currentStock")}
-                  </th>
-                  <th className="text-right py-2 px-4 text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                    {t("stockAnalytics.threshold")}
-                  </th>
+            <table className="w-full text-xs">
+              <thead className="bg-muted/40 text-muted-foreground border-b border-border/70">
+                <tr>
+                  <th className="py-2.5 px-4 text-right font-medium">المنتج</th>
+                  <th className="py-2.5 px-4 text-center font-medium">الرصيد الحالي</th>
+                  <th className="py-2.5 px-4 text-center font-medium">الحد الأدنى (Threshold)</th>
+                  <th className="py-2.5 px-4 text-left font-medium">الحالة</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/50">
                 {stats.lowStockProducts.slice(0, 10).map((product) => (
-                  <tr
-                    key={product.id}
-                    className="border-b border-yellow-100 dark:border-yellow-800"
-                  >
-                    <td className="py-2 px-4 text-sm text-yellow-900 dark:text-yellow-100">
-                      {product.name}
-                    </td>
-                    <td className="py-2 px-4 text-sm text-red-600 font-bold">
+                  <tr key={product.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="py-2.5 px-4 font-medium text-foreground">{product.name}</td>
+                    <td className="py-2.5 px-4 text-center font-mono tabular-nums font-bold text-rose-500">
                       {product.stock}
                     </td>
-                    <td className="py-2 px-4 text-sm text-yellow-700 dark:text-yellow-300">
+                    <td className="py-2.5 px-4 text-center font-mono tabular-nums text-muted-foreground">
                       {product.threshold}
+                    </td>
+                    <td className="py-2.5 px-4 text-left">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                        {product.stock === 0 ? "نفد كلياً" : "حرج جداً"}
+                      </span>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
-      {/* Fast Moving Products Chart */}
+      {/* Fast Moving Velocity Chart */}
       {stats?.fastMovingProducts && stats.fastMovingProducts.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <ArrowTrendingUpIcon className="h-5 w-5 text-green-500" />
-            {t("stockAnalytics.fastestMovingProducts")}
-          </h3>
-          <div style={{ width: "100%", height: 300 }}>
-            <ResponsiveContainer width="100%" height={300} minHeight={300}>
-              <BarChart
-                data={stats.fastMovingProducts.slice(0, 10)}
-                layout="vertical"
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#374151"
-                  opacity={0.1}
-                />
-                <XAxis type="number" stroke="#9CA3AF" fontSize={12} />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  stroke="#9CA3AF"
-                  fontSize={12}
-                  width={150}
-                />
-                <Tooltip />
-                <Bar
-                  dataKey="salesVelocity"
-                  fill="#10B981"
-                  name={t("stockAnalytics.salesVelocity")}
-                  radius={[0, 4, 4, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        <Card className="border-border/70 bg-card">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+                <h3 className="text-sm font-semibold text-foreground">
+                  سرعة سحب الأصناف الأكثر طلباً (Sales Velocity)
+                </h3>
+              </div>
+              <span className="text-xs text-muted-foreground font-mono">
+                أعلى 10 أصناف نشاطاً
+              </span>
+            </div>
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={stats.fastMovingProducts.slice(0, 10)}
+                  layout="vertical"
+                  margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-10" />
+                  <XAxis type="number" stroke="currentColor" className="text-muted-foreground" fontSize={11} />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    stroke="currentColor"
+                    className="text-muted-foreground"
+                    fontSize={11}
+                    width={130}
+                    tickFormatter={(val) => val.length > 18 ? val.slice(0, 18) + "…" : val}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      borderColor: "hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                      color: "hsl(var(--foreground))",
+                    }}
+                    formatter={(val: any) => [val, "معدل السحب"]}
+                  />
+                  <Bar
+                    dataKey="salesVelocity"
+                    fill="#10B981"
+                    radius={[0, 4, 4, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Overstocked Products */}
+      {/* Overstocked Products Table */}
       {stats?.overstockedProducts && stats.overstockedProducts.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <ArchiveBoxIcon className="h-5 w-5 text-blue-500" />
-            {t("stockAnalytics.overstockedProducts")}
-          </h3>
+        <Card className="border-border/70 bg-card overflow-hidden">
+          <div className="p-4 border-b border-border/70 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Archive className="h-4 w-4 text-blue-500" />
+              <h3 className="text-sm font-semibold text-foreground">
+                المخزون الفائض والراكد وتغطية الأشهر
+              </h3>
+            </div>
+            <span className="text-xs text-muted-foreground font-mono">
+              {stats.overstockedProducts.length} صنف
+            </span>
+          </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                    {t("stockAnalytics.product")}
-                  </th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                    {t("stockAnalytics.currentStock")}
-                  </th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                    {t("stockAnalytics.averageSalesPerMonth")}
-                  </th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                    {t("stockAnalytics.monthsToSell")}
-                  </th>
+            <table className="w-full text-xs">
+              <thead className="bg-muted/40 text-muted-foreground border-b border-border/70">
+                <tr>
+                  <th className="py-2.5 px-4 text-right font-medium">المنتج</th>
+                  <th className="py-2.5 px-4 text-center font-medium">الرصيد المتاح</th>
+                  <th className="py-2.5 px-4 text-center font-medium">متوسط المبيعات الشهري</th>
+                  <th className="py-2.5 px-4 text-left font-medium">شهور التغطية المقدرة</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/50">
                 {stats.overstockedProducts.map((product) => {
                   const monthsToSell =
                     product.avgSales > 0
                       ? Math.round(product.stock / product.avgSales)
                       : 999;
                   return (
-                    <tr
-                      key={product.id}
-                      className="border-b border-gray-100 dark:border-gray-700"
-                    >
-                      <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                        {product.name}
+                    <tr key={product.id} className="hover:bg-muted/20 transition-colors">
+                      <td className="py-2.5 px-4 font-medium text-foreground">{product.name}</td>
+                      <td className="py-2.5 px-4 text-center font-mono tabular-nums text-foreground font-semibold">
+                        {product.stock.toLocaleString()}
                       </td>
-                      <td className="py-3 px-4 text-sm text-blue-600 font-bold">
-                        {product.stock}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-500">
+                      <td className="py-2.5 px-4 text-center font-mono tabular-nums text-muted-foreground">
                         {product.avgSales}
                       </td>
-                      <td className="py-3 px-4 text-sm text-orange-600">
-                        {monthsToSell > 12 ? "12+" : monthsToSell}
+                      <td className="py-2.5 px-4 text-left font-mono tabular-nums">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                          {monthsToSell > 12 ? "+12 شهر" : `${monthsToSell} شهر`}
+                        </span>
                       </td>
                     </tr>
                   );
@@ -308,7 +336,7 @@ const StockAnalytics: React.FC = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );

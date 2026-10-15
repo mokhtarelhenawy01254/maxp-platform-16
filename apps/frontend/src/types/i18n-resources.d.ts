@@ -3438,6 +3438,7 @@ declare module 'react-i18next' {
           turboPartial: string;
           turboPartialMore: string;
           bulkNoValidOrders: string;
+          workflowPendingApproval: string;
         };
         confirm: {
           bulkUpdate: string;
@@ -3703,6 +3704,7 @@ declare module 'react-i18next' {
         k_9: string;
         k_20: string;
         k_26: string;
+        bulkHoldOrderLabel: string;
       };
       PrivacySettingsDialog: {
         failed_fetch_6cd1: string;

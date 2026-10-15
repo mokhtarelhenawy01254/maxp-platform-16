@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import {
-  CurrencyDollarIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  XCircleIcon,
-  BanknotesIcon,
-  ReceiptRefundIcon,
-} from "@heroicons/react/24/outline";
+  DollarSign,
+  TrendingUp,
+  RotateCcw,
+  ShoppingBag,
+  RefreshCw,
+  BarChart3,
+  Calendar,
+} from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -14,15 +15,13 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  BarChart,
-  Bar,
 } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
 import { useCurrency } from "../../../hooks/useCurrency";
-import PeriodSelector, {
-  PeriodRange,
-} from "../../../components/common/PeriodSelector";
+import PeriodSelector, { PeriodRange } from "../../../components/common/PeriodSelector";
+import { Card, CardContent } from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
 
 interface RevenueStats {
   grossRevenue: number;
@@ -36,274 +35,160 @@ interface RevenueStats {
 const RevenueAnalytics: React.FC = () => {
   const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<RevenueStats | null>(null);
-
-  useEffect(() => {
-    if (range) {
-      fetchData();
-    }
-  }, [range]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      setError(null);
-
       const [storeData, dailyData] = await Promise.all([
-        analyticsService.getStoreAnalytics(
-          range?.period,
-          range?.startDate,
-          range?.endDate,
-        ),
-        analyticsService.getDailyAnalytics(
-          range?.period,
-          range?.startDate,
-          range?.endDate,
-        ),
+        analyticsService.getStoreAnalytics(range?.period, range?.startDate, range?.endDate),
+        analyticsService.getDailyAnalytics(range?.period, range?.startDate, range?.endDate),
       ]);
 
-      if (storeData.success) {
-        const data = storeData.data;
+      if (storeData?.success) {
+        const data = storeData.data || {};
         setStats({
           grossRevenue: data.totalRevenue || 0,
           netRevenue: (data.totalRevenue || 0) - (data.refundedAmount || 0),
           refunds: data.refundedAmount || 0,
           averageOrderValue: data.averageOrderValue || 0,
           revenueGrowth: data.revenueGrowth || 0,
-          dailyRevenue: dailyData.data || [],
+          dailyRevenue: Array.isArray(dailyData?.data) ? dailyData.data : [],
         });
+      } else {
+        setStats(null);
       }
-    } catch (err: any) {
-      setError(err.message || "حدث خطأ في جلب البيانات");
+    } catch (err) {
+      console.error("RevenueAnalytics error:", err);
+      setStats(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const header = (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          تحليلات الإيرادات
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
-          تتبع الإيرادات والأرباح
-        </p>
-      </div>
-      <PeriodSelector onRangeChange={setRange} />
-    </div>
-  );
+  useEffect(() => {
+    if (range) fetchData();
+  }, [range]);
 
-  if (loading) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl text-center">
-          <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 dark:text-red-400">{error}</p>
-          <button
-            onClick={fetchData}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            إعادة المحاولة
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const cards = [
+    { title: "إجمالي الإيرادات (Gross)", val: formatPrice(stats?.grossRevenue || 0), icon: DollarSign, color: "text-emerald-500", sub: "قبل احتساب أي استرجاعات" },
+    { title: "صافي الإيرادات (Net)", val: formatPrice(stats?.netRevenue || 0), icon: TrendingUp, color: "text-blue-500", sub: "بعد خصم المرتجعات" },
+    { title: "المرتجعات والتعويضات", val: formatPrice(stats?.refunds || 0), icon: RotateCcw, color: "text-rose-500", sub: "شحنات مسترجعة تم تسويتها", alert: (stats?.refunds || 0) > 0 },
+    { title: "متوسط قيمة الطلب (AOV)", val: formatPrice(stats?.averageOrderValue || 0), icon: ShoppingBag, color: "text-primary", sub: `معدل النمو: +${stats?.revenueGrowth || 0}%` },
+  ];
 
   return (
-    <div className="space-y-6" dir="rtl">
-      {header}
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">إجمالي الإيرادات</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatPrice(stats?.grossRevenue || 0)}
-              </p>
-            </div>
-            <div className="p-3 rounded-full bg-green-500">
-              <CurrencyDollarIcon className="h-6 w-6 text-white" />
-            </div>
+    <div className="space-y-5" dir="rtl">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+            <DollarSign className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">تحليلات الإيرادات والتدفق النقدي</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">تتبع المبيعات الإجمالية، المرتجعات، وتطور الإيرادات عبر الفترات</p>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <PeriodSelector onRangeChange={setRange} />
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 gap-1.5 text-xs font-mono">
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} /> تحديث
+          </Button>
+        </div>
+      </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">صافي الإيرادات</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatPrice(stats?.netRevenue || 0)}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">بعد خصم المرتجعات</p>
-            </div>
-            <div className="p-3 rounded-full bg-blue-500">
-              <BanknotesIcon className="h-6 w-6 text-white" />
-            </div>
+      {/* Telemetry Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {cards.map((c, i) => (
+          <Card key={i} className="border-border/70 shadow-sm bg-card">
+            <CardContent className="p-3.5">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span>{c.title}</span><c.icon className={`h-3.5 w-3.5 ${c.color}`} />
+              </div>
+              <div className="text-lg font-bold font-mono tabular-nums text-foreground">{loading ? "..." : c.val}</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{c.sub}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Visual Area Chart */}
+      {stats?.dailyRevenue && stats.dailyRevenue.length > 0 && (
+        <div className="border border-border/70 rounded-xl bg-card p-4 shadow-sm">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-emerald-500" /> منحنى تطور الإيرادات اليومية
+          </h3>
+          <div className="h-[260px]">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+              <AreaChart data={stats.dailyRevenue}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} />
+                <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} />
+                <Tooltip formatter={(val) => formatPrice(Number(val) || 0)} contentStyle={{ backgroundColor: "#1e293b", borderColor: "#334155", borderRadius: "8px", color: "#fff", fontSize: "12px" }} />
+                <Area type="monotone" dataKey="revenue" stroke="#10B981" fill="#10B981" fillOpacity={0.25} name="الإيرادات" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
+      )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">المرتجعات</p>
-              <p className="text-2xl font-bold text-red-600">
-                {formatPrice(stats?.refunds || 0)}
-              </p>
-            </div>
-            <div className="p-3 rounded-full bg-red-500">
-              <ReceiptRefundIcon className="h-6 w-6 text-white" />
-            </div>
-          </div>
+      {/* Daily Records Ledger Table */}
+      <div className="border border-border/70 rounded-xl bg-card overflow-hidden shadow-sm">
+        <div className="p-3 bg-muted/20 border-b border-border/70 flex items-center justify-between text-xs">
+          <span className="font-semibold text-foreground">سجل الإيرادات اليومية</span>
+          <span className="text-muted-foreground">الأيام المسجلة: <strong className="text-foreground font-mono">{stats?.dailyRevenue?.length || 0}</strong></span>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">متوسط قيمة الطلب</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatPrice(stats?.averageOrderValue || 0)}
-              </p>
-              {stats?.revenueGrowth !== undefined && (
-                <div
-                  className={`flex items-center mt-1 text-sm ${stats.revenueGrowth >= 0 ? "text-green-600" : "text-red-600"}`}
-                >
-                  {stats.revenueGrowth >= 0 ? (
-                    <ArrowTrendingUpIcon className="h-4 w-4 mr-1" />
-                  ) : (
-                    <ArrowTrendingDownIcon className="h-4 w-4 mr-1" />
-                  )}
-                  <span>{Math.abs(stats.revenueGrowth)}%</span>
-                </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-right text-xs">
+            <thead className="bg-muted/30 border-b border-border/70 text-muted-foreground text-[11px] font-medium">
+              <tr>
+                <th className="py-2.5 px-3.5">التاريخ</th>
+                <th className="py-2.5 px-3.5 text-center">عدد الطلبيات</th>
+                <th className="py-2.5 px-3.5 text-center">إجمالي الإيرادات اليومية</th>
+                <th className="py-2.5 px-3.5 text-center">متوسط قيمة الطلب</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {loading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse"><td colSpan={4} className="py-4 px-3.5"><div className="h-4 bg-muted rounded w-3/4"></div></td></tr>
+                ))
+              ) : !stats?.dailyRevenue || stats.dailyRevenue.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-12 text-center text-muted-foreground">
+                    <DollarSign className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+                    <p className="font-medium">لا توجد بيانات إيرادات للفترة المحددة</p>
+                  </td>
+                </tr>
+              ) : (
+                stats.dailyRevenue.map((d, idx) => (
+                  <tr key={idx} className="hover:bg-muted/20 transition-colors">
+                    <td className="py-2.5 px-3.5 font-mono text-muted-foreground text-xs flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 text-muted-foreground/70" />
+                      {d.date}
+                    </td>
+                    <td className="py-2.5 px-3.5 text-center font-mono font-bold text-foreground">
+                      {d.orders.toLocaleString("en-US")}
+                    </td>
+                    <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatPrice(d.revenue)}
+                    </td>
+                    <td className="py-2.5 px-3.5 text-center font-mono text-muted-foreground">
+                      {formatPrice(d.orders > 0 ? d.revenue / d.orders : 0)}
+                    </td>
+                  </tr>
+                ))
               )}
-            </div>
-            <div className="p-3 rounded-full bg-purple-500">
-              <ArrowTrendingUpIcon className="h-6 w-6 text-white" />
-            </div>
-          </div>
+            </tbody>
+          </table>
         </div>
-      </div>
 
-      {/* Revenue Over Time Chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          الإيرادات عبر الزمن
-        </h3>
-        <div className="min-w-0 h-[350px]">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <AreaChart data={stats?.dailyRevenue || []}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="currentColor"
-                className="stroke-gray-300 dark:stroke-gray-600"
-              />
-              <XAxis
-                dataKey="date"
-                stroke="currentColor"
-                className="stroke-gray-600 dark:stroke-gray-400"
-                fontSize={12}
-              />
-              <YAxis
-                stroke="currentColor"
-                className="stroke-gray-600 dark:stroke-gray-400"
-                fontSize={12}
-                tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-              />
-              <Tooltip
-                contentStyle={{
-                  borderRadius: "8px",
-                }}
-                wrapperClassName="[&_.recharts-tooltip-wrapper]:!bg-white dark:[&_.recharts-tooltip-wrapper]:!bg-gray-800 [&_.recharts-tooltip-wrapper]:!border-gray-200 dark:[&_.recharts-tooltip-wrapper]:!border-gray-700 [&_.recharts-tooltip-wrapper]:!text-gray-900 dark:[&_.recharts-tooltip-wrapper]:!text-gray-100"
-                formatter={(value) =>
-                  value
-                    ? [formatPrice(value as number), "الإيرادات"]
-                    : ["0", "الإيرادات"]
-                }
-              />
-              <Area
-                type="monotone"
-                dataKey="revenue"
-                stroke="#10B981"
-                fill="#10B981"
-                fillOpacity={0.2}
-                name="الإيرادات"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Revenue vs Orders Chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          الإيرادات مقابل عدد الطلبات
-        </h3>
-        <div className="min-w-0 h-[300px]">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <BarChart data={stats?.dailyRevenue?.slice(-14) || []}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="currentColor"
-                className="stroke-gray-300 dark:stroke-gray-600"
-              />
-              <XAxis
-                dataKey="date"
-                stroke="currentColor"
-                className="stroke-gray-600 dark:stroke-gray-400"
-                fontSize={12}
-              />
-              <YAxis
-                yAxisId="left"
-                stroke="currentColor"
-                className="stroke-gray-600 dark:stroke-gray-400"
-                fontSize={12}
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                stroke="currentColor"
-                className="stroke-gray-600 dark:stroke-gray-400"
-                fontSize={12}
-              />
-              <Tooltip
-                contentStyle={{
-                  borderRadius: "8px",
-                }}
-                wrapperClassName="[&_.recharts-tooltip-wrapper]:!bg-white dark:[&_.recharts-tooltip-wrapper]:!bg-gray-800 [&_.recharts-tooltip-wrapper]:!border-gray-200 dark:[&_.recharts-tooltip-wrapper]:!border-gray-700 [&_.recharts-tooltip-wrapper]:!text-gray-900 dark:[&_.recharts-tooltip-wrapper]:!text-gray-100"
-              />
-              <Bar
-                yAxisId="left"
-                dataKey="revenue"
-                fill="#3B82F6"
-                name="الإيرادات"
-                radius={[4, 4, 0, 0]}
-              />
-              <Bar
-                yAxisId="right"
-                dataKey="orders"
-                fill="#10B981"
-                name="الطلبات"
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="p-2.5 bg-muted/10 border-t border-border/70 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-muted-foreground gap-2">
+          <span>إجمالي الإيرادات: <strong className="text-foreground font-mono">{formatPrice(stats?.grossRevenue || 0)}</strong></span>
+          <span className="text-[11px]">يتم احتساب النمو بمقارنة الفترة الحالية بالفترة السابقة المكافئة</span>
         </div>
       </div>
     </div>

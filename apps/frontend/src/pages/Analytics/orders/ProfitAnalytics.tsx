@@ -1,382 +1,213 @@
-import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
+import React, { useState, useEffect, useMemo } from "react";
 import {
-  CurrencyDollarIcon,
-  XCircleIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  ChartBarIcon,
-} from "@heroicons/react/24/outline";
+  TrendingUp,
+  DollarSign,
+  Percent,
+  Layers,
+  RefreshCw,
+  BarChart3,
+  PieChart as PieIcon,
+  ShoppingBag,
+} from "lucide-react";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   BarChart,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
-import PeriodSelector, {
-  PeriodRange,
-} from "../../../components/common/PeriodSelector";
 import { useCurrency } from "../../../hooks/useCurrency";
+import PeriodSelector, { PeriodRange } from "../../../components/common/PeriodSelector";
+import { Card, CardContent } from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
 
 interface ProfitStats {
   grossProfit: number;
   netProfit: number;
   profitMargin: number;
   cogs: number;
-  operatingExpenses: number;
-  adsCost: number;
-  dailyProfit: Array<{
-    date: string;
-    profit: number;
-    revenue: number;
-    costs: number;
-  }>;
+  dailyProfit: Array<{ date: string; profit: number; revenue: number; costs: number }>;
   profitByCategory: Array<{ name: string; profit: number; margin: number }>;
 }
 
-const COLORS = ["#10B981", "#3B82F6", "#F59E0B", "#EF4444", "#8B5CF6"];
+const COLORS = ["#10B981", "#3B82F6", "#F59E0B", "#8B5CF6", "#EC4899"];
 
 const ProfitAnalytics: React.FC = () => {
-  const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<PeriodRange | null>(null);
   const [stats, setStats] = useState<ProfitStats | null>(null);
-
-  useEffect(() => {
-    if (range) {
-      fetchData();
-    }
-  }, [range]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      setError(null);
-
-      const response = await analyticsService.getProfitAnalytics(
-        range?.period,
-        range?.startDate,
-        range?.endDate,
-      );
-
-      if (response.success && response.data) {
-        // توحيد العقد: الـAPI يرجّع {summary, dailyData, categoryBreakdown} —
-        // والواجهة متوقعة {cogs, dailyProfit, profitByCategory…}
-        const d = response.data;
+      const res = await analyticsService.getProfitAnalytics(range?.period, range?.startDate, range?.endDate);
+      if (res?.success && res.data) {
+        const d = res.data;
         setStats({
           grossProfit: d.summary?.grossProfit ?? 0,
           netProfit: d.summary?.netProfit ?? 0,
           profitMargin: d.summary?.profitMargin ?? 0,
           cogs: d.summary?.totalCOGS ?? 0,
-          // operatingExpenses و adsCost غير متاحين في هذا الـendpoint — يظهران صفرًا
-          operatingExpenses: 0,
-          adsCost: 0,
-          dailyProfit: (d.dailyData || []).map((x: { date: string; profit: number; revenue: number; cogs: number }) => ({
+          dailyProfit: (d.dailyData || []).map((x: any) => ({
             date: x.date,
             profit: x.profit,
             revenue: x.revenue,
             costs: x.cogs,
           })),
-          profitByCategory: (d.categoryBreakdown || []).map((c: { name: string; profit: number; margin: number }) => ({
+          profitByCategory: (d.categoryBreakdown || []).map((c: any) => ({
             name: c.name,
             profit: c.profit,
             margin: c.margin,
           })),
         });
       } else {
-        setStats({
-          grossProfit: 0,
-          netProfit: 0,
-          profitMargin: 0,
-          cogs: 0,
-          operatingExpenses: 0,
-          adsCost: 0,
-          dailyProfit: [],
-          profitByCategory: [],
-        });
+        setStats(null);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("ProfitAnalytics error:", err);
-      setError(err.message || t("profitAnalytics.fetchError"));
+      setStats(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const header = (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t("profitAnalytics.title")}
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
-          {t("profitAnalytics.subtitle")}
-        </p>
-      </div>
-      <PeriodSelector onRangeChange={setRange} />
-    </div>
-  );
+  useEffect(() => {
+    if (range) fetchData();
+  }, [range]);
 
-  if (loading) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl text-center">
-          <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 dark:text-red-400">{error}</p>
-          <button
-            onClick={fetchData}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            {t("profitAnalytics.retry")}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const cards = [
+    { title: "إجمالي الأرباح الإجمالية", val: formatPrice(stats?.grossProfit || 0), icon: DollarSign, color: "text-emerald-500", sub: "قبل احتساب تكاليف التشغيل" },
+    { title: "صافي الأرباح المحققة", val: formatPrice(stats?.netProfit || 0), icon: TrendingUp, color: "text-blue-500", sub: "صافي الربح الفعلي" },
+    { title: "هامش الربح الإجمالي", val: `${(stats?.profitMargin || 0).toFixed(1)}%`, icon: Percent, color: "text-primary", sub: "معدل العائد على الإيرادات" },
+    { title: "تكلفة البضاعة المباعة (COGS)", val: formatPrice(stats?.cogs || 0), icon: Layers, color: "text-amber-500", sub: "تكاليف الإنتاج والشراء" },
+  ];
 
   return (
-    <div className="space-y-6" dir="rtl">
-      {header}
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-green-500">
-              <CurrencyDollarIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("profitAnalytics.grossProfit")}
-              </p>
-              <p className="text-2xl font-bold text-green-600">
-                {formatPrice(stats?.grossProfit || 0)}
-              </p>
-            </div>
+    <div className="space-y-5" dir="rtl">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+            <TrendingUp className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">تحليلات الأرباح وهوامش العائد</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">تتبع الربح الإجمالي، تكاليف البضاعة المباعة، وهوامش ربحية التصنيفات</p>
           </div>
         </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-blue-500">
-              <ChartBarIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("profitAnalytics.netProfit")}
-              </p>
-              <p className="text-2xl font-bold text-blue-600">
-                {formatPrice(stats?.netProfit || 0)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-yellow-500">
-              <ArrowTrendingUpIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("profitAnalytics.margin")}
-              </p>
-              <p className="text-2xl font-bold text-yellow-600">
-                {(stats?.profitMargin || 0).toFixed(1)}%
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-red-500">
-              <ArrowTrendingDownIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("profitAnalytics.totalCosts")}
-              </p>
-              <p className="text-2xl font-bold text-red-600">
-                {formatPrice(
-                  (stats?.cogs || 0) +
-                    (stats?.operatingExpenses || 0) +
-                    (stats?.adsCost || 0),
-                )}
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center gap-2">
+          <PeriodSelector onRangeChange={setRange} />
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 gap-1.5 text-xs font-mono">
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} /> تحديث
+          </Button>
         </div>
       </div>
 
-      {/* Cost Breakdown */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <p className="text-sm text-gray-500 mb-2">
-            {t("profitAnalytics.cogs")}
-          </p>
-          <p className="text-xl font-bold text-gray-900 dark:text-white">
-            {formatPrice(stats?.cogs || 0)}
-          </p>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <p className="text-sm text-gray-500 mb-2">
-            {t("profitAnalytics.adsCost")}
-          </p>
-          <p className="text-xl font-bold text-gray-900 dark:text-white">
-            {formatPrice(stats?.adsCost || 0)}
-          </p>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <p className="text-sm text-gray-500 mb-2">
-            {t("profitAnalytics.operatingExpenses")}
-          </p>
-          <p className="text-xl font-bold text-gray-900 dark:text-white">
-            {formatPrice(stats?.operatingExpenses || 0)}
-          </p>
-        </div>
+      {/* Telemetry Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {cards.map((c, i) => (
+          <Card key={i} className="border-border/70 shadow-sm bg-card">
+            <CardContent className="p-3.5">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span>{c.title}</span><c.icon className={`h-3.5 w-3.5 ${c.color}`} />
+              </div>
+              <div className="text-lg font-bold font-mono tabular-nums text-foreground">{loading ? "..." : c.val}</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{c.sub}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Profit Over Time */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {t("profitAnalytics.profitOverTime")}
-        </h3>
-        <div className="min-w-0 h-[350px]">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <LineChart data={stats?.dailyProfit || []}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#374151"
-                opacity={0.1}
-              />
-              <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} />
-              <YAxis stroke="#9CA3AF" fontSize={12} />
-              <Tooltip
-                formatter={(value) =>
-                  value ? formatPrice(value as number) : "0"
-                }
-              />
-              <Line
-                type="monotone"
-                dataKey="profit"
-                stroke="#10B981"
-                strokeWidth={2}
-                name={t("profitAnalytics.profit")}
-              />
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                stroke="#3B82F6"
-                strokeWidth={2}
-                name={t("profitAnalytics.revenue")}
-              />
-              <Line
-                type="monotone"
-                dataKey="costs"
-                stroke="#EF4444"
-                strokeWidth={2}
-                name={t("profitAnalytics.costs")}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Profit by Category */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {t("profitAnalytics.profitByCategory")}
+      {/* Visual Chart: Daily Profit & Revenue */}
+      {stats?.dailyProfit && stats.dailyProfit.length > 0 && (
+        <div className="border border-border/70 rounded-xl bg-card p-4 shadow-sm">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-emerald-500" /> مسار الأرباح اليومية والإيرادات
           </h3>
-          <div className="min-w-0 h-[300px]">
+          <div className="h-[260px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <PieChart>
-                <Pie
-                  data={stats?.profitByCategory || []}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
-                  dataKey="profit"
-                  nameKey="name"
-                  label={({ name, percent }) =>
-                    `${name} (${percent ? (percent * 100).toFixed(1) : 0}%)`
-                  }
-                >
-                  {(stats?.profitByCategory || []).map((_, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value) =>
-                    value ? formatPrice(value as number) : "0"
-                  }
-                />
-              </PieChart>
+              <AreaChart data={stats.dailyProfit}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} />
+                <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} />
+                <Tooltip formatter={(val) => formatPrice(Number(val) || 0)} contentStyle={{ backgroundColor: "#1e293b", borderColor: "#334155", borderRadius: "8px", color: "#fff", fontSize: "12px" }} />
+                <Area type="monotone" dataKey="revenue" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.1} name="الإيرادات" />
+                <Area type="monotone" dataKey="profit" stroke="#10B981" fill="#10B981" fillOpacity={0.25} name="صافي الربح" />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
+      )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {t("profitAnalytics.profitMarginByCategory")}
-          </h3>
-          <div className="min-w-0 h-[300px]">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <BarChart data={stats?.profitByCategory || []} layout="vertical">
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#374151"
-                  opacity={0.1}
-                />
-                <XAxis type="number" stroke="#9CA3AF" fontSize={12} />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  stroke="#9CA3AF"
-                  fontSize={12}
-                  width={100}
-                />
-                <Tooltip formatter={(value) => `${value}%`} />
-                <Bar
-                  dataKey="margin"
-                  fill="#10B981"
-                  name={t("profitAnalytics.profitMarginPercentage")}
-                  radius={[0, 4, 4, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+      {/* Category Margins Table */}
+      <div className="border border-border/70 rounded-xl bg-card overflow-hidden shadow-sm">
+        <div className="p-3 bg-muted/20 border-b border-border/70 flex items-center justify-between text-xs">
+          <span className="font-semibold text-foreground">ربحية التصنيفات وهوامش المساهمة</span>
+          <span className="text-muted-foreground">التصنيفات: <strong className="text-foreground font-mono">{stats?.profitByCategory?.length || 0}</strong></span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-right text-xs">
+            <thead className="bg-muted/30 border-b border-border/70 text-muted-foreground text-[11px] font-medium">
+              <tr>
+                <th className="py-2.5 px-3.5">التصنيف</th>
+                <th className="py-2.5 px-3.5 text-center">صافي الربح المحقق</th>
+                <th className="py-2.5 px-3.5 text-center">هامش الربح (%)</th>
+                <th className="py-2.5 px-3.5 text-center">مستوى الأداء</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {loading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse"><td colSpan={4} className="py-4 px-3.5"><div className="h-4 bg-muted rounded w-3/4"></div></td></tr>
+                ))
+              ) : !stats?.profitByCategory || stats.profitByCategory.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-12 text-center text-muted-foreground">
+                    <TrendingUp className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+                    <p className="font-medium">لا توجد بيانات ربحية للتصنيفات في الفترة المحددة</p>
+                  </td>
+                </tr>
+              ) : (
+                stats.profitByCategory.map((cat, idx) => (
+                  <tr key={idx} className="hover:bg-muted/20 transition-colors">
+                    <td className="py-2.5 px-3.5 font-medium text-foreground text-sm flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></span>
+                      {cat.name}
+                    </td>
+                    <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatPrice(cat.profit)}
+                    </td>
+                    <td className="py-2.5 px-3.5 text-center">
+                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 font-bold">
+                        {cat.margin.toFixed(1)}%
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3.5 text-center">
+                      <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded ${
+                        cat.margin >= 40
+                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                          : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                      }`}>
+                        {cat.margin >= 40 ? "عائد مرتفع" : "عائد مستقر"}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="p-2.5 bg-muted/10 border-t border-border/70 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-muted-foreground gap-2">
+          <span>إجمالي تكلفة البضاعة: <strong className="text-foreground font-mono">{formatPrice(stats?.cogs || 0)}</strong></span>
+          <span className="text-[11px]">يتم احتساب تكلفة البضاعة المباعة تلقائياً بناءً على أسعار الشراء المسجلة بالمنتجات</span>
         </div>
       </div>
     </div>
