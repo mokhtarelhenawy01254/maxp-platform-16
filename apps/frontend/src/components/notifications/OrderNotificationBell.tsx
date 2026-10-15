@@ -6,13 +6,14 @@ import { tokenManager } from "../../utils/tokenManager";
 import { socketService } from "../../services/socketService";
 import { canUserAccessOrders } from "../layout/sidebar/useSidebarBadges";
 import {
-  BellIcon,
-  ShoppingBagIcon,
-  XMarkIcon,
-  CheckIcon,
-  ArrowRightIcon,
-} from "@heroicons/react/24/outline";
-import { BellIcon as BellSolidIcon } from "@heroicons/react/24/solid";
+  Bell,
+  ShoppingBag,
+  X,
+  CheckCircle2,
+  CheckCheck,
+  ArrowLeft,
+  Loader2,
+} from "lucide-react";
 
 interface NewOrderItem {
   id: string;
@@ -45,10 +46,7 @@ const OrderNotificationBell: React.FC = () => {
     );
   }, [user]);
 
-  const canAccessOrders = useMemo(() => {
-    return canUserAccessOrders(user, activeApps);
-  }, [user, activeApps]);
-
+  const canAccessOrders = useMemo(() => canUserAccessOrders(user, activeApps), [user, activeApps]);
   const getToken = () => tokenManager.getAccessToken();
 
   const fetchNewOrdersCount = useCallback(async () => {
@@ -59,24 +57,16 @@ const OrderNotificationBell: React.FC = () => {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch(buildApiUrl("orders-v2/simple/new-count"), {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+      const res = await fetch(buildApiUrl("orders-v2/simple/new-count"), {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         signal: controller.signal,
       });
-
       clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          setNewOrdersCount(data.data.count || 0);
-        }
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.data) setNewOrdersCount(data.data.count || 0);
       }
-    } catch (error) {
+    } catch {
       // silent fail
     }
   }, [isAuthenticated, user, canAccessOrders]);
@@ -90,24 +80,16 @@ const OrderNotificationBell: React.FC = () => {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch(buildApiUrl("orders-v2/simple/new-list?limit=10"), {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+      const res = await fetch(buildApiUrl("orders-v2/simple/new-list?limit=10"), {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         signal: controller.signal,
       });
-
       clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && Array.isArray(data.data)) {
-          setNewOrders(data.data);
-        }
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) setNewOrders(data.data);
       }
-    } catch (error) {
+    } catch {
       // silent fail
     } finally {
       setLoading(false);
@@ -117,16 +99,12 @@ const OrderNotificationBell: React.FC = () => {
   const markOrderAsViewed = useCallback(async (orderId: string) => {
     const token = getToken();
     if (!token) return;
-
     try {
       await fetch(buildApiUrl(`orders-v2/simple/${orderId}/viewed`), {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       });
-    } catch (error) {
+    } catch {
       // silent fail
     }
   }, []);
@@ -134,22 +112,17 @@ const OrderNotificationBell: React.FC = () => {
   const markAllAsViewed = useCallback(async () => {
     const token = getToken();
     if (!token) return;
-
     try {
-      const response = await fetch(buildApiUrl("orders-v2/simple/mark-all-viewed"), {
+      const res = await fetch(buildApiUrl("orders-v2/simple/mark-all-viewed"), {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       });
-
-      if (response.ok) {
+      if (res.ok) {
         setNewOrdersCount(0);
         setNewOrders([]);
         setIsOpen(false);
       }
-    } catch (error) {
+    } catch {
       // silent fail
     }
   }, []);
@@ -165,208 +138,157 @@ const OrderNotificationBell: React.FC = () => {
     [markOrderAsViewed, navigate],
   );
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Initial fetch and periodic refresh
   useEffect(() => {
     if (!isAuthenticated || !user || !canAccessOrders) return;
-
     fetchNewOrdersCount();
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        fetchNewOrdersCount();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    const interval = setInterval(() => {
-      if (!document.hidden) {
-        fetchNewOrdersCount();
-      }
-    }, 30000);
-
+    const handleVisibility = () => { if (!document.hidden) fetchNewOrdersCount(); };
+    document.addEventListener("visibilitychange", handleVisibility);
+    const interval = setInterval(() => { if (!document.hidden) fetchNewOrdersCount(); }, 30000);
     return () => {
       clearInterval(interval);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [fetchNewOrdersCount, isAuthenticated, user, canAccessOrders]);
 
-  // Socket listeners for real-time updates
   useEffect(() => {
     if (!isAuthenticated || !user || !canAccessOrders) return;
-
     socketService.getSocket();
-
-    const handleNewOrder = () => {
+    const handleOrderEvent = () => {
       fetchNewOrdersCount();
       if (isOpen) fetchNewOrdersList();
     };
-
-    const handleOrderUpdated = () => {
-      fetchNewOrdersCount();
-      if (isOpen) fetchNewOrdersList();
-    };
-
-    socketService.on("order:created", handleNewOrder);
-    socketService.on("order:updated", handleOrderUpdated);
-
+    socketService.on("order:created", handleOrderEvent);
+    socketService.on("order:updated", handleOrderEvent);
     return () => {
-      socketService.off("order:created", handleNewOrder);
-      socketService.off("order:updated", handleOrderUpdated);
+      socketService.off("order:created", handleOrderEvent);
+      socketService.off("order:updated", handleOrderEvent);
     };
   }, [isAuthenticated, user, isOpen, fetchNewOrdersCount, fetchNewOrdersList, canAccessOrders]);
 
-  // Fetch list when dropdown opens, refresh periodically while open
   useEffect(() => {
     if (!isOpen || !canAccessOrders) return;
     fetchNewOrdersList();
-    const interval = setInterval(() => {
-      if (!document.hidden) {
-        fetchNewOrdersList();
-      }
-    }, 15000);
+    const interval = setInterval(() => { if (!document.hidden) fetchNewOrdersList(); }, 15000);
     return () => clearInterval(interval);
   }, [isOpen, fetchNewOrdersList, canAccessOrders]);
 
   const formatTimestamp = (timestamp: string) => {
-    const now = new Date();
-    const date = new Date(timestamp);
-    const diff = now.getTime() - date.getTime();
+    const diff = Date.now() - new Date(timestamp).getTime();
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-
     if (minutes < 1) return "الآن";
-    if (minutes < 60) return `منذ ${minutes} دقيقة`;
-    if (hours < 24) return `منذ ${hours} ساعة`;
-    if (days < 7) return `منذ ${days} يوم`;
-    return date.toLocaleDateString("ar-EG");
+    if (minutes < 60) return `منذ ${minutes} د`;
+    if (hours < 24) return `منذ ${hours} س`;
+    if (days < 7) return `منذ ${days} ي`;
+    return new Date(timestamp).toLocaleDateString("ar-EG");
   };
 
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat("ar-EG", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount);
+    return new Intl.NumberFormat("ar-EG", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(amount);
   };
 
   if (!user || !canAccessOrders) return null;
+  const hasNew = newOrdersCount > 0;
 
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700 transition-colors duration-200"
+        className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         title="الطلبات الجديدة"
         aria-label="الطلبات الجديدة"
       >
-        {newOrdersCount > 0 ? (
-          <BellSolidIcon className="h-5 w-5 text-orange-500" />
-        ) : (
-          <BellIcon className="h-5 w-5" />
-        )}
-
-        {newOrdersCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-500 rounded-full border-2 border-white dark:border-gray-800">
+        <Bell className={`h-4.5 w-4.5 transition-colors ${hasNew ? "text-amber-500 fill-amber-500/20" : "text-muted-foreground"}`} />
+        {hasNew && (
+          <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-mono tabular-nums font-bold text-white bg-rose-500 rounded-full border-2 border-background shadow-xs">
             {newOrdersCount > 99 ? "99+" : newOrdersCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute ltr:right-0 rtl:left-0 z-50 mt-2 max-h-96 w-96 max-w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg dark:bg-gray-800 dark:border-gray-700">
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ShoppingBagIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                  الطلبات الجديدة
-                </h3>
-                {newOrdersCount > 0 && (
-                  <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold text-white bg-red-500 rounded-full">
-                    {newOrdersCount}
-                  </span>
-                )}
+        <div className="absolute ltr:right-0 rtl:left-0 z-50 mt-2 max-h-[420px] w-96 max-w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-xl border border-border/70 bg-card text-card-foreground shadow-xl flex flex-col animate-in fade-in zoom-in-95 duration-100">
+          <div className="px-3.5 py-2.5 border-b border-border/60 bg-muted/40 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="size-6 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+                <ShoppingBag className="w-3.5 h-3.5" />
               </div>
-              <div className="flex items-center gap-1">
-                {newOrdersCount > 0 && (
-                  <button
-                    onClick={markAllAsViewed}
-                    className="text-[11px] text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                  >
-                    تعليم الكل مقروء
-                  </button>
-                )}
+              <h3 className="text-xs font-semibold text-foreground">الطلبات الجديدة</h3>
+              {hasNew && (
+                <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-mono tabular-nums font-bold text-white bg-rose-500 rounded-full">
+                  {newOrdersCount}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              {hasNew && (
                 <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                  type="button"
+                  onClick={markAllAsViewed}
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors px-2 py-0.5 rounded-md hover:bg-primary/10"
                 >
-                  <XMarkIcon className="w-4 h-4" />
+                  <CheckCheck className="size-3" />
+                  تعليم الكل مقروء
                 </button>
-              </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="p-1 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted"
+                aria-label="إغلاق"
+              >
+                <X className="size-3.5" />
+              </button>
             </div>
           </div>
 
-          <div className="max-h-72 overflow-y-auto">
+          <div className="max-h-[300px] overflow-y-auto divide-y divide-border/40">
             {loading ? (
-              <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                <div className="animate-spin w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-2" />
-                <p className="text-xs">جاري التحميل...</p>
+              <div className="px-4 py-8 text-center text-muted-foreground">
+                <Loader2 className="animate-spin size-5 mx-auto mb-2 text-primary" />
+                <p className="text-xs">جاري فحص الطلبات...</p>
               </div>
             ) : newOrders.length === 0 ? (
-              <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                <CheckIcon className="w-10 h-10 mx-auto mb-2 text-green-400" />
-                <p className="text-sm font-medium">لا توجد طلبات جديدة</p>
-                <p className="text-xs mt-1">جميع الطلبات تمت مراجعتها</p>
+              <div className="px-4 py-8 text-center text-muted-foreground">
+                <CheckCircle2 className="size-8 mx-auto mb-2 text-emerald-500/80" />
+                <p className="text-xs font-semibold text-foreground">لا توجد طلبات جديدة</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">جميع الطلبات تمت مراجعتها</p>
               </div>
             ) : (
               newOrders.map((order) => (
                 <button
                   key={`${order.type}-${order.id}`}
+                  type="button"
                   onClick={() => handleOrderClick(order)}
-                  className="w-full text-right px-4 py-3 border-b border-gray-100 dark:border-gray-700/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors duration-150 group"
+                  className="w-full text-right px-3.5 py-2.5 hover:bg-muted/50 transition-colors duration-150 group flex items-start gap-3"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-0.5 w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                      <ShoppingBagIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <div className="shrink-0 mt-0.5 size-7 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+                    <ShoppingBag className="size-3.5" />
+                  </div>
+                  <div className="flex-1 min-w-0 text-right">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-mono tabular-nums font-semibold text-primary">#{order.orderNumber}</span>
+                      <span className="text-[10px] text-muted-foreground font-mono tabular-nums">{formatTimestamp(order.createdAt)}</span>
                     </div>
-                    <div className="flex-1 min-w-0 text-right">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
-                          #{order.orderNumber}
-                        </span>
-                        <span className="text-[11px] text-gray-400">
-                          {formatTimestamp(order.createdAt)}
-                        </span>
-                      </div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate mt-0.5">
-                        {order.displayName || `#${order.orderNumber}`}
-                      </p>
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                          {formatAmount(order.displayTotal)} ج.م
-                        </span>
-                        <span className="text-[10px] text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
-                          فتح الطلب
-                          <ArrowRightIcon className="w-3 h-3" />
-                        </span>
-                      </div>
+                    <p className="text-xs font-medium text-foreground truncate mt-0.5">{order.displayName || `#${order.orderNumber}`}</p>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xs font-mono tabular-nums font-semibold text-foreground">{formatAmount(order.displayTotal)} ج.م</span>
+                      <span className="text-[10px] text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                        فتح الطلب
+                        <ArrowLeft className="size-3 rtl:rotate-0 ltr:rotate-180" />
+                      </span>
                     </div>
                   </div>
                 </button>
@@ -374,13 +296,14 @@ const OrderNotificationBell: React.FC = () => {
             )}
           </div>
 
-          <div className="px-4 py-2.5 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+          <div className="px-3 py-2 border-t border-border/60 bg-muted/20">
             <button
+              type="button"
               onClick={() => {
                 setIsOpen(false);
                 navigate("/orders?isViewed=false");
               }}
-              className="w-full text-center text-[11px] text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors font-medium"
+              className="w-full text-center text-xs text-primary hover:text-primary/80 transition-colors font-medium py-1 rounded-md hover:bg-primary/5"
             >
               عرض جميع الطلبات
             </button>
