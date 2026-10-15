@@ -13,6 +13,7 @@ import { accountingApi, Account } from './accountingApi';
 export const AccountingCoaPage: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedType, setSelectedType] = useState<string>('ALL');
   const [showModal, setShowModal] = useState(false);
@@ -32,8 +33,13 @@ export const AccountingCoaPage: React.FC = () => {
   const loadAccounts = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await accountingApi.getChartOfAccounts();
-      setAccounts(data);
+      setAccounts(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      console.error('Failed to load accounts', err);
+      setError(err.response?.data?.message || 'تعذر تحميل دليل الحسابات حالياً');
+      setAccounts([]);
     } finally {
       setLoading(false);
     }
@@ -49,6 +55,8 @@ export const AccountingCoaPage: React.FC = () => {
       setLoading(true);
       await accountingApi.seedStandardCOA();
       await loadAccounts();
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -85,7 +93,7 @@ export const AccountingCoaPage: React.FC = () => {
     }
   };
 
-  const filteredAccounts = accounts.filter((acc) => {
+  const filteredAccounts = (accounts || []).filter((acc) => {
     if (selectedType !== 'ALL' && acc.type !== selectedType) return false;
     if (search) {
       const q = search.toLowerCase();
@@ -139,6 +147,15 @@ export const AccountingCoaPage: React.FC = () => {
       />
 
       <div className="p-4 sm:p-6 space-y-4 max-w-7xl mx-auto">
+        {error && (
+          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={loadAccounts} className="px-2.5 py-1 rounded bg-rose-600 text-white font-medium hover:bg-rose-700 text-[11px]">
+              إعادة المحاولة
+            </button>
+          </div>
+        )}
+
         {/* Filter Bar */}
         <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
           <div className="relative flex-1 min-w-[200px] max-w-md">

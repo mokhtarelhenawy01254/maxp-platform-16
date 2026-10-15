@@ -11,19 +11,22 @@ import { accountingApi, ProfitLossReport } from './accountingApi';
 export const AccountingProfitLossPage: React.FC = () => {
   const [report, setReport] = useState<ProfitLossReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
   const loadReport = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await accountingApi.getProfitLoss({
         startDate: startDate || undefined,
         endDate: endDate || undefined,
       });
       setReport(data);
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message);
+      console.error('Failed to load profit and loss report', err);
+      setError(err.response?.data?.message || 'تعذر تحميل قائمة الدخل والأرباح والخسائر');
     } finally {
       setLoading(false);
     }
@@ -56,6 +59,15 @@ export const AccountingProfitLossPage: React.FC = () => {
       />
 
       <div className="p-4 sm:p-6 space-y-6 max-w-5xl mx-auto">
+        {error && (
+          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={loadReport} className="px-2.5 py-1 rounded bg-rose-600 text-white font-medium hover:bg-rose-700 text-[11px]">
+              إعادة المحاولة
+            </button>
+          </div>
+        )}
+
         {/* Date Filter Bar */}
         <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3">
@@ -97,11 +109,11 @@ export const AccountingProfitLossPage: React.FC = () => {
             <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800 text-sm font-bold text-slate-900 dark:text-white">
               <span>إيرادات النشاط التشغيلي الرئيسي (Revenues)</span>
               <span className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                {formatEGP(report?.revenues.total || 0)} ج.م
+                {formatEGP(report?.revenues?.total || 0)} ج.م
               </span>
             </div>
             <div className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-              {(report?.revenues.items || []).map((item) => (
+              {(report?.revenues?.items || []).map((item) => (
                 <div key={item.code} className="py-2 flex justify-between items-center text-slate-600 dark:text-slate-300">
                   <span>
                     <span className="font-mono text-slate-400 ml-2">[{item.code}]</span>
@@ -118,11 +130,11 @@ export const AccountingProfitLossPage: React.FC = () => {
             <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800 text-sm font-bold text-slate-900 dark:text-white">
               <span>تكلفة النشاط والمبيعات (COGS)</span>
               <span className="font-mono tabular-nums text-rose-600 dark:text-rose-400">
-                ({formatEGP(report?.cogs.total || 0)}) ج.م
+                ({formatEGP(report?.cogs?.total || 0)}) ج.م
               </span>
             </div>
             <div className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-              {(report?.cogs.items || []).map((item) => (
+              {(report?.cogs?.items || []).map((item) => (
                 <div key={item.code} className="py-2 flex justify-between items-center text-slate-600 dark:text-slate-300">
                   <span>
                     <span className="font-mono text-slate-400 ml-2">[{item.code}]</span>
@@ -147,11 +159,11 @@ export const AccountingProfitLossPage: React.FC = () => {
             <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800 text-sm font-bold text-slate-900 dark:text-white">
               <span>المصروفات التشغيلية والبيعية والإدارية (OPEX)</span>
               <span className="font-mono tabular-nums text-rose-600 dark:text-rose-400">
-                ({formatEGP(report?.operatingExpenses.total || 0)}) ج.م
+                ({formatEGP(report?.operatingExpenses?.total || 0)}) ج.م
               </span>
             </div>
             <div className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-              {(report?.operatingExpenses.items || []).map((item) => (
+              {(report?.operatingExpenses?.items || []).map((item) => (
                 <div key={item.code} className="py-2 flex justify-between items-center text-slate-600 dark:text-slate-300">
                   <span>
                     <span className="font-mono text-slate-400 ml-2">[{item.code}]</span>
@@ -172,12 +184,12 @@ export const AccountingProfitLossPage: React.FC = () => {
           </div>
 
           {/* 4. Other Revenues */}
-          {(report?.otherRevenues.total || 0) > 0 && (
+          {(report?.otherRevenues?.total || 0) > 0 && (
             <div>
               <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800 text-sm font-bold text-slate-900 dark:text-white">
                 <span>إيرادات أخرى وتمويلية</span>
                 <span className="font-mono tabular-nums text-emerald-600">
-                  {formatEGP(report?.otherRevenues.total || 0)} ج.م
+                  {formatEGP(report?.otherRevenues?.total || 0)} ج.م
                 </span>
               </div>
             </div>

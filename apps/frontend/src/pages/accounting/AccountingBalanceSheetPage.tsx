@@ -11,15 +11,18 @@ import { accountingApi, BalanceSheetReport } from './accountingApi';
 export const AccountingBalanceSheetPage: React.FC = () => {
   const [report, setReport] = useState<BalanceSheetReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [asOfDate, setAsOfDate] = useState(new Date().toISOString().split('T')[0]);
 
   const loadReport = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await accountingApi.getBalanceSheet({ asOfDate });
       setReport(data);
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message);
+      console.error('Failed to load balance sheet', err);
+      setError(err.response?.data?.message || 'تعذر تحميل الميزانية العمومية');
     } finally {
       setLoading(false);
     }
@@ -52,6 +55,15 @@ export const AccountingBalanceSheetPage: React.FC = () => {
       />
 
       <div className="p-4 sm:p-6 space-y-6 max-w-6xl mx-auto">
+        {error && (
+          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={loadReport} className="px-2.5 py-1 rounded bg-rose-600 text-white font-medium hover:bg-rose-700 text-[11px]">
+              إعادة المحاولة
+            </button>
+          </div>
+        )}
+
         {/* Date Filter Bar */}
         <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3">
@@ -71,7 +83,7 @@ export const AccountingBalanceSheetPage: React.FC = () => {
           </div>
 
           {/* Equality Check Badge */}
-          {report && (
+          {report?.summary && (
             <div
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs ${
                 report.summary.isBalanced
@@ -87,7 +99,7 @@ export const AccountingBalanceSheetPage: React.FC = () => {
               ) : (
                 <>
                   <ExclamationCircleIcon className="w-4 h-4 text-rose-500" />
-                  <span>تنبيه: يوجد فارق قدره {formatEGP(report.summary.difference)} ج.م</span>
+                  <span>تنبيه: يوجد فارق قدره {formatEGP(report.summary.difference || 0)} ج.م</span>
                 </>
               )}
             </div>
@@ -101,7 +113,7 @@ export const AccountingBalanceSheetPage: React.FC = () => {
             <div className="pb-3 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center font-bold text-sm text-slate-900 dark:text-white">
               <span>الأصول (Assets)</span>
               <span className="font-mono tabular-nums text-emerald-600 text-base">
-                {formatEGP(report?.summary.totalAssets || 0)} ج.م
+                {formatEGP(report?.summary?.totalAssets || 0)} ج.م
               </span>
             </div>
 
@@ -109,7 +121,7 @@ export const AccountingBalanceSheetPage: React.FC = () => {
             <div>
               <span className="text-xs font-bold text-slate-500 block mb-2">الأصول المتداولة (Current Assets)</span>
               <div className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-                {(report?.assets.current.items || []).map((item) => (
+                {(report?.assets?.current?.items || []).map((item) => (
                   <div key={item.code} className="py-2 flex justify-between items-center text-slate-600 dark:text-slate-300">
                     <span>
                       <span className="font-mono text-slate-400 ml-2">[{item.code}]</span>
@@ -121,7 +133,7 @@ export const AccountingBalanceSheetPage: React.FC = () => {
               </div>
               <div className="pt-2 flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
                 <span>إجمالي الأصول المتداولة</span>
-                <span className="font-mono tabular-nums">{formatEGP(report?.assets.current.total || 0)} ج.م</span>
+                <span className="font-mono tabular-nums">{formatEGP(report?.assets?.current?.total || 0)} ج.م</span>
               </div>
             </div>
 
@@ -129,7 +141,7 @@ export const AccountingBalanceSheetPage: React.FC = () => {
             <div>
               <span className="text-xs font-bold text-slate-500 block mb-2">الأصول الثابتة وغير المتداولة (Fixed Assets)</span>
               <div className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-                {(report?.assets.fixed.items || []).map((item) => (
+                {(report?.assets?.fixed?.items || []).map((item) => (
                   <div key={item.code} className="py-2 flex justify-between items-center text-slate-600 dark:text-slate-300">
                     <span>
                       <span className="font-mono text-slate-400 ml-2">[{item.code}]</span>
@@ -141,7 +153,7 @@ export const AccountingBalanceSheetPage: React.FC = () => {
               </div>
               <div className="pt-2 flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
                 <span>إجمالي الأصول الثابتة</span>
-                <span className="font-mono tabular-nums">{formatEGP(report?.assets.fixed.total || 0)} ج.م</span>
+                <span className="font-mono tabular-nums">{formatEGP(report?.assets?.fixed?.total || 0)} ج.م</span>
               </div>
             </div>
           </div>
@@ -151,7 +163,7 @@ export const AccountingBalanceSheetPage: React.FC = () => {
             <div className="pb-3 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center font-bold text-sm text-slate-900 dark:text-white">
               <span>الخصوم وحقوق الملكية (Liabilities & Equity)</span>
               <span className="font-mono tabular-nums text-slate-900 dark:text-white text-base">
-                {formatEGP(report?.summary.totalLiabilitiesAndEquity || 0)} ج.م
+                {formatEGP(report?.summary?.totalLiabilitiesAndEquity || 0)} ج.م
               </span>
             </div>
 
@@ -159,7 +171,7 @@ export const AccountingBalanceSheetPage: React.FC = () => {
             <div>
               <span className="text-xs font-bold text-slate-500 block mb-2">الالتزامات المتداولة (Current Liabilities)</span>
               <div className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-                {(report?.liabilities.current.items || []).map((item) => (
+                {(report?.liabilities?.current?.items || []).map((item) => (
                   <div key={item.code} className="py-2 flex justify-between items-center text-slate-600 dark:text-slate-300">
                     <span>
                       <span className="font-mono text-slate-400 ml-2">[{item.code}]</span>
@@ -171,7 +183,7 @@ export const AccountingBalanceSheetPage: React.FC = () => {
               </div>
               <div className="pt-2 flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
                 <span>إجمالي الالتزامات المتداولة</span>
-                <span className="font-mono tabular-nums">{formatEGP(report?.liabilities.current.total || 0)} ج.م</span>
+                <span className="font-mono tabular-nums">{formatEGP(report?.liabilities?.current?.total || 0)} ج.م</span>
               </div>
             </div>
 
@@ -179,7 +191,7 @@ export const AccountingBalanceSheetPage: React.FC = () => {
             <div>
               <span className="text-xs font-bold text-slate-500 block mb-2">حقوق الملكية (Equity)</span>
               <div className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-                {(report?.equity.items || []).map((item) => (
+                {(report?.equity?.items || []).map((item) => (
                   <div key={item.code} className="py-2 flex justify-between items-center text-slate-600 dark:text-slate-300">
                     <span>
                       <span className="font-mono text-slate-400 ml-2">[{item.code}]</span>
@@ -191,7 +203,7 @@ export const AccountingBalanceSheetPage: React.FC = () => {
               </div>
               <div className="pt-2 flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
                 <span>إجمالي حقوق الملكية</span>
-                <span className="font-mono tabular-nums">{formatEGP(report?.equity.total || 0)} ج.م</span>
+                <span className="font-mono tabular-nums">{formatEGP(report?.equity?.total || 0)} ج.م</span>
               </div>
             </div>
           </div>

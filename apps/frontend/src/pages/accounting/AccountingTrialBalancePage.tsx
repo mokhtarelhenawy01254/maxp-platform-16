@@ -11,19 +11,22 @@ import { accountingApi, TrialBalanceReport } from './accountingApi';
 export const AccountingTrialBalancePage: React.FC = () => {
   const [report, setReport] = useState<TrialBalanceReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
   const loadReport = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await accountingApi.getTrialBalance({
         startDate: startDate || undefined,
         endDate: endDate || undefined,
       });
       setReport(data);
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message);
+      console.error('Failed to load trial balance', err);
+      setError(err.response?.data?.message || 'تعذر تحميل ميزان المراجعة');
     } finally {
       setLoading(false);
     }
@@ -56,6 +59,15 @@ export const AccountingTrialBalancePage: React.FC = () => {
       />
 
       <div className="p-4 sm:p-6 space-y-4 max-w-7xl mx-auto">
+        {error && (
+          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={loadReport} className="px-2.5 py-1 rounded bg-rose-600 text-white font-medium hover:bg-rose-700 text-[11px]">
+              إعادة المحاولة
+            </button>
+          </div>
+        )}
+
         {/* Date Filter Bar */}
         <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3">
@@ -86,7 +98,7 @@ export const AccountingTrialBalancePage: React.FC = () => {
           </div>
 
           {/* Balance Status Badge */}
-          {report && (
+          {report?.totals && (
             <div
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs ${
                 report.totals.isBalanced
@@ -131,14 +143,14 @@ export const AccountingTrialBalancePage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono tabular-nums">
-                {!report || report.rows.length === 0 ? (
+                {!report || !report.rows || report.rows.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-12 text-center text-slate-400 font-sans">
                       {loading ? 'جارٍ احتساب ميزان المراجعة...' : 'لا توجد حركات مالية في هذه الفترة'}
                     </td>
                   </tr>
                 ) : (
-                  report.rows.map((row) => (
+                  (report.rows || []).map((row) => (
                     <tr key={row.accountId} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
                       <td className="py-2 px-4 font-bold border-l border-slate-100 dark:border-slate-800/60">{row.code}</td>
                       <td className="py-2 px-4 font-sans font-medium text-slate-800 dark:text-slate-200 border-l border-slate-100 dark:border-slate-800/60">
@@ -166,16 +178,16 @@ export const AccountingTrialBalancePage: React.FC = () => {
                   ))
                 )}
               </tbody>
-              {report && (
+              {report?.totals && (
                 <tfoot>
                   <tr className="border-t-2 border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-800/70 font-mono font-bold text-slate-900 dark:text-white">
                     <td colSpan={2} className="py-3 px-4 font-sans text-sm">الإجمالي العام لميزان المراجعة</td>
-                    <td className="py-3 px-3 text-left">{formatEGP(report.totals.totalOpeningDebit)}</td>
-                    <td className="py-3 px-3 text-left">{formatEGP(report.totals.totalOpeningCredit)}</td>
-                    <td className="py-3 px-3 text-left text-emerald-600 dark:text-emerald-400">{formatEGP(report.totals.totalPeriodDebit)}</td>
-                    <td className="py-3 px-3 text-left text-rose-600 dark:text-rose-400">{formatEGP(report.totals.totalPeriodCredit)}</td>
-                    <td className="py-3 px-3 text-left text-emerald-600 dark:text-emerald-400">{formatEGP(report.totals.totalEndingDebit)}</td>
-                    <td className="py-3 px-3 text-left text-rose-600 dark:text-rose-400">{formatEGP(report.totals.totalEndingCredit)}</td>
+                    <td className="py-3 px-3 text-left">{formatEGP(report.totals.totalOpeningDebit || 0)}</td>
+                    <td className="py-3 px-3 text-left">{formatEGP(report.totals.totalOpeningCredit || 0)}</td>
+                    <td className="py-3 px-3 text-left text-emerald-600 dark:text-emerald-400">{formatEGP(report.totals.totalPeriodDebit || 0)}</td>
+                    <td className="py-3 px-3 text-left text-rose-600 dark:text-rose-400">{formatEGP(report.totals.totalPeriodCredit || 0)}</td>
+                    <td className="py-3 px-3 text-left text-emerald-600 dark:text-emerald-400">{formatEGP(report.totals.totalEndingDebit || 0)}</td>
+                    <td className="py-3 px-3 text-left text-rose-600 dark:text-rose-400">{formatEGP(report.totals.totalEndingCredit || 0)}</td>
                   </tr>
                 </tfoot>
               )}

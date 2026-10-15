@@ -15,19 +15,24 @@ export const AccountingSettingsPage: React.FC = () => {
   const [unposted, setUnposted] = useState<UnpostedEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const [settingsRes, accountsRes, unpostedRes] = await Promise.all([
-        accountingApi.getSettings(),
-        accountingApi.getChartOfAccounts(),
-        accountingApi.listUnpostedQueue(),
+        accountingApi.getSettings().catch(() => null),
+        accountingApi.getChartOfAccounts().catch(() => []),
+        accountingApi.listUnpostedQueue().catch(() => []),
       ]);
       setSettings(settingsRes);
-      setAccounts(accountsRes.filter((a) => a.isPostable));
-      setUnposted(unpostedRes);
+      setAccounts(Array.isArray(accountsRes) ? accountsRes.filter((a) => a.isPostable) : []);
+      setUnposted(Array.isArray(unpostedRes) ? unpostedRes : []);
+    } catch (err: any) {
+      console.error('Failed to load accounting settings', err);
+      setError('تعذر تحميل بعض إعدادات النظام المحاسبي');
     } finally {
       setLoading(false);
     }
@@ -100,6 +105,15 @@ export const AccountingSettingsPage: React.FC = () => {
       />
 
       <div className="p-4 sm:p-6 space-y-8 max-w-5xl mx-auto">
+        {error && (
+          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={loadData} className="px-2.5 py-1 rounded bg-rose-600 text-white font-medium hover:bg-rose-700 text-[11px]">
+              إعادة المحاولة
+            </button>
+          </div>
+        )}
+
         {/* Auto-Posting Switch Card */}
         {settings && (
           <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-wrap items-center justify-between gap-4">

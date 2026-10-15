@@ -186,13 +186,21 @@ export interface VatReport {
 }
 
 export const accountingApi = {
-  // COA
+  // COA & Accounts
   getChartOfAccounts: async (type?: string): Promise<Account[]> => {
-    const res = await apiClient.get('/accounting/coa', { params: { type } });
+    const res = await apiClient.get('/accounting/accounts', { params: { type } });
     return res.data?.data || [];
   },
+  getAccountTree: async (): Promise<Account[]> => {
+    const res = await apiClient.get('/accounting/accounts/tree');
+    return res.data?.data || [];
+  },
+  getAccountById: async (id: string): Promise<Account> => {
+    const res = await apiClient.get(`/accounting/accounts/${id}`);
+    return res.data?.data;
+  },
   seedStandardCOA: async (): Promise<{ count: number }> => {
-    const res = await apiClient.post('/accounting/coa/seed');
+    const res = await apiClient.post('/accounting/seed');
     return res.data?.data;
   },
   createAccount: async (data: Partial<Account>): Promise<Account> => {
@@ -215,9 +223,21 @@ export const accountingApi = {
     endDate?: string;
     page?: number;
     limit?: number;
+    search?: string;
   }): Promise<{ entries: JournalEntry[]; pagination: { total: number; page: number; totalPages: number } }> => {
     const res = await apiClient.get('/accounting/entries', { params });
-    return res.data?.data || { entries: [], pagination: { total: 0, page: 1, totalPages: 1 } };
+    const payload = res.data;
+    const entries = Array.isArray(payload?.data)
+      ? payload.data
+      : Array.isArray(payload?.data?.entries)
+      ? payload.data.entries
+      : [];
+    const pagination = payload?.pagination || payload?.data?.pagination || {
+      total: entries.length,
+      page: 1,
+      totalPages: 1,
+    };
+    return { entries, pagination };
   },
   getEntryById: async (id: string): Promise<JournalEntry> => {
     const res = await apiClient.get(`/accounting/entries/${id}`);
@@ -230,6 +250,10 @@ export const accountingApi = {
     lines: Array<{ accountId: string; debit: number; credit: number; narration?: string }>;
   }): Promise<JournalEntry> => {
     const res = await apiClient.post('/accounting/entries', data);
+    return res.data?.data;
+  },
+  updateEntry: async (id: string, data: Partial<JournalEntry>): Promise<JournalEntry> => {
+    const res = await apiClient.put(`/accounting/entries/${id}`, data);
     return res.data?.data;
   },
   postEntry: async (id: string): Promise<JournalEntry> => {
@@ -250,8 +274,12 @@ export const accountingApi = {
     const res = await apiClient.get('/accounting/reports/ledger', { params });
     return res.data?.data;
   },
+  getStatement: async (params: { accountId: string; from?: string; to?: string; startDate?: string; endDate?: string }): Promise<GeneralLedgerReport> => {
+    const res = await apiClient.get('/accounting/reports/statement', { params });
+    return res.data?.data;
+  },
   getProfitLoss: async (params?: { startDate?: string; endDate?: string }): Promise<ProfitLossReport> => {
-    const res = await apiClient.get('/accounting/reports/pnl', { params });
+    const res = await apiClient.get('/accounting/reports/profit-loss', { params });
     return res.data?.data;
   },
   getBalanceSheet: async (params?: { asOfDate?: string }): Promise<BalanceSheetReport> => {
@@ -277,13 +305,21 @@ export const accountingApi = {
     return res.data?.data;
   },
 
-  // Settings
+  // Settings & Seed
   getSettings: async (): Promise<AccountingSettings> => {
     const res = await apiClient.get('/accounting/settings');
     return res.data?.data;
   },
   updateSettings: async (data: Partial<AccountingSettings>): Promise<AccountingSettings> => {
     const res = await apiClient.put('/accounting/settings', data);
+    return res.data?.data;
+  },
+  createOpeningBalance: async (data: {
+    date: string;
+    narration?: string;
+    lines: Array<{ accountId: string; debit: number; credit: number; narration?: string }>;
+  }): Promise<JournalEntry> => {
+    const res = await apiClient.post('/accounting/opening-balance', data);
     return res.data?.data;
   },
 

@@ -14,6 +14,7 @@ export const AccountingJournalEntriesPage: React.FC = () => {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
 
@@ -24,12 +25,18 @@ export const AccountingJournalEntriesPage: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const [entriesRes, accountsRes] = await Promise.all([
         accountingApi.listEntries({ status: statusFilter !== 'ALL' ? statusFilter : undefined }),
         accountingApi.getChartOfAccounts(),
       ]);
-      setEntries(entriesRes.entries || []);
-      setAccounts(accountsRes.filter((a) => a.isPostable));
+      setEntries(entriesRes?.entries || []);
+      setAccounts(Array.isArray(accountsRes) ? accountsRes.filter((a) => a.isPostable) : []);
+    } catch (err: any) {
+      console.error('Failed to load journal entries', err);
+      setError(err.response?.data?.message || 'تعذر تحميل قيود اليومية حالياً');
+      setEntries([]);
+      setAccounts([]);
     } finally {
       setLoading(false);
     }
@@ -107,6 +114,15 @@ export const AccountingJournalEntriesPage: React.FC = () => {
       />
 
       <div className="p-4 sm:p-6 space-y-4 max-w-7xl mx-auto">
+        {error && (
+          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={loadData} className="px-2.5 py-1 rounded bg-rose-600 text-white font-medium hover:bg-rose-700 text-[11px]">
+              إعادة المحاولة
+            </button>
+          </div>
+        )}
+
         {/* Status Filter Tabs */}
         <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
           <div className="flex items-center gap-1.5 text-xs">

@@ -20,6 +20,7 @@ import {
 
 export const AccountingDashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [balanceSheet, setBalanceSheet] = useState<BalanceSheetReport | null>(null);
   const [pnl, setPnl] = useState<ProfitLossReport | null>(null);
   const [recentEntries, setRecentEntries] = useState<JournalEntry[]>([]);
@@ -29,19 +30,23 @@ export const AccountingDashboardPage: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const [bsRes, pnlRes, entriesRes, unpostedRes, coaRes] = await Promise.all([
         accountingApi.getBalanceSheet().catch(() => null),
         accountingApi.getProfitLoss().catch(() => null),
-        accountingApi.listEntries({ limit: 5 }).catch(() => ({ entries: [] })),
+        accountingApi.listEntries({ limit: 5 }).catch(() => ({ entries: [], pagination: { total: 0, page: 1, totalPages: 1 } })),
         accountingApi.listUnpostedQueue({ status: 'PENDING' }).catch(() => []),
         accountingApi.getChartOfAccounts().catch(() => []),
       ]);
 
       setBalanceSheet(bsRes);
       setPnl(pnlRes);
-      setRecentEntries(entriesRes.entries || []);
-      setUnpostedCount(unpostedRes.length);
-      setHasAccounts(coaRes.length > 0);
+      setRecentEntries(entriesRes?.entries || []);
+      setUnpostedCount(Array.isArray(unpostedRes) ? unpostedRes.length : 0);
+      setHasAccounts(Array.isArray(coaRes) && coaRes.length > 0);
+    } catch (err: any) {
+      console.error('Accounting dashboard load error', err);
+      setError('تعذر تحديث بعض بيانات لوحة المحاسبة. يرجى مراجعة الاتصال بالخادم.');
     } finally {
       setLoading(false);
     }
@@ -95,6 +100,15 @@ export const AccountingDashboardPage: React.FC = () => {
       />
 
       <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+        {error && (
+          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={loadData} className="px-2.5 py-1 rounded bg-rose-600 text-white font-medium hover:bg-rose-700 text-[11px]">
+              إعادة المحاولة
+            </button>
+          </div>
+        )}
+
         {/* Unposted warning banner */}
         {unpostedCount > 0 && (
           <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-4">
@@ -128,11 +142,11 @@ export const AccountingDashboardPage: React.FC = () => {
               </div>
             </div>
             <p className="text-2xl font-bold mt-2 tabular-nums tracking-tight">
-              {formatEGP(balanceSheet?.summary.totalAssets || 0)} <span className="text-xs font-normal">ج.م</span>
+              {formatEGP(balanceSheet?.summary?.totalAssets || 0)} <span className="text-xs font-normal">ج.م</span>
             </p>
             <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between">
-              <span>متداولة: {formatEGP(balanceSheet?.assets.current.total || 0)}</span>
-              <span>ثابتة: {formatEGP(balanceSheet?.assets.fixed.total || 0)}</span>
+              <span>متداولة: {formatEGP(balanceSheet?.assets?.current?.total || 0)}</span>
+              <span>ثابتة: {formatEGP(balanceSheet?.assets?.fixed?.total || 0)}</span>
             </div>
           </div>
 
@@ -144,11 +158,11 @@ export const AccountingDashboardPage: React.FC = () => {
               </div>
             </div>
             <p className="text-2xl font-bold mt-2 tabular-nums tracking-tight">
-              {formatEGP(balanceSheet?.liabilities.total || 0)} <span className="text-xs font-normal">ج.م</span>
+              {formatEGP(balanceSheet?.liabilities?.total || 0)} <span className="text-xs font-normal">ج.م</span>
             </p>
             <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between">
               <span>موردون ومدينون متداولون</span>
-              <span className="text-rose-600 dark:text-rose-400 font-semibold">{formatEGP(balanceSheet?.liabilities.current.total || 0)}</span>
+              <span className="text-rose-600 dark:text-rose-400 font-semibold">{formatEGP(balanceSheet?.liabilities?.current?.total || 0)}</span>
             </div>
           </div>
 
@@ -160,10 +174,10 @@ export const AccountingDashboardPage: React.FC = () => {
               </div>
             </div>
             <p className="text-2xl font-bold mt-2 tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">
-              {formatEGP(pnl?.revenues.total || 0)} <span className="text-xs font-normal">ج.م</span>
+              {formatEGP(pnl?.revenues?.total || 0)} <span className="text-xs font-normal">ج.م</span>
             </p>
             <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              تكلفة البضاعة المباعة: {formatEGP(pnl?.cogs.total || 0)} ج.م
+              تكلفة البضاعة المباعة: {formatEGP(pnl?.cogs?.total || 0)} ج.م
             </div>
           </div>
 
@@ -256,17 +270,17 @@ export const AccountingDashboardPage: React.FC = () => {
               <div className="space-y-3 text-xs">
                 <div className="flex justify-between p-2 rounded bg-slate-50 dark:bg-slate-800/60">
                   <span>إجمالي الأصول</span>
-                  <span className="font-bold tabular-nums">{formatEGP(balanceSheet?.summary.totalAssets || 0)} ج.م</span>
+                  <span className="font-bold tabular-nums">{formatEGP(balanceSheet?.summary?.totalAssets || 0)} ج.م</span>
                 </div>
                 <div className="flex justify-between p-2 rounded bg-slate-50 dark:bg-slate-800/60">
                   <span>الخصوم + حقوق الملكية</span>
                   <span className="font-bold tabular-nums">
-                    {formatEGP(balanceSheet?.summary.totalLiabilitiesAndEquity || 0)} ج.م
+                    {formatEGP(balanceSheet?.summary?.totalLiabilitiesAndEquity || 0)} ج.م
                   </span>
                 </div>
                 <div className="flex justify-between p-2 rounded bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 font-bold">
                   <span>فارق الميزانية</span>
-                  <span className="tabular-nums">{formatEGP(balanceSheet?.summary.difference || 0)} ج.م</span>
+                  <span className="tabular-nums">{formatEGP(balanceSheet?.summary?.difference || 0)} ج.م</span>
                 </div>
               </div>
             </div>

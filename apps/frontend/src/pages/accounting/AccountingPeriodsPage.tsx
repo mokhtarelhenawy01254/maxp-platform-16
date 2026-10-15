@@ -17,13 +17,19 @@ const MONTH_NAMES = [
 export const AccountingPeriodsPage: React.FC = () => {
   const [periods, setPeriods] = useState<FiscalPeriod[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
   const loadPeriods = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await accountingApi.listPeriods(selectedYear);
-      setPeriods(data);
+      setPeriods(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      console.error('Failed to load periods', err);
+      setError(err.response?.data?.message || 'تعذر تحميل الفترات المالية');
+      setPeriods([]);
     } finally {
       setLoading(false);
     }
@@ -76,6 +82,15 @@ export const AccountingPeriodsPage: React.FC = () => {
       />
 
       <div className="p-4 sm:p-6 space-y-6 max-w-5xl mx-auto">
+        {error && (
+          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={loadPeriods} className="px-2.5 py-1 rounded bg-rose-600 text-white font-medium hover:bg-rose-700 text-[11px]">
+              إعادة المحاولة
+            </button>
+          </div>
+        )}
+
         {/* Information Callout */}
         <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-3">
           <CalendarDaysIcon className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
@@ -90,7 +105,7 @@ export const AccountingPeriodsPage: React.FC = () => {
         {/* 12 Months Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
-            const period = periods.find((p) => p.month === m);
+            const period = (periods || []).find((p) => p.month === m);
             const isClosed = period?.status === 'CLOSED';
 
             return (

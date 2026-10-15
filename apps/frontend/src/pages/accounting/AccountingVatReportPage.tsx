@@ -10,19 +10,22 @@ import { accountingApi, VatReport } from './accountingApi';
 export const AccountingVatReportPage: React.FC = () => {
   const [report, setReport] = useState<VatReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
   const loadReport = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await accountingApi.getVatReport({
         startDate: startDate || undefined,
         endDate: endDate || undefined,
       });
       setReport(data);
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message);
+      console.error('Failed to load VAT report', err);
+      setError(err.response?.data?.message || 'تعذر تحميل إقرار ضريبة القيمة المضافة');
     } finally {
       setLoading(false);
     }
@@ -55,6 +58,15 @@ export const AccountingVatReportPage: React.FC = () => {
       />
 
       <div className="p-4 sm:p-6 space-y-6 max-w-4xl mx-auto">
+        {error && (
+          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={loadReport} className="px-2.5 py-1 rounded bg-rose-600 text-white font-medium hover:bg-rose-700 text-[11px]">
+              إعادة المحاولة
+            </button>
+          </div>
+        )}
+
         {/* Date Filter Bar */}
         <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3">

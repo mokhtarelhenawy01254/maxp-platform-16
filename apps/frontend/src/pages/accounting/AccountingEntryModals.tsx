@@ -127,7 +127,7 @@ export const AccountingNewEntryModal: React.FC<NewEntryModalProps> = ({
                     className="flex-1 px-2 py-1.5 rounded border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs"
                   >
                     <option value="">-- اختر الحساب --</option>
-                    {accounts.map((acc) => (
+                    {(accounts || []).map((acc) => (
                       <option key={acc.id} value={acc.id}>
                         {acc.code} - {acc.name}
                       </option>
