@@ -1,72 +1,77 @@
 import React from "react";
-import { MD_PHOTOS } from "./merchantDossierData";
+import { MD_SCREENS } from "./merchantDossierData";
+import MdFragment from "./MdFragment";
 
 /**
- * شريط الصور: عالم الشغل نفسه ، محل، سوق، رصيد، وبوالص.
- * كل صور من الأرشيف المفتوح، ومعتمدة بالاسم والترخيص في آخر الصفحة.
+ * شاشات المنصة نفسها — مصوّرة من التطبيق ببيانات تجريبية.
+ * مفيش أي صور خارجية ومفيش أي بيانات عملاء حقيقيين.
  */
-const PHOTOS = [
-  {
-    id: "shop",
-    src: MD_PHOTOS.talaatHarb,
-    alt: "واجهات محلات في شارع طلعت حرب بوسط القاهرة",
-    caption: "المحل: البيع بالمقاس، والرصيد اللي قدام الكاشير.",
-    ratio: "h-[420px]",
-  },
-  {
-    id: "market",
-    src: MD_PHOTOS.khanMarket,
-    alt: "سوق خان الخليلي في القاهرة",
-    caption: "الأونلاين: نفس الرصيد، بس الطلب جاي من رسالة.",
-    ratio: "h-[420px]",
-  },
-  {
-    id: "souq",
-    src: MD_PHOTOS.luxorSouq,
-    alt: "سوق في الأقصر",
-    caption: "كل يوم بيخرج من هنا بوالص شحن.",
-    ratio: "h-[420px]",
-  },
-  {
-    id: "stock",
-    src: MD_PHOTOS.textile,
-    alt: "أثواب ملفوفة على رف",
-    caption: "المخزون: مقاسات وألوان على رف واحد.",
-    ratio: "h-[420px]",
-  },
-];
-
 export const MdWorldBand: React.FC = () => (
   <section className="md md-section" dir="rtl">
-    <div className="md-shell grid gap-2 md:grid-cols-12">
-      {PHOTOS.map((photo, index) => {
-        const span = ['md:col-span-7', 'md:col-span-5', 'md:col-span-5', 'md:col-span-7'][index];
-        const offset = [0, 56, 0, 72][index];
-        const height = [
-          'h-[420px] md:h-[520px]',
-          'h-[420px] md:h-[440px]',
-          'h-[420px] md:h-[440px]',
-          'h-[420px] md:h-[520px]',
-        ][index];
-        return (
-          <figure key={photo.id} className={`md-rise m-0 ${span}`} style={{ marginTop: offset }}>
-            <div
-              className="md-photo-tab overflow-hidden"
-              style={{ '--tab-w': '120px', '--tab-h': '24px' } as React.CSSProperties}
-            >
-              <img
-                src={photo.src}
-                alt={photo.alt}
-                width={1000}
-                height={1250}
-                loading="lazy"
-                className={`w-full object-cover ${height}`}
-              />
-            </div>
-            <figcaption className="md-body mt-4 max-w-[30ch]">{photo.caption}</figcaption>
-          </figure>
-        );
-      })}
+    <div className="md-shell grid gap-3 md:grid-cols-12">
+      <figure className="md-rise m-0 md:col-span-8">
+        <div
+          className="md-photo-tab overflow-hidden bg-[#e9edf5]"
+          style={{ "--tab-w": "120px", "--tab-h": "24px" } as React.CSSProperties}
+        >
+          <img
+            src={MD_SCREENS.orders}
+            alt="شاشة الطلبات في المنصة: رقم الأوردر، العميل، المبلغ، حالته، والمدينة"
+            width={1160}
+            height={700}
+            loading="lazy"
+            className="w-full object-cover"
+          />
+        </div>
+        <figcaption className="md-body mt-4 max-w-[42ch]">
+          دي الشاشة اللي بتفتحها الصبح: الأوردر، العميل، المبلغ، وحالته — وبعدها التأكيد على واتساب.
+        </figcaption>
+      </figure>
+
+      <div className="md:col-span-4 md:pt-14">
+        <figure className="md-rise m-0">
+          <div
+            className="md-photo-tab overflow-hidden bg-[#e9edf5]"
+            style={{ "--tab-w": "90px", "--tab-h": "20px" } as React.CSSProperties}
+          >
+            <img
+              src={MD_SCREENS.ordersMobile}
+              alt="نفس شاشة الطلبات على الموبايل"
+              width={390}
+              height={640}
+              loading="lazy"
+              className="mx-auto h-[320px] w-auto object-cover"
+            />
+          </div>
+          <figcaption className="md-body mt-4 max-w-[26ch]">
+            ونفسها على الموبايل، لنفس صاحب الشغل.
+          </figcaption>
+        </figure>
+      </div>
+
+      <figure className="md-rise m-0 md:col-span-5 md:col-start-2 md:mt-6">
+        <div
+          className="md-photo-tab flex h-[190px] items-center justify-center overflow-hidden bg-[#ebebeb] p-5"
+          style={{ "--tab-w": "110px", "--tab-h": "22px" } as React.CSSProperties}
+        >
+          <MdFragment id="waybill" />
+        </div>
+        <figcaption className="md-body mt-4 max-w-[34ch]">
+          البوليصة بتصدر من نفس الأوردر، ومصاريفها مسجّلة عليه.
+        </figcaption>
+      </figure>
+
+      <figure className="md-rise m-0 md:col-span-5 md:mt-6">
+        <div
+          className="md-photo-tab flex h-[190px] items-center justify-center overflow-hidden bg-[#f6e016] p-5"
+          style={{ "--tab-w": "110px", "--tab-h": "22px" } as React.CSSProperties}
+        >
+          <MdFragment id="cod" />
+        </div>
+        <figcaption className="md-body mt-4 max-w-[34ch]">
+          والتحصيل منسوب لنفس الأوردر لحد ما يوصل الخزنة.
+        </figcaption>
+      </figure>
     </div>
   </section>
 );

@@ -138,12 +138,25 @@ export const MD_TILES: MdTile[] = [
   },
 ];
 
-/** صور حقيقية من عالم التاجر ، مفتوحة المصدر، معتمدة في الفوتر. */
-export const MD_PREVIEWS = [
-  { id: "selling", src: "/landing/merchant-dossier/khan-street.webp" },
-  { id: "conversations", src: "/landing/merchant-dossier/talaat-harb.webp" },
-  { id: "logistics", src: "/landing/merchant-dossier/boxes-warehouse.webp" },
-  { id: "measurement", src: "/landing/merchant-dossier/cairo-map.webp" },
+/** شاشات المنصة الحقيقية — مصوّرة من التطبيق ببيانات تجريبية (مفيش أي بيانات عملاء). */
+export const MD_SCREENS = {
+  orders: "/landing/merchant-dossier/screen-orders.webp",
+  ordersMobile: "/landing/merchant-dossier/screen-orders-mobile.webp",
+};
+
+export interface MdPreview {
+  id: string;
+  kind: "screen" | "ui";
+  src?: string;
+  fragment?: string;
+  alt?: string;
+}
+
+export const MD_PREVIEWS: MdPreview[] = [
+  { id: "selling", kind: "screen", src: MD_SCREENS.orders, alt: "شاشة الطلبات في منصة MaxP" },
+  { id: "conversations", kind: "screen", src: MD_SCREENS.ordersMobile, alt: "شاشة الطلبات على الموبايل" },
+  { id: "logistics", kind: "ui", fragment: "waybill" },
+  { id: "measurement", kind: "ui", fragment: "cod" },
 ];
 
 export interface MdQuestion {
@@ -185,100 +198,7 @@ export const MD_QUESTIONS: MdQuestion[] = [
   },
 ];
 
-export interface MdCredit {
-  id: string;
-  title: string;
-  author: string;
-  licence: string;
-  licenceHref: string;
-  sourceHref: string;
-  source: string;
-  asset: string;
-}
-
-/** الاعتمادات ، كما رجّعها `assets.mjs --credits`. */
-export const MD_CREDITS: MdCredit[] = [
-  {
-    id: "khan-street",
-    title: "Khan El-Khalili Street ، Cairo",
-    author: "Ahmed Al.Badawy",
-    licence: "CC BY-SA 2.0",
-    licenceHref: "https://creativecommons.org/licenses/by-sa/2.0/",
-    sourceHref: "https://commons.wikimedia.org/w/index.php?curid=11179448",
-    source: "Wikimedia Commons",
-    asset: "khan-street.webp",
-  },
-  {
-    id: "talaat-harb",
-    title: "Talaat Harb St ، Egypt Free Shops, Cairo",
-    author: "Daniel Mayer",
-    licence: "CC BY-SA 4.0",
-    licenceHref: "https://creativecommons.org/licenses/by-sa/4.0/",
-    sourceHref: "https://commons.wikimedia.org/w/index.php?curid=4672234",
-    source: "Wikimedia Commons",
-    asset: "talaat-harb.webp",
-  },
-  {
-    id: "khan-market",
-    title: "The Khan el-Khalili market in Cairo",
-    author: "V Manninen",
-    licence: "CC BY 2.0",
-    licenceHref: "https://creativecommons.org/licenses/by/2.0/",
-    sourceHref: "https://commons.wikimedia.org/w/index.php?curid=64130450",
-    source: "Wikimedia Commons",
-    asset: "khan-market.webp",
-  },
-  {
-    id: "luxor-souq",
-    title: "Luxor Souq",
-    author: "Marc Ryckaert (MJJR)",
-    licence: "CC BY 3.0",
-    licenceHref: "https://creativecommons.org/licenses/by/3.0/",
-    sourceHref: "https://commons.wikimedia.org/w/index.php?curid=19324251",
-    source: "Wikimedia Commons",
-    asset: "luxor-souq.webp",
-  },
-  {
-    id: "cairo-map",
-    title: "Medieval map of Cairo (revised)",
-    author: "Arab Hafez · revisions Robert Prazeres",
-    licence: "CC BY-SA 4.0",
-    licenceHref: "https://creativecommons.org/licenses/by-sa/4.0/",
-    sourceHref: "https://commons.wikimedia.org/w/index.php?curid=84342239",
-    source: "Wikimedia Commons",
-    asset: "cairo-map.webp",
-  },
-  {
-    id: "boxes-warehouse",
-    title: "Products being kept boxes warehouse",
-    author: "rawpixel",
-    licence: "CC0",
-    licenceHref: "https://creativecommons.org/publicdomain/zero/1.0/",
-    sourceHref: "https://www.rawpixel.com/image/5904462/photo-image-public-domain-office-free",
-    source: "rawpixel",
-    asset: "boxes-warehouse.webp",
-  },
-  {
-    id: "textile-rolls",
-    title: "Textile rolls",
-    author: "rawpixel",
-    licence: "CC0",
-    licenceHref: "https://creativecommons.org/publicdomain/zero/1.0/",
-    sourceHref: "https://www.rawpixel.com/image/6038451/textile-rolls-free-public-domain-cc0-photo",
-    source: "rawpixel",
-    asset: "textile-rolls.webp",
-  },
-];
-
-export const MD_PHOTOS = {
-  khanStreet: "/landing/merchant-dossier/khan-street.webp",
-  khanMarket: "/landing/merchant-dossier/khan-market.webp",
-  talaatHarb: "/landing/merchant-dossier/talaat-harb.webp",
-  luxorSouq: "/landing/merchant-dossier/luxor-souq.webp",
-  boxes: "/landing/merchant-dossier/boxes-warehouse.webp",
-  textile: "/landing/merchant-dossier/textile-rolls.webp",
-  map: "/landing/merchant-dossier/cairo-map.webp",
-};
+export const MD_PHOTOS = MD_SCREENS;
 
 export const MD_BUNDLE_PRICE_TEXT = csbFmt(BUNDLE_PRICE);
 export const MD_INDIVIDUAL_TOTAL_TEXT = csbFmt(INDIVIDUAL_TOTAL);

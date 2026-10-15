@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { CSB_FAMILIES, CSB_LINES, MD_PREVIEWS, csbFmt } from "./merchantDossierData";
+import MdFragment from "./MdFragment";
 
 /** الأدوات: فهرس مقروء ، كل عائلة ليها صورتها في إطار ثابت، والسطر اللي تحته بيبان. */
 export const MdIndex: React.FC = () => {
@@ -17,16 +18,24 @@ export const MdIndex: React.FC = () => {
           <div className="md:col-span-5">
             <div className="md-index-frame md-photo-tab md-rise sticky top-8 h-[520px]" style={{ "--tab-w": "120px", "--tab-h": "24px" } as React.CSSProperties}>
               {MD_PREVIEWS.map((preview) => (
-                <img
+                <div
                   key={preview.id}
-                  src={preview.src}
-                  alt=""
-                  width={1000}
-                  height={1250}
-                  loading="lazy"
-                  className={`md-index-img md-drift ${preview.id === activeFamily ? "is-active" : ""}`}
+                  className={`md-index-img ${preview.id === activeFamily ? "is-active" : ""}`}
                   aria-hidden={preview.id === activeFamily ? "false" : "true"}
-                />
+                >
+                  {preview.kind === "screen" ? (
+                    <img
+                      src={preview.src}
+                      alt={activeFamily === preview.id ? preview.alt || "" : ""}
+                      loading="lazy"
+                      className="h-full w-full object-cover object-top"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-[#ebebeb] p-6">
+                      <MdFragment id={preview.fragment || "waybill"} />
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
             <p className="md-small md-muted mt-4 max-w-[32ch]">
@@ -67,15 +76,22 @@ export const MdIndex: React.FC = () => {
             return (
               <div key={family.id}>
                 {photo && (
-                  <div className="md-photo-tab overflow-hidden" style={{ "--tab-w": "96px", "--tab-h": "20px" } as React.CSSProperties}>
-                    <img
-                      src={photo.src}
-                      alt=""
-                      width={1000}
-                      height={1250}
-                      loading="lazy"
-                      className="h-[240px] w-full object-cover"
-                    />
+                  <div
+                    className="md-photo-tab overflow-hidden bg-[#e9edf5]"
+                    style={{ "--tab-w": "96px", "--tab-h": "20px" } as React.CSSProperties}
+                  >
+                    {photo.kind === "screen" ? (
+                      <img
+                        src={photo.src}
+                        alt={photo.alt || ""}
+                        loading="lazy"
+                        className="h-[220px] w-full object-cover object-top"
+                      />
+                    ) : (
+                      <div className="flex h-[220px] w-full items-center justify-center bg-[#ebebeb] p-5">
+                        <MdFragment id={photo.fragment || "waybill"} />
+                      </div>
+                    )}
                   </div>
                 )}
                 <h3 className="md-lead mt-5 font-semibold">{family.name}</h3>

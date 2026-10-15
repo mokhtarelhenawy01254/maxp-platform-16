@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { MD_CREDITS, MD_WHATSAPP, mdWhatsApp } from "./merchantDossierData";
+import { MD_WHATSAPP, mdWhatsApp } from "./merchantDossierData";
 
 const BLOCKS = [
   { letter: "M", height: "100%", bg: "#f6e016" },
@@ -101,21 +101,8 @@ export const MdClose: React.FC<{ onPreloadRegister?: () => void }> = ({ onPreloa
         </div>
       </div>
 
-      <p className="md-small mt-12 max-w-[70ch] border-t-0 pb-10" style={{ color: "#8b958f" }}>
-        الصور من أرشيفات مفتوحة ومعتمدة:{" "}
-        {MD_CREDITS.map((credit, index) => (
-          <React.Fragment key={credit.id}>
-            <a href={credit.sourceHref} target="_blank" rel="noopener noreferrer" className="md-link">
-              «{credit.title}»
-            </a>{" "}
-            {credit.author} ·{" "}
-            <a href={credit.licenceHref} target="_blank" rel="noopener noreferrer" className="md-link">
-              {credit.licence}
-            </a>{" "}
-            · {credit.source}
-            {index < MD_CREDITS.length - 1 ? " ؛ " : ""}
-          </React.Fragment>
-        ))}
+      <p className="md-small mt-12 max-w-[70ch] pb-10" style={{ color: "#8b958f" }}>
+        الشاشات في الصفحة دي مصوّرة من المنصة نفسها ببيانات تجريبية، ومفيش أي بيانات عملاء حقيقيين.
       </p>
     </div>
   </footer>
