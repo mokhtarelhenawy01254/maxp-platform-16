@@ -250,7 +250,7 @@ const authenticateToken = async (req, res, next) => {
         userPermissions: ['academy.student.access'],
       };
 
-      return require('../services/tenantContext').run(studentCompanyId, () => next());
+      return next();
     }
 
     // Map userId to id for compatibility with code that expects req.user.id
