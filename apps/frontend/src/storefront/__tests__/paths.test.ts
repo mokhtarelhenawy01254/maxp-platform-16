@@ -184,6 +184,31 @@ describe("storefront path helpers", () => {
     expect(parsed.searchParams.get("previewSource")).toBe("settings");
   });
 
+  it("builds visual editor preview URL with previewTheme and prioritizes customDomain", () => {
+    // 1. With companySlug and non-default previewTheme: https://<slug>.<baseDomain>/?previewTheme=...
+    const slugPreview = buildStorefrontPreviewPath("/", {
+      companyId: "cmp_123",
+      companySlug: "demo-shop",
+      previewTheme: "solea-femme",
+    });
+    const parsedSlug = new URL(slugPreview);
+    expect(parsedSlug.hostname.startsWith("demo-shop.")).toBe(true);
+    expect(parsedSlug.pathname).toBe("/");
+    expect(parsedSlug.searchParams.get("previewTheme")).toBe("solea-femme");
+
+    // 2. customDomain has priority over companySlug
+    const customDomainPreview = buildStorefrontPreviewPath("/", {
+      companyId: "cmp_123",
+      companySlug: "demo-shop",
+      customDomain: "shop.brand.com",
+      previewTheme: "bold-fashion",
+    });
+    expect(customDomainPreview).toBe("https://shop.brand.com/?previewTheme=bold-fashion");
+
+    // 3. Without companySlug or customDomain or companyId, returns empty string
+    expect(buildStorefrontPreviewPath("/", {})).toBe("");
+  });
+
   it("builds same-origin preview URLs in local environments when companyId is available", () => {
     const previewUrl = buildStorefrontPreviewPath("/lookbook", {
       companyId: "cmp_1",

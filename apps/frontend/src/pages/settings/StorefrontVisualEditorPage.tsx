@@ -116,11 +116,20 @@ const StorefrontVisualEditorPage: React.FC = () => {
 
   const storefrontPreviewUrl = useMemo(() => {
     if (!storefrontSettings?.companyId) return null;
-    return buildStorefrontPreviewPath({
-      companyId: storefrontSettings.companyId,
-      themeId: activeStorefrontThemeId,
-    });
-  }, [storefrontSettings?.companyId, activeStorefrontThemeId]);
+    return (
+      buildStorefrontPreviewPath("/", {
+        companyId: storefrontSettings.companyId,
+        companySlug: storefrontSettings.companySlug,
+        customDomain: storefrontSettings.customDomain,
+        previewTheme: activeStorefrontThemeId,
+      }) || null
+    );
+  }, [
+    storefrontSettings?.companyId,
+    storefrontSettings?.companySlug,
+    storefrontSettings?.customDomain,
+    activeStorefrontThemeId,
+  ]);
 
   const handleSave = async () => {
     if (!storefrontSettings) return;
@@ -172,7 +181,20 @@ const StorefrontVisualEditorPage: React.FC = () => {
   };
 
   const handleOpenPreview = () => {
-    if (!storefrontPreviewUrl) return;
+    const hasSlugOrDomain = Boolean(
+      storefrontSettings?.companySlug?.trim() || storefrontSettings?.customDomain?.trim()
+    );
+
+    if (!hasSlugOrDomain) {
+      toast.error("يرجى ضبط رابط المتجر (Slug) أو الدومين المخصص أولاً لتفعيل المعاينة");
+      return;
+    }
+
+    if (!storefrontPreviewUrl) {
+      toast.error("تعذر تجهيز رابط معاينة المتجر، يرجى مراجعة إعدادات المتجر");
+      return;
+    }
+
     openUrlInNewTab(storefrontPreviewUrl);
   };
 
