@@ -85,6 +85,7 @@ def run_git(repo: Path, args, check=False, timeout=None):
     env["GIT_PAGER"] = "cat"
     try:
         p = subprocess.run(["git", "-C", str(repo), *args],
+                           stdin=subprocess.DEVNULL,
                            capture_output=True, text=True, env=env, timeout=timeout)
     except subprocess.TimeoutExpired:
         return types.SimpleNamespace(returncode=-1, stdout="",
@@ -364,11 +365,6 @@ def cmd_guard(args):
 
 
 def cmd_hook_check(args):
-    try:
-        if not sys.stdin.isatty():
-            sys.stdin.read()  # drain pre-push ref lines
-    except Exception:
-        pass
     root = toplevel(args.repo)
     agent = os.environ.get("COORD_AGENT") or default_agent()
     lk = read_lock(root)
