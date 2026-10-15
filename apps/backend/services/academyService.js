@@ -1230,7 +1230,25 @@ class AcademyService {
     // Calculate free preview status
     let isFreePreview = Boolean(lesson.isFreePreview);
     if (!isFreePreview && course.freePreviewLessons > 0) {
-      const allCourseLessons = course.modules.flatMap((m) => m.lessons);
+      let modules = course.modules;
+      if (!modules) {
+        const fullCourse = await db.academyCourse.findUnique({
+          where: { id: course.id },
+          include: {
+            modules: {
+              orderBy: { sortOrder: 'asc' },
+              include: {
+                lessons: {
+                  orderBy: { sortOrder: 'asc' },
+                  select: { id: true },
+                },
+              },
+            },
+          },
+        });
+        modules = fullCourse?.modules || [];
+      }
+      const allCourseLessons = modules.flatMap((m) => m.lessons || []);
       const lessonIdx = allCourseLessons.findIndex((l) => l.id === lesson.id);
       if (lessonIdx !== -1 && lessonIdx < course.freePreviewLessons) {
         isFreePreview = true;
