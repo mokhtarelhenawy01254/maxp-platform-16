@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { apiClient } from "../../services/apiClient";
-import { Save, DollarSign, AlertCircle, CheckCircle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { 
+  Save, 
+  Coins, 
+  AlertCircle, 
+  CheckCircle2, 
+  ArrowRight, 
+  Sliders, 
+  Percent, 
+  HelpCircle,
+  Clock
+} from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
+import { apiClient } from "../../services/apiClient";
 
 interface CashbackSettings {
   id: string;
@@ -43,7 +54,6 @@ const CashbackSettingsPage: React.FC = () => {
           maxPerOrder: cs.rules.maxPerOrder || 0,
         });
       } else {
-        // Default state if no settings exist
         setSettings({
           cashbackPercent: 0,
           base: "subtotal",
@@ -62,7 +72,6 @@ const CashbackSettingsPage: React.FC = () => {
   const handleSave = async () => {
     if (!settings) return;
 
-    // Validation
     if (settings.cashbackPercent < 0 || settings.cashbackPercent > 100) {
       tToast.error("CashbackSettings.msg_faa7");
       return;
@@ -87,63 +96,71 @@ const CashbackSettingsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+      <div className="flex flex-col items-center justify-center min-h-[350px] text-muted-foreground gap-3" dir="rtl">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs">جارِ تحميل إعدادات برنامج الكاش باك...</span>
       </div>
     );
   }
 
-  if (!settings) return <div>Failed to load settings</div>;
+  if (!settings) return null;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6" dir="rtl">
+      {/* Top Header Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/70 pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            إعدادات الكاش باك
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            تكوين نظام المكافآت المالية للعملاء
-          </p>
-        </div>
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-        >
-          {isSaving ? (
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <Save className="w-4 h-4" />
-          )}
-          حفظ التغييرات
-        </button>
-      </div>
-
-      {/* Main Settings Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
-              <DollarSign className="w-5 h-5" />
-            </div>
+          <div className="flex items-center gap-2.5">
+            <Link
+              to="/customers/loyalty-programs"
+              className="p-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted/40 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowRight className="w-4 h-4" />
+            </Link>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                الإعدادات الأساسية
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                التحكم في نسبة وآلية احتساب الكاش باك
+              <h1 className="text-xl font-black text-foreground">إعدادات الكاش باك</h1>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                تكوين نظام المكافآت المالية المباشرة وتحديد نسب استرداد الأموال للعملاء
               </p>
             </div>
           </div>
         </div>
 
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Status */}
-          <div className="col-span-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              حالة النظام
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 shadow-sm"
+          >
+            <Save className={`w-3.5 h-3.5 ${isSaving ? 'animate-spin' : ''}`} />
+            <span>{isSaving ? "جارِ الحفظ..." : "حفظ التغييرات"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Settings Card */}
+      <div className="bg-card border border-border/70 rounded-xl p-5 shadow-sm space-y-5">
+        <div className="flex items-center justify-between border-b border-border/40 pb-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+            <Sliders className="w-4 h-4 text-primary" />
+            <span>معايير احتساب الكاش باك الأساسية</span>
+          </div>
+          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+            settings.status === "ACTIVE" 
+              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" 
+              : "bg-muted/50 text-muted-foreground border border-border/70"
+          }`}>
+            {settings.status === "ACTIVE" ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+            <span>{settings.status === "ACTIVE" ? "النظام نشط ومفعل" : "النظام معطل مؤقتاً"}</span>
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Status Field */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-foreground block">
+              حالة النظام العامة
             </label>
             <div className="relative">
               <select
@@ -151,45 +168,45 @@ const CashbackSettingsPage: React.FC = () => {
                 onChange={(e) =>
                   setSettings({ ...settings, status: e.target.value as any })
                 }
-                className="w-full pl-4 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                className="w-full pl-8 pr-3 py-2 bg-background border border-border/70 rounded-lg text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               >
-                <option value="ACTIVE">نشط (Active)</option>
-                <option value="INACTIVE">متوقف (Inactive)</option>
-                <option value="DRAFT">مسودة (Draft)</option>
+                <option value="ACTIVE">نشط (Active) — احتساب الكاش باك لجميع الطلبات المؤهلة</option>
+                <option value="INACTIVE">متوقف (Inactive) — إيقاف مؤقت دون حذف الإعدادات</option>
+                <option value="DRAFT">مسودة (Draft) — قيد المراجعة والإعداد</option>
               </select>
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+              <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
                 {settings.status === "ACTIVE" ? (
-                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                 ) : (
-                  <AlertCircle className="w-4 h-4" />
+                  <AlertCircle className="w-4 h-4 text-muted-foreground" />
                 )}
               </div>
             </div>
           </div>
 
           {/* Calculation Base */}
-          <div className="col-span-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              طريقة الحساب
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-foreground block">
+              طريقة وقاعدة الحساب
             </label>
             <select
               value={settings.base}
               onChange={(e) =>
                 setSettings({ ...settings, base: e.target.value as any })
               }
-              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+              className="w-full px-3 py-2 bg-background border border-border/70 rounded-lg text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="subtotal">
-                المجموع الفرعي (Subtotal) - قبل الضرائب والشحن
+                المجموع الفرعي (Subtotal) — صافي ثمن المنتجات قبل الشحن والضرائب
               </option>
-              <option value="total">الإجمالي الكلي (Grand Total)</option>
+              <option value="total">الإجمالي الكلي للطلب (Grand Total)</option>
             </select>
           </div>
 
           {/* Percentage */}
-          <div className="col-span-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              نسبة الكاش باك (%)
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-foreground block">
+              نسبة الكاش باك المستردة (%)
             </label>
             <div className="relative">
               <input
@@ -204,21 +221,21 @@ const CashbackSettingsPage: React.FC = () => {
                     cashbackPercent: Number(e.target.value),
                   })
                 }
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                className="w-full pl-8 pr-3 py-2 bg-background border border-border/70 rounded-lg text-xs font-mono font-bold tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
-                %
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+                <Percent className="w-3.5 h-3.5" />
               </div>
             </div>
-            <p className="mt-1.5 text-xs text-gray-500">
-              النسبة الافتراضية لجميع العملاء.
+            <p className="text-[11px] text-muted-foreground">
+              النسبة المئوية الافتراضية المضافة إلى محفظة العميل عند اكتمال الطلب.
             </p>
           </div>
 
           {/* Max Limit */}
-          <div className="col-span-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              الحد الأقصى للطلب الواحد
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-foreground block">
+              الحد الأقصى للكاش باك للطلب الواحد
             </label>
             <div className="relative">
               <input
@@ -231,20 +248,19 @@ const CashbackSettingsPage: React.FC = () => {
                     maxPerOrder: Number(e.target.value),
                   })
                 }
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
-                placeholder="0 = بدون حد"
+                className="w-full pl-14 pr-3 py-2 bg-background border border-border/70 rounded-lg text-xs font-mono font-bold tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                placeholder="0"
               />
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
+              <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground font-mono pointer-events-none">
                 عملة المتجر
               </div>
             </div>
-            <p className="mt-1.5 text-xs text-gray-500">
-              اتركه 0 إذا كنت لا تريد وضع حد أقصى.
+            <p className="text-[11px] text-muted-foreground">
+              حدد 0 إذا كنت لا ترغب في فرض حد أقصى لمبلغ الكاش باك لكل طلب.
             </p>
           </div>
         </div>
       </div>
-
     </div>
   );
 };

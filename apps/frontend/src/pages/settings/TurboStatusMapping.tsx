@@ -1,11 +1,16 @@
-import { useTranslation } from "react-i18next";
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
-  ArrowLeftIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+  ArrowRight,
+  Save,
+  CheckCircle2,
+  AlertTriangle,
+  Truck,
+  Shuffle,
+  Sliders,
+  HelpCircle
+} from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
@@ -14,11 +19,6 @@ interface StatusMapping {
   [turboStatus: string]: {
     orderStatus: string | null;
   };
-}
-
-interface TurboStatusInfo {
-  labelAr: string;
-  labelEn: string;
 }
 
 interface OrderStatusOption {
@@ -47,15 +47,15 @@ const TURBO_STATUS_LIST: { key: string; labelAr: string; labelEn: string }[] = [
 
 const TURBO_STATUS_GROUP_MAP: Record<string, { labelAr: string; keys: string[] }> = {
   "قيد المعالجة": {
-    labelAr: "قيد المعالجة",
+    labelAr: "مرحلة المعالجة والفرز",
     keys: ["turbo_saved", "turbo_sent", "processing"],
   },
   "التوصيل": {
-    labelAr: "التوصيل",
+    labelAr: "مرحلة الخروج والتوصيل الميداني",
     keys: ["out_for_delivery", "delivered", "remitted", "delayed"],
   },
   "المرتجعات": {
-    labelAr: "المرتجعات",
+    labelAr: "مسارات المرتجعات والتسوية",
     keys: [
       "returned_to_company",
       "returned_received",
@@ -66,7 +66,7 @@ const TURBO_STATUS_GROUP_MAP: Record<string, { labelAr: string; keys: string[] }
     ],
   },
   "حالات أخرى": {
-    labelAr: "حالات أخرى",
+    labelAr: "حالات استثنائية وأرشيفية",
     keys: ["cancelled", "incomplete", "archived"],
   },
 };
@@ -128,14 +128,10 @@ const TurboStatusMapping: React.FC = () => {
     } catch (error: unknown) {
       console.error("Error saving mapping:", error);
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "فشل حفظ الإعدادات");
+      toast.error(err.response?.data?.message || "فشل حفظ إعدادات الربط");
     } finally {
       setSaving(false);
     }
-  };
-
-  const hasChanges = () => {
-    return true; // Always enable save button when data is loaded
   };
 
   const getStatusName = (code: string | null) => {
@@ -149,62 +145,65 @@ const TurboStatusMapping: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">جاري التحميل...</p>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[350px] text-muted-foreground gap-3" dir="rtl">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs">جارِ تحميل حالات وربط شركة Turbo Express...</span>
       </div>
     );
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-8 dark:bg-gray-900 min-h-screen">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4 text-sm text-gray-500 dark:text-gray-400">
-          <button
-            onClick={() => navigate("/shipping-companies")}
-            className="flex items-center hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
-          >
-            <ArrowLeftIcon className="h-4 w-4 ml-1" />
-            شركات الشحن
-          </button>
-          <span>/</span>
-          <button
-            onClick={() => navigate("/settings/turbo")}
-            className="hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
-          >
-            إعدادات Turbo
-          </button>
-        </div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          ربط حالات Turbo بحالات النظام
-        </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          حدد الحالة المناسبة في النظام لكل حالة من حالات Turbo Express. عند وصول تحديث من Turbo، سيتم تحويل الطلب تلقائياً للحالة المحددة.
-        </p>
-      </div>
-
-      {/* Mapping Table */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6" dir="rtl">
+      {/* Top Header Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/70 pb-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <Link
+              to="/shipping-companies"
+              className="p-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted/40 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowRight className="w-4 h-4" />
+            </Link>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                حالات Turbo Express
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                اختر الحالة المقابلة في النظام لكل حالة Turbo
+              <h1 className="text-xl font-black text-foreground">
+                ربط حالات Turbo Express بحالات النظام
+              </h1>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                تحديث حالات الطلبات التلقائي عند استلام إشعارات التوصيل والتحصيل عبر Webhook
               </p>
             </div>
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 shadow-sm"
+          >
+            <Save className={`w-3.5 h-3.5 ${saving ? 'animate-spin' : ''}`} />
+            <span>{saving ? "جارِ الحفظ..." : "حفظ جدول الحالات"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Mapping Card */}
+      <div className="bg-card border border-border/70 rounded-xl p-5 shadow-sm space-y-6">
+        <div className="flex items-center justify-between border-b border-border/40 pb-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+            <Shuffle className="w-4 h-4 text-primary" />
+            <span>جدول تعيين الحالات (Status Mapping Matrix)</span>
+          </div>
+          <span className="text-[11px] text-muted-foreground font-mono">
+            Turbo Webhook Auto-Sync
+          </span>
+        </div>
+
+        <div className="space-y-6">
           {Object.entries(TURBO_STATUS_GROUP_MAP).map(([groupName, group]) => (
-            <div key={groupName} className="mb-8 last:mb-0">
-              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 px-1 uppercase tracking-wide">
+            <div key={groupName} className="space-y-3">
+              <h3 className="text-xs font-bold text-foreground px-1 border-r-2 border-primary pr-2">
                 {group.labelAr}
               </h3>
               <div className="space-y-2">
@@ -216,29 +215,28 @@ const TurboStatusMapping: React.FC = () => {
                   return (
                     <div
                       key={turboKey}
-                      className="flex items-center gap-4 p-3 rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
+                      className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 p-3 rounded-lg border border-border/60 bg-muted/10 hover:border-primary/30 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        <p className="text-xs font-bold text-foreground truncate">
                           {isRtl ? info?.labelAr : info?.labelEn}
                         </p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 font-mono mt-0.5">
+                        <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
                           {turboKey}
                         </p>
                       </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        {selectedStatus && (
-                          <span className="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">
-                            ←
-                          </span>
-                        )}
+
+                      <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
+                        <span className="text-xs text-muted-foreground hidden sm:inline">
+                          ←
+                        </span>
                         <select
                           value={selectedStatus}
                           onChange={(e) => handleMappingChange(turboKey, e.target.value)}
-                          className="w-56 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          className="w-full sm:w-60 rounded-lg border border-border/70 bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                           dir={isRtl ? "rtl" : "ltr"}
                         >
-                          <option value="">-- لا يوجد تغيير --</option>
+                          <option value="">-- لا يوجد تغيير (تجاهل) --</option>
                           {orderStatuses
                             .filter((s) => s.code !== "TRASH")
                             .map((s) => (
@@ -257,37 +255,15 @@ const TurboStatusMapping: React.FC = () => {
         </div>
       </div>
 
-      {/* Info Banner */}
-      <div className="mt-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <ExclamationTriangleIcon className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-amber-800 dark:text-amber-300">
-            <p className="font-medium mb-1">ملاحظة مهمة</p>
-            <p>
-              {`إذا تركت الحالة "لا يوجد تغيير"، لن يتم تغيير حالة الطلب في النظام عند وصول هذا التحديث من Turbo.`}
-              <br />
-              {`الحالات التي يتم تسليمها (Delivered) ستحدد تلقائياً حالة الدفع على أنها "مكتمل".`}
-            </p>
-          </div>
+      {/* Info Notice Banner */}
+      <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-start gap-3">
+        <AlertTriangle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+        <div className="text-xs text-foreground space-y-1">
+          <span className="font-bold block">ملاحظات هامة لتشغيل المزامنة:</span>
+          <p className="text-muted-foreground leading-relaxed">
+            عند اختيار «لا يوجد تغيير»، سيتم الاحتفاظ بحالة الطلب الحالية في النظام دون تعديل عند وصول إشعار هذه الحالة من Turbo. الحالات التي تعين على «تم التسليم» تقوم تلقائياً بتحديث حالة الدفع إلى «مكتمل».
+          </p>
         </div>
-      </div>
-
-      {/* Save Button */}
-      <div className="mt-6 flex justify-end">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm"
-        >
-          {saving ? (
-            <span className="flex items-center gap-2">
-              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              جاري الحفظ...
-            </span>
-          ) : (
-            "حفظ الإعدادات"
-          )}
-        </button>
       </div>
     </div>
   );

@@ -1,8 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { apiClient } from '../../services/api';
-import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import {
+  Truck,
+  CheckCircle2,
+  XCircle,
+  TrendingUp,
+  Search,
+  ArrowUpDown,
+  ArrowDown,
+  ArrowUp,
+  UserCheck,
+  RotateCcw,
+  Clock,
+  Phone,
+  Building
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { apiClient } from '../../services/api';
 
 interface CaptainStats {
   captainName: string;
@@ -56,13 +71,15 @@ const TurboCaptains: React.FC = () => {
         setTotalStats(res.data.totalStats || null);
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to load captain stats');
+      toast.error(err.response?.data?.error || 'تعذر تحميل إحصائيات مناديب الشحن');
     } finally {
       setLoading(false);
     }
   }, [sortBy, sortOrder, search]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { 
+    fetchData(); 
+  }, [fetchData]);
 
   const handleSort = (field: string) => {
     if (sortBy === field) {
@@ -74,172 +91,191 @@ const TurboCaptains: React.FC = () => {
   };
 
   const SortIcon = ({ field }: { field: string }) => {
-    if (sortBy !== field) return <span className="text-gray-300 ml-1">↕</span>;
-    return <span className="text-blue-600 ml-1">{sortOrder === 'desc' ? '↓' : '↑'}</span>;
-  };
-
-  const getScoreColor = (rate: number) => {
-    if (rate >= 80) return 'text-green-600';
-    if (rate >= 60) return 'text-amber-600';
-    return 'text-red-600';
-  };
-
-  const getScoreBg = (rate: number) => {
-    if (rate >= 80) return 'bg-green-100';
-    if (rate >= 60) return 'bg-amber-100';
-    return 'bg-red-100';
+    if (sortBy !== field) return <ArrowUpDown className="w-3 h-3 text-muted-foreground/60 inline mr-1" />;
+    return sortOrder === 'desc' 
+      ? <ArrowDown className="w-3 h-3 text-primary inline mr-1" />
+      : <ArrowUp className="w-3 h-3 text-primary inline mr-1" />;
   };
 
   if (loading && captains.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex flex-col items-center justify-center min-h-[350px] text-muted-foreground gap-3" dir="rtl">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs">جارِ تحميل تقارير وأداء مناديب الشحن...</span>
       </div>
     );
   }
 
   return (
-    <div className="p-6" dir="rtl">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6" dir="rtl">
+      {/* Top Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/70 pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            تقارير المندوبين
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            تحليل أداء مندوبي Turbo - نسب التسليم والمرتجعات
-          </p>
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <Truck className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-black text-foreground">
+                تقارير مناديب الشحن (Turbo Captains)
+              </h1>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                متابعة أداء المناديب اليومي، نسب التسليم والتحصيل، وأسباب المرتجعات
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Telemetry Ribbon */}
       {totalStats && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-blue-600">{totalStats.totalCaptains}</div>
-            <div className="text-xs text-gray-500 mt-1">إجمالي المندوبين</div>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+            <span className="text-[11px] font-medium text-muted-foreground block">إجمالي المناديب</span>
+            <span className="text-xl font-bold font-mono tabular-nums text-foreground">{totalStats.totalCaptains}</span>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{totalStats.totalShipments}</div>
-            <div className="text-xs text-gray-500 mt-1">إجمالي الشحنات</div>
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+            <span className="text-[11px] font-medium text-muted-foreground block">إجمالي الشحنات</span>
+            <span className="text-xl font-bold font-mono tabular-nums text-foreground">{totalStats.totalShipments}</span>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-green-600">{totalStats.totalDelivered}</div>
-            <div className="text-xs text-gray-500 mt-1">تم التسليم</div>
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+            <span className="text-[11px] font-medium text-muted-foreground block">تم التسليم</span>
+            <span className="text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{totalStats.totalDelivered}</span>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-red-600">{totalStats.totalReturned}</div>
-            <div className="text-xs text-gray-500 mt-1">مرتجعات</div>
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+            <span className="text-[11px] font-medium text-muted-foreground block">المرتجعات</span>
+            <span className="text-xl font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400">{totalStats.totalReturned}</span>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-amber-600">{totalStats.avgDeliveryRate}%</div>
-            <div className="text-xs text-gray-500 mt-1">متوسط نسبة التسليم</div>
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm space-y-1">
+            <span className="text-[11px] font-medium text-muted-foreground block">متوسط نسبة التسليم</span>
+            <span className="text-xl font-bold font-mono tabular-nums text-primary">{totalStats.avgDeliveryRate}%</span>
           </div>
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex gap-2">
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="بحث باسم المندوب..."
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 flex-1 max-w-xs"
-          />
+      {/* Table & Filter Surface */}
+      <div className="bg-card border border-border/70 rounded-xl shadow-sm overflow-hidden">
+        <div className="p-3.5 border-b border-border/70 bg-muted/20 flex flex-wrap gap-2 items-center justify-between">
+          <div className="relative flex-1 max-w-sm">
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && fetchData()}
+              placeholder="ابحث باسم المندوب..."
+              className="w-full pl-8 pr-3 py-1.5 border border-border/70 rounded-lg text-xs bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
+          </div>
           <button
+            type="button"
             onClick={fetchData}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+            className="px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors shadow-sm"
           >
-            بحث
+            تصفية
           </button>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+          <table className="w-full text-xs text-right">
+            <thead className="bg-muted/30 border-b border-border/70 text-muted-foreground font-semibold">
               <tr>
-                <th onClick={() => handleSort('captain_name')} className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700">
+                <th onClick={() => handleSort('captain_name')} className="px-4 py-3 cursor-pointer hover:text-foreground">
                   <SortIcon field="captain_name" /> المندوب
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الفرع</th>
-                <th onClick={() => handleSort('total')} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700">
+                <th className="px-4 py-3">الفرع التابع</th>
+                <th onClick={() => handleSort('total')} className="px-4 py-3 text-center cursor-pointer hover:text-foreground">
                   <SortIcon field="total" /> إجمالي
                 </th>
-                <th onClick={() => handleSort('delivered')} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700">
-                  <SortIcon field="delivered" /> ✅ تم
+                <th onClick={() => handleSort('delivered')} className="px-4 py-3 text-center cursor-pointer hover:text-foreground">
+                  <SortIcon field="delivered" /> تم التسليم
                 </th>
-                <th onClick={() => handleSort('returned')} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700">
-                  <SortIcon field="returned" /> ❌ مرتجع
+                <th onClick={() => handleSort('returned')} className="px-4 py-3 text-center cursor-pointer hover:text-foreground">
+                  <SortIcon field="returned" /> المرتجع
                 </th>
-                <th onClick={() => handleSort('active')} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700">
-                  <SortIcon field="active" /> 🚚 نشط
+                <th onClick={() => handleSort('active')} className="px-4 py-3 text-center cursor-pointer hover:text-foreground">
+                  <SortIcon field="active" /> قيد التوصيل
                 </th>
-                <th onClick={() => handleSort('delivery_rate')} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700">
-                  <SortIcon field="delivery_rate" /> 📈 نسبة التسليم
+                <th onClick={() => handleSort('delivery_rate')} className="px-4 py-3 text-center cursor-pointer hover:text-foreground">
+                  <SortIcon field="delivery_rate" /> نسبة التسليم
                 </th>
-                <th onClick={() => handleSort('return_rate')} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700">
+                <th onClick={() => handleSort('return_rate')} className="px-4 py-3 text-center cursor-pointer hover:text-foreground">
                   <SortIcon field="return_rate" /> نسبة المرتجع
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">أبرز أسباب التأخير</th>
+                <th className="px-4 py-3">أبرز أسباب التأخير</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-border/40">
               {captains.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
-                    لا يوجد مندوبين بعد. انتظر حتى وصول بيانات Webhook من Turbo.
+                  <td colSpan={9} className="px-4 py-10 text-center text-muted-foreground">
+                    لا توجد بيانات مناديب مسجلة حالياً. يتم تسجيل المناديب تلقائياً عبر تحديثات Turbo Webhook.
                   </td>
                 </tr>
               ) : (
                 captains.map((cap, i) => (
-                  <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <tr key={i} className="hover:bg-muted/20 transition-colors">
                     <td className="px-4 py-3">
-                      <Link to={`/orders/turbo-captains/${encodeURIComponent(cap.captainName)}`} className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                      <Link 
+                        to={`/orders/turbo-captains/${encodeURIComponent(cap.captainName)}`} 
+                        className="font-bold text-primary hover:underline block"
+                      >
                         {cap.captainName}
                       </Link>
                       {cap.captainPhone && (
-                        <div className="text-xs text-gray-500 ltr">{cap.captainPhone}</div>
+                        <span className="text-[11px] text-muted-foreground font-mono block" dir="ltr">
+                          {cap.captainPhone}
+                        </span>
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-sm text-gray-700 dark:text-gray-300">
-                        {cap.branchName || '-'}
-                      </div>
+                      <span className="text-xs text-foreground block">{cap.branchName || '—'}</span>
                       {cap.branchPhone && (
-                        <div className="text-xs text-gray-500 ltr">{cap.branchPhone}</div>
+                        <span className="text-[11px] text-muted-foreground font-mono block" dir="ltr">
+                          {cap.branchPhone}
+                        </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
+                    <td className="px-4 py-3 text-center font-mono tabular-nums font-bold text-foreground">
                       {cap.total}
                     </td>
-                    <td className="px-4 py-3 text-center text-sm text-green-600 font-medium">
+                    <td className="px-4 py-3 text-center font-mono tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
                       {cap.delivered + cap.remitted}
                     </td>
-                    <td className="px-4 py-3 text-center text-sm text-red-600 font-medium">
+                    <td className="px-4 py-3 text-center font-mono tabular-nums font-bold text-rose-600 dark:text-rose-400">
                       {cap.returned}
                     </td>
-                    <td className="px-4 py-3 text-center text-sm text-blue-600 font-medium">
+                    <td className="px-4 py-3 text-center font-mono tabular-nums text-foreground">
                       {cap.active}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getScoreBg(cap.deliveryRate)} ${getScoreColor(cap.deliveryRate)}`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold font-mono tabular-nums ${
+                        cap.deliveryRate >= 80 
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
+                          : cap.deliveryRate >= 60 
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20' 
+                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                      }`}>
                         {cap.deliveryRate}%
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${cap.returnRate > 20 ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'}`}>
-                        {cap.returnRate}%
-                      </span>
+                    <td className="px-4 py-3 text-center font-mono tabular-nums text-[11px] text-muted-foreground">
+                      {cap.returnRate}%
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-1 max-w-xs">
                         {cap.delayReasonSummary.length > 0 ? (
                           cap.delayReasonSummary.filter((d) => d != null).map((d, idx) => (
-                            <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap max-w-[200px] truncate" title={d.reason}>
-                              {d.reason.substring(0, 25)}... ({d.count})
+                            <span 
+                              key={idx} 
+                              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-muted/40 text-muted-foreground border border-border/40 truncate max-w-[150px]" 
+                              title={d.reason}
+                            >
+                              {d.reason} ({d.count})
                             </span>
                           ))
                         ) : (
-                          <span className="text-xs text-gray-400">—</span>
+                          <span className="text-[11px] text-muted-foreground/60">—</span>
                         )}
                       </div>
                     </td>
