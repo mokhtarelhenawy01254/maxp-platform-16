@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { BookingPatient, PATIENT_STATUS_MAP, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, api, fetchJson } from "./shared";
-import { Check, Eye, Pencil, Plus, Search, Trash2, ExternalLink, GitMerge, X } from 'lucide-react'
+import { Check, Eye, Pencil, Plus, Search, Trash2, ExternalLink, GitMerge, X, Users } from 'lucide-react';
 import PatientModal from "./PatientModal";
 
 interface Props {
@@ -20,7 +20,7 @@ interface Props {
 
 const GENDER_LABEL: Record<string, string> = { male: "ذكر", female: "أنثى" };
 
-const statusMeta = (status?: string) => PATIENT_STATUS_MAP[status || "ACTIVE"] ?? { label: status || "ACTIVE", color: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300" };
+const statusMeta = (status?: string) => PATIENT_STATUS_MAP[status || "ACTIVE"] ?? { label: status || "ACTIVE", color: "bg-muted text-muted-foreground" };
 
 export default function PatientsTab({
   patients, search, onSearchChange,
@@ -88,100 +88,197 @@ export default function PatientsTab({
   };
 
   return (
-    <div>
-      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-        <h2 className="text-xl font-bold">إدارة المرضى</h2>
-        <div className="flex gap-3">
-          <div className="relative"><Search className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" /><input className="border dark:border-gray-600 rounded-lg pr-9 pl-3 py-2 text-sm w-48 dark:bg-gray-800 dark:text-gray-100" placeholder="بحث..." value={search} onChange={e => onSearchChange(e.target.value)} /></div>
+    <div className="space-y-4">
+      {/* Top search & filters */}
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <div>
+          <h2 className="text-lg font-bold text-foreground">سجل وملفات المرضى</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">البحث في السجلات الطبية، أرقام التأمين، والزيارات</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/70" />
+            <input
+              className={`${MODAL_INPUT_CLS} pr-8 pl-3 py-1.5 text-xs sm:text-sm w-44 sm:w-56`}
+              placeholder="بحث بالاسم أو الهاتف..."
+              value={search}
+              onChange={e => onSearchChange(e.target.value)}
+            />
+          </div>
           {sources.length > 0 && (
-            <select className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100" value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}>
+            <select
+              className="border border-border/70 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm bg-card text-foreground shadow-sm hover:border-border transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40"
+              value={sourceFilter}
+              onChange={e => setSourceFilter(e.target.value)}
+            >
               <option value="">كل المصادر</option>
               {sources.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           )}
           {insuranceCompanies.length > 0 && (
-            <select className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100" value={insuranceFilter} onChange={e => setInsuranceFilter(e.target.value)}>
+            <select
+              className="border border-border/70 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm bg-card text-foreground shadow-sm hover:border-border transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40"
+              value={insuranceFilter}
+              onChange={e => setInsuranceFilter(e.target.value)}
+            >
               <option value="">كل شركات التأمين</option>
               {insuranceCompanies.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           )}
-          <button onClick={() => onEdit({})} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><Plus className="w-4 h-4" />إضافة مريض</button>
+          <button
+            onClick={() => onEdit({})}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs sm:text-sm hover:bg-primary/90 font-medium shadow-sm transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>إضافة مريض</span>
+          </button>
         </div>
       </div>
+
       {filtered.length === 0 ? (
-        <p className="text-center py-12 text-gray-400 dark:text-gray-500">لا يوجد مرضى</p>
-      ) : (<>
-        {/* Mobile cards */}
-        <div className="block md:hidden space-y-3">
-          {filtered.map(p => (
-            <div key={p.id} className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4 ${!p.isActive ? "opacity-60" : ""}`}>
-              <div className="flex items-start justify-between mb-2">
-                <div><h3 className="font-bold text-sm">{p.firstName} {p.lastName || ""}</h3><p className="text-xs text-gray-500 dark:text-gray-400">{GENDER_LABEL[p.gender || ""] || ""} {p.bloodType ? `· فصيلة ${p.bloodType}` : ""}</p></div>
-                <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${statusMeta(p.status).color}`}>{statusMeta(p.status).label}</span>
-              </div>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">{p.phone ? <span dir="ltr">{p.phone}</span> : "—"}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">{p.insuranceNumber ? <span dir="ltr">رقم التأمين: {p.insuranceNumber}</span> : ""}{p.insuranceCompany?.name ? ` · ${p.insuranceCompany.name}` : ""}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">الزيارات: {p.visitCount ?? 0}</p>
-              <div className="flex gap-2">
-                <button onClick={() => onView(p.id)} className="text-xs px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"><Eye className="w-3.5 h-3.5 inline ml-1" />عرض</button>
-                <button onClick={() => navigate(`/admin/booking/patients/${p.id}`)} className="text-xs px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50"><ExternalLink className="w-3.5 h-3.5 inline ml-1" />صفحة</button>
-                <button onClick={() => onEdit(p)} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"><Pencil className="w-3.5 h-3.5 inline ml-1" />تعديل</button>
-                <button onClick={() => onToggleActive(p.id, p.isActive)} className={`text-xs px-3 py-1.5 rounded-lg ${p.isActive ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50" : "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"}`}>{p.isActive ? "تعطيل" : "تفعيل"}</button>
-                <button onClick={() => { setMergeTargetId(""); setMergeSource(p); }} className="text-xs px-3 py-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50"><GitMerge className="w-3.5 h-3.5 inline ml-1" />دمج</button>
-                <button onClick={() => onDelete(p.id)} className="text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50"><Trash2 className="w-3.5 h-3.5 inline ml-1" />حذف</button>
-              </div>
-            </div>
-          ))}
+        <div className="text-center py-12 text-muted-foreground bg-card border border-border/70 rounded-xl p-6">
+          <Users className="w-10 h-10 mx-auto mb-2 opacity-40 text-primary" />
+          <p className="text-xs">لا يوجد مرضى مطابقون لخيارات البحث</p>
         </div>
-        {/* Desktop table */}
-        <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
-          <table className="w-full">
-            <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["الاسم", "الهاتف", "الجنس", "فصيلة الدم", "رقم التأمين", "الزيارات", "الحالة", "المصدر", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
-            <tbody>{filtered.map(p => (
-              <tr key={p.id} className={`border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm ${!p.isActive ? "opacity-60" : ""}`}>
-                <td className="py-3 px-4 font-medium">{p.firstName} {p.lastName || ""}</td>
-                <td className="py-3 px-4" dir="ltr">{p.phone || "—"}</td>
-                <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{GENDER_LABEL[p.gender || ""] || "—"}</td>
-                <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{p.bloodType || "—"}</td>
-                <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
-                  <span dir="ltr">{p.insuranceNumber || "—"}</span>
-                  {p.insuranceCompany?.name ? <div className="text-xs">{p.insuranceCompany.name}</div> : null}
-                </td>
-                <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{p.visitCount ?? 0}</td>
-                <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${statusMeta(p.status).color}`}>{statusMeta(p.status).label}</span></td>
-                <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{p.source || "—"}</td>
-                <td className="py-3 px-4">
-                  <div className="flex gap-1">
-                    <button onClick={() => onView(p.id)} className="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="عرض الملف"><Eye className="w-4 h-4" /></button>
-                    <button onClick={() => navigate(`/admin/booking/patients/${p.id}`)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title="فتح صفحة مستقلة"><ExternalLink className="w-4 h-4" /></button>
-                    <button onClick={() => onEdit(p)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="تعديل"><Pencil className="w-4 h-4" /></button>
-                    <button onClick={() => { setMergeTargetId(""); setMergeSource(p); }} className="p-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded" title="دمج"><GitMerge className="w-4 h-4" /></button>
-                    <button onClick={() => onToggleActive(p.id, p.isActive)} className={`p-1.5 rounded ${p.isActive ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30" : "text-green-500 hover:bg-green-50 dark:hover:bg-green-900/30"}`} title={p.isActive ? "تعطيل" : "تفعيل"}><Check className="w-4 h-4" /></button>
-                    <button onClick={() => onDelete(p.id)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="حذف"><Trash2 className="w-4 h-4" /></button>
+      ) : (
+        <>
+          {/* Mobile cards */}
+          <div className="block md:hidden space-y-3">
+            {filtered.map(p => (
+              <div key={p.id} className={`bg-card rounded-xl border border-border/70 p-4 shadow-sm space-y-2.5 ${!p.isActive ? "opacity-60" : ""}`}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-bold text-sm text-foreground">{p.firstName} {p.lastName || ""}</h3>
+                    <p className="text-xs text-muted-foreground">{GENDER_LABEL[p.gender || ""] || ""} {p.bloodType ? `· فصيلة ${p.bloodType}` : ""}</p>
                   </div>
-                </td>
-              </tr>
-            ))}</tbody>
-          </table>
-        </div>
-      </>)}
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${statusMeta(p.status).color}`}>
+                    {statusMeta(p.status).label}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground font-mono tabular-nums" dir="ltr">{p.phone || "—"}</p>
+                {p.insuranceNumber && (
+                  <p className="text-xs text-muted-foreground">
+                    <span dir="ltr">رقم التأمين: <strong className="font-mono tabular-nums">{p.insuranceNumber}</strong></span>
+                    {p.insuranceCompany?.name ? ` · ${p.insuranceCompany.name}` : ""}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">الزيارات المسجلة: <strong className="font-mono tabular-nums text-foreground">{p.visitCount ?? 0}</strong></p>
+                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-border/60">
+                  <button onClick={() => onView(p.id)} className="text-xs px-2.5 py-1 bg-muted text-muted-foreground rounded-md hover:bg-muted/80 flex items-center gap-1">
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>عرض</span>
+                  </button>
+                  <button onClick={() => navigate(`/admin/booking/patients/${p.id}`)} className="text-xs px-2.5 py-1 bg-primary/10 text-primary rounded-md hover:bg-primary/20 flex items-center gap-1">
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>صفحة</span>
+                  </button>
+                  <button onClick={() => onEdit(p)} className="text-xs px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-md hover:bg-blue-500/20 flex items-center gap-1">
+                    <Pencil className="w-3.5 h-3.5" />
+                    <span>تعديل</span>
+                  </button>
+                  <button onClick={() => { setMergeTargetId(""); setMergeSource(p); }} className="text-xs px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-md hover:bg-amber-500/20 flex items-center gap-1">
+                    <GitMerge className="w-3.5 h-3.5" />
+                    <span>دمج</span>
+                  </button>
+                  <button onClick={() => onToggleActive(p.id, p.isActive)} className={`text-xs px-2.5 py-1 rounded-md ${p.isActive ? "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20" : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"}`}>
+                    {p.isActive ? "تعطيل" : "تفعيل"}
+                  </button>
+                  <button onClick={() => onDelete(p.id)} className="text-xs px-2.5 py-1 bg-rose-500/10 text-rose-600 rounded-md hover:bg-rose-500/20 flex items-center gap-1">
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>حذف</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block bg-card rounded-xl border border-border/70 overflow-hidden shadow-sm">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border/70 bg-muted/40 text-muted-foreground font-medium">
+                  {["الاسم", "الهاتف", "الجنس", "فصيلة الدم", "رقم التأمين", "الزيارات", "الحالة", "المصدر", ""].map(h => (
+                    <th key={h} className="text-right py-2.5 px-3">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {filtered.map(p => (
+                  <tr key={p.id} className={`hover:bg-muted/40 transition-colors ${!p.isActive ? "opacity-60" : ""}`}>
+                    <td className="py-2.5 px-3 font-semibold text-foreground">{p.firstName} {p.lastName || ""}</td>
+                    <td className="py-2.5 px-3 font-mono tabular-nums text-muted-foreground" dir="ltr">{p.phone || "—"}</td>
+                    <td className="py-2.5 px-3 text-muted-foreground">{GENDER_LABEL[p.gender || ""] || "—"}</td>
+                    <td className="py-2.5 px-3 font-mono tabular-nums text-muted-foreground">{p.bloodType || "—"}</td>
+                    <td className="py-2.5 px-3 text-muted-foreground">
+                      <span className="font-mono tabular-nums" dir="ltr">{p.insuranceNumber || "—"}</span>
+                      {p.insuranceCompany?.name ? <div className="text-[10px] text-muted-foreground/75">{p.insuranceCompany.name}</div> : null}
+                    </td>
+                    <td className="py-2.5 px-3 font-mono tabular-nums text-muted-foreground">{p.visitCount ?? 0}</td>
+                    <td className="py-2.5 px-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${statusMeta(p.status).color}`}>
+                        {statusMeta(p.status).label}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 text-muted-foreground">{p.source || "—"}</td>
+                    <td className="py-2.5 px-3 text-left">
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => onView(p.id)} className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors" title="عرض الملف"><Eye className="w-4 h-4" /></button>
+                        <button onClick={() => navigate(`/admin/booking/patients/${p.id}`)} className="p-1 text-primary hover:bg-primary/10 rounded transition-colors" title="فتح صفحة مستقلة"><ExternalLink className="w-4 h-4" /></button>
+                        <button onClick={() => onEdit(p)} className="p-1 text-blue-600 hover:bg-blue-500/10 rounded transition-colors" title="تعديل"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => { setMergeTargetId(""); setMergeSource(p); }} className="p-1 text-amber-600 hover:bg-amber-500/10 rounded transition-colors" title="دمج"><GitMerge className="w-4 h-4" /></button>
+                        <button onClick={() => onToggleActive(p.id, p.isActive)} className={`p-1 rounded transition-colors ${p.isActive ? "text-rose-500 hover:bg-rose-500/10" : "text-emerald-500 hover:bg-emerald-500/10"}`} title={p.isActive ? "تعطيل" : "تفعيل"}><Check className="w-4 h-4" /></button>
+                        <button onClick={() => onDelete(p.id)} className="p-1 text-rose-500 hover:bg-rose-500/10 rounded transition-colors" title="حذف"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
       {modalPatient !== undefined && <PatientModal patient={modalPatient} onClose={onModalClose} onSave={onSave} />}
+
       {mergeSource && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setMergeSource(null)}>
-          <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold">دمج مريض</h3>
-              <button onClick={() => setMergeSource(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><X className="w-5 h-5" /></button>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4" onClick={() => setMergeSource(null)}>
+          <div className={`${MODAL_CONTENT_CLS} bg-card border border-border/80 shadow-2xl max-w-md w-full`} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/70">
+              <h3 className="text-base font-bold text-foreground">دمج مريض</h3>
+              <button onClick={() => setMergeSource(null)} className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">سيتم نقل مواعيد وفواتير <b>{mergeSource.firstName} {mergeSource.lastName || ""}</b> إلى المريض الهدف ثم تعطيله.</p>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">المريض الهدف *</label>
-            <select className={MODAL_INPUT_CLS} value={mergeTargetId} onChange={e => setMergeTargetId(e.target.value)}>
-              <option value="">اختر المريض الهدف...</option>
-              {candidates.map(c => <option key={c.id} value={c.id}>{c.firstName} {c.lastName || ""}{c.phone ? ` (${c.phone})` : ""}</option>)}
+            <p className="text-xs sm:text-sm text-muted-foreground mb-4 leading-relaxed">
+              سيتم نقل مواعيد وفواتير المريض <strong>{mergeSource.firstName} {mergeSource.lastName || ""}</strong> إلى المريض المستهدف ثم تعطيل هذا الحساب.
+            </p>
+            <label className="block text-xs font-medium text-foreground mb-1.5">المريض المستهدف *</label>
+            <select
+              className={`${MODAL_INPUT_CLS} text-xs sm:text-sm`}
+              value={mergeTargetId}
+              onChange={e => setMergeTargetId(e.target.value)}
+            >
+              <option value="">اختر المريض المستهدف...</option>
+              {candidates.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.firstName} {c.lastName || ""}{c.phone ? ` (${c.phone})` : ""}
+                </option>
+              ))}
             </select>
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setMergeSource(null)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-              <button onClick={confirmMerge} disabled={!mergeTargetId || merging} className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50">تأكيد الدمج</button>
+            <div className="flex justify-end gap-2 mt-6 pt-3 border-t border-border/60">
+              <button
+                onClick={() => setMergeSource(null)}
+                className="px-3.5 py-1.5 text-xs sm:text-sm text-muted-foreground border border-border/70 rounded-lg hover:bg-muted/60 transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={confirmMerge}
+                disabled={!mergeTargetId || merging}
+                className="px-3.5 py-1.5 bg-amber-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors shadow-sm"
+              >
+                {merging ? "جاري الدمج..." : "تأكيد الدمج"}
+              </button>
             </div>
           </div>
         </div>

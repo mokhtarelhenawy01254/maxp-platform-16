@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
+import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, Clock, Users } from "lucide-react";
 import {
   BookingAppointment, BookingBranch, BookingDoctor, BookingService, BookingPatient,
   BOOKING_STATUS_MAP, STATUS_MAP, MODAL_INPUT_CLS, fetchJson, api, getAuthHeaders
@@ -58,21 +59,21 @@ const shiftDate = (dateStr: string, days: number): string => {
 };
 
 const BLOCK_COLORS: Record<string, string> = {
-  pending: "bg-yellow-200/80 border-yellow-300 text-yellow-900 dark:bg-yellow-500/25 dark:border-yellow-500/40 dark:text-yellow-100",
-  confirmed: "bg-green-200/80 border-green-300 text-green-900 dark:bg-green-500/25 dark:border-green-500/40 dark:text-green-100",
-  checked_in: "bg-blue-200/80 border-blue-300 text-blue-900 dark:bg-blue-500/25 dark:border-blue-500/40 dark:text-blue-100",
-  procedure_started: "bg-indigo-200/80 border-indigo-300 text-indigo-900 dark:bg-indigo-500/25 dark:border-indigo-500/40 dark:text-indigo-100",
-  procedure_completed: "bg-violet-200/80 border-violet-300 text-violet-900 dark:bg-violet-500/25 dark:border-violet-500/40 dark:text-violet-100",
-  checked_out: "bg-teal-200/80 border-teal-300 text-teal-900 dark:bg-teal-500/25 dark:border-teal-500/40 dark:text-teal-100",
-  completed: "bg-blue-200/80 border-blue-300 text-blue-900 dark:bg-blue-500/25 dark:border-blue-500/40 dark:text-blue-100",
-  cancelled: "bg-red-200/70 border-red-300 text-red-900 dark:bg-red-500/25 dark:border-red-500/40 dark:text-red-100",
-  missed: "bg-orange-200/70 border-orange-300 text-orange-900 dark:bg-orange-500/25 dark:border-orange-500/40 dark:text-orange-100",
-  no_show: "bg-gray-200/70 border-gray-300 text-gray-700 dark:bg-gray-600/30 dark:border-gray-500/40 dark:text-gray-200",
+  pending: "bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-300",
+  confirmed: "bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-300",
+  checked_in: "bg-blue-500/15 border-blue-500/30 text-blue-700 dark:text-blue-300",
+  procedure_started: "bg-indigo-500/15 border-indigo-500/30 text-indigo-700 dark:text-indigo-300",
+  procedure_completed: "bg-violet-500/15 border-violet-500/30 text-violet-700 dark:text-violet-300",
+  checked_out: "bg-teal-500/15 border-teal-500/30 text-teal-700 dark:text-teal-300",
+  completed: "bg-blue-500/15 border-blue-500/30 text-blue-700 dark:text-blue-300",
+  cancelled: "bg-rose-500/15 border-rose-500/30 text-rose-700 dark:text-rose-300",
+  missed: "bg-orange-500/15 border-orange-500/30 text-orange-700 dark:text-orange-300",
+  no_show: "bg-muted border-border/70 text-muted-foreground",
 };
 
 const blockColor = (a: BookingAppointment): string =>
   BLOCK_COLORS[(a.bookingStatus || a.status || "").toLowerCase()] ||
-  "bg-gray-200/70 border-gray-300 text-gray-700 dark:bg-gray-600/30 dark:border-gray-500/40 dark:text-gray-200";
+  "bg-muted border-border/70 text-muted-foreground";
 
 const statusLabel = (a: BookingAppointment): string => {
   if (a.bookingStatus && BOOKING_STATUS_MAP[a.bookingStatus]) return BOOKING_STATUS_MAP[a.bookingStatus]?.label || "";
@@ -204,7 +205,7 @@ export default function CalendarTab(_props: Props) {
         <div
           key={t}
           onClick={() => onEmptyClick(t)}
-          className="absolute inset-x-0 cursor-pointer border-b border-gray-100 dark:border-gray-700/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/10"
+          className="absolute inset-x-0 cursor-pointer border-b border-border/40 hover:bg-primary/5 transition-colors"
           style={{ top: slotTop(t), height: SLOT_PX }}
         />
       ))}
@@ -216,24 +217,24 @@ export default function CalendarTab(_props: Props) {
             type="button"
             onClick={() => openEditAppointment(a)}
             title={`${a.customerName} - ${a.startTime}${a.room ? ` - ${a.room}` : ""}`}
-            className={`absolute inset-x-1 z-[5] overflow-hidden rounded-md border px-1.5 py-0.5 text-left text-[11px] leading-tight ${blockColor(a)}`}
+            className={`absolute inset-x-1 z-[5] overflow-hidden rounded-md border px-1.5 py-0.5 text-right text-[11px] leading-tight transition-transform hover:scale-[1.01] shadow-xs ${blockColor(a)}`}
             style={{ top: blockTop(a), height: blockHeight(a) }}
           >
-            <span className="block truncate font-semibold">{a.customerName}</span>
-            <span className="block truncate">{a.serviceName || ""}</span>
-            <span className="mt-0.5 inline-block rounded-full bg-white/60 px-1 py-px text-[9px] dark:bg-black/30">{statusLabel(a)}</span>
-            {a.room && <span className="block truncate text-[9px] opacity-80">غرفة: {a.room}</span>}
+            <span className="block truncate font-bold">{a.customerName}</span>
+            <span className="block truncate text-[10px] opacity-90">{a.serviceName || ""}</span>
+            <span className="mt-0.5 inline-block rounded-full bg-background/60 px-1 py-px text-[9px] font-medium font-mono tabular-nums">{statusLabel(a)}</span>
+            {a.room && <span className="block truncate text-[9px] opacity-75">غرفة: {a.room}</span>}
           </button>
         ))}
     </>
   );
 
   const renderDoctorColumn = (doc: TimelineResource) => (
-    <div key={doc.doctorId} className="min-w-[170px] flex-1 border-l border-gray-200 dark:border-gray-700">
-      <div className="border-b border-gray-200 bg-gray-50 px-2 py-2 dark:border-gray-700 dark:bg-gray-700/40">
-        <p className="truncate text-sm font-bold">{doc.doctorName}</p>
-        <p className="truncate text-xs text-gray-500 dark:text-gray-400">{doc.specialty || doc.branchName || "—"}</p>
-        {!doc.isAvailable && <span className="text-[10px] text-red-500 dark:text-red-400">أوقات غير محددة</span>}
+    <div key={doc.doctorId} className="min-w-[170px] flex-1 border-l border-border/70">
+      <div className="border-b border-border/70 bg-muted/40 px-2.5 py-2">
+        <p className="truncate text-xs font-bold text-foreground">{doc.doctorName}</p>
+        <p className="truncate text-[11px] text-muted-foreground">{doc.specialty || doc.branchName || "—"}</p>
+        {!doc.isAvailable && <span className="text-[10px] text-destructive">أوقات غير محددة</span>}
       </div>
       <div className="relative overflow-hidden" style={{ height: dayHeight }}>
         {renderBlocks(appointmentsByDoctor[doc.doctorId] || [], true, (t) => openNewAppointment(doc, t))}
@@ -242,34 +243,85 @@ export default function CalendarTab(_props: Props) {
   );
 
   return (
-    <div>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <input type="date" className={`${MODAL_INPUT_CLS} w-auto`} value={timelineDate} onChange={(e) => e.target.value && setTimelineDate(e.target.value)} />
-        <button onClick={() => setTimelineDate(toDateStr(new Date()))} className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">اليوم</button>
-        <button onClick={() => setTimelineDate((d) => shiftDate(d, -1))} className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">اليوم السابق</button>
-        <button onClick={() => setTimelineDate((d) => shiftDate(d, 1))} className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">اليوم التالي</button>
-        <select className={`${MODAL_INPUT_CLS} w-auto`} value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-          <option value="">جميع الفروع</option>
-          {branches.filter((b) => b.isActive).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
-        <select className={`${MODAL_INPUT_CLS} w-auto`} value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
-          <option value="">جميع الخدمات</option>
-          {services.filter((s) => s.isActive).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
-          {loading ? "جاري التحميل..." : `${resources.length} طبيب، ${timeline?.appointments?.length || 0} موعد`}
-        </span>
+    <div className="space-y-4">
+      {/* Calendar Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <input
+              type="date"
+              className={`${MODAL_INPUT_CLS} w-auto text-xs sm:text-sm font-mono tabular-nums`}
+              value={timelineDate}
+              onChange={(e) => e.target.value && setTimelineDate(e.target.value)}
+            />
+          </div>
+          <button
+            onClick={() => setTimelineDate(toDateStr(new Date()))}
+            className="flex items-center gap-1 rounded-lg border border-border/70 bg-card px-2.5 py-1.5 text-xs sm:text-sm font-medium hover:bg-muted/60 transition-colors shadow-sm"
+          >
+            <CalendarIcon className="w-3.5 h-3.5 text-primary" />
+            <span>اليوم</span>
+          </button>
+          <div className="flex items-center gap-1 border border-border/70 rounded-lg p-0.5 bg-card shadow-sm">
+            <button
+              onClick={() => setTimelineDate((d) => shiftDate(d, -1))}
+              className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="اليوم السابق"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setTimelineDate((d) => shiftDate(d, 1))}
+              className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="اليوم التالي"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          </div>
+          <select
+            className={`${MODAL_INPUT_CLS} w-auto text-xs sm:text-sm`}
+            value={branchId}
+            onChange={(e) => setBranchId(e.target.value)}
+          >
+            <option value="">جميع الفروع</option>
+            {branches.filter((b) => b.isActive).map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+          <select
+            className={`${MODAL_INPUT_CLS} w-auto text-xs sm:text-sm`}
+            value={serviceId}
+            onChange={(e) => setServiceId(e.target.value)}
+          >
+            <option value="">جميع الخدمات</option>
+            {services.filter((s) => s.isActive).map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Clock className="w-3.5 h-3.5 text-primary" />
+          <span className="font-mono tabular-nums">
+            {loading ? "جاري التحميل..." : `${resources.length} طبيب · ${timeline?.appointments?.length || 0} موعد`}
+          </span>
+        </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+      {/* Timeline Surface */}
+      <div className="overflow-x-auto rounded-xl border border-border/70 bg-card shadow-sm">
         <div className="flex min-w-max">
-          <div className="sticky right-0 z-10 shrink-0 border-l border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
-            <div className="w-16 border-b border-gray-200 dark:border-gray-700" />
+          <div className="sticky right-0 z-10 shrink-0 border-l border-border/70 bg-muted/40">
+            <div className="w-16 border-b border-border/70 h-9" />
             <div className="flex flex-col" style={{ height: dayHeight }}>
               {timeSlots.map((t) => (
                 <div
                   key={t}
-                  className="border-b border-gray-200/70 pb-0.5 text-center text-[10px] text-gray-500 dark:border-gray-700/60 dark:text-gray-400"
+                  className="border-b border-border/50 pb-0.5 text-center text-[10px] font-mono tabular-nums text-muted-foreground"
                   style={{ height: SLOT_PX }}
                 >
                   {toMinutes(t) % 60 === 0 ? t : ""}
@@ -278,19 +330,22 @@ export default function CalendarTab(_props: Props) {
             </div>
           </div>
           {loading ? (
-            <div className="flex flex-1 items-center justify-center p-10 text-gray-400 dark:text-gray-500">جاري التحميل...</div>
+            <div className="flex flex-1 items-center justify-center p-12 text-xs text-muted-foreground">
+              جاري تحميل الجدول الزمني...
+            </div>
           ) : resources.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center p-10 text-gray-400 dark:text-gray-500">
-              {branchId ? "لا توجد أطباء في هذا الفرع أو لا يوجد أطباء متاحون" : "لا توجد أطباء"}
+            <div className="flex flex-1 flex-col items-center justify-center p-12 text-xs text-muted-foreground">
+              <Users className="w-8 h-8 opacity-40 mb-2 text-primary" />
+              <p>{branchId ? "لا توجد أطباء متاحون في هذا الفرع" : "لا يوجد أطباء مسجلون في الجدول"}</p>
             </div>
           ) : (
             <>
               {resources.map(renderDoctorColumn)}
               {unassigned.length > 0 && (
-                <div className="min-w-[170px] flex-1 border-l border-gray-200 dark:border-gray-700">
-                  <div className="border-b border-gray-200 bg-gray-50 px-2 py-2 dark:border-gray-700 dark:bg-gray-700/40">
-                    <p className="truncate text-sm font-bold">بدون طبيب</p>
-                    <p className="truncate text-xs text-gray-500 dark:text-gray-400">أي طبيب</p>
+                <div className="min-w-[170px] flex-1 border-l border-border/70">
+                  <div className="border-b border-border/70 bg-muted/40 px-2.5 py-2">
+                    <p className="truncate text-xs font-bold text-foreground">بدون طبيب محدد</p>
+                    <p className="truncate text-[11px] text-muted-foreground">موعد عام</p>
                   </div>
                   <div className="relative overflow-hidden" style={{ height: dayHeight }}>
                     {renderBlocks(unassigned, true, (t) => openNewAppointment(null, t))}
