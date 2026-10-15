@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
 } from "../../components/ui/dropdown-menu";
 import { Button } from "../../components/ui/button";
-import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { Download, FileSpreadsheet, FileText, Table } from "lucide-react";
 import { exportToCSV, exportToExcel, exportToPDF, type ExportColumn } from "../../utils/exportHelpers";
 import type { DashboardData } from "./types";
 
@@ -16,8 +16,6 @@ type Props = {
   periodLabel: string;
   disabled?: boolean;
 };
-
-// ponytail: reuses existing exportHelpers (xlsx/jspdf already installed). Builds a flat summary table from DashboardData — no new export endpoint, no new abstraction. Upgrade path: backend generates branded PDF when needed.
 
 export function DashboardExportMenu({ dashboard, periodLabel, disabled }: Props) {
   const { t } = useTranslation();
@@ -66,15 +64,29 @@ export function DashboardExportMenu({ dashboard, periodLabel, disabled }: Props)
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild disabled={disabled}>
-        <Button variant="outline" size="sm" disabled={disabled}>
-          <ArrowDownTrayIcon className="size-4" />
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={disabled}
+          className="border-border/70 bg-card hover:bg-muted/60 text-foreground text-xs font-medium rounded-xl gap-1.5 shadow-xs transition-colors"
+        >
+          <Download className="w-3.5 h-3.5 text-muted-foreground" />
           <span>{t("companyDashboard.export.label")}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={4}>
-        <DropdownMenuItem onClick={handleCSV}>{t("companyDashboard.export.csv")}</DropdownMenuItem>
-        <DropdownMenuItem onClick={handleExcel}>{t("companyDashboard.export.excel")}</DropdownMenuItem>
-        <DropdownMenuItem onClick={handlePDF}>{t("companyDashboard.export.pdf")}</DropdownMenuItem>
+      <DropdownMenuContent align="end" sideOffset={4} className="bg-card border border-border/80 rounded-xl shadow-xl text-xs font-sans p-1">
+        <DropdownMenuItem onClick={handleCSV} className="flex items-center gap-2 cursor-pointer rounded-lg px-2.5 py-1.5 hover:bg-muted/60">
+          <Table className="w-3.5 h-3.5 text-primary" />
+          <span>{t("companyDashboard.export.csv")}</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleExcel} className="flex items-center gap-2 cursor-pointer rounded-lg px-2.5 py-1.5 hover:bg-muted/60">
+          <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
+          <span>{t("companyDashboard.export.excel")}</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handlePDF} className="flex items-center gap-2 cursor-pointer rounded-lg px-2.5 py-1.5 hover:bg-muted/60">
+          <FileText className="w-3.5 h-3.5 text-rose-500" />
+          <span>{t("companyDashboard.export.pdf")}</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

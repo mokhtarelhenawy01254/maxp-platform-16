@@ -1,18 +1,20 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  LightBulbIcon,
-} from "@heroicons/react/24/outline";
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  CheckCircle2,
+  Lightbulb,
+  ArrowRight,
+  type LucideIcon,
+} from "lucide-react";
 import type { DashboardData } from "./types";
 
 type Insight = {
   id: string;
   tone: "positive" | "negative" | "warning" | "neutral";
-  icon: typeof LightBulbIcon;
+  icon: LucideIcon;
   text: string;
   action?: { label: string; href: string };
 };
@@ -30,43 +32,56 @@ export function InsightsPanel({ dashboard, onNavigate }: Props) {
   if (insights.length === 0) return null;
 
   return (
-    <div
-      className="p-5 rounded-2xl bg-card border border-border/50 shadow-sm"
-      style={{ boxShadow: "0 28px 72px -48px rgba(7, 17, 32, 0.42)" }}
-    >
-      <div className="flex items-center gap-2 mb-4">
-        <LightBulbIcon className="w-4 h-4 text-primary" />
-        <h3 className="text-sm font-semibold text-foreground">
-          {t("companyDashboard.sections.insights")}
-        </h3>
-      </div>
-      <div className="space-y-2.5">
-        {insights.map((ins) => (
-          <div
-            key={ins.id}
-            className="flex items-start gap-3 p-3 rounded-xl transition-colors hover:bg-muted/30"
-            style={{ background: "color-mix(in srgb, var(--color-border) 18%, transparent)" }}
-          >
-            <div
-              className="p-1.5 rounded-lg shrink-0 mt-0.5"
-              style={{ background: toneBg(ins.tone) }}
-            >
-              <ins.icon className="w-4 h-4" style={{ color: toneFg(ins.tone) }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-foreground leading-relaxed">{ins.text}</p>
-              {ins.action && onNavigate && (
-                <button
-                  type="button"
-                  onClick={() => onNavigate(ins.action!.href)}
-                  className="mt-1.5 text-xs font-medium text-primary hover:underline"
-                >
-                  {ins.action.label} →
-                </button>
-              )}
-            </div>
+    <div className="rounded-xl bg-card border border-border/70 p-4 sm:p-5 shadow-sm transition-all">
+      <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/50">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+            <Lightbulb className="w-4 h-4" />
           </div>
-        ))}
+          <h3 className="text-sm font-semibold text-foreground tracking-tight">
+            {t("companyDashboard.sections.insights")}
+          </h3>
+        </div>
+        <span className="text-xs font-mono tabular-nums text-muted-foreground px-2 py-0.5 rounded-full bg-muted border border-border/40">
+          {insights.length}
+        </span>
+      </div>
+
+      <div className="space-y-2.5">
+        {insights.map((ins) => {
+          const Icon = ins.icon;
+          return (
+            <div
+              key={ins.id}
+              className="flex items-start gap-3 p-3 rounded-lg border border-border/60 bg-background/50 hover:bg-muted/40 transition-colors"
+            >
+              <div
+                className="p-1.5 rounded-md shrink-0 mt-0.5 border"
+                style={{
+                  background: toneBg(ins.tone),
+                  borderColor: toneBorder(ins.tone),
+                }}
+              >
+                <Icon className="w-4 h-4" style={{ color: toneFg(ins.tone) }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-foreground leading-relaxed font-medium">
+                  {ins.text}
+                </p>
+                {ins.action && onNavigate && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigate(ins.action!.href)}
+                    className="inline-flex items-center gap-1 mt-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <span>{ins.action.label}</span>
+                    <ArrowRight className="w-3 h-3 rtl:rotate-180" />
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -91,7 +106,7 @@ function generateInsights(
       out.push({
         id: "revenue-trend",
         tone: delta > 0 ? "positive" : "negative",
-        icon: delta > 0 ? ArrowTrendingUpIcon : ArrowTrendingDownIcon,
+        icon: delta > 0 ? TrendingUp : TrendingDown,
         text: t("companyDashboard.insights.revenueTrend", {
           delta: fmtPct(delta),
           current: fmtMoney(financials.grossProfit),
@@ -107,7 +122,7 @@ function generateInsights(
       out.push({
         id: "low-conversion",
         tone: "warning",
-        icon: ExclamationTriangleIcon,
+        icon: AlertTriangle,
         text: t("companyDashboard.insights.lowConversion", { rate: metrics.conversionRate.toFixed(1) }),
         action: { label: t("companyDashboard.rangeStats.conversionRate"), href: "/analytics/orders" },
       });
@@ -115,7 +130,7 @@ function generateInsights(
       out.push({
         id: "high-conversion",
         tone: "positive",
-        icon: CheckCircleIcon,
+        icon: CheckCircle2,
         text: t("companyDashboard.insights.highConversion", { rate: metrics.conversionRate.toFixed(1) }),
       });
     }
@@ -127,7 +142,7 @@ function generateInsights(
     out.push({
       id: "high-cancellation",
       tone: "negative",
-      icon: ArrowTrendingDownIcon,
+      icon: TrendingDown,
       text: t("companyDashboard.insights.highCancellation", { rate: cancelRate.toFixed(1) }),
       action: { label: t("companyDashboard.metrics.cancelledOrders"), href: "/orders?filter=cancelled" },
     });
@@ -140,7 +155,7 @@ function generateInsights(
     out.push({
       id: "out-of-stock",
       tone: "negative",
-      icon: ExclamationTriangleIcon,
+      icon: AlertTriangle,
       text: t("companyDashboard.insights.outOfStock", { count: outOfStock }),
       action: { label: t("companyDashboard.inventory.outOfStock"), href: "/products?filter=out-of-stock" },
     });
@@ -148,7 +163,7 @@ function generateInsights(
     out.push({
       id: "low-stock",
       tone: "warning",
-      icon: ExclamationTriangleIcon,
+      icon: AlertTriangle,
       text: t("companyDashboard.insights.lowStock", { count: lowStock }),
       action: { label: t("companyDashboard.inventory.lowStock"), href: "/products?filter=low-stock" },
     });
@@ -160,7 +175,7 @@ function generateInsights(
     out.push({
       id: "open-orders",
       tone: "neutral",
-      icon: LightBulbIcon,
+      icon: Lightbulb,
       text: t("companyDashboard.insights.openOrders", { count: openOrders }),
       action: { label: t("companyDashboard.operations.openOrdersAction"), href: "/orders?filter=open" },
     });
@@ -175,7 +190,7 @@ function generateInsights(
       out.push({
         id: "product-concentration",
         tone: "neutral",
-        icon: LightBulbIcon,
+        icon: Lightbulb,
         text: t("companyDashboard.insights.productConcentration", {
           product: top.name,
           pct: Math.round((topQty / totalItems) * 100),
@@ -191,7 +206,7 @@ function generateInsights(
       out.push({
         id: "new-customers",
         tone: "positive",
-        icon: ArrowTrendingUpIcon,
+        icon: TrendingUp,
         text: t("companyDashboard.insights.newCustomers", { count: newCustomers }),
       });
     } else if (prev.newCustomers > 0) {
@@ -200,7 +215,7 @@ function generateInsights(
         out.push({
           id: "new-customers",
           tone: "positive",
-          icon: ArrowTrendingUpIcon,
+          icon: TrendingUp,
           text: t("companyDashboard.insights.newCustomersGrowth", { delta: fmtPct(delta), count: newCustomers }),
         });
       }
@@ -214,19 +229,28 @@ function generateInsights(
 
 function toneBg(tone: Insight["tone"]): string {
   switch (tone) {
-    case "positive": return "color-mix(in srgb, var(--color-success) 14%, transparent)";
-    case "negative": return "color-mix(in srgb, var(--color-destructive) 14%, transparent)";
-    case "warning": return "color-mix(in srgb, var(--color-warning) 14%, transparent)";
-    default: return "color-mix(in srgb, var(--color-primary) 14%, transparent)";
+    case "positive": return "color-mix(in srgb, var(--color-success, #10b981) 14%, transparent)";
+    case "negative": return "color-mix(in srgb, var(--color-destructive, #ef4444) 14%, transparent)";
+    case "warning": return "color-mix(in srgb, var(--color-warning, #f59e0b) 14%, transparent)";
+    default: return "color-mix(in srgb, var(--color-primary, #6366f1) 14%, transparent)";
+  }
+}
+
+function toneBorder(tone: Insight["tone"]): string {
+  switch (tone) {
+    case "positive": return "color-mix(in srgb, var(--color-success, #10b981) 30%, transparent)";
+    case "negative": return "color-mix(in srgb, var(--color-destructive, #ef4444) 30%, transparent)";
+    case "warning": return "color-mix(in srgb, var(--color-warning, #f59e0b) 30%, transparent)";
+    default: return "color-mix(in srgb, var(--color-primary, #6366f1) 30%, transparent)";
   }
 }
 
 function toneFg(tone: Insight["tone"]): string {
   switch (tone) {
-    case "positive": return "var(--color-success)";
-    case "negative": return "var(--color-destructive)";
-    case "warning": return "var(--color-warning)";
-    default: return "var(--color-primary)";
+    case "positive": return "var(--color-success, #10b981)";
+    case "negative": return "var(--color-destructive, #ef4444)";
+    case "warning": return "var(--color-warning, #f59e0b)";
+    default: return "var(--color-primary, #6366f1)";
   }
 }
 

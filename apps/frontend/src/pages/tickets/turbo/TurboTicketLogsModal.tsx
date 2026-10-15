@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  XMarkIcon,
-  ClockIcon,
-  UserIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+import { X, Clock, User, RotateCcw } from "lucide-react";
 import { apiClient } from "../../../services/apiClient";
 import { TurboTicketLog } from "./types";
 
@@ -53,20 +48,20 @@ export const TurboTicketLogsModal: React.FC<TurboTicketLogsModalProps> = ({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-background/80 backdrop-blur-sm animate-in fade-in"
     >
-      <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col max-h-[80vh] overflow-hidden text-right">
+      <div className="w-full max-w-md bg-card rounded-2xl border border-border/80 shadow-2xl flex flex-col max-h-[80vh] overflow-hidden text-right font-sans">
         {/* Header */}
-        <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/50">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200">
-              <ClockIcon className="h-5 w-5" />
+        <div className="p-4 border-b border-border/60 flex items-center justify-between bg-muted/20">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 text-primary flex items-center justify-center">
+              <Clock className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-zinc-900 dark:text-white">
+              <h3 className="font-bold text-xs sm:text-sm text-foreground">
                 سجل تحركات التذكرة #{ticketId}
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="text-[11px] text-muted-foreground">
                 التسلسل الزمني للعمليات وتحديثات الحالة
               </p>
             </div>
@@ -76,32 +71,32 @@ export const TurboTicketLogsModal: React.FC<TurboTicketLogsModalProps> = ({
               type="button"
               onClick={fetchLogs}
               disabled={loading}
-              className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+              className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/60 transition"
               title="تحديث السجل"
             >
-              <ArrowPathIcon
+              <RotateCcw
                 className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
               />
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+              className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/60 transition"
             >
-              <XMarkIcon className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
         </div>
 
         {/* Body */}
-        <div className="p-4 overflow-y-auto space-y-3 flex-1 min-h-0">
+        <div className="p-4 overflow-y-auto space-y-2.5 flex-1 min-h-0 text-xs">
           {loading ? (
-            <div className="py-12 text-center text-xs text-zinc-500 space-y-2">
-              <div className="h-5 w-5 border-2 border-zinc-900 dark:border-zinc-100 border-t-transparent animate-spin rounded-full mx-auto" />
+            <div className="py-12 text-center text-xs text-muted-foreground space-y-2">
+              <div className="h-6 w-6 border-2 border-primary border-t-transparent animate-spin rounded-full mx-auto" />
               <p>جاري تحميل السجل...</p>
             </div>
           ) : logs.length === 0 ? (
-            <div className="py-12 text-center text-xs text-zinc-400">
+            <div className="py-12 text-center text-xs text-muted-foreground bg-muted/20 border border-border/60 rounded-xl">
               لا توجد سجلات مسجلة لهذه التذكرة حتى الآن.
             </div>
           ) : (
@@ -119,17 +114,17 @@ export const TurboTicketLogsModal: React.FC<TurboTicketLogsModalProps> = ({
               return (
                 <div
                   key={log.id || idx}
-                  className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/40 text-xs space-y-1.5"
+                  className="p-3 rounded-xl border border-border/70 bg-card text-xs space-y-1.5 shadow-xs transition-colors hover:border-primary/30"
                 >
-                  <p className="font-medium text-zinc-800 dark:text-zinc-200">
+                  <p className="font-medium text-foreground leading-relaxed">
                     {desc}
                   </p>
-                  <div className="flex items-center justify-between text-[11px] text-zinc-400">
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/50">
                     <span className="flex items-center gap-1">
-                      <UserIcon className="h-3 w-3" />
+                      <User className="h-3 w-3 text-primary" />
                       <span>{author}</span>
                     </span>
-                    <span className="tabular-nums">{dateStr}</span>
+                    <span className="font-mono tabular-nums">{dateStr}</span>
                   </div>
                 </div>
               );
