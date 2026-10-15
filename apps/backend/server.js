@@ -444,6 +444,7 @@ const platformPartnerRoutes = require("./routes/platformPartner.routes");
 const billingRoutes = require("./routes/billingRoutes");
 const treasuryExpensesRoutes = require("./routes/treasuryExpensesRoutes");
 const accountingRoutes = require("./routes/accountingRoutes");
+const manufacturingRoutes = require("./routes/manufacturingRoutes");
 
 // Billing Cron Service
 const billingCronService = require("./services/billingCronService");
@@ -1204,6 +1205,7 @@ app.use("/api/v1/wallet", walletRoutes);
 app.use("/api/v1/treasury", treasuryExpensesRoutes);
 app.use("/api/treasury", treasuryExpensesRoutes);
 app.use("/api/v1/accounting", accountingRoutes);
+app.use("/api/v1/manufacturing", manufacturingRoutes);
 app.use("/api/v1/billing", billingRoutes);
 app.use("/api/v1/owner", ownerRoutes);
 app.use("/api/v1/support", supportRoutes);

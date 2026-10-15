@@ -1,0 +1,342 @@
+// ============================================================================
+// Manufacturing Execution & Production Engine Schema (MES)
+// Wave 1: Core backend models for Multi-Variant BOMs, Production Orders,
+// Stages, Material Issues, Goods Receipts, Scrap Tracking, and Settings.
+// ============================================================================
+
+enum ProductionOrderStatus {
+  PLANNED
+  RELEASED
+  IN_PROGRESS
+  QC_PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum ProductionStageType {
+  CUTTING
+  PRINTING_EMBROIDERY
+  SEWING
+  FINISHING
+  QC
+  PACKAGING
+  CUSTOM
+}
+
+enum ProductionStageStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+enum MaterialIssueStatus {
+  DRAFT
+  ISSUED
+  CANCELLED
+}
+
+enum FinishedGoodsReceiptStatus {
+  DRAFT
+  RECEIVED
+  CANCELLED
+}
+
+enum ScrapReason {
+  CUTTING_WASTE
+  SEWING_DEFECT
+  FABRIC_FLAW
+  PRINT_DEFECT
+  OTHER
+}
+
+/// Bill of Materials Header (قائمة مكونات ومواد التصنيع)
+model BillOfMaterials {
+  id                  String             @id @default(cuid())
+  companyId           String
+  productId           String?
+  code                String
+  name                String
+  version             String             @default("1.0")
+  baseQuantity        Decimal            @default(1.0) @db.Decimal(10, 2)
+  wasteMarginPercent  Decimal            @default(0.0) @db.Decimal(5, 2)
+  laborCostPerUnit    Decimal            @default(0.0) @db.Decimal(10, 2)
+  overheadCostPerUnit Decimal            @default(0.0) @db.Decimal(10, 2)
+  notes               String?
+  isActive            Boolean            @default(true)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  components          BomComponentItem[]
+  standardStages      BomStandardStage[]
+  orders              ProductionOrder[]
+
+  @@unique([companyId, code])
+  @@index([companyId, productId])
+  @@index([companyId, isActive])
+  @@map("bill_of_materials")
+}
+
+/// BOM Component Item with Multi-Variant Rules (بنود خامات الـ BOM حسب المقاس واللون)
+model BomComponentItem {
+  id                 String          @id @default(cuid())
+  bomId              String
+  rawMaterialId      String
+  rawMaterialName    String?
+  consumptionPerUnit Decimal         @db.Decimal(10, 4)
+  unit               String          @default("PIECE")
+  appliesToSizes     Json?
+  appliesToColors    Json?
+  scrapRate          Decimal         @default(0.0) @db.Decimal(5, 2)
+  notes              String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  bom                BillOfMaterials @relation(fields: [bomId], references: [id], onDelete: Cascade)
+
+  @@index([bomId])
+  @@index([rawMaterialId])
+  @@map("bom_component_items")
+}
+
+/// Standard Production Stage Templates for a BOM (مراحل التشغيل المعيارية للـ BOM)
+model BomStandardStage {
+  id              String              @id @default(cuid())
+  bomId           String
+  name            String
+  stageType       ProductionStageType @default(CUSTOM)
+  sequence        Int                 @default(1)
+  ratePerPiece    Decimal             @default(0.0) @db.Decimal(10, 2)
+  standardMinutes Decimal             @default(0.0) @db.Decimal(8, 2)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  bom             BillOfMaterials     @relation(fields: [bomId], references: [id], onDelete: Cascade)
+
+  @@index([bomId, sequence])
+  @@map("bom_standard_stages")
+}
+
+/// Production Order Header (أمر التشغيل والإنتاج)
+model ProductionOrder {
+  id                 String                        @id @default(cuid())
+  companyId          String
+  orderNumber        String
+  bomId              String
+  productId          String?
+  plannedQuantity    Decimal                       @db.Decimal(10, 2)
+  producedQuantity   Decimal                       @default(0.0) @db.Decimal(10, 2)
+  scrappedQuantity   Decimal                       @default(0.0) @db.Decimal(10, 2)
+  status             ProductionOrderStatus         @default(PLANNED)
+  sourceWarehouseId  String?
+  targetWarehouseId  String?
+  startDate          DateTime?
+  dueDate            DateTime?
+  completedAt        DateTime?
+  cancelledAt        DateTime?
+  cancelReason       String?
+  actualMaterialCost Decimal                       @default(0.0) @db.Decimal(12, 2)
+  actualLaborCost    Decimal                       @default(0.0) @db.Decimal(12, 2)
+  actualOverheadCost Decimal                       @default(0.0) @db.Decimal(12, 2)
+  totalCost          Decimal                       @default(0.0) @db.Decimal(12, 2)
+  unitCost           Decimal                       @default(0.0) @db.Decimal(12, 2)
+  notes              String?
+  createdById        String?
+  createdAt          DateTime                      @default(now())
+  updatedAt          DateTime                      @updatedAt
+
+  bom                BillOfMaterials               @relation(fields: [bomId], references: [id], onDelete: Restrict)
+  variants           ProductionOrderVariantMatrix[]
+  stages             ProductionStage[]
+  materialIssues     MaterialIssue[]
+  goodsReceipts      FinishedGoodsReceipt[]
+  scrapRecords       ScrapRecord[]
+
+  @@unique([companyId, orderNumber])
+  @@index([companyId, status])
+  @@index([companyId, bomId])
+  @@index([companyId, productId])
+  @@map("production_orders")
+}
+
+/// Production Order Variant Breakdown Matrix (مصفوفة كميات الأمر حسب المقاس واللون)
+model ProductionOrderVariantMatrix {
+  id               String          @id @default(cuid())
+  orderId          String
+  size             String
+  color            String
+  sku              String?
+  plannedQuantity  Decimal         @db.Decimal(10, 2)
+  producedQuantity Decimal         @default(0.0) @db.Decimal(10, 2)
+  scrappedQuantity Decimal         @default(0.0) @db.Decimal(10, 2)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  order            ProductionOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, size, color])
+  @@index([orderId])
+  @@map("production_order_variant_matrices")
+}
+
+/// Active Production Stages for an Order (مراحل التشغيل التنفيذية لأمر الإنتاج)
+model ProductionStage {
+  id                String                @id @default(cuid())
+  orderId           String
+  name              String
+  stageType         ProductionStageType   @default(CUSTOM)
+  sequence          Int                   @default(1)
+  status            ProductionStageStatus @default(PENDING)
+  ratePerPiece      Decimal               @default(0.0) @db.Decimal(10, 2)
+  standardMinutes   Decimal               @default(0.0) @db.Decimal(8, 2)
+  actualMinutes     Decimal               @default(0.0) @db.Decimal(8, 2)
+  completedQuantity Decimal               @default(0.0) @db.Decimal(10, 2)
+  stageLaborCost    Decimal               @default(0.0) @db.Decimal(12, 2)
+  assignedWorker    String?
+  notes             String?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  order             ProductionOrder       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, sequence])
+  @@index([orderId, status])
+  @@map("production_stages")
+}
+
+/// Material Issue Voucher (إذن صرف خامات ومستلزمات إنتاج)
+model MaterialIssue {
+  id                String              @id @default(cuid())
+  companyId         String
+  orderId           String
+  issueNumber       String
+  sourceWarehouseId String?
+  status            MaterialIssueStatus @default(ISSUED)
+  date              DateTime            @default(now())
+  totalCost         Decimal             @default(0.0) @db.Decimal(12, 2)
+  notes             String?
+  createdById       String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  order             ProductionOrder     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  items             MaterialIssueItem[]
+
+  @@unique([companyId, issueNumber])
+  @@index([companyId, orderId])
+  @@map("material_issues")
+}
+
+/// Material Issue Line Items (بنود إذن صرف الخامات)
+model MaterialIssueItem {
+  id              String        @id @default(cuid())
+  issueId         String
+  rawMaterialId   String
+  rawMaterialName String?
+  quantity        Decimal       @db.Decimal(10, 4)
+  unit            String        @default("PIECE")
+  unitCost        Decimal       @default(0.0) @db.Decimal(10, 2)
+  totalCost       Decimal       @default(0.0) @db.Decimal(12, 2)
+  batchNumber     String?
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  issue           MaterialIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([issueId])
+  @@index([rawMaterialId])
+  @@map("material_issue_items")
+}
+
+/// Finished Goods Receipt Voucher (إذن استلام إنتاج تام)
+model FinishedGoodsReceipt {
+  id                String                     @id @default(cuid())
+  companyId         String
+  orderId           String
+  receiptNumber     String
+  targetWarehouseId String?
+  status            FinishedGoodsReceiptStatus @default(RECEIVED)
+  date              DateTime                   @default(now())
+  totalQuantity     Decimal                    @default(0.0) @db.Decimal(10, 2)
+  unitCost          Decimal                    @default(0.0) @db.Decimal(12, 2)
+  totalCost         Decimal                    @default(0.0) @db.Decimal(12, 2)
+  notes             String?
+  createdById       String?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  order             ProductionOrder            @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  items             FinishedGoodsReceiptItem[]
+
+  @@unique([companyId, receiptNumber])
+  @@index([companyId, orderId])
+  @@map("finished_goods_receipts")
+}
+
+/// Finished Goods Receipt Items (بنود إذن استلام التام بالمقاس واللون)
+model FinishedGoodsReceiptItem {
+  id            String               @id @default(cuid())
+  receiptId     String
+  size          String?
+  color         String?
+  sku           String?
+  goodQuantity  Decimal              @default(0.0) @db.Decimal(10, 2)
+  scrapQuantity Decimal              @default(0.0) @db.Decimal(10, 2)
+  unitCost      Decimal              @default(0.0) @db.Decimal(12, 2)
+  totalCost     Decimal              @default(0.0) @db.Decimal(12, 2)
+  notes         String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  receipt       FinishedGoodsReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+
+  @@index([receiptId])
+  @@map("finished_goods_receipt_items")
+}
+
+/// Production Scrap & Waste Records (سجل الهالك والفاقد الصناعي)
+model ScrapRecord {
+  id          String          @id @default(cuid())
+  companyId   String
+  orderId     String
+  stageId     String?
+  materialId  String?
+  size        String?
+  color       String?
+  quantity    Decimal         @db.Decimal(10, 2)
+  unit        String          @default("PIECE")
+  cost        Decimal         @default(0.0) @db.Decimal(12, 2)
+  reason      ScrapReason     @default(CUTTING_WASTE)
+  isNormal    Boolean         @default(true)
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  order       ProductionOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, orderId])
+  @@map("scrap_records")
+}
+
+/// Manufacturing Settings per Company (إعدادات التصنيع وحسابات WIP)
+model ManufacturingSettings {
+  id                          String   @id @default(cuid())
+  companyId                   String   @unique
+  defaultSourceWarehouseId    String?
+  defaultTargetWarehouseId    String?
+  defaultOverheadRatePerPiece Decimal  @default(0.0) @db.Decimal(10, 2)
+  defaultWasteMarginPercent   Decimal  @default(3.0) @db.Decimal(5, 2)
+  wipAccountId                String?
+  rawMaterialsAccountId       String?
+  accruedWagesAccountId       String?
+  overheadAppliedAccountId    String?
+  finishedGoodsAccountId      String?
+  autoPostingEnabled          Boolean  @default(false)
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  @@map("manufacturing_settings")
+}

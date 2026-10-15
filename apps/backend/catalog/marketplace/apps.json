@@ -4285,5 +4285,68 @@
     "engineCompatibility": null,
     "createdAt": "2026-10-14T00:00:00Z",
     "updatedAt": "2026-10-14T00:00:00Z"
+  },
+  {
+    "id": "cat-app-manufacturing",
+    "slug": "manufacturing",
+    "name": "التصنيع",
+    "nameEn": "Manufacturing Execution",
+    "description": "نظام إدارة عمليات وخطوط الإنتاج والتصنيع: قوائم مواد (BOM) متعددة المتغيرات، أوامر تشغيل، مراحل إنتاج، صرف خامات واستلام تام، وحساب التكلفة الفعلية للقطعة. (سعر تجريبي مؤقت غير معتمد).",
+    "descriptionEn": "Manufacturing Execution System (MES): multi-variant Bill of Materials (BOM), production orders, stages, material issues, finished goods receipt, and unit costing. (Placeholder pricing - unapproved).",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 249,
+    "yearlyPrice": 2490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "المصانع والورش والعلامات التجارية التي تدير خطوط إنتاج وتصنيع وتحتاج لحساب التكلفة وتتبع المراحل بدقة.",
+      "surface": "داخل قسم التصنيع — قوائم المكونات، أوامر الإنتاج، صالة التشغيل، وتقارير التكاليف.",
+      "outcome": "إدارة محكمة لخطوط الإنتاج، ضبط استهلاك الخامات والهدر، ومعرفة التكلفة الفعلية الحقيقية لكل قطعة منتجة."
+    },
+    "features": {
+      "billOfMaterials": {
+        "enabled": true,
+        "name": "قوائم المكونات متعددة المتغيرات (BOM)",
+        "description": "قائمة مواد مرنة بالمقاس واللون مع نسب الهدر ومراحل التشغيل المعيارية.",
+        "access": "PAID"
+      },
+      "productionOrders": {
+        "enabled": true,
+        "name": "أوامر الإنتاج والتشغيل",
+        "description": "تخطيط واعتماد ومتابعة أوامر التشغيل الصناعي بمصفوفة كميات مفصلة.",
+        "access": "PAID"
+      },
+      "materialIssues": {
+        "enabled": true,
+        "name": "أذون صرف الخامات",
+        "description": "صرف مستلزمات الإنتاج من المستودعات مع تقييم الصرف بمتوسط التكلفة.",
+        "access": "PAID"
+      },
+      "finishedGoodsReceipt": {
+        "enabled": true,
+        "name": "استلام الإنتاج التام",
+        "description": "إضافة المنتجات الجاهزة لمخزن المعرض وتسجيل التكلفة الفعلية المحسوبة.",
+        "access": "PAID"
+      },
+      "costingEngine": {
+        "enabled": true,
+        "name": "محرك حساب التكلفة والانحرافات",
+        "description": "حساب التكلفة الصناعية الثلاثية للقطعة ومقارنة المخطط بالفعلي.",
+        "access": "PAID"
+      }
+    },
+    "isActive": false,
+    "isPublic": false,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "factory",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-10-15T00:00:00Z",
+    "updatedAt": "2026-10-15T00:00:00Z"
   }
 ]
