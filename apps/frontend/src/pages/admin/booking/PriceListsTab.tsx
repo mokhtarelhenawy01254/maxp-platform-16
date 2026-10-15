@@ -1,31 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { PlusIcon, PencilIcon, TrashIcon, X as XMarkIcon, FileText as DocumentTextIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, X, FileText, Check, Tag, AlertCircle } from "lucide-react";
 import { api, fetchJson, getAuthHeaders, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, PriceList, BookingService } from "./shared";
 
-interface PriceListRow extends PriceList {
-  itemCount?: number;
-  isBase?: boolean;
-}
-
-interface PriceListItemRow {
-  id: string;
-  priceListId: string;
-  serviceId: string;
-  price: number;
-  isActive: boolean;
-  effectivePrice?: number;
-  service?: { id: string; name: string; basePrice?: number; durationMinutes?: number };
-}
-
-interface ListForm {
-  id?: string;
-  name: string;
-  description: string;
-  baseListId: string;
-  isActive: boolean;
-}
-
-const emptyForm = (): ListForm => ({ name: "", description: "", baseListId: "", isActive: true });
+import PriceListModal, { PriceListRow, PriceListItemRow, ListForm, emptyForm } from "./PriceListModal";
 
 export default function PriceListsTab() {
   const [lists, setLists] = useState<PriceListRow[]>([]);
@@ -172,125 +149,218 @@ export default function PriceListsTab() {
   const overrideOptions = useMemo(() => services.filter(s => !itemMap.has(s.id)), [services, itemMap]);
 
   if (loading) {
-    return <div className="text-center py-16 text-gray-400 dark:text-gray-500">جارٍ التحميل...</div>;
+    return <div className="text-center py-16 text-muted-foreground text-xs">جارٍ تحميل قوائم الأسعار...</div>;
   }
 
   return (
-    <div>
-      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
+    <div className="space-y-4">
+      {/* Header Bar */}
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h2 className="text-xl font-bold">قوائم الأسعار التعاقدية</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">أسعار تعاقدية لكل عميل أو جهة، تورث من القائمة الأساسية</p>
+          <h2 className="text-lg font-bold text-foreground">قوائم الأسعار التعاقدية</h2>
+          <p className="text-xs text-muted-foreground">أسعار تعاقدية لكل عميل أو جهة، تورث تلقائياً من القائمة الأساسية</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />قائمة جديدة</button>
+        <button
+          onClick={openCreate}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-medium rounded-xl hover:bg-primary/90 transition-colors shadow-sm"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>قائمة جديدة</span>
+        </button>
       </div>
 
       {error && (
-        <div className="mb-4 flex items-center justify-between bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-lg px-4 py-2 text-sm">
-          <span>{error}</span>
-          <button onClick={() => setError(null)} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/50 rounded"><XMarkIcon className="w-4 h-4" /></button>
+        <div className="flex items-center justify-between bg-destructive/10 text-destructive border border-destructive/20 rounded-xl px-3 py-2 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button onClick={() => setError(null)} className="p-1 hover:bg-destructive/20 rounded-lg transition-colors">
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Left Column: Price Lists */}
         <div className="lg:col-span-1 space-y-2">
-          {lists.length === 0 && <p className="text-gray-400 dark:text-gray-500 text-center py-8 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700">لا توجد قوائم أسعار بعد</p>}
+          {lists.length === 0 && (
+            <div className="bg-card border border-border/70 rounded-xl p-8 text-center text-muted-foreground text-xs">
+              لا توجد قوائم أسعار بعد
+            </div>
+          )}
           {lists.map(l => (
             <div
               key={l.id}
               onClick={() => selectList(l.id)}
-              className={`cursor-pointer bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4 flex items-start justify-between gap-2 ${selectedId === l.id ? "border-blue-500 ring-1 ring-blue-500" : "hover:bg-gray-50 dark:hover:bg-gray-750"}`}
+              className={`cursor-pointer bg-card rounded-xl border p-3.5 flex items-start justify-between gap-2 transition-all ${
+                selectedId === l.id
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/20 shadow-sm"
+                  : "border-border/70 hover:border-border hover:bg-muted/30"
+              }`}
             >
               <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-bold truncate">{l.name}</h3>
-                  {l.isBase && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 whitespace-nowrap">أساسية</span>}
-                  {!l.isActive && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300 whitespace-nowrap">معطلة</span>}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h3 className="font-semibold text-xs text-foreground truncate">{l.name}</h3>
+                  {l.isBase && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
+                      أساسية
+                    </span>
+                  )}
+                  {!l.isActive && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
+                      معطلة
+                    </span>
+                  )}
                 </div>
-                {l.description && <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{l.description}</p>}
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">أسعار مخصصة: {l.itemCount ?? 0}</p>
+                {l.description && (
+                  <p className="text-[11px] text-muted-foreground truncate mt-0.5">{l.description}</p>
+                )}
+                <p className="text-[10px] text-muted-foreground mt-1 font-mono tabular-nums">
+                  أسعار مخصصة: {l.itemCount ?? 0}
+                </p>
               </div>
               <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
-                <button onClick={() => openEdit(l)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg" title="تعديل"><PencilIcon className="w-4 h-4" /></button>
+                <button
+                  onClick={() => openEdit(l)}
+                  className="p-1 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                  title="تعديل"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
                 {!l.isBase && (
-                  <button onClick={() => deleteList(l)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg" title="حذف"><TrashIcon className="w-4 h-4" /></button>
+                  <button
+                    onClick={() => deleteList(l)}
+                    className="p-1 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                    title="حذف"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 )}
               </div>
             </div>
           ))}
         </div>
 
+        {/* Right Column: Price List Details & Overrides */}
         <div className="lg:col-span-2">
           {!selected ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-12 text-center text-gray-400 dark:text-gray-500">
-              <DocumentTextIcon className="w-10 h-10 mx-auto mb-3" />
-              اختر قائمة أسعار لعرض تفاصيلها
+            <div className="bg-card border border-border/70 rounded-xl p-12 text-center text-muted-foreground">
+              <FileText className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
+              <p className="text-xs">اختر قائمة أسعار لعرض تفاصيلها</p>
             </div>
           ) : (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b dark:border-gray-700">
+            <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-border/70 bg-muted/20">
                 <div>
-                  <h3 className="font-bold">{selected.name}</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{selectedIsBase ? "هذه القائمة هي الأساس، تُطبَّق أسعار الخدمات كما هي" : "الأسعار غير المخصصة تورث من السعر الأساسي للخدمة"}</p>
+                  <h3 className="font-semibold text-xs text-foreground">{selected.name}</h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    {selectedIsBase ? "هذه القائمة هي الأساس، تُطبَّق أسعار الخدمات كما هي" : "الأسعار غير المخصصة تورث من السعر الأساسي للخدمة"}
+                  </p>
                 </div>
               </div>
 
               {!selectedIsBase && (
-                <div className="px-4 py-3 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex flex-wrap gap-2 items-end">
-                  <div className="flex-1 min-w-[180px]">
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">الخدمة</label>
-                    <select className={MODAL_INPUT_CLS} value={overrideServiceId} onChange={e => {
-                      setOverrideServiceId(e.target.value);
-                      const svc = services.find(s => s.id === e.target.value);
-                      const existing = svc ? itemMap.get(svc.id) : null;
-                      setOverridePrice(existing ? String(existing.price) : (svc?.basePrice != null ? String(svc.basePrice) : ""));
-                    }}>
+                <div className="px-4 py-2.5 border-b border-border/70 bg-muted/30 flex flex-wrap gap-2 items-end">
+                  <div className="flex-1 min-w-[160px]">
+                    <label className="block text-[10px] font-medium text-muted-foreground mb-1">الخدمة</label>
+                    <select
+                      className="w-full border border-border/70 rounded-lg px-2.5 py-1 text-xs bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      value={overrideServiceId}
+                      onChange={e => {
+                        setOverrideServiceId(e.target.value);
+                        const svc = services.find(s => s.id === e.target.value);
+                        const existing = svc ? itemMap.get(svc.id) : null;
+                        setOverridePrice(existing ? String(existing.price) : (svc?.basePrice != null ? String(svc.basePrice) : ""));
+                      }}
+                    >
                       <option value="">اختر خدمة...</option>
                       {overrideOptions.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                   </div>
-                  <div className="w-28">
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">السعر (ج.م)</label>
-                    <input type="number" min={0} className={MODAL_INPUT_CLS} value={overridePrice} onChange={e => setOverridePrice(e.target.value)} placeholder="0" />
+                  <div className="w-24">
+                    <label className="block text-[10px] font-medium text-muted-foreground mb-1">السعر (ج.م)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      className="w-full border border-border/70 rounded-lg px-2.5 py-1 text-xs font-mono tabular-nums bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      value={overridePrice}
+                      onChange={e => setOverridePrice(e.target.value)}
+                      placeholder="0"
+                    />
                   </div>
-                  <button onClick={saveOverride} disabled={overrideSaving || !overrideServiceId || overridePrice === ""} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ السعر</button>
+                  <button
+                    onClick={saveOverride}
+                    disabled={overrideSaving || !overrideServiceId || overridePrice === ""}
+                    className="px-3 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm"
+                  >
+                    حفظ السعر
+                  </button>
                 </div>
               )}
 
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">
-                      <th className="text-right py-3 px-4">الخدمة</th>
-                      <th className="text-right py-3 px-4 whitespace-nowrap">السعر الأساسي</th>
-                      <th className="text-right py-3 px-4 whitespace-nowrap">السعر التعاقدي</th>
-                      <th className="text-right py-3 px-4 whitespace-nowrap">السعر الفعلي</th>
-                      {!selectedIsBase && <th className="text-right py-3 px-4">إجراء</th>}
+                    <tr className="border-b border-border/70 bg-muted/40 text-muted-foreground text-[11px] font-medium">
+                      <th className="text-right py-2.5 px-3">الخدمة</th>
+                      <th className="text-right py-2.5 px-3 whitespace-nowrap">السعر الأساسي</th>
+                      <th className="text-right py-2.5 px-3 whitespace-nowrap">السعر التعاقدي</th>
+                      <th className="text-right py-2.5 px-3 whitespace-nowrap">السعر الفعلي</th>
+                      {!selectedIsBase && <th className="text-right py-2.5 px-3">إجراء</th>}
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-border/60">
                     {rows.length === 0 && (
-                      <tr><td colSpan={selectedIsBase ? 4 : 5} className="py-12 text-center text-gray-400 dark:text-gray-500">لا توجد خدمات</td></tr>
+                      <tr>
+                        <td colSpan={selectedIsBase ? 4 : 5} className="py-10 text-center text-muted-foreground text-xs">
+                          لا توجد خدمات
+                        </td>
+                      </tr>
                     )}
                     {rows.map(({ service, item, basePrice, effective, overridden }) => (
-                      <tr key={service.id} className="border-b dark:border-gray-700 last:border-b-0">
-                        <td className="py-3 px-4 font-medium">{service.name}{service.durationMinutes ? <span className="text-xs text-gray-400 mr-1">({service.durationMinutes} د)</span> : null}</td>
-                        <td className="py-3 px-4 whitespace-nowrap">{basePrice} ج.م</td>
-                        <td className="py-3 px-4 whitespace-nowrap">
+                      <tr key={service.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="py-2 px-3 font-medium text-foreground">
+                          {service.name}
+                          {service.durationMinutes ? (
+                            <span className="text-[10px] text-muted-foreground font-mono tabular-nums mr-1">
+                              ({service.durationMinutes} د)
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="py-2 px-3 whitespace-nowrap font-mono tabular-nums text-muted-foreground">
+                          {basePrice} ج.م
+                        </td>
+                        <td className="py-2 px-3 whitespace-nowrap">
                           {overridden ? (
-                            <span className="text-blue-600 dark:text-blue-400 font-semibold">{item!.price} ج.م</span>
+                            <span className="text-primary font-mono tabular-nums font-semibold">
+                              {item!.price} ج.م
+                            </span>
                           ) : (
-                            <span className="text-gray-400 dark:text-gray-500">—</span>
+                            <span className="text-muted-foreground/60">—</span>
                           )}
                         </td>
-                        <td className="py-3 px-4 whitespace-nowrap font-semibold">
+                        <td className="py-2 px-3 whitespace-nowrap font-mono tabular-nums font-semibold text-foreground">
                           {effective} ج.م
-                          {overridden && basePrice !== effective && <span className={`text-xs mr-1 ${effective < basePrice ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}>{effective < basePrice ? "خصم" : "زيادة"}</span>}
+                          {overridden && basePrice !== effective && (
+                            <span className={`text-[10px] mr-1.5 px-1.5 py-0.2 rounded font-medium ${
+                              effective < basePrice
+                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                : "bg-destructive/10 text-destructive"
+                            }`}>
+                              {effective < basePrice ? "خصم" : "زيادة"}
+                            </span>
+                          )}
                         </td>
                         {!selectedIsBase && (
-                          <td className="py-3 px-4">
+                          <td className="py-2 px-3">
                             {overridden && (
-                              <button onClick={() => removeOverride(item!)} className="text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50">إزالة</button>
+                              <button
+                                onClick={() => removeOverride(item!)}
+                                className="text-[10px] px-2 py-0.5 bg-destructive/10 text-destructive border border-destructive/20 rounded hover:bg-destructive/20 transition-colors"
+                              >
+                                إزالة
+                              </button>
                             )}
                           </td>
                         )}
@@ -305,43 +375,14 @@ export default function PriceListsTab() {
       </div>
 
       {listModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setListModal(null)}>
-          <div className={`${MODAL_CONTENT_CLS}`} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold">{listModal.id ? "تعديل قائمة أسعار" : "قائمة أسعار جديدة"}</h3>
-              <button onClick={() => setListModal(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"><XMarkIcon className="w-5 h-5" /></button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label>
-                <input className={MODAL_INPUT_CLS} value={listModal.name} onChange={e => setListModal({ ...listModal, name: e.target.value })} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الوصف</label>
-                <textarea className={MODAL_INPUT_CLS} rows={2} value={listModal.description} onChange={e => setListModal({ ...listModal, description: e.target.value })} />
-              </div>
-              {!listModal.id && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">القائمة الأساسية (تُورث منها الأسعار غير المخصصة)</label>
-                  <select className={MODAL_INPUT_CLS} value={listModal.baseListId} onChange={e => setListModal({ ...listModal, baseListId: e.target.value })}>
-                    <option value="">تلقائي (أول قائمة تصبح أساسية)</option>
-                    {lists.filter(l => l.isBase && l.isActive).map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                  </select>
-                </div>
-              )}
-              {listModal.id && (
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <input type="checkbox" checked={listModal.isActive} onChange={e => setListModal({ ...listModal, isActive: e.target.checked })} className="rounded border-gray-300 dark:border-gray-600" />
-                  مفعّلة
-                </label>
-              )}
-            </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setListModal(null)} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">إلغاء</button>
-              <button onClick={saveList} disabled={saving || !listModal.name.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">حفظ</button>
-            </div>
-          </div>
-        </div>
+        <PriceListModal
+          listModal={listModal}
+          lists={lists}
+          saving={saving}
+          onClose={() => setListModal(null)}
+          onSave={saveList}
+          onChange={setListModal}
+        />
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MagnifyingGlassIcon, PencilIcon, DocumentDuplicateIcon, EyeIcon, PlusIcon, FolderPlusIcon } from "@heroicons/react/24/outline";
+import { Search, Pencil, Copy, Eye, Plus, FolderPlus, Clock, Sparkles } from "lucide-react";
 import { BookingService, BookingBranch, BookingDoctor, ServiceFormData, ServiceCategory } from "./shared";
 import ServiceModal from "./ServiceModal";
 import ServiceDetailModal from "./ServiceDetailModal";
@@ -28,7 +28,7 @@ interface Props {
   onDetailClose: () => void;
 }
 
-const categoryColor = (c?: string) => c || "bg-gray-100 dark:bg-gray-700";
+const categoryColor = (c?: string) => c || "bg-muted text-muted-foreground";
 
 export default function ServicesTab({
   services, branches, doctors, categories, search, onSearchChange,
@@ -52,33 +52,88 @@ export default function ServicesTab({
   const catMap = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories]);
 
   return (
-    <div>
-      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-        <h2 className="text-xl font-bold">إدارة الخدمات</h2>
-        <div className="flex gap-3 flex-wrap">
-          <button onClick={() => setCategoryModal({})} className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"><FolderPlusIcon className="w-4 h-4" />قسم جديد</button>
-          <select className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100" value={filterStatus} onChange={e => onFilterStatusChange(e.target.value as "all" | "active" | "inactive")}>
+    <div className="space-y-4">
+      {/* Header & Controls */}
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <div>
+          <h2 className="text-lg font-bold text-foreground">دليل الخدمات والإجراءات</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">تسعير الخدمات، الباقات، مدد الجلسات، والأقسام السريرية</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setCategoryModal({})}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border/70 rounded-lg text-xs sm:text-sm font-medium hover:bg-muted/60 transition-colors shadow-sm"
+          >
+            <FolderPlus className="w-3.5 h-3.5 text-primary" />
+            <span>قسم جديد</span>
+          </button>
+          <select
+            className="border border-border/70 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm bg-card text-foreground shadow-sm hover:border-border transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40"
+            value={filterStatus}
+            onChange={e => onFilterStatusChange(e.target.value as "all" | "active" | "inactive")}
+          >
             <option value="active">النشطة</option>
             <option value="inactive">غير النشطة</option>
             <option value="all">الكل</option>
           </select>
-          <div className="relative"><MagnifyingGlassIcon className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" /><input className="border dark:border-gray-600 rounded-lg pr-9 pl-3 py-2 text-sm w-48 dark:bg-gray-800 dark:text-gray-100" placeholder="بحث..." value={search} onChange={e => onSearchChange(e.target.value)} /></div>
-          <button onClick={() => onEdit({})} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />إضافة خدمة</button>
+          <div className="relative">
+            <Search className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/70" />
+            <input
+              className="border border-border/70 rounded-lg pr-8 pl-3 py-1.5 text-xs sm:text-sm w-44 sm:w-56 bg-card text-foreground shadow-sm hover:border-border transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40"
+              placeholder="بحث بالخدمة..."
+              value={search}
+              onChange={e => onSearchChange(e.target.value)}
+            />
+          </div>
+          <button
+            onClick={() => onEdit({})}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs sm:text-sm hover:bg-primary/90 font-medium shadow-sm transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>إضافة خدمة</span>
+          </button>
         </div>
       </div>
 
       {/* Category filter chips */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <button onClick={() => setActiveCategory("all")} className={`px-3 py-1.5 text-sm rounded-lg border ${activeCategory === "all" ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 dark:text-gray-200"}`}>كل الخدمات</button>
-        <button onClick={() => setActiveCategory("none")} className={`px-3 py-1.5 text-sm rounded-lg border ${activeCategory === "none" ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 dark:text-gray-200"}`}>بدون قسم</button>
+      <div className="flex flex-wrap gap-1.5">
+        <button
+          onClick={() => setActiveCategory("all")}
+          className={`px-3 py-1 text-xs rounded-lg border font-medium transition-colors ${
+            activeCategory === "all"
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-card text-muted-foreground border-border/70 hover:bg-muted/60"
+          }`}
+        >
+          كل الخدمات
+        </button>
+        <button
+          onClick={() => setActiveCategory("none")}
+          className={`px-3 py-1 text-xs rounded-lg border font-medium transition-colors ${
+            activeCategory === "none"
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-card text-muted-foreground border-border/70 hover:bg-muted/60"
+          }`}
+        >
+          بدون قسم
+        </button>
         {categories.map(c => (
-          <button key={c.id} onClick={() => setActiveCategory(c.id)} className={`px-3 py-1.5 text-sm rounded-lg border ${activeCategory === c.id ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 dark:text-gray-200"}`}>
-            {c.icon && <span className="ml-1">{c.icon}</span>}{c.name}
+          <button
+            key={c.id}
+            onClick={() => setActiveCategory(c.id)}
+            className={`px-3 py-1 text-xs rounded-lg border font-medium transition-colors ${
+              activeCategory === c.id
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-card text-muted-foreground border-border/70 hover:bg-muted/60"
+            }`}
+          >
+            {c.name}
           </button>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Services Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {filtered.map(s => {
           const bs = s.branchServices || [];
           const visibleBranches = bs.filter(b => b.isActive).slice(0, 3);
@@ -86,56 +141,157 @@ export default function ServicesTab({
           const cat = s.categoryId ? catMap.get(s.categoryId) : undefined;
           const doctorCount = s.doctorServices?.length || 0;
           return (
-            <div key={s.id} className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4 ${!s.isActive ? "opacity-60" : ""}`}>
-              <div className="flex items-start justify-between mb-2">
+            <div
+              key={s.id}
+              className={`bg-card rounded-xl border border-border/70 p-4 shadow-sm space-y-3 transition-all hover:border-border ${
+                !s.isActive ? "opacity-60" : ""
+              }`}
+            >
+              <div className="flex items-start justify-between">
                 <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {cat && <span className={`text-xs px-2 py-0.5 rounded-full ${categoryColor(cat.color)} dark:text-gray-200`}>{cat.icon && <span className="ml-0.5">{cat.icon}</span>}{cat.name}</span>}
-                    <h3 className="font-bold">{s.name}</h3>
+                  <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                    {cat && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border border-border/60 ${categoryColor(cat.color)}`}>
+                        {cat.name}
+                      </span>
+                    )}
+                    <h3 className="font-bold text-sm text-foreground">{s.name}</h3>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">{s.description || "—"}</p>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{s.description || "—"}</p>
                 </div>
-                <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${s.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{s.isActive ? "نشط" : "غير نشط"}</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${
+                    s.isActive
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                      : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+                  }`}
+                >
+                  {s.isActive ? "نشط" : "غير نشط"}
+                </span>
               </div>
-              {(s.basePrice !== undefined && s.basePrice !== null) && <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">السعر الأساسي: {s.basePrice} ج.م</p>}
-              <button onClick={() => navigate("/admin/booking/price-lists")} className="text-xs text-blue-600 dark:text-blue-400 hover:underline mb-1 inline-block">إدارة قوائم الأسعار التعاقدية</button>
-              {s.durationMinutes && <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">المدة: {s.durationMinutes} دقيقة</p>}
-              <div className="flex flex-wrap gap-1 mb-2">
-                {visibleBranches.map(b => (
-                  <span key={b.id} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">{b.branch.name}</span>
-                ))}
-                {extraCount > 0 && <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 px-2 py-0.5 rounded">+{extraCount}</span>}
-                {bs.length === 0 && <span className="text-xs text-gray-400 dark:text-gray-500">لا توجد فروع</span>}
-              </div>
-              {doctorCount > 0 && (
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {s.doctorServices!.slice(0, 3).map(ds => (
-                    <span key={ds.id} className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded">{ds.doctor?.title} {ds.doctor?.name}</span>
-                  ))}
-                  {doctorCount > 3 && <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 px-2 py-0.5 rounded">+{doctorCount - 3}</span>}
+
+              {(s.basePrice !== undefined && s.basePrice !== null) && (
+                <div className="flex items-baseline justify-between pt-1 border-t border-border/50">
+                  <span className="text-xs text-muted-foreground">السعر الأساسي:</span>
+                  <span className="text-base font-bold font-mono tabular-nums text-foreground">
+                    {Number(s.basePrice).toLocaleString()} <span className="text-xs font-normal text-muted-foreground">ج.م</span>
+                  </span>
                 </div>
               )}
+
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <button
+                  onClick={() => navigate("/admin/booking/price-lists")}
+                  className="text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  <span>قوائم الأسعار التعاقدية</span>
+                </button>
+                {s.durationMinutes && (
+                  <span className="inline-flex items-center gap-1 font-mono tabular-nums">
+                    <Clock className="w-3 h-3 text-muted-foreground/70" />
+                    {s.durationMinutes} دقيقة
+                  </span>
+                )}
+              </div>
+
+              {/* Branches & Doctors */}
+              <div className="space-y-1.5 pt-1 border-t border-border/50">
+                <div className="flex flex-wrap gap-1">
+                  {visibleBranches.map(b => (
+                    <span key={b.id} className="text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded">
+                      {b.branch.name}
+                    </span>
+                  ))}
+                  {extraCount > 0 && <span className="text-[11px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono tabular-nums">+{extraCount}</span>}
+                  {bs.length === 0 && <span className="text-xs text-muted-foreground/60">لا توجد فروع محددة</span>}
+                </div>
+
+                {doctorCount > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {s.doctorServices!.slice(0, 3).map(ds => (
+                      <span key={ds.id} className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded">
+                        {ds.doctor?.title} {ds.doctor?.name}
+                      </span>
+                    ))}
+                    {doctorCount > 3 && <span className="text-[11px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono tabular-nums">+{doctorCount - 3}</span>}
+                  </div>
+                )}
+              </div>
+
               {bs.map(b => (b.packages || []).length > 0 && (
-                <div key={b.id} className="mb-1">
+                <div key={b.id} className="pt-1">
                   {b.packages!.map((pkg, i) => (
-                    <div key={i} className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 inline-block px-2 py-0.5 rounded ml-1 mb-1">{pkg.count} جلسات - {pkg.price} ج.م ({b.branch.name})</div>
+                    <div key={i} className="text-[11px] bg-primary/5 text-primary border border-primary/20 inline-block px-2 py-0.5 rounded ml-1 mb-1 font-mono tabular-nums">
+                      {pkg.count} جلسات — {pkg.price} ج.م ({b.branch.name})
+                    </div>
                   ))}
                 </div>
               ))}
-              <div className="flex gap-2 mt-2">
-                <button onClick={() => onDetail(s)} className="text-xs px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"><EyeIcon className="w-3.5 h-3.5 inline ml-1" />عرض</button>
-                <button onClick={() => onEdit(s)} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"><PencilIcon className="w-3.5 h-3.5 inline ml-1" />تعديل</button>
-                <button onClick={() => onToggleActive(s.id, s.isActive)} className={`text-xs px-3 py-1.5 rounded-lg ${s.isActive ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50" : "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"}`}>{s.isActive ? "تعطيل" : "تفعيل"}</button>
-                <button onClick={() => onClone(s)} className="text-xs px-3 py-1.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"><DocumentDuplicateIcon className="w-3.5 h-3.5 inline ml-1" />استنساخ</button>
+
+              <div className="flex gap-1.5 pt-2 border-t border-border/60">
+                <button
+                  onClick={() => onDetail(s)}
+                  className="text-xs px-2.5 py-1 bg-muted text-muted-foreground rounded-md hover:bg-muted/80 flex items-center gap-1 transition-colors"
+                >
+                  <Eye className="w-3 h-3" />
+                  <span>عرض</span>
+                </button>
+                <button
+                  onClick={() => onEdit(s)}
+                  className="text-xs px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-md hover:bg-blue-500/20 flex items-center gap-1 transition-colors"
+                >
+                  <Pencil className="w-3 h-3" />
+                  <span>تعديل</span>
+                </button>
+                <button
+                  onClick={() => onToggleActive(s.id, s.isActive)}
+                  className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
+                    s.isActive
+                      ? "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20"
+                      : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
+                  }`}
+                >
+                  {s.isActive ? "تعطيل" : "تفعيل"}
+                </button>
+                <button
+                  onClick={() => onClone(s)}
+                  className="text-xs px-2.5 py-1 bg-muted text-muted-foreground rounded-md hover:bg-muted/80 flex items-center gap-1 transition-colors"
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>استنساخ</span>
+                </button>
               </div>
             </div>
           );
         })}
-        {filtered.length === 0 && <p className="col-span-full text-gray-400 dark:text-gray-500 text-center py-12">لا توجد خدمات</p>}
+
+        {filtered.length === 0 && (
+          <div className="col-span-full text-center py-12 text-muted-foreground bg-card border border-border/70 rounded-xl p-6">
+            <Sparkles className="w-10 h-10 mx-auto mb-2 opacity-40 text-primary" />
+            <p className="text-xs">لا توجد خدمات مطابقة</p>
+          </div>
+        )}
       </div>
-      {modalService !== undefined && <ServiceModal service={modalService} branches={branches} doctors={doctors} categories={categories} onClose={onModalClose} onSave={onSave} />}
+
+      {modalService !== undefined && (
+        <ServiceModal
+          service={modalService}
+          branches={branches}
+          doctors={doctors}
+          categories={categories}
+          onClose={onModalClose}
+          onSave={onSave}
+        />
+      )}
       {detailService && <ServiceDetailModal service={detailService} onClose={onDetailClose} />}
-      {categoryModal !== undefined && <CategoryModal category={categoryModal} onClose={() => setCategoryModal(undefined)} onSave={onCategorySave} onDelete={onCategoryDelete} />}
+      {categoryModal !== undefined && (
+        <CategoryModal
+          category={categoryModal}
+          onClose={() => setCategoryModal(undefined)}
+          onSave={onCategorySave}
+          onDelete={onCategoryDelete}
+        />
+      )}
     </div>
   );
 }

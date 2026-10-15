@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { PencilIcon, TrashIcon, CheckIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { Pencil, Trash2, Plus, Search, MapPin, Building2, Phone } from "lucide-react";
 import { BookingBranch, BranchFormData, DAY_NAMES, FACILITY_TYPE_LABEL } from "./shared";
 import BranchModal from "./BranchModal";
 
@@ -15,17 +15,22 @@ interface Props {
 }
 
 const PAGE_SIZE = 10;
+const DAYS_ORDER = ["sat", "sun", "mon", "tue", "wed", "thu", "fri"];
+const DAY_INITIALS: Record<string, string> = { sat: "س", sun: "ح", mon: "ن", tue: "ث", wed: "ر", thu: "خ", fri: "ج" };
 
-export default function BranchesTab({ branches, selectedBranchId, onEdit, onToggleActive, onDelete, modalBranch, onModalClose, onSave }: Props) {
+export default function BranchesTab({
+  branches, selectedBranchId, onEdit, onToggleActive, onDelete,
+  modalBranch, onModalClose, onSave,
+}: Props) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
 
   const filtered = useMemo(() => {
     let list = branches;
-    if (selectedBranchId) list = list.filter(b => b.id === selectedBranchId);
+    if (selectedBranchId) list = list.filter((b) => b.id === selectedBranchId);
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      list = list.filter(b => b.name.toLowerCase().includes(q) || (b.address || "").toLowerCase().includes(q));
+      list = list.filter((b) => b.name.toLowerCase().includes(q) || (b.address || "").toLowerCase().includes(q));
     }
     return list;
   }, [branches, selectedBranchId, search]);
@@ -35,187 +40,194 @@ export default function BranchesTab({ branches, selectedBranchId, onEdit, onTogg
   const paged = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
   return (
-    <div>
-      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-        <h2 className="text-xl font-bold">إدارة الفروع</h2>
-        <div className="flex gap-2">
-          <input className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm w-48 dark:bg-gray-800 dark:text-gray-100" placeholder="بحث..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
-          <button onClick={() => onEdit({})} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><PlusIcon className="w-4 h-4" />إضافة فرع</button>
+    <div className="space-y-4">
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <div>
+          <h2 className="text-lg font-bold text-foreground">إدارة الفروع والمراكز</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">تحديد مواعيد العمل، ساعات الاستقبال، والعيادات المتاحة</p>
         </div>
-      </div>
-      {filtered.length === 0 ? (
-        <p className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد فروع</p>
-      ) : (<>
-      {/* Mobile card view */}
-      <div className="block md:hidden space-y-3">
-        {paged.map(b => (
-          <div key={b.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h3 className="font-bold text-sm">{b.name}</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{b.address || "—"}</p>
-                {b.facilityType && <span className="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">{FACILITY_TYPE_LABEL[b.facilityType] || b.facilityType}</span>}
-              </div>
-              <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${b.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{b.isActive ? "نشط" : "غير نشط"}</span>
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 flex flex-wrap gap-1">{(b.phones?.length ? b.phones : b.phone ? [b.phone] : []).map((p, i) => <span key={i} dir="ltr" className="inline-block bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">{p}</span>) || "—"}</div>
-            
-            {/* Working days circular badges */}
-            <div className="flex gap-1 justify-start mb-3">
-              {(() => {
-                const wd = typeof b.workingDays === 'object' ? b.workingDays : null;
-                const DAYS_ORDER = ["sat", "sun", "mon", "tue", "wed", "thu", "fri"];
-                const DAY_INITIALS: Record<string, string> = { sat: "س", sun: "ح", mon: "ن", tue: "ث", wed: "ر", thu: "خ", fri: "ج" };
-                return DAYS_ORDER.map(d => {
-                  const isActive = wd && wd[d];
-                  const hours = wd ? wd[d] : "";
-                  return (
-                    <div
-                      key={d}
-                      title={isActive ? `${DAY_NAMES[d]}: ${hours}` : `${DAY_NAMES[d]}: مغلق`}
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold select-none border transition-all ${
-                        isActive
-                          ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800"
-                          : "bg-gray-50 dark:bg-gray-800/40 text-gray-400 dark:text-gray-600 border-gray-100 dark:border-gray-800"
-                      }`}
-                    >
-                      {DAY_INITIALS[d]}
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-
-            {b.location && (
-              <div className="text-xs mb-3">
-                {/^https?:\/\//.test(b.location) ? (
-                  <a
-                    href={b.location}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    📍 فتح الموقع الجغرافي
-                  </a>
-                ) : (
-                  <span className="text-gray-500 dark:text-gray-400 truncate block" title={b.location}>
-                    📍 {b.location}
-                  </span>
-                )}
-              </div>
-            )}
-            {(() => {
-              const gd = b.genderDays ? (typeof b.genderDays === 'string' ? null : b.genderDays) : null;
-              if (!gd || (!gd.male.length && !gd.female.length)) return null;
-              return (
-                <div className="text-xs mb-3 space-y-1">
-                  {gd.male.length > 0 && <div className="text-blue-600 dark:text-blue-400">👨 الرجال: {gd.male.map(d => DAY_NAMES[d] || d).join("، ")}</div>}
-                  {gd.female.length > 0 && <div className="text-pink-600 dark:text-pink-400">👩 السيدات: {gd.female.map(d => DAY_NAMES[d] || d).join("، ")}</div>}
-                </div>
-              );
-            })()}
-            <div className="flex gap-2">
-              <button onClick={() => onEdit(b)} className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"><PencilIcon className="w-3 h-3 inline ml-1" />تعديل</button>
-              <button onClick={() => onToggleActive(b.id, b.isActive)} className={`text-xs px-3 py-1.5 rounded-lg ${b.isActive ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50" : "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"}`}>{b.isActive ? "تعطيل" : "تفعيل"}</button>
-              <button onClick={() => onDelete(b.id)} className="text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50"><TrashIcon className="w-3 h-3 inline ml-1" />حذف</button>
-            </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/70" />
+            <input
+              className="border border-border/70 rounded-lg pr-8 pl-3 py-1.5 text-xs sm:text-sm w-44 sm:w-56 bg-card text-foreground shadow-sm hover:border-border transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40"
+              placeholder="بحث بالاسم أو العنوان..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+            />
           </div>
-        ))}
-      </div>
-      {/* Desktop table */}
-      <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
-        <table className="w-full">
-          <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["الاسم", "العنوان", "الموقع", "الهاتف", "أيام العمل", "الجنس", "الحالة", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
-          <tbody>{paged.map(b => (
-            <tr key={b.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
-              <td className="py-3 px-4">
-                <div className="font-medium">{b.name}</div>
-                {b.facilityType && <div className="mt-0.5 text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 w-fit">{FACILITY_TYPE_LABEL[b.facilityType] || b.facilityType}</div>}
-              </td>
-              <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{b.address || "—"}</td>
-              <td className="py-3 px-4 text-xs">
-                {b.location ? (
-                  /^https?:\/\//.test(b.location) ? (
-                    <a
-                      href={b.location}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all font-semibold"
-                    >
-                      📍 فتح الخريطة
-                    </a>
-                  ) : (
-                    <span className="text-gray-500 dark:text-gray-400 max-w-[150px] truncate block" title={b.location}>
-                      📍 {b.location}
-                    </span>
-                  )
-                ) : (
-                  <span className="text-gray-400 dark:text-gray-500">—</span>
-                )}
-              </td>
-              <td className="py-3 px-4">
-                <div className="flex flex-wrap gap-1">
-                  {(b.phones?.length ? b.phones : b.phone ? [b.phone] : []).map((p, i) => <span key={i} dir="ltr" className="text-xs inline-block bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded">{p}</span>) || "—"}
-                </div>
-              </td>
-              <td className="py-3 px-4">
-                <div className="flex gap-1 justify-start">
-                  {(() => {
-                    const wd = typeof b.workingDays === 'object' ? b.workingDays : null;
-                    const DAYS_ORDER = ["sat", "sun", "mon", "tue", "wed", "thu", "fri"];
-                    const DAY_INITIALS: Record<string, string> = { sat: "س", sun: "ح", mon: "ن", tue: "ث", wed: "ر", thu: "خ", fri: "ج" };
-                    return DAYS_ORDER.map(d => {
-                      const isActive = wd && wd[d];
-                      const hours = wd ? wd[d] : "";
-                      return (
-                        <div
-                          key={d}
-                          title={isActive ? `${DAY_NAMES[d]}: ${hours}` : `${DAY_NAMES[d]}: مغلق`}
-                          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold select-none border transition-all ${
-                            isActive
-                              ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800"
-                              : "bg-gray-50 dark:bg-gray-800/40 text-gray-400 dark:text-gray-600 border-gray-100 dark:border-gray-800"
-                          }`}
-                        >
-                          {DAY_INITIALS[d]}
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-              </td>
-              <td className="py-3 px-4 text-xs">{
-                (() => {
-                  const gd = b.genderDays ? (typeof b.genderDays === 'string' ? null : b.genderDays) : null;
-                  if (!gd || (!gd.male.length && !gd.female.length)) return <span className="text-gray-400 dark:text-gray-500">—</span>;
-                  return (
-                    <div className="space-y-1">
-                      {gd.male.length > 0 && <div className="text-blue-600 dark:text-blue-400">👨 {gd.male.map(d => DAY_NAMES[d] || d).join("، ")}</div>}
-                      {gd.female.length > 0 && <div className="text-pink-600 dark:text-pink-400">👩 {gd.female.map(d => DAY_NAMES[d] || d).join("، ")}</div>}
-                    </div>
-                  );
-                })()
-              }</td>
-              <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs ${b.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{b.isActive ? "نشط" : "غير نشط"}</span></td>
-              <td className="py-3 px-4">
-                <div className="flex gap-1">
-                  <button onClick={() => onEdit(b)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="تعديل"><PencilIcon className="w-4 h-4" /></button>
-                  <button onClick={() => onToggleActive(b.id, b.isActive)} className={`p-1.5 rounded ${b.isActive ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30" : "text-green-500 hover:bg-green-50 dark:hover:bg-green-900/30"}`} title={b.isActive ? "تعطيل" : "تفعيل"}><CheckIcon className="w-4 h-4" /></button>
-                  <button onClick={() => onDelete(b.id)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="حذف"><TrashIcon className="w-4 h-4" /></button>
-                </div>
-              </td>
-            </tr>
-          ))}</tbody>
-        </table>
-      </div>
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-3 mt-4">
-          <button disabled={safePage <= 0} onClick={() => setPage(safePage - 1)} className="px-4 py-2 border rounded-lg text-sm disabled:opacity-30 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:cursor-default">السابق</button>
-          <span className="text-sm text-gray-500 dark:text-gray-400">{safePage + 1} / {totalPages}</span>
-          <button disabled={safePage >= totalPages - 1} onClick={() => setPage(safePage + 1)} className="px-4 py-2 border rounded-lg text-sm disabled:opacity-30 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:cursor-default">التالي</button>
+          <button
+            onClick={() => onEdit({})}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs sm:text-sm hover:bg-primary/90 font-medium shadow-sm transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>إضافة فرع</span>
+          </button>
         </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground bg-card border border-border/70 rounded-xl p-6">
+          <Building2 className="w-10 h-10 mx-auto mb-2 opacity-40 text-primary" />
+          <p className="text-xs">لا توجد فروع مسجلة</p>
+        </div>
+      ) : (
+        <>
+          {/* Mobile card view */}
+          <div className="block md:hidden space-y-3">
+            {paged.map((b) => (
+              <div key={b.id} className={`bg-card rounded-xl border border-border/70 p-4 shadow-sm space-y-3 ${!b.isActive ? "opacity-60" : ""}`}>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-bold text-sm text-foreground">{b.name}</h3>
+                    <p className="text-xs text-muted-foreground">{b.address || "—"}</p>
+                    {b.facilityType && (
+                      <span className="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                        {FACILITY_TYPE_LABEL[b.facilityType] || b.facilityType}
+                      </span>
+                    )}
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${b.isActive ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"}`}>
+                    {b.isActive ? "نشط" : "غير نشط"}
+                  </span>
+                </div>
+
+                <div className="text-xs text-muted-foreground flex flex-wrap gap-1">
+                  {(b.phones?.length ? b.phones : b.phone ? [b.phone] : []).map((p, i) => (
+                    <span key={i} dir="ltr" className="inline-flex items-center gap-1 bg-muted px-2 py-0.5 rounded text-[11px] font-mono tabular-nums">
+                      <Phone className="w-2.5 h-2.5" />{p}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Working days circular badges */}
+                <div className="flex gap-1 justify-start">
+                  {DAYS_ORDER.map((d) => {
+                    const wd = typeof b.workingDays === "object" ? b.workingDays : null;
+                    const isActive = wd && wd[d];
+                    const hours = wd ? wd[d] : "";
+                    return (
+                      <div
+                        key={d}
+                        title={isActive ? `${DAY_NAMES[d]}: ${hours}` : `${DAY_NAMES[d]}: مغلق`}
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold select-none border transition-all ${isActive ? "bg-primary/10 text-primary border-primary/30" : "bg-muted/40 text-muted-foreground/60 border-border/40"}`}
+                      >
+                        {DAY_INITIALS[d]}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {b.location && (
+                  <div className="text-xs">
+                    {/^https?:\/\//.test(b.location) ? (
+                      <a href={b.location} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
+                        <MapPin className="w-3.5 h-3.5" /><span>فتح الموقع الجغرافي</span>
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{b.location}</span>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex gap-1.5 pt-2 border-t border-border/60">
+                  <button onClick={() => onEdit(b)} className="text-xs px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-md hover:bg-blue-500/20 flex items-center gap-1">
+                    <Pencil className="w-3 h-3" /><span>تعديل</span>
+                  </button>
+                  <button onClick={() => onToggleActive(b.id, b.isActive)} className={`text-xs px-2.5 py-1 rounded-md ${b.isActive ? "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20" : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"}`}>
+                    {b.isActive ? "تعطيل" : "تفعيل"}
+                  </button>
+                  <button onClick={() => onDelete(b.id)} className="text-xs px-2.5 py-1 bg-rose-500/10 text-rose-600 rounded-md hover:bg-rose-500/20 flex items-center gap-1">
+                    <Trash2 className="w-3 h-3" /><span>حذف</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block bg-card rounded-xl border border-border/70 overflow-hidden shadow-sm">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border/70 bg-muted/40 text-muted-foreground font-medium">
+                  {["اسم الفرع", "العنوان", "الهواتف", "أيام وساعات العمل", "النوع", "الموقع", "الحالة", ""].map((h) => (
+                    <th key={h} className="text-right py-2.5 px-3">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {paged.map((b) => (
+                  <tr key={b.id} className={`hover:bg-muted/40 transition-colors ${!b.isActive ? "opacity-60" : ""}`}>
+                    <td className="py-2.5 px-3 font-semibold text-foreground">{b.name}</td>
+                    <td className="py-2.5 px-3 text-muted-foreground">{b.address || "—"}</td>
+                    <td className="py-2.5 px-3 text-muted-foreground font-mono tabular-nums" dir="ltr">
+                      {(b.phones?.length ? b.phones : b.phone ? [b.phone] : []).join(" · ") || "—"}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <div className="flex gap-1 justify-start">
+                        {DAYS_ORDER.map((d) => {
+                          const wd = typeof b.workingDays === "object" ? b.workingDays : null;
+                          const isActive = wd && wd[d];
+                          const hours = wd ? wd[d] : "";
+                          return (
+                            <div
+                              key={d}
+                              title={isActive ? `${DAY_NAMES[d]}: ${hours}` : `${DAY_NAMES[d]}: مغلق`}
+                              className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold select-none border transition-all ${isActive ? "bg-primary/10 text-primary border-primary/30" : "bg-muted/30 text-muted-foreground/50 border-border/30"}`}
+                            >
+                              {DAY_INITIALS[d]}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                        {FACILITY_TYPE_LABEL[b.facilityType || "clinic"] || b.facilityType}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3">
+                      {b.location ? (
+                        /^https?:\/\//.test(b.location) ? (
+                          <a href={b.location} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
+                            <MapPin className="w-3.5 h-3.5" /><span>خريطة</span>
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">{b.location}</span>
+                        )
+                      ) : "—"}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${b.isActive ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"}`}>
+                        {b.isActive ? "نشط" : "غير نشط"}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 text-left">
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => onEdit(b)} className="p-1 text-blue-600 hover:bg-blue-500/10 rounded transition-colors" title="تعديل"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => onToggleActive(b.id, b.isActive)} className={`p-1 rounded transition-colors ${b.isActive ? "text-rose-500 hover:bg-rose-500/10" : "text-emerald-500 hover:bg-emerald-500/10"}`} title={b.isActive ? "تعطيل" : "تفعيل"}><Plus className="w-4 h-4" /></button>
+                        <button onClick={() => onDelete(b.id)} className="p-1 text-rose-500 hover:bg-rose-500/10 rounded transition-colors" title="حذف"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-between items-center text-xs text-muted-foreground pt-2">
+              <span>صفحة <strong className="font-mono tabular-nums text-foreground">{safePage + 1}</strong> من <strong className="font-mono tabular-nums text-foreground">{totalPages}</strong></span>
+              <div className="flex gap-1">
+                <button disabled={safePage <= 0} onClick={() => setPage(safePage - 1)} className="px-2.5 py-1 border border-border/70 rounded-lg bg-card disabled:opacity-40 hover:bg-muted/60 transition-colors">السابق</button>
+                <button disabled={safePage >= totalPages - 1} onClick={() => setPage(safePage + 1)} className="px-2.5 py-1 border border-border/70 rounded-lg bg-card disabled:opacity-40 hover:bg-muted/60 transition-colors">التالي</button>
+              </div>
+            </div>
+          )}
+        </>
       )}
-      </>)}
+
       {modalBranch !== undefined && <BranchModal branch={modalBranch} onClose={onModalClose} onSave={onSave} />}
     </div>
   );

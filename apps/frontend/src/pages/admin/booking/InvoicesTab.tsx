@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { BookingInvoice, BookingPatient, CashierShift, INVOICE_STATUS_MAP, PAYMENT_METHOD_LABEL, api, fetchJson } from "./shared";
-import { Banknote, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Banknote, Pencil, Plus, Search, Trash2, Receipt, ShieldCheck, Wallet, ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
 import InvoiceModal from "./InvoiceModal";
 import PaymentModal from "./PaymentModal";
@@ -25,9 +25,9 @@ interface Props {
 }
 
 const EXPENSE_SPLIT_LABEL: Record<string, { label: string; color: string }> = {
-  PATIENT: { label: "المريض", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
-  INSURANCE: { label: "التأمين", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" },
-  BOTH: { label: "مشترك", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" },
+  PATIENT: { label: "المريض", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20" },
+  INSURANCE: { label: "التأمين", color: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20" },
+  BOTH: { label: "مشترك", color: "bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20" },
 };
 
 const fmt = (n: number) => Number(n || 0).toFixed(2);
@@ -103,90 +103,228 @@ export default function InvoicesTab({
   }), [invoices, search, statusFilter]);
 
   return (
-    <div>
-      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-        <h2 className="text-xl font-bold">المدفوعات والتحصيل</h2>
-        <div className="flex flex-wrap gap-3">
-          <select className="border dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100" value={statusFilter} onChange={e => onStatusFilterChange(e.target.value)}>
+    <div className="space-y-4">
+      {/* Header Controls */}
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <div>
+          <h2 className="text-lg font-bold text-foreground">المدفوعات والتحصيل</h2>
+          <p className="text-xs text-muted-foreground">إدارة الفواتير والتحصيل المالي والشيفتات اليومية</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            className="border border-border/70 rounded-xl px-3 py-1.5 text-xs bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+            value={statusFilter}
+            onChange={e => onStatusFilterChange(e.target.value)}
+          >
             <option value="">كل الحالات</option>
             {Object.entries(INVOICE_STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
           </select>
-          <div className="relative"><Search className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" /><input className="border dark:border-gray-600 rounded-lg pr-9 pl-3 py-2 text-sm w-48 dark:bg-gray-800 dark:text-gray-100" placeholder="بحث..." value={search} onChange={e => onSearchChange(e.target.value)} /></div>
-          <button onClick={onNew} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><Plus className="w-4 h-4" />فاتورة جديدة</button>
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute right-2.5 top-2.5 text-muted-foreground" />
+            <input
+              className="border border-border/70 rounded-xl pr-8 pl-3 py-1.5 text-xs w-44 bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+              placeholder="بحث برقم الفاتورة أو العميل..."
+              value={search}
+              onChange={e => onSearchChange(e.target.value)}
+            />
+          </div>
+          <button
+            onClick={onNew}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-medium rounded-xl hover:bg-primary/90 transition-colors shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>فاتورة جديدة</span>
+          </button>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4 mb-4">
+      {/* Cashier Shift Status Card */}
+      <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm">
         <div className="flex flex-wrap justify-between items-center gap-3">
-          <div>
-            <p className="font-bold text-sm">{shift ? `الشيفت مفتوح — ${shift.cashierName}` : "لا يوجد شيفت مفتوح"}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              {shift ? `رصيد البداية: ${fmt(shift.openingBalance)}` : "افتح شيفت لبدء التحصيل"}
-            </p>
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${shift ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : "bg-muted text-muted-foreground border border-border/60"}`}>
+              <Wallet className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-xs text-foreground">
+                  {shift ? `الشيفت مفتوح — ${shift.cashierName}` : "لا يوجد شيفت مفتوح حالياً"}
+                </span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${shift ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : "bg-muted text-muted-foreground"}`}>
+                  {shift ? "نشط" : "مغلق"}
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {shift ? (
+                  <span>رصيد البداية: <strong className="font-mono tabular-nums text-foreground">{fmt(shift.openingBalance)} ج.م</strong></span>
+                ) : (
+                  "افتح شيفت جديد لبدء تحصيل المدفوعات"
+                )}
+              </p>
+            </div>
           </div>
+
           {shift ? (
             <div className="flex flex-wrap items-center gap-2">
               <div>
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">رصيد الإغلاق</label>
-                <input type="number" className="w-32 border dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100" value={closingBalance} onChange={e => setClosingBalance(e.target.value)} />
+                <label className="block text-[10px] text-muted-foreground mb-0.5">رصيد الإغلاق</label>
+                <input
+                  type="number"
+                  className="w-28 border border-border/70 rounded-lg px-2.5 py-1 text-xs font-mono tabular-nums bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                  value={closingBalance}
+                  onChange={e => setClosingBalance(e.target.value)}
+                  placeholder="0.00"
+                />
               </div>
-              <button onClick={closeShift} disabled={shiftBusy} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm">إغلاق الشيفت</button>
+              <button
+                onClick={closeShift}
+                disabled={shiftBusy}
+                className="mt-4 px-3 py-1 bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium rounded-lg hover:bg-destructive/20 disabled:opacity-50 transition-colors"
+              >
+                إغلاق الشيفت
+              </button>
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
               <div>
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">رصيد البداية</label>
-                <input type="number" className="w-32 border dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm dark:bg-gray-800 dark:text-gray-100" value={openingBalance} onChange={e => setOpeningBalance(e.target.value)} />
+                <label className="block text-[10px] text-muted-foreground mb-0.5">رصيد البداية</label>
+                <input
+                  type="number"
+                  className="w-28 border border-border/70 rounded-lg px-2.5 py-1 text-xs font-mono tabular-nums bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                  value={openingBalance}
+                  onChange={e => setOpeningBalance(e.target.value)}
+                  placeholder="0.00"
+                />
               </div>
-              <button onClick={openShift} disabled={shiftBusy} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm">فتح شيفت</button>
+              <button
+                onClick={openShift}
+                disabled={shiftBusy}
+                className="mt-4 px-3 py-1 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-sm"
+              >
+                فتح شيفت
+              </button>
             </div>
           )}
         </div>
       </div>
 
+      {/* Invoices List Table */}
       {filtered.length === 0 ? (
-        <p className="text-center py-12 text-gray-400 dark:text-gray-500">لا توجد فواتير</p>
+        <div className="bg-card border border-border/70 rounded-xl py-12 text-center text-muted-foreground">
+          <Receipt className="w-8 h-8 mx-auto mb-2 text-muted-foreground/60" />
+          <p className="text-xs">لا توجد فواتير مطابقة للبحث</p>
+        </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
-          <table className="w-full">
-            <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm">{["رقم الفاتورة", "المريض", "الإجمالي", "الخصم", "الصافي", "المسدد", "المتبقي", "الحالة", "الدفعات", ""].map(h => <th key={h} className="text-right py-3 px-4">{h}</th>)}</tr></thead>
-            <tbody>{filtered.map(inv => (
-              <tr key={inv.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
-                <td className="py-3 px-4 font-medium" dir="ltr">{inv.invoiceNumber}</td>
-                <td className="py-3 px-4">{inv.patient ? `${inv.patient.firstName} ${inv.patient.lastName || ""}` : "—"}<span className="block text-xs text-gray-400 dark:text-gray-500" dir="ltr">{inv.patient?.phone || ""}</span></td>
-                <td className="py-3 px-4">{fmt(inv.total)}</td>
-                <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{fmt(inv.discount)}</td>
-                <td className="py-3 px-4 font-medium">{fmt(inv.net ?? Math.max(0, inv.total - inv.discount + (inv.additionAmount || 0)))}</td>
-                <td className="py-3 px-4 text-green-600 dark:text-green-400">{fmt(inv.amountPaid)}</td>
-                <td className="py-3 px-4 font-medium text-red-600 dark:text-red-400">{fmt(inv.remaining)}</td>
-                <td className="py-3 px-4">
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${INVOICE_STATUS_MAP[inv.status]?.color || ""}`}>{INVOICE_STATUS_MAP[inv.status]?.label || inv.status}</span>
-                  {inv.expenseSplit && (
-                    <span className={`block mt-1 px-2 py-0.5 rounded-full text-xs w-fit ${EXPENSE_SPLIT_LABEL[inv.expenseSplit]?.color || "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"}`}>
-                      {EXPENSE_SPLIT_LABEL[inv.expenseSplit]?.label || inv.expenseSplit}
-                    </span>
-                  )}
-                </td>
-                <td className="py-3 px-4 text-xs text-gray-500 dark:text-gray-400">
-                  {inv.payments?.length ? inv.payments.map(p => <div key={p.id} className={p.amount < 0 ? "text-red-500" : ""}>{fmt(p.amount)} {PAYMENT_METHOD_LABEL[p.method] || p.method}{p.reason ? ` — ${p.reason}` : ""}</div>) : "—"}
-                </td>
-                <td className="py-3 px-4">
-                  <div className="flex gap-1 justify-end">
-                    {inv.remaining > 0 && inv.status !== "REFUNDED" && (
-                      <button onClick={() => onPay(inv)} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded" title="تسجيل دفعة"><Banknote className="w-4 h-4" /></button>
-                    )}
-                    <button onClick={() => onEdit(inv)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="تعديل"><Pencil className="w-4 h-4" /></button>
-                    <button onClick={() => onDelete(inv.id)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="حذف"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}</tbody>
-          </table>
+        <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border/70 bg-muted/40 text-muted-foreground text-[11px] font-medium">
+                  {["رقم الفاتورة", "العميل / المريض", "الإجمالي", "الخصم", "الصافي", "المسدد", "المتبقي", "الحالة", "الدفعات", ""].map(h => (
+                    <th key={h} className="text-right py-2.5 px-3 whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {filtered.map(inv => (
+                  <tr key={inv.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="py-2.5 px-3 font-mono tabular-nums text-foreground font-medium" dir="ltr">
+                      {inv.invoiceNumber}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <span className="font-medium text-foreground">
+                        {inv.patient ? `${inv.patient.firstName} ${inv.patient.lastName || ""}` : "—"}
+                      </span>
+                      {inv.patient?.phone && (
+                        <span className="block text-[10px] text-muted-foreground font-mono tabular-nums" dir="ltr">
+                          {inv.patient.phone}
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 font-mono tabular-nums text-foreground">{fmt(inv.total)}</td>
+                    <td className="py-2.5 px-3 font-mono tabular-nums text-muted-foreground">{fmt(inv.discount)}</td>
+                    <td className="py-2.5 px-3 font-mono tabular-nums font-semibold text-foreground">
+                      {fmt(inv.net ?? Math.max(0, inv.total - inv.discount + (inv.additionAmount || 0)))}
+                    </td>
+                    <td className="py-2.5 px-3 font-mono tabular-nums text-emerald-600 dark:text-emerald-400 font-medium">
+                      {fmt(inv.amountPaid)}
+                    </td>
+                    <td className="py-2.5 px-3 font-mono tabular-nums font-semibold text-destructive">
+                      {fmt(inv.remaining)}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${INVOICE_STATUS_MAP[inv.status]?.color || "bg-muted text-muted-foreground"}`}>
+                        {INVOICE_STATUS_MAP[inv.status]?.label || inv.status}
+                      </span>
+                      {inv.expenseSplit && (
+                        <span className={`block mt-1 px-2 py-0.5 rounded-full text-[10px] w-fit ${EXPENSE_SPLIT_LABEL[inv.expenseSplit]?.color || "bg-muted text-muted-foreground"}`}>
+                          {EXPENSE_SPLIT_LABEL[inv.expenseSplit]?.label || inv.expenseSplit}
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-[11px] text-muted-foreground font-mono tabular-nums">
+                      {inv.payments?.length ? (
+                        inv.payments.map(p => (
+                          <div key={p.id} className={p.amount < 0 ? "text-destructive" : ""}>
+                            {fmt(p.amount)} {PAYMENT_METHOD_LABEL[p.method] || p.method}
+                            {p.reason ? ` — ${p.reason}` : ""}
+                          </div>
+                        ))
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <div className="flex gap-1 justify-end">
+                        {inv.remaining > 0 && inv.status !== "REFUNDED" && (
+                          <button
+                            onClick={() => onPay(inv)}
+                            className="p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                            title="تسجيل دفعة"
+                          >
+                            <Banknote className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => onEdit(inv)}
+                          className="p-1 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                          title="تعديل"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => onDelete(inv.id)}
+                          className="p-1 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                          title="حذف"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {invoiceModal !== undefined && <InvoiceModal invoice={invoiceModal} patients={patients} onClose={onInvoiceModalClose} onSave={onInvoiceSave} />}
-      {paymentInvoice && <PaymentModal invoice={paymentInvoice} onClose={onPaymentClose} onSave={onPaymentSave} onPayback={handlePayback} />}
+      {invoiceModal !== undefined && (
+        <InvoiceModal
+          invoice={invoiceModal}
+          patients={patients}
+          onClose={onInvoiceModalClose}
+          onSave={onInvoiceSave}
+        />
+      )}
+      {paymentInvoice && (
+        <PaymentModal
+          invoice={paymentInvoice}
+          onClose={onPaymentClose}
+          onSave={onPaymentSave}
+          onPayback={handlePayback}
+        />
+      )}
     </div>
   );
 }
