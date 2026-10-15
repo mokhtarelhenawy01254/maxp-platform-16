@@ -120,9 +120,10 @@ export const StudioInspectorDesignTab: React.FC<StudioInspectorDesignTabProps> =
               <div className="flex items-center gap-1.5">
                 <input
                   type="text"
+                  dir="ltr"
                   value={currentColor}
                   onChange={(e) => onUpdateField("backgroundColor", e.target.value)}
-                  className="w-16 rounded border border-[#ececee] px-1.5 py-0.5 text-[10.5px] font-mono text-[#17181c]"
+                  className="w-16 rounded border border-[#ececee] px-1.5 py-0.5 text-[10.5px] font-mono text-[#17181c] text-center"
                 />
                 <input
                   type="color"

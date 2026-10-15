@@ -55,6 +55,17 @@ const StorefrontImagePickerModal: React.FC<StorefrontImagePickerModalProps> = ({
     void loadImages();
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -97,11 +108,11 @@ const StorefrontImagePickerModal: React.FC<StorefrontImagePickerModalProps> = ({
         <div className="flex items-center justify-between gap-4 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {title || "اختيار صورة البانر"}
+              {title || "اختيار صورة"}
             </h3>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               {description ||
-                "اختر صورة محفوظة أو ارفع صورة جديدة لتستخدمها مباشرة داخل الـ hero."}
+                "اختر صورة محفوظة أو ارفع صورة جديدة لتستخدمها مباشرة في القسم."}
             </p>
           </div>
 
@@ -130,7 +141,7 @@ const StorefrontImagePickerModal: React.FC<StorefrontImagePickerModalProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-950/30">
           <div className="text-sm text-gray-500 dark:text-gray-400">
             {images.length > 0
-              ? `${images.length} صورة متاحة في الحافظة`
+              ? `${images.length} صورة متاحة`
               : "لا توجد صور محفوظة بعد"}
           </div>
 
@@ -170,11 +181,11 @@ const StorefrontImagePickerModal: React.FC<StorefrontImagePickerModalProps> = ({
             <div className="flex items-center justify-center h-64 rounded-3xl border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-950/20 text-center">
               <div className="space-y-2 px-6">
                 <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {emptyTitle || "لا توجد صور في الحافظة"}
+                  {emptyTitle || "لا توجد صور محفوظة بعد"}
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {emptyDescription ||
-                    "ارفع أول صورة من الزر العلوي، وسيتم ربطها مباشرة بالحقل الحالي."}
+                    "استخدم زر «رفع صورة جديدة» لإضافة صورك وربطها بالقسم مباشرة."}
                 </p>
               </div>
             </div>

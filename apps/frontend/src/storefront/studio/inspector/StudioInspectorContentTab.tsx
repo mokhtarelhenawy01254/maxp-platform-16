@@ -124,10 +124,11 @@ export const StudioInspectorContentTab: React.FC<StudioInspectorContentTabProps>
             <LinkIcon className="h-3.5 w-3.5 shrink-0 me-1" />
             <input
               type="text"
+              dir="ltr"
               value={ctaLink}
               onChange={(e) => onUpdateField("ctaLink", e.target.value)}
               placeholder="/shop"
-              className="w-full bg-transparent py-1.5 text-[11.5px] text-[#17181c] outline-none"
+              className="w-full bg-transparent py-1.5 text-[11.5px] text-[#17181c] outline-none font-mono"
             />
           </div>
         </div>

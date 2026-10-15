@@ -66,6 +66,30 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const [showCatalogModal, setShowCatalogModal] = useState<boolean>(false);
   const [showImagePickerModal, setShowImagePickerModal] = useState<boolean>(false);
 
+  const handleOpenCatalogModal = () => {
+    setShowImagePickerModal(false);
+    setShowCatalogModal(true);
+  };
+
+  const handleOpenImagePickerModal = () => {
+    setShowCatalogModal(false);
+    setShowImagePickerModal(true);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (showImagePickerModal) {
+          setShowImagePickerModal(false);
+        } else if (showCatalogModal) {
+          setShowCatalogModal(false);
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showImagePickerModal, showCatalogModal]);
+
   useEffect(() => {
     if (typeof document === "undefined") return;
     const prevOverflow = document.body.style.overflow;
@@ -187,7 +211,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
             isAiActive={isInspectorOpen && inspectorTab === "interactions"}
             onSelectTab={(tab) => {
               if (tab === "media") {
-                setShowImagePickerModal(true);
+                handleOpenImagePickerModal();
                 return;
               }
               if (tab === "ai") {
@@ -227,7 +251,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                       }
                       setIsInspectorOpen(true);
                     }}
-                    onOpenFullCatalog={() => setShowCatalogModal(true)}
+                    onOpenFullCatalog={handleOpenCatalogModal}
                     onClose={() => setIsLeftDrawerOpen(false)}
                   />
                 )}
@@ -250,7 +274,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                       onMoveSection={handleMoveSection}
                       onDuplicateSection={handleDuplicateSection}
                       onDeleteSection={handleDeleteSection}
-                      onOpenSectionCatalog={() => setShowCatalogModal(true)}
+                      onOpenSectionCatalog={handleOpenCatalogModal}
                       onTabChange={(nextTab) => setLayersPanelTab(nextTab)}
                       onUpdateThemeTokens={handleDesignTokensChange}
                       onCollapse={() => setIsLeftDrawerOpen(false)}
@@ -298,6 +322,11 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                           ? sectionEntry
                           : sectionEntry?.type || "section";
 
+                      const sectionSettings =
+                        typeof sectionEntry === "object" && sectionEntry !== null
+                          ? (sectionEntry.settings || sectionEntry)
+                          : undefined;
+
                       return (
                         <StudioSortableSection
                           key={stableKey}
@@ -310,6 +339,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                           totalSections={activeSections.length}
                           deviceMode={deviceMode}
                           showSpacingOverlay={showSpacingOverlay}
+                          settings={sectionSettings}
                           onSelect={() => {
                             setSelectedSectionKey(stableKey);
                             setIsInspectorOpen(true);
@@ -346,7 +376,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                   onClose={() => setIsInspectorOpen(false)}
                   onUpdateField={handleUpdateSectionField}
                   onBatchUpdateFields={handleBatchUpdateSectionFields}
-                  onOpenImagePicker={() => setShowImagePickerModal(true)}
+                  onOpenImagePicker={handleOpenImagePickerModal}
                   onSwitchDevice={setDeviceMode}
                 />
               </div>
