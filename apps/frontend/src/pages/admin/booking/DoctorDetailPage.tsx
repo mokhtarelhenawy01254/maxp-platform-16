@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowRight, Building2, Phone, Mail, DollarSign, Percent,
+  Calendar, CheckCircle2, Clock, AlertCircle, Edit, User,
+} from "lucide-react";
 import { BookingDoctorDetail, STATUS_MAP, api, getAuthHeaders } from "./shared";
 
 const fmtMoney = (n?: number) => (n != null ? `${Number(n).toFixed(2)} ج.م` : "—");
-
 const WEEKDAY_NAMES = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 
 export default function DoctorDetailPage({ doctorId }: { doctorId?: string }) {
@@ -23,7 +25,7 @@ export default function DoctorDetailPage({ doctorId }: { doctorId?: string }) {
         if (!json.success) throw new Error(json.error || "فشل التحميل");
         if (!cancelled) setDoctor(json.data);
       } catch (e: unknown) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "خطأ");
+        if (!cancelled) setError(e instanceof Error ? e.message : "خطأ أثناء جلب الملف");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -32,226 +34,236 @@ export default function DoctorDetailPage({ doctorId }: { doctorId?: string }) {
   }, [doctorId]);
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto" dir="rtl">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto space-y-6" dir="rtl">
+      {/* Top Header Surface */}
+      <div className="bg-card border border-border/70 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/admin/booking/doctors")} className="p-2 border dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" title="رجوع"><ArrowRightIcon className="w-4 h-4" /></button>
+          <button
+            onClick={() => navigate("/admin/booking/doctors")}
+            className="p-2 border border-border/70 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            title="رجوع لقائمة الأطباء"
+          >
+            <ArrowRight className="w-4 h-4" />
+          </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">ملف الطبيب</h1>
-            {doctor && <p className="text-sm text-gray-500 dark:text-gray-400">{doctor.title} {doctor.name} · {doctor.specialty}</p>}
+            <h1 className="text-lg font-bold text-foreground">
+              {doctor ? `${doctor.title} ${doctor.name}` : "ملف الطبيب"}
+            </h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {doctor?.specialty || "التفاصيل المهنية، جدول المواعيد، والأداء المالي للطبيب"}
+            </p>
           </div>
         </div>
+
         {doctor && (
-          <div className="flex gap-2">
-            <button onClick={() => navigate("/admin/booking/doctors")} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold">تعديل</button>
-          </div>
+          <button
+            onClick={() => navigate("/admin/booking/doctors")}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+          >
+            <Edit className="w-3.5 h-3.5" />
+            تعديل الطبيب
+          </button>
         )}
       </div>
 
       {loading ? (
-        <p className="text-center py-16 text-gray-400 dark:text-gray-500">جاري التحميل...</p>
+        <div className="text-center py-16 text-xs text-muted-foreground">جاري تحميل ملف الطبيب...</div>
       ) : error ? (
-        <div className="text-center py-16">
-          <p className="text-red-500 mb-4">{error}</p>
-          <button onClick={() => navigate("/admin/booking/doctors")} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">العودة للأطباء</button>
+        <div className="bg-card border border-border/70 rounded-xl p-8 text-center max-w-md mx-auto space-y-3">
+          <AlertCircle className="w-8 h-8 text-destructive mx-auto" />
+          <p className="text-xs text-destructive">{error}</p>
+          <button
+            onClick={() => navigate("/admin/booking/doctors")}
+            className="px-4 py-2 bg-primary text-primary-foreground text-xs font-medium rounded-lg"
+          >
+            العودة للأطباء
+          </button>
         </div>
       ) : doctor ? (
-        <div className="space-y-6 max-w-5xl">
-          {/* Profile card */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-            <div className="flex items-center gap-4 md:col-span-1">
+        <div className="space-y-6">
+          {/* Profile Chassis */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 bg-card border border-border/70 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-4 md:col-span-1 border-b md:border-b-0 md:border-l border-border/60 pb-4 md:pb-0 md:pl-4">
               {doctor.avatarUrl ? (
-                <img src={doctor.avatarUrl} alt={doctor.name} className="w-20 h-20 rounded-full object-cover border dark:border-gray-600" />
+                <img src={doctor.avatarUrl} alt={doctor.name} className="w-16 h-16 rounded-xl object-cover border border-border/70 shadow-sm" />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center text-2xl font-bold">
+                <div className="w-16 h-16 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center text-xl font-bold font-mono">
                   {(doctor.name || "؟").charAt(0)}
                 </div>
               )}
-              <div>
-                <p className="text-lg font-bold">{doctor.title} {doctor.name}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{doctor.specialty || "—"}</p>
-                <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs ${doctor.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>{doctor.isActive ? "نشط" : "غير نشط"}</span>
+              <div className="space-y-1">
+                <h2 className="text-base font-bold text-foreground">{doctor.title} {doctor.name}</h2>
+                <p className="text-xs text-muted-foreground">{doctor.specialty || "—"}</p>
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border ${doctor.isActive ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${doctor.isActive ? "bg-emerald-500" : "bg-rose-500"}`} />
+                  {doctor.isActive ? "نشط" : "غير نشط"}
+                </span>
               </div>
             </div>
-            <div className="text-sm space-y-1.5 md:col-span-2">
-              <p>🏥 الفرع: {doctor.branchName || "—"}</p>
-              {doctor.phone && <p dir="ltr">📞 {doctor.phone}</p>}
-              {doctor.email && <p dir="ltr" className="text-xs text-gray-500 dark:text-gray-400">✉️ {doctor.email}</p>}
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2"><p className="text-xs text-gray-500 dark:text-gray-400">رسوم الكشف</p><p className="font-semibold">{fmtMoney(doctor.consultationFee)}</p></div>
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2"><p className="text-xs text-gray-500 dark:text-gray-400">نسبة العمولة</p><p className="font-semibold">{doctor.commissionRate != null ? `${doctor.commissionRate}%` : "—"}</p></div>
-              </div>
-              {doctor.bio && <p className="text-xs text-gray-500 dark:text-gray-400 pt-1">{doctor.bio}</p>}
-            </div>
-          </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">إجمالي المواعيد</p>
-              <p className="text-xl font-bold">{doctor.stats?.total ?? 0}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">مواعيد اليوم</p>
-              <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{doctor.stats?.today ?? 0}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">مواعيد قادمة</p>
-              <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{doctor.stats?.upcoming ?? 0}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">مكتملة</p>
-              <p className="text-xl font-bold text-green-600 dark:text-green-400">{doctor.stats?.completed ?? 0}</p>
-            </div>
-          </div>
-
-          {/* Performance + financial */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-              <h4 className="font-bold mb-3">تحليل الأداء</h4>
-              <div className="space-y-3">
-                <div>
-                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    <span>نسبة الحضور</span><span className="font-semibold text-gray-700 dark:text-gray-200">{doctor.stats?.attendanceRate ?? 0}%</span>
-                  </div>
-                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.min(100, doctor.stats?.attendanceRate ?? 0)}%` }} />
-                  </div>
+            <div className="text-xs space-y-3 md:col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Building2 className="w-4 h-4 text-primary shrink-0" />
+                  <span>الفرع: <strong className="text-foreground font-medium">{doctor.branchName || "—"}</strong></span>
                 </div>
-                <div>
-                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    <span>نسبة عدم الحضور</span><span className="font-semibold text-gray-700 dark:text-gray-200">{doctor.stats?.noShowRate ?? 0}%</span>
+                {doctor.phone && (
+                  <div className="flex items-center gap-2 text-muted-foreground" dir="ltr">
+                    <Phone className="w-4 h-4 text-primary shrink-0" />
+                    <span className="font-mono text-foreground">{doctor.phone}</span>
                   </div>
-                  <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div className="h-full bg-red-500 rounded-full" style={{ width: `${Math.min(100, doctor.stats?.noShowRate ?? 0)}%` }} />
+                )}
+                {doctor.email && (
+                  <div className="flex items-center gap-2 text-muted-foreground" dir="ltr">
+                    <Mail className="w-4 h-4 text-primary shrink-0" />
+                    <span className="font-mono text-foreground">{doctor.email}</span>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 pt-1 text-center">
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2"><p className="text-xs text-gray-500 dark:text-gray-400">مكتملة</p><p className="font-bold text-green-600 dark:text-green-400">{doctor.stats?.completed ?? 0}</p></div>
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2"><p className="text-xs text-gray-500 dark:text-gray-400">قيد الانتظار</p><p className="font-bold text-yellow-600 dark:text-yellow-400">{doctor.stats?.pending ?? 0}</p></div>
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2"><p className="text-xs text-gray-500 dark:text-gray-400">ملغي</p><p className="font-bold text-red-500">{doctor.stats?.cancelled ?? 0}</p></div>
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2"><p className="text-xs text-gray-500 dark:text-gray-400">لم يحضر</p><p className="font-bold text-gray-500">{doctor.stats?.noShow ?? 0}</p></div>
-                </div>
+                )}
               </div>
-            </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-              <h4 className="font-bold mb-3">الأداء المالي</h4>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"><p className="text-xs text-gray-500 dark:text-gray-400">إجمالي المطالب</p><p className="font-bold text-lg">{fmtMoney(doctor.stats?.totalBilled)}</p></div>
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"><p className="text-xs text-gray-500 dark:text-gray-400">المحصل</p><p className="font-bold text-lg text-green-600 dark:text-green-400">{fmtMoney(doctor.stats?.collected)}</p></div>
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"><p className="text-xs text-gray-500 dark:text-gray-400">الخصومات</p><p className="font-bold text-lg text-gray-500">{fmtMoney(doctor.stats?.discounts)}</p></div>
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"><p className="text-xs text-gray-500 dark:text-gray-400">المتبقي</p><p className="font-bold text-lg text-red-600 dark:text-red-400">{fmtMoney(doctor.stats?.outstanding)}</p></div>
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 col-span-2"><p className="text-xs text-gray-500 dark:text-gray-400">عمولة الطبيب المستحقة ({doctor.commissionRate != null ? `${doctor.commissionRate}%` : "—"})</p><p className="font-bold text-lg text-purple-600 dark:text-purple-400">{fmtMoney(doctor.stats?.commission)}</p></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Services */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-            <h4 className="font-bold mb-3">الخدمات المقدمة ({doctor.services?.length || 0})</h4>
-            {(!doctor.services || doctor.services.length === 0) ? (
-              <p className="text-center py-6 text-gray-400 dark:text-gray-500">لا توجد خدمات مرتبطة</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {doctor.services.map(s => (
-                  <span key={s.id} className="bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-3 py-1.5 rounded-lg text-sm border border-purple-100 dark:border-purple-800">
-                    {s.name}
-                    <span className="text-xs text-purple-400 dark:text-purple-400 mr-1.5">{s.fee != null ? `رسومه: ${fmtMoney(s.fee)}` : (s.basePrice != null ? fmtMoney(s.basePrice) : "")}</span>
-                    {s.durationMinutes ? <span className="text-xs text-purple-400 mr-1.5">{s.durationMinutes} د</span> : null}
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/60">
+                <div className="bg-muted/30 border border-border/60 rounded-lg p-2.5 space-y-0.5">
+                  <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                    <DollarSign className="w-3 h-3" /> رسوم الكشف
                   </span>
-                ))}
+                  <p className="font-mono tabular-nums text-sm font-bold text-foreground">{fmtMoney(doctor.consultationFee)}</p>
+                </div>
+                <div className="bg-muted/30 border border-border/60 rounded-lg p-2.5 space-y-0.5">
+                  <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                    <Percent className="w-3 h-3" /> نسبة العمولة
+                  </span>
+                  <p className="font-mono tabular-nums text-sm font-bold text-foreground">{doctor.commissionRate != null ? `${doctor.commissionRate}%` : "—"}</p>
+                </div>
               </div>
-            )}
+
+              {doctor.bio && <p className="text-muted-foreground text-xs leading-relaxed">{doctor.bio}</p>}
+            </div>
           </div>
 
-          {/* Availability - weekly table */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-            <h4 className="font-bold mb-3">مواعيد العمل</h4>
+          {/* Stats Telemetry Ribbon */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 rounded-xl border border-border/70 bg-card overflow-hidden divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 shadow-sm">
+            <div className="p-3.5 space-y-1">
+              <span className="text-xs text-muted-foreground">إجمالي المواعيد</span>
+              <div className="text-lg font-bold font-mono tabular-nums text-foreground">{doctor.stats?.total ?? 0}</div>
+            </div>
+            <div className="p-3.5 space-y-1">
+              <span className="text-xs text-muted-foreground">مواعيد اليوم</span>
+              <div className="text-lg font-bold font-mono tabular-nums text-primary">{doctor.stats?.today ?? 0}</div>
+            </div>
+            <div className="p-3.5 space-y-1">
+              <span className="text-xs text-muted-foreground">مواعيد قادمة</span>
+              <div className="text-lg font-bold font-mono tabular-nums text-sky-600 dark:text-sky-400">{doctor.stats?.upcoming ?? 0}</div>
+            </div>
+            <div className="p-3.5 space-y-1">
+              <span className="text-xs text-muted-foreground">مكتملة</span>
+              <div className="text-lg font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{doctor.stats?.completed ?? 0}</div>
+            </div>
+          </div>
+
+          {/* Performance & Financial Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="bg-card border border-border/70 rounded-xl p-5 shadow-sm space-y-4">
+              <h3 className="text-sm font-semibold text-foreground">مؤشرات الأداء والحضور</h3>
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs text-muted-foreground font-mono">
+                    <span>نسبة الحضور</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">{doctor.stats?.attendanceRate ?? 0}%</span>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, doctor.stats?.attendanceRate ?? 0)}%` }} />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs text-muted-foreground font-mono">
+                    <span>نسبة عدم الحضور</span>
+                    <span className="font-semibold text-rose-600 dark:text-rose-400">{doctor.stats?.noShowRate ?? 0}%</span>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-rose-500 rounded-full" style={{ width: `${Math.min(100, doctor.stats?.noShowRate ?? 0)}%` }} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2 pt-2 text-center">
+                  <div className="bg-muted/30 border border-border/60 rounded-lg p-2">
+                    <span className="text-[10px] text-muted-foreground block">مكتمل</span>
+                    <strong className="text-xs font-mono text-emerald-600 dark:text-emerald-400">{doctor.stats?.completed ?? 0}</strong>
+                  </div>
+                  <div className="bg-muted/30 border border-border/60 rounded-lg p-2">
+                    <span className="text-[10px] text-muted-foreground block">انتظار</span>
+                    <strong className="text-xs font-mono text-amber-600 dark:text-amber-400">{doctor.stats?.pending ?? 0}</strong>
+                  </div>
+                  <div className="bg-muted/30 border border-border/60 rounded-lg p-2">
+                    <span className="text-[10px] text-muted-foreground block">ملغي</span>
+                    <strong className="text-xs font-mono text-rose-600 dark:text-rose-400">{doctor.stats?.cancelled ?? 0}</strong>
+                  </div>
+                  <div className="bg-muted/30 border border-border/60 rounded-lg p-2">
+                    <span className="text-[10px] text-muted-foreground block">لم يحضر</span>
+                    <strong className="text-xs font-mono text-muted-foreground">{doctor.stats?.noShow ?? 0}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-card border border-border/70 rounded-xl p-5 shadow-sm space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">الأداء والتحصيل المالي</h3>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="bg-muted/30 border border-border/60 rounded-lg p-3 space-y-0.5">
+                  <span className="text-muted-foreground">إجمالي المطالب</span>
+                  <p className="font-mono text-sm font-bold text-foreground">{fmtMoney(doctor.stats?.totalBilled)}</p>
+                </div>
+                <div className="bg-muted/30 border border-border/60 rounded-lg p-3 space-y-0.5">
+                  <span className="text-muted-foreground">المحصل</span>
+                  <p className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400">{fmtMoney(doctor.stats?.collected)}</p>
+                </div>
+                <div className="bg-muted/30 border border-border/60 rounded-lg p-3 space-y-0.5">
+                  <span className="text-muted-foreground">الخصومات</span>
+                  <p className="font-mono text-sm font-bold text-muted-foreground">{fmtMoney(doctor.stats?.discounts)}</p>
+                </div>
+                <div className="bg-muted/30 border border-border/60 rounded-lg p-3 space-y-0.5">
+                  <span className="text-muted-foreground">المتبقي</span>
+                  <p className="font-mono text-sm font-bold text-rose-600 dark:text-rose-400">{fmtMoney(doctor.stats?.outstanding)}</p>
+                </div>
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 col-span-2 space-y-0.5">
+                  <span className="text-primary font-medium">عمولة الطبيب المستحقة ({doctor.commissionRate != null ? `${doctor.commissionRate}%` : "—"})</span>
+                  <p className="font-mono text-base font-bold text-primary">{fmtMoney(doctor.stats?.commission)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Availability weekly ribbon */}
+          <div className="bg-card border border-border/70 rounded-xl p-5 shadow-sm space-y-3">
+            <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground">
+              <Calendar className="w-4 h-4 text-primary" />
+              مواعيد العمل الأسبوعية
+            </h3>
             {(!doctor.availability || doctor.availability.length === 0) ? (
-              <p className="text-center py-6 text-gray-400 dark:text-gray-500">لم يتم ضبط مواعيد العمل — يجب إضافة الأيام والساعات حتى يظهر للطبيب في الحجز</p>
+              <p className="text-center py-6 text-xs text-muted-foreground">لم يتم ضبط جدول الأيام والساعات بعد</p>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
                 {WEEKDAY_NAMES.map((dayName, idx) => {
                   const slot = (doctor.availability || []).find(a => a.dayOfWeek === idx && a.isAvailable);
                   return (
-                    <div key={idx} className={`rounded-lg border p-2.5 text-center ${slot ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"}`}>
-                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">{dayName}</p>
+                    <div
+                      key={idx}
+                      className={`rounded-lg border p-2.5 text-center transition-colors ${
+                        slot
+                          ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                          : "bg-muted/30 border-border/60 text-muted-foreground"
+                      }`}
+                    >
+                      <p className="text-xs font-semibold">{dayName}</p>
                       {slot ? (
-                        <p className="text-sm font-bold text-green-700 dark:text-green-300" dir="ltr">{slot.startTime} - {slot.endTime}</p>
+                        <p className="text-xs font-mono font-bold mt-1" dir="ltr">{slot.startTime} - {slot.endTime}</p>
                       ) : (
-                        <p className="text-xs text-gray-400">راحة</p>
+                        <p className="text-[11px] mt-1 opacity-60">راحة</p>
                       )}
                     </div>
                   );
                 })}
               </div>
-            )}
-          </div>
-
-          {/* Today's appointments */}
-          {doctor.todayAppointments && doctor.todayAppointments.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-              <h4 className="font-bold mb-3 text-blue-600 dark:text-blue-400">مواعيد اليوم ({doctor.todayAppointments.length})</h4>
-              <div className="space-y-2">
-                {doctor.todayAppointments.map(a => (
-                  <div key={a.id} className="flex items-center justify-between border dark:border-gray-700 rounded-lg px-3 py-2 text-sm">
-                    <span className="font-medium">{a.startTime} — {a.customerName}</span>
-                    <span className="text-xs text-gray-500">{a.serviceName || "—"}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Appointments - upcoming & past */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-            <h4 className="font-bold mb-3">المواعيد ({doctor.appointments?.length || 0})</h4>
-            {(!doctor.appointments || doctor.appointments.length === 0) ? (
-              <p className="text-center py-8 text-gray-400 dark:text-gray-500">لا توجد مواعيد</p>
-            ) : (
-              <>
-                {doctor.upcomingAppointments && doctor.upcomingAppointments.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-xs font-semibold text-indigo-500 dark:text-indigo-400 mb-2">القادمة</p>
-                    <table className="w-full text-sm">
-                      <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">{["المريض", "التاريخ", "الوقت", "الفرع", "الخدمة", "الحالة", "الدفع"].map(h => <th key={h} className="text-right py-2.5 px-3">{h}</th>)}</tr></thead>
-                      <tbody>{doctor.upcomingAppointments.map(a => (
-                        <tr key={a.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="py-2.5 px-3 font-medium">{a.customerName}</td>
-                          <td className="py-2.5 px-3 whitespace-nowrap">{a.appointmentDate}</td>
-                          <td className="py-2.5 px-3 whitespace-nowrap">{a.startTime}</td>
-                          <td className="py-2.5 px-3">{a.branchName || "—"}</td>
-                          <td className="py-2.5 px-3">{a.serviceName || "—"}</td>
-                          <td className="py-2.5 px-3"><span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span></td>
-                          <td className="py-2.5 px-3 text-xs">{a.paymentStatus ? (a.paymentStatus === "paid" ? "مدفوع" : a.paymentStatus === "partial" ? "جزئي" : "غير مدفوع") : "—"}</td>
-                        </tr>
-                      ))}</tbody>
-                    </table>
-                  </div>
-                )}
-                {doctor.pastAppointments && doctor.pastAppointments.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-gray-400 mb-2">السابقة</p>
-                    <table className="w-full text-sm">
-                      <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">{["المريض", "التاريخ", "الوقت", "الفرع", "الخدمة", "التشخيص", "الحالة", "الدفع"].map(h => <th key={h} className="text-right py-2.5 px-3">{h}</th>)}</tr></thead>
-                      <tbody>{doctor.pastAppointments.map(a => (
-                        <tr key={a.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="py-2.5 px-3 font-medium">{a.customerName}</td>
-                          <td className="py-2.5 px-3 whitespace-nowrap">{a.appointmentDate}</td>
-                          <td className="py-2.5 px-3 whitespace-nowrap">{a.startTime}</td>
-                          <td className="py-2.5 px-3">{a.branchName || "—"}</td>
-                          <td className="py-2.5 px-3">{a.serviceName || "—"}</td>
-                          <td className="py-2.5 px-3 max-w-[180px] truncate" title={a.diagnosis || ""}>{a.diagnosis || "—"}</td>
-                          <td className="py-2.5 px-3"><span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span></td>
-                          <td className="py-2.5 px-3 text-xs">{a.paymentStatus ? (a.paymentStatus === "paid" ? "مدفوع" : a.paymentStatus === "partial" ? "جزئي" : "غير مدفوع") : "—"}</td>
-                        </tr>
-                      ))}</tbody>
-                    </table>
-                  </div>
-                )}
-              </>
             )}
           </div>
         </div>

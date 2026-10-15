@@ -1,9 +1,16 @@
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightIcon } from "@heroicons/react/24/outline";
-import { BookingPatient, BookingAppointment, PatientDocument, STATUS_MAP, INVOICE_STATUS_MAP, PAYMENT_METHOD_LABEL, DOCUMENT_TYPES, MODAL_INPUT_CLS, api, getAuthHeaders, tryParseJSON, fetchJson } from "./shared";
+import {
+  ArrowRight, Phone, Mail, CreditCard, MapPin, Calendar,
+  User, Edit, AlertCircle, RefreshCw, Activity,
+} from "lucide-react";
+import {
+  BookingPatient, BookingAppointment, STATUS_MAP, INVOICE_STATUS_MAP,
+  PAYMENT_METHOD_LABEL, api, getAuthHeaders, tryParseJSON, fetchJson,
+} from "./shared";
 import MedicalHistoryChecklist, { MedicalHistoryValue } from "./MedicalHistoryChecklist";
 import PatientModal from "./PatientModal";
+import PatientDocumentsTab from "./PatientDocumentsTab";
 import { computeAge } from "./patientAge";
 
 interface PatientInvoice {
@@ -49,13 +56,23 @@ const parseMedicalHistory = (v: unknown): MedicalHistoryValue | null => {
 };
 
 const PAGE_TABS = [
-  { id: "data", label: "بيانات" },
-  { id: "medical", label: "التاريخ الطبي" },
-  { id: "appointments", label: "المواعيد" },
-  { id: "documents", label: "المستندات" },
+  { id: "data", label: "البيانات الأساسية والفواتير" },
+  { id: "medical", label: "التاريخ الطبي والحساسية" },
+  { id: "appointments", label: "سجل الزيارات والكشوفات" },
+  { id: "documents", label: "المستندات والملفات" },
 ] as const;
 
 type PageTab = typeof PAGE_TABS[number]["id"];
+
+const statusLabel = (s: string): string => {
+  const labels: Record<string, string> = { ACTIVE: "نشط", INACTIVE: "غير نشط", REVIEW: "قيد المراجعة" };
+  return labels[s] || s;
+};
+
+const maritalLabel = (s: string): string => {
+  const labels: Record<string, string> = { SINGLE: "أعزب/عزباء", MARRIED: "متزوج/متزوجة", DIVORCED: "مطلق/مطلقة", WIDOW: "أرمل/أرملة" };
+  return labels[s] || s;
+};
 
 export default function PatientDetailPage({ patientId }: { patientId?: string }) {
   const id = patientId;
@@ -65,15 +82,6 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<PageTab>("data");
   const [editing, setEditing] = useState(false);
-  const [documents, setDocuments] = useState<PatientDocument[]>([]);
-  const [documentsLoading, setDocumentsLoading] = useState(false);
-  const [docError, setDocError] = useState<string | null>(null);
-  const [docType, setDocType] = useState("OTHER");
-  const [docName, setDocName] = useState("");
-  const [docNotes, setDocNotes] = useState("");
-  const [docFile, setDocFile] = useState<{ name: string; dataUrl: string; mimeType: string } | null>(null);
-  const [fileInputKey, setFileInputKey] = useState(0);
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -85,7 +93,7 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
         if (!json.success) throw new Error(json.error || "فشل التحميل");
         if (!cancelled) setPatient(json.data);
       } catch (e: unknown) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "خطأ");
+        if (!cancelled) setError(e instanceof Error ? e.message : "خطأ أثناء جلب الملف");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -98,319 +106,261 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
   const medications = renderList(patient?.medications);
   const medicalHistory = parseMedicalHistory(patient?.medicalHistory);
 
-  useEffect(() => {
-    if (tab !== "documents" || !id) return;
-    let cancelled = false;
-    setDocumentsLoading(true);
-    (async () => {
-      try {
-        const data = await fetchJson<PatientDocument[]>(api(`patient-documents/patient/${id}`));
-        if (!cancelled) setDocuments(data);
-      } catch (e: unknown) {
-        if (!cancelled) setDocError(e instanceof Error ? e.message : "خطأ");
-      } finally {
-        if (!cancelled) setDocumentsLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [tab, id]);
-
-  const onDocFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    setDocError(null);
-    if (!file) { setDocFile(null); return; }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result || "");
-      if (dataUrl.length > 5 * 1024 * 1024) {
-        setDocError("حجم الملف كبير جداً (الحد الأقصى 5 ميجابايت)");
-        setDocFile(null);
-        setFileInputKey(k => k + 1);
-        return;
-      }
-      setDocFile({ name: file.name, dataUrl, mimeType: file.type || "" });
-    };
-    reader.onerror = () => { setDocError("تعذر قراءة الملف"); setDocFile(null); };
-    reader.readAsDataURL(file);
-  };
-
-  const handleUpload = async () => {
-    if (!id || !docFile) return;
-    setUploading(true);
-    setDocError(null);
-    try {
-      await fetchJson(api("patient-documents"), {
-        method: "POST",
-        body: JSON.stringify({
-          patientId: id,
-          documentType: docType,
-          name: docName.trim() || docFile.name,
-          fileData: docFile.dataUrl,
-          mimeType: docFile.mimeType || undefined,
-          notes: docNotes.trim() || undefined,
-        }),
-      });
-      setDocName("");
-      setDocNotes("");
-      setDocFile(null);
-      setFileInputKey(k => k + 1);
-      const data = await fetchJson<PatientDocument[]>(api(`patient-documents/patient/${id}`));
-      setDocuments(data);
-    } catch (e: unknown) {
-      setDocError(e instanceof Error ? e.message : "خطأ");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleDeleteDocument = async (docId: string) => {
-    if (!window.confirm("هل تريد حذف هذا المستند؟")) return;
-    setDocError(null);
-    try {
-      await fetchJson(api(`patient-documents/${docId}`), { method: "DELETE" });
-      setDocuments(prev => prev.filter(d => d.id !== docId));
-    } catch (e: unknown) {
-      setDocError(e instanceof Error ? e.message : "خطأ");
-    }
-  };
-
   return (
-    <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto" dir="rtl">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto space-y-6" dir="rtl">
+      {/* Top Header Surface */}
+      <div className="bg-card border border-border/70 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/admin/booking/patients")} className="p-2 border dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" title="رجوع"><ArrowRightIcon className="w-4 h-4" /></button>
+          <button
+            onClick={() => navigate("/admin/booking/patients")}
+            className="p-2 border border-border/70 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            title="رجوع لقائمة المرضى"
+          >
+            <ArrowRight className="w-4 h-4" />
+          </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">ملف المريض</h1>
-            {patient && <p className="text-sm text-gray-500 dark:text-gray-400">{patient.firstName} {patient.lastName || ""}</p>}
+            <h1 className="text-lg font-bold text-foreground">
+              {patient ? `${patient.firstName} ${patient.lastName || ""}` : "ملف المريض"}
+            </h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              الملف الطبي الشامل، الفواتير، الزيارات السابقة، والمستندات المرفقة
+            </p>
           </div>
         </div>
+
         {patient && (
-          <div className="flex gap-2">
-            <button onClick={() => setEditing(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold">تعديل</button>
-          </div>
+          <button
+            onClick={() => setEditing(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+          >
+            <Edit className="w-3.5 h-3.5" />
+            تعديل الملف
+          </button>
         )}
       </div>
 
       {loading ? (
-        <p className="text-center py-16 text-gray-400 dark:text-gray-500">جاري التحميل...</p>
+        <div className="text-center py-16 text-xs text-muted-foreground">جاري تحميل بيانات المريض...</div>
       ) : error ? (
-        <div className="text-center py-16">
-          <p className="text-red-500 mb-4">{error}</p>
-          <button onClick={() => navigate("/admin/booking/patients")} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">العودة للمرضى</button>
+        <div className="bg-card border border-border/70 rounded-xl p-8 text-center max-w-md mx-auto space-y-3">
+          <AlertCircle className="w-8 h-8 text-destructive mx-auto" />
+          <p className="text-xs text-destructive">{error}</p>
+          <button
+            onClick={() => navigate("/admin/booking/patients")}
+            className="px-4 py-2 bg-primary text-primary-foreground text-xs font-medium rounded-lg"
+          >
+            العودة لقائمة المرضى
+          </button>
         </div>
       ) : patient ? (
-        <div className="space-y-6 max-w-5xl">
-          <div className="flex gap-2">
+        <div className="space-y-6">
+          {/* Navigation Tabs */}
+          <div className="flex flex-wrap items-center gap-1.5 border-b border-border/60 pb-2">
             {PAGE_TABS.map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)} className={`px-4 py-2 text-sm rounded-lg font-semibold ${tab === t.id ? "bg-blue-600 text-white" : "bg-white dark:bg-gray-800 border dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"}`}>{t.label}</button>
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                  tab === t.id
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "border border-border/70 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                }`}
+              >
+                {t.label}
+              </button>
             ))}
           </div>
 
-          {tab === "data" && (<>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-              <div>
-                <p className="text-lg font-bold">{patient.firstName} {patient.lastName || ""}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{GENDER_LABEL[patient.gender || ""] || ""} {patient.bloodType ? `· فصيلة ${patient.bloodType}` : ""}</p>
-              </div>
-              <div className="text-sm space-y-1.5">
-                {patient.phone && <p dir="ltr">📞 {patient.phone}</p>}
-                {patient.email && <p dir="ltr" className="text-xs text-gray-500 dark:text-gray-400">✉️ {patient.email}</p>}
-                {patient.nationalId && <p dir="ltr" className="text-xs text-gray-500 dark:text-gray-400">🪪 الرقم القومي: {patient.nationalId}</p>}
-                {patient.address && <p>📍 {patient.address}</p>}
-                {patient.birthDate && (
-                  <p>🎂 {String(patient.birthDate).split("T")[0]}{computeAge(String(patient.birthDate)) && <span className="text-xs text-gray-500 dark:text-gray-400"> · العمر: {computeAge(String(patient.birthDate))}</span>}</p>
-                )}
-                {patient.nationalIdImage && (
-                  <div className="pt-1">
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">صورة البطاقة</p>
-                    <img src={patient.nationalIdImage} alt="بطاقة الرقم القومي" className="w-40 h-28 object-cover rounded-lg border dark:border-gray-600" />
-                  </div>
-                )}
-              </div>
-              <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
-                {patient.status && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">الحالة</p><p className="font-medium">{statusLabel(patient.status)}</p></div>}
-                {patient.source && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">المصدر</p><p className="font-medium">{patient.source}</p></div>}
-                {patient.maritalStatus && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">الحالة الاجتماعية</p><p className="font-medium">{maritalLabel(patient.maritalStatus)}</p></div>}
-                {patient.city && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">المدينة</p><p className="font-medium">{patient.city}</p></div>}
-                {patient.occupation && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">المهنة</p><p className="font-medium">{patient.occupation}</p></div>}
-                {patient.referringPhysician && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">الطبيب المحوّل</p><p className="font-medium">{patient.referringPhysician.name}</p></div>}
-                {patient.priceList && <div><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">قائمة الأسعار</p><p className="font-medium">{patient.priceList.name}</p></div>}
-              </div>
-              {allergies && <div className="md:col-span-2"><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">الحساسية</p><div className="flex flex-wrap gap-1">{allergies.map((a, i) => <span key={i} className="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full">{a}</span>)}</div></div>}
-              {diseases && <div className="md:col-span-2"><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">أمراض مزمنة</p><div className="flex flex-wrap gap-1">{diseases.map((d, i) => <span key={i} className="text-xs bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full">{d}</span>)}</div></div>}
-              {medications && <div className="md:col-span-2"><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">أدوية حالية</p><div className="flex flex-wrap gap-1">{medications.map((m, i) => <span key={i} className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">{m}</span>)}</div></div>}
-              {patient.notes && <div className="md:col-span-2"><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ملاحظات</p><p className="text-sm">{patient.notes}</p></div>}
-              {patient.customer && <div className="md:col-span-2 text-xs text-gray-500 dark:text-gray-400">عميل مرتبط: {patient.customer.firstName} {patient.customer.lastName || ""}</div>}
-            </div>
-
-            {/* Summary cards */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">الزيارات</p>
-                <p className="text-xl font-bold">{patient.appointments?.length || 0}</p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">الفواتير</p>
-                <p className="text-xl font-bold">{patient.financialSummary?.invoiceCount ?? patient.invoices?.length ?? 0}</p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">إجمالي المطالب</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{fmtMoney(patient.financialSummary?.totalBilled)}</p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">المسدد</p>
-                <p className="text-xl font-bold text-green-600 dark:text-green-400">{fmtMoney(patient.financialSummary?.totalPaid)}</p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">المتبقي</p>
-                <p className="text-xl font-bold text-red-600 dark:text-red-400">{fmtMoney(patient.financialSummary?.outstanding)}</p>
-              </div>
-            </div>
-
-            {/* Invoices */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-              <h4 className="font-bold mb-3">الفواتير ({patient.invoices?.length || 0})</h4>
-              {(!patient.invoices || patient.invoices.length === 0) ? (
-                <p className="text-center py-8 text-gray-400 dark:text-gray-500">لا توجد فواتير</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">{["رقم الفاتورة", "التاريخ", "الإجمالي", "الخصم", "المسدد", "المتبقي", "الحالة", "الدفعات"].map(h => <th key={h} className="text-right py-2.5 px-3">{h}</th>)}</tr></thead>
-                    <tbody>{patient.invoices.map(inv => (
-                      <tr key={inv.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="py-2.5 px-3 font-medium">{inv.invoiceNumber}</td>
-                        <td className="py-2.5 px-3 whitespace-nowrap">{String(inv.createdAt).split("T")[0]}</td>
-                        <td className="py-2.5 px-3">{fmtMoney(inv.total)}</td>
-                        <td className="py-2.5 px-3 text-gray-500 dark:text-gray-400">{fmtMoney(inv.discount)}</td>
-                        <td className="py-2.5 px-3 text-green-600 dark:text-green-400">{fmtMoney(inv.amountPaid)}</td>
-                        <td className="py-2.5 px-3 text-red-600 dark:text-red-400">{fmtMoney(inv.remaining)}</td>
-                        <td className="py-2.5 px-3"><span className={`px-2 py-0.5 rounded-full text-xs ${INVOICE_STATUS_MAP[inv.status]?.color || ""}`}>{INVOICE_STATUS_MAP[inv.status]?.label || inv.status}</span></td>
-                        <td className="py-2.5 px-3 text-xs text-gray-500 dark:text-gray-400">
-                          {inv.payments?.length ? inv.payments.map((p, i) => <div key={i} dir="ltr">{fmtMoney(p.amount)} · {PAYMENT_METHOD_LABEL[p.method] || p.method}</div>) : "—"}
-                        </td>
-                      </tr>
-                    ))}</tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </>)}
-
-          {tab === "medical" && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5 space-y-4">
-              <MedicalHistoryChecklist value={medicalHistory} onChange={() => { /* read-only */ }} readOnly />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {diseases && <div><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">أمراض مزمنة</p><div className="flex flex-wrap gap-1">{diseases.map((d, i) => <span key={i} className="text-xs bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full">{d}</span>)}</div></div>}
-                {allergies && <div><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">الحساسية</p><div className="flex flex-wrap gap-1">{allergies.map((a, i) => <span key={i} className="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full">{a}</span>)}</div></div>}
-              </div>
-              {!medicalHistory && !diseases && !allergies && <p className="text-center py-8 text-gray-400 dark:text-gray-500">لا توجد بيانات طبية مسجلة</p>}
-            </div>
-          )}
-
-          {tab === "appointments" && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-              <h4 className="font-bold mb-3">تاريخ الزيارات ({patient.appointments?.length || 0})</h4>
-              {(!patient.appointments || patient.appointments.length === 0) ? (
-                <p className="text-center py-8 text-gray-400 dark:text-gray-500">لا توجد زيارات مسجلة بعد</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead><tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">{["التاريخ", "الوقت", "الفرع", "الطبيب", "الخدمة", "الحيوية", "التشخيص", "الحالة", "الدفع"].map(h => <th key={h} className="text-right py-2.5 px-3">{h}</th>)}</tr></thead>
-                    <tbody>{patient.appointments.map(a => (
-                      <tr key={a.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="py-2.5 px-3 whitespace-nowrap">{String(a.appointmentDate).split("T")[0]}</td>
-                        <td className="py-2.5 px-3 whitespace-nowrap">{a.startTime}</td>
-                        <td className="py-2.5 px-3">{a.branch?.name || "—"}</td>
-                        <td className="py-2.5 px-3">{(a.doctor ? `${a.doctor.title || ""} ${a.doctor.name || ""}` : a.doctorName || "—").trim()}</td>
-                        <td className="py-2.5 px-3">{a.serviceName || "—"}</td>
-                        <td className="py-2.5 px-3 text-xs text-gray-500 dark:text-gray-400">{renderVitals(a.vitals) || "—"}</td>
-                        <td className="py-2.5 px-3 max-w-[220px]">
-                          {a.diagnosis ? (
-                            <div>
-                              <p className="truncate" title={a.diagnosis}>{a.diagnosis}</p>
-                              {(a.treatmentPlan || a.prescription) && (
-                                <p className="text-xs text-gray-400 dark:text-gray-500 truncate" title={`${a.treatmentPlan || ""} ${a.prescription || ""}`}>
-                                  {a.treatmentPlan ? `خطة: ${a.treatmentPlan}` : ""}{a.treatmentPlan && a.prescription ? " · " : ""}{a.prescription ? `وصفة: ${a.prescription}` : ""}
-                                </p>
-                              )}
-                            </div>
-                          ) : "—"}
-                        </td>
-                        <td className="py-2.5 px-3"><span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_MAP[a.status]?.color || ""}`}>{STATUS_MAP[a.status]?.label || a.status}</span></td>
-                        <td className="py-2.5 px-3 text-xs">
-                          {a.paymentRequired || a.paymentStatus ? (
-                            <span className={`px-2 py-0.5 rounded-full ${a.paymentStatus === "paid" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : a.paymentStatus === "partial" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>
-                              {a.paymentStatus === "paid" ? "مدفوع" : a.paymentStatus === "partial" ? "جزئي" : "غير مدفوع"}
-                            </span>
-                          ) : "—"}
-                        </td>
-                      </tr>
-                    ))}</tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-          {tab === "documents" && (
-            <div className="space-y-5">
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-                <h4 className="font-bold mb-3">إضافة مستند</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Tab 1: Data & Invoices */}
+          {tab === "data" && (
+            <div className="space-y-6">
+              {/* Profile Card */}
+              <div className="bg-card border border-border/70 rounded-xl p-5 space-y-4 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
                   <div>
-                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">نوع المستند</label>
-                    <select value={docType} onChange={e => setDocType(e.target.value)} className={MODAL_INPUT_CLS}>
-                      {DOCUMENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                    </select>
+                    <h2 className="text-base font-bold text-foreground">{patient.firstName} {patient.lastName || ""}</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+                      {GENDER_LABEL[patient.gender || ""] || ""} {patient.bloodType ? `· فصيلة ${patient.bloodType}` : ""}
+                    </p>
                   </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">اسم المستند</label>
-                    <input value={docName} onChange={e => setDocName(e.target.value)} placeholder="اختياري" className={MODAL_INPUT_CLS} />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">ملاحظات</label>
-                    <input value={docNotes} onChange={e => setDocNotes(e.target.value)} placeholder="اختياري" className={MODAL_INPUT_CLS} />
-                  </div>
+                  <span className="px-2.5 py-1 rounded-md text-xs font-medium border bg-muted border-border/70 text-foreground">
+                    {statusLabel(patient.status || "")}
+                  </span>
                 </div>
-                <div className="mt-3">
-                  <input key={fileInputKey} type="file" onChange={onDocFileChange} className="block w-full text-sm text-gray-600 dark:text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900/30 dark:file:text-blue-300 file:font-semibold" />
-                  {docFile && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">تم اختيار: {docFile.name}</p>}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                  {patient.phone && (
+                    <div className="space-y-0.5">
+                      <span className="text-muted-foreground flex items-center gap-1"><Phone className="w-3 h-3" /> الهاتف</span>
+                      <p className="font-mono text-foreground" dir="ltr">{patient.phone}</p>
+                    </div>
+                  )}
+                  {patient.email && (
+                    <div className="space-y-0.5">
+                      <span className="text-muted-foreground flex items-center gap-1"><Mail className="w-3 h-3" /> البريد الإلكتروني</span>
+                      <p className="font-mono text-foreground" dir="ltr">{patient.email}</p>
+                    </div>
+                  )}
+                  {patient.nationalId && (
+                    <div className="space-y-0.5">
+                      <span className="text-muted-foreground flex items-center gap-1"><CreditCard className="w-3 h-3" /> الرقم القومي</span>
+                      <p className="font-mono text-foreground" dir="ltr">{patient.nationalId}</p>
+                    </div>
+                  )}
+                  {patient.birthDate && (
+                    <div className="space-y-0.5">
+                      <span className="text-muted-foreground flex items-center gap-1"><Calendar className="w-3 h-3" /> تاريخ الميلاد</span>
+                      <p className="font-mono text-foreground">
+                        {String(patient.birthDate).split("T")[0]}
+                        {computeAge(String(patient.birthDate)) && <span className="text-muted-foreground"> ({computeAge(String(patient.birthDate))})</span>}
+                      </p>
+                    </div>
+                  )}
+                  {patient.address && (
+                    <div className="space-y-0.5 sm:col-span-2">
+                      <span className="text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" /> العنوان</span>
+                      <p className="text-foreground">{patient.address}</p>
+                    </div>
+                  )}
                 </div>
-                <div className="mt-4 flex justify-end">
-                  <button onClick={handleUpload} disabled={!docFile || uploading} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed">{uploading ? "جارٍ الرفع..." : "رفع المستند"}</button>
-                </div>
-                {docError && <p className="mt-3 text-sm text-red-600 dark:text-red-400">{docError}</p>}
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-5">
-                <h4 className="font-bold mb-3">المستندات ({documents.length})</h4>
-                {documentsLoading ? (
-                  <p className="text-center py-8 text-gray-400 dark:text-gray-500">جاري التحميل...</p>
-                ) : documents.length === 0 ? (
-                  <p className="text-center py-8 text-gray-400 dark:text-gray-500">لا توجد مستندات مرفوعة</p>
+              {/* Financial Telemetry Ribbon */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 rounded-xl border border-border/70 bg-card overflow-hidden divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-border/60 shadow-sm">
+                <div className="p-3.5 space-y-1">
+                  <span className="text-xs text-muted-foreground">الزيارات</span>
+                  <div className="text-lg font-bold font-mono tabular-nums text-foreground">{patient.appointments?.length || 0}</div>
+                </div>
+                <div className="p-3.5 space-y-1">
+                  <span className="text-xs text-muted-foreground">الفواتير</span>
+                  <div className="text-lg font-bold font-mono tabular-nums text-foreground">{patient.financialSummary?.invoiceCount ?? patient.invoices?.length ?? 0}</div>
+                </div>
+                <div className="p-3.5 space-y-1">
+                  <span className="text-xs text-muted-foreground">إجمالي المطالب</span>
+                  <div className="text-lg font-bold font-mono tabular-nums text-foreground">{fmtMoney(patient.financialSummary?.totalBilled)}</div>
+                </div>
+                <div className="p-3.5 space-y-1">
+                  <span className="text-xs text-muted-foreground">المسدد</span>
+                  <div className="text-lg font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{fmtMoney(patient.financialSummary?.totalPaid)}</div>
+                </div>
+                <div className="p-3.5 space-y-1">
+                  <span className="text-xs text-muted-foreground">المتبقي</span>
+                  <div className="text-lg font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400">{fmtMoney(patient.financialSummary?.outstanding)}</div>
+                </div>
+              </div>
+
+              {/* Invoices Surface */}
+              <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-sm">
+                <div className="p-4 border-b border-border/60 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-foreground">سجل الفواتير ({patient.invoices?.length || 0})</h3>
+                </div>
+                {(!patient.invoices || patient.invoices.length === 0) ? (
+                  <p className="text-center py-8 text-xs text-muted-foreground">لا توجد فواتير مسجلة لهذا المريض</p>
                 ) : (
-                  <div className="space-y-2">
-                    {documents.map(doc => (
-                      <div key={doc.id} className="flex items-center justify-between gap-3 border dark:border-gray-700 rounded-lg px-4 py-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${documentTypeColor(doc.documentType)}`}>{documentTypeLabel(doc.documentType)}</span>
-                          <div className="min-w-0">
-                            <p className="font-medium truncate">{doc.name || "بدون اسم"}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{String(doc.uploadedAt).split("T")[0]}{doc.uploadedBy ? ` · ${doc.uploadedBy}` : ""}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          {doc.fileData && <a href={doc.fileData} target="_blank" rel="noreferrer" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">فتح</a>}
-                          <button onClick={() => handleDeleteDocument(doc.id)} className="text-sm text-red-600 dark:text-red-400 hover:underline">حذف</button>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-right text-xs">
+                      <thead>
+                        <tr className="border-b border-border/60 bg-muted/40 text-muted-foreground uppercase font-medium">
+                          {["رقم الفاتورة", "التاريخ", "الإجمالي", "الخصم", "المسدد", "المتبقي", "الحالة", "الدفعات"].map(h => (
+                            <th key={h} className="py-2.5 px-3">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/40">
+                        {patient.invoices.map(inv => (
+                          <tr key={inv.id} className="hover:bg-muted/30 transition-colors">
+                            <td className="py-2.5 px-3 font-mono font-medium text-foreground">{inv.invoiceNumber}</td>
+                            <td className="py-2.5 px-3 font-mono text-muted-foreground">{String(inv.createdAt).split("T")[0]}</td>
+                            <td className="py-2.5 px-3 font-mono font-semibold">{fmtMoney(inv.total)}</td>
+                            <td className="py-2.5 px-3 font-mono text-muted-foreground">{fmtMoney(inv.discount)}</td>
+                            <td className="py-2.5 px-3 font-mono text-emerald-600 dark:text-emerald-400 font-semibold">{fmtMoney(inv.amountPaid)}</td>
+                            <td className="py-2.5 px-3 font-mono text-rose-600 dark:text-rose-400 font-semibold">{fmtMoney(inv.remaining)}</td>
+                            <td className="py-2.5 px-3">
+                              <span className={`px-2 py-0.5 rounded-md text-[11px] font-medium border ${INVOICE_STATUS_MAP[inv.status]?.color || "bg-muted text-muted-foreground border-border/60"}`}>
+                                {INVOICE_STATUS_MAP[inv.status]?.label || inv.status}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 font-mono text-[11px] text-muted-foreground">
+                              {inv.payments?.length ? inv.payments.map((p, i) => <div key={i} dir="ltr">{fmtMoney(p.amount)} · {PAYMENT_METHOD_LABEL[p.method] || p.method}</div>) : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
             </div>
           )}
+
+          {/* Tab 2: Medical History */}
+          {tab === "medical" && (
+            <div className="bg-card border border-border/70 rounded-xl p-5 space-y-4 shadow-sm">
+              <MedicalHistoryChecklist value={medicalHistory} onChange={() => {}} readOnly />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-border/60">
+                {diseases && (
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground mb-1.5">الأمراض المزمنة</p>
+                    <div className="flex flex-wrap gap-1.5">{diseases.map((d, i) => <span key={i} className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2.5 py-0.5 rounded-md">{d}</span>)}</div>
+                  </div>
+                )}
+                {allergies && (
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground mb-1.5">الحساسية والموانع</p>
+                    <div className="flex flex-wrap gap-1.5">{allergies.map((a, i) => <span key={i} className="text-xs bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 px-2.5 py-0.5 rounded-md">{a}</span>)}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tab 3: Appointments */}
+          {tab === "appointments" && (
+            <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-sm">
+              <div className="p-4 border-b border-border/60 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-foreground">تاريخ وسجل الكشوفات ({patient.appointments?.length || 0})</h3>
+              </div>
+              {(!patient.appointments || patient.appointments.length === 0) ? (
+                <p className="text-center py-8 text-xs text-muted-foreground">لا توجد زيارات مسجلة للمريض حتى الآن</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-right text-xs">
+                    <thead>
+                      <tr className="border-b border-border/60 bg-muted/40 text-muted-foreground uppercase font-medium">
+                        {["التاريخ", "الوقت", "الفرع", "الطبيب", "الخدمة", "العلامات الحيوية", "التشخيص", "الحالة"].map(h => (
+                          <th key={h} className="py-2.5 px-3">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/40">
+                      {patient.appointments.map(a => (
+                        <tr key={a.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="py-2.5 px-3 font-mono font-medium">{String(a.appointmentDate).split("T")[0]}</td>
+                          <td className="py-2.5 px-3 font-mono text-muted-foreground">{a.startTime}</td>
+                          <td className="py-2.5 px-3 text-foreground">{a.branch?.name || "—"}</td>
+                          <td className="py-2.5 px-3 text-foreground">{(a.doctor ? `${a.doctor.title || ""} ${a.doctor.name || ""}` : a.doctorName || "—").trim()}</td>
+                          <td className="py-2.5 px-3 text-foreground">{a.serviceName || "—"}</td>
+                          <td className="py-2.5 px-3 font-mono text-muted-foreground">{renderVitals(a.vitals) || "—"}</td>
+                          <td className="py-2.5 px-3 max-w-[200px] truncate text-foreground" title={a.diagnosis || ""}>{a.diagnosis || "—"}</td>
+                          <td className="py-2.5 px-3">
+                            <span className={`px-2 py-0.5 rounded-md text-[11px] font-medium border ${STATUS_MAP[a.status]?.color || "bg-muted text-muted-foreground border-border/60"}`}>
+                              {STATUS_MAP[a.status]?.label || a.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tab 4: Documents */}
+          {tab === "documents" && <PatientDocumentsTab patientId={patient.id} />}
         </div>
       ) : null}
+
       {editing && patient && (
         <PatientModal
           patient={patient}
@@ -419,8 +369,7 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
             await fetchJson(api(`patients/${id}`), { method: "PUT", body: JSON.stringify(d) });
             const res = await fetch(api(`patients/${id}`), { headers: getAuthHeaders() });
             const json = await res.json();
-            if (!json.success) throw new Error(json.error || "فشل التحميل");
-            setPatient(json.data);
+            if (json.success) setPatient(json.data);
             setEditing(false);
           }}
         />
@@ -428,27 +377,3 @@ export default function PatientDetailPage({ patientId }: { patientId?: string })
     </div>
   );
 }
-
-const statusLabel = (s: string): string => {
-  const labels: Record<string, string> = { ACTIVE: "نشط", INACTIVE: "غير نشط", REVIEW: "قيد المراجعة" };
-  return labels[s] || s;
-};
-
-const maritalLabel = (s: string): string => {
-  const labels: Record<string, string> = { SINGLE: "أعزب/عزباء", MARRIED: "متزوج/متزوجة", DIVORCED: "مطلق/مطلقة", WIDOW: "أرمل/أرملة" };
-  return labels[s] || s;
-};
-
-const documentTypeLabel = (t: string): string => DOCUMENT_TYPES.find(d => d.value === t)?.label || t;
-
-const documentTypeColor = (t: string): string => {
-  const colors: Record<string, string> = {
-    DRIVING_LICENSE: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-    INSURANCE: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
-    PRESCRIPTION: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
-    IMAGE: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
-    VIDEO: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
-    OTHER: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-  };
-  return colors[t] || "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
-};
