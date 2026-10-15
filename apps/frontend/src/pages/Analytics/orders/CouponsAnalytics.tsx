@@ -1,263 +1,202 @@
-import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
+import React, { useState, useEffect, useMemo } from "react";
 import {
-  TicketIcon,
-  XCircleIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+  Ticket,
+  RefreshCw,
+  TrendingUp,
+  Percent,
+  CheckCircle2,
+  AlertTriangle,
+  BarChart3,
+  DollarSign,
+  Layers,
+} from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
 import { useCurrency } from "../../../hooks/useCurrency";
-import PeriodSelector, {
-  PeriodRange,
-} from "../../../components/common/PeriodSelector";
+import PeriodSelector, { PeriodRange } from "../../../components/common/PeriodSelector";
+import { Card, CardContent } from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
 
-interface CouponStats {
-  coupons: Array<{
-    code: string;
-    usageCount: number;
-    discountAmount: number;
-    revenue: number;
-  }>;
-  totalDiscounts: number;
-  totalCouponOrders: number;
+interface CouponItem {
+  code: string;
+  usageCount: number;
+  discountAmount: number;
+  revenue: number;
 }
 
 const CouponsAnalytics: React.FC = () => {
-  const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<PeriodRange | null>(null);
-  const [stats, setStats] = useState<CouponStats | null>(null);
-
-  useEffect(() => {
-    if (range) {
-      fetchData();
-    }
-  }, [range]);
+  const [coupons, setCoupons] = useState<CouponItem[]>([]);
+  const [totalDiscounts, setTotalDiscounts] = useState(0);
+  const [totalCouponOrders, setTotalCouponOrders] = useState(0);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      setError(null);
-      const response = await analyticsService.getCouponsAnalytics(
-        range?.startDate,
-        range?.endDate,
-      );
-      if (response.success) {
-        const data = response.data || {};
-        setStats({
-          coupons: data.coupons || [],
-          totalDiscounts: data.totalDiscounts || 0,
-          totalCouponOrders: data.totalCouponOrders || 0,
-        });
+      const res = await analyticsService.getCouponsAnalytics(range?.startDate, range?.endDate);
+      if (res?.success && res.data) {
+        setCoupons(res.data.coupons || []);
+        setTotalDiscounts(res.data.totalDiscounts || 0);
+        setTotalCouponOrders(res.data.totalCouponOrders || 0);
+      } else {
+        setCoupons([]);
+        setTotalDiscounts(0);
+        setTotalCouponOrders(0);
       }
-    } catch (err: any) {
-      setError(err.message || t("couponsAnalytics.fetchError"));
+    } catch (err) {
+      console.error("CouponsAnalytics error:", err);
+      setCoupons([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const header = (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t("couponsAnalytics.title")}
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
-          {t("couponsAnalytics.subtitle")}
-        </p>
-      </div>
-      <PeriodSelector onRangeChange={setRange} />
-    </div>
-  );
+  useEffect(() => {
+    if (range) fetchData();
+  }, [range]);
 
-  if (loading) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    );
-  }
+  const totalRevenue = useMemo(() => coupons.reduce((sum, c) => sum + (c.revenue || 0), 0), [coupons]);
+  const roi = useMemo(() => {
+    if (totalDiscounts <= 0) return 0;
+    return Math.round(((totalRevenue - totalDiscounts) / totalDiscounts) * 100);
+  }, [totalRevenue, totalDiscounts]);
 
-  if (error) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl text-center">
-          <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 dark:text-red-400">{error}</p>
-          <button
-            onClick={fetchData}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            {t("couponsAnalytics.retry")}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const cards = [
+    { title: "إجمالي الخصومات الممنوحة", val: formatPrice(totalDiscounts), icon: Percent, color: "text-rose-500", sub: `موزعة على ${coupons.length} كوبون نشط` },
+    { title: "الطلبيات المستخدمة لكوبونات", val: totalCouponOrders.toLocaleString("en-US"), icon: Ticket, color: "text-blue-500", sub: `متوسط الخصم للطلب: ${totalCouponOrders > 0 ? formatPrice(totalDiscounts / totalCouponOrders) : formatPrice(0)}` },
+    { title: "الإيرادات الناتجة عن الكوبونات", val: formatPrice(totalRevenue), icon: DollarSign, color: "text-emerald-500", sub: "مبيعات محققة بفضل العروض" },
+    { title: "العائد الاستثماري (ROI)", val: `${roi}%`, icon: TrendingUp, color: "text-primary", sub: "معدل العائد لكل جنيه خصم" },
+  ];
 
   return (
-    <div className="space-y-6" dir="rtl">
-      {header}
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-purple-500">
-              <TicketIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("couponsAnalytics.ordersWithCoupons")}
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {stats?.totalCouponOrders}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-red-500">
-              <ExclamationTriangleIcon className="h-6 w-6 text-white" />
-            </div>
+    <div className="space-y-5" dir="rtl">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+            <Ticket className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-sm text-gray-500">
-              {t("couponsAnalytics.totalDiscounts")}
-            </p>
-            <p className="text-2xl font-bold text-red-600">
-              {formatPrice(stats?.totalDiscounts || 0)}
-            </p>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">تحليلات الكوبونات والخصومات الترويجية</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">تتبع استخدام أكواد الخصم، العائد التجاري، ونفقات التخفيضات</p>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-blue-500">
-              <TicketIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                {t("couponsAnalytics.couponsUsedCount")}
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {stats?.coupons?.length || 0}
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center gap-2">
+          <PeriodSelector onRangeChange={setRange} />
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 gap-1.5 text-xs font-mono">
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} /> تحديث
+          </Button>
         </div>
       </div>
 
-      {/* Coupon Usage Chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {t("couponsAnalytics.usageChartTitle")}
-        </h3>
-        <div className="min-w-0 h-[350px]">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <BarChart
-              data={stats?.coupons?.slice(0, 10) || []}
-              layout="vertical"
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#374151"
-                opacity={0.1}
-              />
-              <XAxis type="number" stroke="#9CA3AF" fontSize={12} />
-              <YAxis
-                dataKey="code"
-                type="category"
-                stroke="#9CA3AF"
-                fontSize={12}
-                width={120}
-              />
-              <Tooltip />
-              <Bar
-                dataKey="usageCount"
-                fill="#8B5CF6"
-                name={t("couponsAnalytics.usageCount")}
-                radius={[0, 4, 4, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+      {/* Telemetry Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {cards.map((c, i) => (
+          <Card key={i} className="border-border/70 shadow-sm bg-card">
+            <CardContent className="p-3.5">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span>{c.title}</span><c.icon className={`h-3.5 w-3.5 ${c.color}`} />
+              </div>
+              <div className="text-lg font-bold font-mono tabular-nums text-foreground">{loading ? "..." : c.val}</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{c.sub}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Coupons Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {t("couponsAnalytics.detailsTitle")}
-        </h3>
+      {/* Visual Chart: Top Coupons */}
+      {coupons.length > 0 && (
+        <div className="border border-border/70 rounded-xl bg-card p-4 shadow-sm">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-purple-500" /> أكثر الكوبونات استخداماً
+          </h3>
+          <div className="h-[260px]">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+              <BarChart data={coupons.slice(0, 8)} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} />
+                <XAxis type="number" stroke="#94a3b8" fontSize={11} />
+                <YAxis dataKey="code" type="category" stroke="#94a3b8" fontSize={11} width={110} />
+                <Tooltip contentStyle={{ backgroundColor: "#1e293b", borderColor: "#334155", borderRadius: "8px", color: "#fff", fontSize: "12px" }} />
+                <Bar dataKey="usageCount" fill="#8B5CF6" name="عدد الاستخدامات" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Data Table Chassis */}
+      <div className="border border-border/70 rounded-xl bg-card overflow-hidden shadow-sm">
+        <div className="p-3 bg-muted/20 border-b border-border/70 flex items-center justify-between text-xs">
+          <span className="font-semibold text-foreground">جدول تفاصيل الكوبونات الفعالة</span>
+          <span className="text-muted-foreground">عدد الأكواد: <strong className="text-foreground font-mono">{coupons.length}</strong></span>
+        </div>
+
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("couponsAnalytics.coupon")}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("couponsAnalytics.usageCount")}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("couponsAnalytics.discountAmount")}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("couponsAnalytics.revenueGenerated")}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("couponsAnalytics.status")}
-                </th>
+          <table className="w-full text-right text-xs">
+            <thead className="bg-muted/30 border-b border-border/70 text-muted-foreground text-[11px] font-medium">
+              <tr>
+                <th className="py-2.5 px-3.5">رمز الكوبون</th>
+                <th className="py-2.5 px-3.5 text-center">مرات الاستخدام</th>
+                <th className="py-2.5 px-3.5 text-center">إجمالي الخصم</th>
+                <th className="py-2.5 px-3.5 text-center">الإيراد الناتج</th>
+                <th className="py-2.5 px-3.5 text-center">حالة العائد</th>
               </tr>
             </thead>
-            <tbody>
-              {stats?.coupons?.map((coupon, index) => {
-                const profitWarning =
-                  coupon.discountAmount > coupon.revenue * 0.3;
-                return (
-                  <tr
-                    key={index}
-                    className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                  >
-                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white font-mono font-medium">
-                      {coupon.code}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                      {coupon.usageCount}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-red-600">
-                      {formatPrice(coupon.discountAmount)}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-green-600">
-                      {formatPrice(coupon.revenue)}
-                    </td>
-                    <td className="py-3 px-4">
-                      {profitWarning ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
-                          <ExclamationTriangleIcon className="h-3 w-3" />
-                          {t("couponsAnalytics.highDiscount")}
-                        </span>
-                      ) : (
-                        <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                          {t("couponsAnalytics.good")}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+            <tbody className="divide-y divide-border/60">
+              {loading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse"><td colSpan={5} className="py-4 px-3.5"><div className="h-4 bg-muted rounded w-3/4"></div></td></tr>
+                ))
+              ) : coupons.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-muted-foreground">
+                    <Ticket className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+                    <p className="font-medium">لم يتم استخدام كوبونات في الفترة المحددة</p>
+                  </td>
+                </tr>
+              ) : (
+                coupons.map((coupon, idx) => {
+                  const isHighDiscount = coupon.discountAmount > coupon.revenue * 0.3;
+                  return (
+                    <tr key={idx} className="hover:bg-muted/20 transition-colors">
+                      <td className="py-2.5 px-3.5 font-mono font-bold text-foreground text-sm flex items-center gap-1.5">
+                        <Ticket className="h-3.5 w-3.5 text-muted-foreground" />
+                        {coupon.code}
+                      </td>
+                      <td className="py-2.5 px-3.5 text-center font-mono font-bold text-foreground">
+                        {coupon.usageCount.toLocaleString("en-US")}
+                      </td>
+                      <td className="py-2.5 px-3.5 text-center font-mono font-semibold text-rose-600 dark:text-rose-400">
+                        {formatPrice(coupon.discountAmount)}
+                      </td>
+                      <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        {formatPrice(coupon.revenue)}
+                      </td>
+                      <td className="py-2.5 px-3.5 text-center">
+                        {isHighDiscount ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                            <AlertTriangle className="h-3 w-3" /> خصم مرتفع ({Math.round((coupon.discountAmount / (coupon.revenue || 1)) * 100)}%)
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                            <CheckCircle2 className="h-3 w-3" /> أداء ربحي ممتاز
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
+        </div>
+
+        <div className="p-2.5 bg-muted/10 border-t border-border/70 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-muted-foreground gap-2">
+          <span>إجمالي الخصومات: <strong className="text-foreground font-mono">{formatPrice(totalDiscounts)}</strong></span>
+          <span className="text-[11px]">مراقبة نسبة الخصم تمنع استنزاف هوامش الربح مع الحفاظ على الحافز البيعي</span>
         </div>
       </div>
     </div>

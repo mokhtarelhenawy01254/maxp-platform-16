@@ -1,6 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import { MapPinIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  MapPin,
+  RefreshCw,
+  TrendingUp,
+  DollarSign,
+  PieChart as PieIcon,
+  BarChart3,
+  CheckCircle2,
+  Banknote,
+} from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -14,230 +22,206 @@ import {
 } from "recharts";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
-import PeriodSelector, {
-  PeriodRange,
-} from "../../../components/common/PeriodSelector";
+import PeriodSelector, { PeriodRange } from "../../../components/common/PeriodSelector";
 import { useCurrency } from "../../../hooks/useCurrency";
+import { Card, CardContent } from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
 
-interface RegionStats {
-  regions: Array<{
-    name: string;
-    orders: number;
-    revenue: number;
-    deliveryRate: number;
-    codAcceptanceRate: number;
-  }>;
+interface RegionItem {
+  name: string;
+  orders: number;
+  revenue: number;
+  deliveryRate: number;
+  codAcceptanceRate: number;
 }
 
-const COLORS = [
-  "#10B981",
-  "#3B82F6",
-  "#F59E0B",
-  "#EF4444",
-  "#8B5CF6",
-  "#EC4899",
-];
+const COLORS = ["#10B981", "#3B82F6", "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4", "#EF4444"];
 
 const RegionAnalytics: React.FC = () => {
-  const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<PeriodRange | null>(null);
-  const [stats, setStats] = useState<RegionStats | null>(null);
-
-  useEffect(() => {
-    if (range) {
-      fetchData();
-    }
-  }, [range]);
+  const [regions, setRegions] = useState<RegionItem[]>([]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      setError(null);
-      const response = await analyticsService.getRegionAnalytics(
-        range?.startDate,
-        range?.endDate,
-      );
-      if (response.success && response.data) {
-        setStats(response.data);
+      const res = await analyticsService.getRegionAnalytics(range?.startDate, range?.endDate);
+      if (res?.success && res.data) {
+        setRegions(res.data.regions || []);
       } else {
-        setStats({ regions: [] });
+        setRegions([]);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("RegionAnalytics error:", err);
-      setError(err.message || t("regionAnalytics.fetchError"));
+      setRegions([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const header = (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t("regionAnalytics.title")}
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
-          {t("regionAnalytics.subtitle")}
-        </p>
-      </div>
-      <PeriodSelector onRangeChange={setRange} />
-    </div>
-  );
+  useEffect(() => {
+    if (range) fetchData();
+  }, [range]);
 
-  if (loading) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    );
-  }
+  const totalRevenue = useMemo(() => regions.reduce((sum, r) => sum + (r.revenue || 0), 0), [regions]);
+  const totalOrders = useMemo(() => regions.reduce((sum, r) => sum + (r.orders || 0), 0), [regions]);
+  const topRegion = useMemo(() => {
+    if (regions.length === 0) return null;
+    return [...regions].sort((a, b) => b.revenue - a.revenue)[0];
+  }, [regions]);
 
-  if (error) {
-    return (
-      <div className="space-y-6" dir="rtl">
-        {header}
-        <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl text-center">
-          <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 dark:text-red-400">{error}</p>
-          <button
-            onClick={fetchData}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            {t("regionAnalytics.retry")}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const avgDelivery = useMemo(() => {
+    if (regions.length === 0) return 0;
+    return regions.reduce((sum, r) => sum + (r.deliveryRate || 0), 0) / regions.length;
+  }, [regions]);
+
+  const cards = [
+    { title: "إجمالي إيرادات المحافظات", val: formatPrice(totalRevenue), icon: DollarSign, color: "text-emerald-500", sub: `موزعة على ${regions.length} محافظة` },
+    { title: "إجمالي الطلبيات المسجلة", val: totalOrders.toLocaleString("en-US"), icon: TrendingUp, color: "text-blue-500", sub: `متوسط الطلب: ${totalOrders > 0 ? formatPrice(totalRevenue / totalOrders) : formatPrice(0)}` },
+    { title: "المحافظة الأعلى طلباً", val: topRegion?.name || "—", icon: MapPin, color: "text-primary", sub: topRegion ? `${topRegion.orders} طلب (${formatPrice(topRegion.revenue)})` : "لا توجد بيانات" },
+    { title: "متوسط نسبة التسليم", val: `${avgDelivery.toFixed(1)}%`, icon: CheckCircle2, color: "text-indigo-500", sub: "معدل الإتمام عبر المحافظات" },
+  ];
 
   return (
-    <div className="space-y-6" dir="rtl">
-      {header}
+    <div className="space-y-5" dir="rtl">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+            <MapPin className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">تحليلات الأداء الجغرافي والمحافظات</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">توزيع حجم المبيعات، نسب التسليم، ومعدل قبول الدفع عند الاستلام جغرافياً</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <PeriodSelector onRangeChange={setRange} />
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 gap-1.5 text-xs font-mono">
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} /> تحديث
+          </Button>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {t("regionAnalytics.revenueByRegion")}
+      {/* Telemetry Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {cards.map((c, i) => (
+          <Card key={i} className="border-border/70 shadow-sm bg-card">
+            <CardContent className="p-3.5">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span>{c.title}</span><c.icon className={`h-3.5 w-3.5 ${c.color}`} />
+              </div>
+              <div className="text-lg font-bold font-mono tabular-nums text-foreground truncate">{loading ? "..." : c.val}</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{c.sub}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Visual Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Revenue by Region Bar */}
+        <div className="border border-border/70 rounded-xl bg-card p-4 shadow-sm">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-emerald-500" /> إجمالي الإيرادات حسب المحافظة
           </h3>
-          <div className="min-w-0 h-[400px]">
+          <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <BarChart data={stats?.regions || []} layout="vertical">
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#374151"
-                  opacity={0.1}
-                />
-                <XAxis type="number" stroke="#9CA3AF" fontSize={12} />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  stroke="#9CA3AF"
-                  fontSize={12}
-                  width={100}
-                />
-                <Tooltip formatter={(value) => formatPrice(value as number)} />
-                <Bar
-                  dataKey="revenue"
-                  fill="#10B981"
-                  name={t("regionAnalytics.revenue")}
-                  radius={[0, 4, 4, 0]}
-                />
+              <BarChart data={regions} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} />
+                <XAxis type="number" stroke="#94a3b8" fontSize={11} />
+                <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={11} width={90} />
+                <Tooltip formatter={(val) => formatPrice(Number(val) || 0)} contentStyle={{ backgroundColor: "#1e293b", borderColor: "#334155", borderRadius: "8px", color: "#fff", fontSize: "12px" }} />
+                <Bar dataKey="revenue" fill="#10B981" name="الإيراد" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {t("regionAnalytics.ordersDistribution")}
+        {/* Order Distribution Pie */}
+        <div className="border border-border/70 rounded-xl bg-card p-4 shadow-sm">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <PieIcon className="h-4 w-4 text-primary" /> حصة الطلبيات لكل محافظة
           </h3>
-          <div className="min-w-0 h-[400px]">
+          <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <PieChart>
-                <Pie
-                  data={stats?.regions || []}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={80}
-                  outerRadius={140}
-                  paddingAngle={5}
-                  dataKey="orders"
-                  nameKey="name"
-                  label={({ name, percent }) =>
-                    `${name} (${percent ? (percent * 100).toFixed(1) : 0}%)`
-                  }
-                >
-                  {(stats?.regions || []).map((_, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
+                <Pie data={regions} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={4} dataKey="orders" nameKey="name">
+                  {regions.map((_, idx) => (
+                    <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip contentStyle={{ backgroundColor: "#1e293b", borderColor: "#334155", borderRadius: "8px", color: "#fff", fontSize: "12px" }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <MapPinIcon className="h-5 w-5 text-blue-500" />
-          {t("regionAnalytics.regionDetails")}
-        </h3>
+      {/* Data Table Chassis */}
+      <div className="border border-border/70 rounded-xl bg-card overflow-hidden shadow-sm">
+        <div className="p-3 bg-muted/20 border-b border-border/70 flex items-center justify-between text-xs">
+          <span className="font-semibold text-foreground">سجل مؤشرات المحافظات</span>
+          <span className="text-muted-foreground">عدد المناطق: <strong className="text-foreground font-mono">{regions.length}</strong></span>
+        </div>
+
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("regionAnalytics.region")}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("regionAnalytics.ordersCount")}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("regionAnalytics.revenue")}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("regionAnalytics.deliveryRate")}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  {t("regionAnalytics.codAcceptanceRate")}
-                </th>
+          <table className="w-full text-right text-xs">
+            <thead className="bg-muted/30 border-b border-border/70 text-muted-foreground text-[11px] font-medium">
+              <tr>
+                <th className="py-2.5 px-3.5">المحافظة / النطاق</th>
+                <th className="py-2.5 px-3.5 text-center">عدد الطلبات</th>
+                <th className="py-2.5 px-3.5 text-center">إجمالي الإيرادات</th>
+                <th className="py-2.5 px-3.5 text-center">نسبة التسليم الناجح</th>
+                <th className="py-2.5 px-3.5 text-center">قبول الدفع عند الاستلام</th>
               </tr>
             </thead>
-            <tbody>
-              {stats?.regions?.map((region, index) => (
-                <tr
-                  key={index}
-                  className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                >
-                  <td className="py-3 px-4 text-sm text-gray-900 dark:text-white font-medium">
-                    {region.name}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-blue-600">
-                    {region.orders?.toLocaleString()}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-green-600 font-medium">
-                    {formatPrice(region.revenue)}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-purple-600">
-                    {region.deliveryRate?.toFixed(1)}%
-                  </td>
-                  <td className="py-3 px-4 text-sm text-orange-600">
-                    {region.codAcceptanceRate?.toFixed(1)}%
+            <tbody className="divide-y divide-border/60">
+              {loading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse"><td colSpan={5} className="py-4 px-3.5"><div className="h-4 bg-muted rounded w-3/4"></div></td></tr>
+                ))
+              ) : regions.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-muted-foreground">
+                    <MapPin className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+                    <p className="font-medium">لا توجد بيانات جغرافية للفترة المحددة</p>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                regions.map((region, idx) => (
+                  <tr key={idx} className="hover:bg-muted/20 transition-colors">
+                    <td className="py-2.5 px-3.5 font-medium text-foreground text-sm flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></span>
+                      {region.name}
+                    </td>
+                    <td className="py-2.5 px-3.5 text-center font-mono font-bold text-foreground">
+                      {region.orders.toLocaleString("en-US")}
+                    </td>
+                    <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatPrice(region.revenue)}
+                    </td>
+                    <td className="py-2.5 px-3.5 text-center">
+                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 font-bold">
+                        {region.deliveryRate ? region.deliveryRate.toFixed(1) : "0.0"}%
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3.5 text-center">
+                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 font-bold">
+                        {region.codAcceptanceRate ? region.codAcceptanceRate.toFixed(1) : "0.0"}%
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
+        </div>
+
+        <div className="p-2.5 bg-muted/10 border-t border-border/70 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-muted-foreground gap-2">
+          <span>إجمالي مبيعات المناطق: <strong className="text-foreground font-mono">{formatPrice(totalRevenue)}</strong></span>
+          <span className="text-[11px]">مقارنة مؤشرات المحافظات تساعد في اختيار مناطق الإعلانات الأكثر ربحية وأقل ارتداداً</span>
         </div>
       </div>
     </div>
