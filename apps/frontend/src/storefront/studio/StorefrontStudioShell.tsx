@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
@@ -49,17 +49,8 @@ interface StorefrontStudioShellProps {
 }
 
 export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
-  themeId,
-  designTokens: externalDesignTokens,
-  storeName = "متجري",
-  hasPendingChanges,
-  saving,
-  previewUrl,
-  onSave,
-  onDiscard,
-  onBack,
-  onOpenPreview,
-  onChange,
+  themeId, designTokens: externalDesignTokens, storeName = "متجري",
+  hasPendingChanges, saving, previewUrl, onSave, onDiscard, onBack, onOpenPreview, onChange,
 }) => {
   const [deviceMode, setDeviceMode] = useState<StudioDeviceMode>("desktop");
   const [zoomLevel, setZoomLevel] = useState<StudioZoomLevel>(1);
@@ -74,6 +65,15 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   );
   const [showCatalogModal, setShowCatalogModal] = useState<boolean>(false);
   const [showImagePickerModal, setShowImagePickerModal] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, []);
 
   // Studio Business State Hook
   const {
