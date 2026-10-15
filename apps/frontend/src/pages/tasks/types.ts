@@ -26,6 +26,10 @@ export type TaskSortBy =
 
 export type TaskScopeFilter = "all" | "my-tasks" | "assigned-by-me";
 
+export type TaskViewMode = "grouped" | "flat";
+
+export type TaskQuickFilter = "all" | "today" | "week" | "overdue";
+
 export interface TaskCategory {
   id: string;
   name: string;

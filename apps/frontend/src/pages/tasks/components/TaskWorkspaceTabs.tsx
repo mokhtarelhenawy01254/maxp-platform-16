@@ -45,12 +45,12 @@ const buildTabs = (
     },
     {
       key: "compliance",
-      label: "تقارير الالتزام",
+      label: "متابعة الإنجاز",
       icon: ShieldCheckIcon,
     },
     {
       key: "backlog",
-      label: "الباك لوج والتحسين",
+      label: "الأفكار وقائمة الانتظار",
       count: backlogCount,
       icon: SparklesIcon,
     },

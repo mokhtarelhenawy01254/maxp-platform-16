@@ -1,9 +1,5 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const fs = require('fs');
+const path = require('path');
 
 const TRANSLATION_PATH = path.join(__dirname, '../apps/frontend/src/locales/en/translation.json');
 const OUTPUT_PATH = path.join(__dirname, '../apps/frontend/src/types/i18n-resources.d.ts');

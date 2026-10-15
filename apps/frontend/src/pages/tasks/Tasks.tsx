@@ -42,6 +42,14 @@ import { TaskWorkspaceHeader } from "./components/TaskWorkspaceHeader";
 import { TaskWorkspaceTabs } from "./components/TaskWorkspaceTabs";
 import { ComplianceReportsTab } from "./components/ComplianceReportsTab";
 import { TaskBacklogTab } from "./components/TaskBacklogTab";
+import { TodayTasksFocusStrip } from "./components/TodayTasksFocusStrip";
+import { TaskProjectGroupView } from "./components/TaskProjectGroupView";
+import { ProjectWorkspaceView } from "./components/ProjectWorkspaceView";
+import { TaskWorkspaceEmptyState } from "./components/TaskWorkspaceEmptyState";
+import type { PresetProjectTemplate } from "./components/taskPresetTemplates";
+import type { TaskViewMode, TaskQuickFilter } from "./types";
+import { AppAccessRoute } from "../../components/protection/AppAccessRoute";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
 
 import { BusinessPageShell } from "../../components/business/BusinessSurface";
 import { Button } from "../../components/ui/button";
@@ -163,15 +171,25 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
   const { formatDate } = useDateFormat();
   const [modalActiveTab, setModalActiveTab] = useState<TaskPageTab>("tasks");
   const activeTab = embeddedInModal ? modalActiveTab : getTaskPageTabFromPathname(location.pathname);
-  const activeCompanyId = user?.companyId ?? null;
+  const activeCompanyId =
+    user?.companyId ||
+    user?.company?.id ||
+    user?.companies?.find((c) => c.isCurrent)?.id ||
+    user?.companies?.[0]?.id ||
+    (typeof window !== "undefined" ? localStorage.getItem("companyId") : null) ||
+    null;
   const activeUserId =
-    (user?.id ? String(user.id) : null) || localStorage.getItem("userId");
+    (user?.id ? String(user.id) : null) || (typeof window !== "undefined" ? localStorage.getItem("userId") : null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [goals, setGoals] = useState<GoalOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [workspaceSettings, setWorkspaceSettings] =
     useState<TaskWorkspaceSettings>(DEFAULT_TASK_WORKSPACE_SETTINGS);
+  const [viewMode, setViewMode] = useState<TaskViewMode>("grouped");
+  const [quickFilter, setQuickFilter] = useState<TaskQuickFilter>("all");
+  const [activeProjectWorkspace, setActiveProjectWorkspace] = useState<Project | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
@@ -314,6 +332,9 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     );
 
     setWorkspaceSettings(nextSettings);
+    if (nextSettings.viewMode) {
+      setViewMode(nextSettings.viewMode);
+    }
   }, [activeCompanyId, activeUserId]);
 
   const settingsAppliedRef = React.useRef(false);
@@ -328,6 +349,9 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     setSortOrder(workspaceSettings.defaultSortOrder);
     setItemsPerPage(workspaceSettings.pageSize);
     setHideCompleted(workspaceSettings.hideCompletedByDefault);
+    if (workspaceSettings.viewMode) {
+      setViewMode(workspaceSettings.viewMode);
+    }
     setCurrentPage(1);
   }, [workspaceSettings]);
 
@@ -335,10 +359,123 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     settingsAppliedRef.current = false;
   }, [activeCompanyId, activeUserId]);
 
+  const handleToggleViewMode = () => {
+    const nextMode: TaskViewMode = viewMode === "grouped" ? "flat" : "grouped";
+    setViewMode(nextMode);
+    const updatedSettings: TaskWorkspaceSettings = {
+      ...workspaceSettings,
+      viewMode: nextMode,
+    };
+    saveTaskWorkspaceSettings(
+      typeof window !== "undefined" ? window.localStorage : null,
+      activeCompanyId,
+      activeUserId,
+      updatedSettings,
+    );
+    setWorkspaceSettings(updatedSettings);
+  };
+
+  // Sync active project workspace from URL search params (?projectId=...)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const pid = params.get("projectId") || params.get("project");
+    if (pid && projects.length > 0) {
+      const match = projects.find((p) => p.id === pid);
+      if (match) {
+        setActiveProjectWorkspace(match);
+      }
+    } else if (!pid && activeProjectWorkspace) {
+      setActiveProjectWorkspace(null);
+    }
+  }, [location.search, projects]);
+
+  const handleOpenProjectWorkspace = (proj: Project) => {
+    setActiveProjectWorkspace(proj);
+    const params = new URLSearchParams(location.search);
+    params.set("projectId", proj.id);
+    navigate({ pathname: location.pathname, search: `?${params.toString()}` }, { replace: false });
+  };
+
+  const handleCloseProjectWorkspace = () => {
+    setActiveProjectWorkspace(null);
+    const params = new URLSearchParams(location.search);
+    params.delete("projectId");
+    params.delete("project");
+    const nextSearch = params.toString() ? `?${params.toString()}` : "";
+    navigate({ pathname: location.pathname, search: nextSearch }, { replace: true });
+  };
+
+  const handleApplyPresetTemplate = async (template: PresetProjectTemplate) => {
+    try {
+      const token = getAccessToken();
+      if (!token) return;
+
+      // 1. Create project
+      const projRes = await fetch(buildApiUrl("projects"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: template.name,
+          description: template.description,
+          priority: "high",
+          status: "in_progress",
+          tags: [template.category],
+        }),
+      });
+
+      const projData = await projRes.json();
+      const createdProject = projData.data?.project || projData.data;
+      const createdProjectId = createdProject?.id;
+
+      if (!createdProjectId) {
+        toast.error("فشل إنشاء المشروع من القالب");
+        return;
+      }
+
+      // 2. Create tasks under project
+      let createdCount = 0;
+      for (const t of template.tasks) {
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + (t.daysFromNow || 1));
+
+        await fetch(buildApiUrl("tasks"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            title: t.title,
+            description: t.description || "",
+            priority: t.priority,
+            projectId: createdProjectId,
+            dueDate: dueDate.toISOString(),
+            status: "pending",
+          }),
+        });
+        createdCount++;
+      }
+
+      toast.success(`تم إنشاء مشروع «${template.name}» و ${createdCount} مهام بنجاح!`);
+      await fetchProjects();
+      await fetchTasks();
+      if (createdProject) {
+        setActiveProjectWorkspace(createdProject);
+      }
+    } catch (err) {
+      console.error("Error applying preset template:", err);
+      toast.error("حدث خطأ أثناء تطبيق القالب");
+    }
+  };
+
   // Data refresh here is intentionally driven by the current workspace controls.
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
-    if (!activeCompanyId) {
+    if (!activeCompanyId && !getAccessToken()) {
+      setLoading(false);
       return;
     }
 
@@ -358,7 +495,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
 
   // Bootstrap auxiliary data once when entering the tasks section.
   useEffect(() => {
-    if (!activeCompanyId) {
+    if (!activeCompanyId && !getAccessToken()) {
       return;
     }
 
@@ -626,10 +763,12 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
   const fetchTasks = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const token = getAccessToken();
 
       if (!token) {
         setLoading(false);
+        setLoadError("لم يتم العثور على جلسة تسجيل دخول صالحة. يرجى تسجيل الدخول مجدداً.");
         return;
       }
 
@@ -687,8 +826,10 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
           tToast.error("tasks.expired_session_please_5957");
+          setLoadError("انتهت جلستك الحالية. يرجى إعادة تسجيل الدخول.");
         } else {
           tToast.error("tasks.unable_load_tasks_f3df");
+          setLoadError("تعذر تحميل المهام مؤقتاً من الخادم. اضغط إعادة المحاولة.");
         }
         return;
       }
@@ -710,6 +851,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
       }
     } catch (error) {
       tToast.error("tasks.unable_connect_check_ccf9");
+      setLoadError("تعذر الاتصال بالخادم. تحقق من اتصالك بالإنترنت ثم حاول مرة أخرى.");
     } finally {
       setLoading(false);
     }
@@ -1208,7 +1350,37 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     return true;
   });
 
-  const paginatedTasks = filteredAndSortedTasks;
+  const quickFilteredTasks = React.useMemo(() => {
+    if (quickFilter === "all") return filteredAndSortedTasks;
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const now = new Date();
+    const oneWeekLater = new Date();
+    oneWeekLater.setDate(oneWeekLater.getDate() + 7);
+
+    return filteredAndSortedTasks.filter((t) => {
+      const isDone = ["completed", "cancelled"].includes(normalizeTaskStatus(t.status));
+      if (!t.dueDate) {
+        return false;
+      }
+
+      const due = new Date(t.dueDate);
+      const dueStr = due.toISOString().split("T")[0];
+
+      if (quickFilter === "today") {
+        return dueStr === todayStr;
+      }
+      if (quickFilter === "week") {
+        return due >= now && due <= oneWeekLater;
+      }
+      if (quickFilter === "overdue") {
+        return !isDone && due < now && dueStr !== todayStr;
+      }
+      return true;
+    });
+  }, [filteredAndSortedTasks, quickFilter]);
+
+  const paginatedTasks = quickFilteredTasks;
   const totalPages = serverTotalPages;
 
   // Stats (case-insensitive) - use server totals if available
@@ -1381,9 +1553,65 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
   };
 
   const renderActiveTabContent = () => {
+    if (activeProjectWorkspace) {
+      return (
+        <ProjectWorkspaceView
+          project={activeProjectWorkspace}
+          tasks={safeTasks}
+          onBack={handleCloseProjectWorkspace}
+          onRefreshTasks={fetchTasks}
+          onTaskStatusChange={updateTaskStatus}
+          onOpenTaskDetails={(t) => {
+            setSelectedTask(t);
+            setShowTaskModal(true);
+          }}
+          onEditTask={(t) => {
+            setEditingTask(t);
+            setShowEditTaskModal(true);
+          }}
+          onDeleteTask={deleteTask}
+          onCreateTaskInProject={() => {
+            setNewTask({
+              ...createInitialTaskDraft(activeUserId || "", user?.name || ""),
+              projectId: activeProjectWorkspace.id,
+            });
+            setShowCreateTaskModal(true);
+          }}
+          userRole={user?.role}
+        />
+      );
+    }
+
     if (activeTab === "tasks") {
       return (
-        <section className="space-y-2">
+        <section className="space-y-3">
+          <TodayTasksFocusStrip
+            tasks={safeTasks}
+            onTaskStatusChange={updateTaskStatus}
+            onOpenTaskDetails={(t) => {
+              setSelectedTask(t);
+              setShowTaskModal(true);
+            }}
+            onSelectTodayFilter={() => setQuickFilter("today")}
+          />
+
+          {loadError && (
+            <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-center">
+              <p className="text-sm font-medium text-rose-700 dark:text-rose-300 mb-2">
+                {loadError}
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={fetchTasks}
+                className="gap-1.5 rounded-xl border-rose-500/30 text-rose-700 hover:bg-rose-500/15"
+              >
+                <ArrowPathIcon className="h-4 w-4" />
+                إعادة المحاولة
+              </Button>
+            </div>
+          )}
+
           <TaskWorkspaceHeader
             taskFilter={taskFilter}
             hasCommandState={hasCommandState}
@@ -1508,38 +1736,92 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
             onOpenCreateGoal={() => setShowCreateGoalModal(true)}
           />
 
-          <TaskTable
-            canApprove={isApprover}
-            userRole={user?.role}
-            onReloadTasks={fetchTasks}
-            paginatedTasks={paginatedTasks}
-            filteredAndSortedTasks={filteredAndSortedTasks}
-            searchQuery={searchQuery}
-            selectedTasks={selectedTasks}
-            loading={loading}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            handleSelectTask={handleSelectTask}
-            handleSelectAll={handleSelectAll}
-            isOverdue={isOverdue}
-            getStatusColor={getStatusColor}
-            getStatusText={getStatusText}
-            getStatusIcon={getStatusIcon}
-            getPriorityColor={getPriorityColor}
-            getPriorityText={getPriorityText}
-            formatDate={formatDate}
-            updateTaskStatus={updateTaskStatus}
-            deleteTask={deleteTask}
-            duplicateTask={duplicateTask}
-            setSelectedTask={setSelectedTask}
-            setShowTaskModal={setShowTaskModal}
-            setEditingTask={setEditingTask}
-            setShowEditTaskModal={setShowEditTaskModal}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            totalPages={totalPages}
-            serverTotalTasks={serverTotalTasks}
-          />
+          {safeTasks.length === 0 && !loading ? (
+            <TaskWorkspaceEmptyState
+              onCreateTask={() => setShowCreateTaskModal(true)}
+              onCreateProject={() => setShowCreateProjectModal(true)}
+              onApplyPresetTemplate={handleApplyPresetTemplate}
+            />
+          ) : viewMode === "grouped" ? (
+            <TaskProjectGroupView
+              projects={projects}
+              tasks={quickFilteredTasks}
+              allTasks={safeTasks}
+              quickFilter={quickFilter}
+              onQuickFilterChange={setQuickFilter}
+              onOpenProject={handleOpenProjectWorkspace}
+              onTaskStatusChange={updateTaskStatus}
+              onOpenTaskDetails={(t) => {
+                setSelectedTask(t);
+                setShowTaskModal(true);
+              }}
+              onEditTask={(t) => {
+                setEditingTask(t);
+                setShowEditTaskModal(true);
+              }}
+              onDeleteTask={deleteTask}
+              onCreateTaskInProject={(projId) => {
+                setNewTask({
+                  ...createInitialTaskDraft(activeUserId || "", user?.name || ""),
+                  projectId: projId,
+                });
+                setShowCreateTaskModal(true);
+              }}
+              onCreateTaskStandalone={() => setShowCreateTaskModal(true)}
+              onCreateProject={() => setShowCreateProjectModal(true)}
+              viewMode={viewMode}
+              onToggleViewMode={handleToggleViewMode}
+              isApprover={isApprover}
+            />
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between rounded-xl border border-border/60 bg-card px-3 py-2">
+                <span className="text-xs font-medium text-muted-foreground">
+                  عرض القائمة المباشرة ({quickFilteredTasks.length} مهمة)
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleToggleViewMode}
+                  className="h-7 text-xs rounded-lg"
+                >
+                  التبديل إلى العرض المجمع بالمشروع
+                </Button>
+              </div>
+              <TaskTable
+                canApprove={isApprover}
+                userRole={user?.role}
+                onReloadTasks={fetchTasks}
+                paginatedTasks={quickFilteredTasks}
+                filteredAndSortedTasks={quickFilteredTasks}
+                searchQuery={searchQuery}
+                selectedTasks={selectedTasks}
+                loading={loading}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                handleSelectTask={handleSelectTask}
+                handleSelectAll={handleSelectAll}
+                isOverdue={isOverdue}
+                getStatusColor={getStatusColor}
+                getStatusText={getStatusText}
+                getStatusIcon={getStatusIcon}
+                getPriorityColor={getPriorityColor}
+                getPriorityText={getPriorityText}
+                formatDate={formatDate}
+                updateTaskStatus={updateTaskStatus}
+                deleteTask={deleteTask}
+                duplicateTask={duplicateTask}
+                setSelectedTask={setSelectedTask}
+                setShowTaskModal={setShowTaskModal}
+                setEditingTask={setEditingTask}
+                setShowEditTaskModal={setShowEditTaskModal}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                totalPages={totalPages}
+                serverTotalTasks={serverTotalTasks}
+              />
+            </div>
+          )}
         </section>
       );
     }
@@ -1556,6 +1838,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
           setShowEditProjectModal={setShowEditProjectModal}
           setShowCreateProjectModal={setShowCreateProjectModal}
           deleteProject={deleteProject}
+          onOpenProjectWorkspace={handleOpenProjectWorkspace}
         />
       );
     }
@@ -1643,7 +1926,8 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
   }
 
   return (
-    <BusinessPageShell className="tasks-page p-2.5 pb-24 md:px-4 md:py-3 xl:px-5 xl:py-4">
+    <AppAccessRoute requiredAppSlugs={["business-tools"]} redirectMode="overlay-blur">
+      <BusinessPageShell className="tasks-page p-2.5 pb-24 md:px-4 md:py-3 xl:px-5 xl:py-4">
       <div className="mx-auto max-w-[1360px] space-y-2.5">
         <TaskWorkspaceTabs
           activeTab={activeTab}
@@ -1875,6 +2159,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         </AlertDialogContent>
       </AlertDialog>
     </BusinessPageShell>
+    </AppAccessRoute>
   );
 };
 

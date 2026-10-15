@@ -10,10 +10,12 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({
   sidebar = true,
   header = true,
 }) => {
+  const isRtl = typeof document !== "undefined" && document.documentElement.dir === "rtl";
+
   return (
-    <div className="min-h-screen flex bg-white" dir="ltr">
+    <div className="min-h-screen flex bg-white" dir={isRtl ? "rtl" : "ltr"}>
       {sidebar && (
-        <div className="w-64 border-l border-gray-200 p-4 space-y-3 shrink-0">
+        <div className="w-64 border-r rtl:border-l rtl:border-r-0 border-gray-200 p-4 space-y-3 shrink-0">
           <Skeleton className="h-8 w-32" />
           <div className="space-y-2 pt-4">
             {Array.from({ length: 6 }).map((_, i) => (

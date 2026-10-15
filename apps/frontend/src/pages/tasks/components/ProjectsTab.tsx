@@ -20,6 +20,7 @@ export interface ProjectsTabProps {
   setShowEditProjectModal: (show: boolean) => void;
   setShowCreateProjectModal: (show: boolean) => void;
   deleteProject: (projectId: string) => void;
+  onOpenProjectWorkspace?: (project: Project) => void;
 }
 
 const projectStatusStyles: Record<string, string> = {
@@ -69,6 +70,7 @@ export const ProjectsTab: React.FC<ProjectsTabProps> = ({
   setShowEditProjectModal,
   setShowCreateProjectModal,
   deleteProject,
+  onOpenProjectWorkspace,
 }) => {
   const activeProjects = projects.filter(
     (project) => project.status === "active",
@@ -177,9 +179,20 @@ export const ProjectsTab: React.FC<ProjectsTabProps> = ({
                       </div>
 
                       <div className="space-y-1.5">
-                        <h3 className="text-lg font-semibold text-foreground">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (onOpenProjectWorkspace) {
+                              onOpenProjectWorkspace(project);
+                            } else {
+                              setSelectedProject(project);
+                              setShowProjectModal(true);
+                            }
+                          }}
+                          className="text-right text-lg font-bold text-foreground hover:text-primary transition-colors focus:outline-none"
+                        >
                           {project.name}
-                        </h3>
+                        </button>
                         <p className="max-w-4xl text-sm leading-6 text-muted-foreground">
                           {project.description ||
                             "لا يوجد وصف موجز لهذا المشروع."}
@@ -194,12 +207,16 @@ export const ProjectsTab: React.FC<ProjectsTabProps> = ({
                         size="sm"
                         className="rounded-full"
                         onClick={() => {
-                          setSelectedProject(project);
-                          setShowProjectModal(true);
+                          if (onOpenProjectWorkspace) {
+                            onOpenProjectWorkspace(project);
+                          } else {
+                            setSelectedProject(project);
+                            setShowProjectModal(true);
+                          }
                         }}
                       >
                         <EyeIcon className="size-4" />
-                        عرض
+                        عرض المشروع
                       </Button>
                       <Button
                         type="button"

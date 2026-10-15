@@ -1,4 +1,4 @@
-import type { TaskScopeFilter, TaskSortBy } from "./types";
+import type { TaskScopeFilter, TaskSortBy, TaskViewMode } from "./types";
 
 export type TaskWorkspacePageSize = 10 | 25 | 50 | 100;
 export type TaskWorkspaceDensity = "comfortable" | "compact";
@@ -13,6 +13,7 @@ export interface TaskWorkspaceSettings {
   highlightOverdue: boolean;
   showProjectShortcut: boolean;
   showMobileCommandBar: boolean;
+  viewMode: TaskViewMode;
 }
 
 export const DEFAULT_TASK_WORKSPACE_SETTINGS: TaskWorkspaceSettings = {
@@ -25,6 +26,7 @@ export const DEFAULT_TASK_WORKSPACE_SETTINGS: TaskWorkspaceSettings = {
   highlightOverdue: true,
   showProjectShortcut: true,
   showMobileCommandBar: true,
+  viewMode: "grouped",
 };
 
 const TASK_WORKSPACE_SETTINGS_KEY = "task-workspace-settings";
@@ -43,6 +45,7 @@ const VALID_SORT_BY_VALUES: TaskSortBy[] = [
 ];
 const VALID_SORT_ORDER_VALUES: Array<"asc" | "desc"> = ["asc", "desc"];
 const VALID_DENSITY_VALUES: TaskWorkspaceDensity[] = ["comfortable", "compact"];
+const VALID_VIEW_MODE_VALUES: TaskViewMode[] = ["grouped", "flat"];
 
 export const MANAGER_TASK_ROLES = [
   "OWNER",
@@ -115,6 +118,11 @@ export const normalizeTaskWorkspaceSettings = (
       typeof candidate.showMobileCommandBar === "boolean"
         ? candidate.showMobileCommandBar
         : DEFAULT_TASK_WORKSPACE_SETTINGS.showMobileCommandBar,
+    viewMode: VALID_VIEW_MODE_VALUES.includes(
+      candidate.viewMode as TaskViewMode,
+    )
+      ? (candidate.viewMode as TaskViewMode)
+      : DEFAULT_TASK_WORKSPACE_SETTINGS.viewMode,
   };
 };
 

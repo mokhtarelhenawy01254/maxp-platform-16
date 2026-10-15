@@ -54,6 +54,7 @@ export const APP_SLUG_ALIASES: Record<string, string[]> = {
     "order-shipping-qpexpress",
   ],
   "pos-pro": ["cafe-restaurant-pro", "store-pro", "ecommerce-pro"],
+  "business-tools": ["tasks", "tasks-management", "projects"],
 };
 
 function getCandidateSlugs(slug: string): string[] {
@@ -136,6 +137,7 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
       "dental-lab-app": "معمل الأسنان",
       "dental-lab": "معمل الأسنان",
       "booking-app": "نظام الحجوزات",
+      "business-tools": "المهام والمشاريع (أدوات الأعمال)",
     };
 
     const names = requiredAppSlugs.map((slug) => {
