@@ -42,6 +42,31 @@
 3. **Zero Polling Loops**: Never poll `manage_subagents(Action='status')` in a loop. Launch subagents concurrently via `invoke_subagent` and stop tool execution to await the runtime's reactive wakeup.
 4. **Strict Compliance with `multi-agent-orchestrator` Skill**: All multi-agent workflows must strictly conform to `.agents/skills/multi-agent-orchestrator/SKILL.md`.
 
+## Rule: Cross-Agent Coordination — Multi-Agent, One Workspace (تنسيق الوكلاء المتعددين على نفس مساحة العمل)
+1. **افحص الحالة أولاً** قبل أي تاسك على هذا الـ workspace:
+   ```bash
+   python scripts/agent-coord/coord.py status
+   ```
+2. **خُد قفل الكتابة قبل أول تعديل ملفات** (إيجينت واحد فقط يعدّل في نفس الـ working tree في أي لحظة):
+   ```bash
+   python scripts/agent-coord/coord.py claim --agent <name> --task "<short task>" --scope "<files/folders>" [--ttl 90]
+   ```
+   - لو القفل محجوز من إيجينت آخر نشط → **لا تبدأ العمل بالتوازي**؛ انتظر أو أبلغ المستخدم للتنسيق.
+   - التاسكات الطويلة: `--ttl` أكبر أو `heartbeat` دوري.
+   - الأسماء الثابتة: `hermes-agent` لـ Hermes، `antigravity` لـ Antigravity.
+3. **الرفع عبر البوابة فقط** — كل `git push` (بما فيه الرفع التلقائي بعد أي تاسك) يمر إجباريًا عبر:
+   ```bash
+   python scripts/agent-coord/coord.py guard --agent <name> --push
+   ```
+   - البوابة تنفّذ `fetch` + `pull --rebase` + `push` مع إعادة محاولة تلقائية عند سباق الريموت.
+   - ممنوع `git push` مباشر بدون سبب مُوثّق، و**ممنوع force push نهائيًا**.
+4. **بعد إنهاء التاسك**: حرّر القفل وسجّل الإنجاز:
+   ```bash
+   python scripts/agent-coord/coord.py release --agent <name> --commit <hash> --note "<summary>"
+   ```
+5. **منع التكرار**: قبل البدء راجع `status` + آخر commits + `log`؛ وكل تاسك جوهري يمر على أكثر من إيجينت (تنفيذ + QA).
+6. الحالة محلية لكل جهاز: `~/.agent-coordination/` — البروتوكول الكامل: `docs/agent-coordination.md`.
+
 ## Rule: Deployment Strategy (Frontend via GitHub CI/CD, Backend Fast Hot-Patch with Git Sync)
 1. **Frontend Releases**: Always deploy frontend changes through Git (`git commit & push` to `main`). GitHub Actions builds the production `dist` bundle, runs full syntax/size guards, and deploys cleanly to Nginx. Never upload ad-hoc raw bundles manually unless specifically directed during emergency offline recovery.
 2. **Backend Fast Verification & Sync**: Backend JS files may be hot-tested on the server directly for rapid verification (`ssh` file update + `pm2 reload maxp-backend`). Once verified on production, ALWAYS commit and push the changes to GitHub immediately to ensure zero drift between the repository and the live environment.

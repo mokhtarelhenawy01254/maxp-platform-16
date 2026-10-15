@@ -96,6 +96,34 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
 - **Zero Polling Loops**: Never poll `manage_subagents(Action='status')` in a loop. Launch subagents concurrently via `invoke_subagent` and stop tool execution to await the runtime's reactive wakeup.
 - **Strict Compliance with `multi-agent-orchestrator` Skill**: All multi-agent workflows must strictly conform to `.agents/skills/multi-agent-orchestrator/SKILL.md`.
 
+## 🔗 Rule: Cross-Agent Coordination — Multi-Agent, One Workspace (تنسيق الوكلاء المتعددين على نفس مساحة العمل)
+- هذا المستودع يعمل عليه **أكثر من إيجينت في الوقت نفسه** (Antigravity، Hermes، وأي أداة أخرى) وعلى أكثر من نسخة/جهاز ترفع إلى `origin`. التزم بالبروتوكول التالي حرفيًا:
+1. **افحص الحالة أولاً** قبل أي تاسك على هذا الـ workspace:
+   ```bash
+   python scripts/agent-coord/coord.py status
+   ```
+2. **خُد قفل الكتابة قبل أول تعديل ملفات** (إيجينت واحد فقط يعدّل في نفس الـ working tree في أي لحظة):
+   ```bash
+   python scripts/agent-coord/coord.py claim --agent <name> --task "<short task>" --scope "<files/folders>" [--ttl 90]
+   ```
+   - لو القفل محجوز من إيجينت آخر نشط → **لا تبدأ العمل بالتوازي**؛ انتظر أو أبلغ المستخدم للتنسيق.
+   - التاسكات الطويلة: `--ttl` أكبر أو `heartbeat` دوري.
+   - الأسماء الثابتة: `hermes-agent` لـ Hermes، `antigravity` لـ Antigravity.
+3. **الرفع عبر البوابة فقط** — كل `git push` (بما فيه الرفع التلقائي بعد أي تاسك) يمر إجباريًا عبر:
+   ```bash
+   python scripts/agent-coord/coord.py guard --agent <name> --push
+   ```
+   - البوابة تنفّذ `fetch` + `pull --rebase` + `push` مع إعادة محاولة تلقائية عند سباق الريموت.
+   - ممنوع `git push` مباشر بدون سبب مُوثّق، و**ممنوع force push نهائيًا**.
+   - رفض البوابة = إيجينت آخر نشط أو تعارض → قف ونسّق، أو `--override "<سبب موثّق>"` بعد تنسيق حقيقي (يُسجَّل في اللوج).
+4. **بعد إنهاء التاسك**: حرّر القفل وسجّل الإنجاز:
+   ```bash
+   python scripts/agent-coord/coord.py release --agent <name> --commit <hash> --note "<summary>"
+   ```
+5. **منع التكرار**: قبل البدء راجع `status` + آخر commits + `log` — لا تعد شغلًا بدأه/أنهاه إيجينت آخر؛ عند الشك طابق مع المستخدم.
+6. **QA متعدد الوكلاء**: كل تاسك جوهري يمر على أكثر من إيجينت (تنفيذ + مراجعة diff/تفتيش) قبل اعتباره منتهيًا — طبقًا لقاعدة الـ Multi-Agent أعلاه.
+7. الحالة محلية لكل جهاز: `~/.agent-coordination/` (أقفال + لوج). البروتوكول الكامل: `docs/agent-coordination.md`.
+
 ## 📐 Rule: Ergonomic Workspace Design (Ban Wasted Space, Explanatory Clutter, and Single-Use Permanent Columns)
 - **Ban Permanent Columns for Single-Use Tools**: Never allocate a permanent screen column/panel (eating 20-30%+ of screen width) to an action that the user performs only once per session (e.g. selecting a product, browsing historical chat sessions, or picking initial filters). Such tools MUST be placed inside top-bar comboboxes, dropdowns, or collapsible slide-over sheets/modals that disappear immediately after selection, reserving 75-85%+ of the screen for the active workspace and live canvas.
 - **Ban Explanatory Copy & Subtitle Clutter (Show, Don't Tell)**: Pro SaaS and dashboard tools must NEVER be bloated with instructional paragraphs, tutorial subtitles, or marketing copy under every button and title (e.g., "تخطيط الحملات وصياغة الزوايا بناءً على...", "خبير الميديا باير..."). Replace wordy text with crisp, compact action labels, tooltips on hover, and self-evident interactive controls.

@@ -28,6 +28,25 @@ Automatically triggered upon completing **ANY** task, feature implementation, bu
 - **Git Remote Name:** `origin`
 - **Branch:** `main` (or current active branch)
 
+## 🧭 Cross-Agent Coordination Gate (بوابة تنسيق الوكلاء — إلزامية قبل أي رفع)
+
+> [!IMPORTANT]
+> نفس الـ workspace يشتغل عليه أكثر من إيجينت (Antigravity + Hermes + غيرهم)، وأجهزة أخرى ترفع إلى `origin` في نفس الوقت. قبل أي `git commit` / `git push`:
+
+0. لو التاسك لسه محصلش claim: `python scripts/agent-coord/coord.py claim --agent antigravity --task "<ملخص التاسك>"`
+   - لو مرفوض → فيه إيجينت آخر شغال — **قف وابلغ المستخدم** (ممنوع العمل بالتوازي على نفس الشجرة).
+1. ارفع حصريًا عبر البوابة (fetch + pull --rebase + push مع إعادة محاولة تلقائية):
+   ```bash
+   python scripts/agent-coord/coord.py guard --agent antigravity --push
+   ```
+2. بعد نجاح الرفع، حرّر القفل وسجّل الإنجاز:
+   ```bash
+   python scripts/agent-coord/coord.py release --agent antigravity --commit <hash> --note "<ملخص>"
+   ```
+3. لو البوابة رفضت أو فشل الـ rebase → أوقف وابلغ المستخدم. **force push ممنوع نهائيًا** (انظر أسفل).
+
+التفاصيل الكاملة: `docs/agent-coordination.md` — الحالة: `~/.agent-coordination/`.
+
 ## Protocol & Steps
 
 1. **Review Changed Files:**
@@ -52,10 +71,10 @@ Automatically triggered upon completing **ANY** task, feature implementation, bu
    git commit -m "<descriptive message identifying the task changes>"
    ```
 
-4. **Push to Remote:**
-   Push commits to the `origin` remote:
+4. **Push to Remote (عبر بوابة التنسيق):**
+   Push commits through the coordination guard (fetch + pull --rebase + push بأمان):
    ```bash
-   git push origin main
+   python scripts/agent-coord/coord.py guard --agent antigravity --push
    ```
 
    > [!CAUTION]

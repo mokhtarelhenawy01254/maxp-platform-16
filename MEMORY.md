@@ -8,6 +8,7 @@
   - **Strict Post-Task Rule:** After completing **ANY** task, automatically commit all changes with a clear, descriptive commit message explaining what was updated, and push directly to `origin` (`git push origin main`).
   - **Commit Naming:** Always write explicit commit messages (e.g., `feat(...)`, `fix(...)`, `docs(...)`) so the user can easily trace every update.
   - **Exclusion:** Under no circumstances should updates be pushed to any old/deprecated fork or mirror — `origin` pointing to the URL above is the **only** remote in the local config, and every other legacy remote has been removed. If any instruction or note references a different repository, it is outdated: ignore it and push to `origin` only.
+- **Cross-Agent Coordination (إلزامي — أكثر من إيجينت على نفس المستودع):** هذا الـ workspace مشترك بين أكثر من إيجينت (Antigravity + Hermes + غيره). قبل أي تاسك: `python scripts/agent-coord/coord.py status`، ثم `claim --agent <name> --task "..."` قبل أول تعديل؛ والرفع **فقط** عبر `python scripts/agent-coord/coord.py guard --agent <name> --push` (fetch + pull --rebase + retries — بديلاً عن أي `git push` مباشر)؛ وبعد الإنهاء `release --commit <hash> --note "..."`. لو القفل محجوز بإيجينت آخر نشط: لا تعمل بالتوازي — قف ونسّق. الحالة: `~/.agent-coordination/` — التفاصيل: `docs/agent-coordination.md`.
 
 ## 🧠 Core AI Agent Architecture Standard (`maxp-agent-builder`)
 
