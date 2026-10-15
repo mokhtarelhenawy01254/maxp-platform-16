@@ -7098,6 +7098,7 @@ const getBillingActivity = async (req, res) => {
       type,
       status,
       search,
+      includeReminders,
       page = 1,
       limit = 20,
     } = req.query;
@@ -7135,6 +7136,11 @@ const getBillingActivity = async (req, res) => {
       }
     }
 
+    // Default: exclude automated notification reminders unless explicitly requested or searched
+    if (includeReminders !== 'true' && !search) {
+      where.description = { not: { startsWith: 'Renewal reminder' } };
+    }
+
     if (search && search.trim()) {
       const searchTerm = search.trim();
       where.OR = [
@@ -7143,9 +7149,28 @@ const getBillingActivity = async (req, res) => {
       ];
     }
 
+    // Standard test company pattern exclusion for trusted financial collection metrics
+    const baseCleanCollectionWhere = {
+      status: 'SUCCESS',
+      description: { not: { startsWith: 'Renewal reminder' } },
+      ...(companyId ? { companyId } : {
+        company: {
+          AND: [
+            { name: { not: { contains: 'test', mode: 'insensitive' } } },
+            { name: { not: { contains: 'تجريب', mode: 'insensitive' } } },
+            { name: { not: { contains: 'demo', mode: 'insensitive' } } },
+            { name: { not: { contains: 'اختبار', mode: 'insensitive' } } },
+            { name: { not: { contains: '00000000', mode: 'insensitive' } } },
+            { slug: { not: { contains: 'test', mode: 'insensitive' } } },
+            { slug: { not: { contains: 'demo', mode: 'insensitive' } } },
+          ],
+        },
+      }),
+    };
+
     const tenantContext = require('../services/tenantContext');
     const result = await tenantContext.bypass(async () => {
-      const [activities, total, todayAgg, monthAgg, allTimeAgg] = await Promise.all([
+      const [activities, total, todayAgg, monthAgg, allTimeAgg, rawCount] = await Promise.all([
         prisma.billingHistory.findMany({
           where,
           include: {
@@ -7160,8 +7185,7 @@ const getBillingActivity = async (req, res) => {
         prisma.billingHistory.count({ where }),
         prisma.billingHistory.aggregate({
           where: {
-            status: 'SUCCESS',
-            ...(companyId ? { companyId } : {}),
+            ...baseCleanCollectionWhere,
             createdAt: { gte: startOfToday },
           },
           _count: { id: true },
@@ -7169,21 +7193,18 @@ const getBillingActivity = async (req, res) => {
         }),
         prisma.billingHistory.aggregate({
           where: {
-            status: 'SUCCESS',
-            ...(companyId ? { companyId } : {}),
+            ...baseCleanCollectionWhere,
             createdAt: { gte: startOfMonth },
           },
           _count: { id: true },
           _sum: { amount: true },
         }),
         prisma.billingHistory.aggregate({
-          where: {
-            status: 'SUCCESS',
-            ...(companyId ? { companyId } : {}),
-          },
+          where: baseCleanCollectionWhere,
           _count: { id: true },
           _sum: { amount: true },
         }),
+        prisma.billingHistory.count(),
       ]);
 
       return {
@@ -7202,6 +7223,7 @@ const getBillingActivity = async (req, res) => {
             count: allTimeAgg._count.id || 0,
             amount: Number(allTimeAgg._sum.amount || 0),
           },
+          rawCount,
         },
       };
     });

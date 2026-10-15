@@ -61,6 +61,16 @@ const DEFAULT_NOTIFICATION_TYPES = [
     channels: ["email", "inApp"],
     canDisable: true,
   },
+  {
+    id: "support_ticket",
+    name: "تذاكر الدعم والاقتراحات",
+    description: "إشعار عند الرد على تذكرتك أو تحديث حالتها من فريق الدعم",
+    category: "support",
+    priority: "high",
+    defaultEnabled: true,
+    channels: ["push", "inApp", "browser"],
+    canDisable: true,
+  },
   // ==================== تنبيهات السيستم والحوادث الحرجة ====================
   {
     id: "system_incident",

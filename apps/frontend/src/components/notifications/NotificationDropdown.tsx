@@ -599,6 +599,9 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     if (t.includes("incident") || t.includes("disconnect")) {
       return <XCircleIcon className="w-5 h-5 text-red-600 animate-pulse" />;
     }
+    if (t.includes("support") || t.includes("ticket")) {
+      return <InformationCircleIcon className="w-5 h-5 text-indigo-500" />;
+    }
     switch (type) {
       case "error":
         return <XCircleIcon className="w-5 h-5 text-red-500" />;

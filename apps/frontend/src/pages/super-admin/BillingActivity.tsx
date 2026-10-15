@@ -46,6 +46,7 @@ interface SummaryData {
   today: { amount: number; count: number };
   thisMonth: { amount: number; count: number };
   totalCount: number;
+  rawCount?: number;
 }
 
 const PERIOD_OPTIONS = [
@@ -72,19 +73,22 @@ export const BillingActivity: React.FC = () => {
     today: { amount: 0, count: 0 },
     thisMonth: { amount: 0, count: 0 },
     totalCount: 0,
+    rawCount: 0,
   });
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<PeriodType>("all");
   const [selectedType, setSelectedType] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [includeReminders, setIncludeReminders] = useState<boolean>(false);
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const params: Record<string, string | number> = {};
+      const params: Record<string, string | number | boolean> = {};
       if (period !== "all") params.period = period;
       if (selectedType !== "ALL") params.type = selectedType;
       if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (includeReminders) params.includeReminders = "true";
 
       const response = await apiClient.get("/super-admin/billing/activity", { params });
       const resData = response.data;
@@ -108,6 +112,7 @@ export const BillingActivity: React.FC = () => {
           today: { amount: sum.today?.amount ?? sum.today?.total ?? 0, count: sum.today?.count ?? 0 },
           thisMonth: { amount: sum.thisMonth?.amount ?? sum.thisMonth?.total ?? 0, count: sum.thisMonth?.count ?? 0 },
           totalCount: sum.allTime?.count ?? rawList.length,
+          rawCount: sum.rawCount ?? sum.allTime?.count ?? 0,
         });
       }
     } catch (error) {
@@ -116,7 +121,7 @@ export const BillingActivity: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [period, selectedType, searchQuery]);
+  }, [period, selectedType, searchQuery, includeReminders]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -197,7 +202,7 @@ export const BillingActivity: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 rounded-xl border border-border/80 bg-card divide-y sm:divide-y-0 sm:divide-x sm:rtl:divide-x-reverse divide-border/60 overflow-hidden shadow-xs">
         <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-            <span className="font-medium text-[11px]">تحصيل اليوم</span>
+            <span className="font-medium text-[11px]">تحصيل اليوم (المعتمد)</span>
             <span className="size-1.5 rounded-full bg-emerald-500" />
           </div>
           <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
@@ -205,13 +210,13 @@ export const BillingActivity: React.FC = () => {
             <span className="text-xs font-normal text-muted-foreground">ج.م</span>
           </div>
           <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
-            {summary.today.count} حركة دفع اليوم
+            {summary.today.count} حركة دفع مؤكدة
           </p>
         </div>
 
         <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-            <span className="font-medium text-[11px]">تحصيل هذا الشهر</span>
+            <span className="font-medium text-[11px]">تحصيل هذا الشهر (المعتمد)</span>
             <span className="size-1.5 rounded-full bg-blue-500" />
           </div>
           <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
@@ -219,19 +224,21 @@ export const BillingActivity: React.FC = () => {
             <span className="text-xs font-normal text-muted-foreground">ج.م</span>
           </div>
           <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
-            {summary.thisMonth.count} حركة خلال الشهر
+            {summary.thisMonth.count} حركة مؤكدة (استبعاد تذكيرات التجديد والتجريبي)
           </p>
         </div>
 
         <div className="p-3.5 flex flex-col justify-between hover:bg-muted/10 transition-colors">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-            <span className="font-medium text-[11px]">إجمالي الحركات</span>
+            <span className="font-medium text-[11px]">إجمالي الحركات المعتمدة</span>
             <span className="size-1.5 rounded-full bg-purple-500" />
           </div>
           <div className="text-2xl font-bold tracking-tight text-foreground font-mono tabular-nums">
             {summary.totalCount.toLocaleString()}
           </div>
-          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">سجل التدقيق المالي الشامل</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
+            سجل مالي معتمد (خام السجل: {summary.rawCount ? summary.rawCount.toLocaleString() : summary.totalCount.toLocaleString()})
+          </p>
         </div>
       </div>
 
@@ -271,6 +278,17 @@ export const BillingActivity: React.FC = () => {
                 </option>
               ))}
             </select>
+
+            {/* Include reminders toggle */}
+            <label className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border border-border/80 bg-background cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={includeReminders}
+                onChange={(e) => setIncludeReminders(e.target.checked)}
+                className="size-3.5 rounded border-border text-primary focus:ring-primary/40"
+              />
+              <span className="text-muted-foreground text-[11px] font-mono">عرض إشعارات التجديد</span>
+            </label>
           </div>
 
           <div className="relative w-full md:w-64">

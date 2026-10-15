@@ -361,17 +361,25 @@ const addMessage = async (req, res) => {
     const execute = async () => {
       const where = isAdmin ? { ticketId } : { ticketId, userId };
 
-      const ticket = await getPrisma().supportTicket.findFirst({ where });
+      const ticket = await getPrisma().supportTicket.findFirst({
+        where,
+        include: {
+          user: {
+            select: { id: true, companyId: true, firstName: true, lastName: true }
+          }
+        }
+      });
       if (!ticket) {
         return { notFound: true };
       }
 
       // Create new message
+      const isInternalMsg = isAdmin && (isInternal === 'true' || isInternal === true);
       const message = await getPrisma().supportMessage.create({
         data: {
           content,
           isFromAdmin: isAdmin,
-          isInternal: isAdmin && (isInternal === 'true' || isInternal === true),
+          isInternal: isInternalMsg,
           ticketId: ticket.id,
           senderId: userId
         },
@@ -421,6 +429,56 @@ const addMessage = async (req, res) => {
         });
       }
 
+      // (أ) & (ج) إشعار لصاحب التذكرة عند رد فريق الدعم (ممنوع إشعار لنفسه، وممنوع إشعار للرسائل الداخلية)
+      if (isAdmin && !isInternalMsg && ticket.userId !== userId) {
+        const targetCompanyId = ticket.companyId || ticket.user?.companyId;
+        if (targetCompanyId && ticket.userId) {
+          const rawSnippet = String(content || '').trim();
+          const snippet = rawSnippet.length > 80 ? rawSnippet.slice(0, 77) + '...' : rawSnippet;
+          try {
+            const { createNotification } = require('../services/notificationService');
+            await createNotification({
+              companyId: targetCompanyId,
+              userId: ticket.userId,
+              title: `رد جديد على تذكرتك ${ticket.ticketId}`,
+              body: snippet || `تم إضافة رد جديد على تذكرتك ${ticket.ticketId}`,
+              type: 'support_ticket',
+              metadata: {
+                ticketId: ticket.ticketId,
+                url: `/support/tickets/${ticket.ticketId}`,
+                action: 'new_reply',
+              },
+            });
+          } catch (notifErr) {
+            console.warn('[supportTicketController] Failed to send reply notification:', notifErr.message);
+          }
+        }
+      } else if (!isAdmin && ticket.assignedUserId && ticket.assignedUserId !== userId) {
+        // إشعار داخلي لفريق الدعم عند رد التاجر
+        const targetCompanyId = ticket.companyId || req.user.companyId;
+        if (targetCompanyId) {
+          const rawSnippet = String(content || '').trim();
+          const snippet = rawSnippet.length > 80 ? rawSnippet.slice(0, 77) + '...' : rawSnippet;
+          try {
+            const { createNotification } = require('../services/notificationService');
+            await createNotification({
+              companyId: targetCompanyId,
+              userId: ticket.assignedUserId,
+              title: `رد جديد من العميل على تذكرة ${ticket.ticketId}`,
+              body: snippet || `قام العميل بإضافة رد على التذكرة ${ticket.ticketId}`,
+              type: 'support_ticket',
+              metadata: {
+                ticketId: ticket.ticketId,
+                url: `/admin/support`,
+                action: 'customer_reply',
+              },
+            });
+          } catch (notifErr) {
+            console.warn('[supportTicketController] Failed to send support notification:', notifErr.message);
+          }
+        }
+      }
+
       return { success: true };
     };
 
@@ -461,31 +519,75 @@ const updateTicket = async (req, res) => {
     }
 
     const execute = async () => {
-      const ticket = await getPrisma().supportTicket.findFirst({ where: { ticketId } });
+      const ticket = await getPrisma().supportTicket.findFirst({
+        where: { ticketId },
+        include: {
+          user: {
+            select: { id: true, companyId: true, firstName: true, lastName: true }
+          }
+        }
+      });
       if (!ticket) {
         return null;
       }
 
       const updateData = {};
+      const targetNewStatus = status ? mapStatus(status) : null;
+      const statusChanged = targetNewStatus && targetNewStatus !== ticket.status;
+
       if (status) {
-        updateData.status = mapStatus(status);
-        if (status === 'closed') updateData.closedAt = new Date();
+        updateData.status = targetNewStatus;
+        if (targetNewStatus === 'CLOSED') updateData.closedAt = new Date();
       }
       if (priority) updateData.priority = mapPriority(priority);
       if (assignedUserId) updateData.assignedUserId = assignedUserId;
 
-      return await getPrisma().supportTicket.update({
+      const updatedTicket = await getPrisma().supportTicket.update({
         where: { id: ticket.id },
         data: updateData,
         include: {
           user: {
-            select: { id: true, firstName: true, lastName: true, email: true }
+            select: { id: true, firstName: true, lastName: true, email: true, companyId: true }
           },
           assignedUser: {
             select: { id: true, firstName: true, lastName: true, email: true }
           }
         }
       });
+
+      // (ب) تغيير حالة التذكرة → إشعار لصاحب التذكرة: «تذكرتك <ticketId> بقت: <الحالة>»
+      if (statusChanged && ticket.userId) {
+        const STATUS_ARABIC_LABELS = {
+          'OPEN': 'مفتوحة',
+          'IN_PROGRESS': 'قيد المعالجة',
+          'CLOSED': 'مغلقة'
+        };
+        const statusLabel = STATUS_ARABIC_LABELS[targetNewStatus] || targetNewStatus;
+        const targetCompanyId = ticket.companyId || ticket.user?.companyId || updatedTicket.companyId || updatedTicket.user?.companyId;
+
+        if (targetCompanyId) {
+          try {
+            const { createNotification } = require('../services/notificationService');
+            await createNotification({
+              companyId: targetCompanyId,
+              userId: ticket.userId,
+              title: `تحديث حالة تذكرتك ${ticket.ticketId}`,
+              body: `تذكرتك ${ticket.ticketId} بقت: ${statusLabel}`,
+              type: 'support_ticket',
+              metadata: {
+                ticketId: ticket.ticketId,
+                status: targetNewStatus,
+                url: `/support/tickets/${ticket.ticketId}`,
+                action: 'status_changed',
+              },
+            });
+          } catch (notifErr) {
+            console.warn('[supportTicketController] Failed to send status change notification:', notifErr.message);
+          }
+        }
+      }
+
+      return updatedTicket;
     };
 
     const updatedTicket = await tenantContext.bypass(execute);
