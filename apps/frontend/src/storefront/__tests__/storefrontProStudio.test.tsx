@@ -87,7 +87,7 @@ describe("Storefront Pro Studio (Design 3 - Wix Studio 2026)", () => {
       expect(screen.getByText("شبكة منتجات")).toBeDefined();
 
       fireEvent.click(screen.getByText("عنوان"));
-      expect(onAdd).toHaveBeenCalledWith("rich-text");
+      expect(onAdd).toHaveBeenCalledWith("richtext");
     });
   });
 
@@ -156,16 +156,16 @@ describe("Storefront Pro Studio (Design 3 - Wix Studio 2026)", () => {
       expect(screen.getByText("تصميم")).toBeDefined();
       expect(screen.getByText("تخطيط")).toBeDefined();
       expect(screen.getByText("محتوى")).toBeDefined();
-      expect(screen.getByText("تفاعلات")).toBeDefined();
+      expect(screen.getByText("تجاوب")).toBeDefined();
 
       // Switch to Content Tab
       fireEvent.click(screen.getByText("محتوى"));
       expect(screen.getByDisplayValue("عنوان تجريبي")).toBeDefined();
 
-      // Switch to Interactions / AI Tab
-      fireEvent.click(screen.getByText("تفاعلات"));
-      expect(screen.getByText("Responsive AI جاهز")).toBeDefined();
-      expect(screen.getByText("توليد النسخ ✦")).toBeDefined();
+      // Switch to Interactions / Responsive Tab
+      fireEvent.click(screen.getByText("تجاوب"));
+      expect(screen.getByText("قواعد التجاوب الذكية")).toBeDefined();
+      expect(screen.getByText(/قواعد التجاوب الذكية قيد التجهيز/)).toBeDefined();
     });
   });
 });

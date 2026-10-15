@@ -243,7 +243,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
   "hero-banner": {
     label: "البنر الرئيسي",
     component: "hero-banner",
-    note: "يمكنك تغيير النصوص والصورة من قسم محتوى الصفحة الرئيسية، بينما يتم هنا التحكم في شكل العرض وترتيب القسم.",
+    note: "يمكنك تخصيص النصوص والصور وأزرار الإجراء مباشرة من لوحة الإعدادات، والتحكم في شكل العرض وترتيب القسم.",
     variants: [
       { value: "centered", label: "عنوان في المنتصف" },
       { value: "full-bleed", label: "عرض كامل" },
@@ -527,7 +527,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
   newsletter: {
     label: "الاشتراك والدعوة",
     component: "newsletter",
-    note: "النصوص الأساسية لهذا القسم متاحة من محرر محتوى الصفحة الرئيسية، بينما يتم هنا التحكم في الـ variant والترتيب.",
+    note: "يمكنك تخصيص نصوص الاشتراك والدعوة وحقول النموذج مباشرة من لوحة الإعدادات، والتحكم في شكل العرض وترتيب القسم.",
     variants: [
       { value: "standard", label: "قياسي" },
       { value: "split-panel", label: "تقسيم جانبي" },

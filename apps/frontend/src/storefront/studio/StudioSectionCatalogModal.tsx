@@ -1,14 +1,12 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   MagnifyingGlassIcon,
   PlusIcon,
   SparklesIcon,
   XMarkIcon,
-  BoltIcon,
-  FilmIcon,
 } from "@heroicons/react/24/outline";
 import { STUDIO_SECTION_CATEGORIES } from "./StudioTypes";
-import { getStorefrontSectionLabel, getStorefrontSectionManifest, STOREFRONT_SECTION_MANIFEST } from "../sections/manifest";
+import { getStorefrontSectionLabel, STOREFRONT_SECTION_MANIFEST } from "../sections/manifest";
 
 interface StudioSectionCatalogModalProps {
   isOpen: boolean;
@@ -24,34 +22,27 @@ export const StudioSectionCatalogModal: React.FC<StudioSectionCatalogModalProps>
   const [selectedCategory, setSelectedCategory] = useState<string>("hero");
   const [searchQuery, setSearchQuery] = useState("");
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   const availableSections = useMemo(() => {
-    const base = Object.entries(STOREFRONT_SECTION_MANIFEST).map(([type, manifest]) => ({
-      type,
-      label: getStorefrontSectionLabel(type),
-      note: manifest.note || "قسم جاهز وقابل للتخصيص الكامل.",
-      icon: (manifest as any).icon || "📦",
-      is2026: false,
-    }));
-
-    // Add 2026 conversion sections if not present
-    const modernSections = [
-      {
-        type: "shoppable-reels",
-        label: "فيديوهات ريلز للشراء الفوري (Shoppable Reels)",
-        note: "عرض فيديوهات ريلز وتيك توك مع نافذة شراء مباشرة للمنتج أثناء المشاهدة.",
-        icon: "🎬",
-        is2026: true,
-      },
-      {
-        type: "flash-sale-timer",
-        label: "مؤقت الفلاش سيل التنازلي (Urgency Timer)",
-        note: "عداد تنازلي لعروض الساعات الأخيرة مع شريط المخزون المتبقي لرفع التحويل.",
-        icon: "⚡",
-        is2026: true,
-      },
-    ];
-
-    return [...modernSections, ...base];
+    return Object.entries(STOREFRONT_SECTION_MANIFEST)
+      .filter(([_, manifest]) => !manifest.legacy)
+      .map(([type, manifest]) => ({
+        type,
+        label: getStorefrontSectionLabel(type),
+        note: manifest.note || "قسم جاهز وقابل للتخصيص الكامل.",
+        icon: (manifest as any).icon || "📦",
+        is2026: false,
+      }));
   }, []);
 
   const filteredSections = useMemo(() => {
@@ -169,10 +160,7 @@ export const StudioSectionCatalogModal: React.FC<StudioSectionCatalogModalProps>
                     </p>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3">
-                    <span className="font-mono text-[10px] text-muted-foreground">
-                      {section.type}
-                    </span>
+                  <div className="mt-4 flex items-center justify-end border-t border-border/60 pt-3">
                     <button
                       type="button"
                       onClick={() => {

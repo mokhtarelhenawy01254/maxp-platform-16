@@ -28,11 +28,11 @@ export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
 
   const quickElements = [
-    { id: "text", label: "عنوان", type: "rich-text", icon: Bars3BottomLeftIcon },
-    { id: "hero", label: "ستاك / بنر", type: "hero-banner", icon: QueueListIcon },
-    { id: "image", label: "صورة", type: "cinematic-banner", icon: PhotoIcon },
+    { id: "text", label: "عنوان", type: "richtext", icon: Bars3BottomLeftIcon },
+    { id: "hero", label: "بانر رئيسي", type: "hero-banner", icon: QueueListIcon },
+    { id: "image", label: "صورة", type: "info-content", icon: PhotoIcon },
     { id: "grid", label: "شبكة", type: "featured-products", icon: Squares2X2Icon },
-    { id: "button", label: "عرض / زر", type: "deal-of-the-day", icon: CursorArrowRaysIcon },
+    { id: "button", label: "شريط عروض", type: "promo-strip", icon: CursorArrowRaysIcon },
     { id: "form", label: "نموذج", type: "newsletter", icon: EnvelopeIcon },
   ];
 
@@ -49,7 +49,7 @@ export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
       id: "preset-deal",
       title: "شريط عروض ومؤقت",
       sub: "عرض كامل",
-      type: "sale-countdown",
+      type: "countdown-banner",
       barColors: ["#b4552d", "#b4552d", "#4b505a"],
       icon: TagIcon,
     },
@@ -57,7 +57,7 @@ export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
       id: "preset-hero",
       title: "واجهة البطل الرئيسية",
       sub: "نص + زر + صورة",
-      type: "hero",
+      type: "hero-banner",
       barColors: ["#2b6cf6", "#4b505a", "#4b505a"],
       icon: SparklesIcon,
     },
@@ -73,7 +73,7 @@ export const StudioElementsPanel: React.FC<StudioElementsPanelProps> = ({
       id: "preset-reviews",
       title: "آراء وتجارب العملاء",
       sub: "تقييمات بالنجوم",
-      type: "customer-reviews",
+      type: "reviews",
       barColors: ["#7c5cff", "#4b505a", "#4b505a"],
       icon: ChatBubbleBottomCenterTextIcon,
     },

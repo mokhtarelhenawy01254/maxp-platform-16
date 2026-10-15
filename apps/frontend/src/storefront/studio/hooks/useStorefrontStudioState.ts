@@ -1,11 +1,65 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
 import type { DragEndEvent } from "@dnd-kit/core";
+import { toast } from "sonner";
 import { useStudioHistory } from "./useStudioHistory";
 import { STOREFRONT_THEME_PRESETS } from "../../themes";
 import { resolveStorefrontTheme } from "../../engine/themeResolver";
 import { useCartStore } from "../../store/useCartStore";
 import { getMarketplacePreviewCartItems } from "../../preview/marketplacePreviewCart";
+import { isStorefrontSectionKnown } from "../../sections/manifest";
+
+const STUDIO_STARTER_SETTINGS: Record<string, Record<string, any>> = {
+  "hero-banner": {
+    title: "مرحبًا بكم في متجرنا",
+    subtitle: "اكتشف أحدث التشكيلات والعروض الحصرية بأفضل الأسعار وبجودة مضمونة.",
+    ctaText: "تسوق الآن",
+    ctaLink: "/shop",
+  },
+  richtext: {
+    title: "عنوان القسم",
+    content: "أضف هنا نصوصك التعريفية وتفاصيل مميزات متجرك لعملائك الكرام.",
+  },
+  "info-content": {
+    title: "عن متجرنا",
+    body: "نقدم لك تجربة تسوق استثنائية مع تشكيلات مختارة بعناية لتناسب كل الأذواق.",
+    badge: "قصتنا",
+  },
+  "featured-products": {
+    title: "المنتجات المميزة",
+    subtitle: "مختارات حصرية من أفضل منتجاتنا لهذا الموسم",
+  },
+  "product-grid": {
+    title: "جميع المنتجات",
+    subtitle: "تصفح أحدث ما وصلنا واستمتع بأقوى العروض",
+  },
+  "promo-strip": {
+    badge: "عرض خاص",
+    message: "خصومات موسمية مميزة وشحن سريع لجميع المحافظات",
+    saleLabel: "خصم يصل إلى 30%",
+    shippingLabel: "شحن مجاني للطلبات الكبيرة",
+    ctaText: "تصفح العروض",
+    ctaLink: "/shop",
+  },
+  "countdown-banner": {
+    title: "عروض لفترة محدودة",
+    subtitle: "لا تفوت فرصة الاستفادة من الخصومات قبل انتهاء المؤقت",
+    ctaText: "اغتنم العرض",
+    ctaLink: "/shop",
+  },
+  reviews: {
+    title: "آراء وتجارب العملاء",
+    subtitle: "ثقة أكثر من 10,000 عميل سعيد بخدماتنا ومنتجاتنا",
+  },
+  "features-bar": {
+    title: "مميزات التسوق معنا",
+  },
+  newsletter: {
+    title: "انضم إلى نشرتنا البريدية",
+    subtitle: "كن أول من يعلم بالعروض والمنتجات الحصرية فور نزولها",
+    buttonText: "اشترك الآن",
+  },
+};
 
 interface UseStorefrontStudioStateProps {
   themeId: string;
@@ -234,13 +288,19 @@ export function useStorefrontStudioState({
   };
 
   const handleAddSection = (sectionType: string) => {
+    if (!isStorefrontSectionKnown(sectionType)) {
+      toast.error(`نوع القسم "${sectionType}" غير مدعوم في المتجر`);
+      return;
+    }
+
     const newKey = `${sectionType}-${Date.now()}`;
+    const starterSettings = STUDIO_STARTER_SETTINGS[sectionType] || {};
     const nextSections = [
       ...activeSections,
       {
         type: sectionType,
         key: newKey,
-        settings: {},
+        settings: { ...starterSettings },
       },
     ];
 
