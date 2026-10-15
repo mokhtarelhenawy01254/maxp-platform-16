@@ -2,11 +2,20 @@ import React, { useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { tToast } from "../../../utils/i18n-toast";
 import {
-  ArrowPathIcon,
-  CloudArrowDownIcon,
-  CheckCircleIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+  RefreshCw,
+  DownloadCloud,
+  CheckCircle2,
+  Plus,
+  Search,
+  Bot,
+  RotateCcw,
+  ArrowLeft,
+  Package,
+  CreditCard,
+  Truck,
+  Settings2,
+  type LucideIcon,
+} from "lucide-react";
 import { StatusBadge } from "./shared/StatusBadge";
 import { useWooCommerceStatus } from "../hooks/useWooCommerceStatus";
 import { Settings } from "../types";
@@ -18,11 +27,11 @@ interface StatusMappingTabProps {
   saveSettings: () => Promise<void>;
 }
 
-const TYPE_META: Record<string, { label: string; name: string; icon: string }> = {
-  order: { label: "طلب", name: "حالات الطلبات", icon: "📦" },
-  payment: { label: "دفع", name: "حالات الدفع", icon: "💳" },
-  shipping: { label: "شحن", name: "حالات الشحن", icon: "🚚" },
-  preparation: { label: "تجهيز", name: "حالات التجهيز", icon: "⚙️" },
+const TYPE_META: Record<string, { label: string; name: string; icon: LucideIcon }> = {
+  order: { label: "طلب", name: "حالات الطلبات", icon: Package },
+  payment: { label: "دفع", name: "حالات الدفع", icon: CreditCard },
+  shipping: { label: "شحن", name: "حالات الشحن", icon: Truck },
+  preparation: { label: "تجهيز", name: "حالات التجهيز", icon: Settings2 },
 };
 
 export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
@@ -55,7 +64,7 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
     if (settings?.hasCredentials) {
       fetchWooStatuses();
     }
-  }, [settings?.hasCredentials]);
+  }, [settings?.hasCredentials, fetchWooStatuses]);
 
   const filteredStatuses = wooStatuses.filter(
     (s) =>
@@ -87,10 +96,10 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
   };
 
   const getBorderColor = (mappedValue: string | undefined): string => {
-    if (!mappedValue) return "border-l-4 border-l-gray-300 dark:border-l-gray-600";
+    if (!mappedValue) return "border-r-4 border-r-border/80";
     const color = statusColors[mappedValue];
-    if (color) return `border-l-4 [border-left-color:${color}]`;
-    return "border-l-4 border-l-gray-300 dark:border-l-gray-600";
+    if (color) return `border-r-4 [border-right-color:${color}]`;
+    return "border-r-4 border-r-border/80";
   };
 
   const hasAnyTypeStatuses = Object.values(localStatusesByType).some(
@@ -98,85 +107,92 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
   );
 
   return (
-    <div>
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-6">
+    <div className="space-y-4">
+      {/* Header & Controls */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 bg-card border border-border/70 rounded-xl p-4 shadow-xs">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+          <h2 className="text-sm sm:text-base font-semibold text-foreground">
             ربط حالات الطلبات (Status Mapping)
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 text-sm">
-            تحديد الحالة المقابلة في النظام لكل حالة من حالات WooCommerce
+          <p className="text-xs text-muted-foreground mt-0.5">
+            تحديد الحالة المقابلة في النظام لكل حالة من حالات WooCommerce المتزامنة
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 justify-end">
           <button
+            type="button"
             onClick={fetchWooStatuses}
             disabled={fetchingStatuses}
-            className="flex-1 sm:flex-none px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center justify-center gap-2 disabled:opacity-50 transition-all font-semibold shadow-sm active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold rounded-lg border border-border/60 disabled:opacity-50 transition-colors active:scale-[0.98]"
           >
             {fetchingStatuses ? (
-              <ArrowPathIcon className="h-5 w-5 animate-spin text-blue-500" />
+              <RefreshCw className="h-3.5 w-3.5 animate-spin text-primary" />
             ) : (
-              <CloudArrowDownIcon className="h-5 w-5 text-blue-500" />
+              <DownloadCloud className="h-3.5 w-3.5 text-primary" />
             )}
-            جلب الحالات
+            <span>جلب الحالات</span>
           </button>
           <button
+            type="button"
             onClick={() =>
               setSettingsForm((prev: any) => ({
                 ...prev,
                 statusMapping: defaultStatusMapping,
               }))
             }
-            className="flex-1 sm:flex-none px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center justify-center gap-2 transition-all font-semibold shadow-sm active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold rounded-lg border border-border/60 transition-colors active:scale-[0.98]"
           >
-            <ArrowPathIcon className="h-5 w-5 text-orange-500" />
-            الافتراضي
+            <RotateCcw className="h-3.5 w-3.5 text-amber-500" />
+            <span>الافتراضي</span>
           </button>
           <button
+            type="button"
             onClick={autoMapStatuses}
-            className="flex-1 sm:flex-none px-4 py-2.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 dark:border-blue-500/30 rounded-xl text-blue-600 dark:text-blue-400 flex items-center justify-center gap-2 transition-all font-bold shadow-sm active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-xs font-semibold rounded-lg transition-colors active:scale-[0.98]"
             title="اقتراح الربط تلقائياً بناءً على أسماء الحالات"
           >
-            <span>🤖</span>
-            ربط تلقائي
+            <Bot className="h-3.5 w-3.5" />
+            <span>ربط تلقائي</span>
           </button>
           <button
+            type="button"
             onClick={saveSettings}
-            className="w-full sm:flex-1 xl:flex-none px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all active:scale-95 font-bold"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold rounded-lg shadow-xs transition-colors active:scale-[0.98]"
           >
-            <CheckCircleIcon className="h-5 w-5" />
-            حفظ الخريطة
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            <span>حفظ الخريطة</span>
           </button>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <div className="rounded-xl border border-border/70 bg-card p-4 sm:p-5 shadow-xs space-y-4">
         {/* Color Legend */}
-        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-          <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">
-            دليل الألوان (Color Legend):
+        <div className="p-3.5 bg-muted/30 border border-border/50 rounded-lg">
+          <div className="text-xs font-semibold text-muted-foreground mb-2.5">
+            دليل تصنيف الحالات في النظام:
           </div>
           <div className="space-y-2">
             {Object.entries(TYPE_META).map(([typeKey, meta]) => {
               const typeStatuses = localStatusesByType[typeKey] || [];
+              const Icon = meta.icon;
               return (
-                <div key={typeKey} className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 ml-2 min-w-[110px] shrink-0">
-                    {meta.icon} {meta.name}:
+                <div key={typeKey} className="flex flex-wrap items-center gap-1.5 text-xs">
+                  <span className="font-medium text-foreground ml-2 min-w-[120px] shrink-0 inline-flex items-center gap-1.5">
+                    <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span>{meta.name}:</span>
                   </span>
                   {typeStatuses.length > 0 ? (
                     typeStatuses.map((s) => (
                       <span
                         key={s.value}
-                        className="px-2 py-0.5 rounded text-[11px] font-medium text-white leading-5"
+                        className="px-2 py-0.5 rounded text-[11px] font-mono font-medium text-white shadow-2xs"
                         style={{ backgroundColor: s.color || "#6B7280" }}
                       >
                         {s.value}
                       </span>
                     ))
                   ) : (
-                    <span className="text-xs text-gray-400">جاري التحميل...</span>
+                    <span className="text-xs text-muted-foreground">جاري التحميل...</span>
                   )}
                 </div>
               );
@@ -185,25 +201,28 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
         </div>
 
         {/* Search */}
-        <div className="mb-6 relative">
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <input
             type="text"
-            placeholder="🔍 ابحث عن حالة..."
+            placeholder="ابحث عن حالة بالاسم أو الرمز البرمجي..."
             value={statusSearch}
             onChange={(e) => setStatusSearch(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+            className="w-full pr-9 pl-4 py-2 border border-border/70 rounded-lg bg-background text-foreground text-xs focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-muted-foreground"
           />
         </div>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm font-bold text-gray-500 dark:text-gray-400">
-            <div className="col-span-1">#</div>
+        <div className="space-y-2">
+          <div className="grid grid-cols-12 gap-3 px-3 py-2 bg-muted/50 rounded-lg text-xs font-semibold text-muted-foreground border border-border/50">
+            <div className="col-span-1 text-center">#</div>
             <div className="col-span-5">حالة WooCommerce</div>
-            <div className="col-span-1 flex justify-center">➡️</div>
-            <div className="col-span-5">الحالة في النظام</div>
+            <div className="col-span-1 flex justify-center">
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </div>
+            <div className="col-span-5">الحالة المقابلة في النظام</div>
           </div>
 
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+          <div className="space-y-1.5">
             {filteredStatuses.map((status, index) => {
               const currentMapping = settingsForm.statusMapping?.[status.slug];
               const isMapped = !!currentMapping;
@@ -214,31 +233,31 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
               return (
                 <div
                   key={status.slug}
-                  className={`grid grid-cols-12 gap-4 items-center p-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors rounded-lg bg-white dark:bg-gray-800 shadow-sm mb-2 ${borderColor}`}
+                  className={`grid grid-cols-12 gap-3 items-center p-3 rounded-lg border border-border/50 bg-background/50 hover:bg-muted/30 transition-colors ${borderColor}`}
                 >
-                  <div className="col-span-1 text-gray-400 flex flex-col items-center">
+                  <div className="col-span-1 text-muted-foreground flex flex-col items-center font-mono text-xs">
                     <span>{index + 1}</span>
                     {status.isCustom && (
-                      <span className="text-[10px] bg-purple-100 text-purple-700 px-1 rounded mt-1">
-                        Custom
+                      <span className="text-[10px] bg-primary/10 text-primary px-1 rounded mt-0.5 font-sans">
+                        مخصص
                       </span>
                     )}
                   </div>
-                  <div className="col-span-5">
-                    <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                      {status.name}
-                      <code className="text-xs bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-500">
+                  <div className="col-span-5 min-w-0">
+                    <div className="font-semibold text-xs text-foreground flex items-center gap-1.5 flex-wrap">
+                      <span>{status.name}</span>
+                      <code className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground border border-border/40">
                         {status.slug}
                       </code>
                     </div>
                     {status.nameEn && (
-                      <div className="text-sm text-gray-500">
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
                         {status.nameEn}
                       </div>
                     )}
                   </div>
-                  <div className="col-span-1 flex justify-center text-gray-300">
-                    ➡️
+                  <div className="col-span-1 flex justify-center text-muted-foreground">
+                    <ArrowLeft className="w-3.5 h-3.5" />
                   </div>
                   <div className="col-span-5">
                     <select
@@ -246,10 +265,10 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
                       onChange={(e) =>
                         handleStatusChange(status.slug, e.target.value)
                       }
-                      className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 outline-none transition-all shadow-sm"
+                      className="w-full px-3 py-1.5 rounded-lg border border-border/70 bg-background text-foreground text-xs focus:ring-1 focus:ring-primary outline-none transition-all font-medium"
                       style={
                         isMapped && statusColors[currentMapping]
-                          ? { borderLeftColor: statusColors[currentMapping], borderLeftWidth: "4px" }
+                          ? { borderRightColor: statusColors[currentMapping], borderRightWidth: "3px" }
                           : undefined
                       }
                     >
@@ -283,50 +302,51 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
           </div>
 
           {/* Add Custom Status */}
-          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <PlusIcon className="h-4 w-4" />
-              إضافة حالة مخصصة
+          <div className="mt-5 pt-4 border-t border-border/60">
+            <h3 className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
+              <Plus className="h-3.5 w-3.5 text-primary" />
+              <span>إضافة حالة مخصصة</span>
             </h3>
-            <div className="flex gap-4 items-center bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-dashed border-gray-300 dark:border-gray-600">
+            <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center bg-muted/20 p-3 rounded-lg border border-border/60">
               <div className="flex-1">
                 <input
                   ref={customStatusRef}
                   type="text"
                   placeholder="مثال: driver-assigned"
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                  className="w-full px-3 py-1.5 border border-border/70 rounded-lg bg-background text-foreground text-xs focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-muted-foreground font-mono"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleAddCustomStatus();
                   }}
                 />
-                <p className="text-xs text-gray-500 mt-1.5">
-                  أدخل الاسم البرمجي (slug) للحالة في WooCommerce
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  أدخل الاسم البرمجي (slug) للحالة المخصصة في متجر WooCommerce
                 </p>
               </div>
               <button
+                type="button"
                 onClick={handleAddCustomStatus}
-                className="px-6 py-3 bg-gray-900 dark:bg-gray-700 hover:bg-gray-800 dark:hover:bg-gray-600 text-white rounded-xl text-sm font-medium transition-colors shadow-lg shadow-gray-200 dark:shadow-none"
+                className="px-4 py-1.5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg text-xs font-semibold transition-colors active:scale-[0.98] shadow-xs shrink-0"
               >
                 إضافة
               </button>
             </div>
           </div>
 
-          {/* Current Mappings */}
-          <div className="mt-8">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              الخريطة الحالية:
+          {/* Current Mappings Preview */}
+          <div className="mt-4 pt-3 border-t border-border/50">
+            <h3 className="text-xs font-semibold text-muted-foreground mb-2">
+              ملخص الخريطة الحالية:
             </h3>
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 font-mono text-xs overflow-x-auto border border-gray-200 dark:border-gray-700 max-h-40 overflow-y-auto">
-              <div className="flex flex-wrap gap-2">
+            <div className="bg-muted/20 rounded-lg p-3 font-mono text-xs overflow-x-auto border border-border/50 max-h-36 overflow-y-auto">
+              <div className="flex flex-wrap gap-1.5">
                 {Object.entries(settingsForm.statusMapping || {}).map(
                   ([key, val]) => (
                     <span
                       key={key}
-                      className="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded flex items-center gap-1"
+                      className="px-2 py-1 bg-background border border-border/60 rounded-md flex items-center gap-1.5 text-[11px]"
                     >
-                      <span className="text-gray-500">{key}</span>
-                      <span className="text-gray-300">→</span>
+                      <span className="text-muted-foreground font-medium">{key}</span>
+                      <ArrowLeft className="w-3 h-3 text-muted-foreground" />
                       <StatusBadge status={val as string} />
                     </span>
                   ),
@@ -339,3 +359,5 @@ export const StatusMappingTab: React.FC<StatusMappingTabProps> = ({
     </div>
   );
 };
+
+export default StatusMappingTab;
