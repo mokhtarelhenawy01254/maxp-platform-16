@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeftIcon,
-  MagnifyingGlassIcon,
-  ShoppingBagIcon,
-  CheckIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/outline";
-import {
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/solid";
+  ArrowRight,
+  Search,
+  ShoppingBag,
+  Check,
+  CheckCircle2,
+  AlertTriangle,
+  Loader2,
+  Globe,
+  Key,
+} from "lucide-react";
 import { toast } from "sonner";
 import i18n from "../../i18n";
 import { tToast } from "../../utils/i18n-toast";
@@ -29,10 +29,6 @@ interface Product {
   images: string[];
   category?: string;
   tags: string[];
-  weight?: number;
-  dimensions?: Record<string, unknown> | null;
-  wooCommerceId?: string;
-  wooCommerceUrl?: string;
 }
 
 const WooCommerceImport: React.FC = () => {
@@ -41,14 +37,11 @@ const WooCommerceImport: React.FC = () => {
   const [consumerKey, setConsumerKey] = useState("");
   const [consumerSecret, setConsumerSecret] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
-  const [selectedProducts, setSelectedProducts] = useState<Set<number>>(
-    new Set(),
-  );
+  const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // جلب المنتجات من WooCommerce
   const fetchProducts = async () => {
     if (!storeUrl.trim() || !consumerKey.trim() || !consumerSecret.trim()) {
       tToast.error("WooCommerceImport.msg_9c80");
@@ -59,9 +52,7 @@ const WooCommerceImport: React.FC = () => {
     try {
       const response = await fetch("/api/v1/woocommerce/fetch-products", {
         method: "POST",
-        headers: tokenManager.createAuthHeaders({
-          "Content-Type": "application/json",
-        }),
+        headers: tokenManager.createAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           storeUrl: storeUrl.trim(),
           consumerKey: consumerKey.trim(),
@@ -70,16 +61,11 @@ const WooCommerceImport: React.FC = () => {
       });
 
       const data = await response.json();
-
       if (data.success) {
         const fetchedProducts: Product[] = data.data?.products ?? [];
         setProducts(fetchedProducts);
-        toast.success(data.message);
-
-        const allIndexes = new Set(
-          fetchedProducts.map((_product: Product, i: number) => i),
-        );
-        setSelectedProducts(allIndexes);
+        toast.success(data.message || `تم جلب ${fetchedProducts.length} منتج`);
+        setSelectedProducts(new Set(fetchedProducts.map((_, i) => i)));
       } else {
         toast.error(data.message || i18n.t("WooCommerceImport.failed_fetch_579a"));
       }
@@ -91,14 +77,12 @@ const WooCommerceImport: React.FC = () => {
     }
   };
 
-  // مسح البيانات
   const clearData = () => {
     setProducts([]);
     setSelectedProducts(new Set());
     setSearchTerm("");
   };
 
-  // استيراد المنتجات المحددة
   const importProducts = async () => {
     if (selectedProducts.size === 0) {
       tToast.error("WooCommerceImport.msg_7f37");
@@ -107,32 +91,20 @@ const WooCommerceImport: React.FC = () => {
 
     setImporting(true);
     try {
-      const selectedProductsList = Array.from(selectedProducts).map(
-        (index) => products[index],
-      );
-
+      const selectedProductsList = Array.from(selectedProducts).map((i) => products[i]);
       const response = await fetch("/api/v1/woocommerce/import-selected", {
         method: "POST",
-        headers: tokenManager.createAuthHeaders({
-          "Content-Type": "application/json",
-        }),
-        body: JSON.stringify({
-          products: selectedProductsList,
-        }),
+        headers: tokenManager.createAuthHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ products: selectedProductsList }),
       });
 
       const data = await response.json();
-
       if (data.success) {
-        const { imported, failed, skipped } = data.data;
-
-        let message = `تم استيراد ${imported} منتج بنجاح`;
+        const { imported, failed, skipped } = data.data || {};
+        let message = `تم استيراد ${imported || 0} منتج بنجاح`;
         if (skipped > 0) message += ` | تم تخطي ${skipped} منتج موجود`;
         if (failed > 0) message += ` | فشل ${failed} منتج`;
-
         toast.success(message);
-
-        // إعادة تعيين
         clearData();
       } else {
         toast.error(data.message || i18n.t("WooCommerceImport.msg_b68b"));
@@ -145,7 +117,6 @@ const WooCommerceImport: React.FC = () => {
     }
   };
 
-  // تبديل تحديد منتج
   const toggleProduct = (index: number) => {
     const newSelected = new Set(selectedProducts);
     if (newSelected.has(index)) {
@@ -156,300 +127,245 @@ const WooCommerceImport: React.FC = () => {
     setSelectedProducts(newSelected);
   };
 
-  // تحديد/إلغاء تحديد الكل
+  const filteredProducts = products.filter((p) =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
   const toggleAll = () => {
     if (selectedProducts.size === filteredProducts.length) {
       setSelectedProducts(new Set());
     } else {
-      const allIndexes = new Set(
-        filteredProducts.map((p: Product) => products.indexOf(p)),
-      );
-      setSelectedProducts(allIndexes);
+      setSelectedProducts(new Set(filteredProducts.map((p) => products.indexOf(p))));
     }
   };
 
-  // تصفية المنتجات حسب البحث
-  const filteredProducts = products.filter((product: Product) =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="w-full">
-        {/* Header */}
-        <div className="mb-6">
+    <div className="space-y-4 sm:space-y-5 p-4 sm:p-6 font-sans text-foreground" dir="rtl">
+      {/* Top Header */}
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border/70 pb-4">
+        <div>
           <button
             onClick={() => navigate("/products")}
-            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-2"
           >
-            <ArrowLeftIcon className="h-5 w-5" />
-            العودة للمنتجات
+            <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
+            <span>العودة لكتالوج المنتجات</span>
           </button>
-          <div className="flex items-center gap-3">
-            <ShoppingBagIcon className="h-8 w-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              استيراد من WooCommerce
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+              <ShoppingBag className="h-4 w-4" />
+            </div>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">
+              استيراد المنتجات من WooCommerce
             </h1>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">
-            استورد منتجاتك من WooCommerce مباشرة إلى متجرك
+          <p className="text-xs text-muted-foreground mt-0.5">
+            مزامنة واستيراد كتالوج المنتجات والصور والمخزون مباشرة من متجر ووكومرس
           </p>
         </div>
+      </header>
 
-        {/* Form */}
-        {products.length === 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              معلومات الاتصال
-            </h2>
+      {/* Connection Form */}
+      {products.length === 0 && (
+        <div className="max-w-2xl mx-auto rounded-xl border border-border/70 bg-card p-5 space-y-4 shadow-xs text-xs">
+          <div className="flex items-center gap-2 border-b border-border/60 pb-2">
+            <Globe className="h-4 w-4 text-primary" />
+            <h2 className="font-semibold text-foreground text-sm">بيانات الربط مع WooCommerce REST API</h2>
+          </div>
 
-            <div className="space-y-4">
-              {/* Store URL */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  رابط المتجر *
-                </label>
-                <input
-                  type="text"
-                  value={storeUrl}
-                  onChange={(e) => setStoreUrl(e.target.value)}
-                  placeholder="https://yourstore.com"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  disabled={loading}
-                />
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  أدخل رابط متجرك على WooCommerce
-                </p>
-              </div>
+          <div className="space-y-3.5">
+            <div>
+              <label className="block font-medium text-foreground mb-1">
+                رابط متجر ووكومرس <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="url"
+                value={storeUrl}
+                onChange={(e) => setStoreUrl(e.target.value)}
+                placeholder="https://yourstore.com"
+                dir="ltr"
+                className="w-full px-3 py-2 rounded-md border border-border/70 bg-background text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-primary font-mono text-left"
+                disabled={loading}
+              />
+            </div>
 
-              {/* Consumer Key */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Consumer Key *
-                </label>
-                <input
-                  type="text"
-                  value={consumerKey}
-                  onChange={(e) => setConsumerKey(e.target.value)}
-                  placeholder="ck_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  disabled={loading}
-                />
-              </div>
+            <div>
+              <label className="block font-medium text-foreground mb-1 flex items-center gap-1.5">
+                <Key className="h-3.5 w-3.5 text-muted-foreground" />
+                Consumer Key <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={consumerKey}
+                onChange={(e) => setConsumerKey(e.target.value)}
+                placeholder="ck_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                dir="ltr"
+                className="w-full px-3 py-2 rounded-md border border-border/70 bg-background text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-primary font-mono text-left"
+                disabled={loading}
+              />
+            </div>
 
-              {/* Consumer Secret */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Consumer Secret *
-                </label>
-                <input
-                  type="password"
-                  value={consumerSecret}
-                  onChange={(e) => setConsumerSecret(e.target.value)}
-                  placeholder="cs_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  disabled={loading}
-                />
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  احصل على مفاتيح API من WooCommerce → Settings → Advanced →
-                  REST API
-                </p>
-              </div>
+            <div>
+              <label className="block font-medium text-foreground mb-1 flex items-center gap-1.5">
+                <Key className="h-3.5 w-3.5 text-muted-foreground" />
+                Consumer Secret <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="password"
+                value={consumerSecret}
+                onChange={(e) => setConsumerSecret(e.target.value)}
+                placeholder="cs_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                dir="ltr"
+                className="w-full px-3 py-2 rounded-md border border-border/70 bg-background text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-primary font-mono text-left"
+                disabled={loading}
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                يمكن توليد المفاتيح من: WooCommerce → Settings → Advanced → REST API
+              </p>
+            </div>
 
-              {/* Fetch Button */}
+            <button
+              onClick={fetchProducts}
+              disabled={loading || !storeUrl.trim() || !consumerKey.trim() || !consumerSecret.trim()}
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-xs disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>جاري الاتصال وجلب المنتجات...</span>
+                </>
+              ) : (
+                <>
+                  <Search className="h-4 w-4" />
+                  <span>الاتصال وجلب المنتجات</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Products Preview & Selection */}
+      {products.length > 0 && (
+        <div className="space-y-4">
+          {/* Controls Bar */}
+          <div className="rounded-lg border border-border/70 bg-card p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="بحث في المنتجات المجلوبة..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pr-8 pl-3 py-1.5 rounded-md border border-border/70 bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
               <button
-                onClick={fetchProducts}
-                disabled={
-                  loading ||
-                  !storeUrl.trim() ||
-                  !consumerKey.trim() ||
-                  !consumerSecret.trim()
-                }
-                className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                onClick={toggleAll}
+                className="rounded-md border border-border/70 bg-background px-3 py-1.5 font-medium text-foreground hover:bg-muted transition-colors"
               >
-                {loading ? (
+                {selectedProducts.size === filteredProducts.length ? "إلغاء تحديد الكل" : "تحديد الكل"}
+              </button>
+              <button
+                onClick={importProducts}
+                disabled={importing || selectedProducts.size === 0}
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs disabled:opacity-50"
+              >
+                {importing ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    جاري جلب المنتجات...
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>جاري الاستيراد...</span>
                   </>
                 ) : (
                   <>
-                    <MagnifyingGlassIcon className="h-5 w-5" />
-                    جلب المنتجات
+                    <Check className="h-3.5 w-3.5" />
+                    <span>استيراد ({selectedProducts.size})</span>
                   </>
                 )}
               </button>
-            </div>
-          </div>
-        )}
-
-        {/* Products List */}
-        {products.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            {/* Search and Actions */}
-            <div className="mb-6">
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                <div className="flex-1 w-full sm:w-auto">
-                  <input
-                    type="text"
-                    placeholder="ابحث عن منتج..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <button
-                    onClick={toggleAll}
-                    className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-                  >
-                    {selectedProducts.size === filteredProducts.length
-                      ? "إلغاء الكل"
-                      : "تحديد الكل"}
-                  </button>
-
-                  <button
-                    onClick={importProducts}
-                    disabled={importing || selectedProducts.size === 0}
-                    className="flex-1 sm:flex-none px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {importing ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        جاري الاستيراد...
-                      </>
-                    ) : (
-                      <>
-                        <CheckIcon className="h-5 w-5" />
-                        استيراد ({selectedProducts.size})
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Products Grid */}
-            {filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredProducts.map((product: Product, index: number) => {
-                  const productIndex = products.indexOf(product);
-                  const isSelected = selectedProducts.has(productIndex);
-
-                  return (
-                    <div
-                      key={productIndex}
-                      onClick={() => toggleProduct(productIndex)}
-                      className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                        isSelected
-                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-                      }`}
-                    >
-                      {/* Selection Indicator */}
-                      <div className="absolute top-2 right-2">
-                        {isSelected ? (
-                          <CheckCircleIcon className="h-6 w-6 text-blue-600" />
-                        ) : (
-                          <div className="h-6 w-6 border-2 border-gray-300 dark:border-gray-600 rounded-full"></div>
-                        )}
-                      </div>
-
-                      {/* Product Image */}
-                      {product.images && product.images.length > 0 ? (
-                        <img
-                          src={product.images[0]}
-                          alt={product.name}
-                          className="w-full h-48 object-cover rounded-lg mb-3"
-                          onError={(e) => {
-                            e.currentTarget.src =
-                              "https://via.placeholder.com/300x300?text=No+Image";
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 rounded-lg mb-3 flex items-center justify-center">
-                          <ShoppingBagIcon className="h-16 w-16 text-gray-400" />
-                        </div>
-                      )}
-
-                      {/* Product Info */}
-                      <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                          {product.name}
-                        </h3>
-
-                        <div className="space-y-1 text-sm">
-                          {/* Price */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-600 dark:text-gray-400">
-                              السعر:
-                            </span>
-                            <span className="font-bold text-green-600 dark:text-green-400">
-                              {product.price} جنيه
-                            </span>
-                          </div>
-
-                          {/* Compare Price */}
-                          {product.comparePrice && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-gray-600 dark:text-gray-400">
-                                السعر الأصلي:
-                              </span>
-                              <span className="line-through text-gray-500">
-                                {product.comparePrice} جنيه
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Stock */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-600 dark:text-gray-400">
-                              المخزون:
-                            </span>
-                            <span className="font-medium text-gray-900 dark:text-white">
-                              {product.stock}
-                            </span>
-                          </div>
-
-                          {/* Category */}
-                          {product.category && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-gray-600 dark:text-gray-400">
-                                الفئة:
-                              </span>
-                              <span className="text-gray-900 dark:text-white">
-                                {product.category}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <ExclamationTriangleIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600 dark:text-gray-400">
-                  لا توجد منتجات تطابق البحث
-                </p>
-              </div>
-            )}
-
-            {/* Cancel Button */}
-            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={clearData}
-                className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+                className="rounded-md border border-border/70 bg-background px-3 py-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
-                إلغاء وبدء من جديد
+                إلغاء
               </button>
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Grid */}
+          {filteredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {filteredProducts.map((product: Product) => {
+                const productIndex = products.indexOf(product);
+                const isSelected = selectedProducts.has(productIndex);
+
+                return (
+                  <div
+                    key={productIndex}
+                    onClick={() => toggleProduct(productIndex)}
+                    className={`rounded-lg border p-3 cursor-pointer transition-all flex flex-col justify-between text-xs ${
+                      isSelected
+                        ? "border-primary/40 bg-primary/5 shadow-xs"
+                        : "border-border/70 bg-card hover:border-border"
+                    }`}
+                  >
+                    <div>
+                      <div className="relative mb-2.5">
+                        {product.images && product.images.length > 0 ? (
+                          <img
+                            src={product.images[0]}
+                            alt={product.name}
+                            className="h-32 w-full object-cover rounded-md border border-border/60"
+                          />
+                        ) : (
+                          <div className="h-32 w-full bg-muted/30 rounded-md border border-border/60 flex items-center justify-center text-muted-foreground">
+                            <ShoppingBag className="h-8 w-8" />
+                          </div>
+                        )}
+                        <div className="absolute top-1.5 right-1.5">
+                          {isSelected ? (
+                            <CheckCircle2 className="h-5 w-5 text-primary fill-primary/20" />
+                          ) : (
+                            <div className="h-5 w-5 rounded-full border border-border/70 bg-background/80" />
+                          )}
+                        </div>
+                      </div>
+
+                      <h3 className="font-semibold text-foreground line-clamp-2 mb-1.5">
+                        {product.name}
+                      </h3>
+                    </div>
+
+                    <div className="space-y-1 pt-2 border-t border-border/60 font-mono tabular-nums">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground font-sans">السعر:</span>
+                        <span className="font-bold text-foreground">{product.price} ج.م</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground font-sans">المخزون:</span>
+                        <span className="text-foreground">{product.stock} قطعة</span>
+                      </div>
+                      {product.sku && (
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                          <span className="font-sans">SKU:</span>
+                          <span>{product.sku}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-16 text-center text-muted-foreground border border-dashed border-border/70 rounded-xl">
+              <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-muted-foreground/60" />
+              <p className="text-xs">لا توجد منتجات مطابقة للبحث</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

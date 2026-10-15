@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { apiClient } from "../../services/apiClient";
-import { useTheme } from "../../hooks/useTheme";
-import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
 import { getCurrencyByCode } from "../../utils/currency";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import {
-  CurrencyDollarIcon,
-  MagnifyingGlassIcon,
-  ArrowPathIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  BoltIcon,
-} from "@heroicons/react/24/outline";
+  Zap,
+  Search,
+  RefreshCw,
+  Check,
+  AlertTriangle,
+  Loader2,
+  DollarSign,
+  TrendingUp,
+} from "lucide-react";
 
 interface Product {
   id: string;
@@ -38,11 +38,7 @@ interface ApiSuccess<T> {
 const EDITABLE_PRICE_FIELDS = ["cost", "basePrice", "price"] as const;
 
 const AffiliateQuickActions: React.FC = () => {
-  const { actualTheme } = useTheme();
-  const { t } = useTranslation();
   const { currency } = useCurrency();
-  const isDark = actualTheme === "dark";
-
   const currencyInfo = getCurrencyByCode(currency || "EGP");
   const displayCurrency = currencyInfo?.symbol || "ج.م";
 
@@ -62,7 +58,7 @@ const AffiliateQuickActions: React.FC = () => {
     try {
       setLoading(true);
       const response = await apiClient.get<ApiSuccess<Product[]>>("/products");
-      if (response.data.success) {
+      if (response?.data?.success && Array.isArray(response.data.data)) {
         setProducts(response.data.data);
       }
     } catch (error) {
@@ -86,7 +82,6 @@ const AffiliateQuickActions: React.FC = () => {
         [field]: value,
       };
 
-      // أتمتة حساب السعر الأساسي للمسوق عند تغيير سعر التاجر (cost)
       if (field === "cost") {
         const cost = Number(value);
         let platMargin = 0;
@@ -119,13 +114,11 @@ const AffiliateQuickActions: React.FC = () => {
 
       for (const field of EDITABLE_PRICE_FIELDS) {
         if (changes[field] === undefined) continue;
-
         const parsed = Number(changes[field]);
         if (!Number.isFinite(parsed) || parsed < 0) {
           toast.error(`قيمة ${product.name} غير صالحة`);
           return;
         }
-
         payload[field] = Number(parsed.toFixed(2));
       }
 
@@ -157,16 +150,12 @@ const AffiliateQuickActions: React.FC = () => {
 
     try {
       setSaving(true);
-      const updatePromises = updates.map(
-        ({ id, payload }) =>
-          apiClient.patch<ApiSuccess<unknown>, Partial<Product>>(
-            `/products/${id}`,
-            payload,
-          ),
+      const updatePromises = updates.map(({ id, payload }) =>
+        apiClient.patch<ApiSuccess<unknown>, Partial<Product>>(`/products/${id}`, payload),
       );
 
       await Promise.all(updatePromises);
-      toast.success(`تم تحديث ${changesCount} منتج بنجاح!`);
+      toast.success(`تم تحديث ${changesCount} منتج بنجاح`);
       setPendingChanges({});
       fetchProducts();
     } catch (error) {
@@ -176,254 +165,203 @@ const AffiliateQuickActions: React.FC = () => {
     }
   };
 
-  const filteredProducts = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      (p.sku && p.sku.toLowerCase().includes(search.toLowerCase())),
-  );
+  const filteredProducts = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    return products.filter(
+      (p) =>
+        p.name?.toLowerCase().includes(q) ||
+        (p.sku && p.sku.toLowerCase().includes(q)),
+    );
+  }, [products, search]);
+
+  const changesCount = Object.keys(pendingChanges).length;
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-muted-foreground font-sans">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="text-xs">جاري تحميل جدول التسعير السريع...</span>
+      </div>
+    );
+  }
 
   return (
-    <div
-      className={`p-6 min-h-screen ${isDark ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900"}`}
-    >
-      <div className="w-full">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2 text-indigo-500">
-              <BoltIcon className="h-8 w-8" />
-              الأكشن السريع: إدارة التسعير الثلاثي 🇪🇬
+    <div className="space-y-4 sm:space-y-5 p-4 sm:p-6 font-sans text-foreground" dir="rtl">
+      {/* Top Header */}
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b border-border/70 pb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+              <Zap className="h-4 w-4" />
+            </div>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">
+              إدارة التسعير الثلاثي وهوامش العمولات
             </h1>
-            <p className={`mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-              إدارة أسعار التجار (التكلفة)، ربح المنصة، وعمولات المسوقين في مكان
-              واحد.
-            </p>
           </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={fetchProducts}
-              className={`p-2 rounded-lg border ${isDark ? "border-gray-700 hover:bg-gray-800" : "border-gray-300 hover:bg-gray-100"}`}
-              title="تحديث البيانات"
-            >
-              <ArrowPathIcon
-                className={`h-5 w-5 ${loading ? "animate-spin" : ""}`}
-              />
-            </button>
-            <button
-              onClick={handleBulkSave}
-              disabled={Object.keys(pendingChanges).length === 0 || saving}
-              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold shadow-lg shadow-indigo-500/20"
-            >
-              {saving
-                ? "جاري الحفظ..."
-                : `حفظ التغييرات (${Object.keys(pendingChanges).length})`}
-              {!saving && <CheckCircleIcon className="h-5 w-5" />}
-            </button>
-          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            إدارة متزامنة لسعر التكلفة، هامش ربح المنصة، وعمولات شبكة المسوقين
+          </p>
         </div>
 
-        {/* Search Bar */}
-        <div className={`mb-6 relative`}>
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={fetchProducts}
+            className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-border/70 bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            title="تحديث البيانات"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          </button>
+          <button
+            onClick={handleBulkSave}
+            disabled={changesCount === 0 || saving}
+            className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs disabled:opacity-50"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>جاري الحفظ...</span>
+              </>
+            ) : (
+              <>
+                <Check className="h-3.5 w-3.5" />
+                <span>حفظ التعديلات {changesCount > 0 ? `(${changesCount})` : ""}</span>
+              </>
+            )}
+          </button>
+        </div>
+      </header>
+
+      {/* Filter and Search Ribbon */}
+      <div className="rounded-lg border border-border/70 bg-card p-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="relative flex-1 min-w-[240px] max-w-md">
+          <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
             type="text"
-            placeholder="ابحث باسم المنتج أو الـ SKU..."
+            placeholder="بحث باسم المنتج أو كود SKU..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={`w-full pl-10 pr-4 py-3 rounded-xl border ${
-              isDark
-                ? "bg-gray-800 border-gray-700 focus:border-indigo-500"
-                : "bg-white border-gray-300 focus:border-indigo-500"
-            } outline-none transition-all shadow-sm`}
+            className="w-full pr-8 pl-3 py-1.5 text-xs rounded-md border border-border/70 bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
 
-        {/* Triple Profit Table */}
-        <div
-          className={`overflow-x-auto rounded-xl border ${isDark ? "border-gray-700" : "border-gray-200"} shadow-sm`}
-        >
-          <table className="w-full text-right border-collapse">
-            <thead
-              className={`${isDark ? "bg-gray-800 text-gray-400" : "bg-gray-100 text-gray-600"}`}
-            >
+        <div className="text-xs font-mono tabular-nums text-muted-foreground">
+          المنتجات: <span className="font-semibold text-foreground">{filteredProducts.length}</span>
+        </div>
+      </div>
+
+      {/* Single-Surface Table */}
+      <div className="rounded-xl border border-border/70 bg-card overflow-hidden shadow-xs">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-border/60 text-right text-xs">
+            <thead className="bg-muted/30">
               <tr>
-                <th className="px-4 py-4 font-semibold text-sm">المنتج</th>
-                <th className="px-4 py-4 font-semibold text-sm">
-                  سعر التاجر 🏗️
-                </th>
-                <th className="px-4 py-4 font-semibold text-sm">
-                  ربح المنصة 🏢
-                </th>
-                <th className="px-4 py-4 font-semibold text-sm">
-                  تكلفة المسوق 👤
-                </th>
-                <th className="px-4 py-4 font-semibold text-sm">
-                  السعر النهائي 🏷️
-                </th>
-                <th className="px-4 py-4 font-semibold text-sm">ربح المسوق</th>
-                <th className="px-4 py-4 font-semibold text-sm">
-                  إجمالي التوزيع
-                </th>
+                <th className="px-4 py-3 font-semibold uppercase tracking-wider text-muted-foreground">المنتج</th>
+                <th className="px-4 py-3 font-semibold uppercase tracking-wider text-muted-foreground">سعر التاجر (التكلفة)</th>
+                <th className="px-4 py-3 font-semibold uppercase tracking-wider text-muted-foreground">هامش المنصة</th>
+                <th className="px-4 py-3 font-semibold uppercase tracking-wider text-muted-foreground">تكلفة المسوق</th>
+                <th className="px-4 py-3 font-semibold uppercase tracking-wider text-muted-foreground">سعر البيع النهائي</th>
+                <th className="px-4 py-3 font-semibold uppercase tracking-wider text-muted-foreground">عمولة المسوق</th>
+                <th className="px-4 py-3 font-semibold uppercase tracking-wider text-muted-foreground text-center">التوزيع</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-border/60 bg-card font-mono tabular-nums">
               {filteredProducts.map((product) => {
                 const changes = pendingChanges[product.id] || {};
-                const currentCost =
-                  changes.cost !== undefined ? changes.cost : product.cost;
+                const currentCost = changes.cost !== undefined ? changes.cost : product.cost;
                 const currentBasePrice =
-                  changes.basePrice !== undefined
-                    ? changes.basePrice
-                    : product.basePrice || product.price;
-                const currentFinalPrice =
-                  changes.price !== undefined ? changes.price : product.price;
+                  changes.basePrice !== undefined ? changes.basePrice : product.basePrice || product.price;
+                const currentFinalPrice = changes.price !== undefined ? changes.price : product.price;
 
-                // حساب ربح المنصة الفعلي المعروض
-                const platformProfit =
-                  Number(currentBasePrice) - Number(currentCost);
-                // حساب ربح المسوق الفعلي
-                const affiliateProfit =
-                  Number(currentFinalPrice) - Number(currentBasePrice);
-
+                const platformProfit = Number(currentBasePrice) - Number(currentCost);
+                const affiliateProfit = Number(currentFinalPrice) - Number(currentBasePrice);
                 const isInvalid = platformProfit < 0 || affiliateProfit < 0;
 
                 return (
                   <tr
                     key={product.id}
-                    className={`${isDark ? "hover:bg-gray-800/50" : "hover:bg-gray-50"} transition-colors ${isInvalid ? "bg-red-50 dark:bg-red-900/10" : ""}`}
+                    className={`hover:bg-muted/30 transition-colors ${isInvalid ? "bg-red-500/5" : ""}`}
                   >
-                    <td className="px-4 py-4">
-                      <div className="font-medium text-sm">{product.name}</div>
-                      <div className="text-xs text-gray-500 font-mono mt-0.5">
-                        {product.sku || "N/A"}
-                      </div>
+                    <td className="px-4 py-3 font-sans whitespace-nowrap">
+                      <div className="font-semibold text-foreground">{product.name}</div>
+                      <div className="text-[10px] text-muted-foreground font-mono mt-0.5">{product.sku || "N/A"}</div>
                     </td>
 
-                    {/* سعر التاجر - قابل للتعديل */}
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-1">
+                    {/* Cost input */}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
                         <input
                           type="number"
                           value={currentCost || ""}
-                          onChange={(e) =>
-                            handleInputChange(
-                              product.id,
-                              "cost",
-                              e.target.value,
-                            )
-                          }
-                          className={`w-24 px-2 py-1.5 rounded-lg border text-sm font-mono ${
-                            isDark
-                              ? "bg-gray-800 border-gray-700"
-                              : "bg-white border-gray-300"
-                          }`}
+                          onChange={(e) => handleInputChange(product.id, "cost", e.target.value)}
+                          className="w-20 px-2 py-1 rounded-md border border-border/70 bg-background text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                         />
-                        <span className="text-[10px] text-gray-500">
-                          {displayCurrency}
-                        </span>
+                        <span className="text-[10px] text-muted-foreground font-sans">{displayCurrency}</span>
                       </div>
                     </td>
 
-                    {/* ربح المنصة - عرض فقط (يتأثر بسعر التاجر تلقائياً) */}
-                    <td className="px-4 py-4">
-                      <div
-                        className={`text-sm font-medium ${platformProfit < 0 ? "text-red-500" : "text-blue-500"}`}
-                      >
+                    {/* Platform margin */}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className={`font-semibold ${platformProfit < 0 ? "text-rose-600 dark:text-rose-400" : "text-blue-600 dark:text-blue-400"}`}>
                         +{platformProfit.toFixed(2)}
-                        <span className="mr-1 text-[10px] text-gray-500">
-                          {displayCurrency}
-                        </span>
+                        <span className="mr-1 text-[10px] text-muted-foreground font-sans">{displayCurrency}</span>
                       </div>
-                      <div className="text-[9px] text-gray-400">
-                        {product.platformMarginType === "FIXED"
-                          ? "ثابت"
-                          : `${product.platformMarginValue}%`}
+                      <div className="text-[10px] text-muted-foreground font-sans">
+                        {product.platformMarginType === "FIXED" ? "مبلغ ثابت" : `${product.platformMarginValue}%`}
                       </div>
                     </td>
 
-                    {/* تكلفة المسوق (Base Price) - قابل للتعديل كاستثناء */}
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-1">
+                    {/* Base price input */}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
                         <input
                           type="number"
                           value={currentBasePrice || ""}
-                          onChange={(e) =>
-                            handleInputChange(
-                              product.id,
-                              "basePrice",
-                              e.target.value,
-                            )
-                          }
-                          className={`w-24 px-2 py-1.5 rounded-lg border text-sm font-mono font-bold ${
-                            isDark
-                              ? "bg-blue-900/20 border-blue-700"
-                              : "bg-blue-50 border-blue-200 text-blue-800"
-                          }`}
+                          onChange={(e) => handleInputChange(product.id, "basePrice", e.target.value)}
+                          className="w-20 px-2 py-1 rounded-md border border-primary/30 bg-primary/5 text-foreground text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
                         />
-                        <span className="text-[10px] text-gray-500">
-                          {displayCurrency}
-                        </span>
+                        <span className="text-[10px] text-muted-foreground font-sans">{displayCurrency}</span>
                       </div>
                     </td>
 
-                    {/* السعر النهائي للجمهور - قابل للتعديل */}
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-1">
+                    {/* Final price input */}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
                         <input
                           type="number"
                           value={currentFinalPrice || ""}
-                          onChange={(e) =>
-                            handleInputChange(
-                              product.id,
-                              "price",
-                              e.target.value,
-                            )
-                          }
-                          className={`w-24 px-2 py-1.5 rounded-lg border text-sm font-mono ${
-                            isDark
-                              ? "bg-gray-800 border-gray-700 text-indigo-400"
-                              : "bg-white border-gray-300 text-indigo-600 font-bold"
-                          }`}
+                          onChange={(e) => handleInputChange(product.id, "price", e.target.value)}
+                          className="w-20 px-2 py-1 rounded-md border border-border/70 bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
                         />
-                        <span className="text-[10px] text-gray-500">
-                          {displayCurrency}
-                        </span>
+                        <span className="text-[10px] text-muted-foreground font-sans">{displayCurrency}</span>
                       </div>
                     </td>
 
-                    {/* ربح المسوق - عرض فقط */}
-                    <td className="px-4 py-4">
-                      <div
-                        className={`text-sm font-bold ${affiliateProfit < 0 ? "text-red-500" : "text-green-500"}`}
-                      >
-                        {affiliateProfit.toFixed(2)}
-                        <span className="mr-1 text-[10px] text-gray-500">
-                          {displayCurrency}
-                        </span>
+                    {/* Affiliate profit */}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className={`font-semibold ${affiliateProfit < 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                        +{affiliateProfit.toFixed(2)}
+                        <span className="mr-1 text-[10px] text-muted-foreground font-sans">{displayCurrency}</span>
                       </div>
                       {affiliateProfit < 0 && (
-                        <div className="text-[9px] text-red-400 flex items-center gap-1">
-                          <ExclamationTriangleIcon className="h-2 w-2" />
-                          خسارة مسوق
+                        <div className="text-[10px] text-rose-500 font-sans flex items-center gap-1 mt-0.5">
+                          <AlertTriangle className="h-3 w-3" />
+                          <span>خسارة مسوق</span>
                         </div>
                       )}
                     </td>
 
-                    {/* الإجمالي */}
-                    <td className="px-4 py-4">
-                      <div className="flex flex-col text-[10px] text-gray-500">
-                        <span className="flex justify-between">
-                          التاجر: <span>{currentCost}</span>
-                        </span>
-                        <span className="flex justify-between">
-                          المنصة: <span>{platformProfit.toFixed(2)}</span>
-                        </span>
-                        <span className="flex justify-between border-t border-gray-700/20 mt-1 pt-1 font-bold">
-                          المنتج: <span>{currentBasePrice}</span>
-                        </span>
-                        <span className="flex justify-between text-green-500">
-                          المسوق: <span>{affiliateProfit.toFixed(2)}</span>
-                        </span>
+                    {/* Breakdown */}
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      <div className="inline-flex flex-col text-[10px] text-muted-foreground space-y-0.5 min-w-[110px]">
+                        <div className="flex justify-between">
+                          <span className="font-sans">التاجر:</span> <span>{currentCost}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-sans">المنصة:</span> <span>{platformProfit.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-emerald-600 dark:text-emerald-400 border-t border-border/60 pt-0.5 font-bold">
+                          <span className="font-sans">المسوق:</span> <span>{affiliateProfit.toFixed(2)}</span>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -433,12 +371,10 @@ const AffiliateQuickActions: React.FC = () => {
           </table>
         </div>
 
-        {filteredProducts.length === 0 && !loading && (
-          <div className="text-center py-20">
-            <MagnifyingGlassIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 font-medium">
-              لم يتم العثور على منتجات تطابق بحثك.
-            </p>
+        {filteredProducts.length === 0 && (
+          <div className="py-16 text-center text-muted-foreground">
+            <Search className="h-8 w-8 mx-auto mb-2 text-muted-foreground/60" />
+            <p className="text-xs">لم يتم العثور على منتجات مطابقة لبحثك</p>
           </div>
         )}
       </div>

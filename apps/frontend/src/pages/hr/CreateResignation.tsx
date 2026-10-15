@@ -3,23 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
-import { Save, ArrowRight, FileX, Calculator, AlertCircle } from "lucide-react";
+import {
+  Save,
+  ArrowRight,
+  FileX,
+  Calculator,
+  AlertCircle,
+  Loader2,
+  Calendar,
+  User,
+  FileText,
+} from "lucide-react";
 import api from "../../services/api";
 
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Textarea } from "../../components/ui/textarea";
-import { Label } from "../../components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
-import { Card, CardContent } from "../../components/ui/card";
-
-// Types
 type ResignationFormData = {
   employeeId: string;
   resignationDate: string;
@@ -28,7 +24,7 @@ type ResignationFormData = {
   exitInterview: string;
 };
 
-const CreateResignation = () => {
+const CreateResignation: React.FC = () => {
   const navigate = useNavigate();
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,11 +54,10 @@ const CreateResignation = () => {
           api.get("/hr/settings"),
         ]);
 
-        // الآن جميع الموظفين المرجعين من Employee table صحيحين
-        setEmployees(empRes.data.employees || []);
-        console.log("Employees fetched:", empRes.data.employees?.length);
+        const empList = empRes.data?.employees || empRes.data?.data || [];
+        setEmployees(Array.isArray(empList) ? empList : []);
 
-        if (settingsRes.data.settings?.noticePeriodDays) {
+        if (settingsRes.data?.settings?.noticePeriodDays) {
           setNoticePeriod(settingsRes.data.settings.noticePeriodDays);
         }
       } catch (error) {
@@ -72,20 +67,6 @@ const CreateResignation = () => {
     };
     fetchData();
   }, []);
-
-  // Watch resignation date to calculate expected last day
-  const resignationDate = control._formValues.resignationDate; // Or use useWatch
-  useEffect(() => {
-    const subscription = control.register("resignationDate").onChange; // This isn't quite right for react-hook-form v7
-    // We'll trust the re-render or useWatch if needed, but for simplicity let's stick to standard flow
-    // Ideally useWatch
-  }, []);
-
-  // Better: useWatch for real-time updates
-  // const watchedResignationDate = useWatch({ control, name: 'resignationDate' });
-  // But since I can't easily add useWatch import without messing lines, I'll calculate on render if I can access form values
-  // actually, I'll just calculate inside the render based on getValues or similar if I could.
-  // Let's simplified: add onChange handler to Input directly or use a derived state.
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const date = new Date(e.target.value);
@@ -99,14 +80,11 @@ const CreateResignation = () => {
   const onSubmit = async (data: ResignationFormData) => {
     try {
       setLoading(true);
-
-      // Validate employeeId before submitting
       if (!data.employeeId || data.employeeId.trim() === "") {
         tToast.error("CreateResignation.msg_640c");
         return;
       }
 
-      console.log("Submitting resignation data:", data);
       await api.post("/hr/resignations", data);
       tToast.success("CreateResignation.success_login_7609");
       navigate("/hr/resignations");
@@ -119,186 +97,172 @@ const CreateResignation = () => {
   };
 
   return (
-    <div className="p-6 w-full space-y-6" dir="rtl">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/hr/resignations")}
-          >
-            <ArrowRight className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <FileX className="h-8 w-8 text-red-500" />
-              تسجيل استقالة جديدة
+    <div className="max-w-3xl mx-auto space-y-4 sm:space-y-5 p-4 sm:p-6 font-sans text-foreground text-xs" dir="rtl">
+      {/* Top Header */}
+      <header className="flex items-center gap-3 border-b border-border/70 pb-4">
+        <button
+          onClick={() => navigate("/hr/resignations")}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border/70 bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          title="رجوع"
+        >
+          <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+        </button>
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md border border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-400">
+              <FileX className="h-4 w-4" />
+            </div>
+            <h1 className="text-base font-bold tracking-tight text-foreground">
+              تسجيل استقالة وإنهاء خدمة موظف
             </h1>
-            <p className="text-gray-500 mt-1">
-              إنهاء خدمة موظف وتسجيل تفاصيل الاستقالة
-            </p>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            توثيق طلب الاستقالة، احتساب فترة الإشعار القانونية، وملاحظات مقابلة الخروج
+          </p>
+        </div>
+      </header>
+
+      {/* Form Chassis */}
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="rounded-xl border border-border/70 bg-card p-5 space-y-5 shadow-xs"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Employee Selection */}
+          <div className="space-y-1.5 md:col-span-2">
+            <label className="block font-medium text-foreground flex items-center gap-1.5">
+              <User className="h-3.5 w-3.5 text-primary" />
+              الموظف <span className="text-red-500">*</span>
+            </label>
+            <Controller
+              name="employeeId"
+              control={control}
+              rules={{ required: "يجب اختيار الموظف" }}
+              render={({ field }) => (
+                <select
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="">-- اختر الموظف من القائمة --</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.firstName} {emp.lastName} {emp.employeeNumber ? `(${emp.employeeNumber})` : ""} {emp.code ? `(${emp.code})` : ""} - {emp.department || "عام"}
+                    </option>
+                  ))}
+                </select>
+              )}
+            />
+            {errors.employeeId && (
+              <p className="text-[11px] text-red-500">{errors.employeeId.message}</p>
+            )}
+            {employees.length === 0 && (
+              <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5 text-[11px] text-amber-700 dark:text-amber-300">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>لا يوجد موظفون متاحون حالياً. يرجى التأكد من تسجيل موظفين في قسم الموارد البشرية.</span>
+              </div>
+            )}
+          </div>
+
+          {/* Resignation Date */}
+          <div className="space-y-1.5">
+            <label className="block font-medium text-foreground flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+              تاريخ تقديم الاستقالة <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              {...register("resignationDate", { required: "التاريخ مطلوب" })}
+              onChange={(e) => {
+                register("resignationDate").onChange(e);
+                handleDateChange(e);
+              }}
+              className="w-full px-3 py-1.5 text-xs rounded-md border border-border/70 bg-background text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            {errors.resignationDate && (
+              <p className="text-[11px] text-red-500">{errors.resignationDate.message}</p>
+            )}
+            {expectedDate && (
+              <div className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/20 p-2 text-[11px] text-muted-foreground font-mono">
+                <Calculator className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span>فترة الإشعار ({noticePeriod} يوم) — آخر يوم متوقع: <strong className="text-foreground">{expectedDate}</strong></span>
+              </div>
+            )}
+          </div>
+
+          {/* Last Working Day */}
+          <div className="space-y-1.5">
+            <label className="block font-medium text-foreground flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+              آخر يوم عمل معتمد <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              {...register("lastWorkingDay", { required: "تاريخ آخر يوم عمل مطلوب" })}
+              className="w-full px-3 py-1.5 text-xs rounded-md border border-border/70 bg-background text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            {errors.lastWorkingDay && (
+              <p className="text-[11px] text-red-500">{errors.lastWorkingDay.message}</p>
+            )}
           </div>
         </div>
-      </div>
 
-      <Card>
-        <CardContent className="p-6">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Employee */}
-              <div className="space-y-2">
-                <Label>
-                  الموظف <span className="text-red-500">*</span>
-                </Label>
-                <Controller
-                  name="employeeId"
-                  control={control}
-                  rules={{ required: "يجب اختيار الموظف" }}
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="اختر الموظف" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {employees.length === 0 ? (
-                          <SelectItem value="no-employees" disabled>
-                            لا يوجد موظفين متاحين
-                          </SelectItem>
-                        ) : (
-                          employees.map((emp) => (
-                            <SelectItem key={emp.id} value={emp.id}>
-                              {emp.firstName} {emp.lastName} -{" "}
-                              {emp.employeeNumber}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.employeeId && (
-                  <p className="text-sm text-red-500">
-                    {errors.employeeId.message}
-                  </p>
-                )}
-                {employees.length === 0 && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2 flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                    <p className="text-sm text-yellow-700">
-                      لا يوجد موظفين مسجلين في النظام. يجب إضافة موظفين أولاً من
-                      قسم الموظفين.
-                    </p>
-                  </div>
-                )}
-              </div>
+        {/* Reason */}
+        <div className="space-y-1.5">
+          <label className="block font-medium text-foreground flex items-center gap-1.5">
+            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+            سبب الاستقالة
+          </label>
+          <textarea
+            placeholder="اذكر أسباب وظروف تقديم الاستقالة..."
+            rows={2}
+            className="w-full px-3 py-1.5 text-xs rounded-md border border-border/70 bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            {...register("reason")}
+          />
+        </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="resignationDate">
-                  تاريخ تقديم الاستقالة <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="resignationDate"
-                  type="date"
-                  {...register("resignationDate", {
-                    required: "التاريخ مطلوب",
-                  })}
-                  onChange={(e) => {
-                    register("resignationDate").onChange(e);
-                    handleDateChange(e);
-                  }}
-                />
-                {errors.resignationDate && (
-                  <p className="text-sm text-red-500">
-                    {errors.resignationDate.message}
-                  </p>
-                )}
+        {/* Exit Interview */}
+        <div className="space-y-1.5">
+          <label className="block font-medium text-foreground flex items-center gap-1.5">
+            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+            ملاحظات مقابلة الخروج (Exit Interview)
+          </label>
+          <textarea
+            placeholder="تفاصيل المقابلة، التغذية الراجعة، وملاحظات الفريق..."
+            rows={3}
+            className="w-full px-3 py-1.5 text-xs rounded-md border border-border/70 bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            {...register("exitInterview")}
+          />
+        </div>
 
-                {expectedDate && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2 flex items-start gap-3">
-                    <Calculator className="h-5 w-5 text-blue-500 mt-0.5" />
-                    <div>
-                      <h4 className="text-sm font-semibold text-blue-700">
-                        فترة الإشعار: {noticePeriod} يوم
-                      </h4>
-                      <p className="text-xs text-blue-600 mt-1">
-                        تاريخ آخر عمل متوقع: <strong>{expectedDate}</strong>
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Last Working Day */}
-              <div className="space-y-2">
-                <Label htmlFor="lastWorkingDay">
-                  آخر يوم عمل <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="lastWorkingDay"
-                  type="date"
-                  {...register("lastWorkingDay", {
-                    required: "تاريخ آخر يوم عمل مطلوب",
-                  })}
-                />
-                {errors.lastWorkingDay && (
-                  <p className="text-sm text-red-500">
-                    {errors.lastWorkingDay.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Reason */}
-            <div className="space-y-2">
-              <Label htmlFor="reason">سبب الاستقالة</Label>
-              <Textarea
-                id="reason"
-                placeholder="اذكر سبب الاستقالة..."
-                className="min-h-[100px]"
-                {...register("reason")}
-              />
-            </div>
-
-            {/* Exit Interview Note */}
-            <div className="space-y-2">
-              <Label htmlFor="exitInterview">
-                ملاحظات مقابلة الخروج (Exit Interview)
-              </Label>
-              <Textarea
-                id="exitInterview"
-                placeholder="تفاصيل المقابلة، ملاحظات إضافية..."
-                className="min-h-[100px]"
-                {...register("exitInterview")}
-              />
-            </div>
-
-            <div className="flex justify-end pt-4 gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate("/hr/resignations")}
-              >
-                إلغاء
-              </Button>
-              <Button
-                type="submit"
-                disabled={loading}
-                size="lg"
-                variant="destructive"
-              >
-                {loading ? (
-                  "جاري الحفظ..."
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 ml-2" />
-                    حفظ الاستقالة
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+        {/* Action Buttons */}
+        <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border/70">
+          <button
+            type="button"
+            onClick={() => navigate("/hr/resignations")}
+            className="rounded-md border border-border/70 bg-background px-4 py-1.5 font-medium text-foreground hover:bg-muted transition-colors"
+          >
+            إلغاء
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-1.5 rounded-md bg-rose-600 px-4 py-1.5 font-semibold text-white hover:bg-rose-700 transition-colors shadow-xs disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>جاري الحفظ...</span>
+              </>
+            ) : (
+              <>
+                <Save className="h-3.5 w-3.5" />
+                <span>حفظ الاستقالة</span>
+              </>
+            )}
+          </button>
+        </div>
+      </form>
     </div>
   );
 };
