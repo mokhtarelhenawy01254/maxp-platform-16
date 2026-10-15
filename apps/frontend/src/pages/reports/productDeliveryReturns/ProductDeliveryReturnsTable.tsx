@@ -82,7 +82,7 @@ export const ProductDeliveryReturnsTable: React.FC<Props> = ({
         <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
           {[
             { id: 'ALL', label: 'كافة المنتجات' },
-            { id: 'CRITICAL', label: 'حرجة ⚠️' },
+            { id: 'CRITICAL', label: 'حرجة' },
             { id: 'WARNING', label: 'ملاحظة' },
             { id: 'HEALTHY', label: 'سليمة' },
           ].map((tab) => (

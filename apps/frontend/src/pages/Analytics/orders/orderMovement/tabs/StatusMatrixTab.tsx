@@ -144,7 +144,14 @@ export default function StatusMatrixTab({ startDate, endDate, mode, onSwitchToVe
     return <ErrorState message={error} onRetry={load} />;
   }
 
-  if (!data || data.totalTransitions === 0) {
+  if (
+    !data ||
+    !Array.isArray(data.rows) ||
+    !Array.isArray(data.statuses) ||
+    data.totalTransitions === 0 ||
+    data.rows.length === 0 ||
+    data.statuses.length === 0
+  ) {
     return <EmptyState />;
   }
 
@@ -353,7 +360,7 @@ export default function StatusMatrixTab({ startDate, endDate, mode, onSwitchToVe
             <li className="flex items-center justify-between gap-2 border-t border-gray-100 pt-3 text-sm dark:border-gray-700/60">
               <span className="text-gray-500 dark:text-gray-400">حركات يدوية / تلقائية</span>
               <span className="font-semibold text-gray-900 dark:text-white">
-                {formatNumber(data.modes.manual)} / {formatNumber(data.modes.auto)}
+                {formatNumber(data.modes?.manual ?? 0)} / {formatNumber(data.modes?.auto ?? 0)}
               </span>
             </li>
           </ul>
