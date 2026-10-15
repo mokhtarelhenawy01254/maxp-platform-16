@@ -302,7 +302,7 @@ export const AdIdentityMediaStep: React.FC<AdIdentityMediaStepProps> = ({
               className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 border border-indigo-200 px-3 py-1.5 text-xs font-black text-indigo-700 hover:bg-indigo-600 hover:text-white shadow-sm transition"
             >
               <ShoppingBagIcon className="h-4 w-4" />
-              <span>{isEn ? "Pick Store Product (1-Click)" : "📦 اختيار من منتجات المتجر (تعبئة فورية)"}</span>
+              <span>{isEn ? "Pick Store Product (1-Click)" : "اختيار من منتجات المتجر (تعبئة فورية)"}</span>
             </button>
           </div>
           <input

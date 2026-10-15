@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  XMarkIcon,
-  MagnifyingGlassIcon,
-  ShoppingBagIcon,
-  CheckCircleIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+  X,
+  Search,
+  ShoppingBag,
+  CheckCircle2,
+  RefreshCw,
+} from "lucide-react";
 import { apiClient } from "../../../services/apiClient";
 import { useAuth } from "../../../hooks/useAuthSimple";
 
@@ -107,59 +107,60 @@ export const StoreProductPickerModal: React.FC<StoreProductPickerModalProps> = (
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div className="w-full max-w-2xl rounded-2xl bg-card shadow-2xl border border-border/70 overflow-hidden flex flex-col max-h-[85vh]">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 bg-muted/20">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-              <ShoppingBagIcon className="h-5 w-5" />
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+              <ShoppingBag className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-slate-900">
+              <h3 className="text-sm font-bold text-foreground">
                 {isEn ? "Select Store Product for Ad" : "اختيار منتج من المتجر للإعلان"}
               </h3>
-              <p className="text-[11px] text-slate-500 font-medium">
+              <p className="text-[11px] text-muted-foreground font-normal">
                 {isEn
                   ? "Auto-populates image, landing page link, title, and price"
-                  : "يملأ الصورة، رابط صفحة الشراء، العنوان الترويجي والسعر تلقائياً بنقرة واحدة"}
+                  : "تعبئة الصورة، ورابط صفحة الشراء، والعنوان الترويجي والسعر تلقائياً"}
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+            aria-label="Close"
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition"
           >
-            <XMarkIcon className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Search Bar */}
-        <div className="p-4 border-b border-slate-100 bg-white">
+        <div className="p-4 border-b border-border/60 bg-card">
           <form onSubmit={handleSearchSubmit} className="relative">
-            <MagnifyingGlassIcon className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={isEn ? "Search by product name..." : "ابحث باسم المنتج..."}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pr-10 pl-4 py-2 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-border/70 bg-muted/20 pr-10 pl-4 py-2 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:bg-card focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </form>
         </div>
 
         {/* Product List */}
-        <div className="flex-1 overflow-y-auto p-4 divide-y divide-slate-100">
+        <div className="flex-1 overflow-y-auto p-4 divide-y divide-border/50">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-              <ArrowPathIcon className="h-6 w-6 animate-spin mb-2 text-indigo-600" />
-              <p className="text-xs font-bold">{isEn ? "Loading products..." : "جاري جلب المنتجات..."}</p>
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <RefreshCw className="h-5 w-5 animate-spin mb-2 text-primary" />
+              <p className="text-xs font-semibold">{isEn ? "Loading products..." : "جاري جلب المنتجات..."}</p>
             </div>
           ) : products.length === 0 ? (
             <div className="text-center py-12">
-              <ShoppingBagIcon className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-              <p className="text-xs font-bold text-slate-600">
+              <ShoppingBag className="h-8 w-8 text-muted-foreground/60 mx-auto mb-2" />
+              <p className="text-xs font-semibold text-muted-foreground">
                 {isEn ? "No products found" : "لم يتم العثور على منتجات"}
               </p>
             </div>
@@ -169,10 +170,10 @@ export const StoreProductPickerModal: React.FC<StoreProductPickerModalProps> = (
               return (
                 <div
                   key={product.id}
-                  className="flex items-center justify-between py-3 px-2 hover:bg-slate-50 rounded-xl transition group"
+                  className="flex items-center justify-between py-3 px-2 hover:bg-muted/30 rounded-lg transition group"
                 >
                   <div className="flex items-center gap-3 min-w-0 pr-2">
-                    <div className="h-12 w-12 rounded-lg border border-slate-200 bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+                    <div className="h-12 w-12 rounded-lg border border-border/60 bg-muted/30 overflow-hidden shrink-0 flex items-center justify-center">
                       {imgUrl ? (
                         <img
                           src={imgUrl}
@@ -180,19 +181,19 @@ export const StoreProductPickerModal: React.FC<StoreProductPickerModalProps> = (
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <ShoppingBagIcon className="h-5 w-5 text-slate-400" />
+                        <ShoppingBag className="h-5 w-5 text-muted-foreground" />
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-black text-slate-900 truncate">
+                      <p className="text-xs font-bold text-foreground truncate">
                         {product.name}
                       </p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs font-black text-emerald-600 font-mono">
+                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
                           {Number(product.price || 0).toLocaleString()} {isEn ? "EGP" : "ج.م"}
                         </span>
                         {product.category && (
-                          <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded border border-border/40">
                             {product.category.name || product.category}
                           </span>
                         )}
@@ -203,9 +204,9 @@ export const StoreProductPickerModal: React.FC<StoreProductPickerModalProps> = (
                   <button
                     type="button"
                     onClick={() => handleSelectProduct(product)}
-                    className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-600 hover:text-white transition shrink-0"
+                    className="inline-flex items-center gap-1 rounded-md bg-primary/10 border border-primary/20 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition shrink-0"
                   >
-                    <CheckCircleIcon className="h-4 w-4" />
+                    <CheckCircle2 className="h-3.5 w-3.5" />
                     <span>{isEn ? "Select" : "اختيار للإعلان"}</span>
                   </button>
                 </div>
