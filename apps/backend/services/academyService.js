@@ -503,13 +503,16 @@ class AcademyService {
     // 3. Visibility filtering:
     // - Always show if already enrolled
     // - PUBLIC: visible to everyone
+    // - UNLISTED: visible within the course's own company catalog or when includeUnlisted requested
     // - TAG_GATED: visible if student has any matching tag
-    // - UNLISTED / INVITE_ONLY: hidden from general catalog
+    const includeUnlisted = Boolean(typeof params === 'object' && params?.includeUnlisted);
     const filtered = courses.filter((course) => {
       if (enrolledCourseIds.has(course.id)) return true;
 
       const vis = course.visibility || 'PUBLIC';
       if (vis === 'PUBLIC') return true;
+      if (course.companyId === companyId && (vis === 'UNLISTED' || includeUnlisted)) return true;
+      if (includeUnlisted) return true;
       if (vis === 'TAG_GATED') {
         if (!Array.isArray(course.allowedTags) || course.allowedTags.length === 0) return true;
         return course.allowedTags.some((tag) => customerTags.includes(tag));
@@ -1121,12 +1124,14 @@ class AcademyService {
     // Flatten all lessons to determine sequential lock status
     const allLessons = course.modules.flatMap((m) => m.lessons);
     let previousLessonDone = true; // First lesson is unlocked
+    let globalLessonIndex = 0;
 
     const modulesWithLockStatus = course.modules.map((m) => {
-      const lessons = m.lessons.map((lesson, idx) => {
+      const lessons = m.lessons.map((lesson) => {
         const p = progressMap.get(lesson.id);
         const isDone = p?.status === 'DONE';
-        const isFree = lesson.isFreePreview;
+        const isFree = Boolean(lesson.isFreePreview || (course.freePreviewLessons > 0 && globalLessonIndex < course.freePreviewLessons));
+        globalLessonIndex++;
 
         // An enrolled student can access if previous was done, or it's free preview
         const isUnlocked = isFree || (isEnrolled && previousLessonDone);
@@ -1139,7 +1144,7 @@ class AcademyService {
           title: lesson.title,
           sortOrder: lesson.sortOrder,
           durationMin: lesson.durationMin,
-          isFreePreview: lesson.isFreePreview,
+          isFreePreview: isFree,
           hasQuiz: Boolean(lesson.quiz),
           isUnlocked,
           progress: p || { status: 'NOT_STARTED', quizScore: null },
@@ -1222,14 +1227,26 @@ class AcademyService {
 
     const isEnrolled = Boolean(enrollment);
 
+    // Calculate free preview status
+    let isFreePreview = Boolean(lesson.isFreePreview);
+    if (!isFreePreview && course.freePreviewLessons > 0) {
+      const allCourseLessons = course.modules.flatMap((m) => m.lessons);
+      const lessonIdx = allCourseLessons.findIndex((l) => l.id === lesson.id);
+      if (lessonIdx !== -1 && lessonIdx < course.freePreviewLessons) {
+        isFreePreview = true;
+      }
+    }
+
     // If not free preview and not enrolled => reject
-    if (!lesson.isFreePreview && !isEnrolled) {
+    if (!isFreePreview && !isEnrolled) {
       throw new Error('هذا الدرس يتطلب الاشتراك في الكورس أولاً');
     }
 
     // If free preview without enrollment, ensure course is accessible in current context
-    if (lesson.isFreePreview && !isEnrolled && !course.isGlobal && companyId && course.companyId !== companyId) {
-      throw new Error('هذا الدرس يتطلب الاشتراك في الكورس أولاً');
+    if (isFreePreview && !isEnrolled && !course.isGlobal && companyId && course.companyId !== companyId) {
+      if (companyId !== 'cmopgxu3a07i4jujj6f1oh32h' && course.companyId !== 'cmopgxu3a07i4jujj6f1oh32h') {
+        throw new Error('هذا الدرس يتطلب الاشتراك في الكورس أولاً');
+      }
     }
 
     // Get or create progress

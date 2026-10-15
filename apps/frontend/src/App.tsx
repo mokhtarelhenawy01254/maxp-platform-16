@@ -1242,6 +1242,27 @@ const PatientInvoicesPage = React.lazy(
 const ParentLoginPage = React.lazy(
   () => import("./pages/auth/ParentLoginPage"),
 );
+const StudentPortalLayout = React.lazy(
+  () => import("./pages/academy-portal/StudentPortalLayout"),
+);
+const AcademyCatalogPublicPage = React.lazy(
+  () => import("./pages/academy-portal/AcademyCatalogPublicPage"),
+);
+const AcademyCoursePublicPage = React.lazy(
+  () => import("./pages/academy-portal/AcademyCoursePublicPage"),
+);
+const StudentLoginPage = React.lazy(
+  () => import("./pages/academy-portal/StudentLoginPage"),
+);
+const StudentMyCoursesPage = React.lazy(
+  () => import("./pages/academy-portal/StudentMyCoursesPage"),
+);
+const StudentLessonPlayerPage = React.lazy(
+  () => import("./pages/academy-portal/StudentLessonPlayerPage"),
+);
+const StudentCertificatePage = React.lazy(
+  () => import("./pages/academy-portal/StudentCertificatePage"),
+);
 const ParentLayout = React.lazy(
   () => import("./components/layout/ParentLayout"),
 );
@@ -2286,6 +2307,22 @@ const AppContent = () => {
                 </AuthLayout>
               }
             />
+            {/* Student Academy Portal Routes (outside ProtectedRoute - lightweight student auth) */}
+            <Route path="/portal" element={<StudentPortalLayout><AcademyCatalogPublicPage /></StudentPortalLayout>} />
+            <Route path="/portal/catalog" element={<StudentPortalLayout><AcademyCatalogPublicPage /></StudentPortalLayout>} />
+            <Route path="/portal/course/:courseId" element={<StudentPortalLayout><AcademyCoursePublicPage /></StudentPortalLayout>} />
+            <Route path="/portal/course/:courseId/lesson/:lessonId" element={<StudentPortalLayout><StudentLessonPlayerPage /></StudentPortalLayout>} />
+            <Route path="/portal/login" element={<StudentPortalLayout><StudentLoginPage /></StudentPortalLayout>} />
+            <Route path="/portal/my-courses" element={<StudentPortalLayout><StudentMyCoursesPage /></StudentPortalLayout>} />
+            <Route path="/portal/certificate/:enrollmentId" element={<StudentPortalLayout><StudentCertificatePage /></StudentPortalLayout>} />
+
+            {/* Direct Academy Public Aliases for seamless linking */}
+            <Route path="/academy/portal" element={<StudentPortalLayout><AcademyCatalogPublicPage /></StudentPortalLayout>} />
+            <Route path="/academy/course/:courseId" element={<StudentPortalLayout><AcademyCoursePublicPage /></StudentPortalLayout>} />
+            <Route path="/academy/course/:courseId/lesson/:lessonId" element={<StudentPortalLayout><StudentLessonPlayerPage /></StudentPortalLayout>} />
+            <Route path="/academy/my-courses" element={<StudentPortalLayout><StudentMyCoursesPage /></StudentPortalLayout>} />
+            <Route path="/academy/student/login" element={<StudentPortalLayout><StudentLoginPage /></StudentPortalLayout>} />
+
             {/* Portal Routes (outside ProtectedRoute - use own auth) */}
             <Route path="/teacher/dashboard" element={<TeacherLayout><TeacherDashboardPage /></TeacherLayout>} />
             <Route path="/teacher/schedule" element={<TeacherLayout><TeacherSchedulePage /></TeacherLayout>} />

@@ -390,6 +390,11 @@ const buildStorefrontConfig = ({
   }
   if (!Array.isArray(parsedEnabledMethods)) parsedEnabledMethods = ['cod'];
 
+  // Enable online card payment for max-p platform company
+  if (company?.id === 'cmopgxu3a07i4jujj6f1oh32h' && !parsedEnabledMethods.includes('card')) {
+    parsedEnabledMethods.push('card');
+  }
+
   let runtimeWalletSettings = storefrontSettings?.walletPaymentSettings || null;
   if (typeof runtimeWalletSettings === 'string') {
     try {

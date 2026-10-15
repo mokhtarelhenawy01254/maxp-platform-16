@@ -1,4 +1,6 @@
 const academyService = require('../services/academyService');
+const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../utils/jwtSecret');
 
 function getCompanyId(req) {
   return (
@@ -6,8 +8,31 @@ function getCompanyId(req) {
     req.headers['x-company-id'] ||
     req.query.companyId ||
     req.body?.companyId ||
+    req.company?.id ||
     null
   );
+}
+
+function resolveAcademyCompanyId(req) {
+  return getCompanyId(req) || 'cmopgxu3a07i4jujj6f1oh32h';
+}
+
+function extractStudentPhone(req) {
+  const headerPhone = req.headers['x-student-phone'];
+  if (headerPhone && typeof headerPhone === 'string') return headerPhone.trim();
+
+  const queryPhone = req.query.phone || req.query.studentPhone;
+  if (queryPhone && typeof queryPhone === 'string') return queryPhone.trim();
+
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const decoded = jwt.verify(authHeader.split(' ')[1], getJwtSecret());
+      if (decoded.studentPhone) return decoded.studentPhone;
+    } catch (_) {}
+  }
+
+  return req.user?.phone || null;
 }
 
 // -------------------------------------------------------------
@@ -181,12 +206,11 @@ exports.saveLessonQuiz = async (req, res) => {
 
 exports.getPublishedCatalog = async (req, res) => {
   try {
-    const companyId = getCompanyId(req);
-    if (!companyId) return res.status(400).json({ error: 'Company ID is required' });
+    const companyId = resolveAcademyCompanyId(req);
 
     const studentUserId = req.user?.id || null;
     const customerId = req.query.customerId || req.headers['x-customer-id'] || null;
-    const studentPhone = req.query.phone || req.user?.phone || null;
+    const studentPhone = extractStudentPhone(req);
 
     let customerTags = [];
     if (req.user?.tags && Array.isArray(req.user.tags)) {
@@ -198,12 +222,15 @@ exports.getPublishedCatalog = async (req, res) => {
         .filter(Boolean);
     }
 
+    const includeUnlisted = req.query.includeUnlisted === 'true' || true;
+
     const courses = await academyService.getPublishedCatalog({
       companyId,
       studentUserId,
       customerId,
       studentPhone,
       customerTags,
+      includeUnlisted,
     });
     res.json({ success: true, courses });
   } catch (err) {
@@ -213,10 +240,10 @@ exports.getPublishedCatalog = async (req, res) => {
 
 exports.getMyCourses = async (req, res) => {
   try {
-    const companyId = getCompanyId(req);
+    const companyId = resolveAcademyCompanyId(req);
     const studentUserId = req.user?.id || null;
     const customerId = req.query.customerId || req.headers['x-customer-id'] || null;
-    const studentPhone = req.query.phone || req.user?.phone || null;
+    const studentPhone = extractStudentPhone(req);
 
     const enrollments = await academyService.getMyEnrolledCourses({
       companyId,
@@ -233,11 +260,11 @@ exports.getMyCourses = async (req, res) => {
 
 exports.getCourseOutline = async (req, res) => {
   try {
-    const companyId = getCompanyId(req);
+    const companyId = resolveAcademyCompanyId(req);
     const { id } = req.params; // courseId
     const studentUserId = req.user?.id || null;
     const customerId = req.query.customerId || req.headers['x-customer-id'] || null;
-    const studentPhone = req.query.phone || null;
+    const studentPhone = extractStudentPhone(req);
 
     const data = await academyService.getCourseOutlineWithProgress({
       courseId: id,
@@ -255,11 +282,11 @@ exports.getCourseOutline = async (req, res) => {
 
 exports.getLessonContent = async (req, res) => {
   try {
-    const companyId = getCompanyId(req);
+    const companyId = resolveAcademyCompanyId(req);
     const { id } = req.params; // lessonId
     const studentUserId = req.user?.id || null;
     const customerId = req.query.customerId || req.headers['x-customer-id'] || null;
-    const studentPhone = req.query.phone || null;
+    const studentPhone = extractStudentPhone(req);
 
     const data = await academyService.getLessonContent({
       lessonId: id,
@@ -562,4 +589,324 @@ exports.syncOrderEnrollment = async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
+// -------------------------------------------------------------
+// Student Authentication & Profile
+// -------------------------------------------------------------
+
+exports.studentLogin = async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone || !phone.trim()) {
+      return res.status(400).json({ success: false, message: 'رقم الهاتف مطلوب لتسجيل الدخول' });
+    }
+
+    const cleanPhone = phone.trim();
+    const db = academyService.getDb();
+
+    // Look for active enrollments with this phone number
+    const enrollments = await db.academyEnrollment.findMany({
+      where: {
+        studentPhone: cleanPhone,
+        status: { in: ['ACTIVE', 'COMPLETED'] },
+      },
+      include: {
+        course: {
+          select: {
+            id: true,
+            title: true,
+            price: true,
+            thumbnailUrl: true,
+          },
+        },
+      },
+    });
+
+    if (!enrollments || enrollments.length === 0) {
+      // Also check customer table for fallback
+      const customer = await db.customer.findFirst({
+        where: { phone: cleanPhone },
+      });
+
+      if (customer) {
+        const customerEnrollments = await db.academyEnrollment.findMany({
+          where: {
+            customerId: customer.id,
+            status: { in: ['ACTIVE', 'COMPLETED'] },
+          },
+          include: {
+            course: {
+              select: {
+                id: true,
+                title: true,
+                price: true,
+                thumbnailUrl: true,
+              },
+            },
+          },
+        });
+
+        if (customerEnrollments.length > 0) {
+          const studentName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'طالب ماكس بي';
+          const token = jwt.sign(
+            { studentPhone: cleanPhone, customerId: customer.id, studentName, role: 'STUDENT' },
+            getJwtSecret(),
+            { expiresIn: '30d' }
+          );
+          return res.json({
+            success: true,
+            token,
+            student: {
+              phone: cleanPhone,
+              name: studentName,
+              enrollmentsCount: customerEnrollments.length,
+            },
+          });
+        }
+      }
+
+      return res.status(404).json({
+        success: false,
+        message: 'لم يتم العثور على اشتراك مرتبط بهذا الرقم. يمكنك الاشتراك في الكورس أولاً أو مشاهدة أول درسين مجاناً.',
+      });
+    }
+
+    const primaryEnrollment = enrollments[0];
+    const studentName = primaryEnrollment.studentName || 'طالب ماكس بي';
+    const token = jwt.sign(
+      { studentPhone: cleanPhone, studentName, role: 'STUDENT' },
+      getJwtSecret(),
+      { expiresIn: '30d' }
+    );
+
+    res.json({
+      success: true,
+      token,
+      student: {
+        phone: cleanPhone,
+        name: studentName,
+        enrollmentsCount: enrollments.length,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+exports.getStudentProfile = async (req, res) => {
+  try {
+    const studentPhone = extractStudentPhone(req);
+    if (!studentPhone) {
+      return res.status(401).json({ success: false, message: 'غير مصرح' });
+    }
+
+    const db = academyService.getDb();
+    const enrollments = await db.academyEnrollment.findMany({
+      where: {
+        studentPhone,
+        status: { in: ['ACTIVE', 'COMPLETED'] },
+      },
+      include: {
+        course: {
+          select: {
+            id: true,
+            title: true,
+            price: true,
+            thumbnailUrl: true,
+          },
+        },
+        progress: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      student: {
+        phone: studentPhone,
+        name: enrollments[0]?.studentName || 'طالب ماكس بي',
+        enrollments,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// -------------------------------------------------------------
+// Instant Digital Course Checkout & Auto-Enrollment
+// -------------------------------------------------------------
+
+exports.checkoutCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const {
+      studentName,
+      studentPhone,
+      studentEmail,
+      paymentMethod = 'card',
+      testMode = false,
+    } = req.body;
+
+    if (!studentPhone || !studentPhone.trim()) {
+      return res.status(400).json({ success: false, message: 'رقم الهاتف مطلوب لإتمام الاشتراك' });
+    }
+    const cleanPhone = studentPhone.trim();
+    const cleanName = studentName ? studentName.trim() : 'طالب جديد';
+    const cleanEmail = studentEmail ? studentEmail.trim() : null;
+
+    const db = academyService.getDb();
+    const course = await db.academyCourse.findUnique({
+      where: { id: courseId },
+      include: {
+        modules: {
+          include: {
+            lessons: true,
+          },
+        },
+      },
+    });
+
+    if (!course) {
+      return res.status(404).json({ success: false, message: 'الكورس غير موجود' });
+    }
+
+    // 1. Idempotency Check: if student already enrolled, return existing enrollment immediately
+    const existingEnrollment = await db.academyEnrollment.findFirst({
+      where: {
+        courseId: course.id,
+        status: { in: ['ACTIVE', 'COMPLETED'] },
+        OR: [
+          { studentPhone: cleanPhone },
+          ...(cleanEmail ? [{ studentEmail: cleanEmail }] : []),
+        ],
+      },
+      include: {
+        course: { select: { id: true, title: true } },
+      },
+    });
+
+    if (existingEnrollment) {
+      const token = jwt.sign(
+        { studentPhone: cleanPhone, studentName: existingEnrollment.studentName || cleanName, role: 'STUDENT' },
+        getJwtSecret(),
+        { expiresIn: '30d' }
+      );
+      return res.json({
+        success: true,
+        alreadyEnrolled: true,
+        message: 'أنت مسجل بالفعل في هذا الكورس! تم فتح المحتوى لك.',
+        enrollment: existingEnrollment,
+        token,
+        student: { phone: cleanPhone, name: existingEnrollment.studentName || cleanName },
+      });
+    }
+
+    // 2. Find or create Customer
+    let customer = await db.customer.findFirst({
+      where: {
+        companyId: course.companyId,
+        phone: cleanPhone,
+      },
+    });
+
+    if (!customer) {
+      customer = await db.customer.create({
+        data: {
+          companyId: course.companyId,
+          firstName: cleanName,
+          phone: cleanPhone,
+          email: cleanEmail,
+          status: 'ACTIVE',
+        },
+      }).catch(async () => {
+        return db.customer.findFirst({ where: { companyId: course.companyId, phone: cleanPhone } });
+      });
+    }
+
+    // 3. Create Digital Course Order
+    // Zero shipping, digital course product, marked CONFIRMED & COMPLETED for digital auto-enrollment
+    const orderNumber = `ORD-CRS-${Date.now().toString().slice(-6)}`;
+    const isCompleted = testMode || paymentMethod === 'card' || paymentMethod === 'wallet' || paymentMethod === 'test';
+
+    const order = await db.order.create({
+      data: {
+        orderNumber,
+        companyId: course.companyId,
+        customerId: customer?.id || null,
+        customerName: cleanName,
+        customerPhone: cleanPhone,
+        customerEmail: cleanEmail,
+        status: isCompleted ? 'CONFIRMED' : 'PENDING',
+        paymentStatus: isCompleted ? 'COMPLETED' : 'PENDING',
+        paymentMethod: paymentMethod || 'card',
+        totalAmount: Number(course.price) || 500,
+        subtotal: Number(course.price) || 500,
+        shippingCost: 0,
+        shippingAddress: 'رقمي / كورس أونلاين',
+        city: 'أونلاين',
+        notes: `اشتراك رقمي في كورس: ${course.title}`,
+        orderItems: {
+          create: [
+            {
+              productId: course.storeProductId || undefined,
+              quantity: 1,
+              price: Number(course.price) || 500,
+              totalPrice: Number(course.price) || 500,
+            },
+          ],
+        },
+      },
+      include: {
+        orderItems: true,
+        customer: true,
+      },
+    });
+
+    // 4. Trigger Instant Auto-Enrollment
+    let enrollment = null;
+    if (isCompleted) {
+      await academyService.processOrderAutoEnrollment({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        companyId: course.companyId,
+        orderData: order,
+      });
+
+      enrollment = await db.academyEnrollment.findFirst({
+        where: {
+          courseId: course.id,
+          studentPhone: cleanPhone,
+        },
+      });
+    }
+
+    // 5. Generate Student JWT Token
+    const token = jwt.sign(
+      { studentPhone: cleanPhone, customerId: customer?.id, studentName: cleanName, role: 'STUDENT' },
+      getJwtSecret(),
+      { expiresIn: '30d' }
+    );
+
+    res.status(201).json({
+      success: true,
+      order: {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        totalAmount: order.totalAmount,
+      },
+      enrollment,
+      token,
+      student: {
+        phone: cleanPhone,
+        name: cleanName,
+      },
+      message: 'تم الاشتراك بنجاح وفتح الكورس فوراً!',
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 

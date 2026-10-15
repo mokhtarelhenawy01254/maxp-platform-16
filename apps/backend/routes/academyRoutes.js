@@ -39,6 +39,11 @@ router.get('/courses/:id/outline', optionalAuth, controller.getCourseOutline);
 router.get('/lessons/:id/content', optionalAuth, controller.getLessonContent);
 router.post('/courses/:courseId/enroll', optionalAuth, controller.enrollStudent);
 
+// Student Authentication & Clean Digital Checkout
+router.post('/student/login', controller.studentLogin);
+router.get('/student/me', optionalAuth, controller.getStudentProfile);
+router.post('/courses/:courseId/checkout', controller.checkoutCourse);
+
 // Student Actions
 router.post('/lessons/:id/complete', optionalAuth, controller.completeLesson);
 router.post('/lessons/:id/submit-quiz', optionalAuth, controller.submitQuiz);
