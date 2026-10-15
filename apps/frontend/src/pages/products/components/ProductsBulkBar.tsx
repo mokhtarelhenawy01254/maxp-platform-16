@@ -1,13 +1,13 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import {
-  TrashIcon,
-  XMarkIcon,
-  EyeSlashIcon,
-  EyeIcon,
-  ArrowPathIcon,
-  CubeIcon,
-} from "@heroicons/react/24/outline";
+  Trash2,
+  X,
+  EyeOff,
+  Eye,
+  Layers,
+  Box,
+} from "lucide-react";
 
 interface ProductsBulkBarProps {
   selectedCount: number;
@@ -36,19 +36,23 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="bg-indigo-50/95 dark:bg-indigo-950/60 backdrop-blur-sm border border-indigo-200/80 dark:border-indigo-800/60 rounded-xl p-2.5 sm:p-3.5 shadow-md space-y-2 sm:space-y-0 sm:flex sm:items-center sm:justify-between animate-slide-up">
-      {/* Top row on mobile / Left side on desktop */}
+    <div className="bg-card border border-primary/40 rounded-xl p-2.5 sm:p-3 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 animate-slide-up">
+      {/* Selection Counter */}
       <div className="flex items-center justify-between sm:justify-start gap-2">
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-xs sm:text-sm font-bold shadow-xs">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20 text-xs font-semibold">
           {isEn ? (
             <>
-              <span className="font-mono px-1 bg-white/20 rounded">{selectedCount}</span>
+              <span className="font-mono tabular-nums px-1.5 py-0.5 bg-primary/15 rounded">
+                {selectedCount}
+              </span>
               <span>{selectedCount === 1 ? "product selected" : "products selected"}</span>
             </>
           ) : (
             <>
               <span>تم تحديد</span>
-              <span className="font-mono px-1 bg-white/20 rounded">{selectedCount}</span>
+              <span className="font-mono tabular-nums px-1.5 py-0.5 bg-primary/15 rounded">
+                {selectedCount}
+              </span>
               <span>منتج</span>
             </>
           )}
@@ -56,21 +60,21 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
         <button
           type="button"
           onClick={onClear}
-          className="sm:hidden inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 bg-white/80 dark:bg-gray-800/80 rounded-lg border border-gray-200 dark:border-gray-700 shadow-xs"
+          className="sm:hidden inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted rounded-lg border border-border/60"
         >
-          <XMarkIcon className="h-3.5 w-3.5" />
+          <X className="h-3.5 w-3.5" />
           <span>{isEn ? "Cancel" : "إلغاء"}</span>
         </button>
       </div>
 
-      {/* Action Buttons: Horizontal scrollable strip on mobile, flex row on desktop */}
+      {/* Action Buttons */}
       <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-0.5 pt-0.5 sm:pb-0">
         <button
           type="button"
           onClick={onConvertToPresentations}
-          className="inline-flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-purple-700 transition-all shadow-xs shrink-0 active:scale-95"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold transition-all shadow-xs shrink-0 active:scale-[0.98]"
         >
-          <ArrowPathIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <Layers className="h-3.5 w-3.5" />
           <span>{isEn ? "Presentations" : "حوّل لعروض"}</span>
         </button>
 
@@ -78,10 +82,10 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
           <button
             type="button"
             onClick={onEnableTrack}
-            className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-teal-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-teal-700 transition-all shadow-xs shrink-0 active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-semibold transition-all shadow-xs shrink-0 active:scale-[0.98]"
             title={isEn ? "Enable stock tracking" : "تفعيل تتبع المخزون"}
           >
-            <CubeIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <Box className="h-3.5 w-3.5" />
             <span>{isEn ? "Enable Track" : "تفعيل التتبع"}</span>
           </button>
         )}
@@ -90,10 +94,10 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
           <button
             type="button"
             onClick={onDisableTrack}
-            className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-gray-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-gray-700 transition-all shadow-xs shrink-0 active:scale-95"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-muted/80 text-foreground border border-border/70 rounded-lg text-xs font-semibold transition-all shadow-xs shrink-0 active:scale-[0.98]"
             title={isEn ? "Disable stock tracking" : "إيقاف تتبع المخزون"}
           >
-            <CubeIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-70" />
+            <Box className="h-3.5 w-3.5 opacity-60" />
             <span>{isEn ? "Disable Track" : "إيقاف التتبع"}</span>
           </button>
         )}
@@ -101,36 +105,36 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
         <button
           type="button"
           onClick={onHide}
-          className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-orange-500 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-orange-600 transition-all shadow-xs shrink-0 active:scale-95"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition-all shadow-xs shrink-0 active:scale-[0.98]"
         >
-          <EyeSlashIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <EyeOff className="h-3.5 w-3.5" />
           <span>{isEn ? "Hide" : "إخفاء"}</span>
         </button>
 
         <button
           type="button"
           onClick={onUnhide}
-          className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-emerald-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-emerald-700 transition-all shadow-xs shrink-0 active:scale-95"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-all shadow-xs shrink-0 active:scale-[0.98]"
         >
-          <EyeIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <Eye className="h-3.5 w-3.5" />
           <span>{isEn ? "Show" : "إظهار"}</span>
         </button>
 
         <button
           type="button"
           onClick={onDelete}
-          className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-red-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-red-700 transition-all shadow-xs shrink-0 active:scale-95"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg text-xs font-semibold transition-all shadow-xs shrink-0 active:scale-[0.98]"
         >
-          <TrashIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <Trash2 className="h-3.5 w-3.5" />
           <span>{isEn ? "Delete" : "حذف"}</span>
         </button>
 
         <button
           type="button"
           onClick={onClear}
-          className="hidden sm:inline-flex items-center gap-1 px-3 py-2 bg-gray-500 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-gray-600 transition-all shadow-xs shrink-0 active:scale-95"
+          className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 bg-muted hover:bg-muted/80 text-foreground border border-border/70 rounded-lg text-xs font-semibold transition-all shadow-xs shrink-0 active:scale-[0.98]"
         >
-          <XMarkIcon className="h-4 w-4" />
+          <X className="h-3.5 w-3.5" />
           <span>{isEn ? "Clear" : "إلغاء التحديد"}</span>
         </button>
       </div>
