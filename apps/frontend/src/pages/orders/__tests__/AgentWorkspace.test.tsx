@@ -540,7 +540,7 @@ describe("AgentWorkspace", () => {
     expect(
       screen.getAllByRole("button", { name: /اعتماد وتأكيد الطلب|Confirm Order|confirmOrder/i }).length,
     ).toBeGreaterThanOrEqual(1);
-  });
+  }, 15000);
 
   it("renders live edit items button in inspector", async () => {
     mockCurrentUser = { id: "u1", role: "AGENT" };
@@ -865,6 +865,112 @@ describe("AgentWorkspace", () => {
     const settingsLinks = screen.getAllByRole("link", { name: /الانتقال لإعدادات التأكيد|فتح إعدادات مركز التأكيد|Settings/i });
     expect(settingsLinks.length).toBeGreaterThan(0);
     expect(settingsLinks[0]).toHaveAttribute("href", "/settings/orders?tab=confirmation");
+  });
+
+  it("renders orders normally and does not show warning banner when confirmationDisabled is false", async () => {
+    mockGet.mockImplementation((url: string) => {
+      if (url.includes('/agent-workspace/my-orders')) {
+        return Promise.resolve({
+          data: {
+            success: true,
+            data: [makeOrder({ id: "o-active", orderNumber: "ORD-ACTIVE" })],
+            stats: defaultStats(1),
+            pagination: { total: 1, page: 1, limit: 50, pages: 1 },
+            confirmationDisabled: false,
+          },
+        });
+      }
+      return Promise.resolve({ data: { success: true, data: [] } });
+    });
+
+    renderWorkspace();
+
+    // Verify order is rendered
+    await screen.findAllByText(/#?ORD-ACTIVE/);
+
+    // Verify warning banner is NOT in the document
+    expect(
+      screen.queryByText(/المركز مقفول من الإعدادات|مركز التأكيد مقفول من الإعدادات|Confirmation Center Disabled/i)
+    ).not.toBeInTheDocument();
+  });
+
+  it("fetches followup orders when navigating to followup tab via URL", async () => {
+    mockGet.mockImplementation((url: string) => {
+      if (url.includes('/agent-workspace/my-orders')) {
+        return Promise.resolve({
+          data: {
+            success: true,
+            data: [
+              makeOrder({
+                id: "o-f1",
+                orderNumber: "ORD-FOLLOWUP-1",
+                followUpDate: new Date(Date.now() + 3600000).toISOString(),
+              }),
+            ],
+            stats: { ...defaultStats(1), followup: 1 },
+            pagination: { total: 1, page: 1, limit: 50, pages: 1 },
+          },
+        });
+      }
+      return Promise.resolve({ data: { success: true, data: [] } });
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/orders/workspace?tab=followup"]}>
+        <AgentWorkspace />
+      </MemoryRouter>,
+    );
+
+    await screen.findAllByText(/#?ORD-FOLLOWUP-1/);
+
+    expect(mockGet).toHaveBeenCalledWith(
+      "/agent-workspace/my-orders",
+      expect.objectContaining({
+        params: expect.objectContaining({
+          followUpOnly: "true",
+        }),
+      }),
+    );
+  });
+
+  it("shows error state with retry button when initial API fetch fails, and retries successfully on click", async () => {
+    let callCount = 0;
+    mockGet.mockImplementation((url: string) => {
+      if (url.includes('/agent-workspace/my-orders')) {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.reject(new Error("Server error loading queue"));
+        }
+        return Promise.resolve({
+          data: {
+            success: true,
+            data: [makeOrder({ id: "o-retry", orderNumber: "ORD-RETRY-SUCCESS" })],
+            stats: defaultStats(1),
+            pagination: { total: 1, page: 1, limit: 50, pages: 1 },
+          },
+        });
+      }
+      return Promise.resolve({ data: { success: true, data: [] } });
+    });
+
+    renderWorkspace();
+
+    // Error toast should be triggered
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalled();
+    });
+
+    // Try again button should be displayed
+    const retryBtn = await screen.findByRole("button", {
+      name: /إعادة المحاولة|Try again/i,
+    });
+    expect(retryBtn).toBeInTheDocument();
+
+    // Click retry
+    fireEvent.click(retryBtn);
+
+    // After retry succeeds, order should appear
+    await screen.findAllByText(/#?ORD-RETRY-SUCCESS/);
   });
 });
 

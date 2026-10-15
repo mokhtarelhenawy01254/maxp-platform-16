@@ -26,6 +26,7 @@ function normalizeWorkspaceTab(value: string | null): FilterTab {
   const val = value.toLowerCase();
   if (val === 'incomplete' || val === 'abandoned' || val === 'carts') return 'incomplete';
   if (val === 'reports') return 'reports';
+  if (val === 'followup' || val === 'follow_up' || val === 'follow-up') return 'followup';
   return 'pending';
 }
 
@@ -799,12 +800,12 @@ export function useAgentWorkspace() {
 
     window.addEventListener('order-confirmation-settings-updated', handleSettingsUpdated);
     window.addEventListener('storage', handleStorage);
-    window.addEventListener('visibilitychange', handleVisibility);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       window.removeEventListener('order-confirmation-settings-updated', handleSettingsUpdated);
       window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('visibilitychange', handleVisibility);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 

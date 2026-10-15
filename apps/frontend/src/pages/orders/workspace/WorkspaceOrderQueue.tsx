@@ -115,6 +115,30 @@ export const WorkspaceOrderQueue: React.FC<WorkspaceOrderQueueProps> = ({
   }
 
   if (orders.length === 0) {
+    if (confirmationDisabled && (activeTab === 'pending' || activeTab === 'all' || activeTab === 'confirmation')) {
+      return (
+        <div className="flex h-full flex-col items-center justify-center p-6 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+            <ExclamationTriangleIcon className="h-6 w-6" />
+          </div>
+          <h4 className="mt-3 text-sm font-bold text-foreground">
+            {isArabic ? 'المركز مقفول من الإعدادات' : 'Confirmation Center Disabled'}
+          </h4>
+          <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed max-w-xs">
+            {isArabic
+              ? 'تم إيقاف مركز التأكيد من الإعدادات، ولن تظهر أي طلبات في قائمة التأكيد حتى يتم تفعيله.'
+              : 'Order confirmation center is disabled in settings. No orders will appear until enabled.'}
+          </p>
+          <Link
+            to="/settings/orders?tab=confirmation"
+            className="mt-3.5 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition-colors hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600"
+          >
+            <span>{isArabic ? 'الانتقال لإعدادات التأكيد ←' : 'Go to Settings →'}</span>
+          </Link>
+        </div>
+      );
+    }
+
     return (
       <div className="flex h-full flex-col items-center justify-center p-6 text-center">
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50 text-muted-foreground">

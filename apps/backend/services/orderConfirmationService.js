@@ -116,7 +116,7 @@ const normalizeNonNegativeInt = (value, fallback) => {
   return Math.max(0, Math.floor(numberValue));
 };
 
-const toJson = (value, fallback) => {
+const toJson = (value, fallback = undefined) => {
   if (value === undefined) return fallback;
   if (typeof value === 'string') return value;
   return JSON.stringify(value);
@@ -130,41 +130,58 @@ class OrderConfirmationService {
   }
 
   async getSettings(companyId) {
-    const existing = await this.prisma.orderConfirmationSettings.findUnique({
+    if (!companyId) return null;
+    const cacheKey = `order_confirmation_settings:${companyId}`;
+    try {
+      const cached = await redisCacheService.get(cacheKey);
+      if (cached) return cached;
+    } catch (_e) {}
+
+    let settings = await this.prisma.orderConfirmationSettings.findUnique({
       where: { companyId }
     });
-    if (existing) return existing;
 
-    try {
-      return await this.prisma.orderConfirmationSettings.create({
-        data: { companyId, ...DEFAULT_SETTINGS }
-      });
-    } catch (error) {
-      if (error.code === 'P2002') {
-        return await this.prisma.orderConfirmationSettings.findUnique({
-          where: { companyId }
+    if (!settings) {
+      try {
+        settings = await this.prisma.orderConfirmationSettings.create({
+          data: { companyId, ...DEFAULT_SETTINGS }
         });
+      } catch (error) {
+        if (error.code === 'P2002') {
+          settings = await this.prisma.orderConfirmationSettings.findUnique({
+            where: { companyId }
+          });
+        } else {
+          throw error;
+        }
       }
-      throw error;
     }
+
+    if (settings) {
+      try {
+        await redisCacheService.set(cacheKey, settings, 120);
+      } catch (_e) {}
+    }
+
+    return settings;
   }
 
   async updateSettings(companyId, data) {
     const payload = {
       enabled: data.enabled,
-      requireSourceTypes: toJson(data.requireSourceTypes, DEFAULT_SETTINGS.requireSourceTypes),
-      requireStatuses: toJson(data.requireStatuses, DEFAULT_SETTINGS.requireStatuses),
+      requireSourceTypes: toJson(data.requireSourceTypes),
+      requireStatuses: toJson(data.requireStatuses),
       requireMatchMode: data.requireMatchMode ? normalizeMatchMode(data.requireMatchMode) : undefined,
       confirmStatus: data.confirmStatus,
       distributionEnabled: data.distributionEnabled,
       distributionStrategy: data.distributionStrategy,
-      eligibleRoles: toJson(data.eligibleRoles, DEFAULT_SETTINGS.eligibleRoles),
-      eligibleUserIds: toJson(data.eligibleUserIds, DEFAULT_SETTINGS.eligibleUserIds),
-      regionRules: toJson(data.regionRules, DEFAULT_SETTINGS.regionRules),
-      specialtyRules: toJson(data.specialtyRules, DEFAULT_SETTINGS.specialtyRules),
-      orderValueRules: toJson(data.orderValueRules, DEFAULT_SETTINGS.orderValueRules),
+      eligibleRoles: toJson(data.eligibleRoles),
+      eligibleUserIds: toJson(data.eligibleUserIds),
+      regionRules: toJson(data.regionRules),
+      specialtyRules: toJson(data.specialtyRules),
+      orderValueRules: toJson(data.orderValueRules),
       workloadMaxOpen: data.workloadMaxOpen,
-      workloadStatuses: toJson(data.workloadStatuses, DEFAULT_SETTINGS.workloadStatuses),
+      workloadStatuses: toJson(data.workloadStatuses),
       maxCallsNoAnswer: data.maxCallsNoAnswer,
       intervalMinutes: data.intervalMinutes,
       lastAssignedUserId: data.lastAssignedUserId,
@@ -176,30 +193,17 @@ class OrderConfirmationService {
       if (payload[key] === undefined) delete payload[key];
     });
 
-    const existing = await this.prisma.orderConfirmationSettings.findUnique({
-      where: { companyId }
+    const result = await this.prisma.orderConfirmationSettings.upsert({
+      where: { companyId },
+      update: payload,
+      create: { companyId, ...DEFAULT_SETTINGS, ...payload }
     });
 
-    if (existing) {
-      return await this.prisma.orderConfirmationSettings.update({
-        where: { companyId },
-        data: payload
-      });
-    }
-
     try {
-      return await this.prisma.orderConfirmationSettings.create({
-        data: { companyId, ...DEFAULT_SETTINGS, ...payload }
-      });
-    } catch (error) {
-      if (error.code === 'P2002') {
-        return await this.prisma.orderConfirmationSettings.update({
-          where: { companyId },
-          data: payload
-        });
-      }
-      throw error;
-    }
+      await redisCacheService.del(`order_confirmation_settings:${companyId}`);
+    } catch (_e) {}
+
+    return result;
   }
 
   normalizeSettings(settings) {
@@ -1253,11 +1257,11 @@ class OrderConfirmationService {
       }
 
       if (type === 'regular') {
-        const order = await this.prisma.order.findUnique({
-          where: { id: orderId }
+        const order = await this.prisma.order.findFirst({
+          where: { id: orderId, companyId }
         });
         if (!order) {
-          console.error(`❌ [ORDER-CONFIRMATION] Regular order ${orderId} not found for distribution.`);
+          console.error(`❌ [ORDER-CONFIRMATION] Regular order ${orderId} not found for distribution in company ${companyId}.`);
           return null;
         }
         
@@ -1268,11 +1272,11 @@ class OrderConfirmationService {
         return selected;
       } 
       else if (type === 'guest') {
-        const guestOrder = await this.prisma.guestOrder.findUnique({
-          where: { id: orderId }
+        const guestOrder = await this.prisma.guestOrder.findFirst({
+          where: { id: orderId, companyId }
         });
         if (!guestOrder) {
-          console.error(`❌ [ORDER-CONFIRMATION] Guest order ${orderId} not found for distribution.`);
+          console.error(`❌ [ORDER-CONFIRMATION] Guest order ${orderId} not found for distribution in company ${companyId}.`);
           return null;
         }
         
@@ -1555,6 +1559,7 @@ class OrderConfirmationService {
         });
         await tx.callAttemptLog.create({
           data: {
+            companyId,
             orderId: order.id,
             userId,
             result: callResult,
@@ -1592,6 +1597,7 @@ class OrderConfirmationService {
       });
       await tx.callAttemptLog.create({
         data: {
+          companyId,
           guestOrderId: guestOrder.id,
           userId,
           result: callResult,
