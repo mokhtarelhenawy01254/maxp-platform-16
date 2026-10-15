@@ -16,6 +16,9 @@ const VARIANTS = [
   { id: "enterprise-os", label: "الحالية — Enterprise OS" },
   { id: "merchant-daylight", label: "نسخة التاجر النهارية" },
   { id: "merchant-dossier", label: "نسخة الملف — tasteskill v2" },
+  { id: "merchant-performs", label: "نسخة الشاشة الشغّالة" },
+  { id: "merchant-annual", label: "تقرير التاجر المطبوع" },
+  { id: "merchant-poster", label: "بوستر الشارع" },
 ] as const;
 
 const useScale = (frameWidth: number, paneWidth: number) =>

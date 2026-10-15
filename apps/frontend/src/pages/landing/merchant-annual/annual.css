@@ -1,0 +1,318 @@
+/* ============================================================================
+   merchant-annual ، اتجاه «التقرير المطبوع» (Cool grey + cobalt)
+   أرض #eef0f3 · سطح #e2e5ea · حبر #0b0c0e · كوبالت #1f2de6
+   الخط التحريري: Noto Naskh Arabic (مستضاف محليًا) للعناوين + IBM Plex للجسم
+   ========================================================================== */
+
+@font-face {
+  font-family: "Naskh Editorial";
+  src: url("/landing/merchant-annual/fonts/noto-naskh-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Naskh Editorial";
+  src: url("/landing/merchant-annual/fonts/noto-naskh-700.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
+.an {
+  --an-bg: #eef0f3;
+  --an-surface: #e2e5ea;
+  --an-paper: #f7f8fa;
+  --an-ink: #0b0c0e;
+  --an-muted: #434a54;
+  --an-accent: #1f2de6;
+  --an-accent-ink: #ffffff;
+
+  --an-small: 14px;
+  --an-body: clamp(16.5px, 1rem + 0.25vw, 19px);
+  --an-lead: clamp(20px, 1.1rem + 0.6vw, 25px);
+  --an-head: clamp(30px, 1.5rem + 3vw, 54px);
+  --an-display: clamp(40px, 2.6rem + 5vw, 96px);
+
+  background: var(--an-bg);
+  color: var(--an-ink);
+  font-family: "IBM Plex Sans Arabic", "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: var(--an-body);
+  line-height: 1.7;
+}
+
+.an-shell {
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding-inline: 18px;
+}
+
+@media (min-width: 768px) {
+  .an-shell {
+    padding-inline: 32px;
+  }
+}
+
+/* المحور: عناوين ومتون على خط رأسي واحد، والملاحظات الجانبية على الشمال */
+.an-axis {
+  display: grid;
+  gap: 16px 32px;
+}
+
+@media (min-width: 900px) {
+  .an-axis {
+    grid-template-columns: 4fr 8fr;
+  }
+
+  .an-axis > .an-note,
+  .an-axis > .an-start {
+    grid-column: 2;
+  }
+
+  .an-axis > .an-sidenote {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+  }
+}
+
+.an-display,
+.an-head {
+  font-family: "Naskh Editorial", "IBM Plex Sans Arabic", serif;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.an-display {
+  font-size: var(--an-display);
+  line-height: 1.02;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.an-head {
+  font-size: var(--an-head);
+  line-height: 1.12;
+  font-weight: 700;
+}
+
+.an-lead {
+  font-size: var(--an-lead);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.an-body {
+  font-size: var(--an-body);
+  margin: 0;
+  max-width: 68ch;
+}
+
+.an-small {
+  font-size: var(--an-small);
+  margin: 0;
+}
+
+.an-muted {
+  color: var(--an-muted);
+}
+
+.an-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  unicode-bidi: isolate;
+  direction: ltr;
+  display: inline-block;
+}
+
+.an-section {
+  padding-block: 64px;
+}
+
+@media (min-width: 768px) {
+  .an-section {
+    padding-block: 104px;
+  }
+}
+
+.an-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 26px;
+  border: 0;
+  border-radius: 0;
+  background: var(--an-accent);
+  color: var(--an-accent-ink);
+  font-family: inherit;
+  font-size: var(--an-body);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 160ms ease-out, background-color 160ms ease-out;
+}
+
+.an-action:active {
+  transform: scale(0.975);
+}
+
+.an-action:hover {
+  background: #1622c4;
+}
+
+.an :focus-visible {
+  outline: 3px solid var(--an-accent);
+  outline-offset: 3px;
+}
+
+/* شريحة الماستهد: ثلاث قصّات بأحجام مختلفة */
+.an-masthead {
+  display: grid;
+  gap: 6px;
+}
+
+@media (min-width: 768px) {
+  .an-masthead {
+    grid-template-columns: 5fr 3fr 4fr;
+    align-items: end;
+  }
+}
+
+.an-masthead figure {
+  margin: 0;
+  background: var(--an-surface);
+  overflow: hidden;
+}
+
+.an-masthead img {
+  display: block;
+  width: 100%;
+  object-fit: cover;
+}
+
+/* الأعمدة الرأسية (bars) واقفة على الحافة */
+.an-bars {
+  display: grid;
+  gap: 8px;
+  align-items: end;
+  height: 46vh;
+  min-height: 260px;
+}
+
+.an-bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 16px;
+  background: var(--an-surface);
+}
+
+.an-bar--accent {
+  background: var(--an-accent);
+  color: var(--an-accent-ink);
+}
+
+/* الجدول: الأشرطة المسموح بها */
+.an-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--an-body);
+}
+
+.an-table th,
+.an-table td {
+  padding: 16px 18px;
+  text-align: start;
+  border-bottom: 1px solid #c9ced6;
+  vertical-align: top;
+}
+
+.an-table th {
+  font-size: var(--an-small);
+  color: var(--an-muted);
+  font-weight: 700;
+}
+
+.an-table tr[data-active="true"] {
+  background: var(--an-paper);
+}
+
+.an-table td.an-price {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* الأسئلة: شريط لكل سؤال */
+.an-faq details {
+  background: var(--an-paper);
+  margin-bottom: 6px;
+}
+
+.an-faq summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 16px 18px;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.an-faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.an-faq p {
+  padding: 0 18px 16px;
+  margin: 0;
+}
+
+/* حركة: كشف العنوان بقناع */
+.an-mask {
+  overflow: hidden;
+  display: block;
+}
+
+.an-js .an-mask > span {
+  display: block;
+  transform: translateY(100%);
+  transition: transform 720ms cubic-bezier(0.16, 0.8, 0.3, 1);
+}
+
+.an-js .an-mask.is-in > span {
+  transform: none;
+}
+
+.an-rise {
+  opacity: 1;
+  transform: none;
+}
+
+.an-js .an-rise {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 480ms ease-out, transform 560ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.an-js .an-rise.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .an *,
+  .an *::before,
+  .an *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .an-js .an-mask > span,
+  .an-js .an-rise {
+    transform: none;
+    opacity: 1;
+  }
+}

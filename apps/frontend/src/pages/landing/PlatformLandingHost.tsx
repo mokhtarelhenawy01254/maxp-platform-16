@@ -15,6 +15,9 @@ const PlatformLandingExecutiveAtlas = React.lazy(() => import("./PlatformLanding
 const PlatformLandingBusinessOs = React.lazy(() => import("./PlatformLandingBusinessOs"));
 const MerchantDaylightLanding = React.lazy(() => import("./merchant-daylight/MerchantDaylightLanding"));
 const MerchantDossierLanding = React.lazy(() => import("./merchant-dossier/MerchantDossierLanding"));
+const MerchantPerformsLanding = React.lazy(() => import("./merchant-performs/MerchantPerformsLanding"));
+const MerchantAnnualLanding = React.lazy(() => import("./merchant-annual/MerchantAnnualLanding"));
+const MerchantPosterLanding = React.lazy(() => import("./merchant-poster/MerchantPosterLanding"));
 
 const variantComponents: Record<
   PlatformLandingVariantId,
@@ -26,6 +29,9 @@ const variantComponents: Record<
   "business-os": PlatformLandingBusinessOs,
   "merchant-daylight": MerchantDaylightLanding,
   "merchant-dossier": MerchantDossierLanding,
+  "merchant-performs": MerchantPerformsLanding,
+  "merchant-annual": MerchantAnnualLanding,
+  "merchant-poster": MerchantPosterLanding,
 };
 
 interface PlatformLandingRendererProps {

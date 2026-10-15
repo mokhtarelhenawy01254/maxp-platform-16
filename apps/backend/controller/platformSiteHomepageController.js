@@ -12,6 +12,9 @@ const ALLOWED_LANDING_IDS = [
   "business-os",
   "merchant-daylight",
   "merchant-dossier",
+  "merchant-performs",
+  "merchant-annual",
+  "merchant-poster",
 ];
 
 const DEFAULT_SETTINGS = Object.freeze({

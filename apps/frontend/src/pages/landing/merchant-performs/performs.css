@@ -1,0 +1,270 @@
+/* ============================================================================
+   merchant-performs ، اتجاه «المنتج بيشتغل» (Frost and slate)
+   البالِت: #f7f9fa أرض · #ecf0f2 سطح · #1f3038 حبر · #0d7480 أكسنت واحد
+   الخط: IBM Plex Sans Arabic (بدل General Sans ، الخط الممسوح مالوش حروف عربية)
+   ========================================================================== */
+
+.pf {
+  --pf-bg: #f7f9fa;
+  --pf-surface: #ecf0f2;
+  --pf-ink: #1f3038;
+  --pf-muted: #47535a;
+  --pf-accent: #0d7480;
+  --pf-accent-ink: #ffffff;
+  --pf-line: #dde4e8;
+
+  --pf-small: 14px;
+  --pf-body: clamp(16.5px, 1rem + 0.25vw, 19px);
+  --pf-lead: clamp(20px, 1.1rem + 0.6vw, 26px);
+  --pf-head: clamp(30px, 1.4rem + 3vw, 56px);
+  --pf-display: clamp(38px, 2.2rem + 5.6vw, 104px);
+
+  background: var(--pf-bg);
+  color: var(--pf-ink);
+  font-family: "IBM Plex Sans Arabic", "Plus Jakarta Sans", system-ui, sans-serif;
+  font-size: var(--pf-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.pf-shell {
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+
+@media (min-width: 768px) {
+  .pf-shell {
+    padding-inline: 28px;
+  }
+}
+
+.pf-display {
+  font-size: var(--pf-display);
+  line-height: 1.06;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.pf-head {
+  font-size: var(--pf-head);
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.pf-lead {
+  font-size: var(--pf-lead);
+  line-height: 1.35;
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.pf-body {
+  font-size: var(--pf-body);
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.pf-small {
+  font-size: var(--pf-small);
+  margin: 0;
+}
+
+.pf-muted {
+  color: var(--pf-muted);
+}
+
+.pf-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  unicode-bidi: isolate;
+  direction: ltr;
+  display: inline-block;
+}
+
+.pf-section {
+  padding-block: 72px;
+}
+
+@media (min-width: 768px) {
+  .pf-section {
+    padding-block: 116px;
+  }
+}
+
+.pf-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--pf-accent);
+  color: var(--pf-accent-ink);
+  font-family: inherit;
+  font-size: var(--pf-body);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 160ms ease-out, background-color 160ms ease-out;
+}
+
+.pf-action:hover {
+  background: #0a5f69;
+}
+
+.pf-action:active {
+  transform: scale(0.975);
+}
+
+.pf-action--quiet {
+  background: var(--pf-surface);
+  color: var(--pf-ink);
+}
+
+.pf-action--quiet:hover {
+  background: #e2e8ec;
+}
+
+.pf :focus-visible {
+  outline: 3px solid var(--pf-accent);
+  outline-offset: 3px;
+}
+
+/* كتلة الشريحة على مسرح لوني واحد */
+.pf-stage {
+  background: var(--pf-surface);
+  padding: 18px;
+  border-radius: 16px;
+}
+
+@media (min-width: 768px) {
+  .pf-stage {
+    padding: 28px;
+  }
+}
+
+/* كشف الشريحة (shutter) */
+.pf-shutter {
+  overflow: hidden;
+}
+
+.pf-js .pf-shutter > * {
+  transform: translateY(18px);
+  opacity: 0;
+  transition: transform 620ms cubic-bezier(0.2, 0.7, 0.2, 1), opacity 520ms ease-out;
+}
+
+.pf-js .pf-shutter.is-open > * {
+  transform: none;
+  opacity: 1;
+}
+
+.pf-rise {
+  opacity: 1;
+  transform: none;
+}
+
+.pf-js .pf-rise {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 480ms ease-out, transform 560ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.pf-js .pf-rise.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* السلايدر */
+.pf-slider {
+  width: 100%;
+  accent-color: var(--pf-accent);
+  height: 28px;
+}
+
+/* تبويب الأسعار */
+.pf-seg {
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  background: var(--pf-surface);
+  border-radius: 12px;
+}
+
+.pf-seg button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--pf-muted);
+  font-family: inherit;
+  font-size: var(--pf-small);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 160ms ease-out, color 160ms ease-out;
+}
+
+.pf-seg button[aria-pressed="true"] {
+  background: var(--pf-ink);
+  color: #fff;
+}
+
+/* الأسئلة: بلاطات مليانة */
+.pf-faq details {
+  background: var(--pf-surface);
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.pf-faq summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 18px 20px;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pf-faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.pf-faq summary::after {
+  content: "+";
+  color: var(--pf-muted);
+}
+
+.pf-faq details[open] summary::after {
+  content: "–";
+}
+
+.pf-faq p {
+  padding: 0 20px 18px;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf *,
+  .pf *::before,
+  .pf *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .pf-js .pf-rise,
+  .pf-js .pf-shutter > * {
+    opacity: 1;
+    transform: none;
+  }
+}

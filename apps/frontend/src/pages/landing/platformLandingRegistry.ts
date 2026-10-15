@@ -4,7 +4,10 @@ export type PlatformLandingVariantId =
   | "executive-atlas"
   | "business-os"
   | "merchant-daylight"
-  | "merchant-dossier";
+  | "merchant-dossier"
+  | "merchant-performs"
+  | "merchant-annual"
+  | "merchant-poster";
 
 export interface PlatformLandingVariantDefinition {
   id: PlatformLandingVariantId;
@@ -105,6 +108,46 @@ export const PLATFORM_LANDING_VARIANTS: PlatformLandingVariantDefinition[] = [
       "الصور من عالم التاجر (أرشيف مفتوح)",
       "شاشة إنشاء المتجر مفتوحة فعلًا",
     ],
+  },
+  {
+    id: "merchant-performs",
+    label: "نسخة الشاشة الشغّالة",
+    badge: "المنتج بيشتغل",
+    summary:
+      "Frost and slate: شاشة الطلبات نفسها شغّالة على الصفحة (فلترة، بحث، وفتح رسالة التأكيد)، وسلايدر بيحسب الأرقام بأسعار المنصة، ورقم واحد حي في الأسعار.",
+    audience: "للتجّار اللي بيثقوا في الشاشة اللي بيشوفها شغّالة، لا في وصف مكتوب.",
+    tone: "هادئ، تقني، بارد.",
+    accent: "#0d7480",
+    surface: "#f7f9fa",
+    focusPoints: ["شريحة شغّالة في الهيرو", "حاسبة على أسعار حقيقية", "رقم حي في الأسعار"],
+  },
+  {
+    id: "merchant-annual",
+    label: "تقرير التاجر المطبوع",
+    badge: "تحريري · كوبالت",
+    summary:
+      "محور رأسي ثابت على 42%: ماستهد بتلات قصّات، وعناوين بخط نسخ عربي مستضاف محليًا، وأعمدة واقفة على الحافة، وجدول أسعار حقيقي.",
+    audience: "لمن يقرأ الأرقام قبل القرار، ويحب الواجهة المرتبة والمحددة.",
+    tone: "تحريري، مطبوع، محدد.",
+    accent: "#1f2de6",
+    surface: "#eef0f3",
+    focusPoints: [
+      "محور رأسي ثابت",
+      "خط نسخ عربي مستضاف",
+      "جدول أسعار حقيقي",
+    ],
+  },
+  {
+    id: "merchant-poster",
+    label: "بوستر الشارع",
+    badge: "جريء · ألوان مليانة",
+    summary:
+      "أرض برتقالي مليانة، عنوان مدوّي بأقصى وزن خط متاح، وقصّة حقيقية مايلة تدخل على الكلام.",
+    audience: "لمن يتوقف عند الصورة الكبيرة أولاً.",
+    tone: "صاخب، مباشر، بلا لف.",
+    accent: "#de194b",
+    surface: "#ff8126",
+    focusPoints: ["عنوان 12vw", "ألوان مليانة بدون تدرج", "رقم التواصل كعنوان"],
   },
   {
     id: "business-os",

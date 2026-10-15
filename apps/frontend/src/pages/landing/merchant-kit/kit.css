@@ -1,0 +1,159 @@
+/* شرائح واجهة المنصة ، scoped تحت .kit، وتشتغل مع أي بالِت من برّه */
+
+.kit-ui {
+  --kit-bg: #ffffff;
+  --kit-ink: #0e1116;
+  --kit-muted: #6b7280;
+  --kit-line: #e2e6ec;
+  --kit-ok: #0b7a52;
+  --kit-ok-bg: #ecf7f2;
+  --kit-warn: #b42318;
+  --kit-warn-bg: #fdeceb;
+  --kit-accent: #2f6bff;
+
+  background: var(--kit-bg);
+  color: var(--kit-ink);
+  font-family: "IBM Plex Sans Arabic", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  width: 100%;
+  max-width: 420px;
+}
+
+.kit-ui--table {
+  max-width: 680px;
+}
+
+.kit-ui-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.kit-ui-input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--kit-line); /* taste-skill-ignore: حقل بحث حقيقي جوه شريحة المنتج، والحقول بتفضل بحدودها */
+  border-radius: 8px;
+  background: #f8fafc;
+  color: var(--kit-ink);
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.kit-ui-input:focus-visible,
+.kit-ui-tab:focus-visible,
+.kit-ui-table tr:focus-visible {
+  outline: 2px solid var(--kit-accent);
+  outline-offset: 1px;
+}
+
+.kit-ui-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 12px 10px;
+  flex-wrap: wrap;
+}
+
+.kit-ui-tab {
+  padding: 5px 10px;
+  border: 1px solid var(--kit-line); /* taste-skill-ignore: زر فلتر حقيقي جوه شريحة المنتج */
+  border-radius: 999px;
+  background: #fff;
+  color: var(--kit-muted);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 160ms ease-out, color 160ms ease-out;
+}
+
+.kit-ui-tab[aria-selected="true"] {
+  background: #0e1116;
+  border-color: #0e1116;
+  color: #fff;
+}
+
+.kit-ui-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+}
+
+.kit-ui-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.kit-ui-table th,
+.kit-ui-table td {
+  padding: 9px 12px;
+  text-align: start;
+  border-top: 1px solid var(--kit-line);
+  white-space: nowrap;
+}
+
+.kit-ui-table th {
+  color: var(--kit-muted);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.kit-ui-table tbody tr {
+  cursor: pointer;
+}
+
+.kit-ui-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.kit-ui-detail td {
+  background: #f8fafc;
+  white-space: normal;
+}
+
+.kit-ui-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--kit-ok-bg);
+  color: var(--kit-ok);
+}
+
+.kit-ui-chip--warn {
+  background: var(--kit-warn-bg);
+  color: var(--kit-warn);
+}
+
+.kit-ui-bubble {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--kit-ok-bg);
+  color: #0a5c3f;
+}
+
+.kit-ui-strong {
+  font-weight: 600;
+}
+
+.kit-ui-muted {
+  color: var(--kit-muted);
+}
+
+.kit-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  unicode-bidi: isolate;
+  direction: ltr;
+  display: inline-block;
+}
