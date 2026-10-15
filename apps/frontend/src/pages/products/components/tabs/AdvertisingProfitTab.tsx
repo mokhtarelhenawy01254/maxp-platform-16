@@ -1,11 +1,11 @@
 import React from "react";
 import {
-  BanknotesIcon,
-  CurrencyDollarIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-  SwatchIcon,
-} from "@heroicons/react/24/outline";
+  Coins,
+  DollarSign,
+  AlertTriangle,
+  Info,
+  Layers,
+} from "lucide-react";
 import type { ProductFormData, ProductVariant } from "../../types";
 import {
   buildAdProfitabilityPreview,
@@ -13,6 +13,7 @@ import {
   type FacebookAdsDecisionSettings,
   type InventoryCostSummary,
 } from "../../utils/adProfitabilitySettings";
+import { isEnglishLocale } from "../../../../utils/currency";
 
 interface AdvertisingProfitTabProps {
   formData: ProductFormData;
@@ -32,13 +33,11 @@ const sourceLabels: Record<string, string> = {
   MISSING: "غير محددة",
 };
 
-import { isEnglishLocale } from "../../../../utils/currency";
-
 const inputBaseClass =
-  "mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white";
+  "mt-1 block w-full rounded-lg border border-border/70 bg-background px-3 py-1.5 text-xs text-foreground focus:ring-1 focus:ring-primary outline-none transition-all font-mono";
 
 const metricClass =
-  "rounded-md border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-800";
+  "rounded-xl border border-border/70 bg-card p-3 shadow-2xs";
 
 const formatMoney = (value: number | null | undefined, currency: string) => {
   if (value === null || value === undefined || Number.isNaN(value)) return "-";
@@ -81,13 +80,14 @@ export const AdvertisingProfitTab: React.FC<AdvertisingProfitTabProps> = ({
     };
 
   return (
-    <div className="animate-fade-in space-y-3">
-      <div className="flex flex-col gap-2 rounded-md border border-indigo-100 bg-indigo-50/60 px-3 py-2 dark:border-indigo-900/40 dark:bg-indigo-900/20 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-4 text-right animate-fadeIn">
+      {/* Top Banner */}
+      <div className="flex flex-col gap-2 rounded-xl border border-border/70 bg-card p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+          <h2 className="text-sm sm:text-base font-semibold text-foreground">
             ربحية الإعلانات
           </h2>
-          <p className="text-xs text-gray-600 dark:text-gray-300">
+          <p className="text-xs text-muted-foreground mt-0.5">
             التكلفة قراءة فقط من المنتج/المخزون، والإعدادات هنا تخص قرار الإعلان.
           </p>
         </div>
@@ -95,85 +95,86 @@ export const AdvertisingProfitTab: React.FC<AdvertisingProfitTabProps> = ({
           <button
             type="button"
             onClick={onOpenPricing}
-            className="inline-flex items-center rounded-md border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-gray-900 dark:text-indigo-200"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-background px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-[0.98]"
           >
-            <CurrencyDollarIcon className="ml-1.5 h-4 w-4" />
-            تعديل التكلفة
+            <DollarSign className="h-3.5 w-3.5 text-primary" />
+            <span>تعديل التكلفة</span>
           </button>
           <button
             type="button"
             onClick={onOpenVariants}
-            className="inline-flex items-center rounded-md border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-gray-900 dark:text-indigo-200"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-background px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-[0.98]"
           >
-            <SwatchIcon className="ml-1.5 h-4 w-4" />
-            تكاليف الـ variants
+            <Layers className="h-3.5 w-3.5 text-primary" />
+            <span>تكاليف الـ variants</span>
           </button>
         </div>
       </div>
 
       {!preview.isReady && (
-        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-          <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 flex-shrink-0" />
-          <span>
-            تكلفة المنتج غير مكتملة. قرارات التوسع/الإغلاق هتظهر بحذر لحد ما تتسجل
-            التكلفة من تبويب التسعير أو من الـ variants أو المخزون.
+        <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3.5 text-xs text-amber-700 dark:text-amber-300">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <span className="leading-relaxed">
+            تكلفة المنتج غير مكتملة. قرارات التوسع/الإغلاق ستظهر بحذر لحين تسجيل التكلفة من تبويب التسعير أو الـ variants أو المخزون.
           </span>
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-2 xl:grid-cols-5">
+      {/* Metrics Row */}
+      <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-5">
         <div className={metricClass}>
-          <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase">
             مصدر التكلفة
           </p>
-          <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+          <p className="mt-1 text-xs font-semibold text-foreground">
             {sourceLabels[preview.costSource]}
           </p>
         </div>
         <div className={metricClass}>
-          <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase">
             التكلفة
           </p>
-          <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+          <p className="mt-1 text-xs font-mono font-semibold text-foreground tabular-nums">
             {formatMoney(preview.unitCost, displayCurrency)}
           </p>
         </div>
         <div className={metricClass}>
-          <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase">
             Break-even CPA
           </p>
-          <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+          <p className="mt-1 text-xs font-mono font-semibold text-foreground tabular-nums">
             {formatMoney(preview.breakEvenCpa, displayCurrency)}
           </p>
         </div>
         <div className={metricClass}>
-          <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase">
             Target CPA
           </p>
-          <p className="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+          <p className="mt-1 text-xs font-mono font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
             {formatMoney(preview.targetCpa, displayCurrency)}
           </p>
         </div>
         <div className={metricClass}>
-          <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase">
             Break-even ROAS
           </p>
-          <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+          <p className="mt-1 text-xs font-mono font-semibold text-foreground tabular-nums">
             {formatRatio(preview.breakEvenRoas)}
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <section className="rounded-md border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
-          <div className="mb-2 flex items-center gap-2">
-            <BanknotesIcon className="h-5 w-5 text-indigo-500" />
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+      {/* Inputs & Preview Grid */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <section className="rounded-xl border border-border/70 bg-card p-4 shadow-xs space-y-3">
+          <div className="flex items-center gap-2 border-b border-border/50 pb-2.5">
+            <Coins className="h-4 w-4 text-primary" />
+            <h3 className="text-xs font-semibold text-foreground">
               افتراضات الربحية
             </h3>
           </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="text-xs font-semibold text-muted-foreground">
               شحن متوقع ({displayCurrency})
               <input
                 type="number"
@@ -185,7 +186,7 @@ export const AdvertisingProfitTab: React.FC<AdvertisingProfitTabProps> = ({
                 placeholder="0"
               />
             </label>
-            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+            <label className="text-xs font-semibold text-muted-foreground">
               مصاريف تحصيل ثابتة ({displayCurrency})
               <input
                 type="number"
@@ -197,7 +198,7 @@ export const AdvertisingProfitTab: React.FC<AdvertisingProfitTabProps> = ({
                 placeholder="0"
               />
             </label>
-            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+            <label className="text-xs font-semibold text-muted-foreground">
               نسبة الدفع/التحصيل %
               <input
                 type="number"
@@ -210,7 +211,7 @@ export const AdvertisingProfitTab: React.FC<AdvertisingProfitTabProps> = ({
                 placeholder="0"
               />
             </label>
-            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+            <label className="text-xs font-semibold text-muted-foreground">
               نسبة المرتجعات المتوقعة %
               <input
                 type="number"
@@ -223,7 +224,7 @@ export const AdvertisingProfitTab: React.FC<AdvertisingProfitTabProps> = ({
                 placeholder="0"
               />
             </label>
-            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+            <label className="text-xs font-semibold text-muted-foreground">
               صافي ربح مطلوب ({displayCurrency})
               <input
                 type="number"
@@ -235,7 +236,7 @@ export const AdvertisingProfitTab: React.FC<AdvertisingProfitTabProps> = ({
                 placeholder="0"
               />
             </label>
-            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+            <label className="text-xs font-semibold text-muted-foreground">
               Max CPA يدوي ({displayCurrency})
               <input
                 type="number"
@@ -250,43 +251,42 @@ export const AdvertisingProfitTab: React.FC<AdvertisingProfitTabProps> = ({
           </div>
         </section>
 
-        <section className="rounded-md border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
-          <div className="mb-2 flex items-center gap-2">
-            <InformationCircleIcon className="h-5 w-5 text-indigo-500" />
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+        <section className="rounded-xl border border-border/70 bg-card p-4 shadow-xs space-y-3">
+          <div className="flex items-center gap-2 border-b border-border/50 pb-2.5">
+            <Info className="h-4 w-4 text-primary" />
+            <h3 className="text-xs font-semibold text-foreground">
               معاينة القرار
             </h3>
           </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
-            <span className="text-gray-500 dark:text-gray-400">سعر البيع</span>
-            <strong className="text-left text-gray-900 dark:text-white">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+            <span className="text-muted-foreground">سعر البيع</span>
+            <strong className="text-left font-mono tabular-nums text-foreground">
               {formatMoney(preview.price, displayCurrency)}
             </strong>
-            <span className="text-gray-500 dark:text-gray-400">مصاريف الدفع</span>
-            <strong className="text-left text-gray-900 dark:text-white">
+            <span className="text-muted-foreground">مصاريف الدفع</span>
+            <strong className="text-left font-mono tabular-nums text-foreground">
               {formatMoney(preview.paymentFee, displayCurrency)}
             </strong>
-            <span className="text-gray-500 dark:text-gray-400">احتياطي المرتجعات</span>
-            <strong className="text-left text-gray-900 dark:text-white">
+            <span className="text-muted-foreground">احتياطي المرتجعات</span>
+            <strong className="text-left font-mono tabular-nums text-foreground">
               {formatMoney(preview.returnReserve, displayCurrency)}
             </strong>
-            <span className="text-gray-500 dark:text-gray-400">ربح قبل الإعلان</span>
-            <strong className="text-left text-gray-900 dark:text-white">
+            <span className="text-muted-foreground">ربح قبل الإعلان</span>
+            <strong className="text-left font-mono tabular-nums text-foreground">
               {formatMoney(preview.grossProfitPerPurchase, displayCurrency)}
             </strong>
-            <span className="text-gray-500 dark:text-gray-400">صافي الربح المطلوب</span>
-            <strong className="text-left text-gray-900 dark:text-white">
+            <span className="text-muted-foreground">صافي الربح المطلوب</span>
+            <strong className="text-left font-mono tabular-nums text-foreground">
               {formatMoney(preview.requiredNetProfit, displayCurrency)}
             </strong>
-            <span className="text-gray-500 dark:text-gray-400">حد CPA المستخدم</span>
-            <strong className="text-left text-emerald-700 dark:text-emerald-300">
+            <span className="text-muted-foreground">حد CPA المستخدم</span>
+            <strong className="text-left font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
               {formatMoney(preview.targetCpa, displayCurrency)}
             </strong>
           </div>
           {inventoryCostSummary?.unitCost !== null && inventoryCostSummary?.unitCost !== undefined && (
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              المخزون: {formatMoney(inventoryCostSummary.unitCost, displayCurrency)}
-              {" "}من {inventoryCostSummary.records || 0} سجلات.
+            <p className="pt-2 border-t border-border/40 text-[11px] text-muted-foreground font-mono">
+              المخزون: {formatMoney(inventoryCostSummary.unitCost, displayCurrency)} من {inventoryCostSummary.records || 0} سجلات.
             </p>
           )}
         </section>
@@ -294,3 +294,5 @@ export const AdvertisingProfitTab: React.FC<AdvertisingProfitTabProps> = ({
     </div>
   );
 };
+
+export default AdvertisingProfitTab;

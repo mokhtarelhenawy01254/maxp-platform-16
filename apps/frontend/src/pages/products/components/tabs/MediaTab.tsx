@@ -1,5 +1,12 @@
 import React from "react";
-import { PhotoIcon, StarIcon, Bars4Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  Image as ImageIcon,
+  Star,
+  GripVertical,
+  X,
+  UploadCloud,
+  RefreshCw,
+} from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -48,34 +55,36 @@ const SortableImageItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative group p-1 rounded-xl border-2 transition-all ${
-        isMain ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20" : "border-transparent"
+      className={`relative group p-1 rounded-xl border transition-all ${
+        isMain
+          ? "border-primary bg-primary/5 shadow-xs ring-1 ring-primary/20"
+          : "border-border/60 hover:border-border bg-card"
       } ${isDragging ? "opacity-50" : ""}`}
     >
       <img
         src={getImageUrl(url) || url}
         alt=""
-        className="h-24 w-full object-cover rounded-lg border border-gray-200 dark:border-gray-600 pointer-events-none"
+        className="h-24 w-full object-cover rounded-lg border border-border/40 pointer-events-none"
       />
 
       {/* Main Image Badge */}
       {isMain && (
-        <div className="absolute top-2 left-2 bg-yellow-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm font-bold flex items-center gap-0.5 pointer-events-none">
-          <StarIcon className="w-3 h-3 fill-current" />
-          الرئيسية
+        <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-md shadow-xs font-semibold flex items-center gap-1 pointer-events-none">
+          <Star className="w-3 h-3 fill-current" />
+          <span>الرئيسية</span>
         </div>
       )}
 
       {/* Actions Overlay */}
-      <div className="absolute inset-0 bg-black/30 sm:bg-black/40 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity rounded-lg flex flex-col items-center justify-center gap-2 pointer-events-none">
+      <div className="absolute inset-0 bg-background/60 backdrop-blur-2xs opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity rounded-lg flex flex-col items-center justify-center gap-2 pointer-events-none">
         {/* Drag Handle (Desktop) */}
         <div
           {...attributes}
           {...listeners}
-          className="p-1 cursor-grab active:cursor-grabbing text-white opacity-80 hover:opacity-100 pointer-events-auto hidden sm:block"
+          className="p-1 cursor-grab active:cursor-grabbing text-foreground opacity-80 hover:opacity-100 pointer-events-auto hidden sm:block"
           title="سحب لإعادة الترتيب"
         >
-          <Bars4Icon className="w-8 h-8 drop-shadow-md" />
+          <GripVertical className="w-6 h-6 drop-shadow-xs" />
         </div>
 
         <div className="flex items-center gap-2 pointer-events-auto">
@@ -87,10 +96,10 @@ const SortableImageItem = ({
                 e.stopPropagation();
                 onSetMain();
               }}
-              className="text-white hover:text-yellow-400 bg-black/60 p-1.5 rounded-full backdrop-blur-sm transition-colors shadow-sm"
+              className="text-foreground hover:text-amber-500 bg-background/90 p-1.5 rounded-full border border-border/70 transition-colors shadow-xs"
               title="تعيين كصورة رئيسية"
             >
-              <StarIcon className="w-4 h-4" />
+              <Star className="w-4 h-4" />
             </button>
           )}
 
@@ -101,10 +110,10 @@ const SortableImageItem = ({
               e.stopPropagation();
               onRemove();
             }}
-            className="text-white hover:text-red-400 bg-black/60 p-1.5 rounded-full backdrop-blur-sm transition-colors shadow-sm"
+            className="text-foreground hover:text-destructive bg-background/90 p-1.5 rounded-full border border-border/70 transition-colors shadow-xs"
             title="حذف الصورة"
           >
-            <XMarkIcon className="w-4 h-4" />
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -155,11 +164,17 @@ export const MediaTab: React.FC<MediaTabProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-3.5 sm:p-6 space-y-6 animate-fade-in">
-      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-        {t("products.media.title")}
-      </h3>
-      <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
+    <div className="rounded-xl border border-border/70 bg-card p-4 sm:p-5 space-y-4 shadow-xs text-right">
+      <div className="border-b border-border/50 pb-3">
+        <h3 className="text-sm font-semibold text-foreground">
+          {t("products.media.title")}
+        </h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          إضافة صور المنتج وترتيب ظهورها وتحديد الصورة الرئيسية
+        </p>
+      </div>
+
+      <div className="border border-dashed border-border/80 hover:border-primary/50 bg-muted/20 hover:bg-muted/40 rounded-xl p-6 text-center transition-all cursor-pointer">
         <input
           type="file"
           multiple
@@ -170,33 +185,36 @@ export const MediaTab: React.FC<MediaTabProps> = ({
         />
         <label
           htmlFor="images"
-          className="cursor-pointer text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 block"
+          className="cursor-pointer block"
         >
-          <PhotoIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-300" />
-          <span className="mt-2 block text-sm font-medium text-gray-900 dark:text-white">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary border border-primary/20 mx-auto flex items-center justify-center mb-2">
+            <UploadCloud className="h-5 w-5" />
+          </div>
+          <span className="block text-xs font-semibold text-foreground">
             {t("products.media.selectImages")}
           </span>
-          <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
+          <span className="mt-1 block text-[11px] text-muted-foreground font-mono">
             {t("products.media.imageFormats")}
           </span>
         </label>
       </div>
       
       {uploading && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-md p-4 flex items-center gap-3 animate-pulse">
-           <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-sm text-blue-700 dark:text-blue-300">
+        <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 flex items-center gap-2.5">
+          <RefreshCw className="w-4 h-4 text-primary animate-spin" />
+          <p className="text-xs font-medium text-primary">
             {t("products.media.uploading")}
           </p>
         </div>
       )}
 
       {uploadedImages.length > 0 && (
-        <div>
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-            {t("products.media.uploadedImages")} ({uploadedImages.length})
+        <div className="pt-2">
+          <p className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
+            <span>{t("products.media.uploadedImages")}</span>
+            <span className="font-mono tabular-nums text-muted-foreground">({uploadedImages.length})</span>
           </p>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -228,3 +246,5 @@ export const MediaTab: React.FC<MediaTabProps> = ({
     </div>
   );
 };
+
+export default MediaTab;
